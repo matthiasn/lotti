@@ -247,13 +247,13 @@ class DayAgentCaptureService {
   /// still-queued/running parse job attaches; a stuck or terminal one is
   /// re-armed by [DayProcessingOutboxRepository.enqueueParseCapture]. A
   /// successful explicit-empty parse is complete too, so it is recognized by
-  /// the capture's durable `parseCompletedAt` marker rather than re-running
-  /// inference whenever Activity reopens it.
+  /// the capture's durable `parseCompletedAt` marker or its independent
+  /// completion link rather than re-running inference whenever Activity
+  /// reopens it.
   Future<bool> retryCapture(String captureId) async {
     final entity = await agentRepository.getEntity(captureId);
     if (entity is! CaptureEntity || entity.deletedAt != null) return false;
-    if (entity.parseCompletedAt != null ||
-        (await parsedItemsForCapture(captureId)).isNotEmpty) {
+    if (await _hasSuccessfulCaptureParse(entity)) {
       return true;
     }
     await outbox.enqueueParseCapture(
@@ -270,14 +270,30 @@ class DayAgentCaptureService {
   /// A deleted capture is terminal too: a recovered parse job must not retry
   /// user intent that was removed while the job was queued.
   ///
-  /// Existing parsed items remain a compatibility signal for captures written
-  /// before `parseCompletedAt` existed.
+  /// The independent basic-link artifact survives marker-less legacy row
+  /// rewrites regardless of sync delivery order. Existing parsed items remain
+  /// a compatibility signal for captures written before either completion
+  /// artifact existed.
   Future<bool> hasCompletedCaptureParse(String captureId) async {
     final capture = await getCapture(captureId);
     if (capture == null) return false;
     if (capture.deletedAt != null) return true;
+    return _hasSuccessfulCaptureParse(capture);
+  }
+
+  /// Checks every successful-parse artifact, newest to oldest.
+  Future<bool> _hasSuccessfulCaptureParse(CaptureEntity capture) async {
     if (capture.parseCompletedAt != null) return true;
-    return (await parsedItemsForCapture(captureId)).isNotEmpty;
+    final completionLink = await agentRepository.getLinkById(
+      _captureParseCompletionLinkId(capture.id),
+    );
+    if (completionLink is BasicAgentLink &&
+        completionLink.deletedAt == null &&
+        completionLink.fromId == capture.id &&
+        completionLink.toId == capture.id) {
+      return true;
+    }
+    return (await parsedItemsForCapture(capture.id)).isNotEmpty;
   }
 
   /// Fetch parsed items linked to [captureId], oldest first.
@@ -386,6 +402,20 @@ class DayAgentCaptureService {
       await _softDeleteExistingParsedItems(captureId, now);
       await syncService.upsertEntity(
         currentCapture.copyWith(parseCompletedAt: now),
+      );
+      // A basic self-link is the delivery-order-independent completion
+      // artifact. Peers predating parseCompletedAt already understand and
+      // preserve this oldest link variant, while parsedItemsForCapture ignores
+      // it because it only reads captureToParsedItem links.
+      await syncService.upsertLink(
+        AgentLink.basic(
+          id: _captureParseCompletionLinkId(captureId),
+          fromId: captureId,
+          toId: captureId,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        ),
       );
       for (final parsedItem in parsedItems) {
         await syncService.upsertEntity(parsedItem);
@@ -595,6 +625,9 @@ class DayAgentCaptureService {
     return entity is Task ? entity : null;
   }
 }
+
+String _captureParseCompletionLinkId(String captureId) =>
+    'capture_parse_completion:$captureId';
 
 /// JSON-string result for direct day-agent tools.
 class DayAgentDirectToolResult {

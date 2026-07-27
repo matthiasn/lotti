@@ -193,8 +193,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// [parseCompletedAt] records a successful `parse_capture_to_items` call,
   /// including the explicit-empty result. Once non-null it is preserved
   /// monotonically at the repository write boundary because older peers omit
-  /// it from whole-row rewrites. Existing parsed-item links remain the
-  /// compatibility signal for legacy captures that completed before the field
+  /// it from whole-row rewrites. Successful parses also write an independent
+  /// basic-link artifact that peers predating this field preserve, so
+  /// completion converges even when a fresh device receives a causally newer
+  /// marker-less rewrite first. Existing parsed-item links remain the
+  /// compatibility signal for captures that completed before either artifact
   /// existed.
   const factory AgentDomainEntity.capture({
     required String id,

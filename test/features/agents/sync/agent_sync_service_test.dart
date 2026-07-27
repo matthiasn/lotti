@@ -613,6 +613,52 @@ void main() {
         );
       });
 
+      test(
+        'propagates a preserved capture completion marker in the sync envelope',
+        () async {
+          final completedAt = DateTime(2026, 3, 15, 10);
+          final completed =
+              AgentDomainEntity.capture(
+                    id: 'capture-1',
+                    agentId: 'agent-1',
+                    transcript: 'Original',
+                    capturedAt: testDate,
+                    createdAt: testDate,
+                    vectorClock: const VectorClock({'local': 1}),
+                    parseCompletedAt: completedAt,
+                  )
+                  as CaptureEntity;
+          final legacyRewrite = completed.copyWith(
+            transcript: 'Legacy rewrite',
+            vectorClock: const VectorClock({'legacy': 2}),
+            parseCompletedAt: null,
+          );
+          when(
+            () => mockRepository.getEntity(completed.id),
+          ).thenAnswer((_) async => completed);
+
+          await syncService.upsertEntity(legacyRewrite);
+
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as CaptureEntity;
+          expect(persisted.transcript, legacyRewrite.transcript);
+          expect(persisted.parseCompletedAt, completedAt);
+          expect(persisted.vectorClock, testClock);
+
+          final message =
+              verify(
+                    () => mockOutboxService.enqueueMessage(captureAny()),
+                  ).captured.single
+                  as SyncAgentEntity;
+          final syncedCapture = message.agentEntity! as CaptureEntity;
+          expect(syncedCapture.parseCompletedAt, completedAt);
+          expect(syncedCapture.vectorClock, testClock);
+        },
+      );
+
       test('works with agentState variant', () async {
         await syncService.upsertEntity(testStateEntity);
 

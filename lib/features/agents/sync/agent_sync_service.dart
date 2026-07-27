@@ -248,6 +248,10 @@ class AgentSyncService {
   /// also bound to the outer transaction's scope so a rollback releases the
   /// counter through the normal burn path instead of binding it to a payload
   /// that never committed.
+  ///
+  /// Local capture rewrites preserve an already persisted `parseCompletedAt`
+  /// before stamping so the database row and emitted sync envelope carry the
+  /// same monotonic completion state.
   Future<void> _upsertEntityRaw(
     AgentDomainEntity entity, {
     bool fromSync = false,
@@ -256,10 +260,19 @@ class AgentSyncService {
       await _repository.upsertEntity(entity);
       return;
     }
+    var entityToWrite = entity;
+    if (entity is CaptureEntity && entity.parseCompletedAt == null) {
+      final existing = await _repository.getEntity(entity.id);
+      if (existing is CaptureEntity && existing.parseCompletedAt != null) {
+        entityToWrite = entity.copyWith(
+          parseCompletedAt: existing.parseCompletedAt,
+        );
+      }
+    }
     await _vectorClockService.withVcScope<void>(() async {
-      final stamped = entity.copyWith(
+      final stamped = entityToWrite.copyWith(
         vectorClock: await _vectorClockService.getNextVectorClock(
-          previous: entity.vectorClock,
+          previous: entityToWrite.vectorClock,
         ),
       );
       await _repository.upsertEntity(stamped);

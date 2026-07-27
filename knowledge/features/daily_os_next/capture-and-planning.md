@@ -81,10 +81,16 @@ completion signal shared by the workflow, the outbox executor, and Activity's
 retry path. Without that marker a successful empty result is indistinguishable
 from an unparsed capture after restart and reopening Activity spends another
 inference run. Legacy captures with parsed-item links still count as complete.
-The marker is monotonic at the agent repository write boundary, so a whole-row
-rewrite from an older peer that does not know the field cannot erase successful
-completion. A recovered outbox job also treats a deleted capture as terminal
-instead of retrying removed user intent.
+The marker is monotonic at both the local sync-envelope and repository write
+boundaries, so a whole-row rewrite cannot erase locally observed completion.
+Every successful parse also writes a deterministic basic self-link
+(`capture_parse_completion:<captureId>`). That oldest link variant is readable
+by peers predating the marker and syncs independently of the capture row, so a
+fresh device still learns completion when it receives a causally newer
+marker-less legacy rewrite before the original completion update. The link is
+not a `capture_to_parsed_item` edge, so it never appears in the reconcile item
+list. A recovered outbox job treats a deleted capture as terminal instead of
+retrying removed user intent.
 
 Only an explicitly empty model `items` array means "nothing to act on." A
 non-empty response whose entries are all invalid or outside the planner's

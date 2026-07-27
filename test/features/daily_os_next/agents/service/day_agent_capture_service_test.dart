@@ -159,6 +159,7 @@ void main() {
   late MockTaskAgentService taskAgentService;
   late Map<String, AgentDomainEntity> agentEntities;
   late Map<String, JournalEntity> journalEntities;
+  late Map<String, AgentLink> linksById;
   late Map<String, List<AgentLink>> linksByFromAndType;
   late List<AgentDomainEntity> upsertedEntities;
   late List<AgentLink> upsertedLinks;
@@ -200,6 +201,7 @@ void main() {
       ),
     };
     journalEntities = <String, JournalEntity>{};
+    linksById = <String, AgentLink>{};
     linksByFromAndType = <String, List<AgentLink>>{};
     upsertedEntities = <AgentDomainEntity>[];
     upsertedLinks = <AgentLink>[];
@@ -218,6 +220,11 @@ void main() {
           if (agentEntities[id] != null) id: agentEntities[id]!,
       };
     });
+    when(() => agentRepository.getLinkById(any())).thenAnswer((
+      invocation,
+    ) async {
+      return linksById[invocation.positionalArguments.single as String];
+    });
     when(
       () => agentRepository.getLinksFrom(any(), type: any(named: 'type')),
     ).thenAnswer((invocation) async {
@@ -231,7 +238,9 @@ void main() {
       agentEntities[entity.id] = entity;
     });
     when(() => syncService.upsertLink(any())).thenAnswer((invocation) async {
-      upsertedLinks.add(invocation.positionalArguments.single as AgentLink);
+      final link = invocation.positionalArguments.single as AgentLink;
+      upsertedLinks.add(link);
+      linksById[link.id] = link;
     });
     when(() => journalDb.journalEntityById(any())).thenAnswer((
       invocation,
@@ -512,6 +521,90 @@ void main() {
             type: any(named: 'type'),
           ),
         );
+      });
+
+      test(
+        'accepts the independent completion link after a marker-less rewrite',
+        () async {
+          final capture = _capture(id: 'capture-legacy-rewrite');
+          final completionLink = AgentLink.basic(
+            id: 'capture_parse_completion:${capture.id}',
+            fromId: capture.id,
+            toId: capture.id,
+            createdAt: _now,
+            updatedAt: _now,
+            vectorClock: null,
+          );
+          agentEntities[capture.id] = capture;
+          linksById[completionLink.id] = completionLink;
+
+          expect(
+            await createService().hasCompletedCaptureParse(capture.id),
+            true,
+          );
+          verifyNever(
+            () => agentRepository.getLinksFrom(
+              any(),
+              type: any(named: 'type'),
+            ),
+          );
+        },
+      );
+
+      test('ignores malformed or deleted completion links', () async {
+        final capture = _capture(id: 'capture-unparsed');
+        agentEntities[capture.id] = capture;
+        final completionId = 'capture_parse_completion:${capture.id}';
+        final invalidLinks = <AgentLink>[
+          AgentLink.basic(
+            id: completionId,
+            fromId: capture.id,
+            toId: capture.id,
+            createdAt: _now,
+            updatedAt: _now,
+            vectorClock: null,
+            deletedAt: _now,
+          ),
+          AgentLink.basic(
+            id: completionId,
+            fromId: 'another-capture',
+            toId: capture.id,
+            createdAt: _now,
+            updatedAt: _now,
+            vectorClock: null,
+          ),
+          AgentLink.basic(
+            id: completionId,
+            fromId: capture.id,
+            toId: 'another-capture',
+            createdAt: _now,
+            updatedAt: _now,
+            vectorClock: null,
+          ),
+          AgentLink.captureToParsedItem(
+            id: completionId,
+            fromId: capture.id,
+            toId: capture.id,
+            createdAt: _now,
+            updatedAt: _now,
+            vectorClock: null,
+          ),
+        ];
+
+        for (final invalidLink in invalidLinks) {
+          linksById[completionId] = invalidLink;
+          expect(
+            await createService().hasCompletedCaptureParse(capture.id),
+            false,
+          );
+        }
+
+        verify(
+          () => agentRepository.getLinksFrom(
+            capture.id,
+            type: AgentLinkTypes.captureToParsedItem,
+          ),
+        ).called(invalidLinks.length);
       });
 
       test('returns false for a live capture with no parse artifact', () async {
@@ -2890,6 +2983,10 @@ void main() {
           (agentEntities[capture.id]! as CaptureEntity).parseCompletedAt,
           _now,
         );
+        final completionLink = upsertedLinks.whereType<BasicAgentLink>().single;
+        expect(completionLink.id, 'capture_parse_completion:${capture.id}');
+        expect(completionLink.fromId, capture.id);
+        expect(completionLink.toId, capture.id);
       },
     );
 
