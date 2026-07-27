@@ -22,6 +22,9 @@ int priorityForMessage(SyncMessage message) {
     SyncJournalEntity() => OutboxPriority.high.index,
     SyncEntryLink() => OutboxPriority.high.index,
     SyncBackfillRequest() => OutboxPriority.normal.index,
+    // A repair request is a peer waiting on a blob it cannot render without,
+    // but it must not queue-jump the user's own writes.
+    SyncMediaRequest() => OutboxPriority.normal.index,
     SyncBackfillResponse() => OutboxPriority.normal.index,
     SyncAgentEntity() => OutboxPriority.normal.index,
     SyncAgentLink() => OutboxPriority.normal.index,

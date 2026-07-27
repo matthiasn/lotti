@@ -10247,6 +10247,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Journal';
 
   @override
+  String get syncPayloadMediaRequest => 'Media-aanvraag';
+
+  @override
   String get syncPayloadNotification => 'Kennisgeving';
 
   @override

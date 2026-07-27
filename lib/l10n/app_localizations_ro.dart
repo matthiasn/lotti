@@ -10406,6 +10406,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Intrare jurnal';
 
   @override
+  String get syncPayloadMediaRequest => 'Cerere de fișiere media';
+
+  @override
   String get syncPayloadNotification => 'Notificare';
 
   @override

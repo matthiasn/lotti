@@ -469,6 +469,10 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
           msg: msg,
           commonFields: commonFields,
         ),
+        final SyncMediaRequest msg => _enqueueWriter.enqueueMediaRequest(
+          msg: msg,
+          commonFields: commonFields,
+        ),
         final SyncBackfillResponse msg =>
           _enqueueWriter.enqueueBackfillResponse(
             msg: msg,

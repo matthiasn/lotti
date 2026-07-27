@@ -17574,6 +17574,12 @@ abstract class AppLocalizations {
   /// **'Journal entry'**
   String get syncPayloadJournalEntity;
 
+  /// No description provided for @syncPayloadMediaRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Media request'**
+  String get syncPayloadMediaRequest;
+
   /// No description provided for @syncPayloadNotification.
   ///
   /// In en, this message translates to:

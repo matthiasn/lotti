@@ -4716,6 +4716,7 @@
   "syncPayloadEntityDefinition": "Definizione di ingresso",
   "syncPayloadEntryLink": "Collegamento di ingresso",
   "syncPayloadJournalEntity": "Entrata del giornale",
+  "syncPayloadMediaRequest": "Richiesta di media",
   "syncPayloadNotification": "Notifica",
   "syncPayloadNotificationStateUpdate": "Aggiornamento dello stato di notifica",
   "syncPayloadOutboxBundle": "Fascetta di uscita",

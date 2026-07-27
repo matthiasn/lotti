@@ -56,6 +56,8 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/media/media_repair_service.dart';
+import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
@@ -676,12 +678,33 @@ Future<void> registerSingletons() async {
   // run before MatrixService consumes any inbound timeline events.
   syncEventProcessor.backfillResponseHandler = backfillResponseHandler;
 
+  // Media self-healing, both halves. The requester turns the loader's
+  // "blob missing locally" signal into a broadcast request; the responder
+  // answers peers' requests with the blob. Wiring the listener is what makes
+  // the signal actionable — unsubscribed, a missing image or recording is
+  // observed on every load and silently dropped.
+  final mediaRepairService = MediaRepairService(
+    outboxService: outboxService,
+    vectorClockService: vectorClockService,
+    loggingService: domainLogger,
+  );
+  syncEventProcessor
+    ..missingMediaListener = mediaRepairService.reportMissing
+    ..mediaRequestHandler = MediaRequestHandler(
+      journalDb: journalDb,
+      outboxService: outboxService,
+      vectorClockService: vectorClockService,
+      documentsDirectory: documentsDirectory,
+      loggingService: domainLogger,
+    );
+
   // Start the backfill request service
   backfillRequestService.start();
 
   getIt
     ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
     ..registerSingleton<BackfillRequestService>(backfillRequestService)
+    ..registerSingleton<MediaRepairService>(mediaRepairService)
     ..registerSingleton<MetadataService>(
       MetadataService(vectorClockService: vectorClockService),
     )

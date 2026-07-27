@@ -346,6 +346,9 @@ class QueueApplyAdapter {
       // backfill handler does its own DB selection; conservatively
       // wrap so any journal-writing branch stays atomic.
       backfillRequest: (_) => true,
+      // The media-request handler reads JournalDb and enqueues outbox rows;
+      // it writes no journal state of its own, so it needs no transaction.
+      mediaRequest: (_) => false,
       backfillResponse: (_) => true,
       // agent_db.
       agentEntity: (_) => false,

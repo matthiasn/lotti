@@ -4937,6 +4937,7 @@
   "syncPayloadEntityDefinition": "Entity definition",
   "syncPayloadEntryLink": "Entry link",
   "syncPayloadJournalEntity": "Journal entry",
+  "syncPayloadMediaRequest": "Media request",
   "syncPayloadNotification": "Notification",
   "syncPayloadNotificationStateUpdate": "Notification state update",
   "syncPayloadOutboxBundle": "Outbox bundle",

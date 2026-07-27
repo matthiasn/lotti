@@ -680,7 +680,7 @@ void main() {
       }, returnsNormally);
     });
 
-    test('descriptorPendingListener with non-smart loader does not crash', () {
+    test('missingMediaListener with non-smart loader does not crash', () {
       final processorWithFileLoader = SyncEventProcessor(
         loggingService: loggingService,
         updateNotifications: updateNotifications,
@@ -691,12 +691,14 @@ void main() {
       );
 
       expect(() {
-        processorWithFileLoader.descriptorPendingListener = (_) {};
+        processorWithFileLoader.missingMediaListener =
+            ({required entryId, required relativePath}) {};
       }, returnsNormally);
     });
 
     test(
-      'descriptorPendingListener forwards missing descriptor notifications from smart loader',
+      'missingMediaListener forwards a missing-media miss from the smart '
+      'loader — the signal media self-healing is built on',
       () async {
         final tempDir = await Directory.systemTemp.createTemp(
           'descriptor_listener_test',
@@ -741,13 +743,19 @@ void main() {
         );
 
         String? pendingPath;
-        processorWithSmartLoader.descriptorPendingListener = (path) {
-          pendingPath = path;
-        };
+        String? pendingEntryId;
+        processorWithSmartLoader.missingMediaListener =
+            ({required entryId, required relativePath}) {
+              pendingEntryId = entryId;
+              pendingPath = relativePath;
+            };
 
         await loader.load(jsonPath: relJson);
 
         expect(pendingPath, getRelativeImagePath(image));
+        // MediaRepairService requests by entry id, so the id must ride along
+        // with the path or the miss cannot be turned into a request.
+        expect(pendingEntryId, image.meta.id);
       },
     );
   });
@@ -1471,6 +1479,50 @@ void main() {
         await processor.process(event: event, journalDb: journalDb);
 
         verify(() => mockHandler.handleBackfillRequest(message)).called(1);
+      },
+    );
+
+    test(
+      'SyncMediaRequest is delegated to the media handler when configured',
+      () async {
+        const message = SyncMediaRequest(
+          entryIds: ['entry-1', 'entry-2'],
+          requesterId: 'requester-1',
+        );
+
+        final mockHandler = MockMediaRequestHandler();
+        when(
+          () => mockHandler.handleMediaRequest(any()),
+        ).thenAnswer((_) async {});
+
+        processor.mediaRequestHandler = mockHandler;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockHandler.handleMediaRequest(message)).called(1);
+      },
+    );
+
+    test(
+      'SyncMediaRequest without a handler is ignored rather than throwing',
+      () async {
+        // Unlike backfill, the responder is optional: a build or test harness
+        // with no handler wired must drop the request quietly, not fail the
+        // inbound event and send it round the retry path forever.
+        const message = SyncMediaRequest(
+          entryIds: ['entry-1'],
+          requesterId: 'requester-1',
+        );
+
+        processor.mediaRequestHandler = null;
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await expectLater(
+          processor.process(event: event, journalDb: journalDb),
+          completes,
+        );
       },
     );
 

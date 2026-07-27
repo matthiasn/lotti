@@ -4715,6 +4715,7 @@
   "syncPayloadEntityDefinition": "De definitie van entiteit",
   "syncPayloadEntryLink": "Verwijzing naar invoer",
   "syncPayloadJournalEntity": "Journal",
+  "syncPayloadMediaRequest": "Media-aanvraag",
   "syncPayloadNotification": "Kennisgeving",
   "syncPayloadNotificationStateUpdate": "Actualisering van de status van kennisgeving",
   "syncPayloadOutboxBundle": "Outbox bundel",

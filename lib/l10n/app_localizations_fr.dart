@@ -10411,6 +10411,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Entrée de journal';
 
   @override
+  String get syncPayloadMediaRequest => 'Demande de média';
+
+  @override
   String get syncPayloadNotification => 'Notification';
 
   @override

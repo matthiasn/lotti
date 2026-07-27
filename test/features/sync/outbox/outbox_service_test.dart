@@ -5148,6 +5148,34 @@ void main() {
       },
     );
 
+    test('SyncMediaRequest rides the inline enqueue path', () async {
+      const message = SyncMessage.mediaRequest(
+        entryIds: ['entry-1', 'entry-2'],
+        requesterId: 'requester-device',
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'mediaRequest:batch:2');
+      // A repair request carries no payload file of its own; it must never be
+      // mistaken for a media row and pulled out of the bundler.
+      expect(companion.filePath.value, isNull);
+      // Round-trips intact, so the responder sees the ids it must answer for.
+      final decoded =
+          SyncMessage.fromJson(
+                jsonDecode(companion.message.value) as Map<String, dynamic>,
+              )
+              as SyncMediaRequest;
+      expect(decoded.entryIds, ['entry-1', 'entry-2']);
+      expect(decoded.requesterId, 'requester-device');
+    });
+
     test('SyncBackfillRequest with empty entries list', () async {
       const message = SyncMessage.backfillRequest(
         requesterId: 'requester-device',

@@ -53,10 +53,22 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     _descriptorDownloader.onCachePurge = listener;
   }
 
-  void Function(String path)? _onMissingDescriptorPath;
+  void Function({required String entryId, required String relativePath})?
+  _onMissingMedia;
 
-  set onMissingDescriptorPath(void Function(String path)? listener) {
-    _onMissingDescriptorPath = listener;
+  /// Called when an entry's image or audio file is absent locally and cannot
+  /// be repaired from the [AttachmentIndex] — no descriptor for that path has
+  /// been observed, or the download failed.
+  ///
+  /// This is the only signal that a blob is missing. The subscriber
+  /// (`MediaRepairService`) turns it into a `SyncMediaRequest`, which is what
+  /// makes a gap self-healing instead of silent and permanent: the entry
+  /// applies either way, so nothing else would ever notice.
+  set onMissingMedia(
+    void Function({required String entryId, required String relativePath})?
+    listener,
+  ) {
+    _onMissingMedia = listener;
   }
 
   @override
@@ -213,10 +225,15 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   Future<void> _ensureMediaOnMissing(JournalEntity e) async {
     switch (e) {
       case JournalImage():
-        await _ensureMediaFile(getRelativeImagePath(e), mediaType: 'image');
+        await _ensureMediaFile(
+          getRelativeImagePath(e),
+          entryId: e.meta.id,
+          mediaType: 'image',
+        );
       case JournalAudio():
         await _ensureMediaFile(
           AudioUtils.getRelativeAudioPath(e),
+          entryId: e.meta.id,
           mediaType: 'audio',
         );
       default:
@@ -226,6 +243,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
 
   Future<void> _ensureMediaFile(
     String relativePath, {
+    required String entryId,
     String? mediaType,
   }) async {
     final rp = relativePath;
@@ -253,7 +271,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         'smart.media.miss path=$rp key=$descriptorKey',
         subDomain: 'SmartLoader.fetchMedia',
       );
-      _onMissingDescriptorPath?.call(descriptorKey);
+      _onMissingMedia?.call(entryId: entryId, relativePath: rp);
       return;
     }
     try {
@@ -293,7 +311,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         stackTrace: st,
         subDomain: 'SmartLoader.fetchMedia',
       );
-      _onMissingDescriptorPath?.call(descriptorKey);
+      _onMissingMedia?.call(entryId: entryId, relativePath: rp);
     }
   }
 

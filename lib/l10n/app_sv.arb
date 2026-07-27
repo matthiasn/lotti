@@ -4716,6 +4716,7 @@
   "syncPayloadEntityDefinition": "Entitetsdefinition",
   "syncPayloadEntryLink": "Inträdeslänk",
   "syncPayloadJournalEntity": "Dagboksanteckning",
+  "syncPayloadMediaRequest": "Mediebegäran",
   "syncPayloadNotification": "Meddelande",
   "syncPayloadNotificationStateUpdate": "Uppdatering av notifikationstillstånd",
   "syncPayloadOutboxBundle": "Utboxspaket",

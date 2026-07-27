@@ -4160,6 +4160,7 @@
   "syncPayloadEntityDefinition": "Definiție entitate",
   "syncPayloadEntryLink": "Link intrare",
   "syncPayloadJournalEntity": "Intrare jurnal",
+  "syncPayloadMediaRequest": "Cerere de fișiere media",
   "syncPayloadNotification": "Notificare",
   "syncPayloadNotificationStateUpdate": "Actualizare stare notificare",
   "syncPayloadOutboxBundle": "Pachet din căsuța de trimitere",

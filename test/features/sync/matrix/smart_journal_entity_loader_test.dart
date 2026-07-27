@@ -279,10 +279,17 @@ void main() {
           loggingService: loggingService,
         );
         String? pendingPath;
-        loader.onMissingDescriptorPath = (path) => pendingPath = path;
+        String? pendingEntryId;
+        loader.onMissingMedia = ({required entryId, required relativePath}) {
+          pendingEntryId = entryId;
+          pendingPath = relativePath;
+        };
         final loaded = await loader.load(jsonPath: relJson);
         expect(loaded.meta.id, image.meta.id);
         expect(pendingPath, relMedia);
+        // The entry id is what the repair request travels by — a path alone
+        // would not let the responder resolve the entity.
+        expect(pendingEntryId, image.meta.id);
         verify(
           () => loggingService.error(
             LogDomain.sync,
@@ -418,13 +425,20 @@ void main() {
           loggingService: loggingService,
         );
         String? pendingPath;
-        loader.onMissingDescriptorPath = (path) => pendingPath = path;
+        String? pendingEntryId;
+        loader.onMissingMedia = ({required entryId, required relativePath}) {
+          pendingEntryId = entryId;
+          pendingPath = relativePath;
+        };
         await loader.load(jsonPath: relJson);
 
         // First download empty → purge throws → purged=false → outer catch
         // surfaces the empty-bytes error without a second download attempt.
         expect(downloads, 1);
         expect(pendingPath, relMedia);
+        // The entry id is what the repair request travels by — a path alone
+        // would not let the responder resolve the entity.
+        expect(pendingEntryId, image.meta.id);
         verify(
           () => loggingService.error(
             LogDomain.sync,
@@ -489,11 +503,18 @@ void main() {
           loggingService: loggingService,
         );
         String? pendingPath;
-        loader.onMissingDescriptorPath = (path) => pendingPath = path;
+        String? pendingEntryId;
+        loader.onMissingMedia = ({required entryId, required relativePath}) {
+          pendingEntryId = entryId;
+          pendingPath = relativePath;
+        };
         await loader.load(jsonPath: relJson);
 
         expect(downloads, 2);
         expect(pendingPath, relMedia);
+        // The entry id is what the repair request travels by — a path alone
+        // would not let the responder resolve the entity.
+        expect(pendingEntryId, image.meta.id);
         // Both attempts saw empty bytes → purge runs twice.
         verify(() => database.deleteFile(mediaUri)).called(2);
         verify(
@@ -583,14 +604,19 @@ void main() {
 
         final index = AttachmentIndex(logging: loggingService);
         String? pendingPath;
+        String? pendingEntryId;
         final loader = SmartJournalEntityLoader(
           attachmentIndex: index,
           loggingService: loggingService,
         );
-        loader.onMissingDescriptorPath = (path) => pendingPath = path;
+        loader.onMissingMedia = ({required entryId, required relativePath}) {
+          pendingEntryId = entryId;
+          pendingPath = relativePath;
+        };
         final loaded = await loader.load(jsonPath: relJson);
         expect(loaded.meta.id, image.meta.id);
         expect(pendingPath, getRelativeImagePath(image));
+        expect(pendingEntryId, image.meta.id);
         verify(
           () => loggingService.log(
             LogDomain.sync,

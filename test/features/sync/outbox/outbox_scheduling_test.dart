@@ -23,6 +23,7 @@ enum _GeneratedPriorityMessageKind {
   dailyOsUserName,
   backfillRequest,
   backfillResponse,
+  mediaRequest,
   agentEntity,
   agentLink,
   agentBundle,
@@ -119,6 +120,12 @@ class _GeneratedPriorityScenario {
           ],
           requesterId: 'requester-$counterSlot',
         ),
+      _GeneratedPriorityMessageKind.mediaRequest => SyncMessage.mediaRequest(
+        entryIds: [
+          for (var index = 0; index < counterSlot; index++) 'entry-$index',
+        ],
+        requesterId: 'requester-$counterSlot',
+      ),
       _GeneratedPriorityMessageKind.backfillResponse =>
         SyncMessage.backfillResponse(
           hostId: 'host-$counterSlot',
@@ -186,6 +193,7 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.entryLink => OutboxPriority.high.index,
       _GeneratedPriorityMessageKind.backfillRequest ||
       _GeneratedPriorityMessageKind.backfillResponse ||
+      _GeneratedPriorityMessageKind.mediaRequest ||
       _GeneratedPriorityMessageKind.agentEntity ||
       _GeneratedPriorityMessageKind.agentLink ||
       _GeneratedPriorityMessageKind.agentBundle ||

@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding
     last_modified: 2026-06-16
+  - id: media-repair
+    resource: ../../../lib/features/sync/media
+    title: Media self-healing — request and response
+    last_modified: 2026-07-28
   - id: attachment-policy
     resource: ../../../lib/features/sync/model/sync_attachment_policy.dart
     title: shouldSendJournalAttachments — the media-send decision
@@ -91,6 +95,58 @@ it joined arrived complete.
 `MatrixPayloadSender` also uploads blobs for any media-bearing bundle child that
 reaches it anyway — defence in depth against a row enqueued by an older build,
 where the attachment decision had not yet moved to enqueue time.
+
+## Self-healing: repairing a blob that never arrived
+
+The policy above governs sends this device chooses to make. A device can still
+end up holding an entry whose blob it never received — it joined after the
+upload, a download failed, a peer ran a build that predates the policy. Nothing
+in the apply path treats that as an error: the JSON is the authoritative state
+and the entry must apply regardless, so the miss would otherwise be observed on
+every load and dropped.
+
+`lib/features/sync/media/` closes that loop.
+
+```mermaid
+sequenceDiagram
+  participant Loader as "SmartJournalEntityLoader"
+  participant Repair as "MediaRepairService"
+  participant Room as "Matrix room"
+  participant Peer as "MediaRequestHandler (peer)"
+  participant Ingest as "AttachmentIngestor (here)"
+
+  Loader->>Loader: _ensureMediaOnMissing(entity)
+  Note over Loader: AttachmentIndex has no descriptor<br/>for this path
+  Loader->>Repair: onMissingMedia(entryId, relativePath)
+  Repair->>Repair: debounce + dedupe + cap
+  Repair->>Room: SyncMediaRequest(entryIds, requesterId)
+  Room->>Peer: broadcast
+  Peer->>Peer: entry known? blob on disk?
+  Peer->>Room: SyncJournalEntity(includeAttachments: true)
+  Room->>Ingest: m.file (the blob)
+  Ingest->>Ingest: write to disk
+```
+
+Three properties are load-bearing:
+
+- **The request travels by entry id, not by path.** The responder resolves the
+  id through `JournalDb` and derives the media path itself, so no wire-supplied
+  path is ever resolved against a peer's filesystem. It also means the answer is
+  an ordinary journal-entity send — no media-specific upload path exists to
+  drift out of step with the policy above.
+- **There is no response envelope.** The blob arrives as a plain attachment
+  event and `AttachmentIngestor` writes it, the same way any attachment lands.
+  The requester never learns a request succeeded; it stops asking because the
+  file now exists and the loader stops reporting it missing.
+- **The request is broadcast and answers are optional.** Any peer holding the
+  blob may answer, because the device that created the entry is often the one
+  that is offline. A peer that lacks the file stays silent rather than
+  answering with nothing.
+
+Bounds live in `SyncTuning` (`mediaRepair*`): a debounce window so a catch-up's
+burst of misses becomes one request, a batch cap so a backlog drains across
+successive requests, an attempt cap so a blob no peer holds is eventually
+abandoned, and a tracking cap so the pending set cannot grow without limit.
 
 # The CAS claim is load-bearing
 

@@ -165,6 +165,30 @@ class SyncTuning {
   /// incomplete walk, so the durable floor remains for a later retry.
   static const Duration backwardWalkTimeout = Duration(minutes: 5);
 
+  // Media repair tuning — self-healing fetch for missing image/audio blobs.
+
+  /// How long the repair service collects misses before sending one request.
+  ///
+  /// A catch-up that applies hundreds of media entries reports its misses in a
+  /// burst; coalescing them into one broadcast keeps that from becoming one
+  /// Matrix event per photo.
+  static const Duration mediaRepairDebounce = Duration(seconds: 20);
+
+  /// Maximum entry ids in a single `SyncMediaRequest`. Further ids ride the
+  /// next request rather than growing one envelope without bound.
+  static const int mediaRepairMaxBatchSize = 50;
+
+  /// How many times one entry's blob may be requested before the service
+  /// gives up on it for this session. Bounds the case where no peer online
+  /// holds the file — including a blob deleted everywhere, which no amount of
+  /// asking can produce.
+  static const int mediaRepairMaxAttemptsPerEntry = 3;
+
+  /// Upper bound on entries tracked for repair at once. Beyond this the
+  /// oldest tracked entries are dropped, so a pathological device missing
+  /// tens of thousands of blobs cannot grow the set without limit.
+  static const int mediaRepairMaxTrackedEntries = 2000;
+
   // Backfill tuning - self-healing sync for missing entries
   static const Duration backfillRequestInterval = Duration(minutes: 2);
   static const int backfillMaxRequestCount = 10;

@@ -57,6 +57,9 @@ void registerSyncProcessorFallbacks() {
     const SyncBackfillRequest(entries: [], requesterId: ''),
   );
   registerFallbackValue(
+    const SyncMediaRequest(entryIds: [], requesterId: ''),
+  );
+  registerFallbackValue(
     const SyncBackfillResponse(hostId: '', counter: 0, deleted: false),
   );
   registerFallbackValue(const VectorClock({'fallback': 1}));
