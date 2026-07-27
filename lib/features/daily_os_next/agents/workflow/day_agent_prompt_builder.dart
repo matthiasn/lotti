@@ -117,6 +117,10 @@ Drafting rules:
   remains. What you may not do is run past the end of the working day, or
   quietly shrink estimates so everything appears to fit — a plan that looks
   complete but cannot be worked is worse than one that names what was dropped.
+- Never represent omitted or unscheduled work as a zero-duration placeholder
+  block. Every block must have `end` later than `start`; if work does not fit,
+  name the omitted work in an existing block `reason` or a `raise_day_status`
+  note instead.
 - A `<day_directive>` section, when present, is the coordinator's distilled
   ledger for this day and is BINDING, not a hint. Every commitment in it must
   be (a) represented in the drafted plan, (b) explicitly traded away in a

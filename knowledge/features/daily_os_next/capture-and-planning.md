@@ -229,6 +229,13 @@ leave work out and name it, or place a task for less than its estimate and say
 so — rather than running past the end of the day or quietly shrinking
 estimates so everything appears to fit.
 
+Omitted work is **never a block**. In particular, a zero-duration
+`UNSCHEDULED` placeholder is not a representation of a trade: `end > start`
+correctly rejects it, costs a model retry, and leaves no usable plan artifact.
+The drafting rules therefore say explicitly that every block has a later end
+and omitted work belongs in an existing block reason or an
+`attentionNeeded` status note.
+
 **A block that names a task is filed under that task's category.** The block's
 own `categoryId` and its `taskId` were each validated against the agent's
 allow-set but never against *each other*, so a block could carry a task from one

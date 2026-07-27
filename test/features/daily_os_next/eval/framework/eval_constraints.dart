@@ -67,6 +67,39 @@ abstract final class EvalConstraintIds {
   ];
 }
 
+/// How strongly each constraint result should be interpreted.
+///
+/// Most constraints compare structured data and are objective. The two
+/// semantic checks below deliberately use string presence as an inexpensive
+/// indifference detector. A green result from either is useful evidence that
+/// the model did not stay silent, but it is not evidence that the model
+/// understood the dependency or capacity trade it named.
+abstract final class EvalConstraintSignals {
+  static const heuristicIds = <String>{
+    EvalConstraintIds.blockerBeforeBlocked,
+    EvalConstraintIds.surfacedConflict,
+  };
+
+  static const caveats = <String, String>{
+    EvalConstraintIds.blockerBeforeBlocked:
+        'Checks whether a reason names a blocker id or title. A match does not '
+        'prove that the model understood the dependency or justified bypassing '
+        'it; inspect the plan and reason in the judge bundle.',
+    EvalConstraintIds.surfacedConflict:
+        'Checks whether the output names omitted work or uses an accepted '
+        'escalation reason. A match does not prove that the model understood '
+        'the capacity trade; inspect the plan, reasons, and status note in the '
+        'judge bundle.',
+  };
+
+  static bool isHeuristic(String id) => heuristicIds.contains(id);
+
+  static String kindFor(String id) =>
+      isHeuristic(id) ? 'heuristic' : 'objective';
+
+  static String? caveatFor(String id) => caveats[id];
+}
+
 /// Scores every constraint against [outcome], in report order.
 List<EvalConstraintResult> scoreAll(EvalRunOutcome outcome) => [
   scoreNoOverlappingBlocks(outcome),

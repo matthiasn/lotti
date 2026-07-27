@@ -63,6 +63,15 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   checked against task **estimates**, not the block lengths the model wrote, since
   the cheapest way to make an impossible day fit is to claim each task is shorter
   than it is.
+- **Two semantic checks are heuristic, not ranking evidence.**
+  `surfacedConflict` looks for omitted work named in output, while
+  `blockerBeforeBlocked` accepts a reason that names a blocker id or title.
+  Both catch the important failure mode of saying nothing, but either can pass
+  through string presence without demonstrating comprehension. They remain
+  visible per constraint as weak priors, carry a caveat into the JSON and judge
+  bundle, and are excluded from the objective model leaderboard. A reviewer
+  must inspect the plan, reasons, and status notes before calling either green
+  result good reasoning.
 - **Fabrication is judged against what the model was shown.** The task corpus
   renders only inside the capture context, so a wake without a capture sees only
   its decided tasks — which do carry `status` and `blockedBy`, but not
@@ -195,7 +204,10 @@ on.
 So the report emits a **judge bundle**: one self-sufficient JSON object per
 (scenario, model, variant, sample) carrying the scenario and its intent, the exact
 prompts, every tool call including rejections and their text, the persisted plan,
-and that run's constraint results and cost.
+and that run's constraint results and cost. Each constraint result is labelled
+`objective` or `heuristic`; heuristic entries repeat their caveat beside the
+evidence so a detached bundle cannot make a string match look like a semantic
+judgement.
 
 The bundle is bounded to the newest samples per cell and **states what it
 dropped**, because a truncated bundle that does not say so reads as complete. It
