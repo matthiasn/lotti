@@ -64,6 +64,19 @@ The distinction matters for reading eval results and for trusting the model:
 So **the persisted plan is always *legal***, and inspecting it alone measures the
 guards rather than the model. See [evaluation](evaluation.md).
 
+**A capture may parse to nothing.** `parse_capture_to_items` accepts an empty
+`items` array, meaning "this capture holds nothing to act on" — the only honest
+answer to a transcript like *"Nothing much on today."* It used to be rejected,
+which left a model that had correctly found nothing with no compliant move:
+invent an item, or skip the call and trip `MissingCaptureParseException` and a
+forced retry. It was the second most frequent rejection across the eval runs,
+and six of seven were that same capture.
+
+An empty parse is not a no-op. `persistParsedItems` replaces a capture's items
+wholesale, so it clears an earlier parse rather than leaving a stale queue in
+the reconcile panel — which is what makes "nothing here" a correction the model
+can actually make.
+
 ## Three guards worth stating precisely
 
 **Planning into the past is refused, whatever the block's type.** For today's
@@ -130,6 +143,17 @@ to express; `drafted` expresses it without claiming a verdict the user never
 gave. `committed` stays in the tool schema, unlike `cal`, because its
 carry-forward use is real — removing it would force a re-draft to call approved
 work `drafted` and silently un-commit it.
+**And so are the estimates it is compared against.** `drafting.decidedTasks`
+projected only `{id, title, categoryId, status, blockedBy}`, while the rules ask
+the model to total `estimateMinutes` and weigh them against `availableMinutes`.
+The task corpus was the only carrier of estimates and it renders inside
+`<capture>` alone, so on a capture-less wake that instruction was unfollowable —
+the same shape as ADR 0043's rule arriving without its data, in a rule written
+one commit earlier. `DecidedTaskRef` carries `estimateMinutes` from
+`task.data.estimate`, the read `hydrateDecidedTasks` already performs, and it is
+omitted rather than zeroed when a task has no estimate: zero would let unsized
+work total as free.
+
 **The day's remaining budget is stated, not derived.** `<planning_window>`
 carries `availableMinutes` — working time still available, bounded by the
 clock *and* by capacity, whichever binds harder. Without it the model had to

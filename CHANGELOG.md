@@ -48,6 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **Saying "nothing to do today" no longer fails.** When you spoke a note with
+  nothing actionable in it, the assistant worked that out correctly and then had
+  no way to say so — the app rejected the answer, and it had to either invent a
+  task or try again. It can now record that a note held nothing, which also
+  clears anything it had wrongly picked out of that note earlier.
 - **The planner is told how much of the day is actually left.** It knew your
   capacity and your working hours, but had to work out for itself how much time
   a mid-afternoon plan really had — and got it wrong, running plans past the end

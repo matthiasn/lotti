@@ -121,6 +121,7 @@ class DecidedTaskRef {
     required this.categoryId,
     this.status,
     this.blockedBy = const [],
+    this.estimateMinutes,
   });
 
   /// Journal task ID.
@@ -146,6 +147,17 @@ class DecidedTaskRef {
   /// One-hop blockers (ADR 0043), in the same shape the corpus uses.
   final List<ResolvedBlocker> blockedBy;
 
+  /// How long the task is expected to take, as the corpus spells it.
+  ///
+  /// Carried because the drafting rules ask the model to total the estimates of
+  /// the work it intends to place and compare that against
+  /// `<planning_window>.availableMinutes`. Without it that instruction is
+  /// unfollowable on a capture-less wake: the corpus is the only other carrier
+  /// of estimates and it renders inside `<capture>` alone. Measured before this
+  /// existed — qwen3.5 placed 540 and 600 minutes of decided work against a
+  /// 480-minute cap on two of three `overCommitted` samples.
+  final int? estimateMinutes;
+
   /// JSON shape sent to the model in the drafting prompt.
   Map<String, Object?> toJson() => {
     'id': id,
@@ -154,6 +166,7 @@ class DecidedTaskRef {
     if (status != null) 'status': status,
     if (blockedBy.isNotEmpty)
       'blockedBy': [for (final blocker in blockedBy) blocker.toJson()],
+    'estimateMinutes': ?estimateMinutes,
   };
 }
 
