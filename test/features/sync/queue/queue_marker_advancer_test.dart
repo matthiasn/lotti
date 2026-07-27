@@ -132,7 +132,22 @@ void main() {
         )..where((t) => t.roomId.equals(_roomA))).getSingle();
         expect(reopened.resumeFloorTs, 2000);
 
-        await advancer.clearResumeFloor(_roomA);
+        await advancer.completeResumeWalk(
+          roomId: _roomA,
+          unresolvedFloorTs: 4000,
+        );
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          4000,
+          reason:
+              'a completed walk may raise the floor to the oldest work that '
+              'is still unresolved',
+        );
+
+        await advancer.completeResumeWalk(
+          roomId: _roomA,
+          unresolvedFloorTs: null,
+        );
         expect(await advancer.resumeFloorTs(_roomA), isNull);
       },
     );

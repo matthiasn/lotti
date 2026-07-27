@@ -98,11 +98,6 @@ class QueuePipelineCoordinator {
     // in the table. Give it the pen's floor, or a newer event applying will
     // step the marker past ciphertext that the next startup's
     // strictly-forward bridge then never re-fetches.
-
-    // Held ciphertext has no queue row, so the marker advancer cannot see it
-    // in the table. Give it the pen's floor, or a newer event applying will
-    // step the marker past ciphertext that the next startup's
-    // strictly-forward bridge then never re-fetches.
     _queue.unqueuedFloorTs = _pen.oldestHeldOriginTs;
 
     // ...and the durable half. The clamp above only survives while this
@@ -143,7 +138,10 @@ class QueuePipelineCoordinator {
           currentRoomId: () => _roomManager.currentRoomId,
           resolveRoom: _resolveRoom,
           readMarker: _readMarker,
-          onWalkCovered: _queue.clearResumeFloor,
+          onWalkCovered: (roomId) => _queue.completeResumeWalk(
+            roomId: roomId,
+            unresolvedFloorTs: _pen.oldestHeldOriginTs(roomId),
+          ),
           bootstrapRunner: _runBootstrap,
           logging: _logging,
         );

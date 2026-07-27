@@ -50,7 +50,7 @@ class BridgeMarker {
     final floor = resumeFloorTs;
     if (floor == null) return true;
     final applied = lastAppliedTs;
-    if (applied == null) return true;
+    if (applied == null) return false;
     return floor > applied;
   }
 }
@@ -60,8 +60,8 @@ class BridgeMarker {
 ///
 /// The bridge calls this for every catch-up trigger. The coordinator
 /// decides, based on [marker], whether to run a backward walk from
-/// the room tip (fresh client: no anchor) or a forward walk anchored
-/// at `marker.lastAppliedEventId` (reconnect: anchor known).
+/// the room tip (fresh client or unresolved resume floor) or a forward walk
+/// anchored at `marker.lastAppliedEventId` (reconnect with a safe anchor).
 ///
 /// Returns `true` when the walk reached the server's tip. Returns
 /// `false` when it stopped early (budget tripped, error,
@@ -105,8 +105,8 @@ class BridgeCoordinator {
   final Future<Room?> Function() _resolveRoom;
   final Future<BridgeMarker> Function() _readMarker;
 
-  /// Invoked with the room id after a walk completes successfully, so the
-  /// durable resume floor can be cleared.
+  /// Invoked with the walked room id after a walk completes successfully, so
+  /// the durable resume floor can be reconciled with ciphertext still held.
   ///
   /// Only a completed walk may clear it. A walk that ran out of retries, hit
   /// a wedged worker, or stopped at pen capacity has *not* re-covered the
@@ -336,18 +336,15 @@ class BridgeCoordinator {
     );
 
     if (completed) {
-      final coveredRoom = _currentRoomId();
-      if (coveredRoom != null) {
-        try {
-          await _onWalkCovered?.call(coveredRoom);
-        } catch (error, stackTrace) {
-          _logging.error(
-            LogDomain.sync,
-            error,
-            stackTrace: stackTrace,
-            subDomain: '$_logSub.clearResumeFloor',
-          );
-        }
+      try {
+        await _onWalkCovered?.call(room.id);
+      } catch (error, stackTrace) {
+        _logging.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: '$_logSub.completeResumeWalk',
+        );
       }
     }
 

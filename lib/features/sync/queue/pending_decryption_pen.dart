@@ -85,8 +85,7 @@ class PendingDecryptionPen {
   /// tests that model the budget directly.
   final Duration attemptInterval;
 
-  /// Minimum real time between two `room.getEventById` lookups for the same
-  /// entry.
+  /// Minimum real time between two SDK decryption attempts for the same entry.
   ///
   /// The lookup is the expensive half of a sweep, and sweeps are frequent:
   /// `InboundWorker` flushes the whole pen before every batch and
@@ -240,11 +239,10 @@ class PendingDecryptionPen {
     return true;
   }
 
-  /// Sweeps held events. For each one, asks [room] for the latest
-  /// cached version via `room.getEventById`; if the SDK has since
-  /// decrypted it, the decrypted event is forwarded to
-  /// `queue.enqueueLive` and the held entry dropped. Entries that
-  /// exceed [maxAttempts] without decrypting are dropped with a
+  /// Sweeps held events. For each one, asks the Matrix SDK to decrypt the
+  /// ciphertext again; if the key is now available, the decrypted event is
+  /// forwarded to `queue.enqueueLive` and the held entry dropped. Entries
+  /// that exceed [maxAttempts] without decrypting are dropped with a
   /// diagnostic; their ciphertext is never written to the queue.
   Future<PenFlushOutcome> flushInto({
     required InboundQueue queue,

@@ -247,6 +247,20 @@ void main() {
         reason: 'strictly-after would exclude an event at the anchor itself',
       );
     });
+
+    test('a floor with no applied timestamp rules an anchor out', () {
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: null,
+          lastAppliedEventId: r'$a',
+          resumeFloorTs: 5000,
+        ).anchorIsSafe,
+        isFalse,
+        reason:
+            'without the anchor timestamp the bridge cannot prove that '
+            'strictly-forward pagination reaches the durable floor',
+      );
+    });
   });
 
   late SyncDatabase db;
@@ -415,6 +429,47 @@ void main() {
           subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
+    },
+  );
+
+  test(
+    'a completed walk reports the room it actually covered even when the '
+    'selected room changes before completion',
+    () async {
+      const otherRoomId = '!other:example.org';
+      var selectedRoomId = roomId;
+      final room = MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      final coveredRooms = <String>[];
+      final runner = _RecordingRunner()
+        ..override = (Room resolvedRoom, BridgeMarker marker) async {
+          selectedRoomId = otherRoomId;
+          return true;
+        };
+      final coordinator = BridgeCoordinator(
+        client: client,
+        currentRoomId: () => selectedRoomId,
+        resolveRoom: () async => room,
+        readMarker: () async => const BridgeMarker(
+          lastAppliedTs: 1000,
+          lastAppliedEventId: null,
+        ),
+        bootstrapRunner: runner.runner,
+        onWalkCovered: (coveredRoomId) async {
+          coveredRooms.add(coveredRoomId);
+        },
+        logging: logging,
+      );
+
+      await coordinator.bridgeNow();
+
+      expect(
+        coveredRooms,
+        <String>[roomId],
+        reason:
+            'clearing the newly selected room would discard recovery state '
+            'for a room this walk never visited',
+      );
     },
   );
 

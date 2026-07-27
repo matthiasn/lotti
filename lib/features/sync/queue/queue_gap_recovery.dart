@@ -43,14 +43,18 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
   /// (page-by-page with back-pressure) into the queue. Invoked by
   /// [BridgeCoordinator] for every catch-up; dispatches by [marker]:
   ///
-  /// - `marker.lastAppliedEventId != null`: reconnect — forward-walks
-  ///   from the anchor event via `collectForwardForBootstrap`. This
-  ///   hits `/rooms/{roomId}/context/{eventId}` then
-  ///   `/messages?dir=f`, so the walk sees server state rather than
-  ///   whatever the SDK cached from prior sessions — the only way to
-  ///   close a gap in the `[lastAppliedTs, now]` window when the
-  ///   cached timeline's oldest event predates the gap.
+  /// - `marker.lastAppliedEventId != null && marker.anchorIsSafe`:
+  ///   reconnect — forward-walks from the anchor event via
+  ///   `collectForwardForBootstrap`. This hits
+  ///   `/rooms/{roomId}/context/{eventId}` then `/messages?dir=f`, so
+  ///   the walk sees server state rather than whatever the SDK cached
+  ///   from prior sessions — the only way to close a gap in the
+  ///   `[lastAppliedTs, now]` window when the cached timeline's oldest
+  ///   event predates the gap.
   /// - Fallbacks:
+  ///   - A durable resume floor at or behind the applied marker makes
+  ///     the anchor unsafe → walk backward from the room tip until the
+  ///     floor so known-missing work is covered instead of skipped.
   ///   - Anchor walk returns `error` (server compacted the anchor,
   ///     context fetch threw) → fall through to the backward walk so
   ///     something still runs.
@@ -66,7 +70,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     required Room room,
     required BridgeMarker marker,
   }) async {
-    if (marker.lastAppliedEventId != null) {
+    if (marker.lastAppliedEventId != null && marker.anchorIsSafe) {
       final forward = await _runForwardBootstrap(
         room: room,
         anchorEventId: marker.lastAppliedEventId!,
@@ -91,7 +95,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
 
     return _runBackwardBootstrap(
       room: room,
-      untilTimestamp: marker.lastAppliedTs,
+      untilTimestamp: marker.resumeFloorTs ?? marker.lastAppliedTs,
     );
   }
 
@@ -330,11 +334,13 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     required Room room,
     int? untilTimestamp,
     String? anchorEventId,
+    int? resumeFloorTs,
   }) => _runBootstrap(
     room: room,
     marker: BridgeMarker(
       lastAppliedTs: untilTimestamp,
       lastAppliedEventId: anchorEventId,
+      resumeFloorTs: resumeFloorTs,
     ),
   );
 

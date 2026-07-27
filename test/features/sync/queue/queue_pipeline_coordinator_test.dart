@@ -1768,7 +1768,7 @@ void main() {
     test(
       'a lookup-throttled sweep does not count toward the stall limit',
       () async {
-        // The pen throttles its own `room.getEventById` calls, and this loop
+        // The pen throttles its own SDK decryption calls, and this loop
         // polls faster than that interval. Counting throttled sweeps burned
         // the whole allowance inside a single interval, so shutdown could
         // tear the pen down without ever having looked once — discarding a
@@ -2173,6 +2173,112 @@ void main() {
   });
 
   group('triggerBridge with real BridgeCoordinator', () {
+    test(
+      'a restart reloads the floor persisted for held ciphertext and walks '
+      'behind the ahead anchor before clearing the covered floor',
+      () async {
+        await syncDb
+            .into(syncDb.queueMarkers)
+            .insert(
+              QueueMarkersCompanion.insert(
+                roomId: roomId,
+                lastAppliedTs: const Value(5000),
+                lastAppliedEventId: const Value(r'$ahead-anchor'),
+              ),
+            );
+
+        final firstQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(firstQueue.dispose);
+        final firstPen = PendingDecryptionPen(logging: logging);
+        final firstCoordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: firstQueue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: firstPen,
+          seederOverride: seeder,
+        );
+
+        final ciphertext = MockEvent();
+        when(() => ciphertext.eventId).thenReturn(r'$held');
+        when(() => ciphertext.roomId).thenReturn(roomId);
+        when(() => ciphertext.type).thenReturn(EventTypes.Encrypted);
+        when(
+          () => ciphertext.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(3000));
+
+        expect(firstPen.hold(ciphertext), isTrue);
+        expect(firstCoordinator.heldCiphertextCount, 1);
+
+        // Reading on the same Drift executor queues behind the fire-and-forget
+        // floor write, so this also proves the callback reached durable state
+        // before the first process is abandoned.
+        final beforeRestart = await (syncDb.select(
+          syncDb.queueMarkers,
+        )..where((t) => t.roomId.equals(roomId))).getSingle();
+        expect(beforeRestart.resumeFloorTs, 3000);
+        expect(beforeRestart.lastAppliedEventId, r'$ahead-anchor');
+
+        final secondQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(secondQueue.dispose);
+        final secondPen = PendingDecryptionPen(logging: logging);
+        final room = MockRoom();
+        stubPenDecryption(room);
+        when(() => room.id).thenReturn(roomId);
+        when(() => roomManager.currentRoom).thenReturn(room);
+
+        final backwardTimeline = MockTimeline();
+        when(() => backwardTimeline.events).thenReturn(<Event>[]);
+        when(() => backwardTimeline.canRequestHistory).thenReturn(false);
+        when(backwardTimeline.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => backwardTimeline);
+
+        final secondCoordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: secondQueue,
+          workerOverride: worker,
+          penOverride: secondPen,
+          seederOverride: seeder,
+        );
+
+        await secondCoordinator.triggerBridge();
+
+        verify(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).called(1);
+        verifyNever(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        );
+
+        final afterRecovery = await (syncDb.select(
+          syncDb.queueMarkers,
+        )..where((t) => t.roomId.equals(roomId))).getSingle();
+        expect(afterRecovery.resumeFloorTs, isNull);
+        expect(afterRecovery.lastAppliedEventId, r'$ahead-anchor');
+      },
+    );
+
     test(
       'reads queue_markers row and runs bootstrap against empty timeline',
       () async {
@@ -3975,6 +4081,79 @@ void main() {
 
   group('reconnect forward-walk dispatch (Option B)', () {
     test(
+      'a resume floor behind the applied anchor dispatches backward from '
+      'the floor instead of stepping over the known gap',
+      () async {
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+        addTearDown(() async => coordinator.stop());
+
+        final room = MockRoom();
+        stubPenDecryption(room);
+        when(() => room.id).thenReturn(roomId);
+
+        final forwardTimeline = MockTimeline();
+        final anchor = MockEvent();
+        when(() => anchor.eventId).thenReturn(r'$anchor');
+        when(
+          () => anchor.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(5000));
+        when(() => forwardTimeline.events).thenReturn(<Event>[anchor]);
+        when(() => forwardTimeline.canRequestFuture).thenReturn(false);
+        when(forwardTimeline.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => forwardTimeline);
+
+        final backwardTimeline = MockTimeline();
+        when(() => backwardTimeline.events).thenReturn(<Event>[]);
+        when(() => backwardTimeline.canRequestHistory).thenReturn(false);
+        when(backwardTimeline.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => backwardTimeline);
+
+        final completed = await coordinator.runBootstrapForTest(
+          room: room,
+          untilTimestamp: 5000,
+          anchorEventId: r'$anchor',
+          resumeFloorTs: 3000,
+        );
+
+        expect(completed, isTrue);
+        verify(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).called(1);
+        verifyNever(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        );
+      },
+    );
+
+    test(
       'anchor event id dispatches to room.getTimeline(eventContextId:) '
       'and NOT to the backward walk — this is the load-bearing reconnect '
       'path that closes gaps the cached backward timeline cannot',
@@ -4564,9 +4743,9 @@ void main() {
     );
 
     test(
-      'dispatch matrix: forward walk runs iff an anchor exists; backward '
-      'walk runs iff there is no anchor or the forward walk made no '
-      'progress (errorNoProgress)',
+      'dispatch matrix without a resume floor: forward walk runs iff an '
+      'anchor exists; backward walk runs iff there is no anchor or the '
+      'forward walk made no progress (errorNoProgress)',
       () async {
         const cases =
             <
@@ -4887,8 +5066,7 @@ void main() {
         addTearDown(() => coordinator.stop(drainFirst: true));
 
         // Build an encrypted event and a decrypted variant that the SDK
-        // would return from `room.getEventById` once the Megolm session
-        // key arrives.
+        // returns once the Megolm session key arrives.
         final encrypted = MockEvent();
         final encryptedContent = <String, dynamic>{
           'msgtype': syncMessageType,

@@ -82,10 +82,15 @@ class InboundQueue {
     required int originTs,
   }) => _markerAdvancer.lowerResumeFloor(roomId: roomId, originTs: originTs);
 
-  /// Clears the durable floor for [roomId] — only for a bootstrap that has
-  /// actually re-walked that ground.
-  Future<void> clearResumeFloor(String roomId) =>
-      _markerAdvancer.clearResumeFloor(roomId);
+  /// Replaces the durable floor after a completed bootstrap with the oldest
+  /// ciphertext that is still unresolved, or clears it when none remains.
+  Future<void> completeResumeWalk({
+    required String roomId,
+    required int? unresolvedFloorTs,
+  }) => _markerAdvancer.completeResumeWalk(
+    roomId: roomId,
+    unresolvedFloorTs: unresolvedFloorTs,
+  );
 
   /// The durable floor for [roomId], or null when nothing is outstanding.
   Future<int?> resumeFloorTs(String roomId) =>

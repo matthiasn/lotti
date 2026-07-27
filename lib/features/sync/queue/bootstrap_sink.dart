@@ -179,10 +179,10 @@ class QueueBootstrapSink implements BootstrapSink {
 
     // Ciphertext creates no queue rows, so `_waitForDrain` — which watches
     // queue depth — applies no back-pressure to an all-encrypted run at all.
-    // A forward walk emits up to 50 pages of 200, and manual history
-    // collection is unbounded, against a 256-entry LRU pen: without this the
-    // walk silently evicts the oldest ciphertext long before it finishes,
-    // recreating exactly the loss this sink was changed to prevent.
+    // Catch-up walks can emit far more than the 256-entry LRU pen can hold:
+    // without this the walk silently evicts the oldest ciphertext long before
+    // it finishes, recreating exactly the loss this sink was changed to
+    // prevent.
     //
     // Stopping is safe now that held events clamp the sync marker: the marker
     // cannot advance past what the pen is holding, so the next run resumes

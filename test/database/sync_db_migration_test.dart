@@ -93,7 +93,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 27);
+        expect(db.schemaVersion, 28);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -151,7 +151,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 27);
+      expect(versionResult.first.read<int>('user_version'), 28);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -301,7 +301,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         // The payload_type column must now exist on the table.
         final columns = await db
@@ -374,7 +374,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 27);
+      expect(versionResult.first.read<int>('user_version'), 28);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -421,7 +421,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 27);
+      expect(versionResult.first.read<int>('user_version'), 28);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -468,7 +468,7 @@ void main() {
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 27);
+      expect(versionResult.first.read<int>('user_version'), 28);
 
       final indexResults = await db
           .customSelect(
@@ -510,7 +510,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final columns = await db
             .customSelect('PRAGMA table_info(outbox)')
@@ -574,7 +574,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final rows = await db
             .customSelect(
@@ -619,7 +619,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         // v12's createTable uses the CURRENT schema, so the queue table
         // must come up with the Phase-3 ledger columns already present and
@@ -677,7 +677,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         const expectedIndexes = <String>{
           // v15: retire/stats/claim hotspots from the production slow log.
@@ -768,7 +768,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         // v11 replaces the v10 index with the covering variant; when the
         // migration steps v9 → v11 in one run, the v10 index must no longer
@@ -846,7 +846,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final oldIndex = await db
             .customSelect(
@@ -923,7 +923,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         // All Phase-3 ledger columns must now exist on the queue table.
         final columns = await db
@@ -1005,7 +1005,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final ready = await db
             .customSelect(
@@ -1066,7 +1066,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final pendingIndex = await db
             .customSelect(
@@ -1159,7 +1159,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final newIndices = await db
             .customSelect(
@@ -1226,7 +1226,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final sendingIndex = await db
             .customSelect(
@@ -1267,7 +1267,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final index = await db
             .customSelect(
@@ -1318,7 +1318,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         // v24 drops and recreates the partial index so burned (8) joins the
         // resolved set.
@@ -1380,7 +1380,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final index = await db
             .customSelect(
@@ -1419,7 +1419,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final index = await db
             .customSelect(
@@ -1459,7 +1459,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 27);
+        expect(versionResult.first.read<int>('user_version'), 28);
 
         final index = await db
             .customSelect(
@@ -1476,6 +1476,67 @@ void main() {
           index.first.readNullable<String>('sql'),
           contains('status IN (0, 3)'),
         );
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v28 migration adds the nullable queue marker resume floor without '
+      'disturbing the applied marker',
+      () async {
+        final dbFile = File(
+          path.join(testDirectory!.path, 'test_sync_v28_resume_floor.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+
+        _createQueueMarkers(sqlite);
+        sqlite
+          ..execute(r'''
+            INSERT INTO queue_markers (
+              room_id,
+              last_applied_event_id,
+              last_applied_ts,
+              last_applied_commit_seq
+            ) VALUES ('!room:example.org', '$anchor', 5000, 7)
+          ''')
+          ..execute('PRAGMA user_version = 27')
+          ..dispose();
+
+        final db = SyncDatabase(
+          overriddenFilename: 'test_sync_v28_resume_floor.db',
+        );
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 28);
+
+        final columns = await db
+            .customSelect('PRAGMA table_info(queue_markers)')
+            .get();
+        expect(
+          columns.map((row) => row.read<String>('name')),
+          contains('resume_floor_ts'),
+        );
+
+        final marker = await (db.select(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals('!room:example.org'))).getSingle();
+        expect(marker.lastAppliedEventId, r'$anchor');
+        expect(marker.lastAppliedTs, 5000);
+        expect(marker.lastAppliedCommitSeq, 7);
+        expect(marker.resumeFloorTs, isNull);
+
+        await (db.update(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals('!room:example.org'))).write(
+          const QueueMarkersCompanion(resumeFloorTs: Value(3000)),
+        );
+        final updated = await (db.select(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals('!room:example.org'))).getSingle();
+        expect(updated.resumeFloorTs, 3000);
 
         await db.close();
       },
@@ -1674,7 +1735,7 @@ void _createInboundEventQueueV13(Database sqlite) {
   ''');
 }
 
-/// Seeds the `queue_markers` table (added in v12, unchanged since).
+/// Seeds the `queue_markers` table as of v27, before `resume_floor_ts`.
 void _createQueueMarkers(Database sqlite) {
   sqlite.execute('''
     CREATE TABLE IF NOT EXISTS queue_markers (
