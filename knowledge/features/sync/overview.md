@@ -289,6 +289,36 @@ leaving the roster on screen for a room that no longer exists.
 `SyncRoomManager.roomIdChanges` closes that — every mutation of the room id
 goes through one private setter, so no path can change it without emitting.
 
+## Telling a finished ceremony from a failed one
+
+The SDK's `KeyVerification.isDone` is `canceled || state in {error, done}` —
+true for a ceremony that was refused just as loudly as for one that verified
+(matrix 8.1.0, `encryption/utils/key_verification.dart`). Every SDK path that
+sets `error` also sets `canceled`, so failure is not separable from
+cancellation; there are two terminal outcomes, not three.
+
+`keyVerificationOutcome` (`matrix/key_verification_runner.dart`) is the single
+place that classifies one, and `KeyVerificationRunner.outcome` exposes it.
+Cancellation is checked first and deliberately wins: a remote cancel sets
+`canceled` without clearing the state that preceded it, and claiming success
+for a ceremony that did not verify is the worse of the two errors. It is a free
+function rather than only a getter so test doubles derive the same answer
+instead of copying the rules.
+
+Three consequences, each of which was a defect while `isDone` stood in for
+success:
+
+- **Both verification modals show the green shield only on `success`.** The
+  outgoing one used to render the cancellation notice and the success shield at
+  the same time; the incoming one had no cancellation branch at all, so a
+  refusal read as a completed verification.
+- **`onCompleted` fires only on `success`.** It runs `updateUserDeviceKeys` and
+  a rescan, which a cancelled ceremony has no business triggering.
+- **The auto-dismiss timer is armed once**, from `_scheduleAutoDismiss` rather
+  than from `build`. A `StreamBuilder` re-runs `build` for every emission while
+  a terminal state holds, so the old code armed a fresh 30-second pop per
+  rebuild and each one fired at whatever route existed by then.
+
 `matrixVerificationRelaunchProvider` is what "show the emoji again" bumps. It
 releases only the identity that launcher last showed, deliberately rather than
 clearing the set: a reset restarts selection at the head of the list and
@@ -333,8 +363,8 @@ clean it up:
   stateDiagram-v2
     [*] --> Excluded: unverified, receives no megolm keys, cannot read new entries
     Excluded --> Verifying: user starts SAS verification (own on-server or legacy foreign device)
-    Verifying --> Excluded: cancelled or times out
-    Verifying --> Recovering: emoji ceremony completes
+    Verifying --> Excluded: cancelled, refused, or times out
+    Verifying --> Recovering: emoji ceremony succeeds
     Excluded --> Deleting: user confirms removal (own-account sessions only)
     Deleting --> Excluded: UIA rejected (e.g. stale password)
     Deleting --> Recovering: homeserver accepts the delete

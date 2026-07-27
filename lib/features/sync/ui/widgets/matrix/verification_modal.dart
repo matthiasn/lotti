@@ -32,11 +32,25 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
   bool _awaitingOtherDevice = false;
   bool _didScheduleUnverifiedRefresh = false;
   bool _verificationStartInFlight = false;
+  Timer? _autoDismiss;
 
   @override
   void dispose() {
+    _autoDismiss?.cancel();
     _runner?.stopTimer();
     super.dispose();
+  }
+
+  /// Schedules the one auto-dismiss for a ceremony that has reached a terminal
+  /// state. Guarded because it is called from `build`, which a StreamBuilder
+  /// re-runs while that state holds: previously each rebuild armed another
+  /// 30-second timer, and every one of them popped — a route that by then may
+  /// belong to something else entirely.
+  void _scheduleAutoDismiss(VoidCallback pop) {
+    if (_autoDismiss != null) return;
+    _autoDismiss = Timer(const Duration(seconds: 30), () {
+      if (mounted) pop();
+    });
   }
 
   Future<void> startVerification({bool retry = false}) async {
@@ -116,23 +130,22 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
         final lastStep = runner?.lastStep;
         final emojis = runner?.emojis;
         final isLastStepKey = lastStep == 'm.key.verification.key';
-        final isLastStepDone = lastStep == 'm.key.verification.done';
-        final isLastStepCancel = lastStep == 'm.key.verification.cancel';
 
-        final isDone =
-            isLastStepDone || (runner?.keyVerification.isDone ?? false);
+        // Not the SDK's `isDone`, which is equally true for a cancelled
+        // ceremony — the modal used to render the cancellation notice and the
+        // green success shield at the same time, telling the user a device had
+        // been verified when it had not.
+        final outcome = runner?.outcome ?? KeyVerificationOutcome.pending;
+        final isSuccess = outcome == KeyVerificationOutcome.success;
+        final isCancelled = outcome == KeyVerificationOutcome.cancelled;
 
-        if (isDone && !_didScheduleUnverifiedRefresh) {
+        if (isSuccess && !_didScheduleUnverifiedRefresh) {
           _didScheduleUnverifiedRefresh = true;
           unawaited(refreshUnverifiedDevices());
         }
 
-        if (isLastStepCancel) {
-          Timer(const Duration(seconds: 30), pop);
-        }
-
-        if (isLastStepDone) {
-          Timer(const Duration(seconds: 30), pop);
+        if (isSuccess || isCancelled) {
+          _scheduleAutoDismiss(pop);
         }
 
         return SingleChildScrollView(
@@ -196,7 +209,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                         ),
                       ],
                     ),
-                  if (isLastStepCancel)
+                  if (isCancelled)
                     Text(
                       context.messages.settingsMatrixVerificationCancelledLabel,
                     ),
@@ -209,7 +222,8 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                           .settingsMatrixAcceptVerificationLabel,
                       size: DesignSystemButtonSize.large,
                     ),
-                  if (!isDone && emojis != null) ...[
+                  if (outcome == KeyVerificationOutcome.pending &&
+                      emojis != null) ...[
                     if (_awaitingOtherDevice)
                       Text(
                         context
@@ -256,7 +270,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                     ),
                     const SizedBox(height: 20),
                   ],
-                  if (isDone) ...[
+                  if (isSuccess) ...[
                     Text(
                       context.messages.settingsMatrixVerificationSuccessLabel(
                         widget.deviceKeys.deviceDisplayName ?? '',

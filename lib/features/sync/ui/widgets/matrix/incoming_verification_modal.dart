@@ -101,19 +101,20 @@ class _IncomingVerificationModalState
       stream: _matrixService.incomingKeyVerificationRunnerStream,
       builder: (context, snapshot) {
         final runner = snapshot.data;
-        final lastStep = runner?.lastStep;
         final emojis = runner?.emojis;
-        final isLastStepDone = lastStep == 'm.key.verification.done';
+        // Not the SDK's `isDone`: it is equally true for a cancelled ceremony,
+        // so a remote cancel used to render the green success shield here —
+        // and this modal has no cancellation notice to contradict it.
+        final outcome = runner?.outcome ?? KeyVerificationOutcome.pending;
+        final isSuccess = outcome == KeyVerificationOutcome.success;
+        final isPending = outcome == KeyVerificationOutcome.pending;
 
-        final isDone =
-            isLastStepDone || (runner?.keyVerification.isDone ?? false);
-
-        if (isDone && !_didScheduleUnverifiedRefresh) {
+        if (isSuccess && !_didScheduleUnverifiedRefresh) {
           _didScheduleUnverifiedRefresh = true;
           unawaited(refreshUnverifiedDevices());
         }
 
-        if (!isDone &&
+        if (isPending &&
             emojis == null &&
             runner != null &&
             !_didAutoAcceptVerification) {
@@ -141,13 +142,13 @@ class _IncomingVerificationModalState
                     ],
                   ),
                   const SizedBox(height: 20),
-                  if (!isDone && emojis == null)
+                  if (isPending && emojis == null)
                     DesignSystemButton(
                       onPressed: runner?.acceptVerification,
                       label: context.messages.settingsMatrixVerifyLabel,
                       size: DesignSystemButtonSize.large,
                     ),
-                  if (!isDone && emojis != null) ...[
+                  if (isPending && emojis != null) ...[
                     if (_awaitingOtherDevice)
                       Text(
                         context
@@ -194,7 +195,33 @@ class _IncomingVerificationModalState
                     ),
                     const SizedBox(height: 20),
                   ],
-                  if (isDone) ...[
+                  if (outcome == KeyVerificationOutcome.cancelled) ...[
+                    Text(
+                      context.messages.settingsMatrixVerificationCancelledLabel,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    // Without this the cancelled state is a dead end: every
+                    // other branch is gated off and nothing is left to dismiss
+                    // the sheet with.
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        DesignSystemButton(
+                          key: const Key('matrix_incoming_cancelled_confirm'),
+                          onPressed: () {
+                            runner?.stopTimer();
+                            pop();
+                          },
+                          label: context
+                              .messages
+                              .settingsMatrixVerificationSuccessConfirm,
+                          size: DesignSystemButtonSize.large,
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (isSuccess) ...[
                     Text(
                       context.messages.settingsMatrixVerificationSuccessLabel(
                         '',

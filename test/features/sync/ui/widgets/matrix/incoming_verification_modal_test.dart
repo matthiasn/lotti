@@ -514,6 +514,60 @@ void main() {
       },
     );
   });
+
+  testWidgets('a remote cancel shows the notice, not the success shield', (
+    tester,
+  ) async {
+    // This modal has no cancellation branch of its own, so the SDK's isDone —
+    // true for a cancel as well as a success — put the green shield and
+    // "You've successfully verified" in front of a user whose ceremony had
+    // just been refused.
+    final runner = MockKeyVerificationRunner();
+    when(() => mockKeyVerification.canceled).thenReturn(true);
+    when(
+      () => mockKeyVerification.state,
+    ).thenReturn(KeyVerificationState.error);
+
+    when(() => runner.lastStep).thenReturn('m.key.verification.cancel');
+    when(() => runner.emojis).thenReturn(null);
+    when(() => runner.keyVerification).thenReturn(mockKeyVerification);
+    when(() => mockKeyVerification.isDone).thenReturn(true);
+
+    await pumpModalWithRunner(tester, runner);
+
+    final context = tester.element(find.byType(IncomingVerificationModal));
+    expect(
+      find.text(context.messages.settingsMatrixVerificationCancelledLabel),
+      findsOneWidget,
+    );
+    expect(find.byIcon(MdiIcons.shieldCheck), findsNothing);
+    expect(
+      find.byKey(const Key('matrix_incoming_cancelled_confirm')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('does not auto-accept a ceremony that was already cancelled', (
+    tester,
+  ) async {
+    // The auto-accept was gated on !isDone, which a cancelled ceremony
+    // satisfies only by accident. Gating on pending states the intent.
+    final runner = MockKeyVerificationRunner();
+    when(() => mockKeyVerification.canceled).thenReturn(true);
+    when(
+      () => mockKeyVerification.state,
+    ).thenReturn(KeyVerificationState.error);
+
+    when(() => runner.lastStep).thenReturn('m.key.verification.cancel');
+    when(() => runner.emojis).thenReturn(null);
+    when(() => runner.keyVerification).thenReturn(mockKeyVerification);
+    when(() => mockKeyVerification.isDone).thenReturn(true);
+    when(runner.acceptVerification).thenAnswer((_) async {});
+
+    await pumpModalWithRunner(tester, runner);
+
+    verifyNever(runner.acceptVerification);
+  });
 }
 
 /// A [MatrixVerificationModalLock] that starts already acquired so that

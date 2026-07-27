@@ -82,6 +82,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **A cancelled device verification no longer claims to have succeeded.** When
+  the other device refused or cancelled the emoji check, this one showed the
+  green shield and "You've successfully verified…" anyway — on the outgoing
+  screen, next to the cancellation notice at the same time. The two devices had
+  not verified each other, and nothing said so. Cancelled and failed ceremonies
+  now say they were cancelled, and only a real success shows the shield.
 - **Leaving an AI setting takes one back tap, not two.** After opening a
   provider, model or profile from AI Settings, backing out of the list you
   returned to appeared to do nothing: the list slid away and an identical list

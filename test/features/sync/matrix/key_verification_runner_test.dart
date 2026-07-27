@@ -87,9 +87,16 @@ void main() {
           ).thenReturn('m.key.verification.key');
           final doneStates = Queue<bool>.from([false, true, true, true]);
           var currentDone = false;
+          var currentState = KeyVerificationState.waitingAccept;
+          when(() => verification.state).thenAnswer((_) => currentState);
           when(() => verification.isDone).thenAnswer((_) {
             if (doneStates.isNotEmpty) {
               currentDone = doneStates.removeFirst();
+            }
+            // A real success also reaches `state == done`; `isDone` alone is
+            // ambiguous, since a cancel sets it too.
+            if (currentDone) {
+              currentState = KeyVerificationState.done;
             }
             return currentDone;
           });
@@ -131,6 +138,8 @@ void main() {
           final verification = MockKeyVerification();
           String? currentStep;
           var currentDone = false;
+          var currentCanceled = false;
+          var currentState = KeyVerificationState.waitingAccept;
           var currentEmojis = [KeyVerificationEmoji(1)];
           void Function()? assignedOnUpdate;
           var previousCalls = 0;
@@ -141,6 +150,8 @@ void main() {
           assignedOnUpdate = previousOnUpdate;
           when(() => verification.lastStep).thenAnswer((_) => currentStep);
           when(() => verification.isDone).thenAnswer((_) => currentDone);
+          when(() => verification.canceled).thenAnswer((_) => currentCanceled);
+          when(() => verification.state).thenAnswer((_) => currentState);
           when(() => verification.sasEmojis).thenAnswer((_) => currentEmojis);
           when(() => verification.onUpdate).thenAnswer((_) => assignedOnUpdate);
           when(() => verification.onUpdate = any()).thenAnswer((invocation) {
@@ -178,6 +189,8 @@ void main() {
             currentStep = transition.sdkStep;
             currentDone = transition.isDone;
             currentEmojis = [transition.emoji];
+            currentCanceled = transition.canceled;
+            currentState = transition.state;
 
             final oldStep = modelStep;
             assignedOnUpdate?.call();
@@ -196,7 +209,11 @@ void main() {
               }
             }
 
-            if (modelDone && expectedCompletions == 0) {
+            // Success only. `isDone` is true for a cancelled ceremony too, and
+            // firing completion there ran updateUserDeviceKeys + forceRescan
+            // for a device that was never verified.
+            if (transition.outcome == KeyVerificationOutcome.success &&
+                expectedCompletions == 0) {
               expectedCompletions = 1;
             }
 
@@ -519,6 +536,100 @@ void main() {
       latestRunner?.stopTimer();
 
       await runnerController.close();
+    });
+  });
+
+  group('outcome', () {
+    KeyVerificationRunner makeRunner(
+      MockKeyVerification verification, {
+      void Function(String source)? onCompleted,
+    }) {
+      when(() => verification.onUpdate).thenReturn(null);
+      when(() => verification.onUpdate = any()).thenReturn(null);
+      final runner = KeyVerificationRunner(
+        verification,
+        controller: runnerController(),
+        name: 'Outcome runner',
+        onCompleted: onCompleted == null
+            ? null
+            : (source) async => onCompleted(source),
+      );
+      addTearDown(runner.stopTimer);
+      return runner;
+    }
+
+    test('reports success only for a ceremony that verified', () {
+      final verification = MockKeyVerification();
+      when(() => verification.state).thenReturn(KeyVerificationState.done);
+      when(
+        () => verification.lastStep,
+      ).thenReturn(EventTypes.KeyVerificationDone);
+      when(() => verification.isDone).thenReturn(true);
+
+      expect(makeRunner(verification).outcome, KeyVerificationOutcome.success);
+    });
+
+    test('reports cancelled when the other side cancels', () {
+      // The SDK reports `isDone == true` here, which is what made the modal
+      // render the green success shield for a ceremony that never verified.
+      final verification = MockKeyVerification();
+      when(() => verification.canceled).thenReturn(true);
+      when(() => verification.state).thenReturn(KeyVerificationState.error);
+      when(
+        () => verification.lastStep,
+      ).thenReturn(EventTypes.KeyVerificationCancel);
+      when(() => verification.isDone).thenReturn(true);
+
+      final runner = makeRunner(verification);
+      expect(runner.keyVerification.isDone, isTrue);
+      expect(runner.outcome, KeyVerificationOutcome.cancelled);
+    });
+
+    test('a cancel outranks a done step it arrives alongside', () {
+      // `canceled` is set without clearing an earlier state, so the two can be
+      // true at once. Claiming success is the worse of the two errors.
+      final verification = MockKeyVerification();
+      when(() => verification.canceled).thenReturn(true);
+      when(() => verification.state).thenReturn(KeyVerificationState.done);
+      when(
+        () => verification.lastStep,
+      ).thenReturn(EventTypes.KeyVerificationDone);
+      when(() => verification.isDone).thenReturn(true);
+
+      expect(
+        makeRunner(verification).outcome,
+        KeyVerificationOutcome.cancelled,
+      );
+    });
+
+    test('is pending while the ceremony is still running', () {
+      final verification = MockKeyVerification();
+      when(() => verification.lastStep).thenReturn('m.key.verification.key');
+      when(() => verification.isDone).thenReturn(false);
+
+      expect(makeRunner(verification).outcome, KeyVerificationOutcome.pending);
+    });
+
+    test('does not fire onCompleted for a cancelled ceremony', () {
+      // onCompleted runs updateUserDeviceKeys + forceRescan. Firing it on a
+      // cancel told the rest of the app a device had just been verified.
+      final verification = MockKeyVerification();
+      when(() => verification.canceled).thenReturn(true);
+      when(() => verification.state).thenReturn(KeyVerificationState.error);
+      when(
+        () => verification.lastStep,
+      ).thenReturn(EventTypes.KeyVerificationCancel);
+      when(() => verification.isDone).thenReturn(true);
+
+      final completions = <String>[];
+      fakeAsync((async) {
+        makeRunner(verification, onCompleted: completions.add);
+        async
+          ..elapse(const Duration(milliseconds: 500))
+          ..flushMicrotasks();
+      });
+
+      expect(completions, isEmpty);
     });
   });
 }
