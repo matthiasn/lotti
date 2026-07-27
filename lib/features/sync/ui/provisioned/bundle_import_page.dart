@@ -306,8 +306,11 @@ class SyncPairStepIndicator extends StatelessWidget {
       child: Text(
         label,
         textAlign: align,
-        style: tokens.typography.styles.body.bodySmall.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
+        // Caption-tier eyebrow: one rank below the page's single imperative
+        // heading. At body rank it was a third header competing with the
+        // sheet title above and the heading below.
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.lowEmphasis,
         ),
       ),
     );
@@ -327,14 +330,14 @@ class _OnlyOwnCodeWarning extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-
     return Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+      padding: EdgeInsets.only(bottom: context.designTokens.spacing.step4),
       child: SyncCallout(
         icon: Icons.lock_outline_rounded,
         text: context.messages.syncPairOnlyOwnCode,
-        tone: tokens.colors.text.lowEmphasis,
+        // The callout's default warning tone, deliberately: this line is the
+        // flow's account-takeover warning, and de-toned to grey it whispered
+        // while the conveniences around it shouted.
         calloutKey: const Key('sync_pair_only_own_code'),
       ),
     );
@@ -634,12 +637,10 @@ class _ManualEntry extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _OnlyOwnCodeWarning(),
-        // One prerequisite block above the field: where to make a code appear,
-        // then how to move it here. Split around the input, the second half
-        // was orphaned after the button that consumes it — and on desktop
-        // nothing followed it at all.
-        _WhereToFindHint(extra: messages.syncPairCopyCodeHint),
+        // The field and its action lead: this screen exists to receive a
+        // paste, and burying the input under two paragraphs of contingency
+        // prose made the reader work through where-to-find advice before
+        // meeting the one control they came for.
         DesignSystemTextarea(
           controller: controller,
           // The heading above already says "Paste the pairing code"; a bold
@@ -685,8 +686,15 @@ class _ManualEntry extends StatelessWidget {
             size: DesignSystemButtonSize.large,
             fullWidth: true,
           ),
-        if (useCamera != null) ...[
-          SizedBox(height: tokens.spacing.step4),
+        SizedBox(height: tokens.spacing.step4),
+        // The security caveat supports the action rather than gatekeeping
+        // it, but keeps its warning tone — it is the line that stops a
+        // pasted stranger's code from joining their account.
+        const _OnlyOwnCodeWarning(),
+        // Contingency prose last: where to make a code appear and how to
+        // move it here matter only to someone whose clipboard is empty.
+        _WhereToFindHint(extra: messages.syncPairCopyCodeHint),
+        if (useCamera != null)
           Center(
             child: DesignSystemButton(
               key: const Key('bundle_import_scan_instead'),
@@ -696,7 +704,6 @@ class _ManualEntry extends StatelessWidget {
               variant: DesignSystemButtonVariant.outlined,
             ),
           ),
-        ],
       ],
     );
   }

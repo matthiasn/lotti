@@ -172,15 +172,20 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
         SizedBox(height: tokens.spacing.step4),
         // Pairing belongs where devices are managed: this is the surface a
         // person opens when they think "I want my other device on here".
-        DesignSystemButton(
-          key: const Key('sync_devices_add_device'),
-          label: messages.syncAddDeviceAction,
-          // The only constructive action on the page; as an outline it lost
-          // the weight contest to two tinted red pills and a diagnostics link.
-          size: DesignSystemButtonSize.large,
-          fullWidth: true,
-          leadingIcon: Icons.add_rounded,
-          onPressed: () => unawaited(AddDeviceModal.show(context)),
+        //
+        // Hug-width, not full-width: the accent fill already wins the weight
+        // contest against the quiet red pills below, and stretched across a
+        // desktop pane the same button became a viewport-wide slab louder
+        // than the content it serves.
+        Align(
+          alignment: Alignment.centerLeft,
+          child: DesignSystemButton(
+            key: const Key('sync_devices_add_device'),
+            label: messages.syncAddDeviceAction,
+            size: DesignSystemButtonSize.large,
+            leadingIcon: Icons.add_rounded,
+            onPressed: () => unawaited(AddDeviceModal.show(context)),
+          ),
         ),
         SizedBox(height: tokens.spacing.step4),
         for (var i = 0; i < devices.length; i++) ...[

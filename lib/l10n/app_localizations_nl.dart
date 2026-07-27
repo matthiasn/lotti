@@ -8236,8 +8236,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get provisionedSyncRotatingPassword => 'Dit apparaat beveiligen…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Koppel nog een apparaat aan dit sync-account';
+  String get provisionedSyncSubtitle => 'Apparaten koppelen en beheren';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Synchronisatieserver';
@@ -9293,8 +9292,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Laatst bijgewerkt:';
 
   @override
-  String get settingsMatrixMaintenanceSubtitle =>
-      'Start de onderhoudstaken en hersteltools van Matrix';
+  String get settingsMatrixMaintenanceSubtitle => 'Matrix-onderhoud en herstel';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Onderhoud';
@@ -9530,7 +9528,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsSyncConflictsSubtitle =>
-      'Synchronisatieconflicten oplossen om de consistentie van gegevens te waarborgen';
+      'Synchronisatieconflicten oplossen';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9575,8 +9573,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsSyncNodeProfileSaveButton => 'Opslaan';
 
   @override
-  String get settingsSyncNodeProfileSubtitle =>
-      'Noem dit apparaat en bekijk de mogelijkheden zichtbaar voor uw andere apparaten.';
+  String get settingsSyncNodeProfileSubtitle => 'Apparaatnaam en mogelijkheden';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Dit apparaat';
@@ -9854,9 +9851,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Installeer Lotti op het nieuwe apparaat, open daar Instellingen → Instellingen synchroniseren → Apparaten en scan deze code.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Daarna · zodra het is toegevoegd';
-
-  @override
   String get syncAddDeviceRevealCode => 'Koppelcode als tekst tonen';
 
   @override
@@ -10069,12 +10063,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get syncPairedFirstDeviceTitle =>
       'Synchronisatie is ingesteld op dit apparaat';
-
-  @override
-  String get syncPairedNextTitle => 'Nog twee stappen';
-
-  @override
-  String get syncPairedNextTitleOne => 'Nog één ding';
 
   @override
   String get syncPairedSettingsStep =>
@@ -11192,4 +11180,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get syncSetupEmptyTitle => 'Synchroniseer je apparaten';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Je dagboek op al je apparaten — end-to-end versleuteld, alleen tussen je eigen apparaten.';
+
+  @override
+  String get syncSetupCta => 'Synchronisatie instellen';
 }

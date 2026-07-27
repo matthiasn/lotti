@@ -339,7 +339,10 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                       // action must not read louder than "Add device" on the
                       // page around it. The blocking case above keeps its
                       // fill, because there removal *is* the primary act.
+                      // The icon keeps the destructive reading legible
+                      // without relying on hue alone.
                       variant: DesignSystemButtonVariant.dangerTertiary,
+                      leadingIcon: Icons.link_off_rounded,
                       isLoading: _busy,
                       onPressed: () => _deleteDevice(context),
                       label: messages.deleteDeviceLabel,

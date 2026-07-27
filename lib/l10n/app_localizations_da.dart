@@ -8218,8 +8218,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get provisionedSyncRotatingPassword => 'Sikrer denne enhed…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Par en enhed mere med denne synkroniseringskonto';
+  String get provisionedSyncSubtitle => 'Par og administrér dine enheder';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Synkroniseringsserver';
@@ -9271,7 +9270,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Kør Matrix-vedligeholdelsesopgaver og gendannelsesværktøjer';
+      'Matrix-vedligeholdelse og gendannelse';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Vedligeholdelse';
@@ -9504,8 +9503,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsSpeechTitle => 'Tale';
 
   @override
-  String get settingsSyncConflictsSubtitle =>
-      'Løs synkroniseringskonflikter for at sikre datakonsistens';
+  String get settingsSyncConflictsSubtitle => 'Løs synkroniseringskonflikter';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9549,8 +9547,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsSyncNodeProfileSaveButton => 'Gem';
 
   @override
-  String get settingsSyncNodeProfileSubtitle =>
-      'Navngiv denne enhed og gennemgå funktioner, der er synlige for dine andre enheder.';
+  String get settingsSyncNodeProfileSubtitle => 'Enhedsnavn og funktioner';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Denne enhed';
@@ -9827,9 +9824,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Installer Lotti på den nye enhed, åbn Indstillinger → Synkroniseringsindstillinger → Enheder der, og scan denne kode.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Næste · når den er kommet med';
-
-  @override
   String get syncAddDeviceRevealCode => 'Vis parringskoden som tekst';
 
   @override
@@ -10036,12 +10030,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get syncPairedFirstDeviceTitle =>
       'Synkronisering er sat op på denne enhed';
-
-  @override
-  String get syncPairedNextTitle => 'To trin tilbage';
-
-  @override
-  String get syncPairedNextTitleOne => 'Én ting tilbage';
 
   @override
   String get syncPairedSettingsStep =>
@@ -11151,4 +11139,14 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get syncSetupEmptyTitle => 'Synkronisér dine enheder';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Din dagbog på alle dine enheder — end-to-end-krypteret, kun mellem dine egne enheder.';
+
+  @override
+  String get syncSetupCta => 'Konfigurer synkronisering';
 }

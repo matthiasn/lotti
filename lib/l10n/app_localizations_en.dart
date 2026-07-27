@@ -8168,8 +8168,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncRotatingPassword => 'Securing this device…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Pair another device to this sync account';
+  String get provisionedSyncSubtitle => 'Pair and manage your devices';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Sync server';
@@ -9209,7 +9208,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Run Matrix maintenance tasks and recovery tools';
+      'Matrix maintenance and recovery';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Maintenance';
@@ -9440,8 +9439,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSpeechTitle => 'Speech';
 
   @override
-  String get settingsSyncConflictsSubtitle =>
-      'Resolve synchronization conflicts to ensure data consistency';
+  String get settingsSyncConflictsSubtitle => 'Resolve sync conflicts';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9484,8 +9482,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSyncNodeProfileSaveButton => 'Save';
 
   @override
-  String get settingsSyncNodeProfileSubtitle =>
-      'Name this device and review capabilities visible to your other devices.';
+  String get settingsSyncNodeProfileSubtitle => 'Device name and capabilities';
 
   @override
   String get settingsSyncNodeProfileTitle => 'This device';
@@ -9757,9 +9754,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Install Lotti on the new device, then open Settings → Sync Settings → Devices there and scan this code.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Next · after it joins';
-
-  @override
   String get syncAddDeviceRevealCode => 'Show pairing code as text';
 
   @override
@@ -9964,12 +9958,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairedFirstDeviceTitle => 'Sync is set up on this device';
-
-  @override
-  String get syncPairedNextTitle => 'Two things left';
-
-  @override
-  String get syncPairedNextTitleOne => 'One thing left';
 
   @override
   String get syncPairedSettingsStep =>
@@ -11073,6 +11061,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get syncSetupEmptyTitle => 'Sync your devices';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Keep your journal on every device you own — end-to-end encrypted, between your own devices only.';
+
+  @override
+  String get syncSetupCta => 'Set up sync';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

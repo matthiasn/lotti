@@ -8296,8 +8296,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get provisionedSyncRotatingPassword => 'Protegendo este dispositivo…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Emparelhe outro dispositivo a esta conta de sincronização';
+  String get provisionedSyncSubtitle => 'Emparelha e gere os teus dispositivos';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Servidor de sincronização';
@@ -9358,7 +9357,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Execute tarefas de manutenção e ferramentas de recuperação do Matrix';
+      'Manutenção e recuperação do Matrix';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Manutenção';
@@ -9594,7 +9593,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsSyncConflictsSubtitle =>
-      'Resolva conflitos de sincronização para garantir a consistência dos dados';
+      'Resolve conflitos de sincronização';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9640,7 +9639,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsSyncNodeProfileSubtitle =>
-      'Dê um nome a este dispositivo e analise os recursos visíveis para seus outros dispositivos.';
+      'Nome e capacidades do dispositivo';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Este dispositivo';
@@ -9921,9 +9920,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Instale o Lotti no novo dispositivo, abra lá Configurações → Configurações de sincronização → Dispositivos e escaneie este código.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Depois · quando ele entrar';
-
-  @override
   String get syncAddDeviceRevealCode =>
       'Mostrar o código de emparelhamento como texto';
 
@@ -10137,12 +10133,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get syncPairedFirstDeviceTitle =>
       'A sincronização está configurada neste dispositivo';
-
-  @override
-  String get syncPairedNextTitle => 'Faltam dois passos';
-
-  @override
-  String get syncPairedNextTitleOne => 'Falta uma coisa';
 
   @override
   String get syncPairedSettingsStep =>
@@ -11258,4 +11248,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get syncSetupEmptyTitle => 'Sincroniza os teus dispositivos';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'O teu diário em todos os teus dispositivos — encriptado de ponta a ponta, apenas entre os teus próprios dispositivos.';
+
+  @override
+  String get syncSetupCta => 'Configurar sincronização';
 }

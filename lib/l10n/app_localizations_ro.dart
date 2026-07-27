@@ -8367,8 +8367,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se securizează acest dispozitiv…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Asociați un alt dispozitiv la acest cont de sincronizare';
+  String get provisionedSyncSubtitle => 'Asociați și gestionați dispozitivele';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Server de sincronizare';
@@ -9441,7 +9440,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Rulează sarcini de întreținere Matrix și instrumente de recuperare';
+      'Întreținere și recuperare Matrix';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Întreținere';
@@ -9678,7 +9677,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsSyncConflictsSubtitle =>
-      'Rezolvați conflictele de sincronizare pentru a asigura consistența datelor';
+      'Rezolvați conflictele de sincronizare';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9724,7 +9723,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsSyncNodeProfileSubtitle =>
-      'Denumiți acest dispozitiv și examinați capabilitățile vizibile pentru celelalte dispozitive.';
+      'Numele și capacitățile dispozitivului';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Acest dispozitiv';
@@ -10007,9 +10006,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Instalați Lotti pe noul dispozitiv, deschideți acolo Setări → Setări sincronizare → Dispozitive și scanați acest cod.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Apoi · după ce se alătură';
-
-  @override
   String get syncAddDeviceRevealCode => 'Afișați codul de asociere ca text';
 
   @override
@@ -10229,12 +10225,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get syncPairedFirstDeviceTitle =>
       'Sincronizarea este configurată pe acest dispozitiv';
-
-  @override
-  String get syncPairedNextTitle => 'Au mai rămas doi pași';
-
-  @override
-  String get syncPairedNextTitleOne => 'A mai rămas un lucru';
 
   @override
   String get syncPairedSettingsStep =>
@@ -11360,4 +11350,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get syncSetupEmptyTitle => 'Sincronizați-vă dispozitivele';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Jurnalul dumneavoastră pe toate dispozitivele — criptat integral, doar între propriile dumneavoastră dispozitive.';
+
+  @override
+  String get syncSetupCta => 'Configurați sincronizarea';
 }

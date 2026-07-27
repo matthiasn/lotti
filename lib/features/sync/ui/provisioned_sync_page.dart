@@ -41,7 +41,7 @@ class ProvisionedSyncPage extends ConsumerWidget {
         ),
         child: configured
             ? const ProvisionedStatusWidget(embedded: true)
-            : const ProvisionedSyncSettingsCard(showDivider: false),
+            : const SyncSetupEmptyState(),
       ),
     );
   }

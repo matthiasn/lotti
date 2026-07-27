@@ -11,7 +11,7 @@ import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
@@ -281,22 +281,21 @@ Widget _syncProvisionedPanel(BuildContext context) {
       // unawaited startup — leaving the setup card up on a configured device.
       final configured = ref.watch(syncConfiguredProvider);
 
-      return Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step4,
-          vertical: tokens.spacing.step4,
+      // Once sync is set up, the roster IS this panel: hiding it behind a
+      // card that opens a modal added a tap and a second surface with the
+      // same name, and made every "open Settings → … → Devices"
+      // instruction in the pairing flow one step short.
+      //
+      // Capped at the shared reading measure: uncapped, the roster's cards
+      // and buttons stretched across the entire detail pane, and the primary
+      // action became a viewport-wide slab.
+      return DetailContentWidth(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+          child: configured
+              ? const ProvisionedStatusWidget(embedded: true)
+              : const SyncSetupEmptyState(),
         ),
-        // Once sync is set up, the roster IS this panel: hiding it behind a
-        // card that opens a modal added a tap and a second surface with the
-        // same name, and made every "open Settings → … → Devices"
-        // instruction in the pairing flow one step short.
-        child: configured
-            ? const ProvisionedStatusWidget(embedded: true)
-            : const DesignSystemGroupedList(
-                children: [
-                  ProvisionedSyncSettingsCard(showDivider: false),
-                ],
-              ),
       );
     },
   );

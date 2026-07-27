@@ -1,17 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/verification_emojis_row.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/verification_ceremony_stages.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:matrix/matrix.dart';
 
 class VerificationModal extends ConsumerStatefulWidget {
@@ -148,36 +146,23 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
           _scheduleAutoDismiss(pop);
         }
 
+        final tokens = context.designTokens;
+
         return SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(tokens.spacing.step2),
             child: SyncFlowSection(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          widget.deviceKeys.deviceDisplayName ??
-                              widget.deviceKeys.deviceId ??
-                              '',
-                          style: context.textTheme.titleLarge,
-                          softWrap: true,
-                        ),
-                      ),
-                    ],
+                  VerificationCeremonyHeader(
+                    deviceName:
+                        widget.deviceKeys.deviceDisplayName ??
+                        widget.deviceKeys.deviceId ??
+                        '',
+                    userId: widget.deviceKeys.userId,
                   ),
-                  const SizedBox(height: 10),
-                  Opacity(
-                    opacity: 0.5,
-                    child: Text(
-                      widget.deviceKeys.userId,
-                      style: context.textTheme.bodySmall,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: tokens.spacing.step5),
                   if (runner == null)
                     DesignSystemButton(
                       key: const Key('matrix_start_verify'),
@@ -195,8 +180,9 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                           context
                               .messages
                               .settingsMatrixContinueVerificationLabel,
+                          style: tokens.typography.styles.body.bodyMedium,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: tokens.spacing.step3),
                         DesignSystemButton(
                           key: const Key('matrix_restart_verify'),
                           onPressed: _verificationStartInFlight
@@ -210,8 +196,12 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                       ],
                     ),
                   if (isCancelled)
-                    Text(
-                      context.messages.settingsMatrixVerificationCancelledLabel,
+                    VerificationCancelledStage(
+                      confirmKey: const Key('matrix_cancelled_confirm'),
+                      onConfirm: () {
+                        runner?.stopTimer();
+                        pop();
+                      },
                     ),
                   if (isLastStepKey && emojis == null)
                     DesignSystemButton(
@@ -223,84 +213,31 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                       size: DesignSystemButtonSize.large,
                     ),
                   if (outcome == KeyVerificationOutcome.pending &&
-                      emojis != null) ...[
-                    if (_awaitingOtherDevice)
-                      Text(
-                        context
-                            .messages
-                            .settingsMatrixContinueVerificationLabel,
-                        style: context.textTheme.bodyMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                    if (_awaitingOtherDevice) const SizedBox(height: 12),
-                    Text(
-                      context.messages.settingsMatrixVerifyConfirm,
-                      style: context.textTheme.bodyLarge,
-                      textAlign: TextAlign.center,
+                      emojis != null)
+                    VerificationEmojiStage(
+                      prompt: context.messages.settingsMatrixVerifyConfirm,
+                      emojis: emojis,
+                      awaitingOtherDevice: _awaitingOtherDevice,
+                      onAccept: () =>
+                          unawaited(_acceptEmojiVerification(runner)),
+                      onCancel: () => unawaited(() async {
+                        await runner?.cancelVerification();
+                        pop();
+                      }()),
                     ),
-                    const SizedBox(height: 20),
-                    VerificationEmojisRow(emojis.take(4)),
-                    VerificationEmojisRow(emojis.skip(4)),
-                    const SizedBox(height: 20),
-                    DesignSystemModalActionBar(
-                      secondary: [
-                        DesignSystemButton(
-                          key: const Key('matrix_cancel_verification'),
-                          onPressed: () async {
-                            await runner?.cancelVerification();
-                            pop();
-                          },
-                          label: context.messages.settingsMatrixCancel,
-                          variant: DesignSystemButtonVariant.danger,
-                          size: DesignSystemButtonSize.large,
-                        ),
-                      ],
-                      primary: DesignSystemButton(
-                        onPressed: _awaitingOtherDevice
-                            ? null
-                            : () => _acceptEmojiVerification(runner),
-                        label: _awaitingOtherDevice
-                            ? context
-                                  .messages
-                                  .settingsMatrixContinueVerificationLabel
-                            : context.messages.settingsMatrixAccept,
-                        size: DesignSystemButtonSize.large,
-                        fullWidth: true,
-                      ),
+                  if (isSuccess)
+                    VerificationSuccessStage(
+                      message: context.messages
+                          .settingsMatrixVerificationSuccessLabel(
+                            widget.deviceKeys.deviceDisplayName ?? '',
+                            widget.deviceKeys.deviceId ?? '',
+                          ),
+                      onConfirm: () {
+                        unawaited(refreshUnverifiedDevices());
+                        runner?.stopTimer();
+                        pop();
+                      },
                     ),
-                    const SizedBox(height: 20),
-                  ],
-                  if (isSuccess) ...[
-                    Text(
-                      context.messages.settingsMatrixVerificationSuccessLabel(
-                        widget.deviceKeys.deviceDisplayName ?? '',
-                        widget.deviceKeys.deviceId ?? '',
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Icon(
-                      MdiIcons.shieldCheck,
-                      color: Colors.greenAccent,
-                      size: 128,
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        DesignSystemButton(
-                          onPressed: () {
-                            unawaited(refreshUnverifiedDevices());
-                            runner?.stopTimer();
-                            pop();
-                          },
-                          label: context
-                              .messages
-                              .settingsMatrixVerificationSuccessConfirm,
-                          size: DesignSystemButtonSize.large,
-                        ),
-                      ],
-                    ),
-                  ],
                 ],
               ),
             ),

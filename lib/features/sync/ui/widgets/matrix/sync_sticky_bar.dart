@@ -19,7 +19,10 @@ class SyncStickyBar extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: context.colorScheme.surface,
+        // One level above the page surface, so the bar reads as a distinct
+        // opaque shelf rather than page background that happens to cover
+        // whatever scrolls beneath it.
+        color: tokens.colors.background.level02,
         border: Border(
           top: BorderSide(color: tokens.colors.text.lowEmphasis),
         ),

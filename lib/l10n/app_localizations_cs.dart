@@ -8329,8 +8329,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zabezpečování tohoto zařízení…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Spáruj další zařízení s tímto synchronizačním účtem';
+  String get provisionedSyncSubtitle => 'Spáruj a spravuj svá zařízení';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Server synchronizace';
@@ -9395,8 +9394,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Naposledy aktualizováno:';
 
   @override
-  String get settingsMatrixMaintenanceSubtitle =>
-      'Spustit úlohy údržby Matrix a nástroje pro obnovení';
+  String get settingsMatrixMaintenanceSubtitle => 'Údržba a obnova Matrixu';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Údržba';
@@ -9630,8 +9628,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsSpeechTitle => 'Řeč';
 
   @override
-  String get settingsSyncConflictsSubtitle =>
-      'Řešte konflikty synchronizace pro zajištění konzistence dat';
+  String get settingsSyncConflictsSubtitle => 'Vyřeš konflikty synchronizace';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9676,8 +9673,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsSyncNodeProfileSaveButton => 'Uložit';
 
   @override
-  String get settingsSyncNodeProfileSubtitle =>
-      'Pojmenuj toto zařízení a zkontroluj schopnosti viditelné pro tvá další zařízení.';
+  String get settingsSyncNodeProfileSubtitle => 'Název a schopnosti zařízení';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Toto zařízení';
@@ -9955,9 +9951,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nainstaluj Lotti na nové zařízení, otevři tam Nastavení → Nastavení synchronizace → Zařízení a naskenuj tento kód.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Dál · až se připojí';
-
-  @override
   String get syncAddDeviceRevealCode => 'Zobrazit párovací kód jako text';
 
   @override
@@ -10172,12 +10165,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get syncPairedFirstDeviceTitle =>
       'Synchronizace je na tomhle zařízení nastavená';
-
-  @override
-  String get syncPairedNextTitle => 'Zbývají dva kroky';
-
-  @override
-  String get syncPairedNextTitleOne => 'Zbývá jedna věc';
 
   @override
   String get syncPairedSettingsStep =>
@@ -11293,4 +11280,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get syncSetupEmptyTitle => 'Synchronizuj svá zařízení';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Tvůj deník na všech tvých zařízeních — šifrovaný end-to-end, jen mezi tvými vlastními zařízeními.';
+
+  @override
+  String get syncSetupCta => 'Nastavit synchronizaci';
 }

@@ -47,10 +47,20 @@ const double kAddDeviceDetailsMin = 250;
 /// Bottom inset for this sheet specifically.
 ///
 /// [WoltModalConfig.stickyActionBarClearance] assumes a bar of padding plus one
-/// large button. This one also carries a lead-in and a live status line, and
-/// its fallback pair wraps to two runs at phone width — reserving the shared
-/// constant sliced a control in half at rest.
-const double kAddDeviceBarClearance = 200;
+/// large button. This one also carries a live status line, and the pair wraps
+/// to two runs at phone width — reserving the shared constant sliced a control
+/// in half at rest.
+const double kAddDeviceBarClearance = 140;
+
+/// Vertical space the QR must leave for everything that shares its viewport:
+/// the sheet header, the step eyebrow and heading, the intro line, the
+/// security callout, the card's own padding, and the pinned bar.
+///
+/// The sheet scrolls, but the QR is the one artifact that must render whole
+/// at rest — a code sliced by the pinned bar is unscannable and reads as a
+/// broken app, which is exactly what happened at 1280×700. The regression
+/// test pins the no-overlap guarantee at that size.
+const double kAddDeviceQrViewportOverhead = 470;
 
 /// What the inviting sheet is waiting on, shared between the scroll body and
 /// the pinned bar. The bar is built outside the view's `State`, and the live
@@ -97,8 +107,7 @@ class AddDeviceModal {
 /// three lines about one control that disagreed left the user unable to tell.
 /// It is pressable whenever the account has a peer at all, since a reopened
 /// sheet must still offer the hand-off; when it is, the button takes the
-/// accent and the "after it joins" lead-in disappears. When it is not, the
-/// lead-in, the status line and an outlined button all say so.
+/// accent. When it is not, the status line and an outlined button both say so.
 class AddDeviceActionBar extends ConsumerWidget {
   const AddDeviceActionBar({
     required this.signal,
@@ -131,62 +140,62 @@ class AddDeviceActionBar extends ConsumerWidget {
     return ValueListenableBuilder<AddDeviceJoinState>(
       valueListenable: signal,
       builder: (context, state, _) {
+        // One tier: the live status line beside (or, narrow, above) the one
+        // pinned action. The old three-tier stack — lead-in, status, button —
+        // gave one control three different answers to "can I press this?"
+        // and spent so much height that it sliced the QR above it in half on
+        // short windows.
+        final button = DesignSystemButton(
+          key: const Key('add_device_send_settings'),
+          label: messages.syncAddDeviceSendSettings,
+          // Accent whenever it actually works. Not `secondary` for the
+          // quiet case: its enabled fill is the same token the component
+          // paints a *disabled* filled button with, so a live action
+          // read as inert. `outlined` drops its border when disabled, so
+          // the two can never be confused.
+          variant: enabled
+              ? DesignSystemButtonVariant.primary
+              : DesignSystemButtonVariant.outlined,
+          size: DesignSystemButtonSize.large,
+          leadingIcon: Icons.sync_alt_rounded,
+          onPressed: enabled
+              ? () => unawaited(
+                  (onSendSettings ?? SyncModal.show)(context),
+                )
+              : null,
+        );
+        // Whenever the pill is quiet, say why. The live status lives here
+        // rather than in the card because on a phone the card's own strip
+        // is below the fold, and a caption naming it pointed at nothing.
+        Widget status({required bool centered}) => _BarStatus(
+          state: state,
+          enabled: enabled,
+          onRetry: signal.onRetry,
+          centered: centered,
+        );
+
         return SyncStickyBar(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // A lead-in, deliberately without a fraction: the body already
-              // carries "Now · Show the code", and a second "Step N of M" on
-              // the same viewport stops either of them indicating anything.
-              //
-              // It also has to agree with the two lines under it. "Next ·
-              // after it joins" over a status reading "Send now" over an
-              // outlined button gave one control three different answers to
-              // "can I press this?", and it is the only pinned control here.
-              // Only while the action is not yet live. Once it is, the
-              // status line and the accent already say so, and a lead-in
-              // reading "after it joins" over them gave one control three
-              // different answers to "can I press this?".
-              if (!enabled)
-                SyncPairStepIndicator(
-                  key: const Key('add_device_step_settings'),
-                  label: messages.syncAddDeviceNextLeadIn,
-                  align: TextAlign.center,
-                  bottomGap: tokens.spacing.step2,
-                ),
-              // Whenever the pill is quiet, say why. The live status lives here
-              // rather than in the card because on a phone the card's own strip
-              // is below the fold, and a caption naming it pointed at nothing.
-              _BarStatus(
-                state: state,
-                enabled: enabled,
-                onRetry: signal.onRetry,
-              ),
-              SizedBox(height: tokens.spacing.step2),
-              DesignSystemButton(
-                key: const Key('add_device_send_settings'),
-                label: messages.syncAddDeviceSendSettings,
-                // Accent only once the new device is actually here; until then
-                // the QR is the thing to look at.
-                // Accent whenever it actually works. Not `secondary` for the
-                // quiet case: its enabled fill is the same token the component
-                // paints a *disabled* filled button with, so a live action
-                // read as inert. `outlined` drops its border when disabled, so
-                // the two can never be confused.
-                variant: enabled
-                    ? DesignSystemButtonVariant.primary
-                    : DesignSystemButtonVariant.outlined,
-                size: DesignSystemButtonSize.large,
-                leadingIcon: Icons.sync_alt_rounded,
-                fullWidth: true,
-                onPressed: enabled
-                    ? () => unawaited(
-                        (onSendSettings ?? SyncModal.show)(context),
-                      )
-                    : null,
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth >= kAddDeviceWideCard) {
+                return Row(
+                  children: [
+                    Expanded(child: status(centered: false)),
+                    SizedBox(width: tokens.spacing.step3),
+                    button,
+                  ],
+                );
+              }
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  status(centered: true),
+                  SizedBox(height: tokens.spacing.step2),
+                  button,
+                ],
+              );
+            },
           ),
         );
       },
@@ -200,16 +209,23 @@ class _BarStatus extends StatelessWidget {
     required this.state,
     required this.enabled,
     required this.onRetry,
+    this.centered = true,
   });
 
   final AddDeviceJoinState state;
   final bool enabled;
   final VoidCallback? onRetry;
 
+  /// Stacked above the button the line centers; beside it, it leads.
+  final bool centered;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final alignment = centered
+        ? MainAxisAlignment.center
+        : MainAxisAlignment.start;
     final caption = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
@@ -218,7 +234,7 @@ class _BarStatus extends StatelessWidget {
       case AddDeviceJoinState.joined:
         return Row(
           key: const Key('add_device_joined'),
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: alignment,
           children: [
             Icon(
               Icons.check_circle_rounded,
@@ -239,7 +255,7 @@ class _BarStatus extends StatelessWidget {
       case AddDeviceJoinState.rosterFailed:
         return Row(
           key: const Key('add_device_poll_failed'),
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: alignment,
           children: [
             Flexible(
               child: Text(
@@ -260,7 +276,7 @@ class _BarStatus extends StatelessWidget {
       case AddDeviceJoinState.waiting:
         return Row(
           key: const Key('add_device_waiting'),
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: alignment,
           children: [
             // Only while the action is genuinely blocked. Spinning beside a
             // live button said "wait" over copy that said "send now".
@@ -552,10 +568,12 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
         // the fold on both viewports — a caveat about a secret that the reader
         // never reaches is not a caveat. Neutral ink so it does not out-shout
         // the live status inside the card.
+        // The callout's default warning tone, deliberately: this is a live
+        // credential on screen, and de-toned to grey the caveat about it was
+        // quieter than the buttons offering to copy it.
         SyncCallout(
           icon: Icons.lock_outline_rounded,
           text: messages.syncAddDeviceSecurityNote,
-          tone: tokens.colors.text.lowEmphasis,
           calloutKey: const Key('add_device_security_note'),
         ),
         SizedBox(height: tokens.spacing.step4),
@@ -601,12 +619,22 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
                 // by step3 on each side, so the card occupies `side + 2·step3`
                 // and budgeting as though it were `side` overspent by exactly
                 // that much.
-                final side =
+                final widthBudget =
                     (constraints.maxWidth -
                             kAddDeviceDetailsMin -
                             tokens.spacing.step5 -
                             tokens.spacing.step3 * 2)
                         .clamp(180.0, 300.0);
+                // The height budget is what stops the pinned bar slicing the
+                // code on a short window: the width formula alone sized the
+                // QR for the dialog's width and let a 1280×700 screen cut it
+                // mid-symbol. The floor keeps it scannable; below that the
+                // page scrolls rather than shrinking the code further.
+                final heightBudget =
+                    (MediaQuery.sizeOf(context).height -
+                            kAddDeviceQrViewportOverhead)
+                        .clamp(160.0, 300.0);
+                final side = math.min(widthBudget, heightBudget);
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

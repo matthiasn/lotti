@@ -14220,7 +14220,7 @@ abstract class AppLocalizations {
   /// No description provided for @provisionedSyncSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Pair another device to this sync account'**
+  /// **'Pair and manage your devices'**
   String get provisionedSyncSubtitle;
 
   /// No description provided for @provisionedSyncSummaryHomeserver.
@@ -15996,7 +15996,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsMatrixMaintenanceSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Run Matrix maintenance tasks and recovery tools'**
+  /// **'Matrix maintenance and recovery'**
   String get settingsMatrixMaintenanceSubtitle;
 
   /// No description provided for @settingsMatrixMaintenanceTitle.
@@ -16389,7 +16389,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSyncConflictsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Resolve synchronization conflicts to ensure data consistency'**
+  /// **'Resolve sync conflicts'**
   String get settingsSyncConflictsSubtitle;
 
   /// No description provided for @settingsSyncNodeProfileCapabilitiesEmpty.
@@ -16467,7 +16467,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSyncNodeProfileSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Name this device and review capabilities visible to your other devices.'**
+  /// **'Device name and capabilities'**
   String get settingsSyncNodeProfileSubtitle;
 
   /// No description provided for @settingsSyncNodeProfileTitle.
@@ -16956,12 +16956,6 @@ abstract class AppLocalizations {
   /// **'Install Lotti on the new device, then open Settings → Sync Settings → Devices there and scan this code.'**
   String get syncAddDeviceIntro;
 
-  /// No description provided for @syncAddDeviceNextLeadIn.
-  ///
-  /// In en, this message translates to:
-  /// **'Next · after it joins'**
-  String get syncAddDeviceNextLeadIn;
-
   /// No description provided for @syncAddDeviceRevealCode.
   ///
   /// In en, this message translates to:
@@ -17261,18 +17255,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync is set up on this device'**
   String get syncPairedFirstDeviceTitle;
-
-  /// No description provided for @syncPairedNextTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Two things left'**
-  String get syncPairedNextTitle;
-
-  /// No description provided for @syncPairedNextTitleOne.
-  ///
-  /// In en, this message translates to:
-  /// **'One thing left'**
-  String get syncPairedNextTitleOne;
 
   /// No description provided for @syncPairedSettingsStep.
   ///
@@ -19175,6 +19157,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// No description provided for @syncSetupEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync your devices'**
+  String get syncSetupEmptyTitle;
+
+  /// No description provided for @syncSetupEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your journal on every device you own — end-to-end encrypted, between your own devices only.'**
+  String get syncSetupEmptyHint;
+
+  /// No description provided for @syncSetupCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up sync'**
+  String get syncSetupCta;
 }
 
 class _AppLocalizationsDelegate

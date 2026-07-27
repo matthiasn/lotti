@@ -58,6 +58,16 @@ class _ConfigActionBar extends ConsumerWidget {
       done: () => true,
       error: (_) => false,
     );
+    final isError = state.when(
+      initial: () => false,
+      bundleDecoded: (_) => false,
+      loggingIn: () => false,
+      joiningRoom: () => false,
+      rotatingPassword: () => false,
+      ready: (_) => false,
+      done: () => false,
+      error: (_) => true,
+    );
 
     // Going back is only safe where rescanning is the remedy. Mid-flight it
     // drops the user onto a live scanner while `configureFromBundle` runs;
@@ -88,14 +98,30 @@ class _ConfigActionBar extends ConsumerWidget {
           ),
           SizedBox(width: context.designTokens.spacing.step2),
           Flexible(
-            child: DesignSystemButton(
-              onPressed: isComplete ? () => pageIndexNotifier.value = 2 : null,
-              // Named for where it lands. "Next Page" says nothing about
-              // what the user is about to see, on the one screen where the
-              // remaining work is described in terms of that destination.
-              label: context.messages.syncPairGoToDevices,
-              size: DesignSystemButtonSize.large,
-            ),
+            // One accent slot, filled by whatever the user should press next.
+            // In the error state that is Retry — as a grey pill inside the
+            // card it was the quietest control on a screen whose only way
+            // forward it is, under a disabled accent going nowhere.
+            child: isError
+                ? DesignSystemButton(
+                    key: const Key('provisioned_config_retry'),
+                    onPressed: () => ref
+                        .read(provisioningControllerProvider.notifier)
+                        .retry(),
+                    label: context.messages.provisionedSyncRetry,
+                    size: DesignSystemButtonSize.large,
+                  )
+                : DesignSystemButton(
+                    onPressed: isComplete
+                        ? () => pageIndexNotifier.value = 2
+                        : null,
+                    // Named for where it lands. "Next Page" says nothing about
+                    // what the user is about to see, on the one screen where
+                    // the remaining work is described in terms of that
+                    // destination.
+                    label: context.messages.syncPairGoToDevices,
+                    size: DesignSystemButtonSize.large,
+                  ),
           ),
         ],
       ),
@@ -116,35 +142,17 @@ class ProvisionedConfigWidget extends ConsumerWidget {
     final state = ref.watch(provisioningControllerProvider);
     final messages = context.messages;
 
-    // Only a `provisioned` bundle rotates the password, so the step count
-    // follows the bundle kind. Keying it off the platform made a rotating
-    // mobile run count "1/2, 2/2, 3/3".
-    final totalSteps =
-        ref.read(provisioningControllerProvider.notifier).rotatesPassword
-        ? 3
-        : 2;
-
     final body = state.when(
-      initial: () => const _ProgressStep(label: '', step: 0, totalSteps: 1),
-      bundleDecoded: (_) => const _ProgressStep(
-        label: '',
-        step: 0,
-        totalSteps: 1,
-      ),
+      initial: () => const _ProgressStep(label: ''),
+      bundleDecoded: (_) => const _ProgressStep(label: ''),
       loggingIn: () => _ProgressStep(
         label: messages.provisionedSyncLoggingIn,
-        step: 1,
-        totalSteps: totalSteps,
       ),
       joiningRoom: () => _ProgressStep(
         label: messages.provisionedSyncJoiningRoom,
-        step: 2,
-        totalSteps: totalSteps,
       ),
       rotatingPassword: () => _ProgressStep(
         label: messages.provisionedSyncRotatingPassword,
-        step: 3,
-        totalSteps: 3,
       ),
       // `ready` and `done` are not the same ending. `ready` follows a fresh
       // CLI `provisioned` bundle, so this is usually the account's *first*
@@ -159,12 +167,7 @@ class ProvisionedConfigWidget extends ConsumerWidget {
       // roster, not to a second QR on the screen that just consumed one.
       ready: (_) => const _FirstDeviceView(),
       done: () => _PairedView(pageIndexNotifier: pageIndexNotifier),
-      error: (error) => _ErrorView(
-        error: error,
-        onRetry: () {
-          ref.read(provisioningControllerProvider.notifier).retry();
-        },
-      ),
+      error: (error) => _ErrorView(error: error),
     );
 
     // The same position line the scan and confirm screens carry — but naming
@@ -192,15 +195,9 @@ class ProvisionedConfigWidget extends ConsumerWidget {
 }
 
 class _ProgressStep extends StatelessWidget {
-  const _ProgressStep({
-    required this.label,
-    required this.step,
-    required this.totalSteps,
-  });
+  const _ProgressStep({required this.label});
 
   final String label;
-  final int step;
-  final int totalSteps;
 
   @override
   Widget build(BuildContext context) {
@@ -211,25 +208,20 @@ class _ProgressStep extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SizedBox(height: tokens.spacing.step6),
+          // One indicator. The determinate bar that used to sit under the
+          // spinner mapped internal phases onto a fraction the eyebrow
+          // already carried, so the screen showed two disagreeing measures
+          // of the same wait.
           const DesignSystemSpinner(),
-          SizedBox(height: tokens.spacing.step6),
           if (label.isNotEmpty) ...[
+            SizedBox(height: tokens.spacing.step6),
             Text(
               label,
               style: tokens.typography.styles.subtitle.subtitle1,
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: tokens.spacing.step3),
-            // Deliberately carries no "2 / 3" caption: this bar measures
-            // progress *within* the final step, and a second fraction beside
-            // "Step 3 of 3" reads as a contradiction.
-            DesignSystemProgressBar(
-              key: const Key('provisioned_config_progress'),
-              value: step / totalSteps,
-              semanticsLabel: label,
-            ),
           ],
-          SizedBox(height: tokens.spacing.step2),
+          SizedBox(height: tokens.spacing.step6),
         ],
       ),
     );
@@ -330,20 +322,17 @@ class _PairedView extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                verified
-                    ? messages.syncPairedNextTitleOne
-                    : messages.syncPairedNextTitle,
-                style: tokens.typography.styles.subtitle.subtitle1,
-              ),
-              SizedBox(height: tokens.spacing.step4),
-              // Once verification is done, the outstanding item leads and the
-              // finished one closes: a card headed "One thing left" that opens
-              // with a paragraph about completed work spends the reader's
-              // first fixation on nothing they can act on.
+              // No meta-title. "Two things left" / "One thing left" was a
+              // third header on the page that spent the reader's first
+              // fixation counting work instead of naming it — the eyebrow
+              // already says "Finish on your other device", so the card
+              // leads directly with the next actionable step.
               //
-              // Numerals only while the list is genuinely ordered — "2." under
-              // a title saying one thing is left sent the reader hunting for a
+              // Once verification is done, the outstanding item leads and
+              // the finished one closes, demoted to a muted done-row.
+              //
+              // Numerals only while the list is genuinely ordered — "2."
+              // with the first item completed sent the reader hunting for a
               // missing first item.
               if (verified) ...[
                 _NextStep(
@@ -609,14 +598,13 @@ class _NextStep extends StatelessWidget {
   }
 }
 
+/// The failure card: what went wrong and why, without its own button — the
+/// remedy lives in the sticky bar's accent slot, the position every other
+/// screen of the wizard has trained the user to press.
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({
-    required this.error,
-    required this.onRetry,
-  });
+  const _ErrorView({required this.error});
 
   final ProvisioningError error;
-  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -652,13 +640,6 @@ class _ErrorView extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           SizedBox(height: tokens.spacing.step6),
-          DesignSystemButton(
-            onPressed: onRetry,
-            label: messages.provisionedSyncRetry,
-            variant: DesignSystemButtonVariant.secondary,
-            size: DesignSystemButtonSize.large,
-          ),
-          SizedBox(height: tokens.spacing.step2),
         ],
       ),
     );

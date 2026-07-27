@@ -8219,8 +8219,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get provisionedSyncRotatingPassword => 'Säkrar den här enheten…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Para ihop en enhet till med det här synkkontot';
+  String get provisionedSyncSubtitle => 'Parkoppla och hantera dina enheter';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Synkroniseringsserver';
@@ -9271,7 +9270,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Kör underhållsuppgifter och återställningsverktyg för matrisen';
+      'Matrix-underhåll och återställning';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Underhåll';
@@ -9505,8 +9504,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsSpeechTitle => 'Tal';
 
   @override
-  String get settingsSyncConflictsSubtitle =>
-      'Lös synkroniseringskonflikter för att säkerställa datakonsistens';
+  String get settingsSyncConflictsSubtitle => 'Lös synkkonflikter';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9549,8 +9547,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsSyncNodeProfileSaveButton => 'Spara';
 
   @override
-  String get settingsSyncNodeProfileSubtitle =>
-      'Namnge denna enhet och granska funktioner som är synliga för dina andra enheter.';
+  String get settingsSyncNodeProfileSubtitle => 'Enhetsnamn och funktioner';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Den här apparaten';
@@ -9827,9 +9824,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Installera Lotti på den nya enheten, öppna Inställningar → Synkroniseringsinställningar → Enheter där och skanna den här koden.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Sedan · när den har anslutit';
-
-  @override
   String get syncAddDeviceRevealCode => 'Visa parkopplingskoden som text';
 
   @override
@@ -10037,12 +10031,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get syncPairedFirstDeviceTitle =>
       'Synkronisering är konfigurerad på den här enheten';
-
-  @override
-  String get syncPairedNextTitle => 'Två steg kvar';
-
-  @override
-  String get syncPairedNextTitleOne => 'En sak kvar';
 
   @override
   String get syncPairedSettingsStep =>
@@ -11155,4 +11143,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get syncSetupEmptyTitle => 'Synka dina enheter';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Din dagbok på alla dina enheter — end-to-end-krypterad, bara mellan dina egna enheter.';
+
+  @override
+  String get syncSetupCta => 'Konfigurera synk';
 }
