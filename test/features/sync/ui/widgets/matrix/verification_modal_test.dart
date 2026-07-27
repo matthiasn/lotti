@@ -683,32 +683,23 @@ void main() {
 
     final observer = _PopCountingObserver();
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [matrixServiceProvider.overrideWithValue(mockMatrixService)],
-        child: MaterialApp(
-          theme: resolveTestTheme(),
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          navigatorObservers: [observer],
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => TextButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => VerificationModal(mockDeviceKeys),
-                  ),
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => VerificationModal(mockDeviceKeys),
                 ),
-                child: const Text('open'),
               ),
+              child: const Text('open'),
             ),
           ),
         ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+        navigatorObservers: [observer],
       ),
     );
 

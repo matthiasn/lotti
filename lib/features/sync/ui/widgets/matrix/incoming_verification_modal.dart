@@ -6,6 +6,7 @@ import 'package:flutter_material_design_icons/flutter_material_design_icons.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
@@ -200,7 +201,7 @@ class _IncomingVerificationModalState
                       context.messages.settingsMatrixVerificationCancelledLabel,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: context.designTokens.spacing.step5),
                     // Without this the cancelled state is a dead end: every
                     // other branch is gated off and nothing is left to dismiss
                     // the sheet with.
