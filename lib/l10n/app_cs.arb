@@ -4167,6 +4167,7 @@
   "syncPayloadEntityDefinition": "Definice entity",
   "syncPayloadEntryLink": "Odkaz na položku",
   "syncPayloadJournalEntity": "Položka deníku",
+  "syncPayloadMediaRequest": "Žádost o média",
   "syncPayloadNotification": "Oznámení",
   "syncPayloadNotificationStateUpdate": "Aktualizace stavu oznámení",
   "syncPayloadOutboxBundle": "Odchozí balíček",

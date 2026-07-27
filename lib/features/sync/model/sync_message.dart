@@ -238,6 +238,34 @@ sealed class SyncMessage with _$SyncMessage {
     String? payloadId,
   }) = SyncBackfillResponse;
 
+  /// Asks peers to re-send the media blobs of entries this device already
+  /// holds but whose image/audio file is missing locally.
+  ///
+  /// Keyed by **entry id**, not by file path, for two reasons. The responder
+  /// resolves the id through `JournalDb` and answers with an ordinary
+  /// `SyncJournalEntity` carrying `includeAttachments: true`, so the whole
+  /// existing send path — attachment policy, `filePath` stamping, bundler
+  /// exclusion, upload — is reused unchanged. And no path from the wire is
+  /// ever resolved against the local filesystem: a peer cannot name a file
+  /// for this device to upload, only an entry whose own media paths this
+  /// device derives itself.
+  ///
+  /// Broadcast, like [SyncBackfillRequest]: any peer holding the blob may
+  /// answer, because the device that originally created the entry is often
+  /// the one that is offline. Duplicate answers are harmless — the receiver
+  /// dedupes attachment events by id and skips the write when the file is
+  /// already on disk.
+  ///
+  /// Carries no vector clock and is not sequence-tracked: it is a transient
+  /// repair request, not journal state.
+  const factory SyncMessage.mediaRequest({
+    /// Ids of the journal entries whose media is missing on `requesterId`.
+    required List<String> entryIds,
+
+    /// The host UUID asking for the blobs. Peers ignore their own requests.
+    required String requesterId,
+  }) = SyncMediaRequest;
+
   const factory SyncMessage.agentEntity({
     required SyncEntryStatus status,
     AgentDomainEntity? agentEntity,

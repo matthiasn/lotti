@@ -10346,6 +10346,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Položka deníku';
 
   @override
+  String get syncPayloadMediaRequest => 'Žádost o média';
+
+  @override
   String get syncPayloadNotification => 'Oznámení';
 
   @override

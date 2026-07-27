@@ -281,6 +281,17 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'entries=${msg.entries.length}',
   );
 
+  Future<bool> enqueueMediaRequest({
+    required SyncMediaRequest msg,
+    required OutboxCompanion commonFields,
+  }) => enqueueSimple(
+    commonFields: commonFields,
+    subject: 'mediaRequest:batch:${msg.entryIds.length}',
+    logMessage:
+        'enqueue type=SyncMediaRequest '
+        'entries=${msg.entryIds.length} requester=${msg.requesterId}',
+  );
+
   Future<bool> enqueueBackfillResponse({
     required SyncBackfillResponse msg,
     required OutboxCompanion commonFields,

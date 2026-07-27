@@ -106,6 +106,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **A photo or recording that never arrived now repairs itself.** If a device
+  ended up holding an entry whose image or audio file it never received, that
+  file stayed missing forever — nothing noticed, and only re-sending your whole
+  history could fix it. Devices now ask each other for the specific files they
+  are missing, and any device that has one sends it back. No action needed, and
+  nothing is asked for repeatedly if no device still has the file.
 - **Photos and audio now reach a device you sync your history to.** Sending
   your existing entries to a newly set up device — from sync maintenance, or
   automatically when a device noticed it was missing entries — transferred the

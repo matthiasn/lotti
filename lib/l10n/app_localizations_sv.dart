@@ -10211,6 +10211,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Dagboksanteckning';
 
   @override
+  String get syncPayloadMediaRequest => 'Mediebegäran';
+
+  @override
   String get syncPayloadNotification => 'Meddelande';
 
   @override

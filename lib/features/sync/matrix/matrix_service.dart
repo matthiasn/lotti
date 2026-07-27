@@ -431,6 +431,7 @@ class MatrixService {
       notificationStateUpdate: (_) => 'notificationStateUpdate',
       consumptionEvent: (_) => 'consumptionEvent',
       backfillRequest: (_) => 'backfillRequest',
+      mediaRequest: (_) => 'mediaRequest',
       backfillResponse: (_) => 'backfillResponse',
       agentEntity: (_) => 'agentEntity',
       agentLink: (_) => 'agentLink',

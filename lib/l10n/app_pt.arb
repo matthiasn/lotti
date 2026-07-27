@@ -4715,6 +4715,7 @@
   "syncPayloadEntityDefinition": "Definição de entidade",
   "syncPayloadEntryLink": "Link de entrada",
   "syncPayloadJournalEntity": "Lançamento de diário",
+  "syncPayloadMediaRequest": "Pedido de multimédia",
   "syncPayloadNotification": "Notificação",
   "syncPayloadNotificationStateUpdate": "Atualização do estado da notificação",
   "syncPayloadOutboxBundle": "Pacote de caixa de saída",

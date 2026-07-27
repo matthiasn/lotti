@@ -240,6 +240,12 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         // Handle backfill request - another device is asking for a missing entry
         await backfillResponseHandler.handleBackfillRequest(syncMessage);
         return null;
+      case final SyncMediaRequest msg:
+        // A peer is missing blobs for entries it already holds. Answering is
+        // best-effort: the request is broadcast, and a device that lacks the
+        // file simply stays quiet.
+        await mediaRequestHandler?.handleMediaRequest(msg);
+        return null;
       case SyncBackfillResponse():
         // Handle backfill response - another device responded to our request
         await backfillResponseHandler.handleBackfillResponse(syncMessage);

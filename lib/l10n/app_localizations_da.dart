@@ -10210,6 +10210,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Dagbogsindlæg';
 
   @override
+  String get syncPayloadMediaRequest => 'Medieanmodning';
+
+  @override
   String get syncPayloadNotification => 'Underretning';
 
   @override

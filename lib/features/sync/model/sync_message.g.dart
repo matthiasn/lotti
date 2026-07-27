@@ -329,6 +329,22 @@ const _$SyncSequencePayloadTypeEnumMap = {
   SyncSequencePayloadType.consumptionEvent: 'consumptionEvent',
 };
 
+SyncMediaRequest _$SyncMediaRequestFromJson(Map<String, dynamic> json) =>
+    SyncMediaRequest(
+      entryIds: (json['entryIds'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      requesterId: json['requesterId'] as String,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncMediaRequestToJson(SyncMediaRequest instance) =>
+    <String, dynamic>{
+      'entryIds': instance.entryIds,
+      'requesterId': instance.requesterId,
+      'runtimeType': instance.$type,
+    };
+
 SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>
     SyncAgentEntity(
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),

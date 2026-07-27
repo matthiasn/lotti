@@ -141,6 +141,7 @@ import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -1025,6 +1026,8 @@ class MockSoulDocumentService extends Mock implements SoulDocumentService {}
 
 class MockBackfillResponseHandler extends Mock
     implements BackfillResponseHandler {}
+
+class MockMediaRequestHandler extends Mock implements MediaRequestHandler {}
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {
   // Default null/no-op so tests that stub only `process` keep working: a

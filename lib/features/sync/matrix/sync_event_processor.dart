@@ -39,6 +39,7 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';
 import 'package:lotti/features/sync/matrix/sync_journal_entity_loader.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
+import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -230,12 +231,24 @@ class SyncEventProcessor {
     }
   }
 
-  set descriptorPendingListener(void Function(String path)? listener) {
+  /// Subscribes [listener] to "this entry's blob is missing locally", the
+  /// signal that drives media self-healing. Wired to `MediaRepairService` in
+  /// `get_it.dart`; without a subscriber the miss is observed and dropped,
+  /// which is what made missing media silent and permanent.
+  set missingMediaListener(
+    void Function({required String entryId, required String relativePath})?
+    listener,
+  ) {
     final loader = _journalEntityLoader;
     if (loader is SmartJournalEntityLoader) {
-      loader.onMissingDescriptorPath = listener;
+      loader.onMissingMedia = listener;
     }
   }
+
+  /// Answers peers' [SyncMediaRequest] broadcasts. Assigned in `get_it.dart`
+  /// after the outbox exists; left null in tests that never exercise the
+  /// responder path, in which case requests are ignored.
+  MediaRequestHandler? mediaRequestHandler;
 
   Future<void> process({
     required Event event,
