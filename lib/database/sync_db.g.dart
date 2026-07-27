@@ -2619,12 +2619,24 @@ class $QueueMarkersTable extends QueueMarkers
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _resumeFloorTsMeta = const VerificationMeta(
+    'resumeFloorTs',
+  );
+  @override
+  late final GeneratedColumn<int> resumeFloorTs = GeneratedColumn<int>(
+    'resume_floor_ts',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     roomId,
     lastAppliedEventId,
     lastAppliedTs,
     lastAppliedCommitSeq,
+    resumeFloorTs,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2673,6 +2685,15 @@ class $QueueMarkersTable extends QueueMarkers
         ),
       );
     }
+    if (data.containsKey('resume_floor_ts')) {
+      context.handle(
+        _resumeFloorTsMeta,
+        resumeFloorTs.isAcceptableOrUnknown(
+          data['resume_floor_ts']!,
+          _resumeFloorTsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2698,6 +2719,10 @@ class $QueueMarkersTable extends QueueMarkers
         DriftSqlType.int,
         data['${effectivePrefix}last_applied_commit_seq'],
       )!,
+      resumeFloorTs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}resume_floor_ts'],
+      ),
     );
   }
 
@@ -2723,11 +2748,31 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
   /// Monotonic counter incremented on every successful
   /// `commitApplied`. Diagnostic use only.
   final int lastAppliedCommitSeq;
+
+  /// `originServerTs` of the oldest event this device has *received* but not
+  /// resolved — today, ciphertext parked in `PendingDecryptionPen` waiting
+  /// for its Megolm key. Null when nothing is outstanding.
+  ///
+  /// **No bootstrap may anchor after this.** The applied marker records what
+  /// has been written; this records what is known to be missing, and the two
+  /// are not the same. Held ciphertext has no queue row by design — writing
+  /// pre-decryption ciphertext into `raw_json` would lose the payload on the
+  /// next `Event.fromJson` round-trip — so before this column existed the
+  /// only trace of it was an in-memory map. A teardown erased that trace, and
+  /// the next forward walk, anchored strictly after `last_applied_event_id`,
+  /// skipped straight over the gap: the event was gone with no row, no ledger
+  /// entry and no counter.
+  ///
+  /// Kept deliberately as a timestamp rather than an event id. It is a
+  /// *floor*, not a cursor — it answers "how far back must a resume reach",
+  /// which survives the event itself being evicted from the pen.
+  final int? resumeFloorTs;
   const QueueMarkerItem({
     required this.roomId,
     this.lastAppliedEventId,
     required this.lastAppliedTs,
     required this.lastAppliedCommitSeq,
+    this.resumeFloorTs,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2738,6 +2783,9 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
     }
     map['last_applied_ts'] = Variable<int>(lastAppliedTs);
     map['last_applied_commit_seq'] = Variable<int>(lastAppliedCommitSeq);
+    if (!nullToAbsent || resumeFloorTs != null) {
+      map['resume_floor_ts'] = Variable<int>(resumeFloorTs);
+    }
     return map;
   }
 
@@ -2749,6 +2797,9 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
           : Value(lastAppliedEventId),
       lastAppliedTs: Value(lastAppliedTs),
       lastAppliedCommitSeq: Value(lastAppliedCommitSeq),
+      resumeFloorTs: resumeFloorTs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resumeFloorTs),
     );
   }
 
@@ -2766,6 +2817,7 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
       lastAppliedCommitSeq: serializer.fromJson<int>(
         json['lastAppliedCommitSeq'],
       ),
+      resumeFloorTs: serializer.fromJson<int?>(json['resumeFloorTs']),
     );
   }
   @override
@@ -2776,6 +2828,7 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
       'lastAppliedEventId': serializer.toJson<String?>(lastAppliedEventId),
       'lastAppliedTs': serializer.toJson<int>(lastAppliedTs),
       'lastAppliedCommitSeq': serializer.toJson<int>(lastAppliedCommitSeq),
+      'resumeFloorTs': serializer.toJson<int?>(resumeFloorTs),
     };
   }
 
@@ -2784,6 +2837,7 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
     Value<String?> lastAppliedEventId = const Value.absent(),
     int? lastAppliedTs,
     int? lastAppliedCommitSeq,
+    Value<int?> resumeFloorTs = const Value.absent(),
   }) => QueueMarkerItem(
     roomId: roomId ?? this.roomId,
     lastAppliedEventId: lastAppliedEventId.present
@@ -2791,6 +2845,9 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
         : this.lastAppliedEventId,
     lastAppliedTs: lastAppliedTs ?? this.lastAppliedTs,
     lastAppliedCommitSeq: lastAppliedCommitSeq ?? this.lastAppliedCommitSeq,
+    resumeFloorTs: resumeFloorTs.present
+        ? resumeFloorTs.value
+        : this.resumeFloorTs,
   );
   QueueMarkerItem copyWithCompanion(QueueMarkersCompanion data) {
     return QueueMarkerItem(
@@ -2804,6 +2861,9 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
       lastAppliedCommitSeq: data.lastAppliedCommitSeq.present
           ? data.lastAppliedCommitSeq.value
           : this.lastAppliedCommitSeq,
+      resumeFloorTs: data.resumeFloorTs.present
+          ? data.resumeFloorTs.value
+          : this.resumeFloorTs,
     );
   }
 
@@ -2813,7 +2873,8 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
           ..write('roomId: $roomId, ')
           ..write('lastAppliedEventId: $lastAppliedEventId, ')
           ..write('lastAppliedTs: $lastAppliedTs, ')
-          ..write('lastAppliedCommitSeq: $lastAppliedCommitSeq')
+          ..write('lastAppliedCommitSeq: $lastAppliedCommitSeq, ')
+          ..write('resumeFloorTs: $resumeFloorTs')
           ..write(')'))
         .toString();
   }
@@ -2824,6 +2885,7 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
     lastAppliedEventId,
     lastAppliedTs,
     lastAppliedCommitSeq,
+    resumeFloorTs,
   );
   @override
   bool operator ==(Object other) =>
@@ -2832,7 +2894,8 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
           other.roomId == this.roomId &&
           other.lastAppliedEventId == this.lastAppliedEventId &&
           other.lastAppliedTs == this.lastAppliedTs &&
-          other.lastAppliedCommitSeq == this.lastAppliedCommitSeq);
+          other.lastAppliedCommitSeq == this.lastAppliedCommitSeq &&
+          other.resumeFloorTs == this.resumeFloorTs);
 }
 
 class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
@@ -2840,12 +2903,14 @@ class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
   final Value<String?> lastAppliedEventId;
   final Value<int> lastAppliedTs;
   final Value<int> lastAppliedCommitSeq;
+  final Value<int?> resumeFloorTs;
   final Value<int> rowid;
   const QueueMarkersCompanion({
     this.roomId = const Value.absent(),
     this.lastAppliedEventId = const Value.absent(),
     this.lastAppliedTs = const Value.absent(),
     this.lastAppliedCommitSeq = const Value.absent(),
+    this.resumeFloorTs = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   QueueMarkersCompanion.insert({
@@ -2853,6 +2918,7 @@ class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
     this.lastAppliedEventId = const Value.absent(),
     this.lastAppliedTs = const Value.absent(),
     this.lastAppliedCommitSeq = const Value.absent(),
+    this.resumeFloorTs = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : roomId = Value(roomId);
   static Insertable<QueueMarkerItem> custom({
@@ -2860,6 +2926,7 @@ class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
     Expression<String>? lastAppliedEventId,
     Expression<int>? lastAppliedTs,
     Expression<int>? lastAppliedCommitSeq,
+    Expression<int>? resumeFloorTs,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2869,6 +2936,7 @@ class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
       if (lastAppliedTs != null) 'last_applied_ts': lastAppliedTs,
       if (lastAppliedCommitSeq != null)
         'last_applied_commit_seq': lastAppliedCommitSeq,
+      if (resumeFloorTs != null) 'resume_floor_ts': resumeFloorTs,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2878,6 +2946,7 @@ class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
     Value<String?>? lastAppliedEventId,
     Value<int>? lastAppliedTs,
     Value<int>? lastAppliedCommitSeq,
+    Value<int?>? resumeFloorTs,
     Value<int>? rowid,
   }) {
     return QueueMarkersCompanion(
@@ -2885,6 +2954,7 @@ class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
       lastAppliedEventId: lastAppliedEventId ?? this.lastAppliedEventId,
       lastAppliedTs: lastAppliedTs ?? this.lastAppliedTs,
       lastAppliedCommitSeq: lastAppliedCommitSeq ?? this.lastAppliedCommitSeq,
+      resumeFloorTs: resumeFloorTs ?? this.resumeFloorTs,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2906,6 +2976,9 @@ class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
         lastAppliedCommitSeq.value,
       );
     }
+    if (resumeFloorTs.present) {
+      map['resume_floor_ts'] = Variable<int>(resumeFloorTs.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2919,6 +2992,7 @@ class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
           ..write('lastAppliedEventId: $lastAppliedEventId, ')
           ..write('lastAppliedTs: $lastAppliedTs, ')
           ..write('lastAppliedCommitSeq: $lastAppliedCommitSeq, ')
+          ..write('resumeFloorTs: $resumeFloorTs, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4294,6 +4368,7 @@ typedef $$QueueMarkersTableCreateCompanionBuilder =
       Value<String?> lastAppliedEventId,
       Value<int> lastAppliedTs,
       Value<int> lastAppliedCommitSeq,
+      Value<int?> resumeFloorTs,
       Value<int> rowid,
     });
 typedef $$QueueMarkersTableUpdateCompanionBuilder =
@@ -4302,6 +4377,7 @@ typedef $$QueueMarkersTableUpdateCompanionBuilder =
       Value<String?> lastAppliedEventId,
       Value<int> lastAppliedTs,
       Value<int> lastAppliedCommitSeq,
+      Value<int?> resumeFloorTs,
       Value<int> rowid,
     });
 
@@ -4331,6 +4407,11 @@ class $$QueueMarkersTableFilterComposer
 
   ColumnFilters<int> get lastAppliedCommitSeq => $composableBuilder(
     column: $table.lastAppliedCommitSeq,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get resumeFloorTs => $composableBuilder(
+    column: $table.resumeFloorTs,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4363,6 +4444,11 @@ class $$QueueMarkersTableOrderingComposer
     column: $table.lastAppliedCommitSeq,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get resumeFloorTs => $composableBuilder(
+    column: $table.resumeFloorTs,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$QueueMarkersTableAnnotationComposer
@@ -4389,6 +4475,11 @@ class $$QueueMarkersTableAnnotationComposer
 
   GeneratedColumn<int> get lastAppliedCommitSeq => $composableBuilder(
     column: $table.lastAppliedCommitSeq,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get resumeFloorTs => $composableBuilder(
+    column: $table.resumeFloorTs,
     builder: (column) => column,
   );
 }
@@ -4428,12 +4519,14 @@ class $$QueueMarkersTableTableManager
                 Value<String?> lastAppliedEventId = const Value.absent(),
                 Value<int> lastAppliedTs = const Value.absent(),
                 Value<int> lastAppliedCommitSeq = const Value.absent(),
+                Value<int?> resumeFloorTs = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => QueueMarkersCompanion(
                 roomId: roomId,
                 lastAppliedEventId: lastAppliedEventId,
                 lastAppliedTs: lastAppliedTs,
                 lastAppliedCommitSeq: lastAppliedCommitSeq,
+                resumeFloorTs: resumeFloorTs,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4442,12 +4535,14 @@ class $$QueueMarkersTableTableManager
                 Value<String?> lastAppliedEventId = const Value.absent(),
                 Value<int> lastAppliedTs = const Value.absent(),
                 Value<int> lastAppliedCommitSeq = const Value.absent(),
+                Value<int?> resumeFloorTs = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => QueueMarkersCompanion.insert(
                 roomId: roomId,
                 lastAppliedEventId: lastAppliedEventId,
                 lastAppliedTs: lastAppliedTs,
                 lastAppliedCommitSeq: lastAppliedCommitSeq,
+                resumeFloorTs: resumeFloorTs,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

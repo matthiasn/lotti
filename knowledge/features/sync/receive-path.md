@@ -5,13 +5,13 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T18:27:07Z }
+generated: { by: codex/5, at: 2026-07-27T02:34:38+02:00 }
 stale_after: 2026-11-02
 sources:
   - id: queue
     resource: ../../../lib/features/sync/queue
     title: Inbound queue pipeline
-    last_modified: 2026-07-14
+    last_modified: 2026-07-27
   - id: processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
@@ -77,6 +77,13 @@ Live events are routed through `PendingDecryptionPen` first, so
 worker sweeps the pen at the top of every drain iteration and only
 fully-decrypted events reach `raw_json`.
 
+Each eligible sweep calls the Matrix SDK's
+`Encryption.decryptRoomEvent(held)` directly. Reading the event back with
+`room.getEventById` is not equivalent: once the SDK has cached the ciphertext,
+that method returns the cached copy and does not attempt decryption. The direct
+call also lets the SDK request a missing Megolm session through its own key
+manager.
+
 **The pen's give-up budget is measured in time, not in sweeps.** An entry that
 never decrypts is eventually dropped, and a dropped entry is gone — its
 ciphertext is never written to the queue, so nothing retries it and nothing
@@ -101,7 +108,10 @@ the per-room `last_applied_event_id` marker.
 The preferred path is an **anchored forward walk**
 (`CatchUpStrategy.collectForwardForBootstrap`): force a server
 `/context/{eventId}` request with `room.getTimeline(eventContextId: marker,
-limit: 0)`, then walk `/messages?dir=f`.
+limit: 0)`, then walk `/messages?dir=f`. It is used only when the durable
+`resume_floor_ts` is absent or newer than the applied anchor. A floor at or
+behind the anchor means known-missing work exists outside the strictly-forward
+window, so anchoring there would skip it.
 
 **The zero cache limit was required by Matrix SDK 7.0.0**, and has not been
 re-verified since; `pubspec.yaml` now pins
@@ -120,9 +130,30 @@ window, or a forward page returns no new events, the walk re-anchors at its
 newest event and probes until the server returns nothing newer.
 
 The fallback is a timestamp-bounded **backward** walk
-(`collectHistoryForBootstrap`), used only for fresh clients with no anchor or
-when the anchor is unresolvable. Both feed the same enqueue path with
+(`collectHistoryForBootstrap`), used for fresh clients, unresolvable anchors,
+and unsafe anchors. An unsafe anchor walks back to `resume_floor_ts`, not
+`last_applied_ts`. Both directions feed the same enqueue path with
 `producer=bootstrap` via `InboundQueue.appendBootstrapPage`.
+
+```mermaid
+stateDiagram-v2
+  [*] --> NoFloor
+  NoFloor --> FloorRecorded: ciphertext held or pen capacity exceeded
+  FloorRecorded --> FloorLowered: older unresolved event observed
+  FloorLowered --> FloorLowered: newer unresolved event observed
+  FloorRecorded --> WalkIncomplete: catch-up stops before coverage
+  FloorLowered --> WalkIncomplete: catch-up stops before coverage
+  WalkIncomplete --> FloorRecorded: retry starts from durable floor
+  FloorRecorded --> WalkComplete: backward walk covers floor
+  FloorLowered --> WalkComplete: backward walk covers floor
+  WalkComplete --> FloorRecorded: ciphertext still held
+  WalkComplete --> NoFloor: no unresolved ciphertext remains
+```
+
+A completed walk replaces the old floor with the pen's oldest still-held event,
+or clears it when the pen is empty. An incomplete walk never clears it. The room
+id passed to that completion step is the room actually walked, so switching
+rooms while pagination is in flight cannot erase another room's recovery state.
 
 # Draining
 
@@ -191,16 +222,16 @@ tiebreak only when both sides are durable. The candidate is clamped against the
 oldest still-active row for the room, so the marker never crosses an unapplied
 gap.
 
-**The room lookup has its own, shorter cadence.** A sweep does not re-query
-every held entry: `room.getEventById` is the expensive half, the worker sweeps
-before every batch, and `SyncTuning.inboundWorkerBatchSize` is 1 — draining 10k
-rows against a full 256-entry pen would otherwise issue ~2.5M sequential
-lookups. That load used to be self-limiting only because entries were dropped
-after 20 sweeps; holding them for ten real minutes makes it persist. So an
-entry is re-queried at most once per `lookupInterval` (1s), which bounds the
-cost while keeping detection within about a second of the key landing. It is a
-real, if small, latency: a key that arrives inside an entry's interval is
-noticed by the next eligible sweep, not the next sweep.
+**The SDK decryption attempt has its own, shorter cadence.** A sweep does not
+retry every held entry: `decryptRoomEvent` is the expensive half, the worker
+sweeps before every batch, and `SyncTuning.inboundWorkerBatchSize` is 1 —
+draining 10k rows against a full 256-entry pen would otherwise issue ~2.5M
+sequential attempts. That load used to be self-limiting only because entries
+were dropped after 20 sweeps; holding them for ten real minutes makes it
+persist. So an entry is retried at most once per `lookupInterval` (1s), which
+bounds the cost while keeping detection within about a second of the key
+landing. It is a real, if small, latency: a key that arrives inside an entry's
+interval is noticed by the next eligible sweep, not the next sweep.
 
 Callers that give up after N unproductive sweeps must count only sweeps that
 actually looked. `drainUntilEmptyImpl` polls every 200ms, faster than the
@@ -237,13 +268,12 @@ intended trade: the displaced entries belong to a room nothing is sweeping. Stop
 cannot pass what the pen holds, so the next run resumes from the right anchor
 instead of skipping the gap.
 
-One limit of that resume story is worth knowing: the clamp prevents the marker
-*advancing* past held work, but it cannot pull the marker *back*. Ciphertext
-penned by a backward or manual history walk is already behind the anchor, and
-the monotonic guard rejects a candidate below the stored timestamp — so if the
-pen is discarded before those entries decrypt, the forward walk will not
-revisit them. Closing that needs a persisted resume floor rather than an
-in-memory one.
+The in-memory clamp cannot pull an already-advanced marker back. The durable
+`queue_markers.resume_floor_ts` closes that restart hole: every held or
+overflowed ciphertext event lowers the floor before later page entries can
+advance the marker, and `_runBootstrap` rejects a forward anchor at or ahead of
+it. The next process therefore walks backward to the floor instead of stepping
+over work the previous process knew was unresolved.
 
 It deliberately does **not** use `TimelineEventOrdering.isNewer`, because
 `isNewer` treats a null stored event id as "no marker" even when the marker

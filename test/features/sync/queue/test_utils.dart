@@ -39,3 +39,35 @@ Event buildSyncEvent({
   });
   return event;
 }
+
+/// Wires [room] so `PendingDecryptionPen` can ask the SDK to decrypt.
+///
+/// The pen calls `room.client.encryption.decryptRoomEvent`, not
+/// `room.getEventById`. That distinction is the point: `getEventById` returns
+/// the SDK's stored copy whenever it has one, so polling it could only ever
+/// *observe* a decryption performed elsewhere — it never attempted one, and
+/// never triggered the SDK's `maybeAutoRequest` for the missing session.
+///
+/// Benches therefore have to provide an `Encryption`. This one resolves
+/// against whatever the room currently reports for that event id, which is
+/// what they already stub, so a test that makes an event "become decrypted"
+/// keeps working unchanged.
+void stubPenDecryption(MockRoom room) {
+  // Owned here rather than pushed onto every bench: the helper is the only
+  // reason these tests need an `Event` matcher at all.
+  registerFallbackValue(
+    buildSyncEvent(
+      eventId: r'$penFallback',
+      roomId: '!fallback:example.org',
+      originTsMs: 0,
+    ),
+  );
+  final client = MockMatrixClient();
+  final encryption = MockEncryption();
+  when(() => room.client).thenReturn(client);
+  when(() => client.encryption).thenReturn(encryption);
+  when(() => encryption.decryptRoomEvent(any())).thenAnswer((invocation) async {
+    final event = invocation.positionalArguments.single as Event;
+    return await room.getEventById(event.eventId) ?? event;
+  });
+}

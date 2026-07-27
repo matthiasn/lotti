@@ -109,6 +109,58 @@ class QueueMarkerAdvancer {
     return true;
   }
 
+  /// Lowers `resume_floor_ts` for [roomId] to [originTs] if it is not already
+  /// at or below it. Never raises it: the floor records how far back a resume
+  /// must reach, and the pen forgetting an entry does not make that ground
+  /// safe to skip.
+  Future<void> lowerResumeFloor({
+    required String roomId,
+    required int originTs,
+  }) async {
+    await _db.transaction(() async {
+      final marker = await (_db.select(
+        _db.queueMarkers,
+      )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+      final current = marker?.resumeFloorTs;
+      if (current != null && current <= originTs) return;
+      await _db
+          .into(_db.queueMarkers)
+          .insertOnConflictUpdate(
+            QueueMarkersCompanion.insert(
+              roomId: roomId,
+              resumeFloorTs: Value(originTs),
+            ),
+          );
+    });
+  }
+
+  /// Marks the previous floor as covered by a completed bootstrap and replaces
+  /// it with [unresolvedFloorTs], the oldest ciphertext still held after that
+  /// walk. This may raise or clear the floor because the walk re-covered the
+  /// older ground; unlike [lowerResumeFloor], ordinary pen churn must never do
+  /// either.
+  Future<void> completeResumeWalk({
+    required String roomId,
+    required int? unresolvedFloorTs,
+  }) async {
+    await _db
+        .into(_db.queueMarkers)
+        .insertOnConflictUpdate(
+          QueueMarkersCompanion.insert(
+            roomId: roomId,
+            resumeFloorTs: Value(unresolvedFloorTs),
+          ),
+        );
+  }
+
+  /// The room's durable floor, or null when nothing is outstanding.
+  Future<int?> resumeFloorTs(String roomId) async {
+    final marker = await (_db.select(
+      _db.queueMarkers,
+    )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+    return marker?.resumeFloorTs;
+  }
+
   /// Returns the minimum `origin_ts` among active (`enqueued`,
   /// `leased`, `retrying`) rows for [roomId], excluding the row with
   /// `queue_id = excludeQueueId` so the in-flight commit/abandon

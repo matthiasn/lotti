@@ -85,7 +85,7 @@ class SyncDatabase extends _$SyncDatabase
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration {
@@ -588,6 +588,22 @@ class SyncDatabase extends _$SyncDatabase
           if (outboxExists != null) {
             await customStatement(_createIdxOutboxActionableSubject);
             await customStatement('ANALYZE');
+          }
+        }
+        if (from >= 12 && from < 28) {
+          // Durable floor for received-but-unresolved work. Additive and
+          // nullable: an existing device simply has nothing outstanding
+          // recorded, which is the correct starting state — anything the pen
+          // was holding at upgrade time was in memory and already lost.
+          // Earlier versions create the current queue_markers table in the
+          // `from < 12` branch above, so adding the current column again would
+          // fail with a duplicate-column error.
+          final queueMarkersExists = await customSelect(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'queue_markers'",
+          ).getSingleOrNull();
+          if (queueMarkersExists != null) {
+            await m.addColumn(queueMarkers, queueMarkers.resumeFloorTs);
           }
         }
       },

@@ -102,6 +102,75 @@ void main() {
     });
 
     test(
+      'the resume floor only ever moves down, and survives a reopen',
+      () async {
+        // The floor records how far back a resume must reach. The pen
+        // forgetting an entry — evicted, or its attempts exhausted — does not
+        // make that ground safe to skip; if anything the event is more lost.
+        // So the floor never rises on its own: only a completed walk clears
+        // it.
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 5000);
+        expect(await advancer.resumeFloorTs(_roomA), 5000);
+
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 9000);
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          5000,
+          reason: 'a newer candidate must not raise the floor',
+        );
+
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 2000);
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          2000,
+          reason: 'an older candidate lowers it',
+        );
+
+        // It is durable — that is the entire point of the column.
+        final reopened = await (db.select(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals(_roomA))).getSingle();
+        expect(reopened.resumeFloorTs, 2000);
+
+        await advancer.completeResumeWalk(
+          roomId: _roomA,
+          unresolvedFloorTs: 4000,
+        );
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          4000,
+          reason:
+              'a completed walk may raise the floor to the oldest work that '
+              'is still unresolved',
+        );
+
+        await advancer.completeResumeWalk(
+          roomId: _roomA,
+          unresolvedFloorTs: null,
+        );
+        expect(await advancer.resumeFloorTs(_roomA), isNull);
+      },
+    );
+
+    test(
+      'lowering the floor does not disturb the applied marker',
+      () async {
+        final queueId = await insertRow(eventId: r'$a', originTs: 5000);
+        await advancer.advanceIfNewer(
+          _entry(queueId: queueId, eventId: r'$a', originTs: 5000),
+        );
+        await markApplied(queueId);
+
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 1000);
+
+        final marker = await readMarker();
+        expect(marker?.lastAppliedTs, 5000);
+        expect(marker?.lastAppliedEventId, r'$a');
+        expect(marker?.resumeFloorTs, 1000);
+      },
+    );
+
+    test(
       'older unqueued work clamps the marker exactly like an active row',
       () async {
         // Ciphertext in the pen is received-but-not-applied, but it has no
