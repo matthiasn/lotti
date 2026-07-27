@@ -7066,24 +7066,54 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sigur doriți să recreați indexul de căutare text complet? Acest lucru poate dura ceva timp.';
 
   @override
-  String get maintenanceReSync => 'Resincronizați mesajele';
+  String get maintenanceReSync => 'Istoricul mesajelor';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Entități agent';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Legături între agenți';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Celelalte dispozitive ale dvs. le vor primi când sincronizarea ajunge la zi.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Mesaje adăugate în coadă';
+
+  @override
+  String get maintenanceReSyncCustom => 'Personalizat';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Resincronizează mesajele de pe server';
+      'Puneți mesajele în coadă pentru celelalte dispozitive';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Tipuri de entități';
 
   @override
+  String get maintenanceReSyncEverything => 'Totul';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Mesajele nu au putut fi adăugate în coadă. Încercați din nou.';
+
+  @override
+  String get maintenanceReSyncInvalidRange =>
+      'Începutul trebuie să fie înaintea sfârșitului';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Intrări jurnal';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Ultimele 30 de zile';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Selectați cel puțin un tip de entitate';
+
+  @override
+  String get maintenanceReSyncSending => 'Se pregătesc mesajele';
 
   @override
   String get maintenanceReSyncStart => 'Porniți';
@@ -9996,7 +10026,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Noul dispozitiv nu are cameră? Copiați codul de asociere și lipiți-l acolo.';
 
   @override
-  String get syncAddDeviceConnected => 'Un dispozitiv nou s-a alăturat';
+  String get syncAddDeviceConnected =>
+      'Noul dispozitiv s-a alăturat — finalizați verificarea cu emoji înainte de a trimite.';
 
   @override
   String get syncAddDeviceCopyCode => 'Copiați codul de asociere';
@@ -10013,7 +10044,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Instalați Lotti pe noul dispozitiv, deschideți acolo Setări → Setări sincronizare → Dispozitive și scanați acest cod.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Apoi · după ce se alătură';
+  String get syncAddDeviceNextLeadIn => 'Apoi · după verificarea cu emoji';
 
   @override
   String get syncAddDeviceRevealCode => 'Afișați codul de asociere ca text';
@@ -10027,19 +10058,22 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acest cod de asociere deblochează contul dvs. de sincronizare – lăsați-l scanat doar de propriul dispozitiv nou și nu îl fotografiați și nu îl trimiteți niciodată.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Trimiteți istoricul mesajelor';
+
+  @override
   String get syncAddDeviceSendSettings => 'Trimiteți setările';
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'După ce noul dispozitiv este conectat, trimiteți-i categoriile, obiceiurile, panourile și setările AI.';
+      'După verificarea cu emoji a noului dispozitiv, trimiteți-i măsurabilele, categoriile, obiceiurile, panourile și setările AI.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Disponibil imediat ce noul dispozitiv se alătură.';
+      'Disponibil după ce noul dispozitiv se alătură și este verificat cu emoji.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Trimiteți acum sau așteptați ca noul dispozitiv să se alăture.';
+      'Noul dispozitiv este verificat — gata de trimitere.';
 
   @override
   String get syncAddDeviceStepScan => 'Acum · Afișați codul';
@@ -10244,11 +10278,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările. Categoriile, obiceiurile, panourile și setările AI ajung aici.';
+      'După verificarea cu emoji, pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările, apoi Trimiteți istoricul mesajelor. Măsurabilele, categoriile, obiceiurile, panourile, setările AI și istoricul mesajelor ajung aici.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Sau redeschideți Setări → Setări sincronizare → Dispozitive → Adăugați dispozitiv.';
+      'Dacă l-ați închis, pe celălalt dispozitiv deschideți Setări → Setări sincronizare → Întreținere, alegeți Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI, apoi alegeți Istoricul mesajelor.';
 
   @override
   String get syncPairedVerifyDone =>

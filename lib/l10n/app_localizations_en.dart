@@ -6895,23 +6895,53 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
-  String get maintenanceReSync => 'Re-sync messages';
+  String get maintenanceReSync => 'Message history';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Agent entities';
 
   @override
-  String get maintenanceReSyncDescription => 'Re-sync messages from server';
+  String get maintenanceReSyncAgentLinks => 'Agent links';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Your other devices will receive them as sync catches up.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Messages queued';
+
+  @override
+  String get maintenanceReSyncCustom => 'Custom';
+
+  @override
+  String get maintenanceReSyncDescription =>
+      'Queue messages for your other devices';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Entity types';
 
   @override
+  String get maintenanceReSyncEverything => 'Everything';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Messages could not be queued. Try again.';
+
+  @override
+  String get maintenanceReSyncInvalidRange => 'Start must be before end';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Journal entities';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Last 30 days';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Select at least one entity type';
+
+  @override
+  String get maintenanceReSyncSending => 'Preparing messages';
 
   @override
   String get maintenanceReSyncStart => 'Start';
@@ -9746,7 +9776,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'No camera on the new device? Copy the pairing code and paste it there instead.';
 
   @override
-  String get syncAddDeviceConnected => 'A new device joined';
+  String get syncAddDeviceConnected =>
+      'New device joined — finish emoji verification to send.';
 
   @override
   String get syncAddDeviceCopyCode => 'Copy pairing code';
@@ -9763,7 +9794,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Install Lotti on the new device, then open Settings → Sync Settings → Devices there and scan this code.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Next · after it joins';
+  String get syncAddDeviceNextLeadIn => 'Next · after emoji verification';
 
   @override
   String get syncAddDeviceRevealCode => 'Show pairing code as text';
@@ -9777,19 +9808,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'This pairing code unlocks your sync account — let only your own new device scan it, and never screenshot or send it.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Send message history';
+
+  @override
   String get syncAddDeviceSendSettings => 'Send settings';
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Once the new device is connected, send your categories, habits, dashboards and AI settings across.';
+      'After the new device is emoji-verified, send your measurables, categories, habits, dashboards and AI settings across.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Ready once the new device joins.';
+      'Available after the new device joins and is emoji-verified.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Send now, or wait until the new device joins.';
+      'New device verified — ready to send.';
 
   @override
   String get syncAddDeviceStepScan => 'Now · Show the code';
@@ -9979,11 +10013,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'On your other device, in the Add device screen you still have open, choose Send settings. Your categories, habits, dashboards and AI settings arrive here.';
+      'After emoji verification, on your other device, in the Add device screen you still have open, choose Send settings, then Send message history. Your measurables, categories, habits, dashboards, AI settings and message history arrive here.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Or reopen Settings → Sync Settings → Devices → Add device.';
+      'If you closed it, on the other device open Settings → Sync Settings → Maintenance, choose Sync measurables, dashboards, habits, categories, AI settings, then choose Message history.';
 
   @override
   String get syncPairedVerifyDone =>
@@ -11417,12 +11451,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get maintenanceRecreateFts5Description =>
       'Recreate full-text search index';
-
-  @override
-  String get maintenanceReSync => 'Re-sync messages';
-
-  @override
-  String get maintenanceReSyncDescription => 'Re-sync messages from server';
 
   @override
   String get maintenanceSyncDefinitions =>

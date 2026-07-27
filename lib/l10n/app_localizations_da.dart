@@ -6933,23 +6933,52 @@ class AppLocalizationsDa extends AppLocalizations {
       'Er du sikker på, at du vil genskabe fuldtekstindekset? Det kan tage noget tid.';
 
   @override
-  String get maintenanceReSync => 'Gensynkroniser beskeder';
+  String get maintenanceReSync => 'Beskedhistorik';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Agentenheder';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Agentlinks';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Dine andre enheder modtager dem, når synkroniseringen har indhentet det forsømte.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Beskeder sat i kø';
+
+  @override
+  String get maintenanceReSyncCustom => 'Tilpasset';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Gensynkroniser beskeder fra serveren';
+      'Sæt beskeder i kø til dine andre enheder';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Enhedstyper';
 
   @override
+  String get maintenanceReSyncEverything => 'Alt';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Beskederne kunne ikke sættes i kø. Prøv igen.';
+
+  @override
+  String get maintenanceReSyncInvalidRange => 'Start skal være før slut';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Tidsskriftsenheder';
 
   @override
+  String get maintenanceReSyncLast30Days => 'Seneste 30 dage';
+
+  @override
   String get maintenanceReSyncSelectAtLeastOne => 'Vælg mindst én enhedstype';
+
+  @override
+  String get maintenanceReSyncSending => 'Forbereder beskeder';
 
   @override
   String get maintenanceReSyncStart => 'Start';
@@ -9816,7 +9845,8 @@ class AppLocalizationsDa extends AppLocalizations {
       'Har den nye enhed intet kamera? Kopiér parringskoden, og indsæt den der i stedet.';
 
   @override
-  String get syncAddDeviceConnected => 'En ny enhed er kommet med';
+  String get syncAddDeviceConnected =>
+      'Den nye enhed er kommet med – fuldfør emoji-bekræftelsen, før du sender.';
 
   @override
   String get syncAddDeviceCopyCode => 'Kopiér parringskode';
@@ -9833,7 +9863,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Installer Lotti på den nye enhed, åbn Indstillinger → Synkroniseringsindstillinger → Enheder der, og scan denne kode.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Næste · når den er kommet med';
+  String get syncAddDeviceNextLeadIn => 'Næste · efter emoji-bekræftelse';
 
   @override
   String get syncAddDeviceRevealCode => 'Vis parringskoden som tekst';
@@ -9847,19 +9877,22 @@ class AppLocalizationsDa extends AppLocalizations {
       'Denne parringskode låser din synkroniseringskonto op – lad kun din egen nye enhed scanne den, og tag aldrig skærmbillede af den eller send den.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Send beskedhistorik';
+
+  @override
   String get syncAddDeviceSendSettings => 'Send indstillinger';
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Når den nye enhed er forbundet, sender du dine kategorier, vaner, dashboards og AI-indstillinger derover.';
+      'Når den nye enhed er emoji-bekræftet, sender du dine målbare ting, kategorier, vaner, dashboards og AI-indstillinger derover.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Klar, når den nye enhed er kommet med.';
+      'Tilgængelig, når den nye enhed er kommet med og er emoji-bekræftet.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Send nu, eller vent til den nye enhed er kommet med.';
+      'Den nye enhed er bekræftet – klar til at sende.';
 
   @override
   String get syncAddDeviceStepScan => 'Nu · Vis koden';
@@ -10051,11 +10084,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'På din anden enhed vælger du Send indstillinger i skærmen Tilføj enhed, som du stadig har åben. Dine kategorier, vaner, dashboards og AI-indstillinger lander her.';
+      'Efter emoji-bekræftelsen vælger du på din anden enhed Send indstillinger og derefter Send beskedhistorik i skærmen Tilføj enhed, som du stadig har åben. Dine målbare ting, kategorier, vaner, dashboards, AI-indstillinger og din beskedhistorik lander her.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Eller åbn Indstillinger → Synkroniseringsindstillinger → Enheder → Tilføj enhed igen.';
+      'Hvis du lukkede den, skal du på den anden enhed åbne Indstillinger → Synkroniseringsindstillinger → Vedligeholdelse, køre indstillingssynkroniseringen og derefter vælge Beskedhistorik.';
 
   @override
   String get syncPairedVerifyDone =>

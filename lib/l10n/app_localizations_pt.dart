@@ -6994,24 +6994,54 @@ class AppLocalizationsPt extends AppLocalizations {
       'Tem certeza de que deseja recriar o índice de texto completo? Isso pode levar algum tempo.';
 
   @override
-  String get maintenanceReSync => 'Sincronizar novamente mensagens';
+  String get maintenanceReSync => 'Histórico de mensagens';
 
   @override
-  String get maintenanceReSyncAgentEntities => 'Entidades agentes';
+  String get maintenanceReSyncAgentEntities => 'Entidades de agente';
+
+  @override
+  String get maintenanceReSyncAgentLinks => 'Links de agente';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Seus outros dispositivos vão recebê-las quando a sincronização estiver em dia.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Mensagens em fila';
+
+  @override
+  String get maintenanceReSyncCustom => 'Personalizado';
 
   @override
   String get maintenanceReSyncDescription =>
-      'Sincronizar novamente mensagens do servidor';
+      'Coloque mensagens na fila para seus outros dispositivos';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Tipos de entidade';
 
   @override
+  String get maintenanceReSyncEverything => 'Tudo';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Não foi possível colocar as mensagens em fila. Tente novamente.';
+
+  @override
+  String get maintenanceReSyncInvalidRange =>
+      'O início deve ser anterior ao fim';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Entidades de diário';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Últimos 30 dias';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Selecione pelo menos um tipo de entidade';
+
+  @override
+  String get maintenanceReSyncSending => 'Preparando mensagens';
 
   @override
   String get maintenanceReSyncStart => 'Começar';
@@ -9910,7 +9940,8 @@ class AppLocalizationsPt extends AppLocalizations {
       'O novo dispositivo não tem câmera? Copie o código de emparelhamento e cole-o lá.';
 
   @override
-  String get syncAddDeviceConnected => 'Um novo dispositivo entrou';
+  String get syncAddDeviceConnected =>
+      'O novo dispositivo entrou — conclui a verificação por emojis antes de enviar.';
 
   @override
   String get syncAddDeviceCopyCode => 'Copiar código de emparelhamento';
@@ -9927,7 +9958,8 @@ class AppLocalizationsPt extends AppLocalizations {
       'Instale o Lotti no novo dispositivo, abra lá Configurações → Configurações de sincronização → Dispositivos e escaneie este código.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Depois · quando ele entrar';
+  String get syncAddDeviceNextLeadIn =>
+      'Depois · após a verificação por emojis';
 
   @override
   String get syncAddDeviceRevealCode =>
@@ -9942,19 +9974,22 @@ class AppLocalizationsPt extends AppLocalizations {
       'Este código de emparelhamento desbloqueia sua conta de sincronização: deixe apenas o seu próprio dispositivo novo escaneá-lo, e nunca o fotografe nem o envie.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Enviar histórico de mensagens';
+
+  @override
   String get syncAddDeviceSendSettings => 'Enviar configurações';
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Assim que o novo dispositivo estiver conectado, envie suas categorias, hábitos, painéis e configurações de IA.';
+      'Depois que o novo dispositivo for verificado por emojis, envie a ele seus mensuráveis, categorias, hábitos, painéis e configurações de IA.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Disponível assim que o novo dispositivo entrar.';
+      'Disponível depois de o novo dispositivo entrar e ser verificado por emojis.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Envie agora, ou espere o novo dispositivo entrar.';
+      'Novo dispositivo verificado — pronto para enviar.';
 
   @override
   String get syncAddDeviceStepScan => 'Agora · Mostre o código';
@@ -10152,11 +10187,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'No seu outro dispositivo, na tela Adicionar dispositivo que ainda está aberta, escolha Enviar configurações. Suas categorias, hábitos, painéis e configurações de IA chegam aqui.';
+      'Após a verificação por emojis, no seu outro dispositivo, na tela Adicionar dispositivo que ainda está aberta, escolha Enviar configurações e depois Enviar histórico de mensagens. Seus mensuráveis, categorias, hábitos, painéis, configurações de IA e o histórico de mensagens chegam aqui.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Ou reabra Configurações → Configurações de sincronização → Dispositivos → Adicionar dispositivo.';
+      'Se você a fechou, no outro dispositivo abra Configurações → Configurações de sincronização → Manutenção, execute a sincronização das configurações e depois escolha Histórico de mensagens.';
 
   @override
   String get syncPairedVerifyDone =>

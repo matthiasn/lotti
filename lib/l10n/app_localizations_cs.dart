@@ -7034,24 +7034,53 @@ class AppLocalizationsCs extends AppLocalizations {
       'Opravdu chcete znovu vytvořit index fulltextového vyhledávání? Toto může chvíli trvat.';
 
   @override
-  String get maintenanceReSync => 'Znovu synchronizovat zprávy';
+  String get maintenanceReSync => 'Historie zpráv';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Entity agentů';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Vazby agentů';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Tvoje ostatní zařízení je obdrží, jakmile se synchronizace dožene.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Zprávy zařazeny do fronty';
+
+  @override
+  String get maintenanceReSyncCustom => 'Vlastní';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Znovu synchronizovat zprávy ze serveru';
+      'Zařadit zprávy do fronty pro ostatní zařízení';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Typy entit';
 
   @override
+  String get maintenanceReSyncEverything => 'Vše';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Zprávy se nepodařilo zařadit do fronty. Zkus to znovu.';
+
+  @override
+  String get maintenanceReSyncInvalidRange => 'Začátek musí být před koncem';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Záznamy v deníku';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Posledních 30 dní';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Vyber alespoň jeden typ entity';
+
+  @override
+  String get maintenanceReSyncSending => 'Připravuji zprávy';
 
   @override
   String get maintenanceReSyncStart => 'Spustit';
@@ -9944,7 +9973,8 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nové zařízení nemá kameru? Zkopíruj párovací kód a vlož ho tam místo skenování.';
 
   @override
-  String get syncAddDeviceConnected => 'Připojilo se nové zařízení';
+  String get syncAddDeviceConnected =>
+      'Nové zařízení se připojilo – před odesláním dokonči ověření pomocí emoji.';
 
   @override
   String get syncAddDeviceCopyCode => 'Kopírovat párovací kód';
@@ -9961,7 +9991,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nainstaluj Lotti na nové zařízení, otevři tam Nastavení → Nastavení synchronizace → Zařízení a naskenuj tento kód.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Dál · až se připojí';
+  String get syncAddDeviceNextLeadIn => 'Dál · po ověření pomocí emoji';
 
   @override
   String get syncAddDeviceRevealCode => 'Zobrazit párovací kód jako text';
@@ -9975,19 +10005,22 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tento párovací kód odemyká tvůj synchronizační účet – nech ho naskenovat jen svým vlastním novým zařízením a nikdy ho nefoť ani neposílej.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Odeslat historii zpráv';
+
+  @override
   String get syncAddDeviceSendSettings => 'Odeslat nastavení';
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Jakmile je nové zařízení připojené, pošli mu své kategorie, návyky, přehledy a nastavení AI.';
+      'Po ověření nového zařízení pomocí emoji mu pošli své měřitelné údaje, kategorie, návyky, přehledy a nastavení AI.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Bude k dispozici, jakmile se nové zařízení připojí.';
+      'Bude k dispozici, až se nové zařízení připojí a ověří pomocí emoji.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Odešli hned, nebo počkej, až se nové zařízení připojí.';
+      'Nové zařízení je ověřené – můžeš odesílat.';
 
   @override
   String get syncAddDeviceStepScan => 'Teď · Ukaž kód';
@@ -10187,11 +10220,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Na svém druhém zařízení zvol v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení. Tvé kategorie, návyky, přehledy a nastavení AI dorazí sem.';
+      'Po ověření pomocí emoji zvol na svém druhém zařízení v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení a potom Odeslat historii zpráv. Tvé měřitelné údaje, kategorie, návyky, přehledy, nastavení AI a historie zpráv dorazí sem.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Nebo znovu otevři Nastavení → Nastavení synchronizace → Zařízení → Přidat zařízení.';
+      'Pokud jsi ji zavřel, otevři na druhém zařízení Nastavení → Nastavení synchronizace → Údržba, spusť synchronizaci nastavení a potom zvol Historie zpráv.';
 
   @override
   String get syncPairedVerifyDone =>

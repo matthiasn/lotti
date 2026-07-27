@@ -11,7 +11,7 @@ sources:
   - id: sync-src
     resource: ../../../lib/features/sync
     title: Sync feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-07-27
   - id: get-it
     resource: ../../../lib/get_it.dart
     title: Default bootstrap wiring
@@ -110,9 +110,12 @@ stateDiagram-v2
     Unavailable --> AddDevice: Retry
     ShowingCode --> Joined: a device id absent at open appears
     ShowingCode --> PollFailed: 3 consecutive roster fetch failures
+    Joined --> PollFailed: 3 consecutive roster fetch failures
     PollFailed --> ShowingCode: Retry
-    ShowingCode --> SendingSettings: Send settings (opens SyncModal)
-    Joined --> SendingSettings: Send settings (opens SyncModal)
+    PollFailed --> Joined: Retry after the device joined
+    Joined --> Ready: the same device is emoji-verified
+    Ready --> SendingSettings: Send settings (opens SyncModal)
+    Ready --> SendingMessages: Send message history (opens ReSyncModal)
   }
   state "New device" as New {
     [*] --> Scanning: mobile opens the camera
@@ -169,19 +172,25 @@ Four properties are deliberate:
   then on (`ShareKeysWith.directlyVerifiedOnly`, ADR 0045). It does not
   retroactively protect a leaked bundle. Reducing what the code carries is
   tracked separately in lotti3-ujm.
-- **The waiting latch, the hand-off gate and the hand-off's emphasis are three
-  separate questions.** `_observeRoster` latches "a new device joined" on a
-  device id absent when the sheet opened. Whether *Send settings* is *enabled*
-  is `AddDeviceActionBar.hasPeer` — does the account hold any session other
-  than this one — because the joining device tells the user to come back and
-  press it, by which time the sheet has usually been closed and reopened, and
-  gating on the delta left the button permanently dead in exactly that case.
-  The **accent** follows enablement too, and deliberately so: the design
-  system paints an enabled `secondary` button with the same token it paints a
-  *disabled* filled one, so a quiet-but-live control read as inert. It is
-  `outlined` while it cannot be pressed and `primary` the moment it can, with
-  the lead-in and the status line switching off the same boolean — three lines
-  about one control that disagreed left the user unable to tell.
+- **The inviting sheet follows one exact device through the security
+  boundary.** `_observeRoster` records the first `(userId, deviceId)` absent
+  when the sheet opened, reports that it joined, and keeps polling until that
+  same roster row is verified. An older peer cannot unlock the new target's
+  transfer actions. *Send settings* and *Send message history* remain disabled
+  until the state reaches `ready`, because
+  `ShareKeysWith.directlyVerifiedOnly` means an unverified target receives the
+  ciphertext but not the keys needed to read it. The inviting sheet therefore
+  has to stay open through the emoji ceremony. If it was closed, the safe
+  fallback is the other device's Sync Settings → Maintenance page, whose
+  independent settings and message pushes do not pretend to identify a newly
+  joined target.
+
+  The **accent** on *Send settings* follows readiness too, and deliberately so:
+  the design system paints an enabled `secondary` button with the same token
+  it paints a *disabled* filled one, so a quiet-but-live control read as inert.
+  It is `outlined` before verification and `primary` after it, with the lead-in
+  and the status line switching off the same state — three lines about one
+  control that disagreed left the user unable to tell.
   `AddDeviceJoinSignal` — a `ValueNotifier<AddDeviceJoinState>` carrying the
   body's retry callback — is what connects the halves, because the sticky bar
   is built outside the view's `State`. The bar, not the card, renders the live
@@ -207,14 +216,23 @@ peer demonstrably exists; that is the state `_PairedView` serves, with its two
 outstanding steps. Collapsing them told a first device to wait on a device that
 did not exist.
 
-Pairing does **not** bring data across. Config entities (categories, habits,
-dashboards, measurables, AI settings) only arrive when an existing device runs
-the entity push (`ui/sync_modal.dart`), which is why *Send settings* lives in
-the add-device sheet's sticky action bar — pinned there because the QR pushes
-everything else below the fold — and why `_PairedView` names it as an
-outstanding step. Entries that predate the join are not gap-detected either — a
-counter from a never-seen host is recorded without becoming a gap (see
-[sequence and backfill](sequence-and-backfill.md)).
+Pairing does **not** bring data across by itself. Config entities (categories,
+habits, dashboards, measurables, AI settings) only arrive when an existing
+device runs the entity push (`ui/sync_modal.dart`). Entries that predate the
+join are not gap-detected either — a counter from a never-seen host is recorded
+without becoming a gap (see
+[sequence and backfill](sequence-and-backfill.md)). After emoji verification,
+the inviting device exposes both follow-up transfers in the sticky action bar:
+*Send settings* opens `SyncModal`, while *Send message history* opens
+`ReSyncModal`
+and re-enqueues that device's local history. The latter defaults to
+*Everything*, with *Last 30 days* and a validated custom interval available,
+and reports the journal, agent-entity and agent-link enqueue phases before
+confirming that the messages are queued. This maintenance path uses the outbox's
+throwing enqueue API, so any preparation or persistence failure keeps the modal
+open with a retry action instead of claiming that a partial batch completed.
+The paired screen names both transfers because the new device cannot send
+history it does not yet have.
 
 Both halves of the flow use one wayfinding component — a quiet
 `SyncPairStepIndicator` eyebrow above a subtitle-rank imperative — because the
@@ -222,10 +240,10 @@ two are read side by side with both devices in hand, so the device must *look*
 the same on each. What the eyebrow says differs by half, deliberately. The
 joining device counts ("Step 2 of 3 · Confirm") because it walks a fixed
 three-screen route. The inviting device is temporal ("Now · Show the code",
-"Next · after it joins") because its second rung lives in the pinned bar, which
-is present from the start: a fraction there would put two "you are here"
-positions on one viewport, and a fraction only on the body would promise a
-step 2 that never announces itself.
+"Next · after emoji verification") because its second rung lives in the pinned
+bar, which is present from the start: a fraction there would put two "you are
+here" positions on one viewport, and a fraction only on the body would promise
+a step 2 that never announces itself.
 
 The connect phase's `DesignSystemProgressBar` inside step 3 renders no second
 fraction for the same reason. Step 3's eyebrow follows the state —

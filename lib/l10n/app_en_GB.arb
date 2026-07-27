@@ -108,8 +108,6 @@
   "maintenancePurgeDeletedDescription": "Purge all deleted items permanently",
   "maintenanceRecreateFts5": "Recreate full-text index",
   "maintenanceRecreateFts5Description": "Recreate full-text search index",
-  "maintenanceReSync": "Re-sync messages",
-  "maintenanceReSyncDescription": "Re-sync messages from server",
   "maintenanceSyncDefinitions": "Sync measurables, dashboards, habits, categories, AI settings",
   "maintenanceSyncDefinitionsDescription": "Sync measurables, dashboards, habits, categories, and AI settings",
   "measurableDeleteConfirm": "YES, DELETE THIS MEASURABLE",

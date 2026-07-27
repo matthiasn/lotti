@@ -42,9 +42,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the new laptop just as well as the other way round. The sheet shows the
   pairing code, tells you when the new device has actually joined, and keeps
   "Send settings" — for your categories, habits, dashboards and AI settings —
-  within reach the whole time instead of below the code. It also says plainly
-  what the code is: letting your own new device scan it is fine, keeping a
-  screenshot or sending it through chat is not.
+  within reach the whole time instead of below the code. Transfers unlock only
+  after that exact new device completes emoji verification, when it can receive
+  the encryption keys needed to read them. The sheet also says plainly what the
+  code is: letting your own new device scan it is fine, keeping a screenshot or
+  sending it through chat is not.
+- **Send message history while adding a device.** "Send message history" now sits
+  beside "Send settings" on the existing device, where it can queue the local
+  history the new device does not have yet. It defaults to everything, also
+  offers the last 30 days or a custom range, and stays open with per-phase
+  progress until the messages are queued.
 - **A machine with no camera can be brought in too.** The typing screen now
   explains how to get the code across from the other device — copy it there,
   and move it the way you would a password — and says so instead of doing
