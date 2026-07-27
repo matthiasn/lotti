@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -29,9 +30,13 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_processor.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
@@ -42,16 +47,121 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../test/mocks/mocks.dart';
 import '../test/utils/utils.dart';
 
 const _uuid = Uuid();
+
+int _messageEntryCount(SyncMessage message) =>
+    message is SyncOutboxBundle ? message.children.length : 1;
+
+/// Observes the production outbox sender without changing its send semantics.
+///
+/// The mid-rejoin scenario uses [beforeSend] to pause *between* bundles. There
+/// is still one [OutboxProcessor], one Matrix client, and one awaited send at a
+/// time, matching the application path.
+class _ObservedOutboxMessageSender implements OutboxMessageSender {
+  _ObservedOutboxMessageSender(MatrixService matrixService)
+    : _delegate = MatrixOutboxMessageSender(matrixService);
+
+  final MatrixOutboxMessageSender _delegate;
+
+  Future<void> Function(int sentEvents, int sentEntries, SyncMessage message)?
+  beforeSend;
+
+  int sentEvents = 0;
+  int sentEntries = 0;
+  final List<int> bundleSizes = [];
+
+  @override
+  Future<bool> send(SyncMessage message) async {
+    await beforeSend?.call(sentEvents, sentEntries, message);
+    final sent = await _delegate.send(message);
+    if (sent) {
+      sentEvents++;
+      final entryCount = _messageEntryCount(message);
+      sentEntries += entryCount;
+      bundleSizes.add(entryCount);
+    }
+    return sent;
+  }
+}
+
+/// Gives each simulated device a stable host identity while both devices run
+/// inside the same test isolate and therefore share GetIt's SettingsDb.
+class _DeviceVectorClockService extends VectorClockService {
+  _DeviceVectorClockService(this._host);
+
+  final String _host;
+
+  @override
+  Future<String?> getHost() async => _host;
+
+  @override
+  Future<String?> getHostHash() async => 'test-hash-$_host';
+}
+
+class _DeviceOutbox {
+  _DeviceOutbox({
+    required this.service,
+    required this.sender,
+    required this.journalDb,
+    required this.syncDb,
+    required this.deviceName,
+  });
+
+  final OutboxService service;
+  final _ObservedOutboxMessageSender sender;
+  final JournalDb journalDb;
+  final SyncDatabase syncDb;
+  final String deviceName;
+  int nextCounter = 1;
+
+  static Future<_DeviceOutbox> create({
+    required MatrixService matrixService,
+    required JournalDb journalDb,
+    required SyncDatabase syncDb,
+    required Directory documentsDirectory,
+    required UserActivityService userActivityService,
+    required DomainLogger loggingService,
+    required VectorClockService vectorClockService,
+    required String deviceName,
+  }) async {
+    final sequenceLogService = SyncSequenceLogService(
+      syncDatabase: syncDb,
+      vectorClockService: vectorClockService,
+      loggingService: loggingService,
+    );
+    final sender = _ObservedOutboxMessageSender(matrixService);
+    final service = OutboxService(
+      syncDatabase: syncDb,
+      loggingService: loggingService,
+      vectorClockService: vectorClockService,
+      journalDb: journalDb,
+      documentsDirectory: documentsDirectory,
+      userActivityService: userActivityService,
+      messageSender: sender,
+      matrixService: matrixService,
+      connectivityStream: const Stream<List<ConnectivityResult>>.empty(),
+      sequenceLogService: sequenceLogService,
+      postDrainSettle: Duration.zero,
+      domainLogger: loggingService,
+    );
+    return _DeviceOutbox(
+      service: service,
+      sender: sender,
+      journalDb: journalDb,
+      syncDb: syncDb,
+      deviceName: deviceName,
+    );
+  }
+}
 
 Future<MatrixService> _createMatrixService({
   required MatrixConfig config,
@@ -67,6 +177,7 @@ Future<MatrixService> _createMatrixService({
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
   required SyncDatabase syncDb,
+  required VectorClockService vectorClockService,
   AttachmentIndex? attachmentIndex,
   QueuePipelineCoordinator Function(QueuePipelineCoordinator coord)?
   onCoordinatorBuilt,
@@ -79,16 +190,8 @@ Future<MatrixService> _createMatrixService({
     journalDb: journalDb,
     documentsDirectory: documentsDirectory,
     sentEventRegistry: sentEventRegistry,
-  );
-  final eventProcessor = SyncEventProcessor(
-    loggingService: loggingService,
-    updateNotifications: updateNotifications,
-    aiConfigRepository: aiConfigRepository,
-    settingsDb: settingsDb,
-    savedTaskFiltersRepository: SavedTaskFiltersRepository(
-      SavedTaskFiltersPersistence(settingsDb),
-      updateNotifications,
-    ),
+    vectorClockService: vectorClockService,
+    domainLogger: loggingService,
   );
 
   // Shared AttachmentIndex so the queue coordinator subscribes to
@@ -106,11 +209,25 @@ Future<MatrixService> _createMatrixService({
     verboseLogging: false,
   );
 
-  final vectorClockService = VectorClockService();
   final sequenceLogService = SyncSequenceLogService(
     syncDatabase: syncDb,
     vectorClockService: vectorClockService,
     loggingService: loggingService,
+  );
+  final eventProcessor = SyncEventProcessor(
+    loggingService: loggingService,
+    domainLogger: loggingService,
+    updateNotifications: updateNotifications,
+    aiConfigRepository: aiConfigRepository,
+    settingsDb: settingsDb,
+    savedTaskFiltersRepository: SavedTaskFiltersRepository(
+      SavedTaskFiltersPersistence(settingsDb),
+      updateNotifications,
+    ),
+    attachmentIndex: sharedAttachmentIndex,
+    sequenceLogService: sequenceLogService,
+    journalDb: journalDb,
+    vectorClockService: vectorClockService,
   );
   final roomManager = SyncRoomManager(
     gateway: gateway,
@@ -414,6 +531,12 @@ void main() {
     late MatrixService bob;
     var aliceInitialized = false;
     var bobInitialized = false;
+    late _DeviceOutbox aliceOutbox;
+    late _DeviceOutbox bobOutbox;
+    var aliceOutboxInitialized = false;
+    var bobOutboxInitialized = false;
+    late _DeviceVectorClockService aliceVectorClockService;
+    late _DeviceVectorClockService bobVectorClockService;
     late String roomId;
     // Bob's settings and queue databases must persist across service
     // reconstruction so test 2 models a real app restart. Production keeps
@@ -424,9 +547,9 @@ void main() {
 
     setUpAll(() async {
       await vod.init();
-      final tmpDir = await getTemporaryDirectory();
-      final docDir = Directory('${tmpDir.path}/${_uuid.v1()}')
-        ..createSync(recursive: true);
+      final docDir = await Directory.systemTemp.createTemp(
+        'lotti_matrix_${_uuid.v1()}_',
+      );
       debugPrint('Created temporary docDir ${docDir.path}');
       sharedDocumentsDirectory = docDir;
 
@@ -460,6 +583,12 @@ void main() {
 
     tearDownAll(() async {
       // Ensure proper cleanup before resetting GetIt
+      if (aliceOutboxInitialized) {
+        await aliceOutbox.service.dispose();
+      }
+      if (bobOutboxInitialized) {
+        await bobOutbox.service.dispose();
+      }
       if (aliceInitialized) {
         try {
           await alice.dispose();
@@ -498,6 +627,13 @@ void main() {
         // Make sure the GetIt dependencies are ready before creating MatrixService
         await Future<void>.delayed(const Duration(seconds: 1));
 
+        aliceVectorClockService = _DeviceVectorClockService('aliceDeviceV2');
+        bobVectorClockService = _DeviceVectorClockService('bobDeviceV2');
+        await Future.wait([
+          aliceVectorClockService.initialized,
+          bobVectorClockService.initialized,
+        ]);
+
         final aliceClient = await createMatrixClient(
           documentsDirectory: sharedDocumentsDirectory,
           dbName: 'AliceV2',
@@ -523,6 +659,7 @@ void main() {
           aiConfigRepository: sharedAiConfigRepository,
           sentEventRegistry: aliceRegistry,
           syncDb: aliceSyncDb,
+          vectorClockService: aliceVectorClockService,
         );
         aliceInitialized = true;
 
@@ -559,6 +696,7 @@ void main() {
           updateNotifications: mockUpdateNotifications,
           aiConfigRepository: sharedAiConfigRepository,
           syncDb: bobSyncDb,
+          vectorClockService: bobVectorClockService,
         );
         bobInitialized = true;
 
@@ -587,6 +725,29 @@ void main() {
           addTearDown: addTearDown,
         );
 
+        aliceOutbox = await _DeviceOutbox.create(
+          matrixService: alice,
+          journalDb: aliceDb,
+          syncDb: aliceSyncDb,
+          documentsDirectory: sharedDocumentsDirectory,
+          userActivityService: sharedUserActivityService,
+          loggingService: getIt<DomainLogger>(),
+          vectorClockService: aliceVectorClockService,
+          deviceName: 'aliceDeviceV2',
+        );
+        aliceOutboxInitialized = true;
+        bobOutbox = await _DeviceOutbox.create(
+          matrixService: bob,
+          journalDb: bobDb,
+          syncDb: bobSyncDb,
+          documentsDirectory: sharedDocumentsDirectory,
+          userActivityService: sharedUserActivityService,
+          loggingService: getIt<DomainLogger>(),
+          vectorClockService: bobVectorClockService,
+          deviceName: 'bobDeviceV2',
+        );
+        bobOutboxInitialized = true;
+
         const n = testSlowNetwork ? 10 : 100;
         // Each device now persists its own entries at send time (matching
         // production behavior) plus receives the other device's entries via
@@ -596,19 +757,15 @@ void main() {
         debugPrint('\n--- Alice sends $n message');
         await _sendTestMessages(
           n,
-          device: alice,
-          deviceName: 'aliceDeviceV2',
-          roomId: roomId,
-          journalDb: aliceDb,
+          device: aliceOutbox,
+          timeout: timeout,
         );
 
         debugPrint('\n--- Bob sends $n message');
         await _sendTestMessages(
           n,
-          device: bob,
-          deviceName: 'bobDeviceV2',
-          roomId: roomId,
-          journalDb: bobDb,
+          device: bobOutbox,
+          timeout: timeout,
         );
 
         await alice.forceRescan();
@@ -675,15 +832,11 @@ void main() {
     );
 
     test(
-      'Large-volume convergence: Bob catches up 1000 messages after '
-      'cold restart',
+      'Bundled outbox convergence: Bob catches up after cold restart',
       () async {
-        // Simulates the real-world scenario: Bob's app is closed while
-        // Alice sends a large burst, then Bob reopens the app (fresh client,
-        // fresh pipeline, but same persisted DB with sync token + journal).
-        // This is the strictest form of the catch-up test: Bob has zero
-        // concurrent processing during sending, and must bootstrap from
-        // scratch when coming back.
+        // Bob's app is closed while Alice accumulates local changes. Alice's
+        // production outbox then drains them in bundles of up to 50 before Bob
+        // reopens with the same persisted sync token, queue marker, and journal.
         const convergenceTimeout = Duration(minutes: 15);
         const n = testSlowNetwork ? 250 : 1000;
 
@@ -693,6 +846,8 @@ void main() {
 
         // Phase 1: Dispose Bob entirely (simulates closing the app)
         debugPrint('\n--- Phase 1: Bob goes offline (full dispose)');
+        await bobOutbox.service.dispose();
+        bobOutboxInitialized = false;
         await bob.dispose();
         bobInitialized = false;
         debugPrint('Bob disposed');
@@ -705,24 +860,20 @@ void main() {
           reason: 'Bob count should not change while offline',
         );
 
-        // Phase 2: Alice sends n messages while Bob is offline
-        debugPrint('\n--- Phase 2: Alice sends $n messages (Bob offline)');
+        // Phase 2: Alice stages n entries, then the production outbox drains
+        // them into ceil(n / 50) Matrix events while Bob is offline.
+        debugPrint(
+          '\n--- Phase 2: Alice drains $n outbox entries (Bob offline)',
+        );
         final sendStopwatch = Stopwatch()..start();
         await _sendTestMessages(
           n,
-          device: alice,
-          deviceName: 'aliceConvergence',
-          roomId: roomId,
-          journalDb: aliceDb,
-          onSent: (sent) {
-            if (sent % 100 == 0) {
-              debugPrint('  Sent $sent/$n messages');
-            }
-          },
+          device: aliceOutbox,
+          timeout: convergenceTimeout,
         );
         sendStopwatch.stop();
         debugPrint(
-          'Alice finished sending $n messages '
+          'Alice finished sending $n outbox entries '
           'in ${sendStopwatch.elapsed.inSeconds}s',
         );
 
@@ -767,6 +918,7 @@ void main() {
           aiConfigRepository: sharedAiConfigRepository,
           singleInstance: false,
           syncDb: bobSyncDb,
+          vectorClockService: bobVectorClockService,
         );
         bobInitialized = true;
 
@@ -921,17 +1073,15 @@ void main() {
     );
 
     test(
-      'Mid-burst rejoin: Bob comes online while Alice is halfway through '
-      'a 600-message burst — startup bridge overlaps sends, history sweep '
-      'converges without duplicates or drops',
+      'Mid-drain rejoin: startup bridge overlaps production outbox bundles '
+      'without duplicates or drops',
       () async {
-        // Unlike the 1000-message cold-start test above — where Alice
-        // finishes sending before Bob reconnects — this scenario
-        // interleaves the two delivery paths. Bob joins while Alice is
-        // still sending, so:
+        // Unlike the cold-start test above, Bob rejoins while Alice's single
+        // production OutboxProcessor is paused mid-drain, so:
         //  - The startup bridge's `/messages` pagination backfills every
-        //    message Alice sent while Bob was offline and overlaps the
-        //    resumed burst.
+        //    bundle Alice sent while Bob was offline.
+        //  - The outbox resumes as soon as Bob's room is saved, allowing live
+        //    delivery while startup catch-up is active.
         //  - A deterministic full-history sweep collects anything sent after
         //    the startup bridge reached the server's then-current end.
         //  - Events near the bridge boundary are visited more than once;
@@ -940,13 +1090,19 @@ void main() {
         //    each event from applying twice.
         const convergenceTimeout = Duration(minutes: 15);
         const n = testSlowNetwork ? 150 : 600;
-        // Percentage of Alice's burst that must land before Bob starts
-        // coming online. Pause the sender at this boundary so degraded
-        // network startup cannot consume an arbitrary part of the remaining
-        // burst before Bob's live listener and bridge are ready.
+        const expectedMatrixEvents =
+            (n + SyncTuning.outboxBundleMaxSize - 1) ~/
+            SyncTuning.outboxBundleMaxSize;
         const bobRejoinAtPercent = 40;
-        const rejoinThreshold = (n * bobRejoinAtPercent) ~/ 100;
-        final resumeBurst = Completer<void>();
+        const calculatedRejoinEvents =
+            (expectedMatrixEvents * bobRejoinAtPercent) ~/ 100;
+        const rejoinAfterEvents = calculatedRejoinEvents == 0
+            ? 1
+            : calculatedRejoinEvents;
+        final resumeDrain = Completer<void>();
+        final sentEventsBefore = aliceOutbox.sender.sentEvents;
+        final sentEntriesBefore = aliceOutbox.sender.sentEntries;
+        var drainStarted = false;
 
         final bobCountBefore = await bobDb.getJournalCount();
         debugPrint(
@@ -957,59 +1113,64 @@ void main() {
         // half of Alice's burst. Keep his DB + settings intact so the
         // cold restart still has the last-applied marker.
         debugPrint('\n--- Phase 1: Bob goes offline (full dispose)');
+        if (bobOutboxInitialized) {
+          await bobOutbox.service.dispose();
+          bobOutboxInitialized = false;
+        }
         await bob.dispose();
         bobInitialized = false;
 
-        // Phase 2: Alice starts sending in the background. We do NOT
-        // await the whole thing — we want Bob to come online while
-        // this Future is still in flight.
+        // Phase 2: stage the full local backlog while sync is disabled, then
+        // let the normal outbox runner drain it. The probe pauses before the
+        // next bundle once 40% of Matrix events have been acknowledged.
         debugPrint(
-          '\n--- Phase 2: Alice starts $n-message burst (background)',
+          '\n--- Phase 2: Alice stages and drains $n outbox entries',
         );
         final aliceStopwatch = Stopwatch()..start();
-        var aliceSent = 0;
-        final burstFuture = _sendTestMessages(
-          n,
-          device: alice,
-          deviceName: 'aliceMidBurst',
-          roomId: roomId,
-          journalDb: aliceDb,
-          // Indices are claimed in order, so every worker parks here once the
-          // burst reaches the threshold — Alice stops at exactly
-          // `rejoinThreshold` sent until Bob's startup bridge is in flight.
-          beforeSend: (index) async {
-            if (index >= rejoinThreshold) {
-              await resumeBurst.future;
-            }
-          },
-          onSent: (sent) {
-            aliceSent = sent;
-            if (sent % 100 == 0) {
-              debugPrint(
-                '  Alice sent $sent/$n (${aliceStopwatch.elapsed.inSeconds}s)',
-              );
-            }
-          },
-        );
+        await _stageTestMessages(n, device: aliceOutbox);
+        aliceOutbox.sender.beforeSend =
+            (
+              sentEvents,
+              sentEntries,
+              message,
+            ) async {
+              if (sentEvents - sentEventsBefore >= rejoinAfterEvents) {
+                await resumeDrain.future;
+              }
+            };
         addTearDown(() async {
-          if (!resumeBurst.isCompleted) {
-            resumeBurst.complete();
+          if (!resumeDrain.isCompleted) {
+            resumeDrain.complete();
           }
-          await burstFuture;
+          aliceOutbox.sender.beforeSend = null;
+          if (drainStarted) {
+            await _waitForOutboxDrain(
+              aliceOutbox,
+              timeout: convergenceTimeout,
+            );
+          }
         });
+        await _startStagedMessages(aliceOutbox);
+        drainStarted = true;
 
-        // Phase 3: Wait until Alice has sent `bobRejoinAtPercent`% of
-        // the burst and paused, then cold-start Bob. The remaining burst
-        // is released only after Bob's startup bridge is in flight.
+        // Phase 3: Wait until the configured number of complete bundles has
+        // landed, then cold-start Bob. The remaining drain resumes only after
+        // Bob's startup bridge is in flight.
         debugPrint(
-          '\n--- Phase 3: waiting for Alice to reach $rejoinThreshold sent',
+          '\n--- Phase 3: waiting for Alice to send '
+          '$rejoinAfterEvents/$expectedMatrixEvents Matrix events',
         );
         await waitUntilAsync(
-          () async => aliceSent >= rejoinThreshold,
+          () async =>
+              aliceOutbox.sender.sentEvents - sentEventsBefore >=
+              rejoinAfterEvents,
           timeout: convergenceTimeout,
         );
+        final entriesSentWhileBobOffline =
+            aliceOutbox.sender.sentEntries - sentEntriesBefore;
         debugPrint(
-          'Alice at $aliceSent sent when Bob starts coming online',
+          'Alice sent $entriesSentWhileBobOffline/$n entries in '
+          '$rejoinAfterEvents Matrix events before Bob starts',
         );
 
         // Phase 4: Bob cold-starts. Live timeline fires concurrently
@@ -1029,6 +1190,7 @@ void main() {
           aiConfigRepository: sharedAiConfigRepository,
           singleInstance: false,
           syncDb: bobSyncDb,
+          vectorClockService: bobVectorClockService,
         );
         bobInitialized = true;
 
@@ -1039,44 +1201,58 @@ void main() {
         debugPrint('Bob cold-started - deviceId: ${bob.client.deviceID}');
 
         await bob.joinRoom(roomId);
+        var bridgeCompletions = 0;
+        final priorOnBridgeCompleted = bob.queueCoordinator.onBridgeCompleted;
+        bob.queueCoordinator.onBridgeCompleted = () {
+          bridgeCompletions++;
+          priorOnBridgeCompleted?.call();
+        };
         await bob.saveRoom(roomId);
         debugPrint('Bob re-joined room $roomId mid-burst');
 
+        expect(
+          aliceOutbox.sender.sentEvents - sentEventsBefore,
+          rejoinAfterEvents,
+        );
+        resumeDrain.complete();
+        debugPrint(
+          'Bob room is saved; Alice resumes the outbox drain',
+        );
         await waitUntilAsync(
-          () async => bob.queueCoordinator.isBridgeInFlight,
+          () async => bridgeCompletions > 0,
           timeout: convergenceTimeout,
         );
-        expect(aliceSent, rejoinThreshold);
-        resumeBurst.complete();
-        debugPrint(
-          'Bob bridge is in flight; Alice resumes at $aliceSent/$n sent',
-        );
 
-        // Phase 5: wait for Alice's burst to finish so the target
+        // Phase 5: wait for Alice's production outbox to drain so the target
         // count is stable.
-        debugPrint('\n--- Phase 5: waiting for Alice to finish burst');
-        await burstFuture;
+        debugPrint('\n--- Phase 5: waiting for Alice outbox to drain');
+        await _waitForOutboxDrain(
+          aliceOutbox,
+          timeout: convergenceTimeout,
+        );
+        aliceOutbox.sender.beforeSend = null;
         aliceStopwatch.stop();
+        expect(aliceOutbox.sender.sentEntries - sentEntriesBefore, n);
+        expect(
+          aliceOutbox.sender.sentEvents - sentEventsBefore,
+          expectedMatrixEvents,
+        );
         debugPrint(
-          'Alice finished $n-message burst in '
+          'Alice sent $n entries as $expectedMatrixEvents Matrix events in '
           '${aliceStopwatch.elapsed.inSeconds}s',
         );
 
-        // The startup bridge walks a moving tail and can legitimately reach
-        // the server's current end before Alice finishes a degraded-network
-        // burst. Wait for that pass to settle, verify it covered the offline
-        // prefix, then run the production full-history sweep. A second
-        // forward bridge can jump directly to the newest event and strand
-        // the middle of the gap; the backward sweep deterministically walks
-        // every visible page while the queue deduplicates the overlap.
+        // The startup bridge can finish before a polling interval now that the
+        // offline prefix is a handful of real bundles rather than hundreds of
+        // synthetic single-entry events. Its completion callback is durable;
+        // sampling `isBridgeInFlight` could miss the whole pass. Verify that
+        // completed pass covered the offline prefix, then run the production
+        // full-history sweep for events sent after Bob rejoined.
         final coordinator = bob.queueCoordinator;
         await waitUntilAsync(
-          () async => !coordinator.isBridgeInFlight,
-          timeout: convergenceTimeout,
-        );
-        await waitUntilAsync(
           () async =>
-              await bobDb.getJournalCount() >= bobCountBefore + rejoinThreshold,
+              await bobDb.getJournalCount() >=
+              bobCountBefore + entriesSentWhileBobOffline,
           timeout: convergenceTimeout,
         );
         final countBeforeTailBridge = await bobDb.getJournalCount();
@@ -1092,7 +1268,10 @@ void main() {
           historyResult.stopReason,
           BootstrapStopReason.serverExhausted,
         );
-        expect(historyResult.totalEvents, greaterThanOrEqualTo(n));
+        expect(
+          historyResult.totalEvents,
+          greaterThanOrEqualTo(expectedMatrixEvents),
+        );
 
         // Phase 6: wait for Bob to converge after the overlapping startup
         // bridge and the full-history sweep.
@@ -1172,6 +1351,7 @@ Future<MatrixService> _createBobService({
   required MockUpdateNotifications updateNotifications,
   required AiConfigRepository aiConfigRepository,
   required SyncDatabase syncDb,
+  required VectorClockService vectorClockService,
   bool? singleInstance,
 }) async {
   final client = await createMatrixClient(
@@ -1198,116 +1378,153 @@ Future<MatrixService> _createBobService({
     aiConfigRepository: aiConfigRepository,
     sentEventRegistry: registry,
     syncDb: syncDb,
+    vectorClockService: vectorClockService,
   );
 }
 
-Future<void> _sendTestMessage(
-  int index, {
-  required MatrixService device,
-  required String deviceName,
-  required String roomId,
-  JournalDb? journalDb,
-}) async {
-  final id = const Uuid().v1();
-  final now = DateTime.now();
-
-  final entity = JournalEntry(
-    meta: Metadata(
-      id: id,
-      createdAt: now,
-      dateFrom: now,
-      dateTo: now,
-      updatedAt: now,
-      starred: true,
-      vectorClock: VectorClock({deviceName: index}),
-    ),
-    entryText: EntryText(
-      plainText: 'Test from $deviceName #$index - $now',
+Future<void> _setMatrixSyncEnabled(JournalDb db, {required bool enabled}) {
+  return db.upsertConfigFlag(
+    ConfigFlag(
+      name: enableMatrixFlag,
+      description: 'Enable Matrix Sync',
+      status: enabled,
     ),
   );
+}
 
-  final jsonPath = relativeEntityPath(entity);
+Future<void> _stageTestMessages(int n, {required _DeviceOutbox device}) async {
+  await _setMatrixSyncEnabled(device.journalDb, enabled: false);
 
-  await saveJournalEntityJson(entity);
+  final actionableBefore = await device.syncDb.getOutboxItems(
+    limit: n + 1,
+    statuses: const [
+      OutboxStatus.pending,
+      OutboxStatus.sending,
+      OutboxStatus.error,
+    ],
+  );
+  expect(
+    actionableBefore,
+    isEmpty,
+    reason: '${device.deviceName} outbox must start each burst drained',
+  );
 
-  // In production, entries exist in the sender's local DB before being synced
-  // out. Persist here so cold-restart catch-up deduplicates correctly.
-  if (journalDb != null) {
-    await journalDb.updateJournalEntity(entity);
+  for (var index = 0; index < n; index++) {
+    final counter = device.nextCounter++;
+    final id = const Uuid().v1();
+    final timestamp = DateTime.utc(
+      2025,
+    ).add(Duration(milliseconds: counter));
+    final vectorClock = VectorClock({device.deviceName: counter});
+
+    final entity = JournalEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: timestamp,
+        dateFrom: timestamp,
+        dateTo: timestamp,
+        updatedAt: timestamp,
+        starred: true,
+        vectorClock: vectorClock,
+      ),
+      entryText: EntryText(
+        plainText:
+            'Test from ${device.deviceName} #$counter - '
+            '${timestamp.toIso8601String()}',
+      ),
+    );
+
+    final jsonPath = relativeEntityPath(entity);
+
+    await saveJournalEntityJson(entity);
+    await device.journalDb.updateJournalEntity(entity);
+    await device.service.enqueueMessage(
+      SyncMessage.journalEntity(
+        id: id,
+        status: SyncEntryStatus.initial,
+        vectorClock: vectorClock,
+        jsonPath: jsonPath,
+        originatingHostId: device.deviceName,
+      ),
+    );
   }
 
-  await device.sendMatrixMsg(
-    SyncMessage.journalEntity(
-      id: id,
-      status: SyncEntryStatus.initial,
-      vectorClock: VectorClock({deviceName: index}),
-      jsonPath: jsonPath,
-    ),
-    myRoomId: roomId,
+  final pending = await device.syncDb.getOutboxItems(
+    limit: n + 1,
+    statuses: const [OutboxStatus.pending],
+  );
+  expect(
+    pending,
+    hasLength(n),
+    reason: 'Every local entry must be staged in the production outbox',
   );
 }
 
-/// How many [_sendTestMessage] calls a burst keeps in flight at once.
-///
-/// Sending was the dominant cost of this suite, not receiving. Awaiting each
-/// send before starting the next made a 250-entry burst take 192s over the
-/// degraded link (768ms per message — a full round trip each) while the
-/// catch-up those 250 entries exist to exercise took 15s. Two burst loops
-/// alone accounted for over five minutes of a nine-minute run.
-///
-/// Serialising bought no fidelity: production does not send this way at all.
-/// Entries go through the outbox, which packs up to
-/// `SyncTuning.outboxBundleMaxSize` (50) rows into a single bundle event, so a
-/// 250-entry backlog ships as ~5 events rather than 250. This helper keeps one
-/// event per entry deliberately — the pagination and forward-walk assertions
-/// need N discrete timeline events — and recovers the wall clock by
-/// overlapping the round trips instead of by sending less.
-const _burstConcurrency = 8;
+Future<void> _startStagedMessages(_DeviceOutbox device) async {
+  await _setMatrixSyncEnabled(device.journalDb, enabled: true);
+  await device.service.enqueueNextSendRequest(delay: Duration.zero);
+}
 
-/// Sends [n] test messages through [device], keeping [_burstConcurrency] of
-/// them in flight.
-///
-/// Indices are claimed in order, so [beforeSend] gates the burst at a known
-/// point: every worker blocks on it, which is what lets the mid-burst test
-/// pause Alice at a precise count and resume her once Bob is online. [onSent]
-/// receives the running completed count.
+Future<void> _waitForOutboxDrain(
+  _DeviceOutbox device, {
+  required Duration timeout,
+}) async {
+  await waitUntilAsync(
+    () async {
+      final actionable = await device.syncDb.getOutboxItems(
+        limit: 100,
+        statuses: const [
+          OutboxStatus.pending,
+          OutboxStatus.sending,
+          OutboxStatus.error,
+        ],
+      );
+      final errors = actionable
+          .where((item) => item.status == OutboxStatus.error.index)
+          .toList();
+      expect(
+        errors,
+        isEmpty,
+        reason: '${device.deviceName} outbox must not strand failed rows',
+      );
+      return actionable.isEmpty;
+    },
+    timeout: timeout,
+  );
+}
+
 Future<void> _sendTestMessages(
   int n, {
-  required MatrixService device,
-  required String deviceName,
-  required String roomId,
-  JournalDb? journalDb,
-  Future<void> Function(int index)? beforeSend,
-  void Function(int sent)? onSent,
+  required _DeviceOutbox device,
+  required Duration timeout,
 }) async {
-  var nextIndex = 0;
-  var sent = 0;
+  final sentEventsBefore = device.sender.sentEvents;
+  final sentEntriesBefore = device.sender.sentEntries;
+  final bundleCountBefore = device.sender.bundleSizes.length;
 
-  Future<void> worker() async {
-    while (true) {
-      // Claim without an intervening await so two workers cannot take the
-      // same index.
-      final index = nextIndex;
-      if (index >= n) return;
-      nextIndex = index + 1;
+  await _stageTestMessages(n, device: device);
+  await _startStagedMessages(device);
+  await _waitForOutboxDrain(device, timeout: timeout);
 
-      if (beforeSend != null) {
-        await beforeSend(index);
-      }
-      await _sendTestMessage(
-        index,
-        device: device,
-        deviceName: deviceName,
-        roomId: roomId,
-        journalDb: journalDb,
-      );
-      sent++;
-      onSent?.call(sent);
-    }
-  }
+  final sentEvents = device.sender.sentEvents - sentEventsBefore;
+  final sentEntries = device.sender.sentEntries - sentEntriesBefore;
+  final bundleSizes = device.sender.bundleSizes.sublist(bundleCountBefore);
+  final expectedEvents =
+      (n + SyncTuning.outboxBundleMaxSize - 1) ~/
+      SyncTuning.outboxBundleMaxSize;
 
-  final workers = n < _burstConcurrency ? n : _burstConcurrency;
-  await Future.wait(List.generate(workers, (_) => worker()));
+  expect(sentEntries, n);
+  expect(
+    sentEvents,
+    expectedEvents,
+    reason:
+        'The production outbox should pack up to '
+        '${SyncTuning.outboxBundleMaxSize} entries per Matrix event',
+  );
+  expect(
+    bundleSizes,
+    everyElement(inInclusiveRange(1, SyncTuning.outboxBundleMaxSize)),
+  );
 }
 
 /// Performs SAS emoji verification between Alice (initiator) and Bob (responder).
