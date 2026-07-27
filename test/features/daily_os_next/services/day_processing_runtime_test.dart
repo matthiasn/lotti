@@ -70,6 +70,43 @@ void main() {
   );
 
   test(
+    'outbox change during an active drain triggers an immediate follow-up',
+    () async {
+      final firstDrainStarted = Completer<void>();
+      final releaseFirstDrain = Completer<void>();
+      final secondDrainCompleted = Completer<void>();
+      var drains = 0;
+      final runtime = DayProcessingRuntime(
+        repository: repository,
+        connectivityChanges: const Stream.empty(),
+        drain: () async {
+          drains += 1;
+          if (drains == 1) {
+            firstDrainStarted.complete();
+            await releaseFirstDrain.future;
+          } else if (drains == 2) {
+            secondDrainCompleted.complete();
+          }
+          return 0;
+        },
+        schedule: (_, _) {},
+      );
+      addTearDown(runtime.dispose);
+
+      runtime.start();
+      await firstDrainStarted.future;
+      await repository.enqueueParseCapture(
+        dayId: 'dayplan-2026-07-18',
+        captureId: 'capture-arrived-during-drain',
+      );
+      releaseFirstDrain.complete();
+      await secondDrainCompleted.future;
+
+      expect(drains, 2);
+    },
+  );
+
+  test(
     'connectivity restoration advances offline work and drains it',
     () async {
       final claim = await repository.claimNext();

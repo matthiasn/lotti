@@ -58,6 +58,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing when there is nothing on the clipboard to paste.
 
 ### Changed
+- **Planning the rest of today is faster and listens to the whole check-in.**
+  Capture parsing and drafting now stay focused on the one artifact each step
+  must produce, stop as soon as that artifact is saved, and immediately pick
+  up a capture that arrived while background processing was already running.
+  This removes avoidable AI round trips that could make planning take about a
+  minute, while preserving separate time constraints, breaks and explicit
+  overcommit trade-offs from dense spoken plans.
 - **Pairing a device is a guided flow now, not a form.** Every screen says where
   you are ("Step 2 of 3") and leads with the one thing to do there. On phones
   the camera opens straight away and typing a code is the fallback, rather than

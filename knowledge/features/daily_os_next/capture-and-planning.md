@@ -5,7 +5,7 @@ description: The Capture/Reconcile/Draft/Refine tools, batch-first durable voice
 resource: ../../../lib/features/daily_os_next/agents/service
 tags: [daily-os, capture, planning, transcription, tools]
 status: stable
-generated: { by: codex/5, at: 2026-07-27T13:52:59+02:00 }
+generated: { by: codex/5, at: 2026-07-27T15:38:00+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: services
@@ -15,6 +15,14 @@ sources:
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Day-agent prompt builder
+    last_modified: 2026-07-27
+  - id: workflow
+    resource: ../../../lib/features/daily_os_next/agents/workflow
+    title: Day-agent workflow and terminal-tool strategy
+    last_modified: 2026-07-27
+  - id: processing-runtime
+    resource: ../../../lib/features/daily_os_next/services/day_processing_runtime.dart
+    title: Durable processing runtime
     last_modified: 2026-07-27
   - id: state
     resource: ../../../lib/features/daily_os_next/state
@@ -56,6 +64,38 @@ wrong workspace.
 `DayAgentPlanService` writes the drafted plan as a `DayPlanEntity` under
 `day_agent_plan:<dayId>`, plus `capture_to_plan` links, and persists refine
 diffs as change sets and decisions.
+
+# Why one plan is multiple wakes
+
+The user-facing Capture/Reconcile/Draft journey intentionally has **two model
+wakes**: one turns the transcript into reviewable capture items, and a second
+turns the user's selections into a plan. The coordinator is a third, separate
+agent: its digest consumes status events and recent-day context in the
+background, so it can revise the day's directive without making the day agent
+own cross-day policy.
+
+Each user-facing wake now has a narrow tool surface:
+
+| Wake | Tools exposed |
+|---|---|
+| Capture submitted | `parse_capture_to_items` only |
+| Drafting | `create_task_from_phrase`, `raise_day_status`, `draft_day_plan` |
+
+The parser and drafter tools are **terminal artifacts**. Once either one is
+accepted, `DayAgentStrategy` completes that conversation immediately rather
+than asking the provider for a prose wrap-up. Rejected calls still continue so
+the model can repair them. This matters twice: an unrestricted drafting wake
+can re-parse, triage, search and summarize before it plans, and continuing after
+the final write adds another provider call after the requested artifact already
+exists.
+
+Durable scheduling has a matching no-lost-signal invariant. When an outbox
+change arrives while `DayProcessingRuntime` is already draining, the runtime
+records that fact and performs one immediate follow-up drain after the active
+one. It must not rely on another database notification or the later due-work
+timer: a capture submitted during the small window between the active drain's
+query and completion would otherwise remain pending even though its nudge was
+coalesced into the drain that had already missed it.
 
 # What the write path enforces
 

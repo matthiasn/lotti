@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
 import 'package:mocktail/mocktail.dart';
@@ -310,6 +311,55 @@ void main() {
         ),
       ).called(1);
     });
+
+    for (final terminalTool in [
+      DayAgentToolNames.parseCaptureToItems,
+      DayAgentToolNames.draftDayPlan,
+    ]) {
+      test(
+        'completes the conversation after accepted $terminalTool',
+        () async {
+          final sut = strategy(
+            handler: (toolName, _, _) async => DayAgentToolResult(
+              success: true,
+              output: toolName == DayAgentToolNames.parseCaptureToItems
+                  ? '{"captureId":"capture-1","items":[]}'
+                  : '{"planId":"plan-1"}',
+            ),
+          );
+
+          final action = await sut.processToolCalls(
+            toolCalls: [
+              _toolCall(name: terminalTool, args: const {}),
+            ],
+            manager: manager,
+          );
+
+          expect(action, ConversationAction.complete);
+        },
+      );
+
+      test(
+        'continues after rejected $terminalTool so the model can repair it',
+        () async {
+          final sut = strategy(
+            handler: (_, _, _) async => const DayAgentToolResult(
+              success: false,
+              output: 'invalid tool payload',
+            ),
+          );
+
+          final action = await sut.processToolCalls(
+            toolCalls: [
+              _toolCall(name: terminalTool, args: const {}),
+            ],
+            manager: manager,
+          );
+
+          expect(action, ConversationAction.continueConversation);
+        },
+      );
+    }
 
     test('unknown tools receive an error response', () async {
       final sut = strategy();

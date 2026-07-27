@@ -56,6 +56,8 @@ import '../services/day_processing_test_db.dart';
 ///    driven either by a scripted repository in the normal lane or, behind
 ///    `LOTTI_DAY_PLANNING_EVAL_LIVE=1`, by the real [ConversationRepository]
 ///    + [CloudInferenceRepository] against a live provider.
+///  * `../eval/day_planning_full_journey_live_test.dart` — live submitted
+///    capture, durable parse, selected-item draft, and coordinator digest.
 class DayAgentPipelineHarness {
   DayAgentPipelineHarness._({
     required this.root,

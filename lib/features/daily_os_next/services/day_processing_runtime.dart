@@ -35,13 +35,22 @@ class DayProcessingRuntime {
   StreamSubscription<void>? _outboxSubscription;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Future<void>? _nudgeFuture;
+  bool _followUpNudgeRequested = false;
   int _scheduleGeneration = 0;
   bool _disposed = false;
   bool _repairComplete = false;
 
   void start() {
     if (_disposed || _outboxSubscription != null) return;
-    _outboxSubscription = repository.changes.listen((_) => nudge());
+    _outboxSubscription = repository.changes.listen((_) {
+      if (_nudgeFuture != null) {
+        // A write can land after the active drain has already inspected the
+        // due queue. Merely returning that older future loses the new signal
+        // and leaves fresh interactive work waiting for an unrelated timer.
+        _followUpNudgeRequested = true;
+      }
+      unawaited(nudge());
+    });
     final connectivity =
         connectivityChanges ?? Connectivity().onConnectivityChanged;
     _connectivitySubscription = connectivity.listen((results) {
@@ -68,6 +77,10 @@ class DayProcessingRuntime {
     _nudgeFuture = future;
     return future.whenComplete(() {
       if (identical(_nudgeFuture, future)) _nudgeFuture = null;
+      if (_followUpNudgeRequested && !_disposed) {
+        _followUpNudgeRequested = false;
+        unawaited(nudge());
+      }
     });
   }
 
@@ -130,6 +143,7 @@ class DayProcessingRuntime {
 
   Future<void> dispose() async {
     _disposed = true;
+    _followUpNudgeRequested = false;
     _scheduleGeneration += 1;
     await _outboxSubscription?.cancel();
     await _connectivitySubscription?.cancel();

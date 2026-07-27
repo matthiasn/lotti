@@ -434,7 +434,11 @@ class DayAgentWorkflow {
         );
       }
 
-      final tools = _buildToolDefinitions(agentId: agentId);
+      final tools = _buildToolDefinitions(
+        agentId: agentId,
+        wakeContext: wakeContext,
+        captureContext: captureContext,
+      );
       final recordConsumption = getIt.isRegistered<AiInteractionCapture>();
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,

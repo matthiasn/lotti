@@ -153,6 +153,14 @@ class DayAgentStrategy extends ConversationStrategy {
       );
     }
 
+    // These are terminal artifacts for their respective wakes. The workflow
+    // already verifies that the required artifact landed after sendMessage
+    // returns, so asking the provider for another turn after success adds no
+    // correctness and doubles the happy-path inference count. Rejections must
+    // still continue so the model can repair the payload in the same wake.
+    if (_didPersistCaptureParse || _didPersistDraftDayPlan) {
+      return ConversationAction.complete;
+    }
     return ConversationAction.continueConversation;
   }
 

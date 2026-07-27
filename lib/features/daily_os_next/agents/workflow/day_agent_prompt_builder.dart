@@ -23,6 +23,41 @@ const dayAgentOmissionRules = '''
   name the omitted work in the status `note`.
 ''';
 
+/// Worked examples for realistic, instruction-dense planning.
+///
+/// Public so source-mirrored tests can prevent the prompt from drifting back
+/// to abstract rules that do not demonstrate instruction retention.
+@visibleForTesting
+const dayAgentPlanningExamples = '''
+Worked examples:
+- Dense capture: "Finish the migration first; take a walk after lunch; the
+  dentist is fixed at 16:30; send the invoice before 15:00; and leave a
+  15-minute break after the client call." Parse this as five separate items,
+  preserving the priority, time anchors, and break relationship. Do not
+  collapse or discard any clause because the transcript is conversational.
+- Overcommitted draft: 180 minutes remain, but four selected items total
+  240 minutes. Place only the work that honestly fits, then use
+  `raise_day_status` with `overCommitted` and name the two omitted items in
+  the note (or name them in a retained block reason when that is clearer).
+  Never make an instruction disappear: every selected item is either placed,
+  explicitly partial, or explicitly named as omitted or conflicting.
+''';
+
+@visibleForTesting
+const dayAgentCaptureTerminalRule = '''
+- On capture-submitted wakes, `parse_capture_to_items` MUST be the final tool
+  call. A successful parse completes the wake without a separate summary turn.
+''';
+
+@visibleForTesting
+const dayAgentDraftTerminalRule = '''
+- On `drafting:<dayId>` wakes, `draft_day_plan` MUST be the final tool call.
+  Do not end the wake with plain text. Materialize approved NEW items and raise
+  any unavoidable status first, then emit the full plan through
+  `draft_day_plan`. A successful draft completes the wake without a separate
+  summary turn.
+''';
+
 /// System-prompt assembly, tool gating, forced capture/plan steps and tool
 /// definitions for [DayAgentWorkflow]. Split from the main workflow file for
 /// size; all members are library-private.
@@ -79,7 +114,7 @@ your memory and observations span every day you have planned. Confine this
 wake's tool calls to that day; never plan or mutate a different day than the one
 this wake targets.
 
-Available tools:
+Tool capabilities (this wake receives only the relevant subset):
 
 ${toolLines.join('\n')}
 
@@ -89,6 +124,7 @@ Capture matching rules:
 - If the capture holds nothing to act on, call it with an empty `items` array.
   That is how you say so — do not invent an item to fill it, and do not skip
   the call.
+$dayAgentCaptureTerminalRule
 - confidenceScore >= 0.75 is a strong match.
 - confidenceScore >= 0.5 and < 0.75 is a low-confidence match.
 - confidenceScore < 0.5 should be treated as a new item.
@@ -158,9 +194,13 @@ $dayAgentOmissionRules
 - On drafting wakes, `drafting.decidedCaptureItems` contains approved capture
   items without task IDs. For each item you place, call `create_task_from_phrase`
   first and use the returned `taskId` in `draft_day_plan`.
-- On `drafting:<dayId>` wakes, `draft_day_plan` MUST be the final tool call.
-  Do not end the wake with plain text. Process reconcile decisions first, then
-  emit the full plan through `draft_day_plan`.
+- Drafting wakes intentionally expose only `create_task_from_phrase`,
+  `raise_day_status`, and `draft_day_plan`. Do not spend turns re-parsing,
+  re-triaging, searching memory, summarizing patterns, or scheduling another
+  wake; the complete planning context is already in this message.
+$dayAgentDraftTerminalRule
+
+$dayAgentPlanningExamples
 
 Refine rules:
 - When this wake's user message carries a `<refine>` section (i.e. the trigger
@@ -295,7 +335,35 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     return buf.toString();
   }
 
-  bool _isToolEnabled(String toolName, {required String agentId}) {
+  bool _isToolEnabled(
+    String toolName, {
+    required String agentId,
+    required DailyOsPlannerWakeContext wakeContext,
+    required CaptureContext? captureContext,
+  }) {
+    if (_requiresCaptureParse(
+      wakeContext: wakeContext,
+      captureContext: captureContext,
+    )) {
+      // Capture-submitted wakes have one artifact to produce. Offering the
+      // rest of the agent toolbox invites preparatory tool turns before the
+      // parse and directly lengthens the user's wait.
+      return toolName == DayAgentToolNames.parseCaptureToItems;
+    }
+    if (wakeContext.isDraftingWake) {
+      // Drafting may need to materialise an approved NEW capture item or
+      // surface a capacity/directive conflict before the terminal draft. It
+      // does not need reconcile reads, pattern summaries, memory search, wake
+      // scheduling, or a second parse of the already-durable capture.
+      return const {
+        DayAgentToolNames.createTaskFromPhrase,
+        DayAgentToolNames.raiseDayStatus,
+        DayAgentToolNames.draftDayPlan,
+      }.contains(toolName);
+    }
+    if (toolName == DayAgentToolNames.parseCaptureToItems) {
+      return false;
+    }
     if (DayAgentToolNames.isCaptureReconcileTool(toolName)) {
       return captureService != null;
     }
@@ -444,9 +512,20 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     );
   }
 
-  List<ChatCompletionTool> _buildToolDefinitions({required String agentId}) {
+  List<ChatCompletionTool> _buildToolDefinitions({
+    required String agentId,
+    required DailyOsPlannerWakeContext wakeContext,
+    required CaptureContext? captureContext,
+  }) {
     return dayAgentTools
-        .where((tool) => _isToolEnabled(tool.name, agentId: agentId))
+        .where(
+          (tool) => _isToolEnabled(
+            tool.name,
+            agentId: agentId,
+            wakeContext: wakeContext,
+            captureContext: captureContext,
+          ),
+        )
         .map((tool) {
           return ChatCompletionTool(
             type: ChatCompletionToolType.function,
