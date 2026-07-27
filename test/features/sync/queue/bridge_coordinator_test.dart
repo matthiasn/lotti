@@ -306,6 +306,7 @@ void main() {
     int? markerTs = 1000,
     String? anchorEventId,
     int? resumeFloorTs,
+    Future<BridgeMarker> Function()? readMarker,
     Future<Room?> Function()? resolveRoom,
     _RecordingRunner? runner,
     Duration incompleteRetryDelay = const Duration(seconds: 10),
@@ -316,11 +317,13 @@ void main() {
       client: client,
       currentRoomId: () => roomId,
       resolveRoom: resolveRoom ?? () async => null,
-      readMarker: () async => BridgeMarker(
-        lastAppliedTs: markerTs,
-        lastAppliedEventId: anchorEventId,
-        resumeFloorTs: resumeFloorTs,
-      ),
+      readMarker:
+          readMarker ??
+          () async => BridgeMarker(
+            lastAppliedTs: markerTs,
+            lastAppliedEventId: anchorEventId,
+            resumeFloorTs: resumeFloorTs,
+          ),
       bootstrapRunner: recording.runner,
       logging: logging,
       incompleteRetryDelay: incompleteRetryDelay,
@@ -362,6 +365,54 @@ void main() {
 
       expect(runner.calls, hasLength(1));
       expect(runner.calls.single.room, same(room));
+      expect(runner.calls.single.marker.resumeFloorTs, 3000);
+      await coordinator.stop();
+    },
+  );
+
+  test(
+    'a failed to-device marker read is contained and a later key retries',
+    () async {
+      final room = MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      final runner = _RecordingRunner();
+      var markerReadFails = true;
+      final coordinator = buildCoordinator(
+        readMarker: () async {
+          if (markerReadFails) {
+            throw StateError('marker database unavailable');
+          }
+          return const BridgeMarker(
+            lastAppliedTs: 5000,
+            lastAppliedEventId: r'$after-ciphertext',
+            resumeFloorTs: 3000,
+          );
+        },
+        resolveRoom: () async => room,
+        runner: runner,
+      )..start();
+
+      syncCtl.add(_roomKeySyncFor(roomId));
+      await pumpEventQueue();
+
+      expect(runner.calls, isEmpty);
+      verify(
+        () => logging.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(
+            named: 'subDomain',
+            that: endsWith('.keyTrigger'),
+          ),
+        ),
+      ).called(1);
+
+      markerReadFails = false;
+      syncCtl.add(_roomKeySyncFor(roomId));
+      await pumpEventQueue();
+
+      expect(runner.calls, hasLength(1));
       expect(runner.calls.single.marker.resumeFloorTs, 3000);
       await coordinator.stop();
     },

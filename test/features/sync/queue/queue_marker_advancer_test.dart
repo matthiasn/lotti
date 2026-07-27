@@ -133,6 +133,7 @@ void main() {
 
         await advancer.completeResumeWalk(
           roomId: _roomA,
+          walkStartedAtFloorRevision: 3,
           unresolvedFloorTs: 4000,
         );
         expect(
@@ -145,6 +146,7 @@ void main() {
 
         await advancer.completeResumeWalk(
           roomId: _roomA,
+          walkStartedAtFloorRevision: 4,
           unresolvedFloorTs: null,
         );
         expect(await advancer.resumeFloorTs(_roomA), isNull);
@@ -166,6 +168,58 @@ void main() {
         expect(marker?.lastAppliedTs, 5000);
         expect(marker?.lastAppliedEventId, r'$a');
         expect(marker?.resumeFloorTs, 1000);
+      },
+    );
+
+    test(
+      'a completed walk preserves a same-timestamp floor observation made '
+      'after the walk began',
+      () async {
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 5000);
+        final revisionAtWalkStart = advancer.resumeFloorRevision(_roomA);
+
+        // A live encrypted event arrives after the walk's final page but
+        // before completion reconciles its stale, empty sink result. Its
+        // timestamp matches the old floor, so the revision is the only
+        // observable evidence of the concurrent event.
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 5000);
+        await advancer.completeResumeWalk(
+          roomId: _roomA,
+          walkStartedAtFloorRevision: revisionAtWalkStart,
+          unresolvedFloorTs: null,
+        );
+
+        expect(revisionAtWalkStart, 1);
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          5000,
+          reason: 'completion must not clear ciphertext observed concurrently',
+        );
+        expect(advancer.resumeFloorRevision(_roomA), 2);
+      },
+    );
+
+    test(
+      'a failed floor write does not poison later serialized writes',
+      () async {
+        await db.customStatement('''
+          CREATE TRIGGER fail_resume_floor
+          BEFORE INSERT ON queue_markers
+          BEGIN
+            SELECT RAISE(ABORT, 'floor write failed');
+          END
+        ''');
+
+        await expectLater(
+          advancer.lowerResumeFloor(roomId: _roomA, originTs: 5000),
+          throwsA(anything),
+        );
+        await db.customStatement('DROP TRIGGER fail_resume_floor');
+
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 2000);
+
+        expect(await advancer.resumeFloorTs(_roomA), 2000);
+        expect(advancer.resumeFloorRevision(_roomA), 2);
       },
     );
 

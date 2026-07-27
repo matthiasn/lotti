@@ -44,10 +44,15 @@ class _MockSeeder extends Mock implements QueueMarkerSeeder {}
 /// call and optionally throws, without needing mocktail fallbacks for
 /// every named-argument type (Function, DomainLogger, nullable refs).
 class _FakeAttachmentIngestor implements AttachmentIngestor {
-  _FakeAttachmentIngestor({this.shouldThrow = false, this.firstProcessed});
+  _FakeAttachmentIngestor({
+    this.shouldThrow = false,
+    this.firstProcessed,
+    this.processGate,
+  });
 
   bool shouldThrow;
   final Completer<Event>? firstProcessed;
+  final Future<void>? processGate;
   final List<Map<Symbol, Object?>> processCalls = <Map<Symbol, Object?>>[];
 
   @override
@@ -64,6 +69,7 @@ class _FakeAttachmentIngestor implements AttachmentIngestor {
     if (firstProcessed case final completer? when !completer.isCompleted) {
       completer.complete(event);
     }
+    await processGate;
     if (shouldThrow) {
       throw StateError('ingestor boom');
     }
@@ -363,9 +369,14 @@ class _GladosBench {
       ),
     );
     when(queue.earliestReadyAt).thenAnswer((_) async => null);
+    when(() => queue.resumeFloorTs(any())).thenAnswer((_) async => null);
+    when(() => queue.resumeFloorRevision(any())).thenReturn(0);
     when(
       () => queue.completeResumeWalk(
         roomId: any<String>(named: 'roomId'),
+        walkStartedAtFloorRevision: any(
+          named: 'walkStartedAtFloorRevision',
+        ),
         unresolvedFloorTs: any(named: 'unresolvedFloorTs'),
       ),
     ).thenAnswer((_) async {});
@@ -600,9 +611,14 @@ void main() {
       ),
     );
     when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
+    when(() => queue.resumeFloorTs(any())).thenAnswer((_) async => null);
+    when(() => queue.resumeFloorRevision(any())).thenReturn(0);
     when(
       () => queue.completeResumeWalk(
         roomId: any<String>(named: 'roomId'),
+        walkStartedAtFloorRevision: any(
+          named: 'walkStartedAtFloorRevision',
+        ),
         unresolvedFloorTs: any(named: 'unresolvedFloorTs'),
       ),
     ).thenAnswer((_) async {});
@@ -621,7 +637,9 @@ void main() {
     await journalDb.close();
   });
 
-  QueuePipelineCoordinator build() => QueuePipelineCoordinator(
+  QueuePipelineCoordinator build({
+    AttachmentIngestor? attachmentIngestor,
+  }) => QueuePipelineCoordinator(
     syncDb: syncDb,
     settingsDb: settingsDb,
     journalDb: journalDb,
@@ -631,6 +649,7 @@ void main() {
     sequenceLogService: sequenceLog,
     activityGate: null,
     logging: logging,
+    attachmentIngestor: attachmentIngestor,
     queueOverride: queue,
     workerOverride: worker,
     bridgeOverride: bridge,
@@ -699,6 +718,78 @@ void main() {
     );
     await coordinator.stop();
   });
+
+  test(
+    'a room switch during attachment processing drops the old-room event',
+    () async {
+      final attachmentStarted = Completer<Event>();
+      final releaseAttachment = Completer<void>();
+      final ingestor = _FakeAttachmentIngestor(
+        firstProcessed: attachmentStarted,
+        processGate: releaseAttachment.future,
+      );
+      final coordinator = build(attachmentIngestor: ingestor);
+      await coordinator.start();
+      final event = buildEvent(EventTypes.Message);
+
+      timelineCtl.add(event);
+      expect(await attachmentStarted.future, same(event));
+
+      when(
+        () => roomManager.currentRoomId,
+      ).thenReturn('!replacement:example.org');
+      await coordinator.onRoomChanged('!replacement:example.org');
+      releaseAttachment.complete();
+      await pumpEventQueue();
+
+      verifyNever(() => queue.enqueueLive(any()));
+      verifyNever(
+        () => queue.lowerResumeFloor(
+          roomId: any<String>(named: 'roomId'),
+          originTs: any<int>(named: 'originTs'),
+        ),
+      );
+      await coordinator.stop();
+    },
+  );
+
+  test(
+    'a live-handler error is logged without an uncaught cleanup future',
+    () async {
+      when(
+        () => queue.lowerResumeFloor(
+          roomId: roomId,
+          originTs: 1234,
+        ),
+      ).thenThrow(StateError('floor write failed'));
+      final uncaught = <Object>[];
+
+      await runZonedGuarded(
+        () async {
+          final coordinator = build();
+          await coordinator.start();
+          timelineCtl.add(buildEvent(EventTypes.Encrypted));
+          await pumpEventQueue();
+          await coordinator.stop();
+          await pumpEventQueue();
+        },
+        (error, _) => uncaught.add(error),
+      );
+
+      expect(uncaught, isEmpty);
+      verify(
+        () => logging.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(
+            named: 'subDomain',
+            that: endsWith('.liveSub'),
+          ),
+        ),
+      ).called(1);
+    },
+  );
 
   test(
     'live event for a different room is ignored',
@@ -1249,6 +1340,71 @@ void main() {
         expect(result.stopReason, BootstrapStopReason.serverExhausted);
         expect(infos, hasLength(1));
         expect(infos.single.totalEventsSoFar, 1);
+      },
+    );
+
+    test(
+      'encrypted history uses the production SDK decryptor before enqueue',
+      () async {
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final encryption = MockEncryption();
+        when(() => client.encryption).thenReturn(encryption);
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          seederOverride: seeder,
+        );
+
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        final timeline = MockTimeline();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        final encrypted = buildEvent(EventTypes.Encrypted);
+        final decrypted = MockEvent();
+        when(() => decrypted.eventId).thenReturn(r'$decrypted-bootstrap');
+        when(() => decrypted.roomId).thenReturn(roomId);
+        when(() => decrypted.type).thenReturn(EventTypes.Message);
+        when(
+          () => decrypted.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1234));
+        when(() => decrypted.content).thenReturn(<String, dynamic>{
+          'msgtype': syncMessageType,
+        });
+        when(decrypted.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$decrypted-bootstrap',
+          'room_id': roomId,
+          'origin_server_ts': 1234,
+          'type': EventTypes.Message,
+          'content': <String, dynamic>{'msgtype': syncMessageType},
+        });
+        when(
+          () => encryption.decryptRoomEvent(encrypted),
+        ).thenAnswer((_) async => decrypted);
+        when(() => timeline.events).thenReturn(<Event>[encrypted]);
+        when(() => timeline.canRequestHistory).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+
+        final result = await coordinator.collectHistory();
+
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        verify(() => encryption.decryptRoomEvent(encrypted)).called(1);
+        expect((await realQueue.stats()).total, 1);
+        expect(await realQueue.resumeFloorTs(roomId), isNull);
       },
     );
 

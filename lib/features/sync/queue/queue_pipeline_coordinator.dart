@@ -379,6 +379,7 @@ class QueuePipelineCoordinator {
     // hook, and companion sync-payload events get stuck in
     // `pendingAttachment` forever.
     await _processAttachment(event);
+    if (_roomManager.currentRoomId != currentRoomId) return;
     if (event.type == EventTypes.Encrypted) {
       // The Matrix SDK retains encrypted timeline events and retries them when
       // a Megolm key arrives. Persist the gap before processing a later event
@@ -570,7 +571,14 @@ class QueuePipelineCoordinator {
 
   void _trackEnqueue(Future<void> future) {
     _inFlightEnqueues.add(future);
-    future.whenComplete(() => _inFlightEnqueues.remove(future));
+    unawaited(
+      future.then<void>(
+        (_) => _inFlightEnqueues.remove(future),
+        onError: (Object _, StackTrace _) {
+          _inFlightEnqueues.remove(future);
+        },
+      ),
+    );
   }
 
   Future<Room?> _resolveRoom() async {

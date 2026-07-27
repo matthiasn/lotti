@@ -60,19 +60,26 @@ class InboundQueue {
     required int originTs,
   }) => _markerAdvancer.lowerResumeFloor(roomId: roomId, originTs: originTs);
 
-  /// Replaces the durable floor after a completed bootstrap with the oldest
-  /// ciphertext observed during that walk, or clears it when none remains.
+  /// Replaces the floor revision observed at walk start after a completed
+  /// bootstrap with the oldest ciphertext seen during that walk, or clears it
+  /// when none remains. A floor observed concurrently is preserved.
   Future<void> completeResumeWalk({
     required String roomId,
+    required int walkStartedAtFloorRevision,
     required int? unresolvedFloorTs,
   }) => _markerAdvancer.completeResumeWalk(
     roomId: roomId,
+    walkStartedAtFloorRevision: walkStartedAtFloorRevision,
     unresolvedFloorTs: unresolvedFloorTs,
   );
 
   /// The durable floor for [roomId], or null when nothing is outstanding.
   Future<int?> resumeFloorTs(String roomId) =>
       _markerAdvancer.resumeFloorTs(roomId);
+
+  /// Revision used by completed walks to preserve concurrent floor writes.
+  int resumeFloorRevision(String roomId) =>
+      _markerAdvancer.resumeFloorRevision(roomId);
 
   Stream<QueueDepthSignal> get depthChanges => _depthEmitter.changes;
 

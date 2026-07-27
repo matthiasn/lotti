@@ -144,11 +144,15 @@ stateDiagram-v2
   WalkComplete --> NoFloor: walk observes no unresolved ciphertext
 ```
 
-A completed walk replaces the old floor with the sink's oldest still-encrypted
-event, or clears it when the walk observes none. An incomplete walk never
-reconciles it. The sink and completion both belong to the same room-specific
-walk, so switching rooms while pagination is in flight cannot erase another
-room's recovery state.
+A completed walk compare-and-sets the floor revision it observed at walk start
+with the sink's oldest still-encrypted event, or clears it when the walk
+observes none. Every ciphertext observation increments the revision, even when
+its millisecond timestamp equals the current floor. If live traffic observes
+ciphertext while pagination is in flight, the comparison fails and the newer
+durable observation wins. An incomplete walk never reconciles the floor. The
+sink and completion both belong to the same room-specific walk, so switching
+rooms while pagination is in flight cannot erase another room's recovery
+state.
 
 # Draining
 

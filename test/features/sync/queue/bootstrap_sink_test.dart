@@ -263,6 +263,42 @@ void main() {
   );
 
   test(
+    'a failed re-decryption is logged and preserves the ciphertext floor',
+    () async {
+      final encrypted = _buildEvent(
+        eventId: r'$decrypt-failed',
+        originTsMs: 7,
+        type: EventTypes.Encrypted,
+      );
+      final error = StateError('Megolm session unavailable');
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        decryptEvent: (_) async => throw error,
+      );
+
+      final cont = await sink.onPage([encrypted], info(0, 1));
+
+      expect(cont, isTrue);
+      expect((await queue.stats()).total, 0);
+      expect(await queue.resumeFloorTs('!roomA:example.org'), 7);
+      expect(sink.oldestUnresolvedTs, 7);
+      expect(sink.lastAcceptedCount, 1);
+      verify(
+        () => logging.error(
+          LogDomain.sync,
+          error,
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(
+            named: 'subDomain',
+            that: endsWith('.decrypt'),
+          ),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
     'still-encrypted backfill lowers the durable floor and is not queued',
     () async {
       final sink = QueueBootstrapSink(queue: queue, logging: logging);

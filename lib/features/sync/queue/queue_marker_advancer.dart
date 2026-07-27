@@ -13,6 +13,8 @@ class QueueMarkerAdvancer {
   QueueMarkerAdvancer(this._db);
 
   final SyncDatabase _db;
+  final Map<String, int> _resumeFloorRevisions = <String, int>{};
+  Future<void> _resumeFloorWrites = Future<void>.value();
 
   /// Advances `queue_markers` for [entry]'s room if the candidate
   /// timestamp — clamped against any still-active queue rows for the
@@ -87,48 +89,68 @@ class QueueMarkerAdvancer {
     return true;
   }
 
-  /// Lowers `resume_floor_ts` for [roomId] to [originTs] if it is not already
-  /// at or below it. Never raises it: the floor records how far back a resume
-  /// must reach, and observing a newer unresolved event does not make older
-  /// ground safe to skip.
+  /// Observes unresolved ciphertext at [originTs], lowering
+  /// `resume_floor_ts` when needed and always incrementing its revision.
+  /// Never raises the timestamp: the floor records how far back a resume must
+  /// reach, and observing a newer unresolved event does not make older ground
+  /// safe to skip. The revision still advances for equal/newer timestamps so
+  /// an in-flight walk can detect every concurrent observation.
   Future<void> lowerResumeFloor({
     required String roomId,
     required int originTs,
-  }) async {
-    await _db.transaction(() async {
-      final marker = await (_db.select(
-        _db.queueMarkers,
-      )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
-      final current = marker?.resumeFloorTs;
-      if (current != null && current <= originTs) return;
-      await _db
+  }) {
+    _resumeFloorRevisions.update(
+      roomId,
+      (revision) => revision + 1,
+      ifAbsent: () => 1,
+    );
+    return _serializeResumeFloorWrite(() async {
+      await _db.transaction(() async {
+        final marker = await (_db.select(
+          _db.queueMarkers,
+        )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+        final current = marker?.resumeFloorTs;
+        if (current != null && current <= originTs) return;
+        await _db
+            .into(_db.queueMarkers)
+            .insertOnConflictUpdate(
+              QueueMarkersCompanion.insert(
+                roomId: roomId,
+                resumeFloorTs: Value(originTs),
+              ),
+            );
+      });
+    });
+  }
+
+  /// Marks the floor at [walkStartedAtFloorRevision] as covered and
+  /// replaces it with [unresolvedFloorTs], the oldest ciphertext still
+  /// unresolved after that walk.
+  ///
+  /// Reconciliation is a compare-and-set: if another floor observation
+  /// occurred while pagination was in flight, that observation wins. This
+  /// prevents a live encrypted event arriving after the final page from being
+  /// cleared by the walk's now-stale sink result.
+  Future<void> completeResumeWalk({
+    required String roomId,
+    required int walkStartedAtFloorRevision,
+    required int? unresolvedFloorTs,
+  }) {
+    final currentRevision = resumeFloorRevision(roomId);
+    if (currentRevision != walkStartedAtFloorRevision) {
+      return Future<void>.value();
+    }
+    _resumeFloorRevisions[roomId] = currentRevision + 1;
+    return _serializeResumeFloorWrite(
+      () => _db
           .into(_db.queueMarkers)
           .insertOnConflictUpdate(
             QueueMarkersCompanion.insert(
               roomId: roomId,
-              resumeFloorTs: Value(originTs),
+              resumeFloorTs: Value(unresolvedFloorTs),
             ),
-          );
-    });
-  }
-
-  /// Marks the previous floor as covered by a completed bootstrap and replaces
-  /// it with [unresolvedFloorTs], the oldest ciphertext still held after that
-  /// walk. This may raise or clear the floor because the walk re-covered the
-  /// older ground; unlike [lowerResumeFloor], ordinary event traffic must
-  /// never do either.
-  Future<void> completeResumeWalk({
-    required String roomId,
-    required int? unresolvedFloorTs,
-  }) async {
-    await _db
-        .into(_db.queueMarkers)
-        .insertOnConflictUpdate(
-          QueueMarkersCompanion.insert(
-            roomId: roomId,
-            resumeFloorTs: Value(unresolvedFloorTs),
           ),
-        );
+    );
   }
 
   /// The room's durable floor, or null when nothing is outstanding.
@@ -137,6 +159,24 @@ class QueueMarkerAdvancer {
       _db.queueMarkers,
     )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
     return marker?.resumeFloorTs;
+  }
+
+  /// Process-local revision of resume-floor observations and reconciliations.
+  ///
+  /// It need not survive restart: an in-flight walk cannot survive restart
+  /// either. Calls that mutate the durable floor are invocation-ordered by
+  /// [_serializeResumeFloorWrite].
+  int resumeFloorRevision(String roomId) => _resumeFloorRevisions[roomId] ?? 0;
+
+  Future<void> _serializeResumeFloorWrite(
+    Future<void> Function() write,
+  ) {
+    final result = _resumeFloorWrites.then((_) => write());
+    _resumeFloorWrites = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
   }
 
   /// Returns the minimum `origin_ts` among active (`enqueued`,

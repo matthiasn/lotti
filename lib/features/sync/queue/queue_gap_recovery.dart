@@ -22,6 +22,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     if (room == null) {
       throw StateError('collectHistory: no current room');
     }
+    final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
     final queueSink = QueueBootstrapSink(
       queue: _queue,
       logging: _logging,
@@ -41,6 +42,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     if (result.stopReason == BootstrapStopReason.serverExhausted) {
       await _queue.completeResumeWalk(
         roomId: room.id,
+        walkStartedAtFloorRevision: walkStartedAtFloorRevision,
         unresolvedFloorTs: queueSink.oldestUnresolvedTs,
       );
     }
@@ -111,6 +113,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     required Room room,
     required String anchorEventId,
   }) async {
+    final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
     final queueSink = QueueBootstrapSink(
       queue: _queue,
       logging: _logging,
@@ -158,6 +161,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     if (outcome == BootstrapOutcome.completed) {
       await _queue.completeResumeWalk(
         roomId: room.id,
+        walkStartedAtFloorRevision: walkStartedAtFloorRevision,
         unresolvedFloorTs: queueSink.oldestUnresolvedTs,
       );
     }
@@ -168,6 +172,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     required Room room,
     required int? untilTimestamp,
   }) async {
+    final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
     // Wrap the queue sink so attachment descriptor events in each
     // paginated page get fed to `AttachmentIngestor.process()` before
     // the queue's own enqueue drops them as non-payload. Without
@@ -210,6 +215,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     if (completed) {
       await _queue.completeResumeWalk(
         roomId: room.id,
+        walkStartedAtFloorRevision: walkStartedAtFloorRevision,
         unresolvedFloorTs: queueSink.oldestUnresolvedTs,
       );
     }
