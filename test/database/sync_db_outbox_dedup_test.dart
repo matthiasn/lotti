@@ -960,8 +960,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 27', () {
-      expect(db.schemaVersion, 27);
+    test('schema version is 28', () {
+      expect(db.schemaVersion, 28);
     });
 
     test(
