@@ -59,6 +59,7 @@ import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dar
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
+import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
@@ -965,6 +966,39 @@ void main() {
     }
   }
 
+  /// Refuses to publish a QR code that encodes anything real.
+  ///
+  /// This capture ends up in a public docs repository and the payload is a
+  /// live credential by design — it carries the sync account's password.
+  ///
+  /// `QrImageView` keeps its payload private, so this guards the two things
+  /// that decide it instead: that the provisioning controller is still the
+  /// stubbed one (drop that override and the sheet mints a bundle from
+  /// whatever sync config the machine running the capture has), and that the
+  /// bundle it mints is demo data.
+  void expectQrCarriesOnlyDemoData(WidgetTester tester) {
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(AddDeviceView)),
+    );
+    expect(
+      container.read(provisioningControllerProvider.notifier),
+      isA<_ManualProvisioningController>(),
+      reason: "A real controller would mint this machine's sync credentials",
+    );
+
+    final bundle = SyncProvisioningBundle.fromJson(
+      jsonDecode(
+            utf8.decode(base64Url.decode(base64Url.normalize(_manualHandover))),
+          )
+          as Map<String, dynamic>,
+    );
+    expect(bundle.password, 'manual-demo-only');
+    expect(bundle.user, endsWith('.test'));
+    // `.test` is reserved by RFC 2606; it can never resolve.
+    expect(Uri.parse(bundle.homeServer).host, endsWith('.test'));
+    expect(bundle.roomId, endsWith('.test'));
+  }
+
   void expectSurface(WidgetTester tester, _SyncSurface surface) {
     final context = tester.element(find.byType(Scaffold).first);
     final messages = context.messages;
@@ -991,6 +1025,7 @@ void main() {
         // derive it independently and it must be compared before connecting.
         expect(find.byType(PairingCheckCodeView), findsOneWidget);
         expect(find.text(messages.syncAddDeviceIntro), findsWidgets);
+        expectQrCarriesOnlyDemoData(tester);
       case _SyncSurface.paired:
         // The quiet "connected" line plus the card that says what is still
         // outstanding — the point of the screen is the second half.
