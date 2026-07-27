@@ -628,6 +628,12 @@ void main() {
         originTs: any<int>(named: 'originTs'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => queue.lowerResumeFloorFromWalk(
+        roomId: any<String>(named: 'roomId'),
+        originTs: any<int>(named: 'originTs'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {

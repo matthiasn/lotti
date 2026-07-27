@@ -76,7 +76,10 @@ For an event still typed `m.room.encrypted`, the coordinator first lowers the
 room's durable `queue_markers.resume_floor_ts`, then skips the event.
 **Pre-decryption ciphertext never lands in `inbound_event_queue.raw_json`**:
 round-tripping it through `Event.toJson` / `Event.fromJson` would not preserve a
-usable decrypted payload.
+usable decrypted payload. If the floor write fails transiently, the observation
+remains process-local and every later queue insertion or floor read retries it;
+no later plaintext can enter the queue and advance the marker until the floor
+is durable.
 
 The Matrix SDK owns the in-memory ciphertext and decryption attempts. Its sync
 handler calls `decryptRoomEvent`, retains failures in its pending-decryption
@@ -127,7 +130,11 @@ The fallback is a timestamp-bounded **backward** walk
 (`collectHistoryForBootstrap`), used for fresh clients, unresolvable anchors,
 and unsafe anchors. An unsafe anchor walks back to `resume_floor_ts`, not
 `last_applied_ts`. Both directions feed the same enqueue path with
-`producer=bootstrap` via `InboundQueue.appendBootstrapPage`.
+`producer=bootstrap` via `InboundQueue.appendBootstrapPage`. When the boundary
+timestamp spans pages, the backward walk continues until that entire
+millisecond bucket is exhausted. It retains only the event IDs emitted at the
+current oldest timestamp, so newly loaded collisions are delivered once
+without an unbounded all-history seen-set.
 
 ```mermaid
 stateDiagram-v2
@@ -146,13 +153,15 @@ stateDiagram-v2
 
 A completed walk compare-and-sets the floor revision it observed at walk start
 with the sink's oldest still-encrypted event, or clears it when the walk
-observes none. Every ciphertext observation increments the revision, even when
-its millisecond timestamp equals the current floor. If live traffic observes
-ciphertext while pagination is in flight, the comparison fails and the newer
-durable observation wins. An incomplete walk never reconciles the floor. The
-sink and completion both belong to the same room-specific walk, so switching
-rooms while pagination is in flight cannot erase another room's recovery
-state.
+observes none. Live ciphertext observations increment the revision, even when
+their millisecond timestamp equals the current floor. Walk-local observations
+persist the floor before page payloads are queued but do not increment the
+revision, so the walk cannot invalidate its own completion CAS. If live traffic
+observes ciphertext while pagination is in flight, the comparison fails and
+the concurrent durable observation wins. An incomplete walk never reconciles
+the floor. The sink and completion both belong to the same room-specific walk,
+so switching rooms while pagination is in flight cannot erase another room's
+recovery state.
 
 # Draining
 

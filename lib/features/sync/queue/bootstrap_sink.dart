@@ -104,7 +104,7 @@ class QueueBootstrapSink implements BootstrapSink {
     // retry state if that attempt still cannot succeed.
     for (final MapEntry(key: roomId, value: originTs)
         in unresolvedFloors.entries) {
-      await _queue.lowerResumeFloor(
+      await _queue.lowerResumeFloorFromWalk(
         roomId: roomId,
         originTs: originTs,
       );

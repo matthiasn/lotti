@@ -750,6 +750,51 @@ void main() {
       },
     );
 
+    test(
+      'a failed floor write blocks later plaintext until the retained floor '
+      'is durable',
+      () async {
+        await db.customStatement('''
+          CREATE TRIGGER fail_resume_floor
+          BEFORE INSERT ON queue_markers
+          BEGIN
+            SELECT RAISE(ABORT, 'floor write failed');
+          END
+        ''');
+
+        await expectLater(
+          queue.lowerResumeFloor(roomId: roomA, originTs: 1000),
+          throwsA(anything),
+        );
+        await expectLater(
+          queue.enqueueLive(
+            _buildSyncEvent(
+              eventId: r'$later',
+              roomId: roomA,
+              originTsMs: 2000,
+            ),
+          ),
+          throwsA(anything),
+        );
+        expect((await queue.stats()).total, 0);
+
+        await db.customStatement('DROP TRIGGER fail_resume_floor');
+        final result = await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$later',
+            roomId: roomA,
+            originTsMs: 2000,
+          ),
+        );
+        final marker = await (db.select(
+          db.queueMarkers,
+        )..where((table) => table.roomId.equals(roomA))).getSingle();
+
+        expect(result.accepted, 1);
+        expect(marker.resumeFloorTs, 1000);
+      },
+    );
+
     test('batch insert attributes producer correctly', () async {
       final events = [
         _buildSyncEvent(eventId: r'$a', roomId: roomA, originTsMs: 100),

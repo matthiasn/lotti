@@ -11,8 +11,10 @@ import 'package:matrix/matrix.dart';
 /// Terminates when any of these is true:
 /// - The sink returns `false` from [BootstrapSink.onPage] (user
 ///   cancelled the bootstrap).
-/// - [untilTimestamp] is supplied AND a page crossed the boundary
-///   AND the sink accepted ≥ 1 event. The guard on accepted count
+/// - [untilTimestamp] is supplied AND a page crossed strictly below the
+///   boundary AND the sink accepted ≥ 1 event. Pages ending exactly on the
+///   boundary keep paging until its full timestamp bucket is exhausted. The
+///   guard on accepted count
 ///   is the reconnect-gap fix: after a long-offline wake-up the
 ///   SDK's local timeline cache can be stale — a page whose oldest
 ///   event is older than the marker but whose contents are all
@@ -25,12 +27,11 @@ import 'package:matrix/matrix.dart';
 /// - The SDK's timeline reports no more history.
 /// - [overallTimeout] elapses.
 ///
-/// Our bookkeeping stays O(1) across pages: we dedup via a single
-/// `(oldest emitted timestamp, oldest emitted event id)` anchor
-/// rather than an ever-growing seen-set of every event id. The
-/// anchor advances monotonically — older pages can only deliver
-/// events strictly older than it — which matches what
-/// `requestHistory()` guarantees. Note: the underlying
+/// Our bookkeeping stays bounded to the current oldest timestamp
+/// bucket across pages. Event IDs within that bucket are retained
+/// until pagination reaches an older timestamp, then discarded.
+/// This handles timestamp collisions without an ever-growing seen-set
+/// of every event id. Note: the underlying
 /// `timeline.events` list is owned by the Matrix SDK and keeps
 /// growing as more history loads; bounding that is out of our hands
 /// without a Timeline API that we do not have in 7.0.0. What we
@@ -59,7 +60,7 @@ Future<BootstrapResult> collectHistoryForBootstrapImpl({
   var pageIndex = 0;
   var totalEventsSoFar = 0;
   num? oldestTsSoFar;
-  String? oldestEventIdSoFar;
+  final emittedAtOldestTs = <String>{};
   var stopReason = BootstrapStopReason.serverExhausted;
   // Counts pages emitted past the `untilTimestamp` boundary when
   // the sink reported `accepted=0`. Guards against unbounded
@@ -78,19 +79,17 @@ Future<BootstrapResult> collectHistoryForBootstrapImpl({
       final sorted = TimelineEventOrdering.sortStableByTimestamp(
         timeline.events,
       );
-      // Build the page by filtering to events strictly older than
-      // the anchor. On the first pass the anchor is null so every
-      // event is included; on subsequent passes only the rows that
-      // `requestHistory()` just loaded (which must be older than the
-      // previous oldest) pass the predicate. This replaces the old
-      // per-event seen-set.
+      // Build the page from events older than the timestamp anchor plus
+      // previously unseen events in its collision bucket. Matrix preserves
+      // timeline order for equal timestamps; lexical event-id order is not a
+      // server pagination anchor and can discard newly loaded collisions.
       final page = <Event>[];
       for (final event in sorted) {
-        if (CatchUpStrategy.isStrictlyOlder(
-          event,
-          anchorTs: oldestTsSoFar,
-          anchorEventId: oldestEventIdSoFar,
-        )) {
+        final timestamp = TimelineEventOrdering.timestamp(event);
+        if (oldestTsSoFar == null ||
+            timestamp < oldestTsSoFar ||
+            (timestamp == oldestTsSoFar &&
+                !emittedAtOldestTs.contains(event.eventId))) {
           page.add(event);
         }
       }
@@ -100,15 +99,18 @@ Future<BootstrapResult> collectHistoryForBootstrapImpl({
         final firstTs = TimelineEventOrdering.timestamp(page.first);
         if (oldestTsSoFar == null || firstTs < oldestTsSoFar) {
           oldestTsSoFar = firstTs;
-          oldestEventIdSoFar = page.first.eventId;
+          emittedAtOldestTs
+            ..clear()
+            ..addAll(
+              page
+                  .where(
+                    (event) =>
+                        TimelineEventOrdering.timestamp(event) == firstTs,
+                  )
+                  .map((event) => event.eventId),
+            );
         } else if (firstTs == oldestTsSoFar) {
-          // Timestamps tied but the first event advanced — keep the
-          // earliest (ts, eventId) pair as the anchor.
-          final firstId = page.first.eventId;
-          if (oldestEventIdSoFar == null ||
-              firstId.compareTo(oldestEventIdSoFar) < 0) {
-            oldestEventIdSoFar = firstId;
-          }
+          emittedAtOldestTs.addAll(page.map((event) => event.eventId));
         }
         final info = BootstrapPageInfo(
           pageIndex: pageIndex,
@@ -136,38 +138,50 @@ Future<BootstrapResult> collectHistoryForBootstrapImpl({
         // `requestHistory` calls bring more of the server's
         // history into the cache — including any pages the SDK
         // hadn't loaded on the initial `room.getTimeline`.
+        final pageOldestTs = TimelineEventOrdering.timestamp(page.first);
         final crossedBoundary =
-            untilTimestamp != null &&
-            TimelineEventOrdering.timestamp(page.first) <= untilTimestamp;
+            untilTimestamp != null && pageOldestTs <= untilTimestamp;
         if (crossedBoundary) {
-          final accepted = sink.lastAcceptedCount;
-          if (accepted != null && accepted > 0) {
-            stopReason = BootstrapStopReason.boundaryReached;
-            break;
-          }
-          // Cap N => N continuation attempts (N extra requestHistory
-          // calls past the boundary-crossing page). Check before
-          // incrementing so the counter reflects attempts already
-          // issued, not attempts about to fire.
-          if (boundaryContinuations >= boundaryContinuationCap) {
+          // A page ending exactly on the boundary does not exhaust that
+          // millisecond's collision bucket. Continue until the server is
+          // exhausted or a page reaches a strictly older timestamp.
+          if (pageOldestTs == untilTimestamp && timeline.canRequestHistory) {
             logging.log(
               LogDomain.sync,
-              'bootstrap.boundaryContinuation.exhausted '
-              'pages=$boundaryContinuations cap=$boundaryContinuationCap',
+              'bootstrap.boundaryTimestampBucket.continue '
+              'timestamp=$pageOldestTs',
               subDomain: 'bootstrap',
             );
-            stopReason = BootstrapStopReason.boundaryReached;
-            break;
+          } else {
+            final accepted = sink.lastAcceptedCount;
+            if (accepted != null && accepted > 0) {
+              stopReason = BootstrapStopReason.boundaryReached;
+              break;
+            }
+            // Cap N => N continuation attempts (N extra requestHistory
+            // calls past the boundary-crossing page). Check before
+            // incrementing so the counter reflects attempts already
+            // issued, not attempts about to fire.
+            if (boundaryContinuations >= boundaryContinuationCap) {
+              logging.log(
+                LogDomain.sync,
+                'bootstrap.boundaryContinuation.exhausted '
+                'pages=$boundaryContinuations cap=$boundaryContinuationCap',
+                subDomain: 'bootstrap',
+              );
+              stopReason = BootstrapStopReason.boundaryReached;
+              break;
+            }
+            boundaryContinuations++;
+            logging.log(
+              LogDomain.sync,
+              'bootstrap.boundaryContinuation '
+              'attempt=$boundaryContinuations cap=$boundaryContinuationCap '
+              'reason=accepted=0 oldestTs='
+              '${TimelineEventOrdering.timestamp(page.first)}',
+              subDomain: 'bootstrap',
+            );
           }
-          boundaryContinuations++;
-          logging.log(
-            LogDomain.sync,
-            'bootstrap.boundaryContinuation '
-            'attempt=$boundaryContinuations cap=$boundaryContinuationCap '
-            'reason=accepted=0 oldestTs='
-            '${TimelineEventOrdering.timestamp(page.first)}',
-            subDomain: 'bootstrap',
-          );
         }
       }
 

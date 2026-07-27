@@ -14,6 +14,7 @@ class QueueMarkerAdvancer {
 
   final SyncDatabase _db;
   final Map<String, int> _resumeFloorRevisions = <String, int>{};
+  final Map<String, int> _pendingResumeFloors = <String, int>{};
   Future<void> _resumeFloorWrites = Future<void>.value();
 
   /// Advances `queue_markers` for [entry]'s room if the candidate
@@ -104,23 +105,66 @@ class QueueMarkerAdvancer {
       (revision) => revision + 1,
       ifAbsent: () => 1,
     );
-    return _serializeResumeFloorWrite(() async {
-      await _db.transaction(() async {
-        final marker = await (_db.select(
-          _db.queueMarkers,
-        )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
-        final current = marker?.resumeFloorTs;
-        if (current != null && current <= originTs) return;
-        await _db
-            .into(_db.queueMarkers)
-            .insertOnConflictUpdate(
-              QueueMarkersCompanion.insert(
-                roomId: roomId,
-                resumeFloorTs: Value(originTs),
-              ),
-            );
-      });
+    return _retainAndPersistResumeFloor(roomId: roomId, originTs: originTs);
+  }
+
+  /// Persists ciphertext observed by the walk that will later reconcile it.
+  ///
+  /// Walk-local observations do not increment the concurrency revision:
+  /// otherwise every unresolved event seen by the walk would invalidate its
+  /// own compare-and-set. A concurrent live observation still increments the
+  /// revision through [lowerResumeFloor] and wins over stale completion.
+  Future<void> lowerResumeFloorFromWalk({
+    required String roomId,
+    required int originTs,
+  }) => _retainAndPersistResumeFloor(roomId: roomId, originTs: originTs);
+
+  /// Retries any floor observation retained after a failed durable write.
+  ///
+  /// Queue insertion and floor reads call this before proceeding. Therefore a
+  /// transient SQLite failure cannot let later plaintext advance the marker
+  /// past ciphertext whose recovery floor has not yet become durable.
+  Future<void> ensureResumeFloorPersisted(String roomId) =>
+      _serializeResumeFloorWrite(() => _persistPendingResumeFloor(roomId));
+
+  Future<void> _retainAndPersistResumeFloor({
+    required String roomId,
+    required int originTs,
+  }) {
+    _pendingResumeFloors.update(
+      roomId,
+      (current) => originTs < current ? originTs : current,
+      ifAbsent: () => originTs,
+    );
+    return ensureResumeFloorPersisted(roomId);
+  }
+
+  Future<void> _persistPendingResumeFloor(String roomId) async {
+    final pending = _pendingResumeFloors[roomId];
+    if (pending == null) return;
+
+    await _db.transaction(() async {
+      final marker = await (_db.select(
+        _db.queueMarkers,
+      )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+      final current = marker?.resumeFloorTs;
+      if (current != null && current <= pending) return;
+      await _db
+          .into(_db.queueMarkers)
+          .insertOnConflictUpdate(
+            QueueMarkersCompanion.insert(
+              roomId: roomId,
+              resumeFloorTs: Value(pending),
+            ),
+          );
     });
+
+    // A lower observation may have arrived while the transaction awaited.
+    // Clear only the exact candidate this write made durable; the serialized
+    // follow-up write will persist any newer pending minimum.
+    if (_pendingResumeFloors[roomId] == pending) {
+      _pendingResumeFloors.remove(roomId);
+    }
   }
 
   /// Marks the floor at [walkStartedAtFloorRevision] as covered and
@@ -155,6 +199,7 @@ class QueueMarkerAdvancer {
 
   /// The room's durable floor, or null when nothing is outstanding.
   Future<int?> resumeFloorTs(String roomId) async {
+    await ensureResumeFloorPersisted(roomId);
     final marker = await (_db.select(
       _db.queueMarkers,
     )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();

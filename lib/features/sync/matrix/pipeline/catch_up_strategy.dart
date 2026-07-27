@@ -475,8 +475,9 @@ enum BootstrapStopReason {
 
   /// An `untilTimestamp` was supplied to
   /// [CatchUpStrategy.collectHistoryForBootstrap] and a page crossed
-  /// the boundary — the callers has everything they asked for, no
-  /// need to page further into history.
+  /// strictly below the boundary after exhausting its timestamp bucket — the
+  /// caller has everything requested, with no need to page further into
+  /// history.
   boundaryReached,
 
   /// Pagination threw or the overall timeout elapsed before the walk

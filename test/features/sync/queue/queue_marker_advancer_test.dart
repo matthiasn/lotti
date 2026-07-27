@@ -200,7 +200,36 @@ void main() {
     );
 
     test(
-      'a failed floor write does not poison later serialized writes',
+      'walk-local observations do not invalidate their own completion CAS',
+      () async {
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 1000);
+        final revisionAtWalkStart = advancer.resumeFloorRevision(_roomA);
+
+        // The old floor decrypted, but the walk found newer ciphertext.
+        await advancer.lowerResumeFloorFromWalk(
+          roomId: _roomA,
+          originTs: 2000,
+        );
+        await advancer.completeResumeWalk(
+          roomId: _roomA,
+          walkStartedAtFloorRevision: revisionAtWalkStart,
+          unresolvedFloorTs: 2000,
+        );
+
+        expect(revisionAtWalkStart, 1);
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          2000,
+          reason:
+              'the completed walk must raise the old floor to its own oldest '
+              'remaining ciphertext',
+        );
+        expect(advancer.resumeFloorRevision(_roomA), 2);
+      },
+    );
+
+    test(
+      'a failed floor write is retained and retried before a later read',
       () async {
         await db.customStatement('''
           CREATE TRIGGER fail_resume_floor
@@ -216,6 +245,11 @@ void main() {
         );
         await db.customStatement('DROP TRIGGER fail_resume_floor');
 
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          5000,
+          reason: 'the read must first retry the retained durable observation',
+        );
         await advancer.lowerResumeFloor(roomId: _roomA, originTs: 2000);
 
         expect(await advancer.resumeFloorTs(_roomA), 2000);

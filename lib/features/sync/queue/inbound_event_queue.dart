@@ -60,6 +60,16 @@ class InboundQueue {
     required int originTs,
   }) => _markerAdvancer.lowerResumeFloor(roomId: roomId, originTs: originTs);
 
+  /// Records ciphertext found by a bootstrap walk without invalidating that
+  /// walk's floor-reconciliation revision.
+  Future<void> lowerResumeFloorFromWalk({
+    required String roomId,
+    required int originTs,
+  }) => _markerAdvancer.lowerResumeFloorFromWalk(
+    roomId: roomId,
+    originTs: originTs,
+  );
+
   /// Replaces the floor revision observed at walk start after a completed
   /// bootstrap with the oldest ciphertext seen during that walk, or clears it
   /// when none remains. A floor observed concurrently is preserved.
@@ -119,6 +129,13 @@ class InboundQueue {
     required InboundEventProducer producer,
   }) async {
     if (events.isEmpty) return EnqueueResult.empty;
+
+    // A failed ciphertext-floor write remains process-local and must become
+    // durable before any later payload can enter the queue and advance the
+    // applied marker past it.
+    for (final roomId in {for (final event in events) event.roomId ?? ''}) {
+      await _markerAdvancer.ensureResumeFloorPersisted(roomId);
+    }
 
     var accepted = 0;
     var duplicates = 0;

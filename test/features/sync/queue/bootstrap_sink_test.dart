@@ -352,6 +352,13 @@ void main() {
       );
       expect(sink.oldestUnresolvedTs, 10);
       expect(await queue.resumeFloorTs('!roomA:example.org'), 10);
+      expect(
+        queue.resumeFloorRevision('!roomA:example.org'),
+        0,
+        reason:
+            'ciphertext observed by this walk must not invalidate the walk’s '
+            'own completion CAS',
+      );
       expect((await queue.stats()).total, 0);
     },
   );
@@ -387,7 +394,7 @@ void main() {
       final orderedQueue = MockInboundQueue();
       final calls = <String>[];
       when(
-        () => orderedQueue.lowerResumeFloor(
+        () => orderedQueue.lowerResumeFloorFromWalk(
           roomId: any<String>(named: 'roomId'),
           originTs: any<int>(named: 'originTs'),
         ),
