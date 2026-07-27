@@ -1805,6 +1805,32 @@ void main() {
       },
     );
 
+    test(
+      'persistParsedItems rejects a capture reassigned during inference',
+      () async {
+        final initial = _capture(id: 'capture-1');
+        final reassigned = initial.copyWith(agentId: 'task_agent:task-9');
+        var captureReads = 0;
+        when(() => agentRepository.getEntity(initial.id)).thenAnswer((_) async {
+          captureReads++;
+          return captureReads == 1 ? initial : reassigned;
+        });
+
+        await expectLater(
+          createService().persistParsedItems(
+            agentId: _agentId,
+            captureId: initial.id,
+            rawItems: const [],
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+
+        expect(upsertedEntities, isEmpty);
+        expect(upsertedLinks, isEmpty);
+        expect(captureReads, 2);
+      },
+    );
+
     test('persistParsedItems rejects an unknown kind value', () async {
       final capture =
           AgentDomainEntity.capture(

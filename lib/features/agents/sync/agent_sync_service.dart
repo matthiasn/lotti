@@ -260,22 +260,30 @@ class AgentSyncService {
       await _repository.upsertEntity(entity);
       return;
     }
-    var entityToWrite = entity;
-    if (entity is CaptureEntity && entity.parseCompletedAt == null) {
-      final existing = await _repository.getEntity(entity.id);
-      if (existing is CaptureEntity && existing.parseCompletedAt != null) {
-        entityToWrite = entity.copyWith(
-          parseCompletedAt: existing.parseCompletedAt,
-        );
-      }
-    }
     await _vectorClockService.withVcScope<void>(() async {
-      final stamped = entityToWrite.copyWith(
-        vectorClock: await _vectorClockService.getNextVectorClock(
-          previous: entityToWrite.vectorClock,
-        ),
-      );
-      await _repository.upsertEntity(stamped);
+      late AgentDomainEntity stamped;
+
+      Future<void> stampAndPersist(AgentDomainEntity entityToWrite) async {
+        stamped = entityToWrite.copyWith(
+          vectorClock: await _vectorClockService.getNextVectorClock(
+            previous: entityToWrite.vectorClock,
+          ),
+        );
+        await _repository.upsertEntity(stamped);
+      }
+
+      if (entity is CaptureEntity && entity.parseCompletedAt == null) {
+        await _repository.runInTransaction(() async {
+          final existing = await _repository.getEntity(entity.id);
+          final entityToWrite =
+              existing is CaptureEntity && existing.parseCompletedAt != null
+              ? entity.copyWith(parseCompletedAt: existing.parseCompletedAt)
+              : entity;
+          await stampAndPersist(entityToWrite);
+        });
+      } else {
+        await stampAndPersist(entity);
+      }
       // DB write succeeded — the VC is now baked into the persisted row
       // and MUST commit. Swallow any outbox failure so the scope's
       // default-commit-on-normal-return can fire.

@@ -396,7 +396,13 @@ class DayAgentCaptureService {
       // this whole-row update preserves the latest fields and never revives a
       // tombstone from the stale pre-inference snapshot.
       final currentCapture = await getCapture(captureId);
-      if (currentCapture == null || currentCapture.deletedAt != null) {
+      if (currentCapture == null ||
+          currentCapture.deletedAt != null ||
+          !canReadDailyOsDayArtifact(
+            readerAgentId: agentId,
+            ownerAgentId: currentCapture.agentId,
+            dayId: captureDayId(currentCapture),
+          )) {
         throw DayAgentCaptureException('capture $captureId not found');
       }
       await _softDeleteExistingParsedItems(captureId, now);
