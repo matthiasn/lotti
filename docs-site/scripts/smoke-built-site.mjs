@@ -283,9 +283,21 @@ for (const locale of translatedLocales) {
     );
     translatedDocCounts[locale] += 1;
   }
+}
+
+// Compared across locales rather than against a pinned number. The invariant
+// worth holding is that no locale is missing a document, and a hard-coded
+// count instead fails on every page added — reporting it as a translation
+// problem rather than a stale constant.
+const [referenceLocale, ...otherLocales] = translatedLocales;
+assert.ok(
+  translatedDocCounts[referenceLocale] > 0,
+  'The translation notice audit found no translated documents at all.',
+);
+for (const locale of otherLocales) {
   assert.equal(
     translatedDocCounts[locale],
-    40,
+    translatedDocCounts[referenceLocale],
     `The translation notice audit must cover every ${locale} manual document.`,
   );
 }

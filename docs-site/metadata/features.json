@@ -391,8 +391,7 @@
       "screenshotCases": [
         "sync/add-device",
         "sync/provisioned",
-        "sync/paired",
-        "sync/verification"
+        "sync/paired"
       ]
     },
     {
@@ -403,6 +402,7 @@
       "screenshotCases": [
         "sync/hub",
         "sync/status",
+        "sync/verification",
         "sync/node-profile",
         "sync/backfill",
         "sync/stats",
