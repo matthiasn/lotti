@@ -1497,6 +1497,36 @@ void main() {
       },
     );
 
+    for (final allocationPredicate in [
+      'schedules',
+      'allocates',
+      'completes',
+      'plans',
+      'places',
+    ]) {
+      test('accepts third-person $allocationPredicate split evidence', () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason:
+                    'task-c $allocationPredicate 60 of 120 minutes for today.',
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
+
+        expect(result.passed, isTrue);
+        expect(result.detail, contains('task-c 60min partial of 120min'));
+      });
+    }
+
     test('accepts the prompt contract of partial plus concrete remainder', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1864,6 +1894,35 @@ void main() {
               taskId: 'task-c',
               reason:
                   'No-code prototype scheduled 60 of 120 minutes for today.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'No-code prototype',
+              estimateMinutes: 120,
+            ),
+          ],
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('ignores a title-contained negator for a partial label', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'No-code prototype is partial; '
+                  '60 minutes remain for later.',
             ),
           ],
           corpus: const [
@@ -5020,6 +5079,27 @@ void main() {
 
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c'));
+    });
+
+    test('rejects a possessive non-task head as an omission object', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: "We omitted task-c's meeting due to capacity.",
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
     });
 
     test('rejects an imperative omission object', () {

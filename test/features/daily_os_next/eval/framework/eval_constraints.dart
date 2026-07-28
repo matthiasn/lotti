@@ -781,8 +781,8 @@ final _partialRemainderDispositionPattern = RegExp(
 );
 
 final _taskAllocationActionPattern = RegExp(
-  r'\b(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-  'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)|'
+  r'\b(?:schedul(?:e|es|ed|ing)|allocat(?:e|es|ed|ing)|'
+  'complet(?:e|es|ed|ing)|plan(?:s|ned|ning)?|plac(?:e|es|ed|ing)|'
   r'fit(?:s|ting)?)\b',
   caseSensitive: false,
 );
@@ -1086,7 +1086,14 @@ bool _hasAuditablePartialDisclosure({
       }
       if (!_partialMentionDescribesPlacement(reason, match)) continue;
       if (_evidenceIsSpeculative(reason, match)) continue;
-      if (_partialMentionIsNegated(reason, match)) return false;
+      if (_partialMentionIsNegated(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+      )) {
+        return false;
+      }
       if (disclosure.canQualify) reasonMentionsPartial = true;
     }
     for (final match in _partialOfEstimatePattern.allMatches(reason)) {
@@ -1280,12 +1287,27 @@ bool _fullAllocationClaimHasExplicitNonTaskHead(
   ).hasMatch(suffix);
 }
 
-bool _partialMentionIsNegated(String reason, Match match) {
+bool _partialMentionIsNegated(
+  String reason,
+  Match match, {
+  required String taskId,
+  required String taskTitle,
+}) {
   final range = _matchClauseRange(reason, match, boundaries: ',.;!?\n');
   final segment = reason.substring(range.start, range.end);
   for (final negation in _negationWordPattern.allMatches(segment)) {
+    final negationStart = range.start + negation.start;
     final negationEnd = range.start + negation.end;
     if (negationEnd > match.start) continue;
+    if (_rangeFallsInsideTaskReference(
+      reason,
+      start: negationStart,
+      end: negationEnd,
+      taskId: taskId,
+      taskTitle: taskTitle,
+    )) {
+      continue;
+    }
     final between = reason.substring(negationEnd, match.start);
     if (_negationQualifiesRatherThanNegates(negation, between)) {
       continue;
@@ -1352,6 +1374,13 @@ bool _tradeEvidenceDescribesTaskOrWork(
   }
   final suffix = prose.substring(match.end, range.end);
   if (!RegExp(r'^\s+\w').hasMatch(suffix)) return true;
+  if (_subjectStartsWithPossessiveTaskReferenceToNonTaskHead(
+    suffix.trimLeft(),
+    taskId: taskId,
+    taskTitle: taskTitle,
+  )) {
+    return false;
+  }
   for (final pattern in _taskReferencePatterns(taskId, taskTitle)) {
     final reference = pattern.firstMatch(suffix);
     if (reference != null && reference.start == 0) return true;
@@ -2924,7 +2953,12 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
         _evidenceIsSpeculative(prose, match)) {
       continue;
     }
-    if (_partialMentionIsNegated(prose, match)) {
+    if (_partialMentionIsNegated(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+    )) {
       record('partial', denied: true);
     } else {
       record('partial', denied: false);
