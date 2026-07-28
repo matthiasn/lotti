@@ -10058,7 +10058,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Synchronizaci tohoto zařízení se nepodařilo zastavit. Zkontroluj připojení a zkus to znovu.';
 
   @override
-  String get syncEntitiesConfirm => 'SPUSTIT SYNCHRONIZACI';
+  String get syncEntitiesConfirm => 'Spustit synchronizaci';
 
   @override
   String get syncEntitiesMessage =>

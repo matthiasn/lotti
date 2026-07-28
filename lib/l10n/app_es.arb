@@ -4045,7 +4045,7 @@
   "syncDevicesVerifiedChip": "Verificado",
   "syncDisconnectExplanation": "Tus entradas se quedan en este dispositivo. Se cerrará su sesión en la cuenta de sincronización y necesitará un código nuevo para volver a sincronizar. Tus otros dispositivos no se ven afectados.",
   "syncDisconnectFailed": "No se pudo detener la sincronización de este dispositivo. Comprueba tu conexión e inténtalo de nuevo.",
-  "syncEntitiesConfirm": "INICIAR SINCRONIZACIÓN",
+  "syncEntitiesConfirm": "Iniciar sincronización",
   "syncEntitiesMessage": "Elige los datos que quieres sincronizar.",
   "syncEntitiesSuccessDescription": "Todo está al día.",
   "syncEntitiesSuccessTitle": "Sincronización completada",

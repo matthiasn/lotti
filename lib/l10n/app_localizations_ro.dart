@@ -10118,7 +10118,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sincronizarea acestui dispozitiv nu a putut fi oprită. Verificați conexiunea și încercați din nou.';
 
   @override
-  String get syncEntitiesConfirm => 'ÎNCEPE SINCRONIZAREA';
+  String get syncEntitiesConfirm => 'Începeți sincronizarea';
 
   @override
   String get syncEntitiesMessage =>

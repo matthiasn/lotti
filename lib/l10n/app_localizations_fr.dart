@@ -10121,7 +10121,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d’arrêter la synchronisation de cet appareil. Vérifie ta connexion et réessaie.';
 
   @override
-  String get syncEntitiesConfirm => 'DÉMARRER LA SYNCHRONISATION';
+  String get syncEntitiesConfirm => 'Démarrer la synchronisation';
 
   @override
   String get syncEntitiesMessage => 'Choisis les données à synchroniser.';

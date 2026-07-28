@@ -10025,7 +10025,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível parar a sincronização deste dispositivo. Verifique sua conexão e tente novamente.';
 
   @override
-  String get syncEntitiesConfirm => 'INICIAR SINCRONIZAÇÃO';
+  String get syncEntitiesConfirm => 'Iniciar sincronização';
 
   @override
   String get syncEntitiesMessage =>

@@ -9923,7 +9923,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att stoppa synkroniseringen för den här enheten. Kontrollera din anslutning och försök igen.';
 
   @override
-  String get syncEntitiesConfirm => 'STARTA SYNKRONISERING';
+  String get syncEntitiesConfirm => 'Starta synkronisering';
 
   @override
   String get syncEntitiesMessage => 'Välj de enheter du vill synka.';

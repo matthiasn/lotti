@@ -4052,7 +4052,7 @@
   "syncDevicesVerifiedChip": "Ověřeno",
   "syncDisconnectExplanation": "Tvé záznamy zůstanou na tomto zařízení. Bude odhlášeno ze synchronizačního účtu a k opětovné synchronizaci bude potřebovat nový párovací kód. Ostatní zařízení to neovlivní.",
   "syncDisconnectFailed": "Synchronizaci tohoto zařízení se nepodařilo zastavit. Zkontroluj připojení a zkus to znovu.",
-  "syncEntitiesConfirm": "SPUSTIT SYNCHRONIZACI",
+  "syncEntitiesConfirm": "Spustit synchronizaci",
   "syncEntitiesMessage": "Vyberte entity, které chcete synchronizovat.",
   "syncEntitiesSuccessDescription": "Vše je aktuální.",
   "syncEntitiesSuccessTitle": "Synchronizace dokončena",

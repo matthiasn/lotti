@@ -267,7 +267,13 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
 
     final trustBadges = <Widget>[
       if (device.isCurrentDevice)
-        DesignSystemBadge.outlined(
+        // Filled, not outlined: an outlined badge keeps its tone at full
+        // saturation on the border, which made "This device" the
+        // highest-contrast edge on the page while carrying the one fact the
+        // user needs least. Filled/secondary keeps the blue hue (so identity
+        // still reads apart from the green trust state) at ink weight, on the
+        // same surface fill as the leading glyph tile below.
+        DesignSystemBadge.filled(
           label: messages.syncDevicesThisDeviceChip,
           tone: DesignSystemBadgeTone.secondary,
         ),
@@ -356,7 +362,10 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
             ],
           ),
           if (metaLine != null) ...[
-            SizedBox(height: tokens.spacing.step2),
+            // Name and chips are identity and trust; paired/last-seen are
+            // evidence. One step of separation makes the card two blocks
+            // instead of one undifferentiated column.
+            SizedBox(height: tokens.spacing.step4),
             Text(
               metaLine,
               maxLines: 2,
@@ -388,8 +397,12 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
               // the localized label may wrap freely so long translations
               // cannot overflow narrow cards.
               messages.syncDevicesLastSeen(_formatDate(context, lastSeen)),
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
+              // Same tier as the paired line above it. These are both
+              // metadata; the hierarchy used to be inverted, with the lower,
+              // more repetitive line rendered larger and brighter. The prose
+              // hints keep bodySmall, so the tier split now carries meaning.
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
               ),
             ),
           ],

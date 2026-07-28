@@ -9924,7 +9924,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Synkroniseringen for denne enhed kunne ikke stoppes. Tjek din forbindelse, og prøv igen.';
 
   @override
-  String get syncEntitiesConfirm => 'START SYNC';
+  String get syncEntitiesConfirm => 'Start synk';
 
   @override
   String get syncEntitiesMessage => 'Vælg de enheder, du vil synkronisere.';

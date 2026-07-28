@@ -121,7 +121,7 @@ class SyncModal extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
                   DesignSystemButton(
-                    label: context.messages.doneButton.toUpperCase(),
+                    label: context.messages.doneButton,
                     size: DesignSystemButtonSize.large,
                     fullWidth: true,
                     onPressed: () {

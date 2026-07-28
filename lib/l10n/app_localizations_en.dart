@@ -9855,7 +9855,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t stop syncing this device. Check your connection and try again.';
 
   @override
-  String get syncEntitiesConfirm => 'START SYNC';
+  String get syncEntitiesConfirm => 'Start sync';
 
   @override
   String get syncEntitiesMessage => 'Choose the entities you want to sync.';

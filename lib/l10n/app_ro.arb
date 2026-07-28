@@ -4045,7 +4045,7 @@
   "syncDevicesVerifiedChip": "Verificat",
   "syncDisconnectExplanation": "Intrările dvs. rămân pe acest dispozitiv. Va fi deconectat de la contul de sincronizare și va avea nevoie de un cod nou pentru a sincroniza din nou. Celelalte dispozitive nu sunt afectate.",
   "syncDisconnectFailed": "Sincronizarea acestui dispozitiv nu a putut fi oprită. Verificați conexiunea și încercați din nou.",
-  "syncEntitiesConfirm": "ÎNCEPE SINCRONIZAREA",
+  "syncEntitiesConfirm": "Începeți sincronizarea",
   "syncEntitiesMessage": "Alegeți datele pe care doriți să le sincronizați.",
   "syncEntitiesSuccessDescription": "Totul este actualizat.",
   "syncEntitiesSuccessTitle": "Sincronizare finalizată",

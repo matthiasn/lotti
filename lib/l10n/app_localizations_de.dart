@@ -9982,7 +9982,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Synchronisierung dieses Geräts konnte nicht beendet werden. Prüfe deine Verbindung und versuche es erneut.';
 
   @override
-  String get syncEntitiesConfirm => 'SYNC STARTEN';
+  String get syncEntitiesConfirm => 'Sync starten';
 
   @override
   String get syncEntitiesMessage =>

@@ -10079,7 +10079,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo detener la sincronización de este dispositivo. Comprueba tu conexión e inténtalo de nuevo.';
 
   @override
-  String get syncEntitiesConfirm => 'INICIAR SINCRONIZACIÓN';
+  String get syncEntitiesConfirm => 'Iniciar sincronización';
 
   @override
   String get syncEntitiesMessage => 'Elige los datos que quieres sincronizar.';

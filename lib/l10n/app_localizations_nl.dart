@@ -9956,7 +9956,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon de synchronisatie van dit apparaat niet stoppen. Controleer je verbinding en probeer het opnieuw.';
 
   @override
-  String get syncEntitiesConfirm => 'START SYNC';
+  String get syncEntitiesConfirm => 'Start sync';
 
   @override
   String get syncEntitiesMessage =>

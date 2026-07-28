@@ -4595,7 +4595,7 @@
   "syncDevicesVerifiedChip": "Verificado",
   "syncDisconnectExplanation": "Suas entradas continuam neste dispositivo. Ele sai da conta de sincronização e precisará de um novo código para sincronizar de novo. Seus outros dispositivos não são afetados.",
   "syncDisconnectFailed": "Não foi possível parar a sincronização deste dispositivo. Verifique sua conexão e tente novamente.",
-  "syncEntitiesConfirm": "INICIAR SINCRONIZAÇÃO",
+  "syncEntitiesConfirm": "Iniciar sincronização",
   "syncEntitiesMessage": "Escolha as entidades que deseja sincronizar.",
   "syncEntitiesSuccessDescription": "Tudo está atualizado.",
   "syncEntitiesSuccessTitle": "Sincronização concluída",

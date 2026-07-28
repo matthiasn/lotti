@@ -231,7 +231,12 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
         SizedBox(
           width: double.infinity,
           child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
+            // spaceBetween places a single-item run at the *leading* edge, so
+            // as soon as the count takes a full run on a phone the actions
+            // jumped to the left with nothing to align to. end keeps them
+            // terminating on the right rail — the card border — at every
+            // width, which is what the desktop layout already does.
+            alignment: WrapAlignment.end,
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: tokens.spacing.step3,
             runSpacing: tokens.spacing.step2,
@@ -286,7 +291,10 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
             onDismiss: () => setState(() => _handOffDismissed = true),
           ),
         ],
-        SizedBox(height: tokens.spacing.step4),
+        // A section step, not a card step: at step4 the header sat exactly as
+        // far from the first card as the cards sit from each other, so
+        // proximity read it as a peer of the roster rather than a level above.
+        SizedBox(height: tokens.spacing.sectionGap),
         LayoutBuilder(
           builder: (context, constraints) {
             Widget card(SyncDeviceInfo device) => DeviceCard(

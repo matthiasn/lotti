@@ -4595,7 +4595,7 @@
   "syncDevicesVerifiedChip": "Geverifieerd",
   "syncDisconnectExplanation": "Je notities blijven op dit apparaat staan. Het wordt afgemeld bij het sync-account en heeft een nieuwe koppelcode nodig om weer te synchroniseren. Je andere apparaten worden niet beïnvloed.",
   "syncDisconnectFailed": "Kon de synchronisatie van dit apparaat niet stoppen. Controleer je verbinding en probeer het opnieuw.",
-  "syncEntitiesConfirm": "START SYNC",
+  "syncEntitiesConfirm": "Start sync",
   "syncEntitiesMessage": "Kies de entiteiten die u wilt synchroniseren.",
   "syncEntitiesSuccessDescription": "Alles is up-to-date.",
   "syncEntitiesSuccessTitle": "Compleet synchroniseren",

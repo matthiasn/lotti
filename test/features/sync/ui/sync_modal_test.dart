@@ -337,7 +337,7 @@ void main() {
       );
 
       expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
-      expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
+      expect(find.text(messages.doneButton), findsOneWidget);
       expect(find.text('5 / 5'), findsOneWidget);
       expect(find.text('6 / 6'), findsOneWidget);
       expect(find.text('7 / 7'), findsOneWidget);
@@ -564,17 +564,14 @@ void main() {
       await tester.pump();
 
       expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
-      expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
+      expect(find.text(messages.doneButton), findsOneWidget);
 
       controller.complete();
       await tester.pump();
 
       // Tapping Done invokes reset() and closes the modal.
       final doneButton = tester.widget<DesignSystemButton>(
-        find.widgetWithText(
-          DesignSystemButton,
-          messages.doneButton.toUpperCase(),
-        ),
+        find.widgetWithText(DesignSystemButton, messages.doneButton),
       );
       doneButton.onPressed?.call();
       await tester.pumpAndSettle();

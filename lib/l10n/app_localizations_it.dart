@@ -10064,7 +10064,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non è stato possibile interrompere la sincronizzazione di questo dispositivo. Controlla la connessione e riprova.';
 
   @override
-  String get syncEntitiesConfirm => 'AVVIA SINCRONIZZAZIONE';
+  String get syncEntitiesConfirm => 'Avvia sincronizzazione';
 
   @override
   String get syncEntitiesMessage => 'Scegli le entità che vuoi sincronizzare.';

@@ -17064,7 +17064,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncEntitiesConfirm.
   ///
   /// In en, this message translates to:
-  /// **'START SYNC'**
+  /// **'Start sync'**
   String get syncEntitiesConfirm;
 
   /// No description provided for @syncEntitiesMessage.

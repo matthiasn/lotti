@@ -4596,7 +4596,7 @@
   "syncDevicesVerifiedChip": "Verificato",
   "syncDisconnectExplanation": "Le tue voci restano su questo dispositivo. Verrà disconnesso dall’account di sincronizzazione e servirà un nuovo codice per sincronizzare di nuovo. Gli altri dispositivi non sono interessati.",
   "syncDisconnectFailed": "Non è stato possibile interrompere la sincronizzazione di questo dispositivo. Controlla la connessione e riprova.",
-  "syncEntitiesConfirm": "AVVIA SINCRONIZZAZIONE",
+  "syncEntitiesConfirm": "Avvia sincronizzazione",
   "syncEntitiesMessage": "Scegli le entità che vuoi sincronizzare.",
   "syncEntitiesSuccessDescription": "Tutto e' aggiornato.",
   "syncEntitiesSuccessTitle": "Sincronizzazione completa",

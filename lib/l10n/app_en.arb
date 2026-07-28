@@ -4842,7 +4842,7 @@
   "syncDevicesVerifiedChip": "Verified",
   "syncDisconnectExplanation": "Your entries stay on this device. It is signed out of the sync account and needs a new pairing code to sync again. Your other devices are not affected.",
   "syncDisconnectFailed": "Couldn't stop syncing this device. Check your connection and try again.",
-  "syncEntitiesConfirm": "START SYNC",
+  "syncEntitiesConfirm": "Start sync",
   "syncEntitiesMessage": "Choose the entities you want to sync.",
   "syncEntitiesSuccessDescription": "Everything is up to date.",
   "syncEntitiesSuccessTitle": "Sync complete",

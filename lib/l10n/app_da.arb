@@ -4596,7 +4596,7 @@
   "syncDevicesVerifiedChip": "Bekræftet",
   "syncDisconnectExplanation": "Dine noter bliver på denne enhed. Den logges ud af synkroniseringskontoen og skal bruge en ny parringskode for at synkronisere igen. Dine andre enheder påvirkes ikke.",
   "syncDisconnectFailed": "Synkroniseringen for denne enhed kunne ikke stoppes. Tjek din forbindelse, og prøv igen.",
-  "syncEntitiesConfirm": "START SYNC",
+  "syncEntitiesConfirm": "Start synk",
   "syncEntitiesMessage": "Vælg de enheder, du vil synkronisere.",
   "syncEntitiesSuccessDescription": "Alt er opdateret.",
   "syncEntitiesSuccessTitle": "Synkronisering fuldført",
