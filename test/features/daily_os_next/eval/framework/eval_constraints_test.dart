@@ -1767,6 +1767,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects imperative allocation evidence', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Schedule for 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('ignores a negator inside the current task title', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -3511,6 +3532,29 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects split arithmetic owned by an object complement', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c reviews a meeting with '
+                  '60 of 120 minutes scheduled.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('does not borrow a postpositive task partial label', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -3804,6 +3848,28 @@ void main() {
               taskId: 'task-c',
               reason: 'task-c scheduled 60 of 120 minutes.',
               note: 'task-c was fully scheduled yesterday.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('a historical allocation denial preserves current partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c scheduled 60 of 120 minutes.',
+              note: 'task-c was not scheduled yesterday.',
             ),
           ],
           corpus: tasks,
@@ -4827,6 +4893,27 @@ void main() {
 
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c'));
+    });
+
+    test('rejects an imperative omission object', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'Omit task-c due to capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
     });
 
     test('accepts a task id in a coordinated active omission object', () {

@@ -1382,12 +1382,13 @@ bool _hasTaskBoundAllocationDenial(
     caseSensitive: false,
   );
   for (final action in placementActionPattern.allMatches(prose)) {
-    if (!_allocationActionIsDirectlyDenied(
-      prose,
-      action,
-      taskId: taskId,
-      taskTitle: taskTitle,
-    )) {
+    if (_evidenceHasHistoricalScope(prose, action) ||
+        !_allocationActionIsDirectlyDenied(
+          prose,
+          action,
+          taskId: taskId,
+          taskTitle: taskTitle,
+        )) {
       continue;
     }
     if (_evidenceIsSpeculative(prose, action)) continue;
@@ -1441,7 +1442,8 @@ bool _hasTaskBoundAllocationDenial(
     caseSensitive: false,
   );
   for (final failure in allocationFailurePattern.allMatches(prose)) {
-    if (_evidenceIsSpeculative(prose, failure) ||
+    if (_evidenceHasHistoricalScope(prose, failure) ||
+        _evidenceIsSpeculative(prose, failure) ||
         _tradeEvidenceHasExplicitNonTaskSubject(
           prose,
           failure,
@@ -1726,7 +1728,8 @@ bool _splitIsTaskBound(
   required String taskTitle,
   required List<EvalCorpusTask> corpus,
 }) {
-  return _splitHasAffirmativeAllocation(
+  return !_evidenceHasExplicitNonTaskObject(reason, match) &&
+      _splitHasAffirmativeAllocation(
         reason,
         match,
         taskId: taskId,
@@ -1789,6 +1792,7 @@ bool _evidenceActionIsAsserted(
   }
   final prefix = prose.substring(clauseStart, actionStart);
   return !_evidenceClauseIsInterrogative(prose, actionStart) &&
+      !_evidenceActionIsImperative(prose, actionStart, prefix) &&
       !_evidenceStartsInConditionalClause(prefix) &&
       !_evidenceStartIsSpeculative(prose, actionStart) &&
       !RegExp(
@@ -1823,6 +1827,21 @@ bool _evidenceActionIsAsserted(
       ).hasMatch(prefix) &&
       !_avoidanceComplementPattern.hasMatch(prefix);
 }
+
+bool _evidenceActionIsImperative(
+  String prose,
+  int actionStart,
+  String prefix,
+) =>
+    RegExp(
+      r'^\s*(?:please\s+)?$',
+      caseSensitive: false,
+    ).hasMatch(prefix) &&
+    RegExp(
+      '^(?:schedule|allocate|complete|plan|place|fit|omit|drop|defer|'
+      r'postpone|shorten|roll|move|carry|leave)\b',
+      caseSensitive: false,
+    ).hasMatch(prose.substring(actionStart));
 
 bool _evidenceStartsInConditionalClause(String prefix) =>
     RegExp(
@@ -2141,7 +2160,7 @@ bool _referenceAttributesEvidence(
 }
 
 bool _remainderIsTaskBound(String reason, Match match) {
-  if (_remainderHasExplicitNonTaskObject(reason, match)) return false;
+  if (_evidenceHasExplicitNonTaskObject(reason, match)) return false;
   final clause = _matchClause(reason, match);
   if (_unrelatedRemainderScopePattern.hasMatch(clause)) return false;
   if (_partialRemainderDispositionPattern.hasMatch(clause)) return true;
@@ -2149,12 +2168,12 @@ bool _remainderIsTaskBound(String reason, Match match) {
 }
 
 bool _remainderIsRelatedToTask(String reason, Match match) {
-  if (_remainderHasExplicitNonTaskObject(reason, match)) return false;
+  if (_evidenceHasExplicitNonTaskObject(reason, match)) return false;
   if (_remainderIsTaskBound(reason, match)) return true;
   return !_unrelatedRemainderScopePattern.hasMatch(_matchClause(reason, match));
 }
 
-bool _remainderHasExplicitNonTaskObject(String reason, Match match) {
+bool _evidenceHasExplicitNonTaskObject(String reason, Match match) {
   final range = _matchClauseRange(reason, match, boundaries: ',.;!?\n');
   final prefix = reason.substring(range.start, match.start);
   return RegExp(

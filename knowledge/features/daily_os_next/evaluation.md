@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T17:48:06+02:00 }
+generated: { by: codex/5, at: 2026-07-28T21:47:26+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -99,6 +99,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   Conditional and subjunctive clauses are counterfactual rather than evidence:
   `If task-c were scheduled for 60 of 120 minutes` cannot earn partial credit,
   even when a comma separates its later denial.
+  Commands are not assertions either: `Schedule for 60 of 120 minutes` does
+  not say that the allocation occurred.
   Intended, planned, aimed, hoped,
   wanted, expected, proposed, considered, attempted, tried, failed, refused,
   or declined actions are likewise not affirmative. Neither are expectation
@@ -118,7 +120,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   earlier action with intervening object prose, such as scheduling a meeting
   before reviewing `60 of 120` recording minutes, cannot supply task-allocation
   context, nor can later meeting scheduling borrow an earlier `60 of 120`
-  recording count. A grammatical auxiliary/adverb bridge such as
+  recording count. Object complements are excluded in the same way:
+  `task-c reviews a meeting with 60 of 120 minutes scheduled` describes the
+  meeting's arithmetic, not task-c's allocation. A grammatical
+  auxiliary/adverb bridge such as
   `were successfully scheduled` or `60 of 120 minutes do fit` remains
   affirmative. A direct quantity preposition or exact quantity modifier, such as
   `scheduled for 60 of 120 minutes` or
@@ -145,7 +150,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `scheduled 60 of 120 minutes yesterday`, and the equivalent `last week`
   describe prior allocation rather than the current block. The same scope rule
   applies to full-allocation retractions, so a note claiming `fully scheduled
-  yesterday` cannot veto current partial evidence. Unbound splits are ignored
+  yesterday` cannot veto current partial evidence. Historical denials and
+  allocation failures are excluded too, so `was not scheduled yesterday`
+  cannot retract today's valid split. Unbound splits are ignored
   before their values are checked, and allocation explicitly scoped to another
   subject or another
   corpus task, named by id or full title, cannot earn credit for the placed
@@ -343,6 +350,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   but the remaining plan stayed intact`. A causal clause about another corpus
   task also retains its own negation: `task-c was deferred because Deployment
   was not scheduled` does not retract task-c's affirmative deferral.
+  Imperative wording such as `Omit task-c due to capacity` requests a trade but
+  does not assert that one happened.
   It must also be affirmative and internally consistent: `not partial` and
   `no conflict` explicitly deny the trade, while `without conflict` and
   `conflict-free` are denials rather than disclosures. Outer falsehoods deny
