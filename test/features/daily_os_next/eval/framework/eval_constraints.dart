@@ -985,6 +985,10 @@ bool _matchClauseIsNegated(String reason, Match match) {
         : negationStart >= match.end
         ? reason.substring(match.end, negationStart)
         : '';
+    if (negationStart >= match.end &&
+        _taskAllocationActionPattern.hasMatch(between)) {
+      continue;
+    }
     if (_wordPattern.allMatches(between).length <= 3 ||
         negationEnd <= match.start &&
             _taskAllocationActionPattern.hasMatch(between)) {
@@ -1002,7 +1006,12 @@ bool _splitIsTaskBound(
   required List<EvalCorpusTask> corpus,
 }) {
   return _splitHasAffirmativeAllocation(reason, match) &&
-      !_splitHasUnrelatedScope(reason, match) &&
+      !_splitHasUnrelatedScope(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+      ) &&
       !_evidenceNamesAnotherTask(
         reason,
         match,
@@ -1027,7 +1036,12 @@ bool _splitHasAffirmativeAllocation(String reason, Match match) {
   return omission == null || action.distance < omission.distance;
 }
 
-bool _splitHasUnrelatedScope(String reason, Match evidence) {
+bool _splitHasUnrelatedScope(
+  String reason,
+  Match evidence, {
+  required String taskId,
+  required String taskTitle,
+}) {
   final evidenceAction = _nearestPatternMatch(
     reason,
     evidence,
@@ -1035,6 +1049,14 @@ bool _splitHasUnrelatedScope(String reason, Match evidence) {
   );
   if (evidenceAction == null) return false;
   final range = _matchClauseRange(reason, evidence, boundaries: ',.;!?\n');
+  final currentTaskDistance = _nearestTaskReferenceDistance(
+    reason,
+    evidence,
+    range: range,
+    taskId: taskId,
+    taskTitle: taskTitle,
+  );
+  if (currentTaskDistance != null) return false;
   for (final scope in _unrelatedRemainderScopePattern.allMatches(reason)) {
     if (scope.start < range.start || scope.end > range.end) continue;
     final scopeAction = _nearestPatternMatch(
@@ -1168,11 +1190,11 @@ bool _referenceAttributesEvidence(
     return trimmed.isEmpty ||
         _taskAllocationActionPattern.hasMatch(between) ||
         RegExp(
-          r'^(?:is|are|was|were)$',
+          r'^(?:is|are|was|were|will\s+be)$',
           caseSensitive: false,
         ).hasMatch(trimmed) ||
         RegExp(r'^[\x27’]s$', caseSensitive: false).hasMatch(trimmed) ||
-        RegExp(r'^[:–—-]+$').hasMatch(trimmed);
+        RegExp(r'^[,:–—-]+$').hasMatch(trimmed);
   }
   if (referenceStart < evidence.end) return true;
   final between = reason.substring(evidence.end, referenceStart);

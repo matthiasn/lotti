@@ -1480,6 +1480,27 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('accepts affirmative exact-cap wording', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '60 of 120 minutes are scheduled and no more.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('allows a later explanation that the full task cannot fit', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1653,6 +1674,29 @@ void main() {
               reason:
                   '60 of 120 minutes are scheduled for this task while '
                   '30 minutes are scheduled for the meeting.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('keeps an explicit task split during a meeting', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  '60 of 120 minutes are scheduled for task-c '
+                  'during the meeting.',
             ),
           ],
           corpus: tasks,
@@ -1869,6 +1913,27 @@ void main() {
               reason:
                   '60 of 120 minutes are allocated to Task D; '
                   'Task C is deferred.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('charges a comma-scoped leading task split to that task', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'For task-d, 60 of 120 minutes are scheduled.',
             ),
           ],
           corpus: tasks,
@@ -2689,6 +2754,39 @@ void main() {
               endHour: 10,
               taskId: 'task-c',
               reason: 'Focused work on task-c; task-d is deferred.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+            EvalCorpusTask(
+              taskId: 'task-d',
+              title: 'D',
+              estimateMinutes: 60,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('does not borrow another task future-tense trade', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Focused work on task-c; task-d will be deferred.',
             ),
           ],
           corpus: const [

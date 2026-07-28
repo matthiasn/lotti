@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T04:53:14+02:00 }
+generated: { by: codex/5, at: 2026-07-28T05:03:50+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -89,13 +89,15 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   earlier valid task split. Unbound splits are ignored before their values are
   checked, and allocation explicitly scoped to another subject or another
   corpus task, named by id or full title, cannot earn credit for the placed
-  task. The block's task is the default arithmetic subject; a corpus reference
-  overrides it only when it is adjacent, linked by an allocation action
-  (including postpositive `allocated to Task D`), possessive, or attached by
-  `for` or `of`. Distinct task ids retain distinct identities even when their
-  titles collide; an explicit id can therefore attribute arithmetic to the
-  other task, while an ambiguous shared title is handled conservatively. This
-  allows one clause to audit the current split and name a deferred casualty
+  task. Explicit current-task scope wins over a later temporal meeting modifier.
+  The block's task is the default arithmetic subject; a corpus reference
+  overrides it when it is comma-led, adjacent, linked by an allocation action
+  (including postpositive `allocated to Task D`), possessive, attached by `for`
+  or `of`, or connected through ordinary copula/future grammar such as
+  `task-d will be deferred`. Distinct task ids retain distinct identities even
+  when their titles collide; an explicit id can therefore attribute arithmetic
+  to the other task, while an ambiguous shared title is handled conservatively.
+  This allows one clause to audit the current split and name a deferred casualty
   before or after it. The same attribution applies to remainder evidence. The
   partial mention and task-bound remainder must occur in the same block reason,
   and the partial mention cannot be borrowed from a claim attributed to another
@@ -114,7 +116,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `cannot be scheduled` and
   `do not have enough room to schedule 60 of 120` invalidate a split, without
   letting a later explanation that the full task `cannot fit` invalidate
-  affirmative arithmetic. A `partial` keyword is negated only by a preceding
+  affirmative arithmetic. Likewise, `60 of 120 are scheduled and no more`
+  remains affirmative because the later `no` follows the allocation action
+  instead of negating it. A `partial` keyword is negated only by a preceding
   negator, so `partial because not all work fits` remains affirmative. Split
   syntax cannot provide its own task context: an allocation word or task
   reference must appear outside the matched numbers. Explicit other-subject
