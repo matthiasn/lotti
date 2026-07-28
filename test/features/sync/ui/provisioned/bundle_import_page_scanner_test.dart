@@ -98,7 +98,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -114,13 +116,13 @@ void main() {
       final context = tester.element(find.byType(BundleImportWidget));
       expect(find.text(context.messages.syncPairScanTitle), findsOneWidget);
       expect(
-        find.text(context.messages.syncPairWhereToFind),
+        find.text(context.messages.syncPairScanHint),
         findsOneWidget,
       );
       expect(
         tester.getTopLeft(find.text(context.messages.syncPairScanTitle)).dy,
         lessThan(
-          tester.getTopLeft(find.text(context.messages.syncPairWhereToFind)).dy,
+          tester.getTopLeft(find.text(context.messages.syncPairScanHint)).dy,
         ),
       );
     });
@@ -139,7 +141,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -153,7 +157,9 @@ void main() {
     testWidgets('hides import form after successful import', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -183,7 +189,9 @@ void main() {
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
-            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            SingleChildScrollView(
+              child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            ),
             overrides: defaultOverrides(),
           ),
         );
@@ -223,7 +231,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -269,7 +279,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -323,7 +335,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -377,7 +391,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -411,7 +427,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -438,7 +456,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -456,7 +476,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -509,7 +531,9 @@ void main() {
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
-            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            SingleChildScrollView(
+              child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            ),
             overrides: defaultOverrides(),
           ),
         );
@@ -545,7 +569,9 @@ void main() {
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
-            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            SingleChildScrollView(
+              child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            ),
             overrides: defaultOverrides(),
           ),
         );
@@ -588,7 +614,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );
@@ -646,7 +674,9 @@ void main() {
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
-            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            SingleChildScrollView(
+              child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            ),
             overrides: defaultOverrides(),
           ),
         );
@@ -696,7 +726,9 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          SingleChildScrollView(
+            child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          ),
           overrides: defaultOverrides(),
         ),
       );

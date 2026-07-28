@@ -136,6 +136,7 @@ class _IncomingVerificationModalState
                 VerificationCeremonyHeader(
                   deviceName: displayName,
                   userId: requestingDevice?.userId,
+                  deviceId: widget.keyVerification.deviceId,
                 ),
                 SizedBox(height: tokens.spacing.step5),
                 if (isPending && emojis == null)
@@ -146,8 +147,6 @@ class _IncomingVerificationModalState
                   ),
                 if (isPending && emojis != null)
                   VerificationEmojiStage(
-                    prompt:
-                        context.messages.settingsMatrixVerifyIncomingConfirm,
                     emojis: emojis,
                     awaitingOtherDevice: _awaitingOtherDevice,
                     onAccept: () => unawaited(_acceptEmojiVerification(runner)),
@@ -171,11 +170,6 @@ class _IncomingVerificationModalState
                   ),
                 if (isSuccess)
                   VerificationSuccessStage(
-                    message: context.messages
-                        .settingsMatrixVerificationSuccessLabel(
-                          '',
-                          runner?.keyVerification.deviceId ?? '',
-                        ),
                     onConfirm: () {
                       unawaited(refreshUnverifiedDevices());
                       runner?.stopTimer();
@@ -218,7 +212,7 @@ class _IncomingVerificationWrapperState
               try {
                 await showVerificationModalSheet(
                   context: context,
-                  title: context.messages.settingsMatrixVerifyLabel,
+                  title: context.messages.syncVerifyModalTitle,
                   child: IncomingVerificationModal(keyVerification),
                 );
               } finally {

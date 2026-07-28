@@ -70,7 +70,7 @@ class _AutoVerificationLauncherState
     try {
       await showVerificationModalSheet(
         context: context,
-        title: context.messages.settingsMatrixVerifyLabel,
+        title: context.messages.syncVerifyModalTitle,
         child: VerificationModal(target),
       );
     } finally {

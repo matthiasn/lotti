@@ -344,17 +344,15 @@ void main() {
         find.byKey(const Key('matrix_remove_device_primary')),
         findsNothing,
       );
-      // Borderless: removing a healthy device is routine cleanup and must not
-      // outweigh "Add device" on the page around it. The blocking case keeps
-      // its fill, because there removal *is* the primary act.
-      expect(
-        tester
-            .widget<DesignSystemButton>(
-              find.byKey(const Key('matrix_delete_device')),
-            )
-            .variant,
-        DesignSystemButtonVariant.dangerTertiary,
+      // An icon in the card's corner: removing a healthy device is routine
+      // cleanup and must not outweigh "Add device" on the page around it.
+      // The blocking case keeps its labeled danger fill, because there
+      // removal *is* the primary act.
+      final delete = tester.widget<IconButton>(
+        find.byKey(const Key('matrix_delete_device')),
       );
+      expect(delete.onPressed, isNotNull);
+      expect(delete.tooltip, isNotNull);
     });
 
     testWidgets('a blocking device keeps the loud removal button', (
@@ -404,16 +402,16 @@ void main() {
       expect(badge.top, greaterThanOrEqualTo(name.bottom));
     });
 
-    testWidgets('puts the name and its badges on one row when wide', (
-      tester,
-    ) async {
+    testWidgets('anchors the card on a device icon tile', (tester) async {
       await pumpAtWidth(tester, kDeviceCardWideBreakpoint + 120);
 
+      // The tile leads the card; the name and its badges stack beside it so
+      // the roster reads as a grid of machines rather than rows of prose.
       final name = tester.getRect(find.text('Pixel 7'));
       final badge = tester.getRect(find.text('Verified'));
-      // Same row: the badge starts to the right of the name, not below it.
-      expect(badge.left, greaterThan(name.right));
-      expect(badge.top, lessThan(name.bottom));
+      final icon = tester.getRect(find.byIcon(Icons.devices_other_rounded));
+      expect(icon.right, lessThan(name.left));
+      expect(badge.top, greaterThanOrEqualTo(name.bottom));
     });
 
     testWidgets('wraps badges rather than overflowing at large text', (

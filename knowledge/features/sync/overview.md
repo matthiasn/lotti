@@ -147,14 +147,17 @@ Four properties are deliberate:
   what that means for the threat model.
 - **Add device is not platform-gated.** Any paired device can present a code,
   so a surviving phone can onboard a replacement for a dead desktop.
-- **Both devices warn, and the joining one warns louder.** Each side wraps its
-  caveat in a lock-badged `SyncCallout` ahead of the thing it is about — above
-  the QR on the inviting side, above the viewfinder on the joining side. The
-  weight belongs on the joining device because that is the side an attack
-  lands on: the inviting device is showing its own code and is not at risk,
-  while a joining device tricked into scanning a stranger's code attaches
-  itself, and everything written on it, to that stranger's account. Its copy
-  names that consequence rather than stopping at "only use your own code".
+- **Both devices warn, and the warning touches the credential.** The inviting
+  side keeps a lock-badged `SyncCallout` glued directly under its pairing
+  card; the joining side renders the caveat *inside* the warning-bordered
+  well that holds the paste field (manual) or directly under the viewfinder
+  (camera), so the warning physically shares a frame with the secret it is
+  about. The weight belongs on the joining device because that is the side an
+  attack lands on: the inviting device is showing its own code and is not at
+  risk, while a joining device tricked into scanning a stranger's code
+  attaches itself, and everything written on it, to that stranger's account.
+  Its copy names that consequence rather than stopping at "only use your own
+  code".
 - **Both devices derive the same check code.** `models/pairing_check_code.dart`
   hashes `"$user|$roomId|$homeServer"` and shows six hex characters, rendered on
   both sides through one `PairingCheckCodeView`: the inviting device derives it
@@ -234,30 +237,35 @@ open with a retry action instead of claiming that a partial batch completed.
 The paired screen names both transfers because the new device cannot send
 history it does not yet have.
 
-Both halves of the flow use one wayfinding component — a quiet
-`SyncPairStepIndicator` eyebrow above a subtitle-rank imperative — because the
-two are read side by side with both devices in hand, so the device must *look*
-the same on each. What the eyebrow says differs by half, deliberately. The
-joining device counts ("Step 2 of 3 · Confirm") because it walks a fixed
-three-screen route. The inviting device is temporal ("Now · Show the code",
-"Next · after emoji verification") because its second rung lives in the pinned
-bar, which is present from the start: a fraction there would put two "you are
-here" positions on one viewport, and a fraction only on the body would promise
-a step 2 that never announces itself.
+The joining wizard's wayfinding is drawn, not narrated: a three-station
+`SyncWizardProgressTrack` (Get code · Check · Connect) heads steps 1–3, with
+the accent on the live station and passed stations faded. The three endings —
+first device, paired, error — drop the track, because a progress line under a
+terminal screen would promise a next station that does not exist. The
+inviting sheet carries no track at all: it is not a wizard, and its live
+state is a three-stop timeline in the body (waiting → joined → verified)
+plus a one-line caption in the pinned bar explaining the locked hand-off
+buttons.
 
-The connect phase's `DesignSystemProgressBar` inside step 3 renders no second
-fraction for the same reason. Step 3's eyebrow follows the state —
-*Connecting*, *Couldn't connect*, *Finish on your other device* — because a
-constant "Finish" printed above a spinner, a red error card, or a card of
-outstanding work is untrue in all three.
+A failed connect distinguishes its remedies honestly: pairing codes go stale
+the moment the other device closes its Add-device sheet, so the bar's accent
+is *Enter a new code* (which resets `ProvisioningController` — the import
+page listens for the return to `initial` and clears its stale decoded
+bundle), while *Retry this code* is the demoted quiet action.
 
 The last screen is state-driven throughout, for one reason worth stating: a
 device that has completed the SAS ceremony leaves `getUnverifiedDevices()`
 exactly as an unpaired one does, so absence from that set cannot mean "done".
 `_PairedView` reads success off the roster instead and passes it down, which
-both retitles the card ("One thing left") and replaces step 1's imperative with
-a past-tense line. Computed in two places, they contradicted each other on the
-terminal screen of the entire flow.
+flips the gate checklist — step 1 closes to a checked row, step 2 unlocks —
+and swaps the bar's accent from *Show the emoji* to *Go to Devices*.
+Computed in two places, they contradicted each other on the terminal screen
+of the entire flow.
+
+The roster keeps the hand-off from dying with the sheet: if a device joins
+and completes its ceremony while the device list is open — the reopened-sheet
+case that used to dead-end in Maintenance — `SyncDevicesList` shows a
+one-time banner offering *Send settings* and *Send message history* directly.
 
 The three modal pages share `SyncStickyBar` and
 `WoltModalConfig.stickyActionBarClearance`: the bar draws a top hairline so

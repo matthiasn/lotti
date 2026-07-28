@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
-import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
@@ -17,9 +16,10 @@ import 'package:lotti/features/sync/state/matrix_verification_relaunch_provider.
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
-import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_config_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_wizard_progress_track.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -50,6 +50,9 @@ class _FakeProvisioningController extends ProvisioningController {
   /// How often the bar's Retry invoked the controller.
   int retryCalls = 0;
 
+  /// How often the bar's "Enter a new code" reset the controller.
+  int resetCalls = 0;
+
   @override
   ProvisioningState build() => initialState;
 
@@ -59,6 +62,12 @@ class _FakeProvisioningController extends ProvisioningController {
   @override
   Future<void> retry() async {
     retryCalls++;
+  }
+
+  @override
+  void reset() {
+    resetCalls++;
+    state = const ProvisioningState.initial();
   }
 }
 
@@ -161,22 +170,24 @@ void main() {
   }
 
   group('ProvisionedConfigWidget', () {
-    testWidgets('shows spinner when in initial state', (tester) async {
+    testWidgets('shows the connecting motif in initial state', (tester) async {
       await pumpConfigWidget(
         tester,
         const ProvisioningState.initial(),
       );
 
-      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(find.byType(SyncDevicePairMotif), findsOneWidget);
     });
 
-    testWidgets('shows spinner when in bundleDecoded state', (tester) async {
+    testWidgets('shows the connecting motif in bundleDecoded state', (
+      tester,
+    ) async {
       await pumpConfigWidget(
         tester,
         const ProvisioningState.bundleDecoded(testBundle),
       );
 
-      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(find.byType(SyncDevicePairMotif), findsOneWidget);
     });
 
     testWidgets('shows progress when in loggingIn state', (tester) async {
@@ -190,10 +201,13 @@ void main() {
         find.text(context.messages.provisionedSyncLoggingIn),
         findsOneWidget,
       );
-      expect(find.byType(DesignSystemSpinner), findsOneWidget);
-      // One indicator: the determinate bar under the spinner mapped internal
-      // phases onto a fraction the step eyebrow already carried, so the
-      // screen showed two disagreeing measures of the same wait.
+      // The wait is narrated by the journey's own figure — dots streaming
+      // toward the other machine — not a generic spinner-plus-bar pair that
+      // gave two disagreeing measures of the same wait.
+      final motif = tester.widget<SyncDevicePairMotif>(
+        find.byType(SyncDevicePairMotif),
+      );
+      expect(motif.state, SyncDevicePairMotifState.connecting);
       expect(find.byType(DesignSystemProgressBar), findsNothing);
     });
 
@@ -223,7 +237,7 @@ void main() {
         find.text(context.messages.provisionedSyncRotatingPassword),
         findsOneWidget,
       );
-      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(find.byType(SyncDevicePairMotif), findsOneWidget);
       expect(find.byType(DesignSystemProgressBar), findsNothing);
     });
 
@@ -272,7 +286,12 @@ void main() {
         find.text(context.messages.provisionedSyncDone),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      // Honest about the gate: the header names the two remaining steps.
+      expect(
+        find.text(context.messages.syncPairedStepsLeft),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
@@ -346,11 +365,14 @@ void main() {
         findsOneWidget,
       );
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      // The remedy lives in the sticky bar's accent slot — the position the
-      // rest of the wizard trained the user on — not as a grey pill inside
-      // the card.
+      // The remedies live in the sticky bar — the position the rest of the
+      // wizard trained the user on — not as a grey pill inside the card.
       expect(
-        find.text(context.messages.provisionedSyncRetry),
+        find.text(context.messages.syncPairRetryThisCode),
+        findsNothing,
+      );
+      expect(
+        find.text(context.messages.syncPairEnterNewCode),
         findsNothing,
       );
     });
@@ -372,28 +394,6 @@ void main() {
         );
       },
     );
-
-    testWidgets('the bar retry invokes the controller in error state', (
-      tester,
-    ) async {
-      final controller = _FakeProvisioningController(
-        const ProvisioningState.error(ProvisioningError.loginFailed),
-      );
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          _ConfigActionBarTestWrapper(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(() => controller),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.byKey(const Key('provisioned_config_retry')));
-      await tester.pump();
-      expect(controller.retryCalls, 1);
-    });
 
     void expectNextSteps(WidgetTester tester) {
       final context = tester.element(find.byType(ProvisionedConfigWidget));
@@ -434,7 +434,6 @@ void main() {
       // And still no second QR handed to a device that just consumed one.
       expect(find.byKey(const Key('provisionedQrImage')), findsNothing);
       expect(find.text('dGVzdC1oYW5kb3Zlci1kYXRh'), findsNothing);
-      expect(find.text(context.messages.syncPairStepDone), findsOneWidget);
     });
 
     testWidgets('the done state renders next steps', (tester) async {
@@ -442,14 +441,26 @@ void main() {
       expectNextSteps(tester);
     });
 
-    testWidgets('says where in the journey this screen sits', (tester) async {
-      // The scan and confirm screens carry the same line; without it the
-      // device with the least context never learned how much was left.
-      await pumpConfigWidget(tester, const ProvisioningState.done());
+    testWidgets('the track marks Connect while the journey runs', (
+      tester,
+    ) async {
+      // In flight, the three-station track marks Connect as the live
+      // station.
+      await pumpConfigWidget(tester, const ProvisioningState.loggingIn());
+      final track = tester.widget<SyncWizardProgressTrack>(
+        find.byType(SyncWizardProgressTrack),
+      );
+      expect(track.active, SyncWizardStep.connect);
+    });
 
-      final context = tester.element(find.byType(ProvisionedConfigWidget));
-      expect(find.byType(SyncPairStepIndicator), findsOneWidget);
-      expect(find.text(context.messages.syncPairStepAlmost), findsOneWidget);
+    testWidgets('the endings drop the track', (tester) async {
+      // The journey has ended one way or another; a progress track under an
+      // ending would promise a next station that does not exist.
+      await pumpConfigWidget(tester, const ProvisioningState.done());
+      expect(
+        find.byKey(const Key('sync_wizard_progress_track')),
+        findsNothing,
+      );
     });
 
     testWidgets('the page lead holds the only title rank', (
@@ -466,42 +477,38 @@ void main() {
         find.text(context.messages.syncPairedVerifyStep),
       );
 
-      // The lead carries the page's one title; the card's meta-title
-      // ("Two things left") is gone, so its steps sit at body rank and the
-      // reader's first fixation lands on the actionable imperative.
+      // The lead carries the page's one title; the gate steps sit at body
+      // rank so the reader's first fixation lands on the actionable
+      // imperative.
       expect(
         done.style?.fontWeight,
-        tokens.typography.styles.subtitle.subtitle1.fontWeight,
+        tokens.typography.styles.heading.heading3.fontWeight,
       );
       expect(
         done.style?.fontSize,
-        tokens.typography.styles.subtitle.subtitle1.fontSize,
+        tokens.typography.styles.heading.heading3.fontSize,
       );
       expect(
         step.style?.fontSize,
-        tokens.typography.styles.body.bodyMedium.fontSize,
+        tokens.typography.styles.body.bodySmall.fontSize,
       );
     });
 
-    testWidgets('names the remedy once a device is awaiting verification', (
+    testWidgets('the settings step stays visibly locked behind the ceremony', (
       tester,
     ) async {
-      await pumpConfigWidget(
-        tester,
-        const ProvisioningState.done(),
-        extraOverrides: [
-          matrixUnverifiedControllerProvider.overrideWith(
-            () => FakeMatrixUnverifiedController([unverifiedPeer()]),
-          ),
-          // Otherwise the launcher opens the ceremony over the assertions.
-          matrixVerificationModalLockProvider.overrideWith(
-            _PreAcquiredLock.new,
-          ),
-        ],
-      );
+      // Verification gating is real: the interface must not promise the
+      // settings hand-off before the ceremony completes.
+      await pumpConfigWidget(tester, const ProvisioningState.done());
 
-      expect(find.byKey(const Key('paired_verify_fallback')), findsOneWidget);
-      expect(find.byKey(const Key('paired_verify_waiting')), findsNothing);
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
+      // The Maintenance fallback route belongs to the unlocked step; while
+      // the ceremony gates everything it would name an unreachable path.
+      expect(
+        find.text(context.messages.syncPairedSettingsStepFallback),
+        findsNothing,
+      );
     });
 
     testWidgets('reports the ceremony as done once the peer is verified', (
@@ -544,20 +551,24 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(context.messages.syncPairedVerifyStep), findsNothing);
-      // The outstanding item leads and the finished one closes: a card that
-      // opened with completed work spent the reader's first fixation on
-      // nothing they could act on.
+      // The gate keeps its numbered order — a checked step 1 above a now
+      // unlocked step 2 — and the settings step opens up, revealing its
+      // Maintenance fallback route.
       expect(
         tester
-            .getTopLeft(find.text(context.messages.syncPairedSettingsStep))
+            .getTopLeft(
+              find.text(context.messages.syncPairedVerifyStepDone),
+            )
             .dy,
         lessThan(
           tester
-              .getTopLeft(
-                find.text(context.messages.syncPairedVerifyStepDone),
-              )
+              .getTopLeft(find.text(context.messages.syncPairedSettingsStep))
               .dy,
         ),
+      );
+      expect(
+        find.text(context.messages.syncPairedSettingsStepFallback),
+        findsOneWidget,
       );
 
       // And the stall copy can no longer surface behind it.
@@ -607,63 +618,36 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a dismissed prompt can be reopened, not merely re-queried', (
+    testWidgets('the stall fallback also covers a device awaiting the emoji', (
       tester,
     ) async {
-      // The launcher fires once per device and its guard lives in its own
-      // State, so the device staying unverified is exactly what keeps the
-      // guard set — re-querying the providers can never bring the sheet back.
-      late ProviderContainer container;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(const ProvisioningState.done()),
-            ),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => FakeMatrixUnverifiedController([unverifiedPeer()]),
-            ),
-            // Otherwise the launcher opens the ceremony over the button.
-            matrixVerificationModalLockProvider.overrideWith(
-              _PreAcquiredLock.new,
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            theme: resolveTestTheme(),
-            home: Consumer(
-              builder: (ctx, ref, _) {
-                container = ProviderScope.containerOf(ctx);
-                return Scaffold(
-                  body: ProvisionedConfigWidget(
-                    pageIndexNotifier: pageIndexNotifier,
-                  ),
-                );
-              },
-            ),
+      // The dismissed-prompt remedy lives in the bar's "Show the emoji"
+      // accent; the in-card fallback re-reads the trust state either way.
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.done(),
+        extraOverrides: [
+          matrixUnverifiedControllerProvider.overrideWith(
+            () => FakeMatrixUnverifiedController([unverifiedPeer()]),
           ),
-        ),
+          // Otherwise the launcher opens the ceremony over the assertions.
+          matrixVerificationModalLockProvider.overrideWith(
+            _PreAcquiredLock.new,
+          ),
+        ],
       );
-      await tester.pump();
+      await tester.pump(kVerifyStallTimeout);
       await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedConfigWidget));
-      final relaunch = find.byKey(const Key('paired_verify_recheck'));
+      expect(find.byKey(const Key('paired_verify_fallback')), findsOneWidget);
       expect(
-        tester.widget<DesignSystemButton>(relaunch).label,
-        context.messages.syncPairShowEmojiAgain,
-      );
-
-      final before = container.read(matrixVerificationRelaunchProvider);
-      await tester.ensureVisible(relaunch);
-      await tester.tap(relaunch);
-      await tester.pump();
-
-      expect(
-        container.read(matrixVerificationRelaunchProvider),
-        greaterThan(before),
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('paired_verify_recheck')),
+            )
+            .label,
+        context.messages.syncPairCheckAgain,
       );
     });
 
@@ -697,251 +681,8 @@ void main() {
     });
   });
 
-  group('ConfigActionBar behavior', () {
-    testWidgets(
-      'next button is disabled when state is not complete',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            _ConfigActionBarTestWrapper(
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.loggingIn(),
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-
-        final context = tester.element(
-          find.byType(_ConfigActionBarTestWrapper),
-        );
-
-        // Find the Next button (DesignSystemButton) - it should be disabled
-        final nextButton = tester.widget<DesignSystemButton>(
-          find.widgetWithText(
-            DesignSystemButton,
-            context.messages.syncPairGoToDevices,
-          ),
-        );
-        expect(nextButton.onPressed, isNull);
-      },
-    );
-
-    testWidgets(
-      'next button is enabled when state is ready',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            _ConfigActionBarTestWrapper(
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.ready('handover-data'),
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-
-        final context = tester.element(
-          find.byType(_ConfigActionBarTestWrapper),
-        );
-
-        final nextButton = tester.widget<DesignSystemButton>(
-          find.widgetWithText(
-            DesignSystemButton,
-            context.messages.syncPairGoToDevices,
-          ),
-        );
-        expect(nextButton.onPressed, isNotNull);
-      },
-    );
-
-    testWidgets(
-      'next button navigates to page 2 when tapped in ready state',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            _ConfigActionBarTestWrapper(
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.ready('handover-data'),
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-
-        final context = tester.element(
-          find.byType(_ConfigActionBarTestWrapper),
-        );
-        await tester.tap(
-          find.text(context.messages.syncPairGoToDevices),
-        );
-        await tester.pump();
-
-        expect(pageIndexNotifier.value, 2);
-      },
-    );
-
-    testWidgets(
-      'next button is enabled when state is done',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            _ConfigActionBarTestWrapper(
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.done(),
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-
-        final context = tester.element(
-          find.byType(_ConfigActionBarTestWrapper),
-        );
-
-        final nextButton = tester.widget<DesignSystemButton>(
-          find.widgetWithText(
-            DesignSystemButton,
-            context.messages.syncPairGoToDevices,
-          ),
-        );
-        expect(nextButton.onPressed, isNotNull);
-      },
-    );
-
-    testWidgets(
-      'previous button navigates to page 0',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            _ConfigActionBarTestWrapper(
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.loggingIn(),
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-
-        final context = tester.element(
-          find.byType(_ConfigActionBarTestWrapper),
-        );
-        await tester.tap(
-          find.text(context.messages.settingsMatrixPreviousPage),
-        );
-        await tester.pump();
-
-        expect(pageIndexNotifier.value, 0);
-      },
-    );
-
-    testWidgets(
-      'error state promotes Retry into the accent slot',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            _ConfigActionBarTestWrapper(
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.error(
-                    ProvisioningError.loginFailed,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-
-        final context = tester.element(
-          find.byType(_ConfigActionBarTestWrapper),
-        );
-
-        // One accent slot, filled by whatever the user should press next:
-        // in the error state that is Retry, not a disabled destination going
-        // nowhere.
-        expect(
-          find.text(context.messages.syncPairGoToDevices),
-          findsNothing,
-        );
-        final retry = tester.widget<DesignSystemButton>(
-          find.byKey(const Key('provisioned_config_retry')),
-        );
-        expect(retry.onPressed, isNotNull);
-      },
-    );
-
-    testWidgets(
-      'next button is disabled in initial state',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            _ConfigActionBarTestWrapper(
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.initial(),
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-
-        final context = tester.element(
-          find.byType(_ConfigActionBarTestWrapper),
-        );
-
-        final nextButton = tester.widget<DesignSystemButton>(
-          find.widgetWithText(
-            DesignSystemButton,
-            context.messages.syncPairGoToDevices,
-          ),
-        );
-        expect(nextButton.onPressed, isNull);
-      },
-    );
-  });
-
-  // Tests for the actual _ConfigActionBar widget rendered via provisionedConfigPage.
-  // This covers lines 44-77 of the source (the private _ConfigActionBar.build method).
+  // Tests for the actual _ConfigActionBar widget rendered via
+  // provisionedConfigPage.
   group('provisionedConfigPage function — _ConfigActionBar', () {
     /// Pumps a full WoltModalSheet containing provisionedConfigPage.
     ///
@@ -955,6 +696,7 @@ void main() {
       WidgetTester tester, {
       required ProvisioningState state,
       List<SyncDeviceInfo> devices = const [],
+      _FakeProvisioningController Function()? controller,
     }) async {
       final localNotifier = ValueNotifier<int>(0);
       addTearDown(localNotifier.dispose);
@@ -964,7 +706,7 @@ void main() {
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
             provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(state),
+              controller ?? () => _FakeProvisioningController(state),
             ),
             syncDevicesControllerProvider.overrideWith(
               () => FakeSyncDevicesController(devices),
@@ -997,7 +739,7 @@ void main() {
 
       await tester.tap(find.text('open'));
       // Use pump+duration rather than pumpAndSettle to avoid timeout from
-      // ongoing spinner animations.
+      // ongoing motif animations.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -1040,7 +782,6 @@ void main() {
       ('joiningRoom', const ProvisioningState.joiningRoom()),
       ('rotatingPassword', const ProvisioningState.rotatingPassword()),
       ('ready', const ProvisioningState.ready('handover')),
-      ('done', const ProvisioningState.done()),
     ]) {
       testWidgets('previous is blocked in $label', (tester) async {
         await pumpConfigPage(tester, state: state);
@@ -1055,6 +796,55 @@ void main() {
         expect(prevBtn.onPressed, isNull);
       });
     }
+
+    testWidgets(
+      'done with the ceremony outstanding points the quiet slot at Devices',
+      (tester) async {
+        // Back is unsafe from the done state; instead of a dead Back button
+        // the quiet slot carries the roster destination while the accent
+        // re-opens the ceremony.
+        final localNotifier = await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.done(),
+        );
+
+        final context = tester.element(find.byType(ProvisionedConfigWidget));
+        final quiet = tester.widget<DesignSystemButton>(
+          find.widgetWithText(
+            DesignSystemButton,
+            context.messages.syncPairGoToDevices,
+          ),
+        );
+        expect(quiet.variant, DesignSystemButtonVariant.secondary);
+        expect(quiet.onPressed, isNotNull);
+
+        quiet.onPressed!();
+        expect(localNotifier.value, 2);
+      },
+    );
+
+    testWidgets(
+      'the accent re-opens the ceremony while it gates everything',
+      (tester) async {
+        await pumpConfigPage(tester, state: const ProvisioningState.done());
+
+        final showEmoji = find.byKey(
+          const Key('provisioned_config_show_emoji'),
+        );
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProvisionedConfigWidget)),
+        );
+        final before = container.read(matrixVerificationRelaunchProvider);
+
+        await tester.tap(showEmoji);
+        await tester.pump();
+
+        expect(
+          container.read(matrixVerificationRelaunchProvider),
+          greaterThan(before),
+        );
+      },
+    );
 
     // Individual tests for each incomplete state to keep isolation clear and
     // avoid modal-bleed between iterations in a single test body.
@@ -1087,25 +877,39 @@ void main() {
     }
 
     testWidgets(
-      'the error state fills the accent slot with a live Retry',
+      'the error state promotes Enter a new code and demotes Retry',
       (tester) async {
-        // Not a disabled destination: the one accent slot carries whatever
-        // the user should press next, and after a failure that is Retry.
-        await pumpConfigPage(
+        // Honest recovery: pairing codes go stale the moment the other
+        // device closes its sheet, so re-attempting the identical credential
+        // must not carry the accent.
+        final controller = _FakeProvisioningController(
+          const ProvisioningState.error(ProvisioningError.loginFailed),
+        );
+        final localNotifier = await pumpConfigPage(
           tester,
-          state: const ProvisioningState.error(ProvisioningError.loginFailed),
+          state: controller.initialState,
+          controller: () => controller,
         );
 
-        final context = tester.element(find.byType(ProvisionedConfigWidget));
-        expect(
-          find.text(context.messages.syncPairGoToDevices),
-          findsNothing,
-        );
         final retry = tester.widget<DesignSystemButton>(
           find.byKey(const Key('provisioned_config_retry')),
         );
+        expect(retry.variant, DesignSystemButtonVariant.secondary);
         expect(retry.onPressed, isNotNull);
-        expect(retry.variant, DesignSystemButtonVariant.primary);
+
+        final newCode = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('provisioned_config_new_code')),
+        );
+        expect(newCode.variant, DesignSystemButtonVariant.primary);
+
+        retry.onPressed!();
+        expect(controller.retryCalls, 1);
+
+        // Entering a new code resets the run and returns to Get code, so
+        // the import page can clear the stale bundle.
+        newCode.onPressed!();
+        expect(controller.resetCalls, 1);
+        expect(localNotifier.value, 0);
       },
     );
 
@@ -1134,10 +938,10 @@ void main() {
     );
 
     testWidgets(
-      'done with an unverified peer keeps Go to Devices enabled but quiet',
+      'done with an unverified peer hands the accent to Show the emoji',
       (tester) async {
-        // The required action lives on the *other* device while the
-        // checklist is open; the accent must not shine away from it.
+        // The ceremony is the one thing left, so the accent re-opens it;
+        // the roster stays reachable through the quiet slot.
         await pumpConfigPage(
           tester,
           state: const ProvisioningState.done(),
@@ -1151,14 +955,18 @@ void main() {
         );
 
         final context = tester.element(find.byType(ProvisionedConfigWidget));
-        final nextBtn = tester.widget<DesignSystemButton>(
+        final showEmoji = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('provisioned_config_show_emoji')),
+        );
+        expect(showEmoji.variant, DesignSystemButtonVariant.primary);
+        final quiet = tester.widget<DesignSystemButton>(
           find.widgetWithText(
             DesignSystemButton,
             context.messages.syncPairGoToDevices,
           ),
         );
-        expect(nextBtn.onPressed, isNotNull);
-        expect(nextBtn.variant, DesignSystemButtonVariant.outlined);
+        expect(quiet.variant, DesignSystemButtonVariant.secondary);
+        expect(quiet.onPressed, isNotNull);
       },
     );
 
@@ -1178,6 +986,10 @@ void main() {
         );
 
         final context = tester.element(find.byType(ProvisionedConfigWidget));
+        expect(
+          find.byKey(const Key('provisioned_config_show_emoji')),
+          findsNothing,
+        );
         final nextBtn = tester.widget<DesignSystemButton>(
           find.widgetWithText(
             DesignSystemButton,
@@ -1199,7 +1011,7 @@ void main() {
 
         // The setup sheet carries its own title; "Devices" now names the
         // roster, which lives in the settings pane rather than this flow.
-        expect(find.text('Sync Setup'), findsOneWidget);
+        expect(find.text('Set up sync'), findsOneWidget);
         // The phase label must also be visible (proves the body rendered).
         final context = tester.element(find.byType(ProvisionedConfigWidget));
         expect(
@@ -1209,67 +1021,4 @@ void main() {
       },
     );
   });
-}
-
-/// Test wrapper that replicates the _ConfigActionBar logic since it's private.
-/// Uses the same provisioningControllerProvider to exercise the isComplete /
-/// isError state.when() logic, including the error slot's accent Retry.
-class _ConfigActionBarTestWrapper extends ConsumerWidget {
-  const _ConfigActionBarTestWrapper({required this.pageIndexNotifier});
-
-  final ValueNotifier<int> pageIndexNotifier;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(provisioningControllerProvider);
-    final isComplete = state.when(
-      initial: () => false,
-      bundleDecoded: (_) => false,
-      loggingIn: () => false,
-      joiningRoom: () => false,
-      rotatingPassword: () => false,
-      ready: (_) => true,
-      done: () => true,
-      error: (_) => false,
-    );
-    final isError = state.when(
-      initial: () => false,
-      bundleDecoded: (_) => false,
-      loggingIn: () => false,
-      joiningRoom: () => false,
-      rotatingPassword: () => false,
-      ready: (_) => false,
-      done: () => false,
-      error: (_) => true,
-    );
-
-    return Column(
-      children: [
-        ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-        Row(
-          children: [
-            OutlinedButton(
-              onPressed: () => pageIndexNotifier.value = 0,
-              child: Text(context.messages.settingsMatrixPreviousPage),
-            ),
-            const SizedBox(width: 8),
-            if (isError)
-              DesignSystemButton(
-                key: const Key('provisioned_config_retry'),
-                onPressed: () =>
-                    ref.read(provisioningControllerProvider.notifier).retry(),
-                label: context.messages.provisionedSyncRetry,
-              )
-            else
-              DesignSystemButton(
-                onPressed: isComplete
-                    ? () => pageIndexNotifier.value = 2
-                    : null,
-                label: context.messages.syncPairGoToDevices,
-              ),
-          ],
-        ),
-      ],
-    );
-  }
 }

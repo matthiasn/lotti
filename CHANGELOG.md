@@ -65,15 +65,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   encrypted, between your own devices only — with one Set up sync button.
 - **The pairing QR code always renders whole.** On a short window the pinned
   "Send settings" bar could slice the code in half — unscannable, and with
-  nothing suggesting the rest was below. The code now sizes itself to the
-  window and the pinned bar shrank to a single row, so the code and its check
-  code are visible together at rest.
+  nothing suggesting the rest was below. The QR and its check code now live
+  in one pairing card that sizes itself to the window, so the two things the
+  other device asks you to look at are always visible together — on phones
+  too, where the pinned bar used to clip the check code.
 - **Every pairing screen has one clear next action.** After a failed
-  connection, Try again is the highlighted button in the bar — it used to be
-  a grey pill inside the error card, under a disabled button going nowhere.
-  While connecting there is one progress indicator instead of two disagreeing
-  ones, and the finished screen leads with what is left to do instead of
-  counting it.
+  connection the highlighted button is now Enter a new code — pairing codes
+  expire when the other device closes its Add device sheet, so retrying the
+  identical code is the quiet option beside it, not the promoted one. While
+  the emoji ceremony is still outstanding, the paired screen shows it as a
+  numbered gate — confirm the emoji first, receive your settings after —
+  with the locked step visibly locked, and the highlighted button reopens
+  the ceremony.
 - **The emoji verification ceremony matches the rest of the app.** Same type,
   spacing and buttons as every other sheet. Cancel is no longer painted red —
   backing out of a ceremony is a safe, ordinary act — and the success shield
@@ -105,26 +108,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   changed less and less of what you actually saw — on recent screens, nothing
   at all. What remains is the choice that still does something: light, dark,
   or follow the system, synced across devices as before.
-- **Pairing a device is a guided flow now, not a form.** Every screen says where
-  you are ("Step 2 of 3") and leads with the one thing to do there. On phones
-  the camera opens straight away and typing a code is the fallback, rather than
-  the other way round. Before anything is configured you see which account you
-  are about to join and a short check code to compare against the device showing
-  the code, with a plain line about what to do if they differ — so a wrong or
-  stale code is something you back out of, not something you discover
-  afterwards. A code from a different Lotti version tells you to update both
-  devices instead of calling itself invalid.
+- **Pairing a device is a guided flow now, not a form.** A three-station
+  progress track — Get code, Check, Connect — draws where you are instead of
+  narrating it, and every screen leads with the one thing to do there. On
+  phones the camera opens straight away, with accent brackets framing where
+  the code should land, and pasting is the fallback rather than the other way
+  round. The check step makes the comparison the whole screen: the code your
+  other device shows, large, with "Same code on both screens?" beneath it and
+  the mismatch consequence riding on the decline button. Waiting is narrated
+  by the journey's own figure — a phone and a laptop with dots streaming
+  between them — and when the emoji match succeeds, the gap between the two
+  machines closes into a solid line with a small celebration: your devices
+  trust each other now, and the screen says exactly that.
 - **Nothing in the flow waits forever without saying what to do.** If the emoji
   check never appears, the last screen now tells you where to start it by hand
   instead of spinning indefinitely. If the camera cannot start, there is a way
   to try again once you have granted access. And if the device list cannot be
   reached while you are waiting for a new device to appear, it says so and
   offers a retry rather than pretending to still be looking.
-- **The device list reads constructively.** "Add device" is the prominent action
-  on the page; removing a device and the technical-details link are quiet
-  alongside it. "Delete device" is now "Remove from sync", which is what it
-  does, and a removal that the server refuses explains the situation instead of
-  showing you the raw error.
+- **The device list reads constructively.** The roster now says how many
+  devices are on which server, lays the cards out in two columns where the
+  window affords it, and anchors each card on a device tile with its trust
+  badges beneath the name. "Add device" is the page's one highlighted action,
+  removing a healthy device is a quiet icon in its card's corner, and the
+  stop-syncing and technical-details actions sit below their own divider at
+  the very end. "Delete device" is now "Remove from sync", which is what it
+  does, and a removal that the server refuses explains the situation instead
+  of showing you the raw error.
+- **Setting up your very first device has a real path.** The "first device?"
+  note used to end in "see the manual" with nothing to press; it now carries
+  an Open the server manual button that opens the manual in your browser, in
+  your language.
+- **The hand-off no longer dies with the Add device sheet.** If a new device
+  joins and finishes its emoji ceremony while you are looking at the device
+  list — say you closed the sheet too early — the list offers Send settings
+  and Send message history right there, instead of leaving you to find the
+  same transfers in Maintenance.
 
 ### Changed
 - **The linked-tasks card is a third shorter.** The relationship headings

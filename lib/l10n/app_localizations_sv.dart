@@ -8197,11 +8197,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get provisionedSyncDisconnect => 'Sluta synka den här enheten';
 
   @override
-  String get provisionedSyncDone => 'Den här enheten är ansluten';
+  String get provisionedSyncDone => 'Ansluten';
 
   @override
-  String get provisionedSyncError =>
-      'Det gick inte att ansluta till ditt synkkonto';
+  String get provisionedSyncError => 'Den koden fungerade inte';
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
@@ -8209,7 +8208,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Det gick inte att logga in med den koden. Kontrollera att den andra enheten fortfarande synkar, öppna Lägg till enhet där igen och använd koden som visas.';
+      'Parkopplingskoder går ut när Lägg till enhet stängs. Öppna den igen på din andra enhet och använd den nya koden som visas.';
 
   @override
   String get provisionedSyncImportButton => 'Fortsätt';
@@ -8218,7 +8217,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get provisionedSyncImportHint => 'Klistra in parkopplingskoden här';
 
   @override
-  String get provisionedSyncImportTitle => 'Synkroniseringsinställning';
+  String get provisionedSyncImportTitle => 'Ställ in synkronisering';
 
   @override
   String get provisionedSyncJoiningRoom => 'Ställer in delat lagringsutrymme…';
@@ -9252,9 +9251,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsManualLanguageTitle => 'Språk';
 
   @override
-  String get settingsMatrixAccept => 'Acceptera';
-
-  @override
   String get settingsMatrixAcceptVerificationLabel =>
       'Annan enhet visar emojis, fortsätt';
 
@@ -9332,22 +9328,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMatrixVerificationSuccessConfirm => 'Fattar';
-
-  @override
-  String settingsMatrixVerificationSuccessLabel(
-    String deviceName,
-    String deviceID,
-  ) {
-    return 'Du har framgångsrikt verifierat $deviceName ($deviceID)';
-  }
-
-  @override
-  String get settingsMatrixVerifyConfirm =>
-      'Bekräfta på en annan enhet att emojis nedan visas på båda enheterna, i samma ordning:';
-
-  @override
-  String get settingsMatrixVerifyIncomingConfirm =>
-      'Bekräfta att emojis nedan visas på båda enheterna, i samma ordning:';
 
   @override
   String get settingsMatrixVerifyLabel => 'Verifiera';
@@ -9835,7 +9815,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncAddDeviceIntro =>
-      'Installera Lotti på den nya enheten, öppna Inställningar → Synkroniseringsinställningar → Enheter där och skanna den här koden.';
+      'Installera Lotti där, öppna Inställningar → Synkronisering → Enheter och välj Ställ in synkronisering.';
 
   @override
   String get syncAddDeviceRevealCode => 'Visa parkopplingskoden som text';
@@ -9846,7 +9826,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'Behandla koden som ditt lösenord — bara din egen nya enhet får skanna den.';
+      'Den här koden är en nyckel till ditt konto — visa den bara för din egen nya enhet.';
 
   @override
   String get syncAddDeviceSendMessages => 'Skicka meddelandehistorik';
@@ -9855,35 +9835,56 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncAddDeviceSendSettings => 'Skicka inställningar';
 
   @override
-  String get syncAddDeviceSendSettingsHint =>
-      'När den nya enheten har emoji-verifierats skickar du dina mätbara saker, kategorier, vanor, instrumentpaneler och AI-inställningar dit.';
-
-  @override
-  String get syncAddDeviceSendSettingsPending =>
-      'Tillgängligt när den nya enheten har anslutit och emoji-verifierats.';
-
-  @override
   String get syncAddDeviceSendSettingsReady =>
       'Den nya enheten är verifierad – klar att skicka.';
 
   @override
-  String get syncAddDeviceStepScan => 'Nu · Visa koden';
+  String get syncAddDeviceStepScanTitle => 'Skanna detta på den nya enheten';
 
   @override
-  String get syncAddDeviceStepScanTitle => 'Skanna detta på den nya enheten';
+  String get syncAddDeviceTimelineJoined =>
+      'Ansluten — bekräfta emojierna på båda skärmarna';
+
+  @override
+  String get syncAddDeviceTimelineVerified =>
+      'Verifierad — redo för överlämning';
+
+  @override
+  String get syncAddDeviceTimelineWaiting => 'Väntar på den nya enheten…';
 
   @override
   String get syncAddDeviceUnavailable =>
       'Ställ in synk på den här enheten innan du lägger till en till.';
 
   @override
-  String get syncAddDeviceWaiting => 'Väntar på den nya enheten…';
+  String get syncAddDeviceUnlockHint =>
+      'Låses upp efter emoji-matchningen — innan dess kan den nya enheten ändå inte dekryptera dem.';
 
   @override
   String get syncDeleteConfigConfirm => 'Sluta synka';
 
   @override
   String get syncDeleteConfigQuestion => 'Sluta synka den här enheten?';
+
+  @override
+  String syncDevicesCount(num count, String server) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count enheter på $server',
+      one: '1 enhet på $server',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesJustJoined(String deviceName) {
+    return '$deviceName anslöt nyss och är verifierad';
+  }
+
+  @override
+  String get syncDevicesJustJoinedHint =>
+      'Ge den dina inställningar och meddelandehistorik nu.';
 
   @override
   String get syncDevicesKeylessHint =>
@@ -10015,7 +10016,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairCheckCode =>
-      'Kontrollera att det stämmer på den andra enheten';
+      'Den nya enheten visar samma kod innan den ansluter — jämför dem.';
 
   @override
   String get syncPairCheckCodeLabel => 'Kontrollkod';
@@ -10029,14 +10030,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att läsa urklipp. Klistra in koden direkt i fältet.';
 
   @override
-  String get syncPairConnectButton => 'Anslut den här enheten';
+  String get syncPairConnectButton => 'Koderna stämmer — anslut';
 
   @override
-  String get syncPairDiscardCode => 'Ange en annan parkopplingskod';
+  String get syncPairDiscardCode => 'De stämmer inte';
 
   @override
   String get syncPairedFirstDeviceBody =>
-      'Det här är än så länge den enda enheten på ditt synkkonto. Lägg till en till när du vill — allt du skriver här väntar på den.';
+      'Det är den första på ditt konto. Lägg till en till när du vill — allt du skriver här väntar på den.';
 
   @override
   String get syncPairedFirstDeviceTitle =>
@@ -10044,15 +10045,18 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Dina kategorier, vanor, paneler och AI-inställningar kommer därifrån.';
+      'Kategorier, vanor, paneler och AI-konfiguration — skickas från din andra enhet efter att emojierna stämt.';
 
   @override
   String get syncPairedSettingsStepFallback =>
       'Om du stängde den öppnar du på den andra enheten Inställningar → Synkroniseringsinställningar → Underhåll, kör inställningssynkroniseringen och väljer sedan Meddelandehistorik.';
 
   @override
-  String get syncPairedVerifyDone =>
-      'Båda enheterna verifierade – den här enheten kan läsa dina anteckningar';
+  String get syncPairedSettingsStepTitle => 'Ta emot dina inställningar';
+
+  @override
+  String get syncPairedStepsLeft =>
+      'Två steg kvar innan den här enheten kan läsa din dagbok.';
 
   @override
   String get syncPairedVerifyFallback =>
@@ -10060,17 +10064,23 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Tills du bekräftar på båda enheterna kan den här enheten inte läsa dina anteckningar.';
+      'Båda enheterna visar strax åtta emojier. Tills de stämmer ser den här enheten bara krypterad text.';
 
   @override
   String get syncPairedVerifyStepDone =>
       'Emojier stämmer – den här enheten kan läsa dina anteckningar';
 
   @override
+  String get syncPairedVerifyStepTitle => 'Bekräfta emojierna';
+
+  @override
   String get syncPairedVerifyWaiting => 'Väntar på att emojierna ska dyka upp…';
 
   @override
-  String get syncPairEnterManually => 'Ange koden manuellt';
+  String get syncPairEnterManually => 'Klistra in koden i stället';
+
+  @override
+  String get syncPairEnterNewCode => 'Ange en ny kod';
 
   @override
   String get syncPairErrorMalformed =>
@@ -10081,56 +10091,62 @@ class AppLocalizationsSv extends AppLocalizations {
       'Koden kommer från en annan version av Lotti. Uppdatera båda enheterna och försök igen.';
 
   @override
+  String get syncPairFirstDeviceHint =>
+      'Det finns ingen annan enhet att kopiera från ännu — din första kod kommer från synkroniseringsserverns provisioneringsverktyg.';
+
+  @override
+  String get syncPairFirstDeviceTitle => 'Ställer du in din första enhet?';
+
+  @override
   String get syncPairGoToDevices => 'Gå till Enheter';
 
   @override
   String get syncPairMismatchWarning =>
-      'Om detta inte stämmer ska du inte ansluta – koden hör till ett annat konto.';
+      'Olika koder betyder att den här inte kommer från din enhet. Anslut inte — hämta en ny kod från din egen enhet.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'Använd bara en kod från din egen enhet — någon annans kod skickar allt du skriver till deras konto.';
+      'Koden är en nyckel till ditt konto. Använd bara en från din egen enhet — någon annans kod skickar allt du skriver till dem.';
+
+  @override
+  String get syncPairOpenManual => 'Öppna serverhandboken';
 
   @override
   String get syncPairPasteTitle => 'Klistra in parkopplingskoden';
 
   @override
-  String get syncPairScanInstead => 'Skanna med kameran';
+  String get syncPairRetryThisCode => 'Försök igen med den här koden';
+
+  @override
+  String get syncPairReviewIntro =>
+      'Din andra enhet visar en kontrollkod under sin QR. Den måste vara exakt denna:';
+
+  @override
+  String get syncPairReviewTitle => 'Jämför innan du ansluter';
+
+  @override
+  String get syncPairSameCodeQuestion => 'Samma kod på båda skärmarna?';
+
+  @override
+  String get syncPairScanHint =>
+      'Rikta mot QR-koden under Lägg till enhet på din andra enhet.';
+
+  @override
+  String get syncPairScanLink => 'Har du en kamera? Skanna QR-koden i stället';
 
   @override
   String get syncPairScannerRejected =>
       'Det är koden du avvisade. Skanna den kod som din egen enhet visar, eller klistra in den nedan.';
 
   @override
-  String get syncPairScanTitle => 'Rikta kameran mot koden på din andra enhet';
+  String get syncPairScanTitle => 'Skanna parkopplingskoden';
 
   @override
-  String get syncPairShowEmojiAgain => 'Visa emojierna igen';
-
-  @override
-  String get syncPairStepAlmost => 'Steg 3 av 3 · Avsluta på din andra enhet';
-
-  @override
-  String get syncPairStepConfirm => 'Steg 2 av 3 · Bekräfta';
-
-  @override
-  String get syncPairStepConnecting => 'Steg 3 av 3 · Ansluter';
-
-  @override
-  String get syncPairStepDone => 'Steg 3 av 3 · Klart';
-
-  @override
-  String get syncPairStepFailed => 'Steg 3 av 3 · Kunde inte ansluta';
-
-  @override
-  String get syncPairStepScan => 'Steg 1 av 3 · Hämta koden';
+  String get syncPairShowEmoji => 'Visa emojierna';
 
   @override
   String get syncPairWhereToFind =>
-      'Koden finns under \"Lägg till enhet\" på en enhet som redan synkar — kopiera den där och klistra in den här.';
-
-  @override
-  String get syncPairWillJoin => 'Den här enheten ansluter till:';
+      'Den finns på din andra enhet under Lägg till enhet — kopiera den där och klistra in den här.';
 
   @override
   String get syncPayloadAgentBundle => 'Agentbunt';
@@ -10201,8 +10217,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncSetupCta => 'Konfigurera synk';
 
   @override
+  String get syncSetupEmptyFootnote =>
+      'Körs på din egen synkroniseringsserver · inget lämnar dina enheter okrypterat';
+
+  @override
   String get syncSetupEmptyHint =>
-      'Din dagbok på alla dina enheter — end-to-end-krypterad, bara mellan dina egna enheter.';
+      'Din dagbok på alla dina enheter. Totalsträckskrypterad, bara mellan dina enheter — inget molnkonto.';
 
   @override
   String get syncSetupEmptyTitle => 'Synka dina enheter';
@@ -10244,6 +10264,37 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncStepSavedTaskFilters => 'Sparade uppgiftsfilter';
+
+  @override
+  String get syncVerifiedCelebrationBody =>
+      'Från och med nu synkas allt du skriver — totalsträckskrypterat, maskin till maskin.';
+
+  @override
+  String get syncVerifiedCelebrationTitle => 'Dina enheter litar på varandra';
+
+  @override
+  String get syncVerifyModalTitle => 'Bekräfta din enhet';
+
+  @override
+  String get syncVerifyPromptLine1 => 'Båda skärmarna visar åtta emojier.';
+
+  @override
+  String get syncVerifyPromptQuestion => 'Samma emojier, samma ordning?';
+
+  @override
+  String get syncVerifyTheyDiffer => 'De skiljer sig — avbryt';
+
+  @override
+  String get syncVerifyTheyMatch => 'De stämmer';
+
+  @override
+  String get syncWizardStepCheck => 'Kontrollera';
+
+  @override
+  String get syncWizardStepConnect => 'Anslut';
+
+  @override
+  String get syncWizardStepGetCode => 'Hämta kod';
 
   @override
   String get taskActionBarAudioRecordingActive => 'Ljudinspelning pågår';
@@ -11162,18 +11213,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get syncPairedVerifyStepTitle => 'Jämför emojierna på båda enheterna';
-
-  @override
-  String get syncPairedSettingsStepTitle =>
-      'Skicka inställningar från din andra enhet';
-
-  @override
-  String get syncPairFirstDeviceTitle => 'Ställer du in din första enhet?';
-
-  @override
-  String get syncPairFirstDeviceHint =>
-      'Din första parkopplingskod kommer från synkserverns provisioneringsverktyg — se manualen. Alla senare enheter får sin kod från appen.';
 }

@@ -65,9 +65,9 @@ import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart'
 import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/outbox/outbox_message_card.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -1028,12 +1028,8 @@ void main() {
       case _SyncSurface.paired:
         // The quiet "connected" line plus the card that says what is still
         // outstanding — the point of the screen is the second half.
-        // The quiet "connected" line plus the card that says what is still
-        // outstanding — the point of the screen is the second half.
-        // The quiet "connected" line plus the card that says what is still
-        // outstanding — the point of the screen is the second half.
         expect(find.text(messages.provisionedSyncDone), findsOneWidget);
-        expect(find.byType(SyncFlowSection), findsWidgets);
+        expect(find.byType(SyncWell), findsWidgets);
       case _SyncSurface.status:
         expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
         // The roster rows are the subject of this capture; asserting only the
@@ -1052,12 +1048,10 @@ void main() {
           findsWidgets,
         );
         expect(
-          find.textContaining(
-            messages.settingsMatrixVerifyConfirm.split(' ').take(4).join(' '),
-          ),
+          find.text(messages.syncVerifyPromptQuestion),
           findsOneWidget,
         );
-        expect(find.text(messages.settingsMatrixAccept), findsOneWidget);
+        expect(find.text(messages.syncVerifyTheyMatch), findsOneWidget);
       case _SyncSurface.nodeProfile:
         expect(find.text(_localNode.displayName), findsOneWidget);
         expect(

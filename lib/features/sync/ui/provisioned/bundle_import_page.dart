@@ -6,15 +6,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_callout.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_wizard_progress_track.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/platform.dart';
@@ -22,28 +24,6 @@ import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
-
-/// Widest a commit action may grow. A phone sheet fills its own width and
-/// never notices; inside a desktop dialog the same `fullWidth` button used to
-/// span the entire modal — an accent slab louder than the content it commits.
-const double kSyncPairActionMaxWidth = 400;
-
-/// Caps a full-width action at [kSyncPairActionMaxWidth] and centers it.
-class _MeasuredAction extends StatelessWidget {
-  const _MeasuredAction({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: kSyncPairActionMaxWidth),
-        child: child,
-      ),
-    );
-  }
-}
 
 SliverWoltModalSheetPage bundleImportPage({
   required BuildContext context,
@@ -202,9 +182,9 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
   /// Declines the decoded code and lands where the button's label promises.
   ///
   /// Two things this must not do, both of which it used to. Returning to the
-  /// camera contradicts "Enter a different pairing code" *and* re-decodes the
-  /// rejected QR — still on the other device's screen — on the next frame, so
-  /// the reject button visibly bounced the user back to what they rejected.
+  /// camera contradicts "They don't match" *and* re-decodes the rejected QR —
+  /// still on the other device's screen — on the next frame, so the reject
+  /// button visibly bounced the user back to what they rejected.
   void _discardDecoded() {
     final rejected = _decodedBundle == null ? null : _lastScannedCode;
     setState(() {
@@ -229,19 +209,37 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // "Enter a new code" on the failed connect screen resets the controller
+    // and lands back here; without this the page still shows the stale
+    // decoded bundle the user is trying to replace.
+    ref.listen(provisioningControllerProvider, (previous, next) {
+      final wasStart =
+          previous?.maybeWhen(initial: () => true, orElse: () => false) ?? true;
+      final isStart = next.maybeWhen(initial: () => true, orElse: () => false);
+      if (isStart && !wasStart) {
+        setState(() {
+          _decodedBundle = null;
+          _lastScannedCode = null;
+          _errorText = null;
+          _textController.clear();
+          if (isDesktop) _manualEntry = true;
+        });
+      }
+    });
+
     final decoded = _decodedBundle;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Where the user is in a four-screen journey. The inviting device
-        // numbers its steps; the device being onboarded — held by whoever has
-        // the least context — had no indicator at all.
-        SyncPairStepIndicator(
-          label: decoded != null
-              ? context.messages.syncPairStepConfirm
-              : context.messages.syncPairStepScan,
+        // Where the user is, drawn rather than narrated: the same
+        // three-station track the connect page carries.
+        SyncWizardProgressTrack(
+          active: decoded != null
+              ? SyncWizardStep.check
+              : SyncWizardStep.getCode,
         ),
+        SizedBox(height: context.designTokens.spacing.step5),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           switchInCurve: Curves.easeOutCubic,
@@ -262,14 +260,18 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
                   key: const ValueKey('bundle_import_input'),
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // The screen's own imperative leads, at the same rank the
-                    // confirm and paired screens use. The prerequisite about a
-                    // *different* device is supporting copy, and sat above it.
                     _StepTitle(
                       _manualEntry
                           ? context.messages.syncPairPasteTitle
                           : context.messages.syncPairScanTitle,
                     ),
+                    SizedBox(height: context.designTokens.spacing.step2),
+                    _SupportLine(
+                      _manualEntry
+                          ? context.messages.syncPairWhereToFind
+                          : context.messages.syncPairScanHint,
+                    ),
+                    SizedBox(height: context.designTokens.spacing.step5),
                     if (_manualEntry)
                       _ManualEntry(
                         controller: _textController,
@@ -299,108 +301,86 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
   }
 }
 
-/// "Step 2 of 3 · Check it matches" — the joining journey's position line.
-///
-/// Shared with the config page so the two halves of the flow cannot disagree
-/// about how many steps there are.
-class SyncPairStepIndicator extends StatelessWidget {
-  const SyncPairStepIndicator({
-    required this.label,
-    super.key,
-    this.align = TextAlign.start,
-    this.bottomGap,
-  });
+/// The imperative that owns each screen, at the rank the sheet's chrome uses.
+class _StepTitle extends StatelessWidget {
+  const _StepTitle(this.label);
 
   final String label;
 
-  /// The pinned bar centres its lead-in; the page bodies start theirs on the
-  /// content rail. One component either way, so the two cannot drift apart.
-  final TextAlign align;
-  final double? bottomGap;
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      key: const Key('sync_pair_step_title'),
+      style: context.designTokens.typography.styles.heading.heading3,
+    );
+  }
+}
+
+/// The one supporting sentence directly under the step title.
+class _SupportLine extends StatelessWidget {
+  const _SupportLine(this.text);
+
+  final String text;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomGap ?? tokens.spacing.step3),
-      child: Text(
-        label,
-        textAlign: align,
-        // Caption-tier eyebrow: one rank below the page's single imperative
-        // heading. At body rank it was a third header competing with the
-        // sheet title above and the heading below.
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: tokens.colors.text.lowEmphasis,
-        ),
+    return Text(
+      text,
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
       ),
     );
   }
 }
 
-/// Which codes are safe to accept, in the same badged grammar the inviting
-/// device uses for its own caveat.
-///
-/// It sits on this side too — and above the camera, not below it — because
-/// this is the side an attack lands on: scanning somebody else's code joins
-/// this device, and everything written on it, to their account. Ranking it
-/// level with the menu-path prose, under a live viewfinder, put the warning
-/// where it could only be read after the scan had already fired.
+/// The account-takeover caveat, rendered *inside* the credential frame so the
+/// warning physically touches the thing it warns about.
 class _OnlyOwnCodeWarning extends StatelessWidget {
   const _OnlyOwnCodeWarning();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: context.designTokens.spacing.step4),
-      child: SyncCallout(
-        icon: Icons.lock_outline_rounded,
-        text: context.messages.syncPairOnlyOwnCode,
-        // The callout's default warning tone, deliberately: this line is the
-        // flow's account-takeover warning, and de-toned to grey it whispered
-        // while the conveniences around it shouted.
-        calloutKey: const Key('sync_pair_only_own_code'),
-      ),
-    );
-  }
-}
-
-/// Names where the code comes from — wayfinding, not a caveat, so it stays
-/// plain prose and stops looking like the warning above it. One line: the
-/// old two-paragraph version was the wall this screen was accused of.
-class _WhereToFindHint extends StatelessWidget {
-  const _WhereToFindHint();
-
-  @override
-  Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step4),
-      child: Text(
-        context.messages.syncPairWhereToFind,
-        style: tokens.typography.styles.body.bodySmall.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
+    return Row(
+      key: const Key('sync_pair_only_own_code'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.lock_outline_rounded,
+          size: tokens.spacing.step5,
+          color: tokens.colors.alert.warning.defaultColor,
         ),
-      ),
+        SizedBox(width: tokens.spacing.step3),
+        Expanded(
+          child: Text(
+            context.messages.syncPairOnlyOwnCode,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
 /// The honest branch for the account's very first device: there is no other
 /// device to mint a code, and the screen used to leave that user staring at
-/// instructions that cannot be followed. A quiet title-plus-caption block,
-/// not a callout — it is a signpost, not a warning.
-class _FirstDeviceHint extends StatelessWidget {
-  const _FirstDeviceHint();
+/// instructions that cannot be followed — with "see the manual" as prose and
+/// nothing to press. The manual link is a real button now.
+class _FirstDeviceCard extends ConsumerWidget {
+  const _FirstDeviceCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
 
-    return Padding(
-      padding: EdgeInsets.only(top: tokens.spacing.step5),
+    return SyncWell(
       child: Column(
         key: const Key('bundle_import_first_device_hint'),
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,29 +396,20 @@ class _FirstDeviceHint extends StatelessWidget {
               color: tokens.colors.text.mediumEmphasis,
             ),
           ),
+          SizedBox(height: tokens.spacing.step3),
+          DesignSystemButton(
+            key: const Key('bundle_import_open_manual'),
+            label: messages.syncPairOpenManual,
+            variant: DesignSystemButtonVariant.outlined,
+            leadingIcon: Icons.menu_book_outlined,
+            onPressed: () => unawaited(
+              openManualInBrowser(
+                systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
+                override: ref.read(manualLanguageControllerProvider).value,
+              ),
+            ),
+          ),
         ],
-      ),
-    );
-  }
-}
-
-/// The imperative that owns each screen, at the rank every other surface in
-/// the flow leads with.
-class _StepTitle extends StatelessWidget {
-  const _StepTitle(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step4),
-      child: Text(
-        label,
-        key: const Key('sync_pair_step_title'),
-        style: tokens.typography.styles.subtitle.subtitle1,
       ),
     );
   }
@@ -538,7 +509,6 @@ class _ScannerViewState extends State<_ScannerView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _OnlyOwnCodeWarning(),
         LayoutBuilder(
           builder: (context, constraints) {
             // Sized from the real constraint and a height budget, not the raw
@@ -555,16 +525,25 @@ class _ScannerViewState extends State<_ScannerView> {
                 borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
                 child: SizedBox.square(
                   dimension: side,
-                  child:
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
                       scannerPreviewOverride?.call(context, side) ??
-                      MobileScanner(
-                        controller: widget.controller,
-                        onDetect: widget.onDetect,
-                        errorBuilder: (context, error) => _CameraUnavailable(
-                          message: messages.syncPairCameraDenied,
-                          onRetry: widget.onRetryCamera,
-                        ),
-                      ),
+                          MobileScanner(
+                            controller: widget.controller,
+                            onDetect: widget.onDetect,
+                            errorBuilder: (context, error) =>
+                                _CameraUnavailable(
+                                  message: messages.syncPairCameraDenied,
+                                  onRetry: widget.onRetryCamera,
+                                ),
+                          ),
+                      // The pairing moment's frame: accent corner brackets
+                      // marking where the code should land. Decorative and
+                      // input-transparent.
+                      const IgnorePointer(child: _ViewfinderBrackets()),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -581,28 +560,126 @@ class _ScannerViewState extends State<_ScannerView> {
           ),
         ],
         SizedBox(height: tokens.spacing.step4),
-        // Below the viewfinder, unlike the manual screen, which puts it above
-        // its field. The camera is already actionable the moment the screen
-        // opens, so the prerequisite supports it; the field is not, so there
-        // the prerequisite has to come first. It still precedes the escape
-        // hatch, which otherwise sat between the user and their first task.
-        const _WhereToFindHint(),
-        // Neutral, hug-width, centred — the same object as "Scan with camera"
-        // on the other screen. On the accent it was the only coloured element
-        // on a page whose real action is holding the camera up, teaching that
-        // the way out is the way forward.
-        Center(
-          child: DesignSystemButton(
-            key: const Key('bundle_import_enter_manually'),
-            label: messages.syncPairEnterManually,
-            variant: DesignSystemButtonVariant.outlined,
-            onPressed: widget.onEnterManually,
-          ),
+        // Glued to the viewfinder it concerns: this side is where an attack
+        // lands — scanning somebody else's code joins this device, and
+        // everything written on it, to their account.
+        SyncWell(
+          borderColor: tokens.colors.alert.warning.defaultColor,
+          padding: EdgeInsets.all(tokens.spacing.step4),
+          child: const _OnlyOwnCodeWarning(),
         ),
-        const _FirstDeviceHint(),
+        SizedBox(height: tokens.spacing.step4),
+        // The escape hatch for a phone whose camera cannot be pointed at
+        // anything useful. Full width, but neutral: the page's real action is
+        // holding the camera up.
+        DesignSystemButton(
+          key: const Key('bundle_import_enter_manually'),
+          label: messages.syncPairEnterManually,
+          leadingIcon: Icons.content_paste,
+          variant: DesignSystemButtonVariant.outlined,
+          size: DesignSystemButtonSize.large,
+          fullWidth: true,
+          onPressed: widget.onEnterManually,
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        const _FirstDeviceCard(),
       ],
     );
   }
+}
+
+/// Accent corner brackets and a center scan line over the camera square.
+class _ViewfinderBrackets extends StatelessWidget {
+  const _ViewfinderBrackets();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return CustomPaint(
+      painter: _ViewfinderBracketsPainter(
+        color: tokens.colors.interactive.enabled,
+        cornerLength: tokens.spacing.step7,
+        cornerRadius: tokens.radii.l,
+        strokeWidth: tokens.spacing.step1,
+        inset: tokens.spacing.step5,
+      ),
+    );
+  }
+}
+
+class _ViewfinderBracketsPainter extends CustomPainter {
+  _ViewfinderBracketsPainter({
+    required this.color,
+    required this.cornerLength,
+    required this.cornerRadius,
+    required this.strokeWidth,
+    required this.inset,
+  });
+
+  final Color color;
+  final double cornerLength;
+  final double cornerRadius;
+  final double strokeWidth;
+  final double inset;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    final rect = Rect.fromLTWH(
+      inset,
+      inset,
+      size.width - inset * 2,
+      size.height - inset * 2,
+    );
+    final r = cornerRadius;
+    final l = cornerLength;
+
+    // One bracket per corner: a horizontal leg and a vertical leg joined by
+    // a bezier through the corner point, so the elbow renders rounded.
+    void drawBracket(Offset corner, {required int dx, required int dy}) {
+      final path = Path()
+        ..moveTo(corner.dx + dx * l, corner.dy)
+        ..lineTo(corner.dx + dx * r, corner.dy)
+        ..quadraticBezierTo(
+          corner.dx,
+          corner.dy,
+          corner.dx,
+          corner.dy + dy * r,
+        )
+        ..lineTo(corner.dx, corner.dy + dy * l);
+      canvas.drawPath(path, paint);
+    }
+
+    drawBracket(rect.topLeft, dx: 1, dy: 1);
+    drawBracket(rect.topRight, dx: -1, dy: 1);
+    drawBracket(rect.bottomLeft, dx: 1, dy: -1);
+    drawBracket(rect.bottomRight, dx: -1, dy: -1);
+
+    // The scan line: a faint accent rule across the middle.
+    final linePaint = Paint()
+      ..color = color.withValues(alpha: 0.7)
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(rect.left + l, rect.center.dy),
+      Offset(rect.right - l, rect.center.dy),
+      linePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ViewfinderBracketsPainter oldDelegate) =>
+      color != oldDelegate.color ||
+      cornerLength != oldDelegate.cornerLength ||
+      cornerRadius != oldDelegate.cornerRadius ||
+      strokeWidth != oldDelegate.strokeWidth ||
+      inset != oldDelegate.inset;
 }
 
 /// Shown in place of the viewfinder when the camera cannot start — most often
@@ -617,7 +694,8 @@ class _CameraUnavailable extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return SyncFlowSection(
+    return SyncWell(
+      radius: tokens.radii.sectionCards,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -679,78 +757,78 @@ class _ManualEntry extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // The field and its action lead: this screen exists to receive a
-        // paste, and burying the input under two paragraphs of contingency
-        // prose made the reader work through where-to-find advice before
-        // meeting the one control they came for.
-        DesignSystemTextarea(
-          controller: controller,
-          // The heading above already says "Paste the pairing code"; a bold
-          // label repeating it gave the screen two titles and no field.
-          hintText: messages.provisionedSyncImportHint,
-          errorText: errorText,
-          minLines: 2,
-          maxLines: 4,
-          onChanged: (_) => onChanged(),
+        // The credential frame: field, its action and the caveat share one
+        // warning-bordered well, so the warning cannot drift away from the
+        // secret it concerns and the screen has one hero instead of a stack
+        // of equally weighted blocks.
+        SyncWell(
+          borderColor: tokens.colors.alert.warning.defaultColor,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DesignSystemTextarea(
+                controller: controller,
+                // The heading above already says "Paste the pairing code"; a
+                // bold label repeating it gave the screen two titles and no
+                // field.
+                hintText: messages.provisionedSyncImportHint,
+                errorText: errorText,
+                minLines: 2,
+                maxLines: 4,
+                onChanged: (_) => onChanged(),
+              ),
+              SizedBox(height: tokens.spacing.step4),
+              // Paste leads while the field is empty: a full-width disabled
+              // slab above the only live control read as the primary action.
+              if (hasText) ...[
+                DesignSystemButton(
+                  onPressed: onImport,
+                  label: messages.provisionedSyncImportButton,
+                  size: DesignSystemButtonSize.large,
+                  fullWidth: true,
+                ),
+                SizedBox(height: tokens.spacing.step3),
+                // Still reachable with text in the field: the malformed-code
+                // error tells the user to copy the code again on the other
+                // device, and this was the control that disappeared exactly
+                // then, leaving a bad payload with no way to overwrite it
+                // short of select-all on a phone.
+                Center(
+                  child: DesignSystemButton(
+                    key: const Key('bundle_import_paste_again'),
+                    onPressed: onPaste,
+                    leadingIcon: Icons.content_paste,
+                    label: messages.provisionedSyncPasteClipboard,
+                    variant: DesignSystemButtonVariant.outlined,
+                  ),
+                ),
+              ] else
+                DesignSystemButton(
+                  onPressed: onPaste,
+                  leadingIcon: Icons.content_paste,
+                  label: messages.provisionedSyncPasteClipboard,
+                  size: DesignSystemButtonSize.large,
+                  fullWidth: true,
+                ),
+              SizedBox(height: tokens.spacing.step4),
+              const _OnlyOwnCodeWarning(),
+            ],
+          ),
         ),
-        SizedBox(height: tokens.spacing.step4),
-        // Paste leads while the field is empty: a full-width disabled slab
-        // above the only live control read as the primary action. Paste is
-        // offered on every platform — the manual screen is exactly where a
-        // user lands when the camera is unavailable.
-        if (hasText) ...[
-          _MeasuredAction(
-            child: DesignSystemButton(
-              onPressed: onImport,
-              label: messages.provisionedSyncImportButton,
-              size: DesignSystemButtonSize.large,
-              fullWidth: true,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          // Still reachable with text in the field: the malformed-code error
-          // tells the user to copy the code again on the other device, and
-          // this was the control that disappeared exactly then, leaving a bad
-          // payload with no way to overwrite it short of select-all on a
-          // phone.
+        if (useCamera != null) ...[
+          SizedBox(height: tokens.spacing.step4),
           Center(
-            child: DesignSystemButton(
-              key: const Key('bundle_import_paste_again'),
-              onPressed: onPaste,
-              leadingIcon: Icons.content_paste,
-              label: messages.provisionedSyncPasteClipboard,
-              variant: DesignSystemButtonVariant.outlined,
-            ),
-          ),
-        ] else
-          _MeasuredAction(
-            child: DesignSystemButton(
-              onPressed: onPaste,
-              leadingIcon: Icons.content_paste,
-              label: messages.provisionedSyncPasteClipboard,
-              size: DesignSystemButtonSize.large,
-              fullWidth: true,
-            ),
-          ),
-        SizedBox(height: tokens.spacing.step4),
-        // The security caveat supports the action rather than gatekeeping
-        // it, but keeps its warning tone — it is the line that stops a
-        // pasted stranger's code from joining their account.
-        const _OnlyOwnCodeWarning(),
-        // Contingency prose last: where to make a code appear and how to
-        // move it here matter only to someone whose clipboard is empty.
-        const _WhereToFindHint(),
-        if (useCamera != null)
-          Center(
-            child: DesignSystemButton(
+            child: DesignSystemInlineAction(
               key: const Key('bundle_import_scan_instead'),
-              onPressed: useCamera,
+              onTap: useCamera,
               leadingIcon: Icons.qr_code_scanner,
-              label: messages.syncPairScanInstead,
-              variant: DesignSystemButtonVariant.outlined,
+              label: messages.syncPairScanLink,
+              semanticsLabel: messages.syncPairScanLink,
             ),
           ),
-        const _FirstDeviceHint(),
+        ],
+        SizedBox(height: tokens.spacing.step5),
+        const _FirstDeviceCard(),
       ],
     );
   }
@@ -776,108 +854,93 @@ class _DecodedView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // An instruction, not a receipt. That the base64 parsed is the least
-        // consequential fact on this screen; whether the code matches is the
-        // only thing the user can actually decide.
+        // The security moment: the check code IS the screen. That the base64
+        // parsed is the least consequential fact here; whether the code
+        // matches is the only thing the user can actually decide.
         Text(
-          messages.syncPairCheckCode,
+          messages.syncPairReviewTitle,
           key: const Key('bundle_import_compare_heading'),
-          style: tokens.typography.styles.subtitle.subtitle1,
+          style: tokens.typography.styles.heading.heading3,
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        _SupportLine(messages.syncPairReviewIntro),
+        SizedBox(height: tokens.spacing.step5),
+        SyncWell(
+          padding: EdgeInsets.symmetric(
+            vertical: tokens.spacing.step6,
+            horizontal: tokens.spacing.step5,
+          ),
+          child: PairingCheckCodeView(
+            code: pairingCheckCode(
+              user: bundle.user,
+              roomId: bundle.roomId,
+              homeServer: bundle.homeServer,
+            ),
+            caption: messages.syncPairSameCodeQuestion,
+            codeKey: const Key('bundle_import_check_code'),
+          ),
         ),
         SizedBox(height: tokens.spacing.step4),
-        _BundleSummaryCard(bundle: bundle),
-        SizedBox(height: tokens.spacing.step4),
-        _MeasuredAction(
-          child: DesignSystemButton(
-            onPressed: onConnect,
-            label: messages.syncPairConnectButton,
-            size: DesignSystemButtonSize.large,
-            fullWidth: true,
-          ),
+        _ContextRow(
+          label: messages.provisionedSyncSummaryUser,
+          value: bundle.user,
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        _ContextRow(
+          label: messages.provisionedSyncSummaryHomeserver,
+          value: Uri.tryParse(bundle.homeServer)?.host ?? bundle.homeServer,
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        DesignSystemButton(
+          onPressed: onConnect,
+          label: messages.syncPairConnectButton,
+          leadingIcon: Icons.check_rounded,
+          size: DesignSystemButtonSize.large,
+          fullWidth: true,
         ),
         SizedBox(height: tokens.spacing.step3),
         // Neutral, not accent: the accent means "commit" one button up, and
         // it cannot also mean "back out".
-        // Neutral *and* smaller: identical width, height and type made the
-        // back-out read as a peer of the commit on the one screen asking for
-        // a deliberate security decision.
-        Center(
-          child: DesignSystemButton(
-            key: const Key('bundle_import_discard'),
-            onPressed: onDiscard,
-            label: messages.syncPairDiscardCode,
-            variant: DesignSystemButtonVariant.outlined,
-          ),
+        DesignSystemButton(
+          key: const Key('bundle_import_discard'),
+          onPressed: onDiscard,
+          label: messages.syncPairDiscardCode,
+          variant: DesignSystemButtonVariant.secondary,
+          fullWidth: true,
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        // The mismatch consequence rides on the decline action it argues
+        // for, not buried under the summary rows.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              size: tokens.spacing.step4,
+              color: tokens.colors.alert.warning.defaultColor,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            Flexible(
+              child: Text(
+                messages.syncPairMismatchWarning,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 }
 
-/// What the code will connect this device to.
-///
-/// The check code leads because it is the only value a person can actually
-/// compare — the inviting device renders the identical one. The account and
-/// server follow as supporting detail. The room id is an opaque handle that
-/// nobody can verify by eye, so it lives in the diagnostics dump instead.
-class _BundleSummaryCard extends StatelessWidget {
-  const _BundleSummaryCard({required this.bundle});
-
-  final SyncProvisioningBundle bundle;
-
-  @override
-  Widget build(BuildContext context) {
-    final messages = context.messages;
-    final tokens = context.designTokens;
-    final check = pairingCheckCode(
-      user: bundle.user,
-      roomId: bundle.roomId,
-      homeServer: bundle.homeServer,
-    );
-
-    return SyncFlowSection(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Names the consequence too: asking someone to compare two values
-          // without saying what a mismatch means leaves them with no decision
-          // to make.
-          Center(
-            child: PairingCheckCodeView(
-              code: check,
-              label: messages.syncPairCheckCodeLabel,
-              caption: messages.syncPairMismatchWarning,
-              codeKey: const Key('bundle_import_check_code'),
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step4),
-          // Introduced as context rather than left under the "check this
-          // matches" heading: neither row appears on the other device, so
-          // presenting them as comparables reads as an unfinished checklist.
-          Text(
-            messages.syncPairWillJoin,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          _SummaryRow(
-            label: messages.provisionedSyncSummaryUser,
-            value: bundle.user,
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          _SummaryRow(
-            label: messages.provisionedSyncSummaryHomeserver,
-            value: Uri.tryParse(bundle.homeServer)?.host ?? bundle.homeServer,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.label, required this.value});
+/// One context row under the check code: what account and server this code
+/// would join. Mono values — identifiers, not prose.
+class _ContextRow extends StatelessWidget {
+  const _ContextRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -888,20 +951,20 @@ class _SummaryRow extends StatelessWidget {
     final styles = tokens.typography.styles.body;
 
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: tokens.spacing.step12,
-          child: Text(
-            label,
-            style: styles.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
+        Text(
+          label,
+          style: styles.bodySmall.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
-        Expanded(
+        SizedBox(width: tokens.spacing.step4),
+        Flexible(
           child: Text(
             value,
+            textAlign: TextAlign.end,
             // Mono, so the account and server read as exact identifiers: a
             // proportional face with hyphen line-breaks undermined the one
             // screen whose typography must guarantee exact comparison.

@@ -42,13 +42,33 @@ void main() {
 
       expect(
         code.style?.fontSize,
-        tokens.typography.styles.heading.heading2.fontSize,
+        tokens.typography.styles.heading.heading1.fontSize,
       );
+      // Mono: the code is a compare-me identifier, not prose, and both
+      // sides must render the identical face.
+      expect(code.style?.fontFamily, 'Inconsolata');
       expect(
         caption.style?.fontSize,
         tokens.typography.styles.body.bodySmall.fontSize,
       );
       expect(code.style!.fontSize, greaterThan(caption.style!.fontSize!));
+    });
+
+    testWidgets('names the value with an overline when asked', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const PairingCheckCodeView(
+            code: '6BA-6DF',
+            caption: 'Compare on both screens.',
+            label: 'Check code',
+          ),
+        ),
+      );
+
+      // Uppercased into the overline register: without a name, six
+      // characters between a QR and "paste this code there" read as the
+      // thing to paste.
+      expect(find.text('CHECK CODE'), findsOneWidget);
     });
 
     testWidgets('uses tabular figures so the digits align to compare', (

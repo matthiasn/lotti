@@ -8361,11 +8361,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Arrêter la synchronisation sur cet appareil';
 
   @override
-  String get provisionedSyncDone => 'Cet appareil est connecté';
+  String get provisionedSyncDone => 'Connecté';
 
   @override
-  String get provisionedSyncError =>
-      'Impossible de se connecter à ton compte de synchronisation';
+  String get provisionedSyncError => 'Ce code n\'a pas fonctionné';
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
@@ -8373,7 +8372,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'La connexion avec ce code a échoué. Vérifie que l’autre appareil synchronise toujours, rouvre Ajouter un appareil là-bas et utilise le code affiché.';
+      'Les codes d\'appairage expirent quand la fenêtre « Ajouter un appareil » se ferme. Rouvre-la sur ton autre appareil et utilise le nouveau code affiché.';
 
   @override
   String get provisionedSyncImportButton => 'Continuer';
@@ -9433,9 +9432,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsManualLanguageTitle => 'Langue';
 
   @override
-  String get settingsMatrixAccept => 'Accepter';
-
-  @override
   String get settingsMatrixAcceptVerificationLabel =>
       'L\'autre appareil affiche des emojis, continuer';
 
@@ -9514,22 +9510,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsMatrixVerificationSuccessConfirm => 'OK';
-
-  @override
-  String settingsMatrixVerificationSuccessLabel(
-    String deviceName,
-    String deviceID,
-  ) {
-    return 'Tu as vérifié avec succès $deviceName ($deviceID)';
-  }
-
-  @override
-  String get settingsMatrixVerifyConfirm =>
-      'Confirme sur l\'autre appareil que les émojis ci-dessous sont affichés sur les deux appareils, dans le même ordre :';
-
-  @override
-  String get settingsMatrixVerifyIncomingConfirm =>
-      'Confirme que les émojis ci-dessous sont affichés sur les deux appareils, dans le même ordre :';
 
   @override
   String get settingsMatrixVerifyLabel => 'Vérifier';
@@ -10029,7 +10009,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncAddDeviceIntro =>
-      'Installe Lotti sur le nouvel appareil, ouvre Paramètres → Paramètres de synchronisation → Appareils là-bas et scanne ce code.';
+      'Installe Lotti dessus, ouvre Réglages → Synchronisation → Appareils et choisis « Configurer la synchronisation ».';
 
   @override
   String get syncAddDeviceRevealCode => 'Afficher le code d’appairage en texte';
@@ -10040,7 +10020,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'Traite ce code comme ton mot de passe — seul ton propre nouvel appareil peut le scanner.';
+      'Ce code est une clé de ton compte — ne le montre qu\'à ton propre nouvel appareil.';
 
   @override
   String get syncAddDeviceSendMessages => 'Envoyer l’historique des messages';
@@ -10049,29 +10029,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncAddDeviceSendSettings => 'Envoyer les réglages';
 
   @override
-  String get syncAddDeviceSendSettingsHint =>
-      'Une fois le nouvel appareil vérifié par émojis, envoie-lui tes mesurables, catégories, habitudes, tableaux de bord et réglages d’IA.';
-
-  @override
-  String get syncAddDeviceSendSettingsPending =>
-      'Disponible une fois le nouvel appareil rejoint et vérifié par émojis.';
-
-  @override
   String get syncAddDeviceSendSettingsReady =>
       'Nouvel appareil vérifié — prêt à recevoir.';
 
   @override
-  String get syncAddDeviceStepScan => 'Maintenant · Affiche le code';
+  String get syncAddDeviceStepScanTitle => 'Scanne ceci sur le nouvel appareil';
 
   @override
-  String get syncAddDeviceStepScanTitle => 'Scanne ceci sur le nouvel appareil';
+  String get syncAddDeviceTimelineJoined =>
+      'Connecté — confirme les émojis sur les deux écrans';
+
+  @override
+  String get syncAddDeviceTimelineVerified =>
+      'Vérifié — prêt pour la passation';
+
+  @override
+  String get syncAddDeviceTimelineWaiting => 'En attente du nouvel appareil…';
 
   @override
   String get syncAddDeviceUnavailable =>
       'Configure la synchronisation sur cet appareil avant d’en ajouter un autre.';
 
   @override
-  String get syncAddDeviceWaiting => 'En attente du nouvel appareil…';
+  String get syncAddDeviceUnlockHint =>
+      'Se débloque après la correspondance des émojis — avant cela, le nouvel appareil ne pourrait de toute façon pas les déchiffrer.';
 
   @override
   String get syncDeleteConfigConfirm => 'Arrêter la synchronisation';
@@ -10079,6 +10060,26 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Arrêter la synchronisation sur cet appareil ?';
+
+  @override
+  String syncDevicesCount(num count, String server) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count appareils sur $server',
+      one: '1 appareil sur $server',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesJustJoined(String deviceName) {
+    return '$deviceName vient de se connecter et est vérifié';
+  }
+
+  @override
+  String get syncDevicesJustJoinedHint =>
+      'Transmets-lui maintenant tes réglages et ton historique de messages.';
 
   @override
   String get syncDevicesKeylessHint =>
@@ -10213,7 +10214,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPairCheckCode =>
-      'Vérifie que c’est identique sur l’autre appareil';
+      'Le nouvel appareil affiche le même code avant de se connecter — compare-les.';
 
   @override
   String get syncPairCheckCodeLabel => 'Code de contrôle';
@@ -10227,14 +10228,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de lire le presse-papiers. Colle le code directement dans le champ.';
 
   @override
-  String get syncPairConnectButton => 'Connecter cet appareil';
+  String get syncPairConnectButton => 'Les codes correspondent — connecter';
 
   @override
-  String get syncPairDiscardCode => 'Saisir un autre code d’appairage';
+  String get syncPairDiscardCode => 'Ils ne correspondent pas';
 
   @override
   String get syncPairedFirstDeviceBody =>
-      'C’est pour l’instant le seul appareil de ton compte de synchronisation. Ajoutes-en un autre quand tu veux — tout ce que tu écris ici l’attendra.';
+      'C\'est le premier appareil de ton compte. Ajoutes-en un autre quand tu veux — tout ce que tu écris ici l\'attendra.';
 
   @override
   String get syncPairedFirstDeviceTitle =>
@@ -10242,15 +10243,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Tes catégories, habitudes, tableaux de bord et réglages d\'IA arrivent depuis là-bas.';
+      'Catégories, habitudes, tableaux de bord et configuration IA — envoyés depuis ton autre appareil après la correspondance des émojis.';
 
   @override
   String get syncPairedSettingsStepFallback =>
       'Si tu l’as fermé, ouvre sur l’autre appareil Paramètres → Paramètres de synchronisation → Maintenance, lance la synchronisation des réglages, puis choisis Historique des messages.';
 
   @override
-  String get syncPairedVerifyDone =>
-      'Les deux appareils sont vérifiés — cet appareil peut lire tes entrées';
+  String get syncPairedSettingsStepTitle => 'Recevoir tes réglages';
+
+  @override
+  String get syncPairedStepsLeft =>
+      'Encore deux étapes avant que cet appareil puisse lire ton journal.';
 
   @override
   String get syncPairedVerifyFallback =>
@@ -10258,18 +10262,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Tant que tu ne confirmes pas sur les deux appareils, celui-ci ne peut pas lire tes entrées.';
+      'Les deux appareils vont afficher huit émojis. Tant qu\'ils ne correspondent pas, cet appareil ne voit que du texte chiffré.';
 
   @override
   String get syncPairedVerifyStepDone =>
       'Émojis identiques — cet appareil peut lire tes entrées';
 
   @override
+  String get syncPairedVerifyStepTitle => 'Confirmer les émojis';
+
+  @override
   String get syncPairedVerifyWaiting =>
       'En attente de l’apparition des émojis…';
 
   @override
-  String get syncPairEnterManually => 'Saisir le code manuellement';
+  String get syncPairEnterManually => 'Coller le code à la place';
+
+  @override
+  String get syncPairEnterNewCode => 'Saisir un nouveau code';
 
   @override
   String get syncPairErrorMalformed =>
@@ -10280,58 +10290,62 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ce code vient d’une autre version de Lotti. Mets à jour les deux appareils et réessaie.';
 
   @override
+  String get syncPairFirstDeviceHint =>
+      'Il n\'y a pas encore d\'autre appareil où le copier — ton premier code vient de l\'outil de provisionnement de ton serveur de synchronisation.';
+
+  @override
+  String get syncPairFirstDeviceTitle => 'Tu configures ton premier appareil ?';
+
+  @override
   String get syncPairGoToDevices => 'Aller à Appareils';
 
   @override
   String get syncPairMismatchWarning =>
-      'Si cela ne correspond pas, ne connecte pas — le code appartient à un autre compte.';
+      'Des codes différents signifient que celui-ci ne vient pas de ton appareil. Ne te connecte pas — récupère un nouveau code sur ton propre appareil.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'N\'utilise qu\'un code venant de ton propre appareil — le code de quelqu\'un d\'autre envoie tout ce que tu écris vers son compte.';
+      'Le code est une clé de ton compte. N\'utilise qu\'un code venant de ton propre appareil — le code de quelqu\'un d\'autre lui envoie tout ce que tu écris.';
+
+  @override
+  String get syncPairOpenManual => 'Ouvrir le manuel du serveur';
 
   @override
   String get syncPairPasteTitle => 'Colle le code d’appairage';
 
   @override
-  String get syncPairScanInstead => 'Scanner avec la caméra';
+  String get syncPairRetryThisCode => 'Réessayer ce code';
+
+  @override
+  String get syncPairReviewIntro =>
+      'Ton autre appareil affiche un code de contrôle sous son QR. Il doit être exactement celui-ci :';
+
+  @override
+  String get syncPairReviewTitle => 'Compare avant de te connecter';
+
+  @override
+  String get syncPairSameCodeQuestion => 'Le même code sur les deux écrans ?';
+
+  @override
+  String get syncPairScanHint =>
+      'Vise le QR affiché sous « Ajouter un appareil » sur ton autre appareil.';
+
+  @override
+  String get syncPairScanLink => 'Tu as une caméra ? Scanne plutôt le QR';
 
   @override
   String get syncPairScannerRejected =>
       'C’est le code que tu as refusé. Scanne celui qu’affiche ton propre appareil, ou colle-le ci-dessous.';
 
   @override
-  String get syncPairScanTitle =>
-      'Dirige la caméra vers le code sur ton autre appareil';
+  String get syncPairScanTitle => 'Scanner le code d\'appairage';
 
   @override
-  String get syncPairShowEmojiAgain => 'Afficher de nouveau les émojis';
-
-  @override
-  String get syncPairStepAlmost =>
-      'Étape 3 sur 3 · Termine sur ton autre appareil';
-
-  @override
-  String get syncPairStepConfirm => 'Étape 2 sur 3 · Confirmer';
-
-  @override
-  String get syncPairStepConnecting => 'Étape 3 sur 3 · Connexion';
-
-  @override
-  String get syncPairStepDone => 'Étape 3 sur 3 · Terminé';
-
-  @override
-  String get syncPairStepFailed => 'Étape 3 sur 3 · Échec de la connexion';
-
-  @override
-  String get syncPairStepScan => 'Étape 1 sur 3 · Obtiens le code';
+  String get syncPairShowEmoji => 'Afficher les émojis';
 
   @override
   String get syncPairWhereToFind =>
-      'Le code se trouve sous « Ajouter un appareil » sur un appareil déjà synchronisé — copie-le là-bas, puis colle-le ici.';
-
-  @override
-  String get syncPairWillJoin => 'Cet appareil va rejoindre :';
+      'Il se trouve sur ton autre appareil, sous « Ajouter un appareil » — copie-le là-bas, colle-le ici.';
 
   @override
   String get syncPayloadAgentBundle => 'Lot d\'agent';
@@ -10402,8 +10416,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncSetupCta => 'Configurer la synchronisation';
 
   @override
+  String get syncSetupEmptyFootnote =>
+      'Fonctionne sur ton propre serveur de synchronisation · rien ne quitte tes appareils sans chiffrement';
+
+  @override
   String get syncSetupEmptyHint =>
-      'Ton journal sur tous tes appareils — chiffré de bout en bout, uniquement entre tes propres appareils.';
+      'Ton journal sur chacun de tes appareils. Chiffré de bout en bout, uniquement entre tes appareils — sans compte cloud.';
 
   @override
   String get syncSetupEmptyTitle => 'Synchronise tes appareils';
@@ -10445,6 +10463,37 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncStepSavedTaskFilters => 'Filtres de tâches enregistrés';
+
+  @override
+  String get syncVerifiedCelebrationBody =>
+      'À partir de maintenant, tout ce que tu écris se synchronise — chiffré de bout en bout, de machine à machine.';
+
+  @override
+  String get syncVerifiedCelebrationTitle => 'Tes appareils se font confiance';
+
+  @override
+  String get syncVerifyModalTitle => 'Confirme ton appareil';
+
+  @override
+  String get syncVerifyPromptLine1 => 'Les deux écrans affichent huit émojis.';
+
+  @override
+  String get syncVerifyPromptQuestion => 'Mêmes émojis, même ordre ?';
+
+  @override
+  String get syncVerifyTheyDiffer => 'Ils diffèrent — annuler';
+
+  @override
+  String get syncVerifyTheyMatch => 'Ils correspondent';
+
+  @override
+  String get syncWizardStepCheck => 'Vérifier';
+
+  @override
+  String get syncWizardStepConnect => 'Connecter';
+
+  @override
+  String get syncWizardStepGetCode => 'Obtenir le code';
 
   @override
   String get taskActionBarAudioRecordingActive =>
@@ -11378,19 +11427,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String get syncPairedVerifyStepTitle =>
-      'Compare les émojis sur les deux appareils';
-
-  @override
-  String get syncPairedSettingsStepTitle =>
-      'Envoie les réglages depuis ton autre appareil';
-
-  @override
-  String get syncPairFirstDeviceTitle => 'Tu configures ton premier appareil ?';
-
-  @override
-  String get syncPairFirstDeviceHint =>
-      'Ton premier code d\'association vient de l\'outil de provisionnement de ton serveur de synchro — voir le manuel. Chaque appareil suivant reçoit son code depuis l\'app.';
 }

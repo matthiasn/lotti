@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
@@ -136,10 +136,11 @@ void main() {
     controller.add(runner);
     await tester.pump();
 
-    expect(find.text('Accept'), findsOneWidget);
+    expect(find.text('They match'), findsOneWidget);
     final cancelFinder = find.byKey(const Key('matrix_cancel_verification'));
     expect(cancelFinder, findsOneWidget);
 
+    await tester.ensureVisible(cancelFinder);
     await tester.tap(cancelFinder);
     await tester.pumpAndSettle();
 
@@ -172,11 +173,17 @@ void main() {
     controller.add(runner);
     await tester.pump();
 
+    // The trust moment celebrates: the motif's gap closes into a solid
+    // line and the copy states the property that was just established.
     expect(
-      find.text("You've successfully verified Pixel 7 (DEVICE1)"),
+      find.byKey(const Key('verification_success_stage')),
       findsOneWidget,
     );
-    expect(find.byIcon(MdiIcons.shieldCheck), findsOneWidget);
+    expect(find.text('Your devices trust each other'), findsOneWidget);
+    final motif = tester.widget<SyncDevicePairMotif>(
+      find.byType(SyncDevicePairMotif),
+    );
+    expect(motif.state, SyncDevicePairMotifState.linked);
 
     await tester.pump(const Duration(seconds: 30));
   });
@@ -237,7 +244,8 @@ void main() {
       controller.add(runner);
       await tester.pump();
 
-      await tester.tap(find.text('Accept'));
+      await tester.ensureVisible(find.text('They match'));
+      await tester.tap(find.text('They match'));
       await tester.pump();
 
       verify(runner.acceptEmojiVerification).called(1);
@@ -292,7 +300,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('Pixel 7'), findsOneWidget);
-      expect(find.text('@user:server'), findsOneWidget);
+      // Account and session id share one mono meta line.
+      expect(find.text('@user:server · DEVICE1'), findsOneWidget);
     },
   );
 
@@ -524,7 +533,10 @@ void main() {
       await tester.pump();
 
       // The success state must be visible.
-      expect(find.byIcon(MdiIcons.shieldCheck), findsOneWidget);
+      expect(
+        find.byKey(const Key('verification_success_stage')),
+        findsOneWidget,
+      );
 
       // Invoke the confirm button's onPressed directly: the button sits in a
       // Row(mainAxisAlignment: end) that may render at x > screenWidth in the
@@ -623,11 +635,11 @@ void main() {
     await tester.pump();
 
     expect(find.text('Cancelled on other device...'), findsOneWidget);
-    expect(find.byIcon(MdiIcons.shieldCheck), findsNothing);
     expect(
-      find.textContaining("You've successfully verified"),
+      find.byKey(const Key('verification_success_stage')),
       findsNothing,
     );
+    expect(find.text('Your devices trust each other'), findsNothing);
 
     await tester.pump(const Duration(seconds: 30));
   });

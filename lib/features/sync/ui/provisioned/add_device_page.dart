@@ -12,13 +12,12 @@ import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
-import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_callout.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -29,7 +28,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 /// How often the roster is re-fetched while the sheet waits for the new device
 /// to appear. Nothing else pushes that state, so without a poll the "waiting"
-/// strip would never resolve.
+/// stop would never resolve.
 const Duration kAddDevicePollInterval = Duration(seconds: 5);
 
 /// Consecutive failed roster fetches before the sheet stops pretending to wait.
@@ -46,19 +45,19 @@ const double kAddDeviceWideCard = 420;
 const double kAddDeviceDetailsMin = 250;
 
 /// Vertical space the QR must leave for everything that shares its viewport:
-/// the sheet header, the step eyebrow and heading, the intro line, the
-/// security callout, the card's own padding, and the pinned bar.
+/// the sheet header, the heading and intro, the pairing card's own padding,
+/// and the pinned bar.
 ///
 /// The sheet scrolls, but the QR is the one artifact that must render whole
 /// at rest — a code sliced by the pinned bar is unscannable and reads as a
 /// broken app, which is exactly what happened at 1280×700. The regression
 /// test pins the no-overlap guarantee at that size.
-const double kAddDeviceQrViewportOverhead = 540;
+const double kAddDeviceQrViewportOverhead = 440;
 
 /// What the inviting sheet is waiting on, shared between the scroll body and
 /// the pinned bar. The bar is built outside the view's `State`, and the live
-/// signal has to live there: on a phone the body's own status strip is below
-/// the fold, so a caption pointing "above" pointed at nothing.
+/// signal has to live there: on a phone the body's own status strip can sit
+/// below the fold, so a caption pointing "above" pointed at nothing.
 enum AddDeviceJoinState { waiting, joined, ready, rosterFailed }
 
 /// The one object the scroll body and the pinned bar share: the live state,
@@ -97,14 +96,14 @@ class AddDeviceModal {
   }
 }
 
-/// Step 2's action, pinned to the sheet so it is reachable without scrolling
-/// past the QR — the joining device's own instructions send the user here.
+/// The hand-off actions, pinned to the sheet so they are reachable without
+/// scrolling past the QR — the joining device's own instructions send the
+/// user here.
 ///
-/// Every signal here follows one question — can this be pressed? — because
-/// three lines about one control that disagreed left the user unable to tell.
-/// It is pressable only after the device that joined through this sheet has
-/// completed emoji verification. That ordering matches Matrix key sharing:
-/// before verification the new device has ciphertext, but no keys to read it.
+/// Both actions stay visibly locked until the device that joined through this
+/// sheet has completed emoji verification, and the caption says why. That
+/// ordering matches Matrix key sharing: before verification the new device
+/// has ciphertext, but no keys to read it.
 class AddDeviceActionBar extends StatelessWidget {
   const AddDeviceActionBar({
     required this.signal,
@@ -113,8 +112,8 @@ class AddDeviceActionBar extends StatelessWidget {
     this.onSendSettings,
   });
 
-  /// What step 1 is waiting on, and how to retry looking. Drives the live
-  /// status line and whether the action takes the accent.
+  /// What the body is waiting on, and how to retry looking. Drives the
+  /// caption and whether the actions unlock.
   final AddDeviceJoinSignal signal;
 
   /// Test seam for the settings hand-off; defaults to opening [SyncModal].
@@ -133,25 +132,20 @@ class AddDeviceActionBar extends StatelessWidget {
       valueListenable: signal,
       builder: (context, state, _) {
         final enabled = state == AddDeviceJoinState.ready;
-        // One tier: the live status line beside (or, narrow, above) the two
-        // hand-off actions. The old stack — lead-in, status, button — gave
-        // one control three different answers to "can I press this?" and
-        // spent so much height that it sliced the QR above it in half on
-        // short windows. The status line alone carries the gating story:
-        // waiting, joined-but-unverified, or ready.
         final sendSettings = DesignSystemButton(
           key: const Key('add_device_send_settings'),
           label: messages.syncAddDeviceSendSettings,
           // Accent whenever it actually works. Not `secondary` for the
-          // quiet case: its enabled fill is the same token the component
-          // paints a *disabled* filled button with, so a live action
-          // read as inert. `outlined` drops its border when disabled, so
-          // the two can never be confused.
+          // locked case: its enabled fill is the same token the component
+          // paints a *disabled* filled button with, so a live action read
+          // as inert. `outlined` drops its border when disabled, so the
+          // two can never be confused. The lock glyph carries the "not
+          // yet" story without a paragraph.
           variant: enabled
               ? DesignSystemButtonVariant.primary
               : DesignSystemButtonVariant.outlined,
           size: DesignSystemButtonSize.large,
-          leadingIcon: Icons.sync_alt_rounded,
+          leadingIcon: enabled ? Icons.sync_alt_rounded : Icons.lock_outline,
           onPressed: enabled
               ? () => unawaited(
                   (onSendSettings ?? SyncModal.show)(context),
@@ -163,44 +157,33 @@ class AddDeviceActionBar extends StatelessWidget {
           label: messages.syncAddDeviceSendMessages,
           variant: DesignSystemButtonVariant.outlined,
           size: DesignSystemButtonSize.large,
-          leadingIcon: Icons.history_rounded,
+          leadingIcon: enabled ? Icons.history_rounded : Icons.lock_outline,
           onPressed: enabled
               ? () => unawaited(
                   (onSendMessages ?? ReSyncModal.show)(context),
                 )
               : null,
         );
-        // Whenever the pills are quiet, say why. The live status lives here
-        // rather than in the card because on a phone the card's own strip
-        // is below the fold, and a caption naming it pointed at nothing.
-        Widget status({required bool centered}) => _BarStatus(
-          state: state,
-          onRetry: signal.onRetry,
-          centered: centered,
-        );
+
+        final caption = _BarCaption(state: state, onRetry: signal.onRetry);
 
         return SyncStickyBar(
           child: LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth >= kAddDeviceWideCard) {
-                // Status on its own line, actions right-aligned under it.
-                // Sharing one row starved the status of width beside two
-                // labeled buttons — it wrapped one word per line and the bar
-                // grew to a third of the dialog.
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    status(centered: false),
-                    SizedBox(height: tokens.spacing.step3),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        sendMessages,
+                        Expanded(child: sendSettings),
                         SizedBox(width: tokens.spacing.step3),
-                        sendSettings,
+                        Expanded(child: sendMessages),
                       ],
                     ),
+                    SizedBox(height: tokens.spacing.step2),
+                    caption,
                   ],
                 );
               }
@@ -208,11 +191,11 @@ class AddDeviceActionBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  status(centered: true),
-                  SizedBox(height: tokens.spacing.step2),
                   sendSettings,
                   SizedBox(height: tokens.spacing.step3),
                   sendMessages,
+                  SizedBox(height: tokens.spacing.step2),
+                  caption,
                 ],
               );
             },
@@ -223,47 +206,40 @@ class AddDeviceActionBar extends StatelessWidget {
   }
 }
 
-/// The pinned bar's one live line: waiting, joined, ready, or unable to look.
-class _BarStatus extends StatelessWidget {
-  const _BarStatus({
-    required this.state,
-    required this.onRetry,
-    this.centered = true,
-  });
+/// The pinned bar's one explanatory line: why the actions are locked, that
+/// the device has joined, that everything is ready — or that the roster
+/// cannot be read at all, with the retry.
+class _BarCaption extends StatelessWidget {
+  const _BarCaption({required this.state, required this.onRetry});
 
   final AddDeviceJoinState state;
   final VoidCallback? onRetry;
-
-  /// Stacked above the buttons the line centers; beside them, it leads.
-  final bool centered;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final alignment = centered
-        ? MainAxisAlignment.center
-        : MainAxisAlignment.start;
-    final caption = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
+    final caption = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.lowEmphasis,
     );
 
     switch (state) {
       case AddDeviceJoinState.ready:
         return Row(
           key: const Key('add_device_ready'),
-          mainAxisAlignment: alignment,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.verified_user_rounded,
-              size: tokens.spacing.step5,
+              size: tokens.spacing.step4,
               color: tokens.colors.alert.success.defaultColor,
             ),
             SizedBox(width: tokens.spacing.step2),
             Flexible(
               child: Text(
                 messages.syncAddDeviceSendSettingsReady,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.highEmphasis,
                 ),
               ),
@@ -271,24 +247,11 @@ class _BarStatus extends StatelessWidget {
           ],
         );
       case AddDeviceJoinState.joined:
-        return Row(
+        return Text(
+          messages.syncAddDeviceConnected,
           key: const Key('add_device_joined'),
-          mainAxisAlignment: alignment,
-          children: [
-            DesignSystemSpinner(
-              size: tokens.spacing.step5,
-              strokeWidth: tokens.spacing.step1 / 2,
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            Flexible(
-              child: Text(
-                messages.syncAddDeviceConnected,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-            ),
-          ],
+          textAlign: TextAlign.center,
+          style: caption,
         );
       case AddDeviceJoinState.rosterFailed:
         // A Wrap, not a Row: the error line plus the retry pill exceed a
@@ -296,14 +259,14 @@ class _BarStatus extends StatelessWidget {
         // simply break onto a second run.
         return Wrap(
           key: const Key('add_device_poll_failed'),
-          alignment: centered ? WrapAlignment.center : WrapAlignment.start,
+          alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: tokens.spacing.step2,
           runSpacing: tokens.spacing.step2,
           children: [
             Text(
               messages.syncAddDeviceRosterError,
-              textAlign: centered ? TextAlign.center : TextAlign.start,
+              textAlign: TextAlign.center,
               style: caption,
             ),
             DesignSystemButton(
@@ -315,24 +278,11 @@ class _BarStatus extends StatelessWidget {
           ],
         );
       case AddDeviceJoinState.waiting:
-        return Row(
-          key: const Key('add_device_waiting'),
-          mainAxisAlignment: alignment,
-          children: [
-            DesignSystemSpinner(
-              size: tokens.spacing.step4,
-              strokeWidth: tokens.spacing.step1 / 2,
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            Flexible(
-              child: Text(
-                messages.syncAddDeviceSendSettingsPending,
-                key: const Key('add_device_send_settings_pending'),
-                textAlign: TextAlign.center,
-                style: caption,
-              ),
-            ),
-          ],
+        return Text(
+          messages.syncAddDeviceUnlockHint,
+          key: const Key('add_device_send_settings_pending'),
+          textAlign: TextAlign.center,
+          style: caption,
         );
     }
   }
@@ -346,7 +296,7 @@ class AddDeviceView extends ConsumerStatefulWidget {
   });
 
   /// Shared with the pinned bar, which is built outside this widget's `State`
-  /// and still has to render the live line and its retry.
+  /// and still has to render the caption and its retry.
   final AddDeviceJoinSignal? signal;
 
   /// Test seam for the roster poll that drives the waiting state.
@@ -449,7 +399,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
     });
   }
 
-  /// One roster fetch, counting consecutive failures. Without this the strip
+  /// One roster fetch, counting consecutive failures. Without this the stop
   /// spins "Waiting for the new device…" forever against a dead homeserver.
   ///
   /// Serialized: a fetch slower than the interval used to overlap the next
@@ -471,7 +421,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
     setState(() {
       _pollFailures = succeeded ? 0 : _pollFailures + 1;
     });
-    // Once the strip has given up and offered Retry, stop asking on a timer:
+    // Once the bar has given up and offered Retry, stop asking on a timer:
     // continuing to poll a homeserver that has failed three times running
     // changes nothing on screen and only adds load. Retry restarts it.
     if (_pollFailures >= kAddDeviceMaxPollFailures) _poll?.cancel();
@@ -595,16 +545,20 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
     }
 
     final checkCode = _checkCode;
+    final joinState = _ready
+        ? AddDeviceJoinState.ready
+        : _joined
+        ? AddDeviceJoinState.joined
+        : AddDeviceJoinState.waiting;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SyncPairStepIndicator(label: messages.syncAddDeviceStepScan),
-        _StepHeading(
-          label: messages.syncAddDeviceStepScanTitle,
-          done: _joined,
+        Text(
+          messages.syncAddDeviceStepScanTitle,
+          style: tokens.typography.styles.heading.heading3,
         ),
-        SizedBox(height: tokens.spacing.step3),
+        SizedBox(height: tokens.spacing.step2),
         Text(
           messages.syncAddDeviceIntro,
           style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -612,22 +566,12 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
           ),
         ),
         SizedBox(height: tokens.spacing.step4),
-        // Before the credential, not after it: a caveat about a secret the
-        // reader never reaches is not a caveat. Warning tone, deliberately —
-        // this is a live credential on screen, and de-toned to grey it was
-        // quieter than the buttons offering to copy it. The one-line copy is
-        // what keeps it affordable above the fold.
-        SyncCallout(
-          icon: Icons.lock_outline_rounded,
-          text: messages.syncAddDeviceSecurityNote,
-          calloutKey: const Key('add_device_security_note'),
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        // One block: the code, the value to compare it by, whether the other
-        // device has arrived, and the no-camera fallback for the same code.
-        // Separating them read as four peers, and on desktop it put the
-        // fallback control below the fold while naming it above.
-        SyncFlowSection(
+        // The handshake is the hero: QR and check code live in one pairing
+        // card that can never be separated — which is also how the phone
+        // clipping defect dies. The check code sits inside the card, above
+        // the pinned bar, at every height.
+        SyncWell(
+          radius: tokens.radii.sectionCards,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final details = Column(
@@ -639,6 +583,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
                       label: messages.syncPairCheckCodeLabel,
                       caption: messages.syncPairCheckCode,
                       codeKey: const Key('add_device_check_code'),
+                      centered: constraints.maxWidth < kAddDeviceWideCard,
                     ),
                     SizedBox(height: tokens.spacing.step4),
                   ],
@@ -682,7 +627,6 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
                         .clamp(160.0, 300.0);
                 final side = math.min(widthBudget, heightBudget);
                 return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _QrCard(data: handover, side: side),
                     SizedBox(width: tokens.spacing.step5),
@@ -695,11 +639,147 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _QrCard(data: handover),
-                  SizedBox(height: tokens.spacing.step3),
+                  SizedBox(height: tokens.spacing.step4),
                   details,
                 ],
               );
             },
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        // Under the credential it concerns. Warning tone, deliberately —
+        // this is a live credential on screen, and de-toned to grey it was
+        // quieter than the buttons offering to copy it.
+        SyncCallout(
+          icon: Icons.lock_outline_rounded,
+          text: messages.syncAddDeviceSecurityNote,
+          calloutKey: const Key('add_device_security_note'),
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        // The wait, narrated as a timeline the account fills in: waiting,
+        // joined, verified. The bar below only explains the locked actions.
+        _JoinTimeline(state: joinState),
+      ],
+    );
+  }
+}
+
+/// The three stops of the inviting side's wait, with the live one pulsing.
+class _JoinTimeline extends StatelessWidget {
+  const _JoinTimeline({required this.state});
+
+  final AddDeviceJoinState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    // rosterFailed pauses the *poll*, not the journey: the stops keep their
+    // last honest reading while the bar explains the retry.
+    final reached = switch (state) {
+      AddDeviceJoinState.waiting || AddDeviceJoinState.rosterFailed => 0,
+      AddDeviceJoinState.joined => 1,
+      AddDeviceJoinState.ready => 2,
+    };
+    final labels = [
+      messages.syncAddDeviceTimelineWaiting,
+      messages.syncAddDeviceTimelineJoined,
+      messages.syncAddDeviceTimelineVerified,
+    ];
+
+    return Column(
+      key: const Key('add_device_timeline'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < labels.length; i++)
+          _TimelineStop(
+            label: labels[i],
+            isDone:
+                i < reached ||
+                (i == reached && state == AddDeviceJoinState.ready),
+            isActive: i == reached && state != AddDeviceJoinState.ready,
+            isLast: i == labels.length - 1,
+          ),
+      ],
+    );
+  }
+}
+
+class _TimelineStop extends StatelessWidget {
+  const _TimelineStop({
+    required this.label,
+    required this.isDone,
+    required this.isActive,
+    required this.isLast,
+  });
+
+  final String label;
+  final bool isDone;
+  final bool isActive;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final dotSide = tokens.spacing.step1 * 5;
+
+    final Widget dot;
+    if (isActive) {
+      dot = _PulsingDot(side: dotSide);
+    } else if (isDone) {
+      dot = DecoratedBox(
+        decoration: BoxDecoration(
+          color: tokens.colors.interactive.enabled,
+          shape: BoxShape.circle,
+        ),
+        child: SizedBox(width: dotSide, height: dotSide),
+      );
+    } else {
+      dot = DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: tokens.colors.decorative.level02,
+            width: tokens.spacing.step1,
+          ),
+        ),
+        child: SizedBox(width: dotSide, height: dotSide),
+      );
+    }
+
+    final labelStyle = isActive
+        ? tokens.typography.styles.subtitle.subtitle2
+        : tokens.typography.styles.body.bodySmall.copyWith(
+            color: isDone
+                ? tokens.colors.text.mediumEmphasis
+                : tokens.colors.text.lowEmphasis,
+          );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step1),
+              child: dot,
+            ),
+            if (!isLast)
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: tokens.colors.decorative.level01,
+                ),
+                child: SizedBox(
+                  width: tokens.spacing.step1,
+                  height: tokens.spacing.step5,
+                ),
+              ),
+          ],
+        ),
+        SizedBox(width: tokens.spacing.step4),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: tokens.spacing.step2),
+            child: Text(label, style: labelStyle),
           ),
         ),
       ],
@@ -707,37 +787,55 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   }
 }
 
-/// Numbered section heading, so the sheet reads as an ordered procedure rather
-/// than a stack of equally-weighted blocks.
-class _StepHeading extends StatelessWidget {
-  const _StepHeading({required this.label, this.done = false});
+/// The live stop's marker: a softly pulsing accent dot; steady under reduced
+/// motion.
+class _PulsingDot extends StatefulWidget {
+  const _PulsingDot({required this.side});
 
-  /// Carries the whole heading. The eyebrow above it is temporal ("Now · …")
-  /// rather than a fraction: this half's second rung lives in the pinned bar,
-  /// which is on screen from the start, so a count here would either promise a
-  /// step that never announces itself or put two positions in one viewport.
-  final String label;
-  final bool done;
+  final double side;
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _pulse.stop();
+    } else if (!_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    // A rank above the body copy it heads; at subtitle2 the numbering was the
-    // only thing distinguishing structure from prose.
-    final style = tokens.typography.styles.subtitle.subtitle1;
 
-    return Row(
-      children: [
-        if (done) ...[
-          Icon(
-            Icons.check_circle_rounded,
-            size: tokens.spacing.step5,
-            color: tokens.colors.alert.success.defaultColor,
-          ),
-          SizedBox(width: tokens.spacing.step2),
-        ],
-        Expanded(child: Text(label, style: style)),
-      ],
+    return FadeTransition(
+      opacity: Tween<double>(begin: 1, end: 0.35).animate(
+        CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: tokens.colors.interactive.enabled,
+          shape: BoxShape.circle,
+        ),
+        child: SizedBox(width: widget.side, height: widget.side),
+      ),
     );
   }
 }
@@ -774,7 +872,7 @@ class _QrCard extends StatelessWidget {
                 .clamp(200.0, 260.0);
         return Center(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+            borderRadius: BorderRadius.circular(tokens.radii.m),
             child: ColoredBox(
               color: Colors.white,
               child: Padding(
@@ -797,8 +895,8 @@ class _QrCard extends StatelessWidget {
 /// The text fallback for a device without a camera, masked until asked for.
 ///
 /// The reveal and copy controls carry labels rather than bare glyphs: on the
-/// joining device's manual screen the instruction names "Copy code", so the
-/// control it names has to be findable by that name.
+/// joining device's manual screen the instruction names "Copy pairing code",
+/// so the control it names has to be findable by that name.
 class _CodeRow extends StatelessWidget {
   const _CodeRow({
     required this.data,
@@ -824,10 +922,6 @@ class _CodeRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // No explanatory sentence above the controls: "Copy pairing code"
-        // and "Show pairing code as text" already say everything the old
-        // no-camera paragraph said, and the paragraph was one more grey
-        // block in a screen that had four.
         if (revealed) ...[
           // Bounded so a long payload cannot stretch the sheet.
           ConstrainedBox(
@@ -854,7 +948,7 @@ class _CodeRow extends StatelessWidget {
               ),
             ),
             // Both neutral: copying is the useful act of the pair, and the
-            // accent on this screen belongs to the pinned action alone.
+            // accent on this sheet belongs to the unlocked hand-off alone.
             DesignSystemButton(
               key: const Key('addDeviceToggleHandoverVisibility'),
               label: revealed
