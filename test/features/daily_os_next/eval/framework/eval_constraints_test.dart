@@ -1834,6 +1834,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects an intention-only allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c intended to schedule 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('preserves a scheduling denial after dash punctuation', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -4899,6 +4920,31 @@ void main() {
             ),
           ],
           decidedTaskIds: const ['task-review'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('does not find a casualty title inside a hyphenated task id', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'weekly',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'weekly-report',
+              reason: 'Reviewed weekly-report. Deferred.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(taskId: 'task-report', title: 'Report'),
+            EvalCorpusTask(taskId: 'weekly-report', title: 'Weekly'),
+          ],
+          decidedTaskIds: const ['task-report'],
           requiresConflictSurfaced: true,
         ),
       );

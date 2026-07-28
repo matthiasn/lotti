@@ -1390,7 +1390,10 @@ bool _allocationActionIsAsserted(
         caseSensitive: false,
       ).hasMatch(prefix) &&
       !RegExp(
-        r'\b(?:attempt(?:s|ed|ing)?|tr(?:y|ies|ied|ying)|'
+        r'\b(?:intend(?:s|ed|ing)?|aim(?:s|ed|ing)?|'
+        'hop(?:e|es|ed|ing)|want(?:s|ed|ing)?|expect(?:s|ed|ing)?|'
+        'propos(?:e|es|ed|ing)|plan(?:s|ned|ning)?|'
+        'attempt(?:s|ed|ing)?|tr(?:y|ies|ied|ying)|'
         'fail(?:s|ed|ing)?|refus(?:e|es|ed|ing)|'
         r'declin(?:e|es|ed|ing))\s+to\s*$',
         caseSensitive: false,
@@ -2152,7 +2155,7 @@ bool _titleNamed(EvalRunOutcome outcome, String taskId, String prose) {
   }
   return _allowsBareTaskTitle(title) &&
       RegExp(
-        r'(?:^|[^\w])' + RegExp.escape(title) + r'(?=$|[^\w])',
+        r'(?:^|[^\w-])' + RegExp.escape(title) + r'(?=$|[^\w-])',
         caseSensitive: false,
       ).hasMatch(prose);
 }

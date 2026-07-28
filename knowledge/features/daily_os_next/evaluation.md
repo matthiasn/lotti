@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T09:21:04+02:00 }
+generated: { by: codex/5, at: 2026-07-28T09:34:43+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -89,8 +89,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   than any omitted/deferred predicate in the same comma-delimited clause. A
   merely possible action such as `task-c might schedule 60 of 120 minutes` is
   not an affirmative allocation, and neither is
-  `task-c might be partially scheduled`. Attempted, tried, failed, refused, or
-  declined actions are likewise not affirmative. A later action describing “the rest” cannot
+  `task-c might be partially scheduled`. Intended, planned, aimed, hoped,
+  wanted, expected, proposed, attempted, tried, failed, refused, or declined
+  actions are likewise not affirmative. A later action describing “the rest” cannot
   validate earlier omitted
   arithmetic. Unrelated meeting/workday scope is likewise associated with its
   nearest allocation action, so later meeting arithmetic does not poison an
@@ -188,6 +189,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   omitted task only as context for retained work does not surface the omission.
   Numeric remainder claims for a fully omitted estimated task must equal its
   full estimate; omission does not make arbitrary positive arithmetic valid.
+  Hyphenated task ids also remain whole tokens: a title such as `Report` is not
+  named merely because another task id contains `weekly-report`.
   The scorer does not combine a task name in one field with unbound trade prose
   in the other. A name occurring only inside another task id or word,
   task-binding grammar such as `for this task`, and trade wording in unrelated
