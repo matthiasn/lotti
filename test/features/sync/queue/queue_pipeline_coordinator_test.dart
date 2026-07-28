@@ -4356,20 +4356,19 @@ void main() {
     );
 
     test(
-      'forward walk routes every paginated event through the '
-      'AttachmentIngestor — bootstrap catch-up on a room with '
-      'historical attachments must hydrate descriptor JSONs alongside '
-      'the queue enqueue, otherwise the companion sync-payload events '
-      'sit in pendingAttachment forever',
+      'forward walk sends a freshly-decrypted descriptor through the '
+      'AttachmentIngestor before queue classification',
       () async {
         final realQueue = InboundQueue(db: syncDb, logging: logging);
         addTearDown(realQueue.dispose);
+        final encryption = MockEncryption();
         final firstProcessed = Completer<Event>();
         final processGate = Completer<void>();
         final ingestor = _FakeAttachmentIngestor(
           firstProcessed: firstProcessed,
           processGate: processGate.future,
         );
+        when(() => client.encryption).thenReturn(encryption);
 
         final coordinator = QueuePipelineCoordinator(
           syncDb: syncDb,
@@ -4397,23 +4396,42 @@ void main() {
         when(
           () => anchor.originServerTs,
         ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
-        final e1 = MockEvent();
-        when(() => e1.eventId).thenReturn(r'$e1');
+        final encrypted = MockEvent();
+        when(() => encrypted.eventId).thenReturn(r'$descriptor');
         when(
-          () => e1.originServerTs,
+          () => encrypted.originServerTs,
         ).thenReturn(DateTime.fromMillisecondsSinceEpoch(110));
-        when(() => e1.roomId).thenReturn(roomId);
-        when(() => e1.type).thenReturn(EventTypes.Message);
-        when(() => e1.content).thenReturn(<String, dynamic>{});
-        when(e1.toJson).thenReturn(<String, dynamic>{
-          'event_id': r'$e1',
+        when(() => encrypted.roomId).thenReturn(roomId);
+        when(() => encrypted.type).thenReturn(EventTypes.Encrypted);
+        when(() => encrypted.content).thenReturn(<String, dynamic>{
+          'ciphertext': <String, dynamic>{},
+        });
+        final decrypted = MockEvent();
+        when(() => decrypted.eventId).thenReturn(r'$descriptor');
+        when(
+          () => decrypted.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(110));
+        when(() => decrypted.roomId).thenReturn(roomId);
+        when(() => decrypted.type).thenReturn(EventTypes.Message);
+        when(() => decrypted.content).thenReturn(<String, dynamic>{
+          'msgtype': 'm.file',
+          'relativePath': '/journal/descriptor.json',
+        });
+        when(decrypted.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$descriptor',
           'room_id': roomId,
           'origin_server_ts': 110,
           'type': EventTypes.Message,
-          'content': <String, dynamic>{},
+          'content': <String, dynamic>{
+            'msgtype': 'm.file',
+            'relativePath': '/journal/descriptor.json',
+          },
         });
+        when(
+          () => encryption.decryptRoomEvent(encrypted),
+        ).thenAnswer((_) async => decrypted);
         final timeline = MockTimeline();
-        when(() => timeline.events).thenReturn(<Event>[anchor, e1]);
+        when(() => timeline.events).thenReturn(<Event>[anchor, encrypted]);
         when(() => timeline.canRequestFuture).thenReturn(false);
         when(timeline.cancelSubscriptions).thenAnswer((_) {});
         when(
@@ -4430,9 +4448,7 @@ void main() {
         );
         expect(completed, isTrue);
 
-        // The forward walk emitted page [e1] (anchor itself is
-        // filtered) → ingestor.process must have fired for that event.
-        expect(await firstProcessed.future, same(e1));
+        final processed = await firstProcessed.future;
         var drainCompleted = false;
         final drain = coordinator.drainBootstrapAttachmentWorkForTesting().then(
           (_) => drainCompleted = true,
@@ -4447,21 +4463,30 @@ void main() {
         await drain;
         expect(drainCompleted, isTrue);
         expect(ingestor.processCalls, hasLength(1));
-        expect(ingestor.processCalls.single[#event], same(e1));
+        expect(
+          processed,
+          same(decrypted),
+          reason:
+              'attachment descriptors revealed by the fresh decrypt must not '
+              'be ingested as their original ciphertext',
+        );
+        expect(ingestor.processCalls.single[#event], same(decrypted));
+        verify(() => encryption.decryptRoomEvent(encrypted)).called(1);
       },
     );
 
     test(
-      'backward walk with attachment ingestor routes every page event '
-      'through `AttachmentIngestor.process` — covers the ingestor-aware '
-      'branch for the fresh-client / anchor-unresolvable fallback',
+      'backward walk sends a freshly-decrypted descriptor through the '
+      'AttachmentIngestor before queue classification',
       () async {
         final realQueue = InboundQueue(db: syncDb, logging: logging);
         addTearDown(realQueue.dispose);
+        final encryption = MockEncryption();
         final firstProcessed = Completer<Event>();
         final ingestor = _FakeAttachmentIngestor(
           firstProcessed: firstProcessed,
         );
+        when(() => client.encryption).thenReturn(encryption);
 
         final coordinator = QueuePipelineCoordinator(
           syncDb: syncDb,
@@ -4484,23 +4509,42 @@ void main() {
 
         final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn(r'$e1');
+        final encrypted = MockEvent();
+        when(() => encrypted.eventId).thenReturn(r'$descriptor');
         when(
-          () => e.originServerTs,
+          () => encrypted.originServerTs,
         ).thenReturn(DateTime.fromMillisecondsSinceEpoch(200));
-        when(() => e.roomId).thenReturn(roomId);
-        when(() => e.type).thenReturn(EventTypes.Message);
-        when(() => e.content).thenReturn(<String, dynamic>{});
-        when(e.toJson).thenReturn(<String, dynamic>{
-          'event_id': r'$e1',
+        when(() => encrypted.roomId).thenReturn(roomId);
+        when(() => encrypted.type).thenReturn(EventTypes.Encrypted);
+        when(() => encrypted.content).thenReturn(<String, dynamic>{
+          'ciphertext': <String, dynamic>{},
+        });
+        final decrypted = MockEvent();
+        when(() => decrypted.eventId).thenReturn(r'$descriptor');
+        when(
+          () => decrypted.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(200));
+        when(() => decrypted.roomId).thenReturn(roomId);
+        when(() => decrypted.type).thenReturn(EventTypes.Message);
+        when(() => decrypted.content).thenReturn(<String, dynamic>{
+          'msgtype': 'm.file',
+          'relativePath': '/journal/descriptor.json',
+        });
+        when(decrypted.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$descriptor',
           'room_id': roomId,
           'origin_server_ts': 200,
           'type': EventTypes.Message,
-          'content': <String, dynamic>{},
+          'content': <String, dynamic>{
+            'msgtype': 'm.file',
+            'relativePath': '/journal/descriptor.json',
+          },
         });
+        when(
+          () => encryption.decryptRoomEvent(encrypted),
+        ).thenAnswer((_) async => decrypted);
         final tl = MockTimeline();
-        when(() => tl.events).thenReturn(<Event>[e]);
+        when(() => tl.events).thenReturn(<Event>[encrypted]);
         when(() => tl.canRequestHistory).thenReturn(false);
         when(tl.cancelSubscriptions).thenAnswer((_) {});
         when(
@@ -4511,9 +4555,10 @@ void main() {
         // No anchor id → backward walk runs.
         final completed = await coordinator.runBootstrapForTest(room: room);
         expect(completed, isTrue);
-        expect(await firstProcessed.future, same(e));
+        expect(await firstProcessed.future, same(decrypted));
         expect(ingestor.processCalls, hasLength(1));
-        expect(ingestor.processCalls.single[#event], same(e));
+        expect(ingestor.processCalls.single[#event], same(decrypted));
+        verify(() => encryption.decryptRoomEvent(encrypted)).called(1);
       },
     );
 

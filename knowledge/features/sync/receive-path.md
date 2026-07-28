@@ -90,7 +90,13 @@ does not maintain a second retry cache. When any to-device traffic arrives
 while a durable floor exists, `BridgeCoordinator` reruns catch-up; pagination
 can still return a cached encrypted `Event`, so `QueueBootstrapSink` makes one
 fresh `decryptRoomEvent` attempt before classifying it. Successful plaintext is
-queued; ciphertext that remains unresolved keeps the floor.
+queued; ciphertext that remains unresolved keeps the floor. When that fresh
+attempt reveals an attachment descriptor, the queue sink synchronously hands
+the decrypted event to `AttachmentAwareBootstrapSink` before type
+classification. The descriptor then enters the same bounded attachment worker
+pool as plaintext page events, so its JSON can land and wake a companion payload
+from `pendingAttachment`; the descriptor itself remains excluded from the
+inbound event queue.
 
 The same rule applies to bootstrap pages. `QueueBootstrapSink` lowers each
 room's floor before appending later plaintext from that page, re-decrypts each

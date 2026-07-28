@@ -155,12 +155,14 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     required String anchorEventId,
   }) async {
     final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
+    AttachmentAwareBootstrapSink? attachmentSink;
     final queueSink = QueueBootstrapSink(
       queue: _queue,
       logging: _logging,
       decryptEvent: _decryptBootstrapEvent,
+      onDecryptedEvent: (event) => attachmentSink?.addDecryptedEvent(event),
     );
-    final attachmentSink = _attachmentIngestor == null
+    attachmentSink = _attachmentIngestor == null
         ? null
         : AttachmentAwareBootstrapSink(
             inner: queueSink,
@@ -226,12 +228,14 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     // enqueue the sync-payload events while their descriptor
     // JSONs never land on disk, producing the pendingAttachment
     // skip cascade we just fixed.
+    AttachmentAwareBootstrapSink? attachmentSink;
     final queueSink = QueueBootstrapSink(
       queue: _queue,
       logging: _logging,
       decryptEvent: _decryptBootstrapEvent,
+      onDecryptedEvent: (event) => attachmentSink?.addDecryptedEvent(event),
     );
-    final attachmentSink = _attachmentIngestor == null
+    attachmentSink = _attachmentIngestor == null
         ? null
         : AttachmentAwareBootstrapSink(
             inner: queueSink,

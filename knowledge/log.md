@@ -7,6 +7,9 @@
 * **Correction**: Clarified that explicit sync bridge calls await every
   single-flight rerun coalesced onto the active pass, while attachment downloads
   retain their independent queue and drain point.
+* **Correction**: Documented the bootstrap ordering contract for freshly
+  decrypted attachment descriptors: they enter the bounded attachment worker
+  pool before queue classification drops the non-payload event.
 
 ## 2026-07-26
 * **Enforcement**: The metadata that makes drift detectable now fails the build

@@ -46,6 +46,7 @@ class _RecordingInnerSink implements BootstrapSink {
 Event _buildEvent(String id) {
   final event = MockEvent();
   when(() => event.eventId).thenReturn(id);
+  when(() => event.type).thenReturn(EventTypes.Message);
   return event;
 }
 
@@ -248,6 +249,27 @@ void main() {
 
         expect(processed, containsAll(<String>['a', 'b']));
         expect(processed.contains('bad'), isFalse);
+      },
+    );
+
+    test(
+      'skips ciphertext pages and accepts their later decrypted event',
+      () async {
+        final processed = <Event>[];
+        final sink = AttachmentAwareBootstrapSink(
+          inner: _RecordingInnerSink(),
+          processAttachment: (event) async => processed.add(event),
+        );
+        final encrypted = _buildEvent('encrypted');
+        final decrypted = _buildEvent('decrypted');
+        when(() => encrypted.type).thenReturn(EventTypes.Encrypted);
+        when(() => decrypted.type).thenReturn(EventTypes.Message);
+
+        await sink.onPage([encrypted], _pageInfo());
+        sink.addDecryptedEvent(decrypted);
+        await sink.drain();
+
+        expect(processed, [same(decrypted)]);
       },
     );
 
