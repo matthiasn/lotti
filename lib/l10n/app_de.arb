@@ -1393,6 +1393,8 @@
   "configFlagEnableAiStreamingDescription": "Streame AI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.",
   "configFlagEnableAiSummaryTts": "AI-Zusammenfassung vorlesen",
   "configFlagEnableAiSummaryTtsDescription": "Zeigt die lokale Text-to-Speech-Schaltfläche in AI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes MLX-Audio-TTS-Modell.",
+  "configFlagEnableDailyOs": "DailyOS aktivieren",
+  "configFlagEnableDailyOsDescription": "DailyOS in der Hauptnavigation anzeigen.",
   "configFlagEnableDashboardsPage": "Seite Dashboards aktivieren",
   "configFlagEnableDashboardsPageDescription": "Zeigt die Dashboard-Seite in der Hauptnavigation an. Zeige deine Daten und Erkenntnisse in anpassbaren Dashboards an.",
   "configFlagEnableEmbeddings": "Einbettungen generieren",

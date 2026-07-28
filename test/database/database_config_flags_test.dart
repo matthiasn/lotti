@@ -78,6 +78,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableDailyOsPageFlag,
+    description: 'Enable DailyOS Page?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableNotificationsFlag,
     description: 'Enable notifications?',
     status: false,

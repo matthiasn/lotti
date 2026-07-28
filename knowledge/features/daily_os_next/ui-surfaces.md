@@ -5,7 +5,7 @@ description: The Day page, the anchored voice template, timeline editing, the ca
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
+generated: { by: codex/5, at: 2026-07-28T23:33:17+02:00 }
 stale_after: 2026-10-26
 sources:
   - id: ui
@@ -19,7 +19,7 @@ sources:
   - id: onboarding-state
     resource: ../../../lib/features/daily_os_next/state
     title: Onboarding session and trigger services
-    last_modified: 2026-07-25
+    last_modified: 2026-07-28
 ---
 
 # The planning modal
@@ -237,8 +237,10 @@ simulating it.
 coordinates it, `AppScreen` auto-arms it (sequenced behind What's New and the FTUE
 welcome), the spotlight mounts over the empty-Day CTA, coach strips render inside
 the create modal, and the modal's typed result drives completion or a skip. The
-config flag seeds **off**, and the prepared all-install rollout lever also stays
-off. Still deferred: the completion celebration beat and the Settings replay entry.
+walkthrough config flag seeds **off**. Candidate eligibility also requires the
+separate `enable_daily_os_page` rollout flag, so an install whose Daily OS
+destination is hidden cannot be auto-invited into it. Still deferred: the
+completion celebration beat and the Settings replay entry.
 
 | Piece | Role |
 |-------|------|

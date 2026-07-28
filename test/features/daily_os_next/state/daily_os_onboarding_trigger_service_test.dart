@@ -58,6 +58,7 @@ void main() {
     // with a ready provider and nothing persisted. Each test overrides only
     // the input(s) relevant to the branch under test.
     bool eligible({
+      bool dailyOsFlagEnabled = true,
       bool dailyOsOnboardingFlagEnabled = true,
       bool hasUnseenWhatsNew = false,
       bool welcomeStillOwed = false,
@@ -70,6 +71,7 @@ void main() {
       DateTime? firstShownAt,
       DateTime? now,
     }) => isDailyOsOnboardingEligible(
+      dailyOsFlagEnabled: dailyOsFlagEnabled,
       dailyOsOnboardingFlagEnabled: dailyOsOnboardingFlagEnabled,
       hasUnseenWhatsNew: hasUnseenWhatsNew,
       welcomeStillOwed: welcomeStillOwed,
@@ -97,6 +99,10 @@ void main() {
 
     test('false when the Daily OS onboarding flag is off', () {
       expect(eligible(dailyOsOnboardingFlagEnabled: false), isFalse);
+    });
+
+    test('false when the Daily OS rollout flag is off', () {
+      expect(eligible(dailyOsFlagEnabled: false), isFalse);
     });
 
     test('false when the selected date is not today', () {
@@ -176,6 +182,7 @@ void main() {
     });
 
     ProviderContainer createContainer({
+      bool dailyOsEnabled = true,
       bool onboardingEnabled = true,
       bool providerReady = true,
       bool Function()? readProviderReady,
@@ -186,6 +193,9 @@ void main() {
       DraftPlan? todayPlan,
     }) {
       final mockJournalDb = MockJournalDb();
+      when(
+        () => mockJournalDb.getConfigFlag(enableDailyOsPageFlag),
+      ).thenAnswer((_) async => dailyOsEnabled);
       when(
         () => mockJournalDb.getConfigFlag(dailyOsOnboardingEnabledFlag),
       ).thenAnswer((_) async => onboardingEnabled);
@@ -239,6 +249,11 @@ void main() {
 
     test('false when the Daily OS onboarding flag is off', () async {
       final container = createContainer(onboardingEnabled: false);
+      expect(await read(container), isFalse);
+    });
+
+    test('false when the Daily OS rollout flag is off', () async {
+      final container = createContainer(dailyOsEnabled: false);
       expect(await read(container), isFalse);
     });
 

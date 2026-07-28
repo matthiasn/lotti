@@ -52,8 +52,7 @@ const dailyOsOnboardingWindow = Duration(days: 14);
 /// auto-show slot (so it never races What's New or the general FTUE).
 ///
 /// Eligible while:
-/// - the Daily OS onboarding flag is on (the Daily OS surface itself is always
-///   available, so only the walkthrough is gated),
+/// - the Daily OS rollout flag and its separate onboarding flag are both on,
 /// - What's New has nothing unseen and the general FTUE welcome is not still
 ///   owed — the walkthrough is sequenced *behind* both so the three
 ///   auto-shown surfaces never race for the screen,
@@ -69,6 +68,7 @@ const dailyOsOnboardingWindow = Duration(days: 14);
 /// - once shown at least once, [now] is still within [dailyOsOnboardingWindow]
 ///   of the first auto-show.
 bool isDailyOsOnboardingEligible({
+  required bool dailyOsFlagEnabled,
   required bool dailyOsOnboardingFlagEnabled,
   required bool hasUnseenWhatsNew,
   required bool welcomeStillOwed,
@@ -81,6 +81,7 @@ bool isDailyOsOnboardingEligible({
   required DateTime? firstShownAt,
   required DateTime now,
 }) {
+  if (!dailyOsFlagEnabled) return false;
   if (!dailyOsOnboardingFlagEnabled) return false;
   if (hasUnseenWhatsNew) return false;
   if (welcomeStillOwed) return false;
@@ -138,6 +139,9 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
   final whatsNewFuture = ref.watch(whatsNewControllerProvider.future);
   final welcomeOwedFuture = ref.watch(shouldAutoShowOnboardingProvider.future);
 
+  final dailyOsEnabled = await db.getConfigFlag(enableDailyOsPageFlag);
+  if (!dailyOsEnabled) return false;
+
   final onboardingEnabled = await db.getConfigFlag(
     dailyOsOnboardingEnabledFlag,
   );
@@ -178,6 +182,7 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
   final firstShownAtRaw = stored[dailyOsOnboardingFirstShownAtKey];
 
   return isDailyOsOnboardingEligible(
+    dailyOsFlagEnabled: dailyOsEnabled,
     dailyOsOnboardingFlagEnabled: onboardingEnabled,
     hasUnseenWhatsNew: hasUnseenWhatsNew,
     welcomeStillOwed: welcomeStillOwed,

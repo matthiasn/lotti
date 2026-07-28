@@ -3020,6 +3020,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Mostre o botão de conversão de texto em fala local nos resumos de IA de tarefas. Requer um modelo MLX Audio TTS instalado.';
 
   @override
+  String get configFlagEnableDailyOs => 'Ativar DailyOS';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Mostrar o DailyOS na navegação principal.';
+
+  @override
   String get configFlagEnableDashboardsPage => 'Ativar página Painéis';
 
   @override

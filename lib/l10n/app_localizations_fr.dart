@@ -3035,6 +3035,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Affiche le bouton local de synthèse vocale dans les résumés IA des tâches. Nécessite un modèle TTS MLX Audio installé.';
 
   @override
+  String get configFlagEnableDailyOs => 'Activer DailyOS';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Afficher DailyOS dans la navigation principale.';
+
+  @override
   String get configFlagEnableDashboardsPage =>
       'Activer la page Tableaux de bord';
 

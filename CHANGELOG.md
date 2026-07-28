@@ -69,6 +69,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   screens now uses the same material as the rest of the app's detail pages —
   same tone, same hairline border, no one-off shadow — so Devices no longer
   looks subtly foreign next to the pages around it.
+- **Daily OS is opt-in again while its planning quality is improved.** Existing
+  installs that had enabled it keep that choice, while new installs start
+  without the Daily OS navigation entry. It can be enabled explicitly from
+  Settings → Advanced → Config flags.
 - **Setting up sync starts with a real first screen.** Before anything is
   configured, the Devices page used to show a single row that repeated the
   menu entry you had just tapped, floating in an otherwise empty pane. It now

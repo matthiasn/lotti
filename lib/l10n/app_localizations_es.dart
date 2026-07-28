@@ -3030,6 +3030,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Muestra el botón local de texto a voz en los resúmenes de IA de tareas. Requiere un modelo TTS de MLX Audio instalado.';
 
   @override
+  String get configFlagEnableDailyOs => 'Habilitar DailyOS';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Mostrar DailyOS en la navegación principal.';
+
+  @override
   String get configFlagEnableDashboardsPage => 'Habilitar página Paneles';
 
   @override

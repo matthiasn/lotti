@@ -5,7 +5,7 @@ description: Eight independent Beamer stacks behind one IndexedStack, and the ru
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-27T12:00:00Z }
+generated: { by: codex/5, at: 2026-07-28T23:33:17+02:00 }
 stale_after: 2027-01-27
 sources:
   - id: beamer-app
@@ -23,7 +23,7 @@ sources:
   - id: nav-service
     resource: ../../lib/services/nav_service.dart
     title: NavService — tab index and delegate registry
-    last_modified: 2026-07-20
+    last_modified: 2026-07-28
 ---
 
 # One stack per tab
@@ -34,7 +34,7 @@ top-level destination, each a `BeamerDelegate` with its own history:
 | Destination | Root path | Enabled |
 |-------------|-----------|---------|
 | Tasks | `/tasks` | always |
-| Daily OS (calendar) | `/calendar` | always |
+| Daily OS (calendar) | `/calendar` | `enable_daily_os_page` |
 | Projects | `/projects` | flag |
 | Habits | `/habits` | flag |
 | Dashboards | `/dashboards` | flag |
@@ -86,6 +86,13 @@ Because the flag-gated destinations can appear and disappear,
 current list. The `IndexedStack` children and the delegate list are built from
 the same ordering — reordering one without the other silently mismatches tab and
 content.
+
+Daily OS reuses its historical `enable_daily_os_page` row. `initConfigFlags`
+inserts that row as `false` only when it is absent, so new installs do not enter
+the still-experimental planner while an existing install that previously opted
+in keeps its stored `true`. Turning the flag off while `/calendar` is selected
+normalizes the active route back to `/tasks`, just like the other removable
+destinations.
 
 # Locations and path patterns
 

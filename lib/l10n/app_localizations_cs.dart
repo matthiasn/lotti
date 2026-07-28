@@ -3030,6 +3030,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model MLX Audio TTS.';
 
   @override
+  String get configFlagEnableDailyOs => 'Povolit DailyOS';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Zobrazit DailyOS v hlavní navigaci.';
+
+  @override
   String get configFlagEnableDashboardsPage => 'Povolit stránku Dashboardů';
 
   @override

@@ -3038,6 +3038,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS MLX Audio instalat.';
 
   @override
+  String get configFlagEnableDailyOs => 'Activează DailyOS';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Afișează DailyOS în navigarea principală.';
+
+  @override
   String get configFlagEnableDashboardsPage =>
       'Activați pagina Tablouri de bord';
 

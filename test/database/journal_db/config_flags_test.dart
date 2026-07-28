@@ -25,15 +25,16 @@ void main() {
 
   tearDown(() async {
     // Reset to a clean, fully-defaulted flag set so each test is
-    // order-independent. The only flag any test mutates is [enableMatrixFlag]
-    // ("preserves existing flag status when re-run"); restoring it to its
+    // order-independent. The only flag any test mutates is the restored
+    // Daily OS rollout flag ("preserves existing flag status when re-run");
+    // restoring it to its
     // default `false` via [upsertConfigFlag] keeps both the DB row and the
     // in-memory flag cache in sync.
-    if (await db.getConfigFlagByName(enableMatrixFlag) != null) {
+    if (await db.getConfigFlagByName(enableDailyOsPageFlag) != null) {
       await db.upsertConfigFlag(
         const ConfigFlag(
-          name: enableMatrixFlag,
-          description: 'Enable Matrix Sync',
+          name: enableDailyOsPageFlag,
+          description: 'Enable DailyOS Page?',
           status: false,
         ),
       );
@@ -75,6 +76,7 @@ void main() {
         enableNotificationsFlag: false,
         enableHabitsPageFlag: false,
         enableDashboardsPageFlag: false,
+        enableDailyOsPageFlag: false,
         enableEventsFlag: false,
         enableSessionRatingsFlag: false,
         enableSyncActorFlag: false,
@@ -133,13 +135,14 @@ void main() {
 
     test('preserves existing flag status when re-run', () async {
       await initConfigFlags(db, inMemoryDatabase: true);
-      // User toggles a flag.
-      await db.toggleConfigFlag(enableMatrixFlag);
-      expect(await getStatus(enableMatrixFlag), isTrue);
+      // An existing install enabled Daily OS before the rollout flag was
+      // temporarily removed from the app's seed list.
+      await db.toggleConfigFlag(enableDailyOsPageFlag);
+      expect(await getStatus(enableDailyOsPageFlag), isTrue);
 
       // Re-running init should not reset their toggle.
       await initConfigFlags(db, inMemoryDatabase: true);
-      expect(await getStatus(enableMatrixFlag), isTrue);
+      expect(await getStatus(enableDailyOsPageFlag), isTrue);
     });
 
     test(

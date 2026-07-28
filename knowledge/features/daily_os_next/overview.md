@@ -5,13 +5,13 @@ description: The day-planning runtime — one coordinator plus per-day agents, a
 resource: ../../../lib/features/daily_os_next
 tags: [daily-os, planning, day-agent, calendar]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
+generated: { by: codex/5, at: 2026-07-28T23:33:17+02:00 }
 stale_after: 2026-10-26
 sources:
   - id: src
     resource: ../../../lib/features/daily_os_next
     title: Daily OS Next source
-    last_modified: 2026-07-26
+    last_modified: 2026-07-28
   - id: day-plan
     resource: ../../../lib/classes/day_plan.dart
     title: Shared day-plan aggregate
@@ -29,6 +29,12 @@ sources:
 Daily OS Next is **the** Daily OS surface: `CalendarRoot` — the `/calendar` tab
 root — mounts `DailyOsNextRoot` directly. The legacy `features/daily_os`
 implementation has been removed.
+
+The surface is an opt-in rollout behind the historical
+`enable_daily_os_page` config row. The row seeds `false` when absent, while
+`insertFlagIfNotExists` preserves a stored `true` from an earlier rollout.
+`NavService` omits the `/calendar` destination while it is off; enabling it in
+*Settings → Advanced → Config flags* adds the destination reactively.
 
 The one shared piece is the day-plan aggregate in `lib/classes/day_plan.dart`.
 That model is already the durable representation of a day, so Daily OS Next
@@ -73,10 +79,11 @@ stateDiagram-v2
   DayPlan --> DayEmpty: plan deleted
 ```
 
-`DailyOsNextRoot` always renders `DayPage` for the selected date — the real plan
-when one exists, otherwise the empty Day surface. The selected local plan date
-lives in `dailyOsNextSelectedDateProvider`; the desktop sidebar's month calendar
-drives the same provider.
+Once the rollout flag exposes the destination, `DailyOsNextRoot` always renders
+`DayPage` for the selected date — the real plan when one exists, otherwise the
+empty Day surface. The selected local plan date lives in
+`dailyOsNextSelectedDateProvider`; the desktop sidebar's month calendar drives
+the same provider.
 
 **The root surface is identical on every no-plan day.** `DayPage` mounts in
 *empty mode* with a synthetic `DraftPlan.emptyForDay`, so recorded sessions stay

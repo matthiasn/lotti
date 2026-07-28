@@ -1663,6 +1663,8 @@
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableAiSummaryTts": "AI summary playback",
   "configFlagEnableAiSummaryTtsDescription": "Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.",
+  "configFlagEnableDailyOs": "Enable DailyOS",
+  "configFlagEnableDailyOsDescription": "Show the DailyOS page in the main navigation.",
   "configFlagEnableDashboardsPage": "Enable Dashboards page",
   "configFlagEnableDashboardsPageDescription": "Show the Dashboards page in the main navigation. View your data and insights in customizable dashboards.",
   "configFlagEnableEmbeddings": "Generate Embeddings",

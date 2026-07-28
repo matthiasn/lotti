@@ -1564,6 +1564,8 @@
   "configFlagEnableAiStreamingDescription": "Stream AI-svar for opgaverelaterede handlinger. Slå fra for at buffere svarene og hold brugerfladen mere jævn.",
   "configFlagEnableAiSummaryTts": "AI-opsummering afspilning",
   "configFlagEnableAiSummaryTtsDescription": "Vis den lokale tekst-til-tale-knap på opgave-AI-resuméer. Kræver en installeret MLX Audio TTS-model.",
+  "configFlagEnableDailyOs": "Aktivér DailyOS",
+  "configFlagEnableDailyOsDescription": "Vis DailyOS i hovednavigationen.",
   "configFlagEnableDashboardsPage": "Aktivér dashboards-siden",
   "configFlagEnableDashboardsPageDescription": "Vis dashboards-siden i hovednavigationen. Se dine data og indsigter i tilpassede dashboards.",
   "configFlagEnableEmbeddings": "Generer indlejringer",
