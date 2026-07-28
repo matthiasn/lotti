@@ -4671,6 +4671,27 @@ void main() {
       expect(result.detail, contains('task-c'));
     });
 
+    test('accepts since after an omitted task disposition', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c was omitted since the day was full.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
     test('accepts a postponed task as a deferred casualty', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -4690,6 +4711,27 @@ void main() {
 
       expect(result.passed, isTrue);
       expect(result.detail, allOf(contains('task-c'), contains('deferred')));
+    });
+
+    test('accepts an unavoidable-choice omission', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'We had no choice but to omit task-c due to capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
     });
 
     test('accepts a task id as an active omission object', () {
@@ -4861,6 +4903,27 @@ void main() {
         result.detail,
         allOf(contains('task-a'), contains('task-b'), contains('task-c')),
       );
+    });
+
+    test('rejects a historical omitted-task disclosure', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'Yesterday, task-c was omitted due to capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
     });
 
     test('accepts an explicit not-scheduled trade', () {

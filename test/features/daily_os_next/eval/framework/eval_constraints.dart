@@ -1299,15 +1299,15 @@ bool _tradeEvidenceDescribesTaskOrWork(
         caseSensitive: false,
       ).hasMatch(suffix) ||
       RegExp(
-        r'^\s+(?:to|until|for|because|due\s+to|owing\s+to|after|before|so|and|'
-        r'but|yet|with|against|over)\b',
+        r'^\s+(?:to|until|for|because|since|as|due\s+to|owing\s+to|after|'
+        r'before|so|and|but|yet|with|against|over)\b',
         caseSensitive: false,
       ).hasMatch(suffix) ||
       RegExp(
         r'^\s+(?:entirely|completely|fully|actually|definitely|explicitly|'
         'ultimately|finally|temporarily)'
-        r'(?:\s*$|\s+(?:to|until|for|because|due\s+to|owing\s+to|after|'
-        r'before|so|and|but|yet|with|against|over)\b)',
+        r'(?:\s*$|\s+(?:to|until|for|because|since|as|due\s+to|owing\s+to|'
+        r'after|before|so|and|but|yet|with|against|over)\b)',
         caseSensitive: false,
       ).hasMatch(suffix) ||
       RegExp(
@@ -1495,7 +1495,7 @@ bool _negationQualifiesRatherThanNegates(Match negation, String between) {
   final negator = (negation.group(0) ?? '').toLowerCase();
   if (negator == 'no') {
     return RegExp(
-      r'^\s*more\s+than\b',
+      r'^\s*(?:more\s+than|(?:choice|option|alternative)\s+but\s+to)\b',
       caseSensitive: false,
     ).hasMatch(between);
   }
@@ -1617,6 +1617,10 @@ bool _negativeTradeDisclosureIsDenied(String prose, Match match) {
         : start >= match.end
         ? prose.substring(match.end, start)
         : '';
+    if (end <= match.start &&
+        _negationQualifiesRatherThanNegates(negation, between)) {
+      continue;
+    }
     if (start >= match.end &&
         RegExp(
           r'^\s*(?:because|since|as|due\s+to|owing\s+to)\s*$',
@@ -2724,6 +2728,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
               r'\btomorrow\b',
               caseSensitive: false,
             ).hasMatch(match.group(0) ?? '') ||
+        _evidenceHasHistoricalScope(prose, match) ||
         !_tradeEvidenceDescribesTaskOrWork(
           prose,
           match,
@@ -2773,6 +2778,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   }
   for (final match in _conflictTradePattern.allMatches(prose)) {
     if (!belongsToTask(match) ||
+        _evidenceHasHistoricalScope(prose, match) ||
         !_evidenceActionIsAsserted(prose, match.start) ||
         _evidenceIsSpeculative(prose, match)) {
       continue;

@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T16:50:50+02:00 }
+generated: { by: codex/5, at: 2026-07-28T17:10:59+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -368,9 +368,14 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   actual deferral.
   Correlative negation covers both dispositions, so
   `task-c was neither omitted nor deferred` asserts neither trade.
+  Necessity idioms are affirmative rather than negated: `We had no choice but
+  to omit task-c` explicitly names the unavoidable casualty despite the word
+  `no`. Historical scope is never current trade evidence, so
+  `Yesterday, task-c was omitted` cannot surface today's conflict.
   `Cannot fit`, `will not fit`, `conflicts`, and `conflicting` are affirmative
   disclosures, including label-bound forms such as `task-c: Cannot fit today`.
-  A causal explanation does not retract that disclosure:
+  Causal explanations introduced by `because`, `since`, `as`, `due to`, or
+  `owing to` remain attached to the preceding trade and do not retract it:
   `task-c cannot be scheduled because no time remains` still names the omitted
   task even though its explanation contains `no`.
   `Postponed` is normalized as a deferral alongside moved, deferred, and
