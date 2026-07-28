@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T03:55:33+02:00 }
+generated: { by: codex/5, at: 2026-07-28T04:06:55+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -84,11 +84,14 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   subject or another corpus task, named by id or full title, cannot earn credit
   for the placed task. The block's task is the default arithmetic subject; a
   corpus reference overrides it only when it is adjacent, linked by an
-  allocation action, possessive, or attached by `for` or `of`. This allows one
-  clause to audit the current split and name a deferred casualty before or after
-  it. The same attribution applies to remainder evidence. The partial mention
-  and task-bound remainder must occur in the same block reason; unrelated
-  workday-capacity prose cannot supply the remainder.
+  allocation action, possessive, or attached by `for` or `of`. Distinct task ids
+  retain distinct identities even when their titles collide; an explicit id can
+  therefore attribute arithmetic to the other task, while an ambiguous shared
+  title is handled conservatively. This allows one clause to audit the current
+  split and name a deferred casualty before or after it. The same attribution
+  applies to remainder evidence. The partial mention and task-bound remainder
+  must occur in the same block reason; unrelated workday-capacity prose cannot
+  supply the remainder.
   Task qualifiers may sit inside the arithmetic, as in
   `60 minutes of this task remain`; leading forms may also qualify the noun, as
   in `the remaining work is 60 minutes`. Remainder arithmetic explicitly scoped
@@ -118,9 +121,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   audited partial credit, so a plan that represents every task only partially
   must still name the trade or escalate it. Merely repeating a shortened task's
   title is not a trade: the prose must also disclose partial, deferred, omitted,
-  remaining, shortened, or conflicting work. The constraint detail records
-  every credited partial and every shortening denied credit, so the judge
-  bundle preserves the accounting
+  remaining, shortened, or conflicting work in the same block reason or note
+  that names the task. Trade wording in unrelated plan prose cannot satisfy that
+  disclosure. The constraint detail records every credited partial and every
+  shortening denied credit, so the judge bundle preserves the accounting
   evidence rather than only the final pass/fail.
 - **Weak semantic outcomes are not ranking evidence.** `surfacedConflict`
   passes either when an accepted `attentionNeeded`

@@ -1013,10 +1013,7 @@ bool _evidenceNamesAnotherTask(
   );
   int? nearestOtherDistance;
   for (final task in corpus) {
-    if (task.taskId == taskId ||
-        task.title.trim().toLowerCase() == taskTitle.trim().toLowerCase()) {
-      continue;
-    }
+    if (task.taskId == taskId) continue;
     final distance = _nearestTaskReferenceDistance(
       reason,
       evidence,
@@ -1242,19 +1239,14 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
       'nothing was left out or partially deferred, so there is no trade to name',
     );
   }
-  final prose = [
-    for (final block in outcome.blocks)
-      '${block.reason ?? ''} ${block.note ?? ''}',
-  ].join(' ').toLowerCase();
-  final hasTradeDisclosure =
-      _partialMentionPattern.hasMatch(prose) ||
-      _partialRemainderDispositionPattern.hasMatch(prose) ||
-      _conflictTradePattern.hasMatch(prose);
   final namedCasualties = [
     for (final taskId in deferred)
-      if (prose.contains(taskId.toLowerCase()) ||
-          _titleNamed(outcome, taskId, prose))
-        if (!shortenedTasks.contains(taskId) || hasTradeDisclosure) taskId,
+      if (_taskTradeIsNamed(
+        outcome,
+        taskId,
+        requireTradeDisclosure: shortenedTasks.contains(taskId),
+      ))
+        taskId,
   ];
   return EvalConstraintResult(
     id: id,
@@ -1658,6 +1650,27 @@ Set<String> _placedTaskIds(EvalRunOutcome outcome) => {
 bool _titleNamed(EvalRunOutcome outcome, String taskId, String prose) {
   final title = outcome.inputs.taskById(taskId)?.title.toLowerCase();
   return title != null && title.isNotEmpty && prose.contains(title);
+}
+
+bool _taskTradeIsNamed(
+  EvalRunOutcome outcome,
+  String taskId, {
+  required bool requireTradeDisclosure,
+}) {
+  for (final block in outcome.blocks) {
+    final prose = '${block.reason ?? ''} ${block.note ?? ''}'.toLowerCase();
+    final namesTask =
+        prose.contains(taskId.toLowerCase()) ||
+        _titleNamed(outcome, taskId, prose);
+    if (!namesTask) continue;
+    if (!requireTradeDisclosure ||
+        _partialMentionPattern.hasMatch(prose) ||
+        _partialRemainderDispositionPattern.hasMatch(prose) ||
+        _conflictTradePattern.hasMatch(prose)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /// Blocks that consume capacity — `dropped` ones are recorded but not
