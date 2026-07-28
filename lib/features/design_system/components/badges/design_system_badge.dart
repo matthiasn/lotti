@@ -356,30 +356,22 @@ class _BadgeStyleSpec {
       };
     }
 
-    final (accentColor, inkColor) = switch (tone) {
-      DesignSystemBadgeTone.primary => (
-        tokens.colors.alert.info.defaultColor,
-        tokens.colors.alert.info.ink,
+    // The remaining tones all bind an alert ramp. Secondary and neutral
+    // returned above, so this map carries exactly the ramp tones — a switch
+    // here would need unreachable throw arms for the two special cases.
+    final alert = tokens.colors.alert;
+    final (accentColor, inkColor) = {
+      DesignSystemBadgeTone.primary: (alert.info.defaultColor, alert.info.ink),
+      DesignSystemBadgeTone.danger: (alert.error.defaultColor, alert.error.ink),
+      DesignSystemBadgeTone.warning: (
+        alert.warning.defaultColor,
+        alert.warning.ink,
       ),
-      DesignSystemBadgeTone.danger => (
-        tokens.colors.alert.error.defaultColor,
-        tokens.colors.alert.error.ink,
+      DesignSystemBadgeTone.success: (
+        alert.success.defaultColor,
+        alert.success.ink,
       ),
-      DesignSystemBadgeTone.warning => (
-        tokens.colors.alert.warning.defaultColor,
-        tokens.colors.alert.warning.ink,
-      ),
-      DesignSystemBadgeTone.success => (
-        tokens.colors.alert.success.defaultColor,
-        tokens.colors.alert.success.ink,
-      ),
-      DesignSystemBadgeTone.secondary => throw StateError(
-        'Secondary tone must be handled separately.',
-      ),
-      DesignSystemBadgeTone.neutral => throw StateError(
-        'Neutral tone must be handled separately.',
-      ),
-    };
+    }[tone]!;
 
     return switch (type) {
       _DesignSystemBadgeType.dot => _BadgeStyleSpec(
