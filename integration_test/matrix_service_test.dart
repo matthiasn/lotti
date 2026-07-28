@@ -1339,21 +1339,29 @@ void main() {
         expect(newEntries, n);
 
         if (metrics != null) {
-          debugPrint('  failures: ${metrics.failures}');
-          debugPrint('  circuitOpens: ${metrics.circuitOpens}');
-          debugPrint('  catchupBatches: ${metrics.catchupBatches}');
-          debugPrint('  processed: ${metrics.processed}');
           debugPrint('  dbApplied: ${metrics.dbApplied}');
+          debugPrint(
+            '  dbIgnoredByVectorClock: '
+            '${metrics.dbIgnoredByVectorClock}',
+          );
+          debugPrint('  conflictsCreated: ${metrics.conflictsCreated}');
+          debugPrint('  queueAbandoned: ${metrics.queueAbandoned}');
 
+          // The previous assertions here read `failures == 0` and
+          // `circuitOpens == 0`, which passed unconditionally: nothing ever
+          // incremented either counter, so they asserted a constant. These
+          // check counters the pipeline actually feeds.
           expect(
-            metrics.failures,
-            0,
-            reason: 'Expected zero processing failures during catch-up',
+            metrics.dbApplied,
+            greaterThanOrEqualTo(n),
+            reason:
+                'Catch-up applied fewer rows to the DB than the $n entries '
+                'Bob converged on',
           );
           expect(
-            metrics.circuitOpens,
+            metrics.queueAbandoned,
             0,
-            reason: 'Circuit breaker should never trip during catch-up',
+            reason: 'No inbound event should be abandoned during catch-up',
           );
         }
 
