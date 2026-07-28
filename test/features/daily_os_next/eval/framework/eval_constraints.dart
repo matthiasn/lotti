@@ -893,6 +893,15 @@ bool _hasAuditablePartialDisclosure({
       hasMatchingSplit = true;
     }
     for (final match in _partialRemainingPattern.allMatches(reason)) {
+      if (_evidenceNamesAnotherTask(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+        corpus: corpus,
+      )) {
+        continue;
+      }
       if (!_remainderIsRelatedToTask(reason, match)) continue;
       if (_matchClauseIsNegated(reason, match)) return false;
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
@@ -902,6 +911,15 @@ bool _hasAuditablePartialDisclosure({
       }
     }
     for (final match in _partialLeadingRemainingPattern.allMatches(reason)) {
+      if (_evidenceNamesAnotherTask(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+        corpus: corpus,
+      )) {
+        continue;
+      }
       if (!_remainderIsRelatedToTask(reason, match)) continue;
       if (_matchClauseIsNegated(reason, match)) return false;
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
@@ -948,47 +966,90 @@ bool _splitIsTaskBound(
   final context = _matchClauseExcludingMatch(reason, match);
   return _taskAllocationContextPattern.hasMatch(context) &&
       !_unrelatedSplitScopePattern.hasMatch(clause) &&
-      !_namesAnotherTask(
-        clause,
+      !_evidenceNamesAnotherTask(
+        reason,
+        match,
         taskId: taskId,
         taskTitle: taskTitle,
         corpus: corpus,
       );
 }
 
-bool _namesAnotherTask(
-  String clause, {
+bool _evidenceNamesAnotherTask(
+  String reason,
+  Match evidence, {
   required String taskId,
   required String taskTitle,
   required List<EvalCorpusTask> corpus,
 }) {
+  final range = _matchClauseRange(reason, evidence, boundaries: '.;!?\n');
+  final currentDistance = _nearestTaskReferenceDistance(
+    reason,
+    evidence,
+    range: range,
+    taskId: taskId,
+    taskTitle: taskTitle,
+  );
+  int? nearestOtherDistance;
   for (final task in corpus) {
     if (task.taskId == taskId ||
         task.title.trim().toLowerCase() == taskTitle.trim().toLowerCase()) {
       continue;
     }
-    final idPattern = RegExp(
-      r'(?:^|[^\w-])' + RegExp.escape(task.taskId) + r'(?=$|[^\w-])',
-      caseSensitive: false,
+    final distance = _nearestTaskReferenceDistance(
+      reason,
+      evidence,
+      range: range,
+      taskId: task.taskId,
+      taskTitle: task.title,
     );
-    final title = task.title.trim();
-    final titlePattern = RegExp(
-      r'\btask\s+' + RegExp.escape(title) + r'\b',
-      caseSensitive: false,
-    );
-    final bareTitlePattern = title.length >= 4
-        ? RegExp(
-            r'(?:^|[^\w])' + RegExp.escape(title) + r'(?=$|[^\w])',
-            caseSensitive: false,
-          )
-        : null;
-    if (idPattern.hasMatch(clause) ||
-        titlePattern.hasMatch(clause) ||
-        (bareTitlePattern?.hasMatch(clause) ?? false)) {
-      return true;
+    if (distance != null &&
+        (nearestOtherDistance == null || distance < nearestOtherDistance)) {
+      nearestOtherDistance = distance;
     }
   }
-  return false;
+  return nearestOtherDistance != null &&
+      (currentDistance == null || nearestOtherDistance <= currentDistance);
+}
+
+int? _nearestTaskReferenceDistance(
+  String reason,
+  Match evidence, {
+  required ({int start, int end}) range,
+  required String taskId,
+  required String taskTitle,
+}) {
+  final clause = reason.substring(range.start, range.end);
+  final title = taskTitle.trim();
+  final patterns = [
+    RegExp(
+      r'(?:^|[^\w-])' + RegExp.escape(taskId) + r'(?=$|[^\w-])',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'\btask\s+' + RegExp.escape(title) + r'\b',
+      caseSensitive: false,
+    ),
+    if (title.length >= 4)
+      RegExp(
+        r'(?:^|[^\w])' + RegExp.escape(title) + r'(?=$|[^\w])',
+        caseSensitive: false,
+      ),
+  ];
+  int? nearest;
+  for (final pattern in patterns) {
+    for (final reference in pattern.allMatches(clause)) {
+      final referenceStart = range.start + reference.start;
+      final referenceEnd = range.start + reference.end;
+      final distance = referenceEnd <= evidence.start
+          ? evidence.start - referenceEnd
+          : referenceStart >= evidence.end
+          ? referenceStart - evidence.end
+          : 0;
+      if (nearest == null || distance < nearest) nearest = distance;
+    }
+  }
+  return nearest;
 }
 
 bool _remainderIsTaskBound(String reason, Match match) {

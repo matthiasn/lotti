@@ -1641,6 +1641,36 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('allows a current-task split beside a deferred casualty', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  '60 of 120 minutes are scheduled for task-c while '
+                  'Prepare the board deck is deferred.',
+            ),
+          ],
+          corpus: const [
+            ...tasks,
+            EvalCorpusTask(
+              taskId: 'task-deck',
+              title: 'Prepare the board deck',
+              estimateMinutes: 120,
+            ),
+          ],
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('audits a partial task across all of its scheduled blocks', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1696,6 +1726,58 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('charges a remainder explicitly naming another task', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'This placement is partial. '
+                  'Remaining 60 minutes of Prepare the board deck '
+                  'are deferred.',
+            ),
+          ],
+          corpus: const [
+            ...tasks,
+            EvalCorpusTask(
+              taskId: 'task-deck',
+              title: 'Prepare the board deck',
+              estimateMinutes: 120,
+            ),
+          ],
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('charges remaining-of-estimate prose at the full estimate', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '30 of the 120 minutes remain for this task.',
+            ).copyWith(endTime: DateTime(2026, 7, 18, 9, 30)),
+          ],
+          corpus: tasks,
+          capacityMinutes: 30,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 30min of 120min'));
     });
 
     for (final badDisclosure in <({String name, String? reason})>[
