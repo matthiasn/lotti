@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T15:40:36+02:00 }
+generated: { by: codex/5, at: 2026-07-28T15:54:50+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -128,8 +128,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   arithmetic.
   Unrelated meeting/workday scope is likewise associated with its nearest
   allocation action, so later meeting arithmetic does not poison an
-  earlier valid task split. Explicit trailing historical scope is rejected too:
-  `scheduled 60 of 120 minutes yesterday` and the equivalent `last week`
+  earlier valid task split. Explicit historical scope is rejected whether it
+  leads or trails the evidence: `Yesterday, task-c scheduled 60 of 120 minutes`,
+  `scheduled 60 of 120 minutes yesterday`, and the equivalent `last week`
   describe prior allocation rather than the current block. The same scope rule
   applies to full-allocation retractions, so a note claiming `fully scheduled
   yesterday` cannot veto current partial evidence. Unbound splits are ignored
@@ -172,7 +173,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   all` do not retract an affirmative placement. Failure retractions work in
   either order: both `the allocation failed` and a later `failed to allocate
   the task` invalidate earlier split arithmetic. An affirmative task-bound
-  claim such as `task-c was fully scheduled after all` still contradicts and
+  claim such as `task-c was fully scheduled after all` or the postpositive
+  equivalent `task-c was scheduled in full after all` still contradicts and
   vetoes partial accounting. An outer falsehood such as
   `It is false that task-c was fully scheduled` denies that completion and
   therefore cannot veto valid partial evidence. A full-allocation adjective

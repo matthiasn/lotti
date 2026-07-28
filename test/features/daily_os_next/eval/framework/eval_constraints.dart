@@ -787,9 +787,12 @@ final _taskAllocationActionPattern = RegExp(
 );
 
 final _fullAllocationPattern = RegExp(
-  r'\b(?:fully|entirely|completely)\s+'
+  r'\b(?:(?:fully|entirely|completely)\s+'
   '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-  r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing))\b',
+  'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing))|'
+  '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+  r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing))\s+'
+  r'in\s+full)\b',
   caseSensitive: false,
 );
 
@@ -810,6 +813,14 @@ final _historicalAllocationScopePattern = RegExp(
   r'^\s*(?:yesterday|previously|earlier(?:\s+today)?|last\s+'
   '(?:week|month|year|(?:mon|tues|wednes|thurs|fri|satur|sun)day))'
   r'\s*(?=$|because\b|due\s+to\b|owing\s+to\b)',
+  caseSensitive: false,
+);
+
+final _leadingHistoricalAllocationScopePattern = RegExp(
+  r'(?:^|[.;!?\n])\s*'
+  r'(?:yesterday|previously|earlier(?:\s+today)?|last\s+'
+  '(?:week|month|year|(?:mon|tues|wednes|thurs|fri|satur|sun)day))'
+  r'\s*,\s*$',
   caseSensitive: false,
 );
 
@@ -1172,7 +1183,7 @@ bool _hasTaskBoundFullAllocationClaim(
           taskTitle: taskTitle,
           corpus: corpus,
         ) ||
-        _evidenceHasTrailingHistoricalScope(prose, match) ||
+        _evidenceHasHistoricalScope(prose, match) ||
         !_evidenceActionIsAsserted(prose, match.start) ||
         _evidenceIsSpeculative(prose, match) ||
         _matchClauseIsNegated(
@@ -1722,7 +1733,7 @@ bool _splitHasUnrelatedScope(
   final scopeEnd = evidence.end > evidenceAction.end
       ? evidence.end
       : evidenceAction.end;
-  if (_evidenceHasTrailingHistoricalScope(
+  if (_evidenceHasHistoricalScope(
     reason,
     evidence,
     evidenceEnd: scopeEnd,
@@ -1756,14 +1767,19 @@ bool _splitHasUnrelatedScope(
   return false;
 }
 
-bool _evidenceHasTrailingHistoricalScope(
+bool _evidenceHasHistoricalScope(
   String prose,
   Match evidence, {
   int? evidenceEnd,
 }) {
   final range = _matchClauseRange(prose, evidence, boundaries: ',.;!?\n');
-  return _historicalAllocationScopePattern.hasMatch(
+  if (_historicalAllocationScopePattern.hasMatch(
     prose.substring(evidenceEnd ?? evidence.end, range.end),
+  )) {
+    return true;
+  }
+  return _leadingHistoricalAllocationScopePattern.hasMatch(
+    prose.substring(0, range.start),
   );
 }
 

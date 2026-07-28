@@ -2732,6 +2732,27 @@ void main() {
       });
     }
 
+    test('rejects a leading historical allocation scope', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Yesterday, task-c scheduled 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('rejects arithmetic not governing a later allocation action', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -3601,6 +3622,28 @@ void main() {
               taskId: 'task-c',
               reason: '60 of 120 minutes are scheduled.',
               note: 'task-c was fully scheduled after all.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('a postpositive full-completion note vetoes partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c scheduled 60 of 120 minutes.',
+              note: 'task-c was scheduled in full after all.',
             ),
           ],
           corpus: tasks,
