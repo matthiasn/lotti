@@ -1225,6 +1225,7 @@ bool _hasTaskBoundAllocationDenial(
   );
   for (final action in placementActionPattern.allMatches(prose)) {
     if (!_allocationActionIsDirectlyDenied(prose, action)) continue;
+    if (_evidenceIsSpeculative(prose, action)) continue;
     if (_tradeEvidenceHasExplicitNonTaskSubject(
       prose,
       action,
@@ -1564,11 +1565,20 @@ bool _splitHasUnrelatedScope(
   for (final match in _taskAllocationActionPattern.allMatches(clause)) {
     final start = range.start + match.start;
     final end = range.start + match.end;
-    if (end <= evidence.start &&
+    if (end <= evidence.start) {
+      if (!RegExp(
+        r'^\s*(?:(?:only|just|merely|about|approximately|roughly)\s+)?$',
+        caseSensitive: false,
+      ).hasMatch(reason.substring(end, evidence.start))) {
+        continue;
+      }
+    } else if (start >= evidence.end &&
         !RegExp(
-          r'^\s*(?:(?:only|just|merely|about|approximately|roughly)\s+)?$',
+          r'^\s*(?:(?:is|are|was|were|will|be|been|being|has|have|had|'
+          'only|just|merely|already|actually|currently|now|'
+          r'estimate|estimated)\s+)*$',
           caseSensitive: false,
-        ).hasMatch(reason.substring(end, evidence.start))) {
+        ).hasMatch(reason.substring(evidence.end, start))) {
       continue;
     }
     final distance = end <= evidence.start

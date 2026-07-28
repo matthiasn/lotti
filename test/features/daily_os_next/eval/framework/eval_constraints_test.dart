@@ -2373,6 +2373,29 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects arithmetic not governing a later allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c reviewed 60 of 120 minutes of recordings '
+                  'before scheduling the meeting.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('accepts a task qualifier before the remainder verb', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2982,6 +3005,28 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('a speculative note denial does not veto partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '60 of 120 minutes are scheduled.',
+              note: 'this task might not be scheduled after all.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
     test('a full-completion note vetoes reason-field partial credit', () {
