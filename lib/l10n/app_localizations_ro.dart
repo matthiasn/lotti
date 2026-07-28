@@ -2484,6 +2484,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Recuperare avansată';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Marcați entitățile și legăturile de agent salvate fără ceas vectorial, pentru ca celelalte dispozitive să le poată ordona și primi.';
+
+  @override
+  String get backfillAgentClocksTitle => 'Ceasurile vectoriale ale agenților';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Reparați ceasurile';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Întreabă colegii';
 
   @override

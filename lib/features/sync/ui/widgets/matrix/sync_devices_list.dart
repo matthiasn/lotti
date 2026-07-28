@@ -263,7 +263,6 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
                   DesignSystemButton(
                     key: const Key('sync_devices_add_device'),
                     label: messages.syncAddDeviceAction,
-                    size: DesignSystemButtonSize.large,
                     leadingIcon: Icons.add_rounded,
                     onPressed: () => unawaited(AddDeviceModal.show(context)),
                   ),

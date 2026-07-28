@@ -1168,6 +1168,9 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Recuperación avanzada",
+  "backfillAgentClocksDescription": "Marca las entidades y los enlaces de agente guardados sin reloj vectorial, para que tus otros dispositivos puedan ordenarlos y recibirlos.",
+  "backfillAgentClocksTitle": "Relojes vectoriales de agentes",
+  "backfillAgentClocksTrigger": "Reparar relojes",
   "backfillAskPeersConfirmAccept": "Preguntar a pares",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Esto vuelve a poner 1 entrada irresoluble del registro de secuencia como faltante para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entradas realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.} other{Esto vuelve a poner las {count} entradas irresolubles del registro de secuencia como faltantes para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entradas realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.}}",
   "@backfillAskPeersConfirmContent": {

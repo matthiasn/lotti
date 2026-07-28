@@ -1438,6 +1438,9 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Advanced recovery",
+  "backfillAgentClocksDescription": "Stamp agent entities and links that were saved without a vector clock, so your other devices can order and receive them.",
+  "backfillAgentClocksTitle": "Agent vector clocks",
+  "backfillAgentClocksTrigger": "Repair clocks",
   "backfillAskPeersConfirmAccept": "Ask peers",
   "backfillAskPeersConfirmContent": "{count, plural, =1{This flips 1 unresolvable sequence-log entry back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.} other{This flips all {count} unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.}}",
   "@backfillAskPeersConfirmContent": {

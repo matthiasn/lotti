@@ -2461,6 +2461,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Geavanceerd herstel';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Voorzie agent-items en -koppelingen die zonder vectorklok zijn opgeslagen alsnog van een klok, zodat je andere apparaten ze kunnen ordenen en ontvangen.';
+
+  @override
+  String get backfillAgentClocksTitle => 'Vectorklokken van agents';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Klokken herstellen';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Vragen aan gelijken';
 
   @override

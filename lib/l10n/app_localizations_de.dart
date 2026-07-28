@@ -2471,6 +2471,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Erweiterte Wiederherstellung';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Versieh Agent-Einträge und -Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.';
+
+  @override
+  String get backfillAgentClocksTitle => 'Agent-Vektoruhren';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Uhren reparieren';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Peers fragen';
 
   @override

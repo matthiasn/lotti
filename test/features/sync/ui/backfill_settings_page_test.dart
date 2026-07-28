@@ -322,11 +322,11 @@ void main() {
     testWidgets('header shows the action count meta', (tester) async {
       await pumpBody(tester);
       final messages = messagesOf(tester);
-      // Without skipped events, six actions are shown; the skipped
+      // Without skipped events, seven actions are shown; the skipped
       // entry is conditional and gated on skipped > 0, which we have
       // no way to populate here (no Matrix coordinator in DI).
       expect(
-        find.text(messages.backfillAdvancedRecoveryActions(6)),
+        find.text(messages.backfillAdvancedRecoveryActions(7)),
         findsOneWidget,
       );
     });
@@ -641,9 +641,9 @@ void main() {
         await emitDepth(tester, total: 0, abandoned: 3);
         final messages = messagesOf(tester);
 
-        // Header meta now reports 7 actions (6 base + 1 retry-skipped).
+        // Header meta now reports 8 actions (7 base + 1 retry-skipped).
         expect(
-          find.text(messages.backfillAdvancedRecoveryActions(7)),
+          find.text(messages.backfillAdvancedRecoveryActions(8)),
           findsOneWidget,
         );
 

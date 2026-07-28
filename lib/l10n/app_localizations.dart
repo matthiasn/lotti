@@ -4290,6 +4290,24 @@ abstract class AppLocalizations {
   /// **'Advanced recovery'**
   String get backfillAdvancedRecoveryTitle;
 
+  /// No description provided for @backfillAgentClocksDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Stamp agent entities and links that were saved without a vector clock, so your other devices can order and receive them.'**
+  String get backfillAgentClocksDescription;
+
+  /// No description provided for @backfillAgentClocksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent vector clocks'**
+  String get backfillAgentClocksTitle;
+
+  /// No description provided for @backfillAgentClocksTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair clocks'**
+  String get backfillAgentClocksTrigger;
+
   /// No description provided for @backfillAskPeersConfirmAccept.
   ///
   /// In en, this message translates to:

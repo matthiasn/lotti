@@ -2475,6 +2475,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Pokročilé obnovení';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Označ agentní entity a odkazy uložené bez vektorových hodin, aby je tvá ostatní zařízení mohla seřadit a přijmout.';
+
+  @override
+  String get backfillAgentClocksTitle => 'Vektorové hodiny agentů';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Opravit hodiny';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Zeptat se peerů';
 
   @override

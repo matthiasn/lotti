@@ -2440,6 +2440,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Advanced recovery';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Stamp agent entities and links that were saved without a vector clock, so your other devices can order and receive them.';
+
+  @override
+  String get backfillAgentClocksTitle => 'Agent vector clocks';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Repair clocks';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Ask peers';
 
   @override

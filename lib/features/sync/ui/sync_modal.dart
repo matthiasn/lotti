@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
@@ -12,6 +13,11 @@ class SyncModal extends ConsumerWidget {
 
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
+    // Settings only. Agent entities and links are journal-side data and are
+    // offered on the entries path instead — the "Send message history" sheet
+    // has one "Agent entities" checkbox covering both. The two agent
+    // clock-backfill steps are a repair, not a choice of what to send, and
+    // live on the Backfill sync page.
     const orderedSteps = <SyncStep>[
       SyncStep.measurables,
       SyncStep.labels,
@@ -20,10 +26,6 @@ class SyncModal extends ConsumerWidget {
       SyncStep.habits,
       SyncStep.aiSettings,
       SyncStep.savedTaskFilters,
-      SyncStep.backfillAgentEntityClocks,
-      SyncStep.backfillAgentLinkClocks,
-      SyncStep.agentEntities,
-      SyncStep.agentLinks,
     ];
     final selectedStepsNotifier = ValueNotifier<Set<SyncStep>>(
       orderedSteps.toSet(),
@@ -42,6 +44,12 @@ class SyncModal extends ConsumerWidget {
         builder: (context, selectedSteps, _) {
           return Column(
             mainAxisSize: MainAxisSize.min,
+            // DesignSystemCheckbox is an intrinsic-width Row, so a centered
+            // column leaves every box at a different x depending on how long
+            // its label is — which reads as arbitrary indentation rather than
+            // a list.
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: context.designTokens.spacing.step2,
             children: [
               for (final step in orderedSteps)
                 DesignSystemCheckbox(

@@ -2487,6 +2487,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Récupération avancée';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Horodate les entités et liens d\'agent enregistrés sans horloge vectorielle, pour que tes autres appareils puissent les ordonner et les recevoir.';
+
+  @override
+  String get backfillAgentClocksTitle => 'Horloges vectorielles des agents';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Réparer les horloges';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Demander aux pairs';
 
   @override

@@ -1344,6 +1344,9 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Avancerad återhämtning",
+  "backfillAgentClocksDescription": "Stämpla agentposter och -länkar som sparats utan vektorklocka, så att dina andra enheter kan ordna och ta emot dem.",
+  "backfillAgentClocksTitle": "Agenternas vektorklockor",
+  "backfillAgentClocksTrigger": "Reparera klockor",
   "backfillAskPeersConfirmAccept": "Fråga kollegor",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Detta vänder tillbaka en olösbar sekvensloggpost till att saknas, så den normala backfill-svepningen frågar om peers. Jämliker som fortfarande har nyttolasten kommer att svara; Verkligt oåterkalleliga inträden kommer att pensioneras igen efter sju dagars amnestifönster. } other{Detta vänder alla {count} olösbara sekvensloggposter tillbaka till att saknas, så att den normala backfill-sweepen frågar peers igen. Jämliker som fortfarande har nyttolasten kommer att svara; Verkligt oåterkalleliga inträden kommer att pensioneras igen efter sju dagars amnestifönster. }}",
   "@backfillAskPeersConfirmContent": {

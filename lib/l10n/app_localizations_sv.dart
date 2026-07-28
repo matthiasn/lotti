@@ -2456,6 +2456,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Avancerad återhämtning';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Stämpla agentposter och -länkar som sparats utan vektorklocka, så att dina andra enheter kan ordna och ta emot dem.';
+
+  @override
+  String get backfillAgentClocksTitle => 'Agenternas vektorklockor';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Reparera klockor';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Fråga kollegor';
 
   @override

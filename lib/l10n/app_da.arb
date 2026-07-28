@@ -1344,6 +1344,9 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Avanceret genopretning",
+  "backfillAgentClocksDescription": "Stempl agent-elementer og -links, der blev gemt uden vektorur, så dine andre enheder kan sortere og modtage dem.",
+  "backfillAgentClocksTitle": "Agenternes vektorure",
+  "backfillAgentClocksTrigger": "Reparer ure",
   "backfillAskPeersConfirmAccept": "Spørg jævnaldrende",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Dette vender én uløselig sekvenslog-post tilbage til manglende, så den normale backfill-gennemgang spørger peers igen. Jævnaldrende, der stadig har nyttelasten, vil reagere; Virkelig uoprettelige bidrag vil igen trække sig tilbage efter 7-dages amnestivinduet. } other{Dette vender alle {count} uløselige sekvenslog-poster tilbage til at mangle, så den normale backfill-sweep spørger peers igen. Jævnaldrende, der stadig har nyttelasten, vil reagere; Virkelig uoprettelige bidrag vil igen trække sig tilbage efter 7-dages amnestivinduet. }}",
   "@backfillAskPeersConfirmContent": {

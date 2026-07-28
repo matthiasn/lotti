@@ -328,10 +328,10 @@ void main() {
             SyncStep.habits,
             SyncStep.aiSettings,
             SyncStep.savedTaskFilters,
-            SyncStep.backfillAgentEntityClocks,
-            SyncStep.backfillAgentLinkClocks,
-            SyncStep.agentEntities,
-            SyncStep.agentLinks,
+            // Settings only. Agent entities/links are offered on the entries
+            // path (Send message history), and the two agent clock backfills
+            // are a repair on the Backfill sync page — neither belongs in a
+            // "choose the entities you want to sync" selection.
           },
         ),
       );
@@ -374,6 +374,37 @@ void main() {
       expect(find.text(messages.syncStepDashboards), findsOneWidget);
       expect(find.text(messages.syncStepHabits), findsOneWidget);
       expect(find.text(messages.syncStepAiSettings), findsOneWidget);
+      expect(find.text(messages.syncStepSavedTaskFilters), findsOneWidget);
+
+      // Agent data is journal-side, not settings: the entries path offers it
+      // (one "Agent entities" checkbox in Send message history covering both
+      // entities and links), and the two clock backfills are a repair on the
+      // Backfill sync page. None of the four may reappear here.
+      expect(find.text(messages.syncStepAgentEntities), findsNothing);
+      expect(find.text(messages.syncStepAgentLinks), findsNothing);
+      expect(
+        find.text(messages.syncStepBackfillAgentEntityClocks),
+        findsNothing,
+      );
+      expect(find.text(messages.syncStepBackfillAgentLinkClocks), findsNothing);
+
+      // Every box shares one left edge. DesignSystemCheckbox is an
+      // intrinsic-width Row, so a centered column staggers each box by label
+      // length and the list reads as arbitrarily indented.
+      final boxes = tester
+          .widgetList<DesignSystemCheckbox>(find.byType(DesignSystemCheckbox))
+          .toList();
+      expect(boxes.length, 7);
+      final lefts = find
+          .byType(DesignSystemCheckbox)
+          .evaluate()
+          .map((e) => tester.getTopLeft(find.byWidget(e.widget)).dx)
+          .toSet();
+      expect(
+        lefts.length,
+        1,
+        reason: 'checkboxes must share one left edge, found $lefts',
+      );
     },
   );
 

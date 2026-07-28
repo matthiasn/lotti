@@ -110,6 +110,12 @@ class ConfirmationProgressModal {
                 ],
                 const SizedBox(height: AppTheme.spacingLarge),
                 DesignSystemModalActionBar(
+                  // The confirm action sizes to its label rather than
+                  // stretching edge to edge: a full-width filled primary reads
+                  // as the loudest thing on screen even when the modal is a
+                  // routine choice, and at modal width it dwarfs the Cancel
+                  // beside it.
+                  layout: DesignSystemModalActionBarLayout.compactPrimary,
                   secondary: [
                     DesignSystemButton(
                       label: context.messages.cancelButton,
@@ -190,13 +196,12 @@ class ConfirmationProgressModal {
     final enabled = isConfirmEnabled?.call() ?? true;
     return DesignSystemButton(
       onPressed: enabled ? onConfirm : null,
-      label: confirmLabel.toUpperCase(),
+      label: confirmLabel,
       leadingIcon: Icons.check_circle_rounded,
       variant: isDestructive
           ? DesignSystemButtonVariant.danger
           : DesignSystemButtonVariant.primary,
       size: DesignSystemButtonSize.large,
-      fullWidth: true,
     );
   }
 }

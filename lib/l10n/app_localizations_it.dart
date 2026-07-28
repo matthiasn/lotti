@@ -2486,6 +2486,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Recupero avanzato';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Applica un orologio vettoriale alle entità e ai collegamenti agente salvati senza, così i tuoi altri dispositivi possono ordinarli e riceverli.';
+
+  @override
+  String get backfillAgentClocksTitle => 'Orologi vettoriali degli agenti';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Ripara orologi';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Chiedi ai colleghi';
 
   @override

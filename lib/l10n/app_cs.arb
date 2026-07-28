@@ -1175,6 +1175,9 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Pokročilé obnovení",
+  "backfillAgentClocksDescription": "Označ agentní entity a odkazy uložené bez vektorových hodin, aby je tvá ostatní zařízení mohla seřadit a přijmout.",
+  "backfillAgentClocksTitle": "Vektorové hodiny agentů",
+  "backfillAgentClocksTrigger": "Opravit hodiny",
   "backfillAskPeersConfirmAccept": "Zeptat se peerů",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Toto vrátí 1 neřešitelný záznam sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.} few{Toto vrátí všechny {count} neřešitelné záznamy sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.} other{Toto vrátí všech {count} neřešitelných záznamů sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.}}",
   "@backfillAskPeersConfirmContent": {

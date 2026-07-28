@@ -2450,6 +2450,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Avanceret genopretning';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Stempl agent-elementer og -links, der blev gemt uden vektorur, så dine andre enheder kan sortere og modtage dem.';
+
+  @override
+  String get backfillAgentClocksTitle => 'Agenternes vektorure';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Reparer ure';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Spørg jævnaldrende';
 
   @override
