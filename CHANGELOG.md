@@ -58,6 +58,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing when there is nothing on the clipboard to paste.
 
 ### Changed
+- **The sync statistics legend moved onto the panel it explains.** The
+  "Legend" button in Matrix Stats did nothing when tapped — the definitions of
+  each counter only ever appeared as a hover tooltip, so on a phone they were
+  unreachable. The button is gone and the definitions now sit on the "Sync
+  Metrics" heading directly above the counters, where a tap shows them.
 - **The device list tells status and identity apart.** A device that has no
   encryption keys yet wears a quiet grey "Unverified" chip instead of
   borrowing the exact dress of the "This device" marker, so a glance down the

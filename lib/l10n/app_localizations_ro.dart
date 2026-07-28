@@ -9397,9 +9397,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Detalii tehnice';
 
   @override
-  String get settingsMatrixDone => 'Done';
-
-  @override
   String get settingsMatrixLastUpdated => 'Ultima actualizare:';
 
   @override
@@ -9417,14 +9414,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Pagina anterioară';
-
-  @override
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
-    return 'Invite to room $roomId from $senderId. Accept?';
-  }
-
-  @override
-  String get settingsMatrixRoomInviteTitle => 'Room invite';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Mesaje trimise:';

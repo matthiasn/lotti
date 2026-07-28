@@ -9351,9 +9351,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Technické podrobnosti';
 
   @override
-  String get settingsMatrixDone => 'Done';
-
-  @override
   String get settingsMatrixLastUpdated => 'Naposledy aktualizováno:';
 
   @override
@@ -9370,14 +9367,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Předchozí stránka';
-
-  @override
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
-    return 'Invite to room $roomId from $senderId. Accept?';
-  }
-
-  @override
-  String get settingsMatrixRoomInviteTitle => 'Room invite';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Odeslané zprávy:';

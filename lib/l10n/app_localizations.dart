@@ -15909,12 +15909,6 @@ abstract class AppLocalizations {
   /// **'Technical details'**
   String get settingsMatrixDiagnosticShowButton;
 
-  /// No description provided for @settingsMatrixDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get settingsMatrixDone;
-
   /// No description provided for @settingsMatrixLastUpdated.
   ///
   /// In en, this message translates to:
@@ -15950,18 +15944,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Previous Page'**
   String get settingsMatrixPreviousPage;
-
-  /// No description provided for @settingsMatrixRoomInviteMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Invite to room {roomId} from {senderId}. Accept?'**
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId);
-
-  /// No description provided for @settingsMatrixRoomInviteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Room invite'**
-  String get settingsMatrixRoomInviteTitle;
 
   /// No description provided for @settingsMatrixSentMessagesLabel.
   ///

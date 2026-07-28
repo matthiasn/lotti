@@ -9166,9 +9166,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Technical details';
 
   @override
-  String get settingsMatrixDone => 'Done';
-
-  @override
   String get settingsMatrixLastUpdated => 'Last updated:';
 
   @override
@@ -9186,14 +9183,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Previous Page';
-
-  @override
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
-    return 'Invite to room $roomId from $senderId. Accept?';
-  }
-
-  @override
-  String get settingsMatrixRoomInviteTitle => 'Room invite';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Sent messages:';
