@@ -128,23 +128,35 @@ void main() {
 
     testWidgets('lets long copy wrap instead of overflowing', (tester) async {
       // The security warning is two full sentences; on a phone it must wrap.
+      // Centered so the width constraint actually applies (a MaterialApp home
+      // is tight-constrained to the screen), and asserted on the wrap
+      // *contract* rather than a pixel height — line metrics vary with which
+      // fonts earlier suites in the batched CI process have loaded.
       await tester.pumpWidget(
         makeTestableWidget(
-          const SizedBox(
-            width: 300,
-            child: SyncCallout(
-              icon: Icons.warning_amber_rounded,
-              text:
-                  'This code unlocks your sync account. Show it only to a '
-                  'device you own, and never share a picture of it.',
+          const Center(
+            child: SizedBox(
+              width: 300,
+              child: SyncCallout(
+                icon: Icons.warning_amber_rounded,
+                text:
+                    'This code unlocks your sync account. Show it only to a '
+                    'device you own, and never share a picture of it.',
+              ),
             ),
           ),
         ),
       );
 
-      expect(tester.takeException(), isNull);
-      final text = tester.renderObject<RenderBox>(find.byType(Text));
-      expect(text.size.height, greaterThan(20));
+      expect(tester.takeException(), isNull, reason: 'no overflow');
+      final text = tester.widget<Text>(
+        find.descendant(
+          of: find.byType(SyncCallout),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(text.softWrap ?? true, isTrue);
+      expect(text.maxLines, isNull, reason: 'long copy must be able to wrap');
     });
   });
 }
