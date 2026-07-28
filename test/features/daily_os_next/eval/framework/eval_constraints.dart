@@ -795,7 +795,9 @@ final _unrelatedRemainderScopePattern = RegExp(
 
 final _conflictTradePattern = RegExp(
   r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|'
-  r'left\s+(?:out|unfinished|incomplete|unscheduled)|'
+  r'left\s+(?:(?:(?:some|the|this|that|its|our|my|your|their|remaining)\s+)*'
+  r'(?:task|work|remainder|rest|portion|part)\s+)?'
+  '(?:out|unfinished|incomplete|unscheduled)|'
   r'(?:(?:(?:is|are|was|were|be|been|being)\s+)?not|'
   r'(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)'
   r'(?:\s+be)?|'
@@ -803,7 +805,7 @@ final _conflictTradePattern = RegExp(
   r'(?:isn|aren|wasn|weren)[\x27’]?t\s+able\s+to)'
   r'(?:\s+be)?)\s+'
   'schedul(?:e|ed|ing)|'
-  r'trade|conflict(?:s|ed|ing)?(?![-\s]+free\b)|'
+  r'trade|conflict(?:s|ed|ing)(?![-\s]+free\b)|'
   'shorten(?:s|ed|ing)?|'
   r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
   r'(?:do|does|did|will|shall)\s+not|'
@@ -1227,6 +1229,12 @@ bool _tradeEvidenceDescribesTaskOrWork(String prose, Match match) {
         caseSensitive: false,
       ).hasMatch(suffix) ||
       RegExp(
+        r'^\s+by\s+(?:'
+        r'\d+(?:[.,]\d+)?\s*(?:%|percent|minutes?|hours?)|'
+        r'(?:an?|half\s+an)\s+hour)\b',
+        caseSensitive: false,
+      ).hasMatch(suffix) ||
+      RegExp(
         r'^\s+from\s+(?:(?:today[\x27’]s|the|this|our|my|your|their)\s+)?'
         r'(?:plan|schedule|day)\b',
         caseSensitive: false,
@@ -1588,7 +1596,8 @@ bool _evidenceActionIsAsserted(
       !RegExp(
         r'\b(?:must|need(?:s|ed)?\s+to|'
         r'(?:has|have|had)\s+to|(?:is|are|was|were)\s+required\s+to|'
-        r'ought\s+to)(?:\s+(?:be|being|get|getting))?\s*$',
+        r'ought\s+to|requir(?:e|es|ed|ing)(?:\s+to)?)'
+        r'(?:\s+(?:be|being|get|getting))?\s*$',
         caseSensitive: false,
       ).hasMatch(prefix) &&
       !RegExp(
