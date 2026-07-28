@@ -1723,6 +1723,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects a likely-to allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c is likely to schedule 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('rejects a progressive non-task partial subject', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -4599,6 +4620,7 @@ void main() {
           corpus: dropped,
           decidedTaskIds: const ['task-deck', 'task-report'],
           requiresConflictSurfaced: true,
+          now: DateTime(2026, 7, 18, 8),
         ),
       );
 
@@ -4790,6 +4812,27 @@ void main() {
       expect(result.detail, contains('task-c'));
     });
 
+    test('preserves a scheduling omission before causal negation', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c cannot be scheduled because no time remains.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
     for (final inability in [
       'cannot be scheduled',
       "can't be scheduled",
@@ -4903,6 +4946,7 @@ void main() {
       'task-c was meant to be omitted.',
       'task-c was going to be omitted.',
       'task-c considered deferring.',
+      'task-c is likely to be omitted.',
     ]) {
       test('rejects a non-asserted trade disposition: $reason', () {
         final result = scoreSurfacedConflict(
@@ -5334,6 +5378,27 @@ void main() {
 
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c'));
+    });
+
+    test('tomorrow is not a deferral on a future-day plan', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c is scheduled for tomorrow.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
     });
 
     test('does not treat a trade object as a trade disposition', () {
@@ -6087,6 +6152,7 @@ void main() {
           ],
           decidedTaskIds: const ['task-c'],
           requiresConflictSurfaced: true,
+          now: DateTime(2026, 7, 18, 8),
         ),
       );
 

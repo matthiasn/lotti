@@ -1616,6 +1616,13 @@ bool _negativeTradeDisclosureIsDenied(String prose, Match match) {
         : start >= match.end
         ? prose.substring(match.end, start)
         : '';
+    if (start >= match.end &&
+        RegExp(
+          r'^\s*(?:because|since|as|due\s+to|owing\s+to)\s*$',
+          caseSensitive: false,
+        ).hasMatch(between)) {
+      continue;
+    }
     if (_wordPattern.allMatches(between).length <= 3) return true;
   }
   return false;
@@ -1688,6 +1695,8 @@ bool _evidenceActionIsAsserted(
       !_evidenceStartIsSpeculative(prose, actionStart) &&
       !RegExp(
         r'\b(?:almost|nearly|not\s+quite|unsuccessfully|'
+        r'(?:(?:is|are|was|were)\s+)?(?:likely|unlikely)\s+to'
+        r'(?:\s+(?:be|being|get|getting))?|'
         r'(?:(?:is|are|was|were)\s+)?(?:supposed|meant|going)\s+to'
         r'(?:\s+(?:be|being|get|getting))?|'
         '(?:(?:intend(?:s|ed|ing)?|aim(?:s|ed|ing)?|'
@@ -2703,6 +2712,11 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   }
   for (final match in _partialTradeDispositionPattern.allMatches(prose)) {
     if (!belongsToTask(match) ||
+        outcome.inputs.now == null &&
+            RegExp(
+              r'\btomorrow\b',
+              caseSensitive: false,
+            ).hasMatch(match.group(0) ?? '') ||
         !_tradeEvidenceDescribesTaskOrWork(
           prose,
           match,

@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T16:15:24+02:00 }
+generated: { by: codex/5, at: 2026-07-28T16:33:33+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -94,7 +94,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   not an affirmative allocation, and neither is
   `task-c might be partially scheduled`. Modal remainder arithmetic such as
   `task-c might have 60 minutes remaining` is likewise hypothetical and cannot
-  qualify or contradict a placement. Intended, planned, aimed, hoped,
+  qualify or contradict a placement. Probabilistic complements such as
+  `task-c is likely to schedule 60 of 120 minutes` are non-asserted too.
+  Intended, planned, aimed, hoped,
   wanted, expected, proposed, considered, attempted, tried, failed, refused,
   or declined actions are likewise not affirmative. Neither are expectation
   forms such as
@@ -301,7 +303,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   omit/defer/shorten/conflict disposition, is required. Likewise, `left
   unchanged` and moving a block to another clock slot are continuity or
   rescheduling, while `left unfinished`, `left some work unfinished`, and moving
-  work to tomorrow are actual remainder dispositions. Unfinished work remains
+  work to tomorrow are actual remainder dispositions on a same-day plan. On a
+  future-day run, `tomorrow` names the day currently being planned, so
+  `scheduled for tomorrow` or `moved to tomorrow` alone cannot surface a
+  deferral. Unfinished work remains
   distinct from full omission, so `not left out; left unfinished` still
   discloses the unfinished remainder. A quantitative complement
   such as `shortened by 60 minutes` also remains a task-bound disposition. A
@@ -363,6 +368,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   actual deferral.
   `Cannot fit`, `will not fit`, `conflicts`, and `conflicting` are affirmative
   disclosures, including label-bound forms such as `task-c: Cannot fit today`.
+  A causal explanation does not retract that disclosure:
+  `task-c cannot be scheduled because no time remains` still names the omitted
+  task even though its explanation contains `no`.
   A bare conflict object is not: `task-c resolves conflict` describes subject
   matter rather than a scheduling casualty, while the task-bound predicate
   `task-c has a scheduling conflict` does disclose one. An explicit omission
