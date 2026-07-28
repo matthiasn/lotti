@@ -879,6 +879,15 @@ bool _hasAuditablePartialDisclosure({
     var reasonMentionsPartial = false;
     var reasonHasBoundRemainder = false;
     for (final match in _partialMentionPattern.allMatches(reason)) {
+      if (_evidenceNamesAnotherTask(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+        corpus: corpus,
+      )) {
+        continue;
+      }
       if (_partialMentionIsNegated(reason, match)) return false;
       reasonMentionsPartial = true;
     }
@@ -1089,6 +1098,10 @@ bool _referenceAttributesEvidence(
     final trimmed = between.trim();
     return trimmed.isEmpty ||
         _taskAllocationActionPattern.hasMatch(between) ||
+        RegExp(
+          r'^(?:is|are|was|were)$',
+          caseSensitive: false,
+        ).hasMatch(trimmed) ||
         RegExp(r'^[\x27’]s$', caseSensitive: false).hasMatch(trimmed) ||
         RegExp(r'^[:–—-]+$').hasMatch(trimmed);
   }
@@ -1648,8 +1661,13 @@ Set<String> _placedTaskIds(EvalRunOutcome outcome) => {
 
 /// Whether [prose] mentions the title of [taskId].
 bool _titleNamed(EvalRunOutcome outcome, String taskId, String prose) {
-  final title = outcome.inputs.taskById(taskId)?.title.toLowerCase();
-  return title != null && title.isNotEmpty && prose.contains(title);
+  final title = outcome.inputs.taskById(taskId)?.title.trim();
+  return title != null &&
+      title.isNotEmpty &&
+      RegExp(
+        r'(?:^|[^\w])' + RegExp.escape(title) + r'(?=$|[^\w])',
+        caseSensitive: false,
+      ).hasMatch(prose);
 }
 
 bool _taskTradeIsNamed(

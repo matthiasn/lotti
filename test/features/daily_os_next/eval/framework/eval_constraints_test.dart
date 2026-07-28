@@ -1865,6 +1865,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('does not borrow another task partial mention', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Task D is partial. 60 minutes remain.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('preserves distinct task ids when titles collide', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2473,6 +2494,34 @@ void main() {
             ),
           ],
           decidedTaskIds: const ['task-deck'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('does not find a casualty title inside another word', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'review',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-review',
+              reason: 'Partial preview of the material; 60 minutes remain.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-review',
+              title: 'Review',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-review'],
           requiresConflictSurfaced: true,
         ),
       );
