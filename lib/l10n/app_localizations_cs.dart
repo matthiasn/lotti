@@ -7127,13 +7127,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vynutit nové skenování a dohnání nyní';
 
   @override
-  String get matrixStatsLegend => 'Legenda';
-
-  @override
-  String get matrixStatsLegendTooltip =>
-      'Legenda:\n• dbApplied = zapsané řádky databáze\n• dbIgnoredByVectorClock = starší nebo stejné příchozí údaje ignorované databází\n• conflictsCreated = zaznamenané souběžné vektorové hodiny\n• dbMissingBase = přeskočeno při čekání na chybějící závislost\n• dbEntryLinkNoop = propojení už existuje, nic se nezapsalo\n• droppedByType.<type> = zahozené zprávy podle typu po opakováních nebo ignorování starších zpráv\n• queueActive = příchozí události čekající na použití\n• signalConnectivity = podněty k synchronizaci po obnovení připojení';
-
-  @override
   String get matrixStatsQueueActive => 'Fronta (aktivní)';
 
   @override
@@ -9354,9 +9347,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Technické podrobnosti';
 
   @override
-  String get settingsMatrixDone => 'Hotovo';
-
-  @override
   String get settingsMatrixLastUpdated => 'Naposledy aktualizováno:';
 
   @override
@@ -9373,14 +9363,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Předchozí stránka';
-
-  @override
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
-    return 'Pozvánka do místnosti $roomId od $senderId. Přijmout?';
-  }
-
-  @override
-  String get settingsMatrixRoomInviteTitle => 'Pozvánka do místnosti';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Odeslané zprávy:';

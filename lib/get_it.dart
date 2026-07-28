@@ -54,7 +54,6 @@ import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/media/media_repair_service.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
@@ -324,17 +323,10 @@ Future<void> registerSingletons() async {
 
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
-  // Room discovery service for single-user multi-device flow
-  final discoveryService = SyncRoomDiscoveryService(
-    loggingService: domainLogger,
-  );
-
-  // Room manager with discovery capability
   final roomManager = SyncRoomManager(
     gateway: matrixGateway,
     settingsDb: settingsDb,
     loggingService: domainLogger,
-    discoveryService: discoveryService,
   );
 
   // Session manager is ordinarily created inside MatrixService, but

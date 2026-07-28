@@ -6986,13 +6986,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matrixStatsForceRescanTooltip => 'Force rescan and catch up now';
 
   @override
-  String get matrixStatsLegend => 'Legend';
-
-  @override
-  String get matrixStatsLegendTooltip =>
-      'Legend:\n• dbApplied = database rows written\n• dbIgnoredByVectorClock = older or identical incoming data ignored by the database\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting a missing dependency or base row\n• dbEntryLinkNoop = link already present, nothing written\n• droppedByType.<type> = per-type drops after retries or older-message ignores\n• queueActive = inbound events still waiting to be applied\n• signalConnectivity = sync nudges after connectivity returned';
-
-  @override
   String get matrixStatsQueueActive => 'Queue (active)';
 
   @override
@@ -9169,9 +9162,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Technical details';
 
   @override
-  String get settingsMatrixDone => 'Done';
-
-  @override
   String get settingsMatrixLastUpdated => 'Last updated:';
 
   @override
@@ -9189,14 +9179,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Previous Page';
-
-  @override
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
-    return 'Invite to room $roomId from $senderId. Accept?';
-  }
-
-  @override
-  String get settingsMatrixRoomInviteTitle => 'Room invite';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Sent messages:';

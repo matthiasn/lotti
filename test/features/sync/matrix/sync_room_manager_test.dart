@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
@@ -26,14 +25,9 @@ class _MockMatrixClient extends Mock implements Client {}
 
 class MockMatrixGateway extends Mock implements MatrixSyncGateway {}
 
-class MockRoomInviteEvent extends Mock implements RoomInviteEvent {}
-
 class MockClient extends Mock implements Client {}
 
 class MockMatrixException extends Mock implements MatrixException {}
-
-class MockSyncRoomDiscoveryService extends Mock
-    implements SyncRoomDiscoveryService {}
 
 class FakeRoom extends Fake implements Room {}
 
@@ -86,39 +80,6 @@ extension _AnyGeneratedHydrateScenario on glados.Any {
       );
 }
 
-/// Builds a [SyncRoomManager] wired to a *synchronous* broadcast invite stream
-/// so invite delivery to the manager's handler is deterministic under
-/// [fakeAsync] (no real event-loop yield needed). Returns the manager and the
-/// controller the test drives. [getRoomById] backs `gateway.getRoomById`.
-(SyncRoomManager, StreamController<RoomInviteEvent>) _buildSyncInviteManager({
-  required MockSettingsDb settingsDb,
-  required MockDomainLogger loggingService,
-  Room? Function(String roomId)? getRoomById,
-}) {
-  final gateway = MockMatrixGateway();
-  final invites = StreamController<RoomInviteEvent>.broadcast(sync: true);
-  when(() => gateway.invites).thenAnswer((_) => invites.stream);
-  when(
-    () => gateway.getRoomById(any<String>()),
-  ).thenAnswer((invocation) {
-    final id = invocation.positionalArguments.first as String;
-    return getRoomById?.call(id);
-  });
-  when(
-    () => loggingService.log(
-      any<LogDomain>(),
-      any<String>(),
-      subDomain: any<String?>(named: 'subDomain'),
-    ),
-  ).thenReturn(null);
-  final manager = SyncRoomManager(
-    gateway: gateway,
-    settingsDb: settingsDb,
-    loggingService: loggingService,
-  );
-  return (manager, invites);
-}
-
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeRoom());
@@ -126,16 +87,12 @@ void main() {
   late MockMatrixGateway gateway;
   late MockSettingsDb settingsDb;
   late MockDomainLogger loggingService;
-  late StreamController<RoomInviteEvent> inviteController;
   late SyncRoomManager manager;
 
   setUp(() {
     gateway = MockMatrixGateway();
     settingsDb = MockSettingsDb();
     loggingService = MockDomainLogger();
-    inviteController = StreamController<RoomInviteEvent>.broadcast();
-
-    when(() => gateway.invites).thenAnswer((_) => inviteController.stream);
     when(
       () => loggingService.log(
         any<LogDomain>(),
@@ -170,7 +127,6 @@ void main() {
 
   tearDown(() async {
     await manager.dispose();
-    await inviteController.close();
   });
 
   test('initialize does nothing when no persisted room id', () async {
@@ -228,8 +184,6 @@ void main() {
         final gateway = MockMatrixGateway();
         final settingsDb = MockSettingsDb();
         final loggingService = MockDomainLogger();
-        final inviteController = StreamController<RoomInviteEvent>.broadcast();
-        when(() => gateway.invites).thenAnswer((_) => inviteController.stream);
         final manager = SyncRoomManager(
           gateway: gateway,
           settingsDb: settingsDb,
@@ -290,168 +244,11 @@ void main() {
           reason: '$scenario',
         );
         unawaited(manager.dispose());
-        unawaited(inviteController.close());
         async.flushMicrotasks();
       });
     },
     tags: 'glados',
   );
-
-  test('inviteUser throws when no active room configured', () {
-    expect(
-      () => manager.inviteUser('@user:server'),
-      throwsStateError,
-    );
-  });
-
-  test('inviteUser delegates to current room invite', () async {
-    final room = MockRoom();
-    when(() => room.invite(any<String>())).thenAnswer((_) async {});
-    when(() => gateway.getRoomById('!room:server')).thenReturn(room);
-    when(
-      () => settingsDb.itemByKey(matrixRoomKey),
-    ).thenAnswer((_) async => '!room:server');
-
-    await manager.initialize();
-    await manager.inviteUser('@user:server');
-
-    verify(() => room.invite('@user:server')).called(1);
-  });
-
-  test('invite stream filters invalid room ids', () {
-    fakeAsync((async) {
-      // Build a fresh manager inside the fake zone with a synchronous gateway
-      // invite stream so delivery to the manager's invite handler is
-      // deterministic and microtasks flush within this zone.
-      final localGateway = MockMatrixGateway();
-      final localInvites = StreamController<RoomInviteEvent>.broadcast(
-        sync: true,
-      );
-      when(() => localGateway.invites).thenAnswer((_) => localInvites.stream);
-      when(
-        () => loggingService.log(
-          any<LogDomain>(),
-          any<String>(),
-          subDomain: any<String?>(named: 'subDomain'),
-        ),
-      ).thenReturn(null);
-      final localManager = SyncRoomManager(
-        gateway: localGateway,
-        settingsDb: settingsDb,
-        loggingService: loggingService,
-      );
-
-      final invites = <SyncRoomInvite>[];
-      final sub = localManager.inviteRequests.listen(invites.add);
-
-      final invalidInvite = MockRoomInviteEvent();
-      when(() => invalidInvite.roomId).thenReturn('room');
-      when(() => invalidInvite.senderId).thenReturn('@alice:server');
-
-      localInvites.add(invalidInvite);
-      async.flushMicrotasks();
-
-      expect(invites, isEmpty);
-      verify(
-        () => loggingService.log(
-          LogDomain.sync,
-          any<String>(that: contains('Discarding invite')),
-          subDomain: 'inviteFiltered',
-        ),
-      ).called(1);
-
-      unawaited(sub.cancel());
-      unawaited(localManager.dispose());
-      unawaited(localInvites.close());
-      async.flushMicrotasks();
-    });
-  });
-
-  test('invite stream emits validated invites', () async {
-    when(() => gateway.getRoomById('!existing:server')).thenReturn(MockRoom());
-    when(
-      () => settingsDb.saveSettingsItem(matrixRoomKey, '!existing:server'),
-    ).thenAnswer((_) async => 1);
-    await manager.saveRoomId('!existing:server');
-
-    final invite = MockRoomInviteEvent();
-    when(() => invite.roomId).thenReturn('!existing:server');
-    when(() => invite.senderId).thenReturn('@alice:server');
-
-    final expectation = expectLater(
-      manager.inviteRequests,
-      emits(
-        isA<SyncRoomInvite>()
-            .having((invite) => invite.roomId, 'roomId', '!existing:server')
-            .having((invite) => invite.senderId, 'senderId', '@alice:server')
-            .having(
-              (invite) => invite.matchesExistingRoom,
-              'matchesExistingRoom',
-              isTrue,
-            ),
-      ),
-    );
-
-    inviteController.add(invite);
-    await expectation;
-  });
-
-  test('leaveCurrentRoom clears state and notifies gateway', () async {
-    final room = MockRoom();
-    when(() => gateway.getRoomById('!room:server')).thenReturn(room);
-    when(
-      () => settingsDb.saveSettingsItem(matrixRoomKey, '!room:server'),
-    ).thenAnswer((_) async => 1);
-    when(
-      () => settingsDb.removeSettingsItem(matrixRoomKey),
-    ).thenAnswer((_) async {});
-    when(() => gateway.leaveRoom('!room:server')).thenAnswer((_) async {});
-
-    await manager.saveRoomId('!room:server');
-    expect(manager.currentRoomId, '!room:server');
-
-    await manager.leaveCurrentRoom();
-
-    verify(() => gateway.leaveRoom('!room:server')).called(1);
-    verify(() => settingsDb.removeSettingsItem(matrixRoomKey)).called(1);
-    expect(manager.currentRoom, isNull);
-    expect(manager.currentRoomId, isNull);
-  });
-
-  test('leaveCurrentRoom clears state when server says not in room', () async {
-    when(
-      () => settingsDb.itemByKey(matrixRoomKey),
-    ).thenAnswer((_) async => '!room:server');
-    // Throw a MatrixException with M_NOT_FOUND
-    final mex = MockMatrixException();
-    when(() => mex.errcode).thenReturn('M_NOT_FOUND');
-    when(() => gateway.leaveRoom('!room:server')).thenThrow(mex);
-
-    await manager.initialize();
-    await manager.leaveCurrentRoom();
-
-    verify(() => settingsDb.removeSettingsItem(matrixRoomKey)).called(1);
-    expect(manager.currentRoomId, isNull);
-  });
-
-  test('acceptInvite delegates to joinRoom and logs', () async {
-    when(() => gateway.joinRoom('!inv:server')).thenAnswer((_) async {});
-    when(
-      () => settingsDb.saveSettingsItem(matrixRoomKey, '!inv:server'),
-    ).thenAnswer((_) async => 1);
-    final invite = SyncRoomInvite(
-      roomId: '!inv:server',
-      senderId: '@alice:server',
-      matchesExistingRoom: false,
-    );
-
-    await manager.acceptInvite(invite);
-
-    verify(() => gateway.joinRoom('!inv:server')).called(1);
-    verify(
-      () => settingsDb.saveSettingsItem(matrixRoomKey, '!inv:server'),
-    ).called(1);
-  });
 
   test('clearPersistedRoom clears state and logs', () async {
     when(
@@ -470,142 +267,6 @@ void main() {
     expect(manager.currentRoomId, isNull);
   });
 
-  group('room discovery integration', () {
-    late MockSyncRoomDiscoveryService discoveryService;
-    late SyncRoomManager managerWithDiscovery;
-    late StreamController<RoomInviteEvent> inviteController2;
-
-    setUp(() {
-      discoveryService = MockSyncRoomDiscoveryService();
-      inviteController2 = StreamController<RoomInviteEvent>.broadcast();
-
-      when(() => gateway.invites).thenAnswer((_) => inviteController2.stream);
-
-      managerWithDiscovery = SyncRoomManager(
-        gateway: gateway,
-        settingsDb: settingsDb,
-        loggingService: loggingService,
-        discoveryService: discoveryService,
-      );
-    });
-
-    tearDown(() async {
-      await managerWithDiscovery.dispose();
-      await inviteController2.close();
-    });
-
-    test(
-      'discoverExistingSyncRooms returns empty when no discovery service',
-      () async {
-        // manager without discovery service
-        final rooms = await manager.discoverExistingSyncRooms();
-        expect(rooms, isEmpty);
-      },
-    );
-
-    test('discoverExistingSyncRooms delegates to discovery service', () async {
-      final client = MockClient();
-      final candidates = [
-        const SyncRoomCandidate(
-          roomId: '!room1:server',
-          roomName: 'Room 1',
-          createdAt: null,
-          memberCount: 2,
-          hasStateMarker: true,
-          hasLottiContent: true,
-        ),
-      ];
-
-      when(() => gateway.client).thenReturn(client);
-      when(
-        () => discoveryService.discoverSyncRooms(client),
-      ).thenAnswer((_) async => candidates);
-
-      final rooms = await managerWithDiscovery.discoverExistingSyncRooms();
-
-      expect(rooms, equals(candidates));
-      verify(() => discoveryService.discoverSyncRooms(client)).called(1);
-    });
-
-    test(
-      'createRoom marks room with Lotti state when discovery service exists',
-      () async {
-        final room = MockRoom();
-        final client = MockClient();
-        when(() => gateway.client).thenReturn(client);
-        when(() => client.userID).thenReturn('@lotti_user:example.com');
-        when(
-          () => gateway.createRoom(
-            name: any(named: 'name'),
-            inviteUserIds: any(named: 'inviteUserIds'),
-          ),
-        ).thenAnswer((_) async => '!newroom:server');
-        when(() => gateway.getRoomById('!newroom:server')).thenReturn(room);
-        when(
-          () => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'),
-        ).thenAnswer((_) async => 1);
-        when(
-          () => discoveryService.markRoomAsLottiSync(room),
-        ).thenAnswer((_) async {});
-
-        await managerWithDiscovery.createRoom();
-
-        verify(() => discoveryService.markRoomAsLottiSync(room)).called(1);
-      },
-    );
-
-    test('createRoom includes the creator username in room name', () async {
-      final client = MockClient();
-      when(() => gateway.client).thenReturn(client);
-      when(() => client.userID).thenReturn('@lotti_user:example.com');
-      when(
-        () => gateway.createRoom(
-          name: any(named: 'name'),
-          inviteUserIds: any(named: 'inviteUserIds'),
-        ),
-      ).thenAnswer((_) async => '!newroom:server');
-      when(
-        () => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'),
-      ).thenAnswer((_) async => 1);
-      when(() => gateway.getRoomById('!newroom:server')).thenReturn(null);
-
-      await managerWithDiscovery.createRoom();
-
-      final name =
-          verify(
-                () => gateway.createRoom(
-                  name: captureAny(named: 'name'),
-                  inviteUserIds: any(named: 'inviteUserIds'),
-                ),
-              ).captured.single
-              as String;
-      expect(name, contains('Lotti Sync (lotti_user)'));
-    });
-
-    test(
-      'createRoom does not mark room when gateway returns null room',
-      () async {
-        final client = MockClient();
-        when(() => gateway.client).thenReturn(client);
-        when(() => client.userID).thenReturn('@lotti_user:example.com');
-        when(
-          () => gateway.createRoom(
-            name: any(named: 'name'),
-            inviteUserIds: any(named: 'inviteUserIds'),
-          ),
-        ).thenAnswer((_) async => '!newroom:server');
-        when(() => gateway.getRoomById('!newroom:server')).thenReturn(null);
-        when(
-          () => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'),
-        ).thenAnswer((_) async => 1);
-
-        await managerWithDiscovery.createRoom();
-
-        verifyNever(() => discoveryService.markRoomAsLottiSync(any()));
-      },
-    );
-  });
-
   // ---------------------------------------------------------------------------
   // Tests originally in room_test.dart
   // ---------------------------------------------------------------------------
@@ -614,7 +275,6 @@ void main() {
     late MockSettingsDb mockSettingsDb;
     late MockDomainLogger mockLoggingService;
     late SyncRoomManager manager;
-    late StreamController<RoomInviteEvent> inviteController;
     late MockRoom mockRoom;
     late _MockMatrixClient mockClient;
 
@@ -623,13 +283,9 @@ void main() {
       mockGateway = _MockMatrixSyncGateway();
       mockSettingsDb = MockSettingsDb();
       mockLoggingService = MockDomainLogger();
-      inviteController = StreamController<RoomInviteEvent>.broadcast();
       mockRoom = MockRoom();
       mockClient = _MockMatrixClient();
 
-      when(
-        () => mockGateway.invites,
-      ).thenAnswer((_) => inviteController.stream);
       when(() => mockGateway.getRoomById(any<String>())).thenReturn(null);
       when(
         () => mockSettingsDb.itemByKey(any<String>()),
@@ -659,7 +315,6 @@ void main() {
 
     tearDown(() async {
       await manager.dispose();
-      await inviteController.close();
     });
 
     test('initialize loads persisted room and resolves snapshot', () async {
@@ -672,205 +327,6 @@ void main() {
 
       expect(manager.currentRoomId, '!room:server');
       expect(manager.currentRoom, mockRoom);
-    });
-
-    test('emits invite requests for valid room ids', () {
-      fakeAsync((async) {
-        final (localManager, localInvites) = _buildSyncInviteManager(
-          settingsDb: mockSettingsDb,
-          loggingService: mockLoggingService,
-        );
-        unawaited(localManager.initialize());
-        async.flushMicrotasks();
-
-        final invites = <SyncRoomInvite>[];
-        final sub = localManager.inviteRequests.listen(invites.add);
-
-        localInvites.add(
-          const RoomInviteEvent(
-            roomId: '!room:server',
-            senderId: '@user:server',
-          ),
-        );
-        async.flushMicrotasks();
-
-        expect(invites, hasLength(1));
-        expect(invites.first.roomId, '!room:server');
-        expect(invites.first.senderId, '@user:server');
-        expect(invites.first.matchesExistingRoom, isFalse);
-
-        unawaited(sub.cancel());
-        unawaited(localManager.dispose());
-        unawaited(localInvites.close());
-        async.flushMicrotasks();
-      });
-    });
-
-    test('ignores invites with invalid room id', () {
-      fakeAsync((async) {
-        final (localManager, localInvites) = _buildSyncInviteManager(
-          settingsDb: mockSettingsDb,
-          loggingService: mockLoggingService,
-        );
-        unawaited(localManager.initialize());
-        async.flushMicrotasks();
-
-        final invites = <SyncRoomInvite>[];
-        final sub = localManager.inviteRequests.listen(invites.add);
-
-        localInvites.add(
-          const RoomInviteEvent(
-            roomId: 'not-a-room',
-            senderId: '@user:server',
-          ),
-        );
-        async.flushMicrotasks();
-
-        expect(invites, isEmpty);
-
-        unawaited(sub.cancel());
-        unawaited(localManager.dispose());
-        unawaited(localInvites.close());
-        async.flushMicrotasks();
-      });
-    });
-
-    test('marks invite as matching when ids align', () {
-      fakeAsync((async) {
-        final (localManager, localInvites) = _buildSyncInviteManager(
-          settingsDb: mockSettingsDb,
-          loggingService: mockLoggingService,
-          getRoomById: (id) => id == '!room:server' ? mockRoom : null,
-        );
-        when(
-          () => mockSettingsDb.itemByKey(matrixRoomKey),
-        ).thenAnswer((_) async => '!room:server');
-
-        unawaited(localManager.initialize());
-        async.flushMicrotasks();
-
-        final invites = <SyncRoomInvite>[];
-        final sub = localManager.inviteRequests.listen(invites.add);
-
-        localInvites.add(
-          const RoomInviteEvent(
-            roomId: '!room:server',
-            senderId: '@user:server',
-          ),
-        );
-        async.flushMicrotasks();
-
-        expect(invites.single.matchesExistingRoom, isTrue);
-
-        unawaited(sub.cancel());
-        unawaited(localManager.dispose());
-        unawaited(localInvites.close());
-        async.flushMicrotasks();
-      });
-    });
-
-    test('acceptInvite joins room and persists id', () async {
-      when(() => mockGateway.joinRoom('!room:server')).thenAnswer((_) async {});
-      when(
-        () => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!room:server'),
-      ).thenAnswer((_) async => 1);
-      when(() => mockGateway.getRoomById('!room:server')).thenReturn(mockRoom);
-
-      await manager.initialize();
-
-      final invite = SyncRoomInvite(
-        roomId: '!room:server',
-        senderId: '@user:server',
-        matchesExistingRoom: false,
-      );
-      await manager.acceptInvite(invite);
-
-      verify(() => mockGateway.joinRoom('!room:server')).called(1);
-      verify(
-        () => mockSettingsDb.saveSettingsItem(
-          matrixRoomKey,
-          '!room:server',
-        ),
-      ).called(1);
-      expect(manager.currentRoomId, '!room:server');
-      expect(manager.currentRoom, mockRoom);
-    });
-
-    test(
-      'leaveCurrentRoom clears persisted id and leaves gateway room',
-      () async {
-        when(
-          () => mockSettingsDb.itemByKey(matrixRoomKey),
-        ).thenAnswer((_) async => '!room:server');
-        when(
-          () => mockGateway.getRoomById('!room:server'),
-        ).thenReturn(mockRoom);
-        when(
-          () => mockSettingsDb.removeSettingsItem(matrixRoomKey),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockGateway.leaveRoom('!room:server'),
-        ).thenAnswer((_) async {});
-
-        await manager.initialize();
-        await manager.leaveCurrentRoom();
-
-        verify(() => mockGateway.leaveRoom('!room:server')).called(1);
-        verify(
-          () => mockSettingsDb.removeSettingsItem(matrixRoomKey),
-        ).called(1);
-        expect(manager.currentRoomId, isNull);
-        expect(manager.currentRoom, isNull);
-      },
-    );
-
-    test('inviteUser throws when no room is configured', () async {
-      await manager.initialize();
-      expect(
-        () => manager.inviteUser('@user:server'),
-        throwsStateError,
-      );
-    });
-
-    test('inviteUser delegates to current room when available', () async {
-      when(() => mockGateway.getRoomById('!room:server')).thenReturn(mockRoom);
-      when(
-        () => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!room:server'),
-      ).thenAnswer((_) async => 1);
-      when(() => mockRoom.invite('@user:server')).thenAnswer((_) async {});
-
-      await manager.saveRoomId('!room:server');
-      await manager.inviteUser('@user:server');
-
-      verify(() => mockRoom.invite('@user:server')).called(1);
-    });
-
-    test('createRoom persists room id and resolves snapshot', () async {
-      when(
-        () => mockGateway.createRoom(
-          name: any<String>(named: 'name'),
-          inviteUserIds: ['@user:server'],
-        ),
-      ).thenAnswer((_) async => '!created:room');
-      when(
-        () => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!created:room'),
-      ).thenAnswer((_) async => 1);
-      when(() => mockGateway.getRoomById('!created:room')).thenReturn(mockRoom);
-
-      final roomId = await manager.createRoom(inviteUserIds: ['@user:server']);
-
-      expect(roomId, '!created:room');
-      expect(manager.currentRoomId, '!created:room');
-      expect(manager.currentRoom, mockRoom);
-      verify(
-        () => mockGateway.createRoom(
-          name: any<String>(named: 'name'),
-          inviteUserIds: ['@user:server'],
-        ),
-      ).called(1);
-      verify(
-        () => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!created:room'),
-      ).called(1);
     });
 
     test('loadPersistedRoomId caches value after first lookup', () async {
@@ -979,42 +435,6 @@ void main() {
           LogDomain.sync,
           any<String>(that: contains('Failed to resolve room !missing:room')),
           subDomain: 'hydrate',
-        ),
-      ).called(1);
-    });
-
-    test('leaveCurrentRoom skips gateway call when no room stored', () async {
-      when(
-        () => mockSettingsDb.itemByKey(matrixRoomKey),
-      ).thenAnswer((_) async => null);
-
-      await manager.initialize();
-      await manager.leaveCurrentRoom();
-
-      verifyNever(() => mockGateway.leaveRoom(any<String>()));
-    });
-
-    test('leaveCurrentRoom preserves state when leave fails', () async {
-      when(
-        () => mockSettingsDb.saveSettingsItem(matrixRoomKey, '!room:server'),
-      ).thenAnswer((_) async => 1);
-      await manager.saveRoomId('!room:server');
-      when(
-        () => mockGateway.leaveRoom('!room:server'),
-      ).thenThrow(Exception('network error'));
-
-      expect(
-        () => manager.leaveCurrentRoom(),
-        throwsException,
-      );
-      expect(manager.currentRoomId, '!room:server');
-      verifyNever(() => mockSettingsDb.removeSettingsItem(matrixRoomKey));
-      verify(
-        () => mockLoggingService.error(
-          LogDomain.sync,
-          any<Object>(),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          subDomain: 'leaveRoom',
         ),
       ).called(1);
     });

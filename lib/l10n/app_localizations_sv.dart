@@ -7021,13 +7021,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get matrixStatsForceRescanTooltip => 'Tvinga om och ta igen nu';
 
   @override
-  String get matrixStatsLegend => 'Legend';
-
-  @override
-  String get matrixStatsLegendTooltip =>
-      'Legend:\n• dbApplied = skrivna databasrader\n• dbIgnoredByVectorClock = äldre eller identiska inkommande data ignorerade av databasen\n• conflictsCreated = samtidiga vektorklockor loggade\n• dbMissingBase = överhoppad i väntan på ett saknat beroende\n• dbEntryLinkNoop = länken finns redan, inget skrevs\n• droppedByType.<type> = bortsorterade per typ efter försök eller ignorerade äldre meddelanden\n• queueActive = inkommande händelser som ännu inte tillämpats\n• signalConnectivity = synkroniseringsknuffar efter att anslutningen kom tillbaka';
-
-  @override
   String get matrixStatsQueueActive => 'Kö (aktiv)';
 
   @override
@@ -9228,9 +9221,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Tekniska detaljer';
 
   @override
-  String get settingsMatrixDone => 'Klart';
-
-  @override
   String get settingsMatrixLastUpdated => 'Senast uppdaterad:';
 
   @override
@@ -9248,14 +9238,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Föregående sida';
-
-  @override
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
-    return 'Bjud in till rum $roomId från $senderId. Acceptera?';
-  }
-
-  @override
-  String get settingsMatrixRoomInviteTitle => 'Rumsinbjudan';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Skickade meddelanden:';

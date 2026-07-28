@@ -13,8 +13,6 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -95,9 +93,6 @@ void main() {
     when(() => messageSender.sentEventRegistry).thenReturn(sentEventRegistry);
     when(() => roomManager.currentRoomId).thenReturn(null);
     when(() => roomManager.currentRoom).thenReturn(null);
-    when(
-      () => roomManager.inviteRequests,
-    ).thenAnswer((_) => const Stream.empty());
     when(() => syncEngine.lifecycleCoordinator).thenReturn(coordinator);
     when(() => gateway.unverifiedDevices()).thenReturn([]);
   });
@@ -308,18 +303,6 @@ void main() {
       verify(() => roomManager.joinRoom('!room:server')).called(1);
     });
 
-    test('createRoom delegates to room manager', () async {
-      when(
-        () =>
-            roomManager.createRoom(inviteUserIds: any(named: 'inviteUserIds')),
-      ).thenAnswer((_) async => '!new:room');
-
-      final service = createService();
-      final result = await service.createRoom();
-
-      expect(result, '!new:room');
-    });
-
     test('getRoom delegates to room manager', () async {
       when(
         () => roomManager.loadPersistedRoomId(),
@@ -331,17 +314,6 @@ void main() {
       expect(result, '!stored:room');
     });
 
-    test('leaveRoom delegates to room manager', () async {
-      when(
-        () => roomManager.leaveCurrentRoom(),
-      ).thenAnswer((_) async {});
-
-      final service = createService();
-      await service.leaveRoom();
-
-      verify(() => roomManager.leaveCurrentRoom()).called(1);
-    });
-
     test('clearPersistedRoom delegates to room manager', () async {
       when(
         () => roomManager.clearPersistedRoom(),
@@ -351,17 +323,6 @@ void main() {
       await service.clearPersistedRoom();
 
       verify(() => roomManager.clearPersistedRoom()).called(1);
-    });
-
-    test('inviteToSyncRoom delegates to room manager', () async {
-      when(
-        () => roomManager.inviteUser(any()),
-      ).thenAnswer((_) async {});
-
-      final service = createService();
-      await service.inviteToSyncRoom(userId: '@bob:server');
-
-      verify(() => roomManager.inviteUser('@bob:server')).called(1);
     });
 
     test('logout delegates to sync engine', () async {
@@ -569,33 +530,6 @@ void main() {
         );
       },
     );
-
-    // Covers lines 486-490: acceptInvite() logs the request and delegates.
-    test('acceptInvite logs request and delegates to room manager', () async {
-      final invite = SyncRoomInvite(
-        roomId: '!invited:server',
-        senderId: '@alice:server',
-        matchesExistingRoom: false,
-      );
-      when(() => roomManager.acceptInvite(invite)).thenAnswer((_) async {});
-
-      final service = createService();
-      await service.acceptInvite(invite);
-
-      verify(
-        () => loggingService.log(
-          LogDomain.sync,
-          any(
-            that: allOf(
-              contains('!invited:server'),
-              contains('@alice:server'),
-            ),
-          ),
-          subDomain: 'room.acceptInvite',
-        ),
-      ).called(1);
-      verify(() => roomManager.acceptInvite(invite)).called(1);
-    });
 
     // Covers lines 508-512: onVerificationCompleted() logs the source. Also
     // returns early at the !isLoggedIn() guard so neither catch is reached.
@@ -959,39 +893,6 @@ void main() {
       expect(service.matrixConfig, config);
     });
 
-    // Covers line 220: inviteRequests getter delegates to room manager.
-    test('inviteRequests getter returns room manager stream', () {
-      final controller = StreamController<SyncRoomInvite>.broadcast();
-      when(() => roomManager.inviteRequests).thenAnswer(
-        (_) => controller.stream,
-      );
-
-      final service = createService();
-      expect(service.inviteRequests, isA<Stream<SyncRoomInvite>>());
-      controller.close();
-    });
-
-    // Covers line 222: discoverExistingSyncRooms delegates to the room
-    // manager and returns its result unchanged.
-    test('discoverExistingSyncRooms delegates to room manager', () async {
-      const candidate = SyncRoomCandidate(
-        roomId: '!room:server',
-        roomName: 'Lotti Sync',
-        createdAt: null,
-        memberCount: 2,
-        hasStateMarker: true,
-        hasLottiContent: true,
-      );
-      when(
-        () => roomManager.discoverExistingSyncRooms(),
-      ).thenAnswer((_) async => [candidate]);
-
-      final result = await createService().discoverExistingSyncRooms();
-
-      expect(result, [candidate]);
-      verify(() => roomManager.discoverExistingSyncRooms()).called(1);
-    });
-
     // Covers lines 287-288: publishIncomingRunnerState is a no-op when
     // incomingKeyVerificationRunner is null (default).
     test(
@@ -1016,9 +917,6 @@ void main() {
         final innerRoomManager = MockSyncRoomManager();
         when(() => innerRoomManager.currentRoomId).thenReturn('!r:s');
         when(() => innerRoomManager.currentRoom).thenReturn(null);
-        when(
-          () => innerRoomManager.inviteRequests,
-        ).thenAnswer((_) => const Stream.empty());
         when(
           () => sessionManager.roomManager,
         ).thenReturn(innerRoomManager);
@@ -1777,7 +1675,6 @@ void main() {
       MatrixConfig? matrixConfig,
       String? deviceDisplayName,
     }) {
-      when(() => gateway.invites).thenAnswer((_) => const Stream.empty());
       return MatrixService(
         gateway: gateway,
         loggingService: loggingService,

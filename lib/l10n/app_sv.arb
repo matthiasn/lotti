@@ -3331,8 +3331,6 @@
   "matrixStatsEntryLinkNoops": "EntryLink No-ops",
   "matrixStatsForceRescan": "Force Omscan",
   "matrixStatsForceRescanTooltip": "Tvinga om och ta igen nu",
-  "matrixStatsLegend": "Legend",
-  "matrixStatsLegendTooltip": "Legend:\n• dbApplied = skrivna databasrader\n• dbIgnoredByVectorClock = äldre eller identiska inkommande data ignorerade av databasen\n• conflictsCreated = samtidiga vektorklockor loggade\n• dbMissingBase = överhoppad i väntan på ett saknat beroende\n• dbEntryLinkNoop = länken finns redan, inget skrevs\n• droppedByType.<type> = bortsorterade per typ efter försök eller ignorerade äldre meddelanden\n• queueActive = inkommande händelser som ännu inte tillämpats\n• signalConnectivity = synkroniseringsknuffar efter att anslutningen kom tillbaka",
   "matrixStatsQueueActive": "Kö (aktiv)",
   "matrixStatsRefresh": "Uppdatera",
   "matrixStatsRetryNow": "Försök igen nu",
@@ -4321,25 +4319,12 @@
   "settingsMatrixDiagnosticCopyButton": "Kopiera till urklipp",
   "settingsMatrixDiagnosticDialogTitle": "Synkronisera diagnostisk information",
   "settingsMatrixDiagnosticShowButton": "Tekniska detaljer",
-  "settingsMatrixDone": "Klart",
   "settingsMatrixLastUpdated": "Senast uppdaterad:",
   "settingsMatrixMaintenanceSubtitle": "Matrix-underhåll och återställning",
   "settingsMatrixMaintenanceTitle": "Underhåll",
   "settingsMatrixMetrics": "Synkroniseringsmått",
   "settingsMatrixNextPage": "Nästa sida",
   "settingsMatrixPreviousPage": "Föregående sida",
-  "settingsMatrixRoomInviteMessage": "Bjud in till rum {roomId} från {senderId}. Acceptera?",
-  "@settingsMatrixRoomInviteMessage": {
-    "placeholders": {
-      "roomId": {
-        "type": "String"
-      },
-      "senderId": {
-        "type": "String"
-      }
-    }
-  },
-  "settingsMatrixRoomInviteTitle": "Rumsinbjudan",
   "settingsMatrixSentMessagesLabel": "Skickade meddelanden:",
   "settingsMatrixSentMessageType": "Skickad ({eventType})",
   "@settingsMatrixSentMessageType": {

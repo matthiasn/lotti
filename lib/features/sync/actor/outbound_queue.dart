@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
-import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';

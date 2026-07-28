@@ -12243,18 +12243,6 @@ abstract class AppLocalizations {
   /// **'Force rescan and catch up now'**
   String get matrixStatsForceRescanTooltip;
 
-  /// No description provided for @matrixStatsLegend.
-  ///
-  /// In en, this message translates to:
-  /// **'Legend'**
-  String get matrixStatsLegend;
-
-  /// No description provided for @matrixStatsLegendTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Legend:\n• dbApplied = database rows written\n• dbIgnoredByVectorClock = older or identical incoming data ignored by the database\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting a missing dependency or base row\n• dbEntryLinkNoop = link already present, nothing written\n• droppedByType.<type> = per-type drops after retries or older-message ignores\n• queueActive = inbound events still waiting to be applied\n• signalConnectivity = sync nudges after connectivity returned'**
-  String get matrixStatsLegendTooltip;
-
   /// No description provided for @matrixStatsQueueActive.
   ///
   /// In en, this message translates to:
@@ -15915,12 +15903,6 @@ abstract class AppLocalizations {
   /// **'Technical details'**
   String get settingsMatrixDiagnosticShowButton;
 
-  /// No description provided for @settingsMatrixDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get settingsMatrixDone;
-
   /// No description provided for @settingsMatrixLastUpdated.
   ///
   /// In en, this message translates to:
@@ -15956,18 +15938,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Previous Page'**
   String get settingsMatrixPreviousPage;
-
-  /// No description provided for @settingsMatrixRoomInviteMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Invite to room {roomId} from {senderId}. Accept?'**
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId);
-
-  /// No description provided for @settingsMatrixRoomInviteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Room invite'**
-  String get settingsMatrixRoomInviteTitle;
 
   /// No description provided for @settingsMatrixSentMessagesLabel.
   ///

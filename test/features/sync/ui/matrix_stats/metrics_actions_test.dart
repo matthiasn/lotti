@@ -24,13 +24,6 @@ void main() {
       ),
     );
 
-    // Legend tooltip present
-    final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip)).toList();
-    expect(
-      tooltips.any((t) => t.message?.startsWith('Legend:') ?? false),
-      isTrue,
-    );
-
     await tester.tap(find.byKey(const Key('matrixStats.forceRescan')));
     await tester.tap(find.byKey(const Key('matrixStats.retryNow')));
     await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
@@ -43,7 +36,6 @@ void main() {
     expect(refreshed, 1);
 
     // Labels visible
-    expect(find.text('Legend'), findsOneWidget);
     expect(find.text('Force Rescan'), findsOneWidget);
     expect(find.text('Retry Now'), findsOneWidget);
     expect(find.text('Copy Diagnostics'), findsOneWidget);

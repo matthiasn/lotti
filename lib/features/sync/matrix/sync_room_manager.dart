@@ -1,52 +1,31 @@
 import 'dart:async';
 
-import 'package:intl/intl.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 const int kSyncRoomLoadMaxAttempts = 4;
 const int kSyncRoomLoadBaseDelayMs = 1000;
 
-/// Represents a pending invite that requires user confirmation before the
-/// device joins a Matrix room.
-class SyncRoomInvite {
-  SyncRoomInvite({
-    required this.roomId,
-    required this.senderId,
-    required this.matchesExistingRoom,
-  });
-
-  final String roomId;
-  final String senderId;
-  final bool matchesExistingRoom;
-}
-
-/// Handles sync-room persistence, invite filtering, and safe join/leave flows.
+/// Handles sync-room persistence and the join/hydrate flows.
 ///
-/// This manager replaces the legacy auto-join logic that subscribed directly to
-/// `Client.onRoomState` events. It ensures that only valid invite events are
-/// surfaced to the UI and requires explicit confirmation before joining.
+/// Devices never create or discover a sync room: provisioning carries the room
+/// id in the bundle, so every device simply joins the room it was told about
+/// (see `ProvisioningController`). This manager owns the persisted pointer to
+/// that room and the retry loop that resolves it once the homeserver has
+/// synced.
 class SyncRoomManager {
   SyncRoomManager({
     required this._gateway,
     required this._settingsDb,
     required this._loggingService,
-    this._discoveryService,
-  }) {
-    _inviteSubscription = _gateway.invites.listen(_handleInvite);
-  }
+  });
 
   final MatrixSyncGateway _gateway;
   final SettingsDb _settingsDb;
   final DomainLogger _loggingService;
-  final SyncRoomDiscoveryService? _discoveryService;
-
-  final StreamController<SyncRoomInvite> _inviteController =
-      StreamController<SyncRoomInvite>.broadcast();
 
   /// Emits whenever the sync room changes, including when it is cleared.
   ///
@@ -59,7 +38,6 @@ class SyncRoomManager {
   final StreamController<String?> _roomIdController =
       StreamController<String?>.broadcast();
 
-  StreamSubscription<RoomInviteEvent>? _inviteSubscription;
   Room? _currentRoom;
   String? _currentRoomId;
 
@@ -68,10 +46,6 @@ class SyncRoomManager {
 
   /// Identifier of the current sync room, if available.
   String? get currentRoomId => _currentRoomId;
-
-  /// Emits invite requests that passed validation. The UI is expected to prompt
-  /// the user and explicitly call [acceptInvite] when appropriate.
-  Stream<SyncRoomInvite> get inviteRequests => _inviteController.stream;
 
   /// The sync room id on every change, null when cleared.
   Stream<String?> get roomIdChanges => _roomIdController.stream;
@@ -84,18 +58,6 @@ class SyncRoomManager {
     if (!_roomIdController.isClosed) _roomIdController.add(roomId);
   }
 
-  /// Discovers existing Lotti sync rooms that this user is a member of.
-  ///
-  /// Returns an empty list if no discovery service is configured or if no
-  /// sync rooms are found. Used by the setup flow to detect existing rooms
-  /// when a user logs in on an additional device.
-  Future<List<SyncRoomCandidate>> discoverExistingSyncRooms() async {
-    if (_discoveryService == null) {
-      return const [];
-    }
-    return _discoveryService.discoverSyncRooms(_gateway.client);
-  }
-
   /// Loads any persisted room identifier and resolves the current room snapshot
   /// if the Matrix client has already synced it.
   Future<void> initialize() async {
@@ -105,56 +67,6 @@ class SyncRoomManager {
     }
 
     _resolveRoomSnapshot(savedRoomId, subDomain: 'initialize');
-  }
-
-  /// Creates a new encrypted private sync room and persists its identifier.
-  ///
-  /// The room is marked with the Lotti sync room state event for future
-  /// discovery by other devices using the same Matrix account.
-  Future<String> createRoom({List<String>? inviteUserIds}) async {
-    final name = _buildSyncRoomName();
-    final roomId = await _gateway.createRoom(
-      name: name,
-      inviteUserIds: inviteUserIds,
-    );
-
-    await _settingsDb.saveSettingsItem(matrixRoomKey, roomId);
-    final room = _updateCurrentRoom(roomId);
-
-    // Mark the room for future discovery by other devices
-    if (room != null && _discoveryService != null) {
-      await _discoveryService.markRoomAsLottiSync(room);
-    }
-
-    _loggingService.log(
-      LogDomain.sync,
-      'Created sync room $roomId (invitees: ${inviteUserIds?.length ?? 0})',
-      subDomain: 'createRoom',
-    );
-    return roomId;
-  }
-
-  String _buildSyncRoomName() {
-    final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
-    final localpart = _currentUserLocalpart();
-    if (localpart == null) {
-      return 'Lotti Sync $timestamp';
-    }
-    return 'Lotti Sync ($localpart) $timestamp';
-  }
-
-  String? _currentUserLocalpart() {
-    try {
-      final userId = _gateway.client.userID;
-      if (userId == null || userId.isEmpty) return null;
-      final withoutAt = userId.startsWith('@') ? userId.substring(1) : userId;
-      if (withoutAt.isEmpty) return null;
-      final idx = withoutAt.indexOf(':');
-      if (idx <= 0) return withoutAt;
-      return withoutAt.substring(0, idx);
-    } catch (_) {
-      return null;
-    }
   }
 
   /// Persistently saves the provided room ID without joining. Useful for manual
@@ -170,76 +82,6 @@ class SyncRoomManager {
     await _gateway.joinRoom(roomId);
     await _settingsDb.saveSettingsItem(matrixRoomKey, roomId);
     return _updateCurrentRoom(roomId);
-  }
-
-  /// Leaves the currently configured room (if any) and clears persisted state.
-  Future<void> leaveCurrentRoom() async {
-    final roomId = _currentRoomId ?? await _settingsDb.itemByKey(matrixRoomKey);
-    if (roomId == null) {
-      return;
-    }
-
-    try {
-      await _gateway.leaveRoom(roomId);
-      await _settingsDb.removeSettingsItem(matrixRoomKey);
-      _currentRoom = null;
-      _setCurrentRoomId(null);
-
-      _loggingService.log(
-        LogDomain.sync,
-        'Left sync room $roomId and cleared persisted state.',
-        subDomain: 'leaveRoom',
-      );
-    } catch (error, stackTrace) {
-      // If the homeserver reports that this device/user is not in the room,
-      // treat this as a successful local leave: clear persisted state anyway.
-      var notInRoom = false;
-      if (error is MatrixException) {
-        final code = error.errcode;
-        notInRoom = code == 'M_FORBIDDEN' || code == 'M_NOT_FOUND';
-      }
-
-      _loggingService.error(
-        LogDomain.sync,
-        error,
-        stackTrace: stackTrace,
-        subDomain: notInRoom ? 'leaveRoom.notInRoom' : 'leaveRoom',
-      );
-
-      if (notInRoom) {
-        try {
-          await _settingsDb.removeSettingsItem(matrixRoomKey);
-          _currentRoom = null;
-          _setCurrentRoomId(null);
-          _loggingService.log(
-            LogDomain.sync,
-            'Cleared persisted state for $roomId (server says not in room).',
-            subDomain: 'leaveRoom.localClear',
-          );
-        } catch (e, st) {
-          _loggingService.error(
-            LogDomain.sync,
-            e,
-            stackTrace: st,
-            subDomain: 'leaveRoom.localClear',
-          );
-          rethrow; // surface local clear failure
-        }
-      } else {
-        rethrow; // rethrow unexpected errors
-      }
-    }
-  }
-
-  /// Accepts a pending invite by joining the room and persisting the room ID.
-  Future<void> acceptInvite(SyncRoomInvite invite) async {
-    _loggingService.log(
-      LogDomain.sync,
-      'Accepting invite to ${invite.roomId} from ${invite.senderId} '
-      '(matchesExistingRoom: ${invite.matchesExistingRoom})',
-      subDomain: 'acceptInvite',
-    );
-    await joinRoom(invite.roomId);
   }
 
   /// Clears any persisted sync room locally without contacting the server.
@@ -318,42 +160,8 @@ class SyncRoomManager {
     );
   }
 
-  /// Invites the specified user to the current sync room.
-  Future<void> inviteUser(String userId) async {
-    final room = _currentRoom;
-    if (room == null) {
-      throw StateError(
-        'Cannot invite $userId: no active sync room configured.',
-      );
-    }
-    try {
-      final roomId = _currentRoomId;
-      _loggingService.log(
-        LogDomain.sync,
-        'Inviting $userId to room ${roomId ?? '(unknown)'}',
-        subDomain: 'inviteUser',
-      );
-      await room.invite(userId);
-      _loggingService.log(
-        LogDomain.sync,
-        'Invite sent to $userId for room ${roomId ?? '(unknown)'}',
-        subDomain: 'inviteUser',
-      );
-    } catch (e, st) {
-      _loggingService.error(
-        LogDomain.sync,
-        e,
-        stackTrace: st,
-        subDomain: 'inviteUser',
-      );
-      rethrow;
-    }
-  }
-
   /// Disposes resources owned by the manager.
   Future<void> dispose() async {
-    await _inviteSubscription?.cancel();
-    await _inviteController.close();
     await _roomIdController.close();
   }
 
@@ -370,38 +178,6 @@ class SyncRoomManager {
     }
 
     return _currentRoom;
-  }
-
-  void _handleInvite(RoomInviteEvent event) {
-    if (!_isValidRoomId(event.roomId)) {
-      _loggingService.log(
-        LogDomain.sync,
-        'Discarding invite with invalid roomId ${event.roomId} from '
-        '${event.senderId}',
-        subDomain: 'inviteFiltered',
-      );
-      return;
-    }
-
-    final matchesExisting = _currentRoomId == event.roomId;
-    _loggingService.log(
-      LogDomain.sync,
-      'Received invite for room ${event.roomId} from ${event.senderId} '
-      '(matchesExistingRoom: $matchesExisting)',
-      subDomain: 'inviteReceived',
-    );
-
-    _inviteController.add(
-      SyncRoomInvite(
-        roomId: event.roomId,
-        senderId: event.senderId,
-        matchesExistingRoom: matchesExisting,
-      ),
-    );
-  }
-
-  bool _isValidRoomId(String roomId) {
-    return roomId.startsWith('!');
   }
 
   Room? _resolveRoomSnapshot(

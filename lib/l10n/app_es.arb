@@ -2946,8 +2946,6 @@
   "matrixStatsEntryLinkNoops": "Operaciones nulas de EntryLink",
   "matrixStatsForceRescan": "Forzar reescaneo",
   "matrixStatsForceRescanTooltip": "Forzar el reescaneo y la recuperación ahora",
-  "matrixStatsLegend": "Leyenda",
-  "matrixStatsLegendTooltip": "Leyenda:\n• dbApplied = filas escritas en la base de datos\n• dbIgnoredByVectorClock = datos entrantes antiguos o idénticos ignorados por la base de datos\n• conflictsCreated = relojes vectoriales simultáneos registrados\n• dbMissingBase = omitido mientras se espera una dependencia que falta\n• dbEntryLinkNoop = el enlace ya existe, no se escribió nada\n• droppedByType.<type> = descartes por tipo tras reintentos o al ignorar mensajes antiguos\n• queueActive = eventos entrantes pendientes de aplicar\n• signalConnectivity = impulsos de sincronización tras recuperar la conexión",
   "matrixStatsQueueActive": "Cola (activa)",
   "matrixStatsRefresh": "Actualizar",
   "matrixStatsRetryNow": "Reintentar ahora",
@@ -3783,25 +3781,12 @@
   "settingsMatrixDiagnosticCopyButton": "Copiar al portapapeles",
   "settingsMatrixDiagnosticDialogTitle": "Información de diagnóstico de sincronización",
   "settingsMatrixDiagnosticShowButton": "Detalles técnicos",
-  "settingsMatrixDone": "Listo",
   "settingsMatrixLastUpdated": "Última actualización:",
   "settingsMatrixMaintenanceSubtitle": "Mantenimiento y recuperación de Matrix",
   "settingsMatrixMaintenanceTitle": "Mantenimiento",
   "settingsMatrixMetrics": "Métricas de sincronización",
   "settingsMatrixNextPage": "Página siguiente",
   "settingsMatrixPreviousPage": "Página anterior",
-  "settingsMatrixRoomInviteMessage": "Invitación a la sala {roomId} de {senderId}. ¿Aceptar?",
-  "@settingsMatrixRoomInviteMessage": {
-    "placeholders": {
-      "roomId": {
-        "type": "String"
-      },
-      "senderId": {
-        "type": "String"
-      }
-    }
-  },
-  "settingsMatrixRoomInviteTitle": "Invitación a sala",
   "settingsMatrixSentMessagesLabel": "Mensajes enviados:",
   "settingsMatrixSentMessageType": "Enviado ({eventType})",
   "@settingsMatrixSentMessageType": {

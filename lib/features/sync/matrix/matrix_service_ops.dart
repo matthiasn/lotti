@@ -116,37 +116,7 @@ class MatrixServiceOps {
 
   bool isLoggedIn() => sessionManager.isLoggedIn();
 
-  Future<String> createRoom({List<String>? invite}) =>
-      roomManager.createRoom(inviteUserIds: invite);
-
   Future<String?> getRoom() => roomManager.loadPersistedRoomId();
-
-  Future<void> leaveRoom() async {
-    loggingService.log(
-      LogDomain.sync,
-      'leaveRoom requested',
-      subDomain: 'room.leave',
-    );
-    await roomManager.leaveCurrentRoom();
-  }
-
-  Future<void> inviteToSyncRoom({required String userId}) async {
-    loggingService.log(
-      LogDomain.sync,
-      'inviteToSyncRoom requested user=$userId room=${roomManager.currentRoomId}',
-      subDomain: 'room.invite',
-    );
-    await roomManager.inviteUser(userId);
-  }
-
-  Future<void> acceptInvite(SyncRoomInvite invite) async {
-    loggingService.log(
-      LogDomain.sync,
-      'acceptInvite requested room=${invite.roomId} from=${invite.senderId}',
-      subDomain: 'room.acceptInvite',
-    );
-    await roomManager.acceptInvite(invite);
-  }
 
   List<DeviceKeys> getUnverifiedDevices() {
     return gateway.unverifiedDevices();

@@ -7,7 +7,6 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -404,36 +403,6 @@ void main() {
         ).called(1);
       },
     );
-  });
-
-  test('discoverExistingSyncRooms delegates to room manager', () {
-    final candidates = [
-      const SyncRoomCandidate(
-        roomId: '!room1:server',
-        roomName: 'Sync Room',
-        createdAt: null,
-        memberCount: 2,
-        hasStateMarker: true,
-        hasLottiContent: true,
-      ),
-    ];
-
-    when(
-      () => roomManager.discoverExistingSyncRooms(),
-    ).thenAnswer((_) async => candidates);
-
-    fakeAsync((async) {
-      final service = createService();
-
-      unawaited(
-        service.discoverExistingSyncRooms().then((result) {
-          expect(result, equals(candidates));
-        }),
-      );
-      async.flushMicrotasks();
-
-      verify(() => roomManager.discoverExistingSyncRooms()).called(1);
-    });
   });
 
   group('getSyncMetrics queue overlay', () {

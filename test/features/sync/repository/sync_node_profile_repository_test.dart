@@ -187,21 +187,6 @@ void main() {
     });
   });
 
-  group('removeNode', () {
-    test('removeNode deletes an existing entry and returns true', () async {
-      await repo.upsertNode(makeProfile(hostId: 'peer-1', updatedAt: t0));
-
-      final removed = await repo.removeNode('peer-1');
-
-      expect(removed, isTrue);
-      expect(await repo.getNode('peer-1'), isNull);
-    });
-
-    test('removeNode on unknown host returns false', () async {
-      expect(await repo.removeNode('unknown'), isFalse);
-    });
-  });
-
   group('watchKnownNodes', () {
     test('emits the updated directory on upsert', () async {
       final emissions = <List<SyncNodeProfile>>[];
@@ -366,40 +351,29 @@ void main() {
         // contaminating their state and producing confusing cascade failures.
         try {
           for (final op in operations) {
-            switch (op) {
-              case _Upsert():
-                final profile = SyncNodeProfile(
-                  hostId: op.hostId,
-                  displayName: op.displayName,
-                  platform: 'macos',
-                  capabilities: const [NodeCapability.mlxAudio],
-                  updatedAt: op.updatedAt,
-                );
-                final existing = expected[op.hostId];
-                // Mirror the repository's predicate exactly: write iff the
-                // existing snapshot is null, OR the incoming updatedAt is not
-                // older than the existing one AND content differs.
-                final wouldChange =
-                    existing == null ||
-                    (!existing.updatedAt.isAfter(profile.updatedAt) &&
-                        existing != profile);
-                final returned = await repo2.upsertNode(profile);
+            final profile = SyncNodeProfile(
+              hostId: op.hostId,
+              displayName: op.displayName,
+              platform: 'macos',
+              capabilities: const [NodeCapability.mlxAudio],
+              updatedAt: op.updatedAt,
+            );
+            final existing = expected[op.hostId];
+            // Mirror the repository's predicate exactly: write iff the
+            // existing snapshot is null, OR the incoming updatedAt is not
+            // older than the existing one AND content differs.
+            final wouldChange =
+                existing == null ||
+                (!existing.updatedAt.isAfter(profile.updatedAt) &&
+                    existing != profile);
+            final returned = await repo2.upsertNode(profile);
 
-                if (wouldChange) {
-                  expected[op.hostId] = profile;
-                  expect(returned, isTrue, reason: 'upsert $op');
-                  expectedEmissionCount++;
-                } else {
-                  expect(returned, isFalse, reason: 'stale or identical $op');
-                }
-              case _Remove():
-                final wasPresent = expected.containsKey(op.hostId);
-                final returned = await repo2.removeNode(op.hostId);
-                expect(returned, wasPresent, reason: 'remove $op');
-                if (wasPresent) {
-                  expected.remove(op.hostId);
-                  expectedEmissionCount++;
-                }
+            if (wouldChange) {
+              expected[op.hostId] = profile;
+              expect(returned, isTrue, reason: 'upsert $op');
+              expectedEmissionCount++;
+            } else {
+              expect(returned, isFalse, reason: 'stale or identical $op');
             }
           }
 
@@ -444,33 +418,19 @@ void main() {
 // Glados scenario types for the directory state machine.
 // ---------------------------------------------------------------------------
 
-sealed class _DirOp {
-  const _DirOp();
-  String get hostId;
-}
-
-class _Upsert extends _DirOp {
+class _Upsert {
   const _Upsert({
     required this.hostId,
     required this.displayName,
     required this.updatedAt,
   });
-  @override
+
   final String hostId;
   final String displayName;
   final DateTime updatedAt;
 
   @override
   String toString() => 'Upsert($hostId, "$displayName", $updatedAt)';
-}
-
-class _Remove extends _DirOp {
-  const _Remove(this.hostId);
-  @override
-  final String hostId;
-
-  @override
-  String toString() => 'Remove($hostId)';
 }
 
 const _hosts = ['A', 'B', 'C'];
@@ -482,22 +442,15 @@ final _times = [
 const _names = ['alpha', 'beta', 'gamma'];
 
 extension _AnyDirectoryOp on glados.Any {
-  glados.Generator<_DirOp> get directoryOperation =>
-      glados.CombinableAny(this).combine4(
+  glados.Generator<_Upsert> get directoryOperation =>
+      glados.CombinableAny(this).combine3(
         glados.AnyUtils(this).choose(_hosts),
         glados.AnyUtils(this).choose(_names),
         glados.AnyUtils(this).choose(_times),
-        glados.BoolAny(this).bool,
-        (
-          String hostId,
-          String name,
-          DateTime t,
-          bool isUpsert,
-        ) => isUpsert
-            ? _Upsert(hostId: hostId, displayName: name, updatedAt: t)
-            : _Remove(hostId),
+        (String hostId, String name, DateTime t) =>
+            _Upsert(hostId: hostId, displayName: name, updatedAt: t),
       );
 
-  glados.Generator<List<_DirOp>> get directoryOperationList =>
+  glados.Generator<List<_Upsert>> get directoryOperationList =>
       glados.ListAnys(this).listWithLengthInRange(0, 12, directoryOperation);
 }

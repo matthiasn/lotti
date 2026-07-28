@@ -4,22 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/matrix.dart';
 
-/// Exposes the current Matrix [LoginState] (or null before the first event),
-/// driven by [loginStateStream], for sync UI that gates on login.
-final AsyncNotifierProvider<MatrixLoginController, LoginState?>
-matrixLoginControllerProvider =
-    AsyncNotifierProvider.autoDispose<MatrixLoginController, LoginState?>(
-      MatrixLoginController.new,
-      name: 'matrixLoginControllerProvider',
-    );
-
-class MatrixLoginController extends AsyncNotifier<LoginState?> {
-  @override
-  Future<LoginState?> build() async {
-    return ref.watch(loginStateStreamProvider).value;
-  }
-}
-
 /// Streams the Matrix client's login-state transitions.
 final StreamProvider<LoginState> loginStateStreamProvider =
     StreamProvider.autoDispose<LoginState>(

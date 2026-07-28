@@ -26,6 +26,7 @@ import 'package:path_provider/path_provider.dart';
 import '../test/mocks/mocks.dart';
 import 'helpers/sync_test_helpers.dart';
 import 'helpers/toxiproxy_controller.dart';
+import 'matrix_test_room.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -252,7 +253,7 @@ void main() {
       await alice.login();
       debugPrint('Alice - deviceId: ${alice.client.deviceID}');
 
-      final roomId = await alice.createRoom();
+      final roomId = await createTestSyncRoom(aliceGateway);
       debugPrint('Alice - room created: $roomId');
 
       await alice.joinRoom(roomId);
@@ -290,7 +291,7 @@ void main() {
       debugPrint('Bob - deviceId: ${bob.client.deviceID}');
 
       debugPrint('\n--- Alice invites Bob');
-      await alice.inviteToSyncRoom(userId: userPair.$2);
+      await inviteToTestSyncRoom(alice, userId: userPair.$2);
       await waitSeconds(defaultDelay);
 
       await bob.joinRoom(roomId);
