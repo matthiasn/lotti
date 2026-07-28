@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
-import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -112,7 +111,6 @@ void main() {
     gateway = MatrixSdkGateway(
       client: client,
       sentEventRegistry: sentEventRegistry,
-      roomStateStream: roomStateController.stream,
       loginStateStream: loginStateController.stream,
       keyVerificationRequestStream: keyVerificationController.stream,
     );
@@ -249,17 +247,14 @@ void main() {
     );
   });
 
-  test('joinRoom and leaveRoom delegate to client', () async {
+  test('joinRoom delegates to client', () async {
     when(
       () => client.joinRoom('!room:server'),
     ).thenAnswer((_) async => '!room');
-    when(() => client.leaveRoom('!room:server')).thenAnswer((_) async {});
 
     await gateway.joinRoom('!room:server');
-    await gateway.leaveRoom('!room:server');
 
     verify(() => client.joinRoom('!room:server')).called(1);
-    verify(() => client.leaveRoom('!room:server')).called(1);
   });
 
   test('keyVerificationRequests forwards the injected stream', () async {
@@ -273,44 +268,6 @@ void main() {
     expect(requests, [verification]);
     await sub.cancel();
   });
-
-  test(
-    'dispose cancels the invite subscription and closes the invites stream',
-    () async {
-      // Stub userID so the late room-state event would pass the
-      // `state_key == userID` filter in _handleRoomState pre-dispose.
-      // Without this the event is dropped regardless of disposal, and the
-      // empty-invites assertion below would pass even on a live subscription.
-      when(() => client.userID).thenReturn('@me:server');
-      final invites = <RoomInviteEvent>[];
-      final done = Completer<void>();
-      gateway.invites.listen(invites.add, onDone: done.complete);
-
-      await gateway.dispose();
-      disposed = true;
-
-      // The invites stream completes for listeners...
-      await done.future;
-      // ...the SDK client is disposed...
-      verify(() => client.dispose()).called(1);
-      // ...and room-state events arriving after dispose are ignored.
-      roomStateController.add(
-        (
-          roomId: '!late:server',
-          state: StrippedStateEvent.fromJson(
-            {
-              'type': 'm.room.member',
-              'sender': '@admin:server',
-              'state_key': '@me:server',
-              'content': {'membership': 'invite'},
-            },
-          ),
-        ),
-      );
-      await pumpEventQueue();
-      expect(invites, isEmpty);
-    },
-  );
 
   test('getRoomById proxies to client', () {
     final room = _stubRoom(client, '!room:server');
@@ -347,7 +304,6 @@ void main() {
       final fallbackGateway = MatrixSdkGateway(
         client: client,
         sentEventRegistry: sentEventRegistry,
-        roomStateStream: roomStateController.stream,
         keyVerificationRequestStream: keyVerificationController.stream,
       );
       addTearDown(fallbackGateway.dispose);
@@ -405,97 +361,6 @@ void main() {
     await gateway.deleteDevice('DEVICE_B', auth: auth);
 
     verify(() => client.deleteDevice('DEVICE_B', auth: auth)).called(1);
-  });
-
-  test('invite stream emits only invite membership events', () async {
-    final inviteStream = gateway.invites;
-    final inviteFuture = expectLater(
-      inviteStream,
-      emitsInOrder([
-        predicate<RoomInviteEvent>(
-          (event) =>
-              event.roomId == '!room:server' && event.senderId == '@a:server',
-        ),
-      ]),
-    );
-
-    roomStateController
-      ..add(
-        (
-          roomId: '!room:server',
-          state: StrippedStateEvent.fromJson(
-            {
-              'type': 'm.room.member',
-              'sender': '@a:server',
-              'content': {'membership': 'join'},
-            },
-          ),
-        ),
-      )
-      ..add(
-        (
-          roomId: '!room:server',
-          state: StrippedStateEvent.fromJson(
-            {
-              'type': 'm.room.member',
-              'sender': '@a:server',
-              'content': {'membership': 'invite'},
-            },
-          ),
-        ),
-      );
-
-    await inviteFuture;
-  });
-
-  test('invite stream ignores invites targeted at other users', () async {
-    when(() => client.userID).thenReturn('@me:server');
-
-    final invites = <RoomInviteEvent>[];
-    final sub = gateway.invites.listen(invites.add);
-
-    // Invite targeted at a different user — should be ignored
-    roomStateController.add(
-      (
-        roomId: '!room:server',
-        state: StrippedStateEvent.fromJson(
-          {
-            'type': 'm.room.member',
-            'sender': '@admin:server',
-            'state_key': '@other:server',
-            'content': {'membership': 'invite'},
-          },
-        ),
-      ),
-    );
-
-    // Drain the event queue deterministically so the stream event
-    // propagates — no zero-duration Timers (fake-time policy).
-    await pumpEventQueue();
-
-    expect(invites, isEmpty);
-
-    // Invite targeted at this client — should be emitted
-    roomStateController.add(
-      (
-        roomId: '!room:server',
-        state: StrippedStateEvent.fromJson(
-          {
-            'type': 'm.room.member',
-            'sender': '@admin:server',
-            'state_key': '@me:server',
-            'content': {'membership': 'invite'},
-          },
-        ),
-      ),
-    );
-
-    await pumpEventQueue();
-
-    expect(invites, hasLength(1));
-    expect(invites.first.roomId, '!room:server');
-
-    await sub.cancel();
   });
 
   test('createRoom does not rely on immediate room snapshot', () async {
@@ -765,17 +630,12 @@ void main() {
     expect(devices, [unverifiedDevice, foreignDevice]);
   });
 
-  test(
-    'dispose cancels subscription, closes invites, and disposes client',
-    () async {
-      final inviteCompletion = expectLater(gateway.invites, emitsDone);
-      when(() => client.dispose()).thenAnswer((_) async {});
+  test('dispose disposes the client it owns', () async {
+    when(() => client.dispose()).thenAnswer((_) async {});
 
-      await gateway.dispose();
-      disposed = true;
+    await gateway.dispose();
+    disposed = true;
 
-      verify(() => client.dispose()).called(1);
-      await inviteCompletion;
-    },
-  );
+    verify(() => client.dispose()).called(1);
+  });
 }

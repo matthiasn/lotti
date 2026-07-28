@@ -36,14 +36,8 @@ abstract class MatrixSyncGateway {
   /// Joins the room with the given ID.
   Future<void> joinRoom(String roomId);
 
-  /// Leaves the current room identified by [roomId].
-  Future<void> leaveRoom(String roomId);
-
   /// Returns a room snapshot by its identifier.
   Room? getRoomById(String roomId);
-
-  /// Stream of invites targeted at this client.
-  Stream<RoomInviteEvent> get invites;
 
   /// Sends a text event to the given room and returns the event ID.
   Future<String> sendText({
@@ -92,18 +86,4 @@ abstract class MatrixSyncGateway {
 
   /// Releases any resources (streams, controllers, database connections).
   Future<void> dispose();
-}
-
-/// Lightweight representation of a room invite targeted at the current user.
-class RoomInviteEvent {
-  const RoomInviteEvent({
-    required this.roomId,
-    required this.senderId,
-  });
-
-  /// The invited room id
-  final String roomId;
-
-  /// The user who sent the invite
-  final String senderId;
 }

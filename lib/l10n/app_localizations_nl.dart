@@ -7050,9 +7050,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get matrixStatsForceRescanTooltip => 'Herscannen en nu inhalen.';
 
   @override
-  String get matrixStatsLegend => 'Legende';
-
-  @override
   String get matrixStatsLegendTooltip =>
       'Legende:\n• dbApplied = geschreven databaserijen\n• dbIgnoredByVectorClock = oudere of identieke inkomende gegevens genegeerd door de database\n• conflictsCreated = gelijktijdige vectorklokken gelogd\n• dbMissingBase = overgeslagen terwijl op een ontbrekende afhankelijkheid wordt gewacht\n• dbEntryLinkNoop = koppeling bestaat al, niets geschreven\n• droppedByType.<type> = weggegooid per type na pogingen of het negeren van oudere berichten\n• queueActive = inkomende gebeurtenissen die nog toegepast moeten worden\n• signalConnectivity = synchronisatiezetjes nadat de verbinding terug was';
 
@@ -9260,9 +9257,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Technische details';
 
   @override
-  String get settingsMatrixDone => 'Klaar';
-
-  @override
   String get settingsMatrixLastUpdated => 'Laatst bijgewerkt:';
 
   @override
@@ -9279,14 +9273,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Vorige pagina';
-
-  @override
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
-    return 'Uitnodigen naar kamer $roomId van ${senderId}Accepteren?';
-  }
-
-  @override
-  String get settingsMatrixRoomInviteTitle => 'Kameruitnodiging';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Verzonden berichten:';

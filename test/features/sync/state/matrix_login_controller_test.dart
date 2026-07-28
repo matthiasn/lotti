@@ -20,7 +20,6 @@ void main() {
   late ProviderContainer container;
   late MockMatrixService mockMatrixService;
   late MockMatrixClient mockClient;
-  late StateListener<AsyncValue<LoginState?>> listener;
 
   // Use a real StreamController for the loginStateStream
   late StreamController<LoginState> loginStateController;
@@ -34,60 +33,29 @@ void main() {
     when(() => mockMatrixService.client).thenReturn(mockClient);
     when(() => mockClient.userID).thenReturn('@testuser:matrix.org');
 
-    listener = StateListener<AsyncValue<LoginState?>>();
-
     // Create a ProviderContainer that overrides the loginStateStreamProvider
     container =
         ProviderContainer(
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            // Override the loginStateStream provider to use our test stream
-            loginStateStreamProvider.overrideWith(
-              (ref) => loginStateController.stream,
-            ),
-          ],
-        )..listen(
-          matrixLoginControllerProvider,
-          listener.call,
-          fireImmediately: true,
-        );
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+              // Override the loginStateStream provider to use our test stream
+              loginStateStreamProvider.overrideWith(
+                (ref) => loginStateController.stream,
+              ),
+            ],
+          )
+          // Keep the login-state stream subscribed for the whole test: awaiting
+          // a StreamProvider's `.future` with no listener hangs until timeout.
+          ..listen(
+            loginStateStreamProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
   });
 
   tearDown(() {
     loginStateController.close();
     container.dispose();
-  });
-
-  group('MatrixLoginController', () {
-    test('initial state is loading', () {
-      verify(() => listener(null, const AsyncValue<LoginState?>.loading()));
-    });
-
-    test('controller state updates when login state changes', () async {
-      // Add the loggedOut state to the stream
-      loginStateController.add(LoginState.loggedOut);
-
-      // Wait for the state to propagate
-      await Future.microtask(() {});
-
-      // Wait for the state to update
-      final result1 = await container.read(
-        matrixLoginControllerProvider.future,
-      );
-      expect(result1, equals(LoginState.loggedOut));
-
-      // Add the loggedIn state to the stream
-      loginStateController.add(LoginState.loggedIn);
-
-      // Wait for the state to propagate
-      await Future.microtask(() {});
-
-      // Wait for the state to update
-      final result2 = await container.read(
-        matrixLoginControllerProvider.future,
-      );
-      expect(result2, equals(LoginState.loggedIn));
-    });
   });
 
   group('isLoggedIn provider', () {

@@ -60,6 +60,7 @@ import 'package:uuid/uuid.dart';
 import '../test/mocks/mocks.dart';
 import '../test/test_resources/test_audio_data.dart';
 import '../test/utils/utils.dart';
+import 'matrix_test_room.dart';
 
 const _uuid = Uuid();
 
@@ -701,7 +702,7 @@ void main() {
         await alice.login();
         debugPrint('Alice - deviceId: ${alice.client.deviceID}');
 
-        roomId = await alice.createRoom();
+        roomId = await createTestSyncRoom(aliceGateway);
 
         debugPrint('Alice - room created: $roomId');
 
@@ -739,7 +740,7 @@ void main() {
         debugPrint('Bob - deviceId: ${bob.client.deviceID}');
 
         debugPrint('\n--- Alice invites Bob into room $roomId');
-        await alice.inviteToSyncRoom(userId: bobUserName);
+        await inviteToTestSyncRoom(alice, userId: bobUserName);
         // Allow invite to propagate to Bob's homeserver before joining
         await waitSeconds(defaultDelay);
 

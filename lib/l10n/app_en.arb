@@ -3556,7 +3556,6 @@
   "matrixStatsEntryLinkNoops": "EntryLink No-ops",
   "matrixStatsForceRescan": "Force Rescan",
   "matrixStatsForceRescanTooltip": "Force rescan and catch up now",
-  "matrixStatsLegend": "Legend",
   "matrixStatsLegendTooltip": "Legend:\n• dbApplied = database rows written\n• dbIgnoredByVectorClock = older or identical incoming data ignored by the database\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting a missing dependency or base row\n• dbEntryLinkNoop = link already present, nothing written\n• droppedByType.<type> = per-type drops after retries or older-message ignores\n• queueActive = inbound events still waiting to be applied\n• signalConnectivity = sync nudges after connectivity returned",
   "matrixStatsQueueActive": "Queue (active)",
   "matrixStatsRefresh": "Refresh",
@@ -4546,25 +4545,12 @@
   "settingsMatrixDiagnosticCopyButton": "Copy to Clipboard",
   "settingsMatrixDiagnosticDialogTitle": "Sync Diagnostic Info",
   "settingsMatrixDiagnosticShowButton": "Technical details",
-  "settingsMatrixDone": "Done",
   "settingsMatrixLastUpdated": "Last updated:",
   "settingsMatrixMaintenanceSubtitle": "Matrix maintenance and recovery",
   "settingsMatrixMaintenanceTitle": "Maintenance",
   "settingsMatrixMetrics": "Sync Metrics",
   "settingsMatrixNextPage": "Next Page",
   "settingsMatrixPreviousPage": "Previous Page",
-  "settingsMatrixRoomInviteMessage": "Invite to room {roomId} from {senderId}. Accept?",
-  "@settingsMatrixRoomInviteMessage": {
-    "placeholders": {
-      "roomId": {
-        "type": "String"
-      },
-      "senderId": {
-        "type": "String"
-      }
-    }
-  },
-  "settingsMatrixRoomInviteTitle": "Room invite",
   "settingsMatrixSentMessagesLabel": "Sent messages:",
   "settingsMatrixSentMessageType": "Sent ({eventType})",
   "@settingsMatrixSentMessageType": {

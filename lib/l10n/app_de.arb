@@ -2948,7 +2948,6 @@
   "matrixStatsEntryLinkNoops": "EntryLink-Nulloperationen",
   "matrixStatsForceRescan": "Erneut scannen erzwingen",
   "matrixStatsForceRescanTooltip": "Jetzt erneut scannen und nachholen",
-  "matrixStatsLegend": "Legende",
   "matrixStatsLegendTooltip": "Legende:\n• dbApplied = geschriebene Datenbankzeilen\n• dbIgnoredByVectorClock = von der Datenbank ignorierte ältere oder identische eingehende Daten\n• conflictsCreated = protokollierte gleichzeitige Vector Clocks\n• dbMissingBase = übersprungen, während eine fehlende Abhängigkeit erwartet wird\n• dbEntryLinkNoop = Verknüpfung bereits vorhanden, nichts geschrieben\n• droppedByType.<type> = verworfene Nachrichten pro Typ nach Wiederholungen oder Ignorieren älterer Nachrichten\n• queueActive = eingehende Ereignisse, die noch angewendet werden müssen\n• signalConnectivity = Sync-Anstöße nach Wiederkehr der Verbindung",
   "matrixStatsQueueActive": "Warteschlange (aktiv)",
   "matrixStatsRefresh": "Aktualisieren",
@@ -3785,25 +3784,12 @@
   "settingsMatrixDiagnosticCopyButton": "In Zwischenablage kopieren",
   "settingsMatrixDiagnosticDialogTitle": "Sync-Diagnoseinfos",
   "settingsMatrixDiagnosticShowButton": "Technische Details",
-  "settingsMatrixDone": "Fertig",
   "settingsMatrixLastUpdated": "Zuletzt aktualisiert:",
   "settingsMatrixMaintenanceSubtitle": "Matrix-Wartung und Wiederherstellung",
   "settingsMatrixMaintenanceTitle": "Wartung",
   "settingsMatrixMetrics": "Sync-Metriken",
   "settingsMatrixNextPage": "Nächste Seite",
   "settingsMatrixPreviousPage": "Vorherige Seite",
-  "settingsMatrixRoomInviteMessage": "Einladung zu Raum {roomId} von {senderId}. Akzeptieren?",
-  "@settingsMatrixRoomInviteMessage": {
-    "placeholders": {
-      "roomId": {
-        "type": "String"
-      },
-      "senderId": {
-        "type": "String"
-      }
-    }
-  },
-  "settingsMatrixRoomInviteTitle": "Raumeinladung",
   "settingsMatrixSentMessagesLabel": "Gesendete Nachrichten:",
   "settingsMatrixSentMessageType": "Gesendet ({eventType})",
   "@settingsMatrixSentMessageType": {

@@ -2948,7 +2948,6 @@
   "matrixStatsEntryLinkNoops": "Opérations nulles EntryLink",
   "matrixStatsForceRescan": "Forcer la nouvelle analyse",
   "matrixStatsForceRescanTooltip": "Forcer la nouvelle analyse et le rattrapage maintenant",
-  "matrixStatsLegend": "Légende",
   "matrixStatsLegendTooltip": "Légende :\n• dbApplied = lignes écrites dans la base de données\n• dbIgnoredByVectorClock = données entrantes anciennes ou identiques ignorées par la base de données\n• conflictsCreated = horloges vectorielles concurrentes enregistrées\n• dbMissingBase = ignoré en attendant une dépendance manquante\n• dbEntryLinkNoop = lien déjà présent, rien d’écrit\n• droppedByType.<type> = abandons par type après tentatives ou ignorance des anciens messages\n• queueActive = événements entrants restant à appliquer\n• signalConnectivity = relances de synchronisation après le retour de la connexion",
   "matrixStatsQueueActive": "File d'attente (active)",
   "matrixStatsRefresh": "Actualiser",
@@ -3785,25 +3784,12 @@
   "settingsMatrixDiagnosticCopyButton": "Copier dans le presse-papiers",
   "settingsMatrixDiagnosticDialogTitle": "Informations de diagnostic de synchronisation",
   "settingsMatrixDiagnosticShowButton": "Détails techniques",
-  "settingsMatrixDone": "Terminé",
   "settingsMatrixLastUpdated": "Dernière mise à jour :",
   "settingsMatrixMaintenanceSubtitle": "Maintenance et récupération Matrix",
   "settingsMatrixMaintenanceTitle": "Maintenance",
   "settingsMatrixMetrics": "Métriques de synchronisation",
   "settingsMatrixNextPage": "Page suivante",
   "settingsMatrixPreviousPage": "Page précédente",
-  "settingsMatrixRoomInviteMessage": "Invitation au salon {roomId} de {senderId}. Accepter ?",
-  "@settingsMatrixRoomInviteMessage": {
-    "placeholders": {
-      "roomId": {
-        "type": "String"
-      },
-      "senderId": {
-        "type": "String"
-      }
-    }
-  },
-  "settingsMatrixRoomInviteTitle": "Invitation au salon",
   "settingsMatrixSentMessagesLabel": "Messages envoyés :",
   "settingsMatrixSentMessageType": "Envoyé ({eventType})",
   "@settingsMatrixSentMessageType": {

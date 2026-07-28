@@ -70,6 +70,29 @@ void main() {
       expect(find.text('Last updated: 12:34:56'), findsOneWidget);
     });
 
+    testWidgets('the title carries the counter legend, tappable on touch', (
+      tester,
+    ) async {
+      // The legend is the only place the counter names are defined. It used
+      // to hang off an action button with an empty onPressed; that button is
+      // gone, so the definitions must still be reachable here — and via tap,
+      // since hover does not exist on mobile.
+      await pumpFull(tester);
+
+      final tooltip = tester.widget<Tooltip>(
+        find.ancestor(
+          of: find.text('Sync Metrics'),
+          matching: find.byType(Tooltip),
+        ),
+      );
+
+      expect(tooltip.triggerMode, TooltipTriggerMode.tap);
+      expect(tooltip.message, contains('dbApplied'));
+      expect(tooltip.message, contains('dbIgnoredByVectorClock'));
+      expect(tooltip.message, contains('queueActive'));
+      expect(tooltip.message, contains('signalConnectivity'));
+    });
+
     testWidgets('wraps long localized header copy on a narrow screen', (
       tester,
     ) async {

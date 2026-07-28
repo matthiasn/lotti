@@ -9,12 +9,10 @@ import 'package:matrix/matrix.dart';
 /// Production [MatrixSyncGateway] backed by the `matrix` SDK [Client].
 ///
 /// Thin adapter: each method delegates to the SDK and adds only the
-/// sync-specific glue — stamping created/joined rooms with the
-/// `m.lotti.sync_room` and encryption state events, surfacing only invites
-/// addressed to this client (`state_key == userID`) on [invites], and
-/// registering every event id it sends in the [SentEventRegistry] so the
-/// inbound pipeline can recognise and skip its own echoes. Owns the [Client]
-/// lifecycle and disposes it in [dispose].
+/// sync-specific glue — stamping created rooms with the `m.lotti.sync_room`
+/// and encryption state events, and registering every event id it sends in the
+/// [SentEventRegistry] so the inbound pipeline can recognise and skip its own
+/// echoes. Owns the [Client] lifecycle and disposes it in [dispose].
 class MatrixSdkGateway implements MatrixSyncGateway {
   /// Creates a new [MatrixSdkGateway].
   ///
@@ -24,15 +22,9 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   MatrixSdkGateway({
     required this._client,
     required this._sentEventRegistry,
-    this._roomStateStream,
     this._loginStateStream,
     Stream<KeyVerification>? keyVerificationRequestStream,
-  }) : _keyVerificationRequests = keyVerificationRequestStream {
-    _inviteSubscription = (_roomStateStream ?? _client.onRoomState.stream)
-        .listen(
-          _handleRoomState,
-        );
-  }
+  }) : _keyVerificationRequests = keyVerificationRequestStream;
 
   static const _roomEncryptionType = 'm.room.encryption';
   static const _syncRoomStateType = 'm.lotti.sync_room';
@@ -40,11 +32,6 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   final Client _client;
   final SentEventRegistry _sentEventRegistry;
 
-  late final StreamSubscription<({String roomId, StrippedStateEvent state})>
-  _inviteSubscription;
-  final StreamController<RoomInviteEvent> _inviteController =
-      StreamController<RoomInviteEvent>.broadcast();
-  final Stream<({String roomId, StrippedStateEvent state})>? _roomStateStream;
   final Stream<LoginState>? _loginStateStream;
   final Stream<KeyVerification>? _keyVerificationRequests;
 
@@ -154,39 +141,7 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   }
 
   @override
-  Future<void> leaveRoom(String roomId) async {
-    await _client.leaveRoom(roomId);
-  }
-
-  @override
   Room? getRoomById(String roomId) => _client.getRoomById(roomId);
-
-  void _handleRoomState(
-    ({
-      String roomId,
-      StrippedStateEvent state,
-    })
-    event,
-  ) {
-    final content = event.state.content as Map<String, dynamic>?;
-    final membership = content?['membership'];
-    final stateKey = event.state.stateKey;
-    if (event.state.type == 'm.room.member' && membership == 'invite') {
-      final target = stateKey;
-      // Only surface invites targeted at this client (state_key == userID)
-      if (target == _client.userID) {
-        _inviteController.add(
-          RoomInviteEvent(
-            roomId: event.roomId,
-            senderId: event.state.senderId,
-          ),
-        );
-      }
-    }
-  }
-
-  @override
-  Stream<RoomInviteEvent> get invites => _inviteController.stream;
 
   @override
   Future<String> sendText({
@@ -278,8 +233,6 @@ class MatrixSdkGateway implements MatrixSyncGateway {
 
   @override
   Future<void> dispose() async {
-    await _inviteSubscription.cancel();
-    await _inviteController.close();
     await _client.dispose();
   }
 }

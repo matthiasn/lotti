@@ -3333,7 +3333,6 @@
   "matrixStatsEntryLinkNoops": "Operazioni EntryLink senza effetto",
   "matrixStatsForceRescan": "Forza Rescan",
   "matrixStatsForceRescanTooltip": "Forza rescan e cattura ora",
-  "matrixStatsLegend": "La leggenda",
   "matrixStatsLegendTooltip": "Legenda:\n• dbApplied = righe di database scritte\n• dbIgnoredByVectorClock = dati in entrata più vecchi o identici ignorati dal database\n• conflictsCreated = orologi vettoriali concorrenti registrati\n• dbMissingBase = saltato in attesa di una dipendenza mancante\n• dbEntryLinkNoop = collegamento già presente, nulla di scritto\n• droppedByType.<type> = scarti per tipo dopo i tentativi o l’ignorare messaggi vecchi\n• queueActive = eventi in entrata ancora da applicare\n• signalConnectivity = solleciti di sincronizzazione dopo il ritorno della connessione",
   "matrixStatsQueueActive": "Coda (attiva)",
   "matrixStatsRefresh": "Rifiuti",
@@ -4323,25 +4322,12 @@
   "settingsMatrixDiagnosticCopyButton": "Copia a Appunti",
   "settingsMatrixDiagnosticDialogTitle": "Informazioni diagnostiche di Sync",
   "settingsMatrixDiagnosticShowButton": "Dettagli tecnici",
-  "settingsMatrixDone": "Fatto",
   "settingsMatrixLastUpdated": "Ultimo aggiornamento:",
   "settingsMatrixMaintenanceSubtitle": "Manutenzione e ripristino Matrix",
   "settingsMatrixMaintenanceTitle": "Manutenzione",
   "settingsMatrixMetrics": "Sincronizzazioni",
   "settingsMatrixNextPage": "Pagina successiva",
   "settingsMatrixPreviousPage": "Pagina precedente",
-  "settingsMatrixRoomInviteMessage": "Invita la stanza {roomId} da {senderId}. Accettare?",
-  "@settingsMatrixRoomInviteMessage": {
-    "placeholders": {
-      "roomId": {
-        "type": "String"
-      },
-      "senderId": {
-        "type": "String"
-      }
-    }
-  },
-  "settingsMatrixRoomInviteTitle": "Invita la camera",
   "settingsMatrixSentMessagesLabel": "Messaggi inviati:",
   "settingsMatrixSentMessageType": "Inviato ({eventType})",
   "@settingsMatrixSentMessageType": {

@@ -7071,9 +7071,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Jetzt erneut scannen und nachholen';
 
   @override
-  String get matrixStatsLegend => 'Legende';
-
-  @override
   String get matrixStatsLegendTooltip =>
       'Legende:\n• dbApplied = geschriebene Datenbankzeilen\n• dbIgnoredByVectorClock = von der Datenbank ignorierte ältere oder identische eingehende Daten\n• conflictsCreated = protokollierte gleichzeitige Vector Clocks\n• dbMissingBase = übersprungen, während eine fehlende Abhängigkeit erwartet wird\n• dbEntryLinkNoop = Verknüpfung bereits vorhanden, nichts geschrieben\n• droppedByType.<type> = verworfene Nachrichten pro Typ nach Wiederholungen oder Ignorieren älterer Nachrichten\n• queueActive = eingehende Ereignisse, die noch angewendet werden müssen\n• signalConnectivity = Sync-Anstöße nach Wiederkehr der Verbindung';
 
@@ -9287,9 +9284,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Technische Details';
 
   @override
-  String get settingsMatrixDone => 'Fertig';
-
-  @override
   String get settingsMatrixLastUpdated => 'Zuletzt aktualisiert:';
 
   @override
@@ -9307,14 +9301,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Vorherige Seite';
-
-  @override
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
-    return 'Einladung zu Raum $roomId von $senderId. Akzeptieren?';
-  }
-
-  @override
-  String get settingsMatrixRoomInviteTitle => 'Raumeinladung';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Gesendete Nachrichten:';

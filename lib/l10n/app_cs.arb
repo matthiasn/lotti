@@ -2955,7 +2955,6 @@
   "matrixStatsEntryLinkNoops": "Prázdné operace EntryLink",
   "matrixStatsForceRescan": "Vynutit nové skenování",
   "matrixStatsForceRescanTooltip": "Vynutit nové skenování a dohnání nyní",
-  "matrixStatsLegend": "Legenda",
   "matrixStatsLegendTooltip": "Legenda:\n• dbApplied = zapsané řádky databáze\n• dbIgnoredByVectorClock = starší nebo stejné příchozí údaje ignorované databází\n• conflictsCreated = zaznamenané souběžné vektorové hodiny\n• dbMissingBase = přeskočeno při čekání na chybějící závislost\n• dbEntryLinkNoop = propojení už existuje, nic se nezapsalo\n• droppedByType.<type> = zahozené zprávy podle typu po opakováních nebo ignorování starších zpráv\n• queueActive = příchozí události čekající na použití\n• signalConnectivity = podněty k synchronizaci po obnovení připojení",
   "matrixStatsQueueActive": "Fronta (aktivní)",
   "matrixStatsRefresh": "Obnovit",
@@ -3792,25 +3791,12 @@
   "settingsMatrixDiagnosticCopyButton": "Kopírovat do schránky",
   "settingsMatrixDiagnosticDialogTitle": "Diagnostické informace synchronizace",
   "settingsMatrixDiagnosticShowButton": "Technické podrobnosti",
-  "settingsMatrixDone": "Hotovo",
   "settingsMatrixLastUpdated": "Naposledy aktualizováno:",
   "settingsMatrixMaintenanceSubtitle": "Údržba a obnova Matrixu",
   "settingsMatrixMaintenanceTitle": "Údržba",
   "settingsMatrixMetrics": "Metriky synchronizace",
   "settingsMatrixNextPage": "Další stránka",
   "settingsMatrixPreviousPage": "Předchozí stránka",
-  "settingsMatrixRoomInviteMessage": "Pozvánka do místnosti {roomId} od {senderId}. Přijmout?",
-  "@settingsMatrixRoomInviteMessage": {
-    "placeholders": {
-      "roomId": {
-        "type": "String"
-      },
-      "senderId": {
-        "type": "String"
-      }
-    }
-  },
-  "settingsMatrixRoomInviteTitle": "Pozvánka do místnosti",
   "settingsMatrixSentMessagesLabel": "Odeslané zprávy:",
   "settingsMatrixSentMessageType": "Odesláno ({eventType})",
   "@settingsMatrixSentMessageType": {

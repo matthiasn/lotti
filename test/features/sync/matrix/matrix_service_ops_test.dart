@@ -6,7 +6,6 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service_ops.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -122,21 +121,6 @@ void main() {
       },
     );
 
-    test('createRoom forwards invite ids to the room manager', () async {
-      when(
-        () =>
-            roomManager.createRoom(inviteUserIds: any(named: 'inviteUserIds')),
-      ).thenAnswer((_) async => '!new:server');
-
-      expect(
-        await buildOps().createRoom(invite: const ['@a:server']),
-        '!new:server',
-      );
-      verify(
-        () => roomManager.createRoom(inviteUserIds: const ['@a:server']),
-      ).called(1);
-    });
-
     test('getRoom returns the persisted room id', () async {
       when(
         roomManager.loadPersistedRoomId,
@@ -150,43 +134,6 @@ void main() {
 
       await buildOps().clearPersistedRoom();
       verify(roomManager.clearPersistedRoom).called(1);
-    });
-
-    test('leaveRoom logs and delegates to the room manager', () async {
-      when(roomManager.leaveCurrentRoom).thenAnswer((_) async {});
-
-      await buildOps().leaveRoom();
-      verify(roomManager.leaveCurrentRoom).called(1);
-      verify(
-        () => logging.log(
-          LogDomain.sync,
-          any(),
-          subDomain: 'room.leave',
-        ),
-      ).called(1);
-    });
-
-    test(
-      'inviteToSyncRoom delegates the user id to the room manager',
-      () async {
-        when(() => roomManager.currentRoomId).thenReturn('!room:server');
-        when(() => roomManager.inviteUser(any())).thenAnswer((_) async {});
-
-        await buildOps().inviteToSyncRoom(userId: '@guest:server');
-        verify(() => roomManager.inviteUser('@guest:server')).called(1);
-      },
-    );
-
-    test('acceptInvite delegates the invite to the room manager', () async {
-      final invite = SyncRoomInvite(
-        roomId: '!room:server',
-        senderId: '@host:server',
-        matchesExistingRoom: false,
-      );
-      when(() => roomManager.acceptInvite(invite)).thenAnswer((_) async {});
-
-      await buildOps().acceptInvite(invite);
-      verify(() => roomManager.acceptInvite(invite)).called(1);
     });
 
     test('isLoggedIn reflects the session manager state', () {

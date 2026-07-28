@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/actor/outbound_queue.dart';
-import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:matrix/matrix.dart';

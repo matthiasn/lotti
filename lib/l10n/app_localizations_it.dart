@@ -7115,9 +7115,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get matrixStatsForceRescanTooltip => 'Forza rescan e cattura ora';
 
   @override
-  String get matrixStatsLegend => 'La leggenda';
-
-  @override
   String get matrixStatsLegendTooltip =>
       'Legenda:\n• dbApplied = righe di database scritte\n• dbIgnoredByVectorClock = dati in entrata più vecchi o identici ignorati dal database\n• conflictsCreated = orologi vettoriali concorrenti registrati\n• dbMissingBase = saltato in attesa di una dipendenza mancante\n• dbEntryLinkNoop = collegamento già presente, nulla di scritto\n• droppedByType.<type> = scarti per tipo dopo i tentativi o l’ignorare messaggi vecchi\n• queueActive = eventi in entrata ancora da applicare\n• signalConnectivity = solleciti di sincronizzazione dopo il ritorno della connessione';
 
@@ -9363,9 +9360,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Dettagli tecnici';
 
   @override
-  String get settingsMatrixDone => 'Fatto';
-
-  @override
   String get settingsMatrixLastUpdated => 'Ultimo aggiornamento:';
 
   @override
@@ -9383,14 +9377,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Pagina precedente';
-
-  @override
-  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
-    return 'Invita la stanza $roomId da $senderId. Accettare?';
-  }
-
-  @override
-  String get settingsMatrixRoomInviteTitle => 'Invita la camera';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Messaggi inviati:';

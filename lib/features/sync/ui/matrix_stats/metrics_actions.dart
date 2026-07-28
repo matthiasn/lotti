@@ -25,15 +25,6 @@ class MetricsActions extends StatelessWidget {
       runSpacing: 8,
       children: [
         Tooltip(
-          message: messages.matrixStatsLegendTooltip,
-          child: DesignSystemButton(
-            label: messages.matrixStatsLegend,
-            leadingIcon: Icons.info_outline_rounded,
-            variant: DesignSystemButtonVariant.secondary,
-            onPressed: () {},
-          ),
-        ),
-        Tooltip(
           message: messages.matrixStatsForceRescanTooltip,
           child: DesignSystemButton(
             key: const Key('matrixStats.forceRescan'),

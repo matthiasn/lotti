@@ -107,18 +107,6 @@ class SyncNodeProfileRepository {
     return true;
   }
 
-  /// Removes a peer profile. Returns true if the directory changed.
-  Future<bool> removeNode(String hostId) async {
-    final directory = await _readDirectory();
-    if (!directory.containsKey(hostId)) return false;
-    directory.remove(hostId);
-    await _writeDirectory(directory);
-    if (_directoryController.hasListener) {
-      _directoryController.add(_sortedSnapshot(directory));
-    }
-    return true;
-  }
-
   Future<Map<String, SyncNodeProfile>> _readDirectory() async {
     final raw = await _settingsDb.itemByKey(directoryKey);
     if (raw == null || raw.isEmpty) {

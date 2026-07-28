@@ -16,7 +16,6 @@ import 'package:lotti/features/sync/matrix/stats_signature.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
-import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
@@ -241,14 +240,6 @@ class MatrixService {
   /// notify on its own.
   Stream<String?> get syncRoomIdChanges => _roomManager.roomIdChanges;
   Room? get syncRoom => _roomManager.currentRoom;
-  Stream<SyncRoomInvite> get inviteRequests => _roomManager.inviteRequests;
-
-  /// Discovers existing Lotti sync rooms the user is already a member of.
-  ///
-  /// Used for the single-user multi-device flow where Device B can discover
-  /// and join an existing sync room instead of waiting for an invite.
-  Future<List<SyncRoomCandidate>> discoverExistingSyncRooms() =>
-      _roomManager.discoverExistingSyncRooms();
 
   final Map<String, int> messageCounts = {};
   int sentCount = 0;
@@ -574,17 +565,7 @@ class MatrixService {
 
   bool isLoggedIn() => _ops.isLoggedIn();
 
-  Future<String> createRoom({List<String>? invite}) =>
-      _ops.createRoom(invite: invite);
-
   Future<String?> getRoom() => _ops.getRoom();
-
-  Future<void> leaveRoom() => _ops.leaveRoom();
-
-  Future<void> inviteToSyncRoom({required String userId}) =>
-      _ops.inviteToSyncRoom(userId: userId);
-
-  Future<void> acceptInvite(SyncRoomInvite invite) => _ops.acceptInvite(invite);
 
   List<DeviceKeys> getUnverifiedDevices() => _ops.getUnverifiedDevices();
 
