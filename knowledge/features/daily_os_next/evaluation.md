@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T11:10:07+02:00 }
+generated: { by: codex/5, at: 2026-07-28T11:24:37+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -102,7 +102,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `60 of 120` recording minutes, cannot supply task-allocation context, nor can
   later meeting scheduling borrow an earlier `60 of 120` recording count. A
   grammatical auxiliary/adverb bridge such as `were successfully scheduled`
-  remains affirmative. A later action describing “the rest” cannot validate
+  remains affirmative, while a failure qualifier such as `were unsuccessfully
+  scheduled` does not. A later action describing “the rest” cannot validate
   earlier omitted arithmetic.
   Unrelated meeting/workday scope is likewise associated with its nearest
   allocation action, so later meeting arithmetic does not poison an
@@ -136,7 +137,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   context. Speculative denials such as `this task might not be scheduled after
   all` do not retract an affirmative placement. An affirmative task-bound claim
   such as `task-c was fully scheduled after all` still contradicts and vetoes
-  partial accounting. A denial or
+  partial accounting. A full-allocation adjective phrase with an explicit
+  non-task noun head, such as `Fully planned day`, does not describe the
+  attached task and cannot veto its partial evidence. A denial or
   full-completion claim explicitly naming another corpus task does not retract
   the enclosing task's arithmetic, while qualified non-completion such as `not
   fully scheduled` describes a partial placement rather than no allocation.
@@ -209,7 +212,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   positive structural placement to shorten; it must instead name an actual
   omission, deferral, or other applicable trade.
   Numeric remainder claims for a fully omitted estimated task must equal its
-  full estimate; omission does not make arbitrary positive arithmetic valid.
+  full estimate and be affirmative; `task-c may leave a remainder: 120
+  minutes` is hypothetical rather than an actual disclosed trade. Omission does
+  not make arbitrary positive arithmetic valid.
   Hyphenated task ids also remain whole tokens: a title such as `Report` is not
   named merely because another task id contains `weekly-report`.
   The scorer does not combine a task name in one field with unbound trade prose

@@ -1103,6 +1103,7 @@ bool _hasTaskBoundFullAllocationClaim(
           taskId: taskId,
           taskTitle: taskTitle,
         ) ||
+        _fullAllocationClaimHasExplicitNonTaskHead(prose, match) ||
         _evidenceNamesAnotherTask(
           prose,
           match,
@@ -1123,6 +1124,20 @@ bool _hasTaskBoundFullAllocationClaim(
     return true;
   }
   return false;
+}
+
+bool _fullAllocationClaimHasExplicitNonTaskHead(
+  String prose,
+  Match match,
+) {
+  final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
+  final suffix = prose.substring(match.end, range.end);
+  return RegExp(
+    r'^\s+(?:(?:the|a|an|this|that)\s+)?'
+    '(?:day|meeting|workday|calendar|appointment|break|event|agenda|'
+    r'schedule|session)\b',
+    caseSensitive: false,
+  ).hasMatch(suffix);
 }
 
 bool _partialMentionIsNegated(String reason, Match match) {
@@ -1592,7 +1607,8 @@ bool _splitHasUnrelatedScope(
         !RegExp(
           r'^\s*(?:(?:is|are|was|were|will|be|been|being|has|have|had|'
           'only|just|merely|already|actually|currently|now|'
-          r'estimate|estimated|[a-z]+ly)\s+)*$',
+          'estimate|estimated|successfully|explicitly|deliberately|'
+          r'intentionally|firmly|definitively|concretely)\s+)*$',
           caseSensitive: false,
         ).hasMatch(reason.substring(evidence.end, start))) {
       continue;
@@ -2413,6 +2429,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
     for (final match in pattern.allMatches(prose)) {
       if (!belongsToTask(match) ||
           _remainderDescribesContinuity(prose, match) ||
+          _evidenceIsSpeculative(prose, match) ||
           _unrelatedRemainderScopePattern.hasMatch(
             _matchClause(prose, match),
           )) {
