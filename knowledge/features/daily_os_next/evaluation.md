@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T07:48:40+02:00 }
+generated: { by: codex/5, at: 2026-07-28T08:05:22+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -45,8 +45,8 @@ always legal, and inspecting it alone measures the guards rather than the model.
 
 | Scored on | Constraints |
 |-----------|-------------|
-| Objective structure in the persisted plan | overlap, capacity (as written *and* as estimated), working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, blocker ordering, fabricated task ids, fabricated calendar blocks, fabricated history, invented work, task-work typing, duplicate ids |
-| Weak semantic evidence in plan prose and accepted status/diff calls | conflict surfaced, blocker-bypass justification, directive honoured — visible per constraint, but excluded from ranking |
+| Objective structure in the persisted plan | overlap, capacity as written, estimated-capacity failures and passes that do not need partial-prose credit, working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, blocker ordering, fabricated task ids, fabricated calendar blocks, fabricated history, invented work, task-work typing, duplicate ids |
+| Weak semantic evidence in plan prose and accepted status/diff calls | estimated-capacity passes that depend on audited partial prose, conflict surfaced, blocker-bypass justification, directive honoured — visible per constraint, but excluded from ranking |
 | The rejection count | whether the model complied without being corrected |
 
 A run that never attempted `draft_day_plan` is **inapplicable** for the rejection
@@ -87,7 +87,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   completed, planned, placed, or fitting action that is nearer to the numbers
   than any omitted/deferred predicate in the same comma-delimited clause. A
   merely possible action such as `task-c might schedule 60 of 120 minutes` is
-  not an affirmative allocation. A later action describing “the rest” cannot
+  not an affirmative allocation, and neither is
+  `task-c might be partially scheduled`. A later action describing “the rest” cannot
   validate earlier omitted
   arithmetic. Unrelated meeting/workday scope is likewise associated with its
   nearest allocation action, so later meeting arithmetic does not poison an
@@ -158,8 +159,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   allocations below 10% of the estimate, and overlapping blocks for one task
   are charged at the full estimate or receive no placement score. Estimated
   charges are compared with the clock-bounded `plannableMinutes`, not nominal
-  full-day capacity, so a late-start scenario cannot silently compress work
-  into the remaining window. Every structurally shortened decided task counts
+  full-day capacity. Scheduled non-task blocks retain their written duration in
+  that charge while estimated task allocations are replaced by their estimate
+  or audited-partial value, so buffers and calendar blocks cannot disappear
+  from effective capacity. A late-start scenario therefore cannot silently
+  compress work into the remaining window. Every structurally shortened decided task counts
   as deferred work for `surfacedConflict`, whether or not its disclosure earns
   audited partial credit, so a plan that represents every task only partially
   must still name the trade or escalate it. Merely repeating a shortened task's
@@ -197,7 +201,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   work: domain language such as `task-c documents deferred revenue` or
   `task-c documents unscheduled maintenance`, and purpose phrases such as
   `formats notes for later reference`, do not disclose that task-c itself was
-  deferred or left unscheduled. Contracted negative-fit forms such as
+  deferred or left unscheduled. The same object binding rejects domain phrases
+  such as `reviews trade policy` and `carries over balances`. Contracted negative-fit forms such as
   `task-c doesn't fit` remain affirmative conflict disclosures.
   It must also be affirmative and internally consistent: `not partial` and
   `no conflict` explicitly deny the trade, `conflict-free` is an antonym rather

@@ -653,25 +653,26 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
       'no placed task carries an estimate',
     );
   }
-  final fullEstimateMinutes = placements.values.fold(
+  final scheduledMinutes = _scheduled(outcome).fold(
     0,
-    (total, placement) => total + placement.estimateMinutes,
+    (total, block) => total + block.duration.inMinutes,
   );
-  var chargedMinutes = 0;
+  var fullEstimateMinutes = scheduledMinutes;
+  var chargedMinutes = scheduledMinutes;
   final partials = <String>[];
   final undisclosedShortenings = <String>[];
   for (final entry in placements.entries) {
     final taskId = entry.key;
     final allocated = entry.value.allocatedMinutes;
     final estimate = entry.value.estimateMinutes;
+    fullEstimateMinutes += estimate - allocated;
     if (_isAuditedPartial(entry.value)) {
-      chargedMinutes += allocated;
       partials.add(
         '$taskId ${allocated}min partial of ${estimate}min '
         '(${estimate - allocated}min remain)',
       );
     } else {
-      chargedMinutes += estimate;
+      chargedMinutes += estimate - allocated;
       if (allocated > 0 && allocated < estimate) {
         undisclosedShortenings.add(
           '$taskId allocated ${allocated}min of ${estimate}min',
@@ -941,6 +942,7 @@ bool _hasAuditablePartialDisclosure({
         continue;
       }
       if (!_partialMentionDescribesPlacement(reason, match)) continue;
+      if (_partialMentionIsSpeculative(reason, match)) continue;
       if (_partialMentionIsNegated(reason, match)) return false;
       if (disclosure.canQualify) reasonMentionsPartial = true;
     }
@@ -1096,14 +1098,7 @@ bool _partialMentionDescribesPlacement(String prose, Match match) {
       isStandaloneLabelOrExplanation;
 }
 
-bool _tradeDispositionDescribesTaskOrWork(String prose, Match match) {
-  final wording = (match.group(0) ?? '').toLowerCase();
-  if (!wording.startsWith('defer') &&
-      wording != 'unscheduled' &&
-      !wording.startsWith('for later')) {
-    return true;
-  }
-
+bool _tradeEvidenceDescribesTaskOrWork(String prose, Match match) {
   final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
   final suffix = prose.substring(match.end, range.end);
   if (!RegExp(r'^\s+\w').hasMatch(suffix)) return true;
@@ -1113,9 +1108,19 @@ bool _tradeDispositionDescribesTaskOrWork(String prose, Match match) {
         caseSensitive: false,
       ).hasMatch(suffix) ||
       RegExp(
-        r'^\s+(?:to|until|for|because|after|before|so|and)\b',
+        r'^\s+(?:to|until|for|because|after|before|so|and|with|against|over)\b',
         caseSensitive: false,
       ).hasMatch(suffix);
+}
+
+bool _partialMentionIsSpeculative(String prose, Match match) {
+  final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
+  final prefix = prose.substring(range.start, match.start);
+  return RegExp(
+    r'\b(?:might|may|could|would|should|can)'
+    r'(?:\s+\w+){0,2}\s*$',
+    caseSensitive: false,
+  ).hasMatch(prefix);
 }
 
 bool _negationQualifiesRatherThanNegates(Match negation, String between) {
@@ -2063,7 +2068,8 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
 
   for (final match in _partialMentionPattern.allMatches(prose)) {
     if (!belongsToTask(match) ||
-        !_partialMentionDescribesPlacement(prose, match)) {
+        !_partialMentionDescribesPlacement(prose, match) ||
+        _partialMentionIsSpeculative(prose, match)) {
       continue;
     }
     if (_partialMentionIsNegated(prose, match)) {
@@ -2074,7 +2080,7 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
   }
   for (final match in _partialTradeDispositionPattern.allMatches(prose)) {
     if (!belongsToTask(match) ||
-        !_tradeDispositionDescribesTaskOrWork(prose, match)) {
+        !_tradeEvidenceDescribesTaskOrWork(prose, match)) {
       continue;
     }
     if (_matchClauseIsNegated(prose, match)) {
@@ -2122,6 +2128,8 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
       } else {
         hasAffirmativeEvidence = true;
       }
+    } else if (!_tradeEvidenceDescribesTaskOrWork(prose, match)) {
+      continue;
     } else if (_matchClauseIsNegated(prose, match)) {
       hasDeniedEvidence = true;
     } else {
