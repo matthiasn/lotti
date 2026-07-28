@@ -175,10 +175,24 @@ class BridgeCoordinator {
     }
   }
 
-  /// Runs a bridge pass explicitly, bypassing the onSync listener.
-  /// Used by `MatrixService.forceRescan(includeCatchUp: true)` and by
-  /// tests.
-  Future<void> bridgeNow() => _bridge(_currentRoomId());
+  /// Runs a bridge pass explicitly, bypassing the onSync listener, and waits
+  /// for any single-flight rerun coalesced onto that pass.
+  ///
+  /// Used by `MatrixService.forceRescan(includeCatchUp: true)` and by tests.
+  /// A completed future means the current bridge cascade is idle; bounded
+  /// retries scheduled for a later timeout remain asynchronous.
+  Future<void> bridgeNow() async {
+    await _bridge(_currentRoomId());
+    await _waitUntilIdle();
+  }
+
+  Future<void> _waitUntilIdle() async {
+    while (true) {
+      final inFlight = _inFlightBridge;
+      if (inFlight == null) return;
+      await inFlight;
+    }
+  }
 
   void _handle(SyncUpdate sync) {
     if (_stopped) return;

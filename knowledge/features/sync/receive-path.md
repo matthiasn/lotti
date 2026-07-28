@@ -11,7 +11,7 @@ sources:
   - id: queue
     resource: ../../../lib/features/sync/queue
     title: Inbound queue pipeline
-    last_modified: 2026-07-27
+    last_modified: 2026-07-29
   - id: processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
@@ -105,6 +105,11 @@ This has no fixed capacity and no attempt timer.
 On coordinator startup, an explicit room save, a manual rescan, or a joined-room
 `timeline.limited == true`, `BridgeCoordinator` runs a catch-up walk anchored on
 the per-room `last_applied_event_id` marker.
+
+Catch-up is single-flight. Organic sync triggers that arrive during a walk
+coalesce into one rerun. Explicit `bridgeNow()` callers await that entire rerun
+cascade, so returning from a manual rescan is a reliable synchronisation point
+for the bridge itself; attachment downloads remain independently queued.
 
 The preferred path is an **anchored forward walk**
 (`CatchUpStrategy.collectForwardForBootstrap`): force a server

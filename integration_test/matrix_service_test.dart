@@ -76,6 +76,16 @@ final _eventProcessors = Expando<SyncEventProcessor>(
 int _messageEntryCount(SyncMessage message) =>
     message is SyncOutboxBundle ? message.children.length : 1;
 
+Iterable<SyncMessage> _flattenMessages(Iterable<SyncMessage> messages) sync* {
+  for (final message in messages) {
+    if (message is SyncOutboxBundle) {
+      yield* _flattenMessages(message.children);
+    } else {
+      yield message;
+    }
+  }
+}
+
 /// Observes the production outbox sender without changing its send semantics.
 ///
 /// The mid-rejoin scenario uses [beforeSend] to pause *between* bundles. There
@@ -93,6 +103,7 @@ class _ObservedOutboxMessageSender implements OutboxMessageSender {
   int sentEvents = 0;
   int sentEntries = 0;
   final List<int> bundleSizes = [];
+  final List<SyncMessage> sentMessages = [];
 
   @override
   Future<bool> send(SyncMessage message) async {
@@ -103,6 +114,7 @@ class _ObservedOutboxMessageSender implements OutboxMessageSender {
       final entryCount = _messageEntryCount(message);
       sentEntries += entryCount;
       bundleSizes.add(entryCount);
+      sentMessages.add(message);
     }
     return sent;
   }
@@ -1862,6 +1874,8 @@ void main() {
           ..add(aliceRepair)
           ..add(bobRepair);
 
+        final bobSentBeforeRepair = bobOutbox.sender.sentMessages.length;
+        final aliceSentBeforeRepair = aliceOutbox.sender.sentMessages.length;
         final updated = await _sendMediaMetadataUpdates(
           entities: [image, audio],
           sender: aliceOutbox,
@@ -1910,6 +1924,28 @@ void main() {
           timeout: repairTimeout,
         );
 
+        final repairRequests = _flattenMessages(
+          bobOutbox.sender.sentMessages.skip(bobSentBeforeRepair),
+        ).whereType<SyncMediaRequest>().toList();
+        expect(repairRequests, hasLength(1));
+        expect(repairRequests.single.entryIds.toSet(), missingEntryIds);
+
+        final repairResponses =
+            _flattenMessages(
+                  aliceOutbox.sender.sentMessages.skip(aliceSentBeforeRepair),
+                )
+                .whereType<SyncJournalEntity>()
+                .where(
+                  (message) =>
+                      message.includeAttachments == true &&
+                      missingEntryIds.contains(message.id),
+                )
+                .toList();
+        expect(
+          repairResponses.map((message) => message.id).toSet(),
+          missingEntryIds,
+          reason: 'Alice must answer both requested entries with attachments',
+        );
         expect(await bobImageFile.readAsBytes(), orderedEquals(imageBytes));
         expect(await bobAudioFile.readAsBytes(), orderedEquals(audioBytes));
       },
