@@ -604,7 +604,7 @@ class _ViewfinderBrackets extends StatelessWidget {
     final tokens = context.designTokens;
 
     return CustomPaint(
-      painter: _ViewfinderBracketsPainter(
+      painter: ViewfinderBracketsPainter(
         color: tokens.colors.interactive.enabled,
         cornerLength: tokens.spacing.step7,
         cornerRadius: tokens.radii.l,
@@ -615,8 +615,11 @@ class _ViewfinderBrackets extends StatelessWidget {
   }
 }
 
-class _ViewfinderBracketsPainter extends CustomPainter {
-  _ViewfinderBracketsPainter({
+/// Public for its repaint contract's unit test: the painter mounts under a
+/// `const` overlay, so no widget test can ever hand it a new delegate.
+@visibleForTesting
+class ViewfinderBracketsPainter extends CustomPainter {
+  ViewfinderBracketsPainter({
     required this.color,
     required this.cornerLength,
     required this.cornerRadius,
@@ -681,7 +684,7 @@ class _ViewfinderBracketsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ViewfinderBracketsPainter oldDelegate) =>
+  bool shouldRepaint(ViewfinderBracketsPainter oldDelegate) =>
       color != oldDelegate.color ||
       cornerLength != oldDelegate.cornerLength ||
       cornerRadius != oldDelegate.cornerRadius ||

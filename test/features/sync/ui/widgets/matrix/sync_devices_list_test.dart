@@ -9,8 +9,10 @@ import 'package:lotti/features/design_system/components/spinners/design_system_s
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
+import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_devices_list.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:mocktail/mocktail.dart';
@@ -841,6 +843,64 @@ void main() {
         find.byKey(const Key('sync_devices_send_messages')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('Send settings opens the room-wide settings hand-off', (
+      tester,
+    ) async {
+      // The banner's whole point: the action that used to die with the
+      // Add-device sheet must actually open the hand-off from here.
+      final container = await pumpWithContainer(
+        tester,
+        initial: [currentDevice, joinedPhone],
+      );
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = const AsyncData<List<SyncDeviceInfo>>([
+        currentDevice,
+        verifiedPhone,
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('sync_devices_send_settings')),
+      );
+      await tester.tap(find.byKey(const Key('sync_devices_send_settings')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final context = tester.element(find.byType(SyncDevicesList));
+      expect(
+        find.text(context.messages.syncEntitiesConfirm),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Send message history opens the re-sync hand-off', (
+      tester,
+    ) async {
+      final container = await pumpWithContainer(
+        tester,
+        initial: [currentDevice, joinedPhone],
+      );
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = const AsyncData<List<SyncDeviceInfo>>([
+        currentDevice,
+        verifiedPhone,
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('sync_devices_send_messages')),
+      );
+      await tester.tap(find.byKey(const Key('sync_devices_send_messages')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byType(ReSyncModalContent), findsOneWidget);
     });
 
     testWidgets('stays away for a roster that was already verified', (

@@ -24,10 +24,11 @@ Exécutée par un admin du homeserver, elle :
 3. écrit dans un fichier un **bundle de provisionnement** — le texte que
    Lotti accepte comme code d'appairage.
 
-Le README à côté de l'outil documente chaque argument et les façons sûres de
+Le README à côté de l'outil documente l'installation initiale, chaque argument et les façons sûres de
 fournir le mot de passe admin. Une exécution minimale ressemble à :
 
 ```bash
+cd tools/matrix_provisioner
 python provision.py \
   --homeserver https://matrix.example.com \
   --admin-user admin \
@@ -45,11 +46,13 @@ Sur l'appareil qui doit devenir ton premier, ouvre **Paramètres →
 Paramètres de synchronisation → Appareils** et choisis **Configurer la
 synchronisation**. Colle le texte du bundle dans le champ de code — sur un
 téléphone, où la caméra s'ouvre d'abord, choisis **Coller le code à la
-place** pour y accéder. À partir de là, c'est le parcours d'appairage
-ordinaire : vérifier ce que le code décrit, se connecter, puis
-[vérifier l'appareil](./sync.mdx).
+place** pour y accéder. Vérifie ce que le code décrit, puis connecte-toi —
+c'est déjà tout le parcours pour un premier appareil. Il n'y a pas de
+vérification par emoji ici : elle compare deux de tes appareils, et tu n'en
+as qu'un. La cérémonie apparaît pour la première fois quand tu appaires ton
+deuxième appareil avec [Ajouter un appareil](./add-device.mdx).
 
-Une différence mérite d'être connue : consommer un bundle de provisionnement
+Bon à savoir aussi : consommer un bundle de provisionnement
 neuf **fait tourner le mot de passe du compte** au moment de la connexion.
 Le fichier du bundle est donc épuisé après sa première utilisation — les
 identifiants actifs n'existent alors que sur cet appareil, et chaque

@@ -24,10 +24,11 @@ Von einem Homeserver-Admin ausgeführt:
 3. schreibt ein **Provisionierungs-Bundle** — den Text, den Lotti als
    Pairing-Code akzeptiert — in eine Datei.
 
-Das README neben dem Werkzeug dokumentiert jedes Argument und die sicheren
+Das README neben dem Werkzeug dokumentiert die einmalige Einrichtung, jedes Argument und die sicheren
 Wege, das Admin-Passwort zu übergeben. Ein minimaler Aufruf sieht so aus:
 
 ```bash
+cd tools/matrix_provisioner
 python provision.py \
   --homeserver https://matrix.example.com \
   --admin-user admin \
@@ -46,10 +47,13 @@ Sorgfalt.
 Synchronisierungseinstellungen → Geräte** und wähle **Sync einrichten**.
 Füge den Text des Bundles in das Codefeld ein — auf dem Telefon, wo sich
 zuerst die Kamera öffnet, kommst du mit **Code stattdessen einfügen**
-dorthin. Ab da ist der Ablauf die gewohnte Pairing-Reise: prüfen, was der
-Code beschreibt, verbinden und [verifizieren](./sync.mdx).
+dorthin. Prüfe, was der Code beschreibt, und verbinde — das ist für ein
+erstes Gerät bereits die ganze Reise. Eine Emoji-Verifizierung gibt es hier
+nicht: Sie vergleicht zwei deiner Geräte, und du hast erst eins. Die
+Zeremonie tritt zum ersten Mal auf, wenn du dein zweites Gerät über
+[Gerät hinzufügen](./add-device.mdx) koppelst.
 
-Ein Unterschied ist wissenswert: Das Einlösen eines frischen
+Ebenfalls wissenswert: Das Einlösen eines frischen
 Provisionierungs-Bundles **rotiert das Kontopasswort** beim Verbinden. Die
 Bundle-Datei ist nach dem ersten Gebrauch verbraucht — die gültigen
 Zugangsdaten existieren dann nur auf diesem Gerät, und jedes weitere Gerät

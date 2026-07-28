@@ -155,6 +155,56 @@ void main() {
       expect(cancelled, 1);
     });
 
+    testWidgets('the decision pair stacks on a phone sheet, accent on top', (
+      tester,
+    ) async {
+      // Two spelled-out labels share a phone sheet's width badly: side by
+      // side they truncate into indistinguishability, which is exactly the
+      // distinction this pair exists to make.
+      var accepted = 0;
+      var cancelled = 0;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: SizedBox(
+              width: kVerificationDecisionRowMinWidth - 60,
+              child: VerificationEmojiStage(
+                emojis: emojis,
+                awaitingOtherDevice: false,
+                onAccept: () => accepted++,
+                onCancel: () => cancelled++,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final context = tester.element(find.byType(VerificationEmojiStage));
+      final acceptFinder = find.widgetWithText(
+        DesignSystemButton,
+        context.messages.syncVerifyTheyMatch,
+      );
+      final cancelFinder = find.widgetWithText(
+        DesignSystemButton,
+        context.messages.syncVerifyTheyDiffer,
+      );
+      // Stacked, accent above the quiet way out — and both full width so
+      // neither label can ellipsize.
+      expect(
+        tester.getTopLeft(acceptFinder).dy,
+        lessThan(tester.getTopLeft(cancelFinder).dy),
+      );
+      expect(tester.widget<DesignSystemButton>(acceptFinder).fullWidth, isTrue);
+      expect(tester.widget<DesignSystemButton>(cancelFinder).fullWidth, isTrue);
+
+      await tester.ensureVisible(acceptFinder);
+      await tester.tap(acceptFinder);
+      await tester.ensureVisible(cancelFinder);
+      await tester.tap(cancelFinder);
+      expect(accepted, 1);
+      expect(cancelled, 1);
+    });
+
     testWidgets('waits on the peer with the accept disabled', (tester) async {
       var accepted = 0;
       await pumpStage(tester, awaiting: true, onAccept: () => accepted++);

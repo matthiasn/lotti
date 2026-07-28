@@ -71,6 +71,23 @@ void main() {
       expect(after, isNot(equals(before)));
     });
 
+    testWidgets('the pulse stops when the connection completes', (
+      tester,
+    ) async {
+      // The repeating controller must not outlive the connecting state: a
+      // motif updated to linked keeps ticking invisibly otherwise, burning
+      // frames on a screen that reads as finished.
+      await pumpMotif(tester, SyncDevicePairMotifState.connecting);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await pumpMotif(tester, SyncDevicePairMotifState.linked);
+      // Settles only if didUpdateWidget stopped the repeat — a live
+      // repeating controller would make this time out.
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.smartphone_rounded), findsOneWidget);
+    });
+
     testWidgets('reduced motion parks the stream at steady mid-strength', (
       tester,
     ) async {

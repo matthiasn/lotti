@@ -24,10 +24,11 @@ Eseguita da un admin dell'homeserver:
 3. scrive in un file un **bundle di provisioning** — il testo che Lotti
    accetta come codice di associazione.
 
-Il README accanto allo strumento documenta ogni argomento e i modi sicuri di
+Il README accanto allo strumento documenta la configurazione iniziale, ogni argomento e i modi sicuri di
 fornire la password admin. Un'esecuzione minima è così:
 
 ```bash
+cd tools/matrix_provisioner
 python provision.py \
   --homeserver https://matrix.example.com \
   --admin-user admin \
@@ -45,11 +46,13 @@ Sul dispositivo che diventerà il tuo primo, apri **Impostazioni →
 Impostazioni di sincronizzazione → Dispositivi** e scegli **Configura la
 sincronizzazione**. Incolla il testo del bundle nel campo del codice — su un
 telefono, dove prima si apre la fotocamera, scegli **Incolla invece il
-codice** per arrivarci. Da lì il flusso è il normale percorso di
-associazione: rivedere cosa descrive il codice, connettersi e
-[verificare](./sync.mdx).
+codice** per arrivarci. Rivedi cosa descrive il codice e connettiti — per
+un primo dispositivo il percorso finisce qui. Non c'è verifica con le
+emoji: la verifica confronta due dei tuoi dispositivi, e ne hai uno solo.
+La cerimonia compare per la prima volta quando associ il secondo
+dispositivo con [Aggiungere un dispositivo](./add-device.mdx).
 
-Vale la pena conoscere una differenza: consumare un bundle di provisioning
+Vale anche la pena sapere: consumare un bundle di provisioning
 fresco **ruota la password dell'account** al momento della connessione. Il
 file del bundle è quindi esaurito dopo il primo uso — la credenziale viva
 esiste solo su quel dispositivo, e ogni dispositivo successivo si associa da

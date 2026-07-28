@@ -283,6 +283,7 @@ Widget makeTestableWidgetWithScaffold(
   List<Override> overrides = const [],
   ThemeData? theme,
   MediaQueryData? mediaQueryData,
+  Locale? locale,
 }) {
   final mq = mediaQueryData ?? phoneMediaQueryData;
 
@@ -300,6 +301,7 @@ Widget makeTestableWidgetWithScaffold(
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
+        locale: locale,
         home: Scaffold(
           body: SingleChildScrollView(
             child: ConstrainedBox(

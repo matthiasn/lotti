@@ -22,10 +22,11 @@ Spuštěn adminem homeserveru:
 3. zapíše do souboru **provisioning bundle** — text, který Lotti přijímá
    jako párovací kód.
 
-README vedle nástroje dokumentuje každý argument i bezpečné způsoby předání
+README vedle nástroje dokumentuje jednorázové nastavení, každý argument i bezpečné způsoby předání
 administrátorského hesla. Minimální spuštění vypadá takto:
 
 ```bash
+cd tools/matrix_provisioner
 python provision.py \
   --homeserver https://matrix.example.com \
   --admin-user admin \
@@ -42,10 +43,13 @@ zacházej s péčí popsanou níže.
 Na zařízení, které se má stát tvým prvním, otevři **Nastavení → Nastavení
 synchronizace → Zařízení** a zvol **Nastavit synchronizaci**. Vlož text
 bundlu do pole pro kód — na telefonu, kde se nejdřív otevře fotoaparát, se
-tam dostaneš přes **Raději kód vložit**. Odtud je to běžná párovací cesta:
-zkontrolovat, co kód popisuje, připojit se a [ověřit](./sync.mdx).
+tam dostaneš přes **Raději kód vložit**. Zkontroluj, co kód popisuje, a
+připoj se — u prvního zařízení tím cesta končí. Žádné ověření pomocí emoji
+tu není: ověření porovnává dvě tvá zařízení, a máš zatím jen jedno.
+Ceremonie se poprvé objeví, až budeš párovat druhé zařízení přes
+[Přidat zařízení](./add-device.mdx).
 
-Jeden rozdíl stojí za to znát: použití čerstvého provisioning bundlu
+Za vědění stojí i tohle: použití čerstvého provisioning bundlu
 **rotuje heslo účtu** v rámci připojení. Soubor s bundlem je po prvním
 použití vyčerpaný — platné přihlašovací údaje pak existují jen na tom
 zařízení a každé další zařízení se páruje z existujícího přes

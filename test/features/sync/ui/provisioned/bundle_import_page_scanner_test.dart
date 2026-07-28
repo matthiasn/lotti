@@ -127,6 +127,35 @@ void main() {
       );
     });
 
+    test('the viewfinder painter repaints only when its look changes', () {
+      // The overlay is const-mounted, so the framework consults this
+      // contract on theme changes; repainting on identical values would
+      // redraw the brackets every frame the camera preview ticks.
+      ViewfinderBracketsPainter make({
+        Color color = const Color(0xFF00FF00),
+        double cornerLength = 24,
+        double cornerRadius = 12,
+        double strokeWidth = 2,
+        double inset = 16,
+      }) => ViewfinderBracketsPainter(
+        color: color,
+        cornerLength: cornerLength,
+        cornerRadius: cornerRadius,
+        strokeWidth: strokeWidth,
+        inset: inset,
+      );
+
+      expect(make().shouldRepaint(make()), isFalse);
+      expect(
+        make(color: const Color(0xFFFF0000)).shouldRepaint(make()),
+        isTrue,
+      );
+      expect(make(cornerLength: 32).shouldRepaint(make()), isTrue);
+      expect(make(cornerRadius: 8).shouldRepaint(make()), isTrue);
+      expect(make(strokeWidth: 3).shouldRepaint(make()), isTrue);
+      expect(make(inset: 20).shouldRepaint(make()), isTrue);
+    });
+
     testWidgets('desktop stays on manual entry with no camera', (
       tester,
     ) async {
