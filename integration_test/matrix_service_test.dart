@@ -1338,23 +1338,25 @@ void main() {
         // so Bob should receive exactly n new entries.
         expect(newEntries, n);
 
+        // Diagnostics only — deliberately not asserted on.
+        //
+        // The assertions that used to live here read `failures == 0` and
+        // `circuitOpens == 0` on counters nothing ever incremented, so they
+        // passed unconditionally. Replacing them with `dbApplied >= n` looked
+        // right and was equally wrong: this harness leaves
+        // `SyncEventProcessor.applyObserver` unwired, so every counter in the
+        // snapshot reads 0 here even on a run that converges correctly.
+        // Production wires the observer in `MatrixService`; see `get_it`.
+        //
+        // The real convergence check is `expect(newEntries, n)` above, which
+        // counts rows in Bob's database rather than trusting a counter.
         if (metrics != null) {
-          debugPrint('  failures: ${metrics.failures}');
-          debugPrint('  circuitOpens: ${metrics.circuitOpens}');
-          debugPrint('  catchupBatches: ${metrics.catchupBatches}');
-          debugPrint('  processed: ${metrics.processed}');
           debugPrint('  dbApplied: ${metrics.dbApplied}');
-
-          expect(
-            metrics.failures,
-            0,
-            reason: 'Expected zero processing failures during catch-up',
+          debugPrint(
+            '  dbIgnoredByVectorClock: ${metrics.dbIgnoredByVectorClock}',
           );
-          expect(
-            metrics.circuitOpens,
-            0,
-            reason: 'Circuit breaker should never trip during catch-up',
-          );
+          debugPrint('  conflictsCreated: ${metrics.conflictsCreated}');
+          debugPrint('  queueAbandoned: ${metrics.queueAbandoned}');
         }
 
         // Bring Alice back online for clean teardown

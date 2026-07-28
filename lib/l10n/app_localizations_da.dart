@@ -6983,12 +6983,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get manageLinks => 'Administrer links…';
 
   @override
-  String get matrixStatsCatchupBatches => 'Indhentningsgrupper';
-
-  @override
-  String get matrixStatsCircuitOpens => 'Banen åbner';
-
-  @override
   String get matrixStatsConflicts => 'Konflikter';
 
   @override
@@ -7019,12 +7013,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get matrixStatsEntryLinkNoops => 'EntryLink No-ops';
 
   @override
-  String get matrixStatsFailures => 'Fejl';
-
-  @override
-  String get matrixStatsFlushes => 'Flushes';
-
-  @override
   String get matrixStatsForceRescan => 'Force Rescan';
 
   @override
@@ -7035,24 +7023,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Legende:\n• behandlet. <type> = behandlede synkroniseringsbeskeder efter nyttelasttype\n• droppedByType. <type> = per-type falder efter genforsøg eller ældre-besked ignorerer\n• dbApplied = databaserækker skrevet\n• dbIgnoredByVectorClock = ældre eller identiske indkommende data ignoreres af databasen\n• konflikterSkabt = samtidige vektorure logget\n• dbMissingBase = sprunget over mens man venter på en manglende afhængighed eller basisrække\n• staleAttachmentPurges = cachede forældede beskrivelser slettet før opdatering';
+      'Legende:\n• dbApplied = skrevne databaserækker\n• dbIgnoredByVectorClock = ældre eller identiske indkommende data ignoreret af databasen\n• conflictsCreated = samtidige vektorure logget\n• dbMissingBase = sprunget over mens en manglende afhængighed afventes\n• dbEntryLinkNoop = link findes allerede, intet skrevet\n• droppedByType.<type> = frasorteringer pr. type efter forsøg eller ignorering af ældre beskeder\n• queueActive = indkommende hændelser der stadig venter på at blive anvendt\n• signalConnectivity = synkroniseringspuf efter at forbindelsen kom tilbage';
 
   @override
-  String get matrixStatsProcessed => 'Forarbejdet';
-
-  @override
-  String matrixStatsProcessedByType(Object type) {
-    return 'Behandlet ($type)';
-  }
+  String get matrixStatsQueueActive => 'Kø (aktiv)';
 
   @override
   String get matrixStatsRefresh => 'Opfrisk';
-
-  @override
-  String get matrixStatsReliability => 'Pålidelighed';
-
-  @override
-  String get matrixStatsRetriesScheduled => 'Planlagte forsøg';
 
   @override
   String get matrixStatsRetryNow => 'Prøv igen nu';
@@ -7061,38 +7038,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get matrixStatsRetryNowTooltip => 'Prøv igen ventende fejl nu';
 
   @override
-  String get matrixStatsSignalLatencyLast => 'Signallatens (sidste ms)';
-
-  @override
-  String get matrixStatsSignalLatencyMax => 'Signallatens (max ms)';
-
-  @override
-  String get matrixStatsSignalLatencyMin => 'Signallatens (min ms)';
-
-  @override
   String get matrixStatsSignals => 'Signaler';
 
   @override
-  String get matrixStatsSignalsClientStream => 'Signaler (klientstrøm)';
-
-  @override
   String get matrixStatsSignalsConnectivity => 'Signaler (forbindelse)';
-
-  @override
-  String get matrixStatsSignalsTimelineCallbacks =>
-      'Signaler (tidslinje-callbacks)';
-
-  @override
-  String get matrixStatsSkipped => 'Sprunget over';
-
-  @override
-  String get matrixStatsSkippedRetryCap => 'Sprunget over (Retry Cap)';
-
-  @override
-  String get matrixStatsStaleAttachmentPurges => 'Stale Attachment Purges';
-
-  @override
-  String get matrixStatsThroughput => 'Gennemstrømning';
 
   @override
   String get matrixStatsTopKpis => 'Top KPI\'er';

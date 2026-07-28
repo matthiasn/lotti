@@ -45,37 +45,19 @@ class SyncMetricsSection extends StatelessWidget {
 
   String _labelFor(BuildContext context, String key) {
     final messages = context.messages;
-    if (key.startsWith('processed.')) {
-      return messages.matrixStatsProcessedByType(
-        key.substring('processed.'.length),
-      );
-    }
     if (key.startsWith('droppedByType.')) {
       return messages.matrixStatsDroppedByType(
         key.substring('droppedByType.'.length),
       );
     }
     return switch (key) {
-      'processed' => messages.matrixStatsProcessed,
-      'skipped' => messages.matrixStatsSkipped,
-      'failures' => messages.matrixStatsFailures,
-      'flushes' => messages.matrixStatsFlushes,
-      'catchupBatches' => messages.matrixStatsCatchupBatches,
-      'skippedByRetryLimit' => messages.matrixStatsSkippedRetryCap,
-      'retriesScheduled' => messages.matrixStatsRetriesScheduled,
-      'circuitOpens' => messages.matrixStatsCircuitOpens,
+      'queueActive' => messages.matrixStatsQueueActive,
       'dbApplied' => messages.matrixStatsDbApplied,
       'dbIgnoredByVectorClock' => messages.matrixStatsDbIgnoredVectorClock,
       'conflictsCreated' => messages.matrixStatsConflicts,
       'dbMissingBase' => messages.matrixStatsDbMissingBase,
       'dbEntryLinkNoop' => messages.matrixStatsEntryLinkNoops,
-      'staleAttachmentPurges' => messages.matrixStatsStaleAttachmentPurges,
-      'signalClientStream' => messages.matrixStatsSignalsClientStream,
-      'signalTimelineCallbacks' => messages.matrixStatsSignalsTimelineCallbacks,
       'signalConnectivity' => messages.matrixStatsSignalsConnectivity,
-      'signalLatencyLastMs' => messages.matrixStatsSignalLatencyLast,
-      'signalLatencyMinMs' => messages.matrixStatsSignalLatencyMin,
-      'signalLatencyMaxMs' => messages.matrixStatsSignalLatencyMax,
       _ => key,
     };
   }
@@ -85,23 +67,6 @@ class SyncMetricsSection extends StatelessWidget {
     Map<String, int> v2,
   ) {
     final messages = context.messages;
-    final throughput = _select(
-      v2,
-      (k) =>
-          k == 'processed' ||
-          k == 'flushes' ||
-          k == 'catchupBatches' ||
-          k == 'retriesScheduled' ||
-          k.startsWith('processed.'),
-    );
-    final reliability = _select(
-      v2,
-      (k) =>
-          k == 'failures' ||
-          k == 'skipped' ||
-          k == 'skippedByRetryLimit' ||
-          k == 'circuitOpens',
-    );
     final db = _select(
       v2,
       (k) =>
@@ -110,22 +75,13 @@ class SyncMetricsSection extends StatelessWidget {
           k == 'conflictsCreated' ||
           k == 'dbMissingBase' ||
           k == 'dbEntryLinkNoop' ||
-          k == 'staleAttachmentPurges' ||
           k.startsWith('droppedByType.'),
     );
     final signals = _select(
       v2,
-      (k) =>
-          k == 'signalClientStream' ||
-          k == 'signalTimelineCallbacks' ||
-          k == 'signalConnectivity' ||
-          k == 'signalLatencyLastMs' ||
-          k == 'signalLatencyMinMs' ||
-          k == 'signalLatencyMaxMs',
+      (k) => k == 'signalConnectivity',
     ).where((e) => e.value != 0).toList();
     final sections = <String, List<MapEntry<String, int>>>{
-      messages.matrixStatsThroughput: throughput,
-      messages.matrixStatsReliability: reliability,
       messages.matrixStatsDbApply: db,
     };
     if (signals.isNotEmpty) {
@@ -172,7 +128,11 @@ class SyncMetricsSection extends StatelessWidget {
         // Top KPIs with optional sparklines
         Builder(
           builder: (context) {
-            const kpiKeys = ['processed', 'failures', 'retriesScheduled'];
+            // The headline numbers: what actually landed in the database,
+            // what needed a conflict, and how much work the queue still has.
+            // These are the counters with real call sites — see the invariant
+            // on `MetricsCounters`.
+            const kpiKeys = ['dbApplied', 'conflictsCreated', 'queueActive'];
             final kpiEntries =
                 metrics.entries.where((e) => kpiKeys.contains(e.key)).toList()
                   ..sort(

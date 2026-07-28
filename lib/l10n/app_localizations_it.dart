@@ -7068,12 +7068,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get manageLinks => 'Gestire i collegamenti…';
 
   @override
-  String get matrixStatsCatchupBatches => 'Batches di catch-up';
-
-  @override
-  String get matrixStatsCircuitOpens => 'Circuito si apre';
-
-  @override
   String get matrixStatsConflicts => 'Conflitti';
 
   @override
@@ -7104,12 +7098,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get matrixStatsEntryLinkNoops => 'Operazioni EntryLink senza effetto';
 
   @override
-  String get matrixStatsFailures => 'Fallimenti';
-
-  @override
-  String get matrixStatsFlushes => 'Flussi';
-
-  @override
   String get matrixStatsForceRescan => 'Forza Rescan';
 
   @override
@@ -7120,24 +7108,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Legenda: • elaborata. <type> = messaggi di sincronizzazione elaborati per tipo di payload • dropByType. <type> = per-type drops after retries or old-message ignora • dbApplied = righe di database scritte • dbIgnoredByVectorClock = dati in entrata vecchi o identici ignorati dal database • conflittiCreated = orologi corrente registrati • dbMissing';
+      'Legenda:\n• dbApplied = righe di database scritte\n• dbIgnoredByVectorClock = dati in entrata più vecchi o identici ignorati dal database\n• conflictsCreated = orologi vettoriali concorrenti registrati\n• dbMissingBase = saltato in attesa di una dipendenza mancante\n• dbEntryLinkNoop = collegamento già presente, nulla di scritto\n• droppedByType.<type> = scarti per tipo dopo i tentativi o l’ignorare messaggi vecchi\n• queueActive = eventi in entrata ancora da applicare\n• signalConnectivity = solleciti di sincronizzazione dopo il ritorno della connessione';
 
   @override
-  String get matrixStatsProcessed => 'Processo';
-
-  @override
-  String matrixStatsProcessedByType(Object type) {
-    return 'Processato ($type)';
-  }
+  String get matrixStatsQueueActive => 'Coda (attiva)';
 
   @override
   String get matrixStatsRefresh => 'Rifiuti';
-
-  @override
-  String get matrixStatsReliability => 'Affidabilità';
-
-  @override
-  String get matrixStatsRetriesScheduled => 'Riprese programmate';
 
   @override
   String get matrixStatsRetryNow => 'Recuperare ora';
@@ -7147,38 +7124,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Recuperare fallimenti in sospeso ora';
 
   @override
-  String get matrixStatsSignalLatencyLast => 'Latency del segnale (ultimo ms)';
-
-  @override
-  String get matrixStatsSignalLatencyMax => 'Latenza segnaletica (max ms)';
-
-  @override
-  String get matrixStatsSignalLatencyMin => 'Latenza di segnale (min ms)';
-
-  @override
   String get matrixStatsSignals => 'Segnali';
 
   @override
-  String get matrixStatsSignalsClientStream => 'Segnali (flusso corrente)';
-
-  @override
   String get matrixStatsSignalsConnectivity => 'Segnali (connettività)';
-
-  @override
-  String get matrixStatsSignalsTimelineCallbacks =>
-      'Segnali (chiamate di linea temporale)';
-
-  @override
-  String get matrixStatsSkipped => 'Abilitato';
-
-  @override
-  String get matrixStatsSkippedRetryCap => 'Saltato (limite tentativi)';
-
-  @override
-  String get matrixStatsStaleAttachmentPurges => 'Punteggio di aggancio';
-
-  @override
-  String get matrixStatsThroughput => 'Portata';
 
   @override
   String get matrixStatsTopKpis => 'I migliori KPI';

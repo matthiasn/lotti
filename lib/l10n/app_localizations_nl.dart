@@ -7003,12 +7003,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get manageLinks => 'Links beheren…';
 
   @override
-  String get matrixStatsCatchupBatches => 'Inhaalpartijen';
-
-  @override
-  String get matrixStatsCircuitOpens => 'Circuit opent';
-
-  @override
   String get matrixStatsConflicts => 'Conflicten';
 
   @override
@@ -7039,12 +7033,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get matrixStatsEntryLinkNoops => 'EntryLink No-ops';
 
   @override
-  String get matrixStatsFailures => 'Mislukt';
-
-  @override
-  String get matrixStatsFlushes => 'Flushes';
-
-  @override
   String get matrixStatsForceRescan => 'Herscanen forceren';
 
   @override
@@ -7055,24 +7043,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Legende: • verwerkt.<type> = verwerkt sync berichten per payload type • droppedByType.<type> = per type druppels na retrie- of ouder bericht negeert • dbToegepast = database rijen geschreven • dbIgnoredByVectorClock = oudere of identieke inkomende gegevens genegeerd door de database • conflictenCreated = gelijktijdige vector klokken gelogd • dbMissingBase = overgeslagen terwijl wachtte op een ontbrekende afhankelijkheid of basisrij • trueAttachmentPurges = gecached stamdescriptoren geklaard voordat ze werden ververst';
+      'Legende:\n• dbApplied = geschreven databaserijen\n• dbIgnoredByVectorClock = oudere of identieke inkomende gegevens genegeerd door de database\n• conflictsCreated = gelijktijdige vectorklokken gelogd\n• dbMissingBase = overgeslagen terwijl op een ontbrekende afhankelijkheid wordt gewacht\n• dbEntryLinkNoop = koppeling bestaat al, niets geschreven\n• droppedByType.<type> = weggegooid per type na pogingen of het negeren van oudere berichten\n• queueActive = inkomende gebeurtenissen die nog toegepast moeten worden\n• signalConnectivity = synchronisatiezetjes nadat de verbinding terug was';
 
   @override
-  String get matrixStatsProcessed => 'Bewerkt';
-
-  @override
-  String matrixStatsProcessedByType(Object type) {
-    return 'Verwerkt ($type)';
-  }
+  String get matrixStatsQueueActive => 'Wachtrij (actief)';
 
   @override
   String get matrixStatsRefresh => 'Verversen';
-
-  @override
-  String get matrixStatsReliability => 'Betrouwbaarheid';
-
-  @override
-  String get matrixStatsRetriesScheduled => 'Geplande herstart';
 
   @override
   String get matrixStatsRetryNow => 'Nu opnieuw proberen';
@@ -7082,38 +7059,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Herstarten van nog niet-afgebroken programma';
 
   @override
-  String get matrixStatsSignalLatencyLast => 'Signaallekkage (laatste ms)';
-
-  @override
-  String get matrixStatsSignalLatencyMax => 'Signaallekkage (max ms)';
-
-  @override
-  String get matrixStatsSignalLatencyMin => 'Signaalsterkte (min ms)';
-
-  @override
   String get matrixStatsSignals => 'Signalen';
 
   @override
-  String get matrixStatsSignalsClientStream => 'Signalen (clientstream)';
-
-  @override
   String get matrixStatsSignalsConnectivity => 'Signalen (connectiviteit)';
-
-  @override
-  String get matrixStatsSignalsTimelineCallbacks =>
-      'Signalen (tijdlijn terugroep)';
-
-  @override
-  String get matrixStatsSkipped => 'Overgeslagen';
-
-  @override
-  String get matrixStatsSkippedRetryCap => 'Overgeslagen (herhalingskap)';
-
-  @override
-  String get matrixStatsStaleAttachmentPurges => 'Stambijlagen';
-
-  @override
-  String get matrixStatsThroughput => 'Doorvoer';
 
   @override
   String get matrixStatsTopKpis => 'Top KPI\'s';
