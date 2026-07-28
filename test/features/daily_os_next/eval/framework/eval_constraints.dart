@@ -825,6 +825,21 @@ final _leadingHistoricalAllocationScopePattern = RegExp(
   caseSensitive: false,
 );
 
+final _futureAllocationScopePattern = RegExp(
+  r'^\s*(?:next\s+(?:week|month|year)|'
+  r'in\s+\d+\s+(?:days?|weeks?|months?|years?))'
+  r'\s*(?=$|because\b|due\s+to\b|owing\s+to\b)',
+  caseSensitive: false,
+);
+
+final _leadingFutureAllocationScopePattern = RegExp(
+  r'(?:^|[.;!?\n])\s*'
+  r'(?:next\s+(?:week|month|year)|'
+  r'in\s+\d+\s+(?:days?|weeks?|months?|years?))'
+  r'\s*,\s*$',
+  caseSensitive: false,
+);
+
 final _tradeSubjectPrefixPattern = RegExp(
   r'^(.*?)\s+(?:(?:(?:is|are|was|were)(?:\s+being)?|'
   r'(?:has|have|had)\s+been(?:\s+being)?|will\s+be(?:\s+being)?)'
@@ -895,6 +910,19 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
   }
 
   for (final block in _scheduled(outcome)) {
+    final isWorkBlock =
+        block.type == PlannedBlockType.ai ||
+        block.type == PlannedBlockType.manual;
+    final reason = block.reason?.trim();
+    if (reason != null && reason.isNotEmpty) {
+      for (final task in outcome.inputs.corpus) {
+        if ((!isWorkBlock || block.taskId != task.taskId) &&
+            (_taskIdNamed(task.taskId, reason) ||
+                _titleNamed(outcome, task.taskId, reason))) {
+          addDisclosure(task.taskId, canQualify: false, prose: reason);
+        }
+      }
+    }
     final note = block.note?.trim();
     final noteTaskIds = <String>{
       if (note != null && note.isNotEmpty)
@@ -908,10 +936,7 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
         addDisclosure(taskId, canQualify: false, prose: note);
       }
     }
-    if (block.type != PlannedBlockType.ai &&
-        block.type != PlannedBlockType.manual) {
-      continue;
-    }
+    if (!isWorkBlock) continue;
     final taskId = block.taskId;
     if (taskId == null) continue;
     allocatedByTask.update(
@@ -921,7 +946,6 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
       ifAbsent: () => block.endTime.difference(block.startTime).inMinutes,
     );
     blocksByTask.putIfAbsent(taskId, () => []).add(block);
-    final reason = block.reason?.trim();
     if (reason != null && reason.isNotEmpty) {
       addDisclosure(taskId, canQualify: true, prose: reason);
     }
@@ -1208,7 +1232,7 @@ bool _hasTaskBoundFullAllocationClaim(
           taskTitle: taskTitle,
           corpus: corpus,
         ) ||
-        _evidenceHasHistoricalScope(prose, match) ||
+        _evidenceHasNonCurrentAllocationScope(prose, match) ||
         !_evidenceActionIsAsserted(prose, match.start) ||
         _evidenceIsSpeculative(prose, match) ||
         _matchClauseIsNegated(
@@ -1382,7 +1406,7 @@ bool _hasTaskBoundAllocationDenial(
     caseSensitive: false,
   );
   for (final action in placementActionPattern.allMatches(prose)) {
-    if (_evidenceHasHistoricalScope(prose, action) ||
+    if (_evidenceHasNonCurrentAllocationScope(prose, action) ||
         !_allocationActionIsDirectlyDenied(
           prose,
           action,
@@ -1442,7 +1466,7 @@ bool _hasTaskBoundAllocationDenial(
     caseSensitive: false,
   );
   for (final failure in allocationFailurePattern.allMatches(prose)) {
-    if (_evidenceHasHistoricalScope(prose, failure) ||
+    if (_evidenceHasNonCurrentAllocationScope(prose, failure) ||
         _evidenceIsSpeculative(prose, failure) ||
         _tradeEvidenceHasExplicitNonTaskSubject(
           prose,
@@ -1806,7 +1830,8 @@ bool _evidenceActionIsAsserted(
         'propos(?:e|es|ed|ing)|plan(?:s|ned|ning)?|'
         'consider(?:s|ed|ing)?|'
         'attempt(?:s|ed|ing)?|tr(?:y|ies|ied|ying)|'
-        'fail(?:s|ed|ing)?|refus(?:e|es|ed|ing)|'
+        'fail(?:s|ed|ing)?|den(?:y|ies|ied|ying)|'
+        'refus(?:e|es|ed|ing)|'
         r'declin(?:e|es|ed|ing))(?:\s+to)?'
         r'(?:\s+(?:be|being|get|getting))?))\s*$',
         caseSensitive: false,
@@ -1878,7 +1903,7 @@ bool _splitHasUnrelatedScope(
   final scopeEnd = evidence.end > evidenceAction.end
       ? evidence.end
       : evidenceAction.end;
-  if (_evidenceHasHistoricalScope(
+  if (_evidenceHasNonCurrentAllocationScope(
     reason,
     evidence,
     evidenceEnd: scopeEnd,
@@ -1924,6 +1949,29 @@ bool _evidenceHasHistoricalScope(
     return true;
   }
   return _leadingHistoricalAllocationScopePattern.hasMatch(
+    prose.substring(0, range.start),
+  );
+}
+
+bool _evidenceHasNonCurrentAllocationScope(
+  String prose,
+  Match evidence, {
+  int? evidenceEnd,
+}) {
+  if (_evidenceHasHistoricalScope(
+    prose,
+    evidence,
+    evidenceEnd: evidenceEnd,
+  )) {
+    return true;
+  }
+  final range = _matchClauseRange(prose, evidence, boundaries: ',.;!?\n');
+  if (_futureAllocationScopePattern.hasMatch(
+    prose.substring(evidenceEnd ?? evidence.end, range.end),
+  )) {
+    return true;
+  }
+  return _leadingFutureAllocationScopePattern.hasMatch(
     prose.substring(0, range.start),
   );
 }
@@ -3018,11 +3066,10 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   ).allMatches(prefix)) {
     rawSubject = prefix.substring(complementizer.end).trim();
   }
-  if (_subjectStartsWithExplicitNonTaskHead(rawSubject)) {
-    return true;
-  }
   final subjectMatch = _tradeSubjectPrefixPattern.firstMatch(prefix);
-  if (subjectMatch == null) return false;
+  if (subjectMatch == null) {
+    return _subjectStartsWithExplicitNonTaskHead(rawSubject);
+  }
   final subject = subjectMatch.group(1)?.trim() ?? '';
   if (RegExp(
     r'^(?:(?:and|but|yet|so)\s+)?'

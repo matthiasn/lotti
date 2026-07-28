@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T21:47:26+02:00 }
+generated: { by: codex/5, at: 2026-07-28T22:03:45+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -148,7 +148,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   earlier valid task split. Explicit historical scope is rejected whether it
   leads or trails the evidence: `Yesterday, task-c scheduled 60 of 120 minutes`,
   `scheduled 60 of 120 minutes yesterday`, and the equivalent `last week`
-  describe prior allocation rather than the current block. The same scope rule
+  describe prior allocation rather than the current block. Explicit future
+  scopes outside the plan day are excluded too: `will schedule 60 of 120
+  minutes next week` cannot earn current-day credit. The same scope rule
   applies to full-allocation retractions, so a note claiming `fully scheduled
   yesterday` cannot veto current partial evidence. Historical denials and
   allocation failures are excluded too, so `was not scheduled yesterday`
@@ -183,7 +185,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   their concrete arithmetic and denials remain audit evidence that can veto a
   reason. An explicitly task-named note is routed to that task across every
   scheduled block, including notes on another task or a buffer; an unbound note
-  remains attached to its enclosing work block. A task-bound standalone
+  remains attached to its enclosing work block. Task-named reasons are audited
+  across blocks in the same way, but only the enclosing work block's reason may
+  positively qualify its own partial placement. A task-bound standalone
   allocation denial such as
   `task-c was not scheduled after all` therefore retracts reason-field partial
   arithmetic even when the note contains no split or remainder of its own; the
@@ -303,7 +307,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   An explicit non-task subject is rejected too: `the meeting is deferred`
   cannot disclose the shortening merely because the same reason names a task,
   and neither can `the meeting is scheduled for later`; `the remainder is
-  deferred` remains task-trade evidence. A task reference inside a modifier
+  deferred` remains task-trade evidence. An exact current-task id or title
+  takes precedence over that generic head vocabulary, so a task actually titled
+  `Meeting` can be disclosed as `Meeting was omitted`. A task reference inside a modifier
   does not replace the head subject, so `the meeting for task-c is partial`
   remains a meeting claim; copula modifiers do not change that head, so `the
   meeting was only partial` is rejected too. The same head-subject rule applies
@@ -364,6 +370,7 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   Modal scope ends only when the conjunction begins an independently asserted
   clause. Attempt and failure complements are likewise not actual
   dispositions: neither `attempted to be omitted`, `failed to be omitted`, the
+  denial complement `denied being omitted`,
   near miss `was almost omitted`, expectations such as `was supposed to be
   omitted`, `was meant to be omitted`, or `was going to be omitted`,
   consideration such as `considered deferring`, nor the direct requirement

@@ -1767,6 +1767,28 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects future-dated allocation evidence', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c will schedule 60 of 120 minutes next week.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+          now: DateTime(2026, 7, 18, 8),
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('rejects imperative allocation evidence', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -3771,6 +3793,45 @@ void main() {
       );
     }
 
+    test('a task-named reason on another block vetoes partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c scheduled 60 of 120 minutes.',
+            ),
+            block(
+              id: 'other-task',
+              startHour: 10,
+              endHour: 11,
+              taskId: 'task-d',
+              reason: 'task-c was fully scheduled after all.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'Core',
+              estimateMinutes: 120,
+            ),
+            EvalCorpusTask(
+              taskId: 'task-d',
+              title: 'Dependency',
+              estimateMinutes: 60,
+            ),
+          ],
+          capacityMinutes: 120,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('a speculative note denial does not veto partial credit', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -4961,6 +5022,27 @@ void main() {
       expect(result.detail, contains('task-c'));
     });
 
+    test('accepts an exact task title that is also a non-task head', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'Meeting was omitted due to capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Meeting')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
     test('accepts an affirmative adverb after an omitted disposition', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -5281,6 +5363,7 @@ void main() {
     for (final reason in [
       'task-c attempted to be omitted.',
       'task-c failed to be omitted.',
+      'task-c denied being omitted.',
       'task-c requires deferring.',
       'task-c was almost omitted.',
       'task-c was supposed to be omitted.',
