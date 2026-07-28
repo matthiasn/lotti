@@ -733,6 +733,12 @@ final _negationWordPattern = RegExp(
   caseSensitive: false,
 );
 
+final _longNegatedComplementPattern = RegExp(
+  r'^\s*(?:(?:actually|really)\s+)?'
+  r'(?:get|gets|got|getting)\s+around\s+to\s*$',
+  caseSensitive: false,
+);
+
 final _avoidanceComplementPattern = RegExp(
   r'\b(?:avoid(?:s|ed|ing)?(?:\s+(?:being|getting))?|'
   'prevent(?:s|ed|ing)?|'
@@ -1159,6 +1165,7 @@ bool _hasTaskBoundFullAllocationClaim(
           taskTitle: taskTitle,
           corpus: corpus,
         ) ||
+        _evidenceHasTrailingHistoricalScope(prose, match) ||
         !_evidenceActionIsAsserted(prose, match.start) ||
         _evidenceIsSpeculative(prose, match) ||
         _matchClauseIsNegated(
@@ -1519,6 +1526,10 @@ bool _matchClauseIsNegated(
         _negationQualifiesRatherThanNegates(negation, between)) {
       continue;
     }
+    if (negationEnd <= match.start &&
+        _longNegatedComplementPattern.hasMatch(between)) {
+      return true;
+    }
     if (negationStart >= match.end &&
         _followingNegationExplainsCapacityLimit(
           reason,
@@ -1646,7 +1657,8 @@ bool _evidenceActionIsAsserted(
     }
   }
   final prefix = prose.substring(clauseStart, actionStart);
-  return !_evidenceStartIsSpeculative(prose, actionStart) &&
+  return !_evidenceClauseIsInterrogative(prose, actionStart) &&
+      !_evidenceStartIsSpeculative(prose, actionStart) &&
       !RegExp(
         r'\b(?:almost|nearly|not\s+quite|unsuccessfully|'
         r'(?:(?:is|are|was|were)\s+)?(?:supposed|meant|going)\s+to'
@@ -1678,6 +1690,14 @@ bool _evidenceActionIsAsserted(
       !_avoidanceComplementPattern.hasMatch(prefix);
 }
 
+bool _evidenceClauseIsInterrogative(String prose, int evidenceStart) {
+  for (var i = evidenceStart; i < prose.length; i++) {
+    if (prose[i] == '?') return true;
+    if ('.;!\n'.contains(prose[i])) return false;
+  }
+  return false;
+}
+
 bool _splitHasUnrelatedScope(
   String reason,
   Match evidence, {
@@ -1695,8 +1715,10 @@ bool _splitHasUnrelatedScope(
   final scopeEnd = evidence.end > evidenceAction.end
       ? evidence.end
       : evidenceAction.end;
-  if (_historicalAllocationScopePattern.hasMatch(
-    reason.substring(scopeEnd, range.end),
+  if (_evidenceHasTrailingHistoricalScope(
+    reason,
+    evidence,
+    evidenceEnd: scopeEnd,
   )) {
     return true;
   }
@@ -1725,6 +1747,17 @@ bool _splitHasUnrelatedScope(
     }
   }
   return false;
+}
+
+bool _evidenceHasTrailingHistoricalScope(
+  String prose,
+  Match evidence, {
+  int? evidenceEnd,
+}) {
+  final range = _matchClauseRange(prose, evidence, boundaries: ',.;!?\n');
+  return _historicalAllocationScopePattern.hasMatch(
+    prose.substring(evidenceEnd ?? evidence.end, range.end),
+  );
 }
 
 ({int start, int end, int distance})? _nearestPatternMatch(

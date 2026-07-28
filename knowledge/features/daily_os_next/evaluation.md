@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T15:04:54+02:00 }
+generated: { by: codex/5, at: 2026-07-28T15:23:37+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -96,7 +96,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   or declined actions are likewise not affirmative. Neither are expectation
   forms such as
   `was supposed to schedule`, `was meant to schedule`, or
-  `was going to schedule`, inability complements such as
+  `was going to schedule`, nor interrogative clauses such as
+  `Was task-c omitted?`. Inability complements such as
   `was unable to schedule`, `was not able to schedule`, or
   `was incapable of scheduling`, nor actions the prose says were avoided or
   prevented, including passive `was prevented from being scheduled` wording. A
@@ -125,9 +126,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   allocation action, so later meeting arithmetic does not poison an
   earlier valid task split. Explicit trailing historical scope is rejected too:
   `scheduled 60 of 120 minutes yesterday` and the equivalent `last week`
-  describe prior allocation rather than the current block. Unbound splits are
-  ignored before their values are checked, and allocation explicitly scoped to
-  another subject or another
+  describe prior allocation rather than the current block. The same scope rule
+  applies to full-allocation retractions, so a note claiming `fully scheduled
+  yesterday` cannot veto current partial evidence. Unbound splits are ignored
+  before their values are checked, and allocation explicitly scoped to another
+  subject or another
   corpus task, named by id or full title, cannot earn credit for the placed
   task. Explicit current-task scope wins over a later temporal meeting modifier,
   such as `during the meeting`, but not over an explicit allocation destination:
@@ -334,8 +337,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `was going to schedule 60 of 120 minutes`. Avoidance and prevention
   complements are denials too:
   neither `task-c avoided being omitted` nor
-  `task-c avoided getting omitted` asserts an omission. An affirmative claim
-  plus denial of that same
+  `task-c avoided getting omitted` asserts an omission.
+  Long negated complements retain their negation as well:
+  `never actually got around to omitting` does not assert an omission merely
+  because more than three words separate the negator from the disposition.
+  An affirmative claim plus denial of that same
   disposition receives no credit in either order or across two task-named
   fields. A task-bound full-completion claim retracts every trade
   disposition, including across reason and note fields; `was omitted, but it
