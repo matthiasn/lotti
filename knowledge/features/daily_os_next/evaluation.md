@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T06:25:06+02:00 }
+generated: { by: codex/5, at: 2026-07-28T06:35:52+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -131,7 +131,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   a meeting cannot earn task remainder credit while `partial for today` remains
   valid. Bare numeric remainders in another field of the same task block are
   still audited, because a contradictory note must not be hidden from matching
-  arithmetic in the reason.
+  arithmetic in the reason. Numeric continuity such as `60 minutes remain
+  scheduled` is not a remainder claim.
   Negated or vague “partial” prose, silence,
   contradictory numbers, buffer or calendar blocks carrying a task id,
   allocations below 10% of the estimate, and overlapping blocks for one task
@@ -154,11 +155,14 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   Label punctuation binds too, so `Partial: task-d` remains owned by `task-d`
   rather than the task attached to the enclosing block.
   Trade-shaped words inside the task's own id or full-title span are only
-  naming evidence, not a separate disclosure.
+  naming evidence, not a separate disclosure in either capacity or conflict
+  scoring.
   An explicit non-task subject is rejected too: `the meeting is deferred`
   cannot disclose the shortening merely because the same reason names a task,
   and neither can `the meeting is scheduled for later`; `the remainder is
-  deferred` remains task-trade evidence.
+  deferred` remains task-trade evidence. A task reference inside a modifier
+  does not replace the head subject, so `the meeting for task-c is partial`
+  remains a meeting claim.
   Bare continuity such as `remains scheduled` is not a trade: numeric remainder
   arithmetic matching the structural remainder, or an actual
   omit/defer/shorten/conflict disposition, is required. Likewise, `left
@@ -166,8 +170,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   rescheduling, while `left unfinished` and moving work to tomorrow are actual
   remainder dispositions.
   It must also be affirmative and internally consistent: `not partial` and
-  `no conflict` explicitly deny the trade, and an affirmative claim plus its
-  denial receives no credit in either order or across two task-named fields.
+  `no conflict` explicitly deny the trade, `conflict-free` is an antonym rather
+  than a disclosure, and an affirmative claim plus its denial receives no
+  credit in either order or across two task-named fields.
   `Cannot fit`, `conflicts`, and `conflicting` are affirmative disclosures.
   The detail records every credited
   partial and every shortening denied credit, so the judge bundle preserves the

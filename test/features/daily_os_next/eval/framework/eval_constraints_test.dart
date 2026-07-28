@@ -2256,6 +2256,61 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('does not treat partial inside a task title as capacity evidence', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-migration',
+              reason:
+                  'Focused work on Partial index migration; '
+                  '60 minutes remain for later.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-migration',
+              title: 'Partial index migration',
+              estimateMinutes: 120,
+            ),
+          ],
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(
+        result.detail,
+        contains('task-migration allocated 60min of 120min'),
+      );
+    });
+
+    test('rejects a partial claim owned by a meeting with a task modifier', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'The meeting for task-c is partial; '
+                  '60 minutes remain for task-c.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('does not borrow a postpositive task partial label', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2439,6 +2494,52 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('task-c allocated 30min of 120min'));
+    });
+
+    test('does not treat remaining scheduled time as unfinished work', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  "task-c's placement is partial; "
+                  '60 minutes remain scheduled as planned.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('rejects task-bound numeric continuity as unfinished work', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c is partial; '
+                  '60 minutes remain scheduled as planned.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
     for (final badDisclosure in <({String name, String? reason})>[
@@ -3437,6 +3538,34 @@ void main() {
       expect(result.detail, contains('without naming a casualty'));
     });
 
+    test('does not borrow a meeting claim with a task modifier', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'The meeting for task-c is partial.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
     test('does not borrow a scheduled meeting disposition', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -3632,6 +3761,34 @@ void main() {
               endHour: 10,
               taskId: 'task-c',
               reason: 'There is no conflict for task-c.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('conflict-free wording does not disclose a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c uses a conflict-free schedule.',
             ),
           ],
           corpus: const [

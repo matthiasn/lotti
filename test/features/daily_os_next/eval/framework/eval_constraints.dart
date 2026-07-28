@@ -771,7 +771,8 @@ final _unrelatedRemainderScopePattern = RegExp(
 final _conflictTradePattern = RegExp(
   r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|'
   r'left\s+(?:out|unfinished|incomplete|unscheduled)|'
-  'trade|conflict(?:s|ed|ing)?|shorten(?:s|ed|ing)?|'
+  r'trade|conflict(?:s|ed|ing)?(?![-\s]+free\b)|'
+  'shorten(?:s|ed|ing)?|'
   r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
   r'(?:do|does|did)\s+not)\s+fit)\b',
   caseSensitive: false,
@@ -896,12 +897,18 @@ bool _hasAuditablePartialDisclosure({
     var reasonMentionsPartial = false;
     var reasonHasBoundRemainder = false;
     for (final match in _partialMentionPattern.allMatches(reason)) {
-      if (_tradeEvidenceHasExplicitNonTaskSubject(
-        reason,
-        match,
-        taskId: taskId,
-        taskTitle: taskTitle,
-      )) {
+      if (_evidenceFallsInsideTaskReference(
+            reason,
+            match,
+            taskId: taskId,
+            taskTitle: taskTitle,
+          ) ||
+          _tradeEvidenceHasExplicitNonTaskSubject(
+            reason,
+            match,
+            taskId: taskId,
+            taskTitle: taskTitle,
+          )) {
         continue;
       }
       if (_evidenceNamesAnotherTask(
@@ -917,7 +924,13 @@ bool _hasAuditablePartialDisclosure({
       reasonMentionsPartial = true;
     }
     for (final match in _partialOfEstimatePattern.allMatches(reason)) {
-      if (_tradeEvidenceHasExplicitNonTaskSubject(
+      if (_evidenceFallsInsideTaskReference(
+            reason,
+            match,
+            taskId: taskId,
+            taskTitle: taskTitle,
+          ) ||
+          _tradeEvidenceHasExplicitNonTaskSubject(
             reason,
             match,
             taskId: taskId,
@@ -942,12 +955,19 @@ bool _hasAuditablePartialDisclosure({
       hasMatchingSplit = true;
     }
     for (final match in _partialRemainingPattern.allMatches(reason)) {
-      if (_tradeEvidenceHasExplicitNonTaskSubject(
-        reason,
-        match,
-        taskId: taskId,
-        taskTitle: taskTitle,
-      )) {
+      if (_evidenceFallsInsideTaskReference(
+            reason,
+            match,
+            taskId: taskId,
+            taskTitle: taskTitle,
+          ) ||
+          _tradeEvidenceHasExplicitNonTaskSubject(
+            reason,
+            match,
+            taskId: taskId,
+            taskTitle: taskTitle,
+          ) ||
+          _remainderDescribesContinuity(reason, match)) {
         continue;
       }
       if (_evidenceNamesAnotherTask(
@@ -968,12 +988,19 @@ bool _hasAuditablePartialDisclosure({
       }
     }
     for (final match in _partialLeadingRemainingPattern.allMatches(reason)) {
-      if (_tradeEvidenceHasExplicitNonTaskSubject(
-        reason,
-        match,
-        taskId: taskId,
-        taskTitle: taskTitle,
-      )) {
+      if (_evidenceFallsInsideTaskReference(
+            reason,
+            match,
+            taskId: taskId,
+            taskTitle: taskTitle,
+          ) ||
+          _tradeEvidenceHasExplicitNonTaskSubject(
+            reason,
+            match,
+            taskId: taskId,
+            taskTitle: taskTitle,
+          ) ||
+          _remainderDescribesContinuity(reason, match)) {
         continue;
       }
       if (_evidenceNamesAnotherTask(
@@ -1303,6 +1330,18 @@ bool _remainderIsTaskBound(String reason, Match match) {
 bool _remainderIsRelatedToTask(String reason, Match match) {
   if (_remainderIsTaskBound(reason, match)) return true;
   return !_unrelatedRemainderScopePattern.hasMatch(_matchClause(reason, match));
+}
+
+bool _remainderDescribesContinuity(String reason, Match match) {
+  final range = _matchClauseRange(reason, match, boundaries: ',.;!?\n');
+  final suffix = reason.substring(match.end, range.end);
+  return RegExp(
+    r'^\s+(?:(?:is|are|was|were|will\s+be)\s+)?'
+    '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+    'plan(?:ned|ning)?|plac(?:e|ed|ing)|book(?:ed|ing)|'
+    r'unchanged|intact|available|open)\b',
+    caseSensitive: false,
+  ).hasMatch(suffix);
 }
 
 String _matchClause(
@@ -1902,6 +1941,7 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
   ]) {
     for (final match in pattern.allMatches(prose)) {
       if (!belongsToTask(match) ||
+          _remainderDescribesContinuity(prose, match) ||
           _unrelatedRemainderScopePattern.hasMatch(
             _matchClause(prose, match),
           )) {
@@ -1949,14 +1989,6 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   required String taskTitle,
 }) {
   final range = _matchClauseRange(prose, evidence, boundaries: ',.;!?\n');
-  final currentTaskDistance = _nearestTaskReferenceDistance(
-    prose,
-    evidence,
-    range: range,
-    taskId: taskId,
-    taskTitle: taskTitle,
-  );
-  if (currentTaskDistance != null) return false;
   final prefix = prose.substring(range.start, evidence.start).trim();
   if (RegExp(
     r'^not\s+only\s+(?:is|are|was|were)$',
@@ -1974,12 +2006,43 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   ).firstMatch(prefix);
   if (subjectMatch == null) return false;
   final subject = subjectMatch.group(1)?.trim() ?? '';
-  return !RegExp(
+  if (RegExp(
     r'^(?:(?:the|this|that|its)\s+)?'
     r'(?:task|work|placement|block|remainder|remaining\s+(?:task|work)|'
-    r'rest|portion|part|it)$',
+    r'rest|portion|part|it)\b',
     caseSensitive: false,
-  ).hasMatch(subject);
+  ).hasMatch(subject)) {
+    return false;
+  }
+  return !_subjectStartsWithTaskReference(
+    subject,
+    taskId: taskId,
+    taskTitle: taskTitle,
+  );
+}
+
+bool _subjectStartsWithTaskReference(
+  String subject, {
+  required String taskId,
+  required String taskTitle,
+}) {
+  const prefix = r'^(?:(?:the|this|that|its)\s+)?';
+  const suffix =
+      r'(?=$|[\x27’]s\b|\s+(?:task|work|placement|block|remainder|rest|'
+      r'portion|part)\b)';
+  final title = taskTitle.trim();
+  return RegExp(
+        prefix + RegExp.escape(taskId) + suffix,
+        caseSensitive: false,
+      ).hasMatch(subject) ||
+      RegExp(
+        prefix + r'task\s+' + RegExp.escape(title) + suffix,
+        caseSensitive: false,
+      ).hasMatch(subject) ||
+      RegExp(
+        prefix + RegExp.escape(title) + suffix,
+        caseSensitive: false,
+      ).hasMatch(subject);
 }
 
 bool _taskTradeIsNamed(
