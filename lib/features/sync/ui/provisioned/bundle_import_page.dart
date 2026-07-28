@@ -615,8 +615,12 @@ class _ViewfinderBrackets extends StatelessWidget {
   }
 }
 
-/// Public for its repaint contract's unit test: the painter mounts under a
-/// `const` overlay, so no widget test can ever hand it a new delegate.
+/// `shouldRepaint` is the delegate-comparison contract the framework
+/// consults when a rebuild provides a new painter instance: it compares the
+/// visual fields (color, corner length, corner radius, stroke width, inset)
+/// against the previous delegate's and requests a redraw only when one
+/// differs. Public for that contract's unit test — the painter mounts under
+/// a `const` overlay, so no widget test can ever hand it a new delegate.
 @visibleForTesting
 class ViewfinderBracketsPainter extends CustomPainter {
   ViewfinderBracketsPainter({

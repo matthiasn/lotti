@@ -17,6 +17,7 @@ import 'package:lotti/utils/platform.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -41,6 +42,9 @@ void main() {
   );
 
   setUpAll(() {
+    registerAllFallbackValues();
+    // Not part of the shared inventory: a real instance of a config class
+    // only sync tests stub with `any()`.
     registerFallbackValue(
       const MatrixConfig(homeServer: '', user: '', password: ''),
     );
@@ -903,7 +907,6 @@ void main() {
       final originalInstance = UrlLauncherPlatform.instance;
       UrlLauncherPlatform.instance = mockUrlLauncher;
       addTearDown(() => UrlLauncherPlatform.instance = originalInstance);
-      registerFallbackValue(FakeLaunchOptions());
       when(
         () => mockUrlLauncher.launchUrl(any(), any()),
       ).thenAnswer((_) async => true);
@@ -921,6 +924,38 @@ void main() {
               ).captured.single
               as String;
       expect(url, endsWith('sync-and-data/first-device'));
+    });
+
+    test('the viewfinder painter compares its look fields for a new '
+        'delegate', () {
+      // The contract the framework consults when a rebuild hands the render
+      // object a new painter delegate: repaint when any of the visual
+      // fields (color, corner length, corner radius, stroke width, inset)
+      // differs from the previous delegate's, and skip the redraw when the
+      // two delegates would paint identically.
+      ViewfinderBracketsPainter make({
+        Color color = const Color(0xFF00FF00),
+        double cornerLength = 24,
+        double cornerRadius = 12,
+        double strokeWidth = 2,
+        double inset = 16,
+      }) => ViewfinderBracketsPainter(
+        color: color,
+        cornerLength: cornerLength,
+        cornerRadius: cornerRadius,
+        strokeWidth: strokeWidth,
+        inset: inset,
+      );
+
+      expect(make().shouldRepaint(make()), isFalse);
+      expect(
+        make(color: const Color(0xFFFF0000)).shouldRepaint(make()),
+        isTrue,
+      );
+      expect(make(cornerLength: 32).shouldRepaint(make()), isTrue);
+      expect(make(cornerRadius: 8).shouldRepaint(make()), isTrue);
+      expect(make(strokeWidth: 3).shouldRepaint(make()), isTrue);
+      expect(make(inset: 20).shouldRepaint(make()), isTrue);
     });
 
     testWidgets('a provisioning reset clears the stale decoded bundle', (
