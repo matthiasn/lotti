@@ -700,7 +700,7 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
 }
 
 final _partialOfEstimatePattern = RegExp(
-  r'(?<![\d.,])\b(\d+)(?:\s*(?:m|mins?|minutes?))?\s+'
+  r'(?<![\d.,+−-])\b(\d+)(?:\s*(?:m|mins?|minutes?))?\s+'
   r'(?:out\s+)?of\s+'
   r'(?:(?:an?|the)\s+)?(?:estimated\s+)?'
   r'(\d+)(?:\s+estimated)?\s*[-–—]?\s*(?:m|mins?|minutes?)\b',
@@ -708,7 +708,7 @@ final _partialOfEstimatePattern = RegExp(
 );
 
 final _partialRemainingPattern = RegExp(
-  r'(?<![\d.,])\b(\d+)\s*'
+  r'(?<![\d.,+−-])\b(\d+)\s*'
   r'(?:(?:more|additional)\s+)?(?:m|mins?|minutes?)\s+'
   r'(?:(?:of|for)\s+(?:this|the)\s+(?:task|work)\s+)?'
   r'(?:(?:still|yet)\s+)?'
@@ -1264,7 +1264,12 @@ bool _partialMentionDescribesPlacement(String prose, Match match) {
       isStandaloneLabelOrExplanation;
 }
 
-bool _tradeEvidenceDescribesTaskOrWork(String prose, Match match) {
+bool _tradeEvidenceDescribesTaskOrWork(
+  String prose,
+  Match match, {
+  required String taskId,
+  required String taskTitle,
+}) {
   final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
   final wording = (match.group(0) ?? '').toLowerCase();
   if (wording.startsWith('for ')) {
@@ -1283,6 +1288,10 @@ bool _tradeEvidenceDescribesTaskOrWork(String prose, Match match) {
   }
   final suffix = prose.substring(match.end, range.end);
   if (!RegExp(r'^\s+\w').hasMatch(suffix)) return true;
+  for (final pattern in _taskReferencePatterns(taskId, taskTitle)) {
+    final reference = pattern.firstMatch(suffix);
+    if (reference != null && reference.start == 0) return true;
+  }
   return RegExp(
         r'^\s+(?:(?:the|this|that|their|our|my|your)\s+)?'
         r'(?:task|work|remainder|rest|portion|part)\b',
@@ -2694,7 +2703,12 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   }
   for (final match in _partialTradeDispositionPattern.allMatches(prose)) {
     if (!belongsToTask(match) ||
-        !_tradeEvidenceDescribesTaskOrWork(prose, match) ||
+        !_tradeEvidenceDescribesTaskOrWork(
+          prose,
+          match,
+          taskId: taskId,
+          taskTitle: task.title,
+        ) ||
         !_evidenceActionIsAsserted(prose, match.start) ||
         _evidenceIsSpeculative(prose, match)) {
       continue;
@@ -2772,12 +2786,24 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
         record('negative-fit', denied: false);
       }
     } else if (negativeSchedulingDisclosure) {
-      if (!_tradeEvidenceDescribesTaskOrWork(prose, match)) continue;
+      if (!_tradeEvidenceDescribesTaskOrWork(
+        prose,
+        match,
+        taskId: taskId,
+        taskTitle: task.title,
+      )) {
+        continue;
+      }
       record(
         'not-scheduled',
         denied: _negativeTradeDisclosureIsDenied(prose, match),
       );
-    } else if (!_tradeEvidenceDescribesTaskOrWork(prose, match)) {
+    } else if (!_tradeEvidenceDescribesTaskOrWork(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+    )) {
       continue;
     } else if (clauseIsNegated(match) ||
         _negativeTradeDisclosureIsDenied(prose, match)) {

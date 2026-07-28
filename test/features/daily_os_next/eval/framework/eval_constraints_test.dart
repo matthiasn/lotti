@@ -1539,6 +1539,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects a positive match inside a negative remainder', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Partial: -60 minutes remain for later.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     for (final modifier in ['more', 'additional']) {
       test('accepts a $modifier-minutes remainder modifier', () {
         final result = scoreWithinCapacityByEstimate(
@@ -4594,6 +4615,48 @@ void main() {
               startHour: 9,
               endHour: 10,
               reason: 'task-c was omitted due to capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
+    test('accepts a task id as an active omission object', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'We omitted task-c due to capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
+    test('accepts a full task title as an active omission object', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'We omitted Core due to capacity.',
             ),
           ],
           corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],

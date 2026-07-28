@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T15:54:50+02:00 }
+generated: { by: codex/5, at: 2026-07-28T16:15:24+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -83,7 +83,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `Remaining 60m are carried over`) that agrees with both the summed duration
   of that task's work blocks and the corpus estimate. Numeric evidence must
   start at a complete numeric token, so a thousands or decimal suffix such as
-  the `060` in `1,060 minutes remain` cannot restart a match. A numeric
+  the `060` in `1,060 minutes remain`, or digits after a positive or negative
+  sign such as the `60` in `-60 minutes remain`, cannot restart a match. A numeric
   completed/estimate split must describe task allocation,
   not omitted/deferred arithmetic or coincidentally equal workday capacity, so
   the surrounding clause must include an affirmative scheduled, allocated,
@@ -308,7 +309,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   such as `task-c documents deferred revenue` or
   `task-c documents unscheduled maintenance`, and purpose phrases such as
   `formats notes for later reference` or terminal `formats notes for later`, do
-  not disclose that task-c itself was deferred or left unscheduled. A
+  not disclose that task-c itself was deferred or left unscheduled. Active
+  dispositions may govern a token-bounded task id or full title directly, so
+  `We omitted task-c due to capacity` and `We omitted Core due to capacity`
+  name the casualty when those references identify the current task. A
   `for later` disposition must be governed by a scheduling, movement, copula,
   or remainder predicate. The same object binding rejects domain phrases
   such as `reviews trade policy`, `evaluates a trade`, and `carries over
