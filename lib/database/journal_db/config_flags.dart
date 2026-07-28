@@ -108,14 +108,6 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableSyncActorFlag,
-      description: 'Enable Sync Actor (isolate-based sync)?',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableProjectsFlag,
       description: 'Enable Projects?',
       status: false,
@@ -196,4 +188,21 @@ Future<void> initConfigFlags(
   );
 
   // No additional flags for label guardrails: always-on behavior.
+
+  for (final flagName in retiredConfigFlags) {
+    await db.deleteConfigFlag(flagName);
+  }
 }
+
+/// Flags the app no longer defines, removed from existing installs on start.
+///
+/// Deleting a flag's `insertFlagIfNotExists` call only stops *new* installs
+/// from getting it. The settings page lists whatever rows `config_flags`
+/// holds, so without this an upgraded install keeps a toggle that no code
+/// reads. Entries can be dropped from this list once every install that could
+/// still carry the row has upgraded past it.
+const retiredConfigFlags = <String>[
+  // Removed with the sync actor isolate (ADR 0046). Never read by any code
+  // path: the actor it would have gated was never wired into the app.
+  'enable_sync_actor',
+];

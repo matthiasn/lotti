@@ -85,7 +85,6 @@ concepts describe. Construction order matters and is documented in
 | `sequence/` | Record `(hostId, counter)` coverage, detect gaps, track lifecycle states |
 | `backfill/` | Send missing-counter requests; answer peer requests with resend, deleted, unresolvable or covering-payload hints |
 | `state/`, `ui/` | Riverpod controllers and the settings, stats, diagnostics, provisioning and maintenance screens |
-| `actor/` | Isolate-based sync implementation — present and tested, **not** wired by the default bootstrap |
 | `services/`, `repository/` | Node capability probe, profile broadcaster, node-profile persistence, maintenance repository, synced-audio inference listener and dispatcher |
 
 # Pairing a new device
@@ -442,29 +441,6 @@ clean it up:
 * [Receive path](receive-path.md) - the inbound queue pipeline, catch-up bridge, and marker advancement.
 * [Sequence log and backfill](sequence-and-backfill.md) - causal accounting and gap repair.
 * [Node profiles and auto-trigger](node-profiles-and-auto-trigger.md) - capability advertisement and local-only inference on synced audio.
-
-# The isolate actor path
-
-`actor/` holds a separate isolate-based implementation —
-`SyncActorCommandHandler`, `SyncActorHost`, an actor-side `OutboundQueue` —
-with its own lifecycle:
-
-```mermaid
-stateDiagram-v2
-  [*] --> Uninitialized
-  Uninitialized --> Initializing: init
-  Initializing --> Syncing: init succeeds (enables backgroundSync, starts sync stream)
-  Initializing --> Uninitialized: init fails (resources cleaned up)
-  Syncing --> Idle: stopSync
-  Idle --> Syncing: startSync
-  Idle --> Stopping: stop
-  Syncing --> Stopping: stop
-  Stopping --> Disposed: cleanup complete
-```
-
-It is documented because it exists and is tested, but nothing in the default
-bootstrap reaches it. Do not assume a change to the actor path affects shipping
-behaviour.
 
 # Standing constraints
 
