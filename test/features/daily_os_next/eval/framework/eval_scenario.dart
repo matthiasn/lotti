@@ -489,9 +489,9 @@ const _lateStart = EvalScenario(
   // and the scenario would read as covering a check it cannot perform. That is
   // worse than an acknowledged gap.
   //
-  // What actually needs checking is whether a *truncated* task was declared
-  // partial, which no scorer reads today (lotti3-qip). `respectsEstimates`
-  // holds the line meanwhile by requiring the plan to fill the time it has.
+  // `withinCapacityByEstimate` now audits whether a truncated task declares
+  // concrete partial arithmetic. `respectsEstimates` independently holds the
+  // line by requiring the plan to fill the time it has.
   startHour: 15,
   captureTranscript: 'Late start, only the afternoon left.',
 );
