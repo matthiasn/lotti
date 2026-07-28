@@ -733,6 +733,15 @@ final _unrelatedRemainderScopePattern = RegExp(
   caseSensitive: false,
 );
 
+final _unrelatedSplitScopePattern = RegExp(
+  r'\b(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+  'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing))'
+  r'\b[^,.;!?]*\b(?:for|in|during)\s+'
+  r'(?:(?:the|a|an|my|our|their|your)\s+)?'
+  r'(?:meeting|workday|calendar|appointment|break)\b',
+  caseSensitive: false,
+);
+
 typedef _EstimatedTaskPlacement = ({
   int allocatedMinutes,
   int estimateMinutes,
@@ -839,6 +848,7 @@ bool _hasAuditablePartialDisclosure({
       reasonMentionsPartial = true;
     }
     for (final match in _partialOfEstimatePattern.allMatches(reason)) {
+      if (!_splitIsTaskBound(reason, match)) continue;
       if (_matchClauseIsNegated(reason, match)) return false;
       final declaredAllocated = int.tryParse(match.group(1) ?? '');
       final declaredEstimate = int.tryParse(match.group(2) ?? '');
@@ -846,9 +856,7 @@ bool _hasAuditablePartialDisclosure({
           declaredEstimate != estimateMinutes) {
         return false;
       }
-      if (_splitIsTaskBound(reason, match)) {
-        hasMatchingSplit = true;
-      }
+      hasMatchingSplit = true;
     }
     for (final match in _partialRemainingPattern.allMatches(reason)) {
       if (!_remainderIsRelatedToTask(reason, match)) continue;
@@ -882,7 +890,9 @@ bool _matchClauseIsNegated(String reason, Match match) {
 }
 
 bool _splitIsTaskBound(String reason, Match match) {
-  return _taskAllocationContextPattern.hasMatch(_matchClause(reason, match));
+  final clause = _matchClause(reason, match);
+  return _taskAllocationContextPattern.hasMatch(clause) &&
+      !_unrelatedSplitScopePattern.hasMatch(clause);
 }
 
 bool _remainderIsTaskBound(String reason, Match match) {

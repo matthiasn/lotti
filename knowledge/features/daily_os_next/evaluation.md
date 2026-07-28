@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T02:11:14+02:00 }
+generated: { by: codex/5, at: 2026-07-28T02:22:06+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -79,8 +79,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   tomorrow`, or `Remaining 60m are carried over`) that agrees with both the
   summed duration of that task's work blocks and the corpus estimate. A numeric
   completed/estimate split must describe task allocation, not coincidentally
-  equal workday capacity. The partial mention and task-bound remainder must
-  occur in the same block reason; unrelated workday-capacity prose cannot
+  equal workday capacity. Unbound splits are ignored before their values are
+  checked, and allocation explicitly scoped to another subject such as a
+  meeting cannot earn task credit. The partial mention and task-bound remainder
+  must occur in the same block reason; unrelated workday-capacity prose cannot
   supply the remainder. Task qualifiers may sit inside the arithmetic
   (`60 minutes of this task remain`), while remainder arithmetic explicitly
   scoped to another subject such as a meeting or workday is ignored. Every

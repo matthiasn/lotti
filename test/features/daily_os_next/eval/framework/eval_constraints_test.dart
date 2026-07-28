@@ -1526,6 +1526,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('ignores unrelated completed-estimate arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  '60 of 120 minutes are scheduled for this task. '
+                  'The meeting used 15 of 30 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('accepts a task qualifier before the remainder verb', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1641,6 +1664,12 @@ void main() {
         name: 'an unrelated workday completed-estimate split',
         reason:
             'Only 60 of the 120 minutes are available in the workday; '
+            'this task is deferred.',
+      ),
+      (
+        name: 'a completed-estimate split scheduled for a meeting',
+        reason:
+            '60 of the 120 minutes are scheduled for the meeting; '
             'this task is deferred.',
       ),
     ]) {
