@@ -3331,6 +3331,7 @@
   "matrixStatsEntryLinkNoops": "EntryLink No-ops",
   "matrixStatsForceRescan": "Force Rescan",
   "matrixStatsForceRescanTooltip": "Force-scan og indhent nu",
+  "matrixStatsLegendTooltip": "Legende:\n• dbApplied = skrevne databaserækker\n• dbIgnoredByVectorClock = ældre eller identiske indkommende data ignoreret af databasen\n• conflictsCreated = samtidige vektorure logget\n• dbMissingBase = sprunget over mens en manglende afhængighed afventes\n• dbEntryLinkNoop = link findes allerede, intet skrevet\n• droppedByType.<type> = frasorteringer pr. type efter forsøg eller ignorering af ældre beskeder\n• queueActive = indkommende hændelser der stadig venter på at blive anvendt\n• signalConnectivity = synkroniseringspuf efter at forbindelsen kom tilbage",
   "matrixStatsQueueActive": "Kø (aktiv)",
   "matrixStatsRefresh": "Opfrisk",
   "matrixStatsRetryNow": "Prøv igen nu",

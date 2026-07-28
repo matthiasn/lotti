@@ -9,9 +9,12 @@ const String syncLoggingDomain = 'MATRIX_SYNC';
 
 /// Room state event type stamped on a room to mark it as a Lotti sync room.
 ///
-/// Rooms are created out of band and reach a device through the provisioning
-/// bundle, so nothing writes this marker any more; the actor's outbound queue
-/// still reads it to pick the sync room out of the joined rooms.
+/// Written by `MatrixSdkGateway.createRoom`, both in the room's `initialState`
+/// and as a backfill in `_ensureRequiredRoomState`. Read by the sync actor's
+/// outbound queue to pick the sync room out of the rooms it has joined.
+///
+/// No device-provisioning path writes it: rooms are created out of band and
+/// reach a device through the provisioning bundle, which joins by room id.
 const String lottiSyncRoomStateType = 'm.lotti.sync_room';
 
 /// Key in a sync attachment event's content that declares an on-wire encoding

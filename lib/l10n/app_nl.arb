@@ -3330,6 +3330,7 @@
   "matrixStatsEntryLinkNoops": "EntryLink No-ops",
   "matrixStatsForceRescan": "Herscanen forceren",
   "matrixStatsForceRescanTooltip": "Herscannen en nu inhalen.",
+  "matrixStatsLegendTooltip": "Legende:\n• dbApplied = geschreven databaserijen\n• dbIgnoredByVectorClock = oudere of identieke inkomende gegevens genegeerd door de database\n• conflictsCreated = gelijktijdige vectorklokken gelogd\n• dbMissingBase = overgeslagen terwijl op een ontbrekende afhankelijkheid wordt gewacht\n• dbEntryLinkNoop = koppeling bestaat al, niets geschreven\n• droppedByType.<type> = weggegooid per type na pogingen of het negeren van oudere berichten\n• queueActive = inkomende gebeurtenissen die nog toegepast moeten worden\n• signalConnectivity = synchronisatiezetjes nadat de verbinding terug was",
   "matrixStatsQueueActive": "Wachtrij (actief)",
   "matrixStatsRefresh": "Verversen",
   "matrixStatsRetryNow": "Nu opnieuw proberen",

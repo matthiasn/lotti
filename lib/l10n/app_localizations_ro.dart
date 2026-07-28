@@ -7160,6 +7160,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Forțează acum rescanarea și recuperarea';
 
   @override
+  String get matrixStatsLegendTooltip =>
+      'Legendă:\n• dbApplied = rânduri scrise în baza de date\n• dbIgnoredByVectorClock = date de intrare vechi sau identice ignorate de baza de date\n• conflictsCreated = ceasuri vectoriale concurente înregistrate\n• dbMissingBase = omis în așteptarea unei dependențe lipsă\n• dbEntryLinkNoop = legătura există deja, nu s-a scris nimic\n• droppedByType.<type> = elemente eliminate pe tip după reîncercări sau ignorarea mesajelor vechi\n• queueActive = evenimente primite care așteaptă să fie aplicate\n• signalConnectivity = impulsuri de sincronizare după revenirea conexiunii';
+
+  @override
   String get matrixStatsQueueActive => 'Coadă (activă)';
 
   @override
@@ -9393,6 +9397,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Detalii tehnice';
 
   @override
+  String get settingsMatrixDone => 'Done';
+
+  @override
   String get settingsMatrixLastUpdated => 'Ultima actualizare:';
 
   @override
@@ -9410,6 +9417,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Pagina anterioară';
+
+  @override
+  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
+    return 'Invite to room $roomId from $senderId. Accept?';
+  }
+
+  @override
+  String get settingsMatrixRoomInviteTitle => 'Room invite';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Mesaje trimise:';

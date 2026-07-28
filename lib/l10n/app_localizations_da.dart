@@ -7023,6 +7023,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get matrixStatsForceRescanTooltip => 'Force-scan og indhent nu';
 
   @override
+  String get matrixStatsLegendTooltip =>
+      'Legende:\n• dbApplied = skrevne databaserækker\n• dbIgnoredByVectorClock = ældre eller identiske indkommende data ignoreret af databasen\n• conflictsCreated = samtidige vektorure logget\n• dbMissingBase = sprunget over mens en manglende afhængighed afventes\n• dbEntryLinkNoop = link findes allerede, intet skrevet\n• droppedByType.<type> = frasorteringer pr. type efter forsøg eller ignorering af ældre beskeder\n• queueActive = indkommende hændelser der stadig venter på at blive anvendt\n• signalConnectivity = synkroniseringspuf efter at forbindelsen kom tilbage';
+
+  @override
   String get matrixStatsQueueActive => 'Kø (aktiv)';
 
   @override
@@ -9222,6 +9226,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsMatrixDiagnosticShowButton => 'Tekniske detaljer';
 
   @override
+  String get settingsMatrixDone => 'Done';
+
+  @override
   String get settingsMatrixLastUpdated => 'Sidst opdateret:';
 
   @override
@@ -9239,6 +9246,14 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsMatrixPreviousPage => 'Forrige side';
+
+  @override
+  String settingsMatrixRoomInviteMessage(String roomId, String senderId) {
+    return 'Invite to room $roomId from $senderId. Accept?';
+  }
+
+  @override
+  String get settingsMatrixRoomInviteTitle => 'Room invite';
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Sendte beskeder:';

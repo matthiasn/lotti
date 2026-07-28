@@ -2946,6 +2946,7 @@
   "matrixStatsEntryLinkNoops": "EntryLink-Nulloperationen",
   "matrixStatsForceRescan": "Erneut scannen erzwingen",
   "matrixStatsForceRescanTooltip": "Jetzt erneut scannen und nachholen",
+  "matrixStatsLegendTooltip": "Legende:\n• dbApplied = geschriebene Datenbankzeilen\n• dbIgnoredByVectorClock = von der Datenbank ignorierte ältere oder identische eingehende Daten\n• conflictsCreated = protokollierte gleichzeitige Vector Clocks\n• dbMissingBase = übersprungen, während eine fehlende Abhängigkeit erwartet wird\n• dbEntryLinkNoop = Verknüpfung bereits vorhanden, nichts geschrieben\n• droppedByType.<type> = verworfene Nachrichten pro Typ nach Wiederholungen oder Ignorieren älterer Nachrichten\n• queueActive = eingehende Ereignisse, die noch angewendet werden müssen\n• signalConnectivity = Sync-Anstöße nach Wiederkehr der Verbindung",
   "matrixStatsQueueActive": "Warteschlange (aktiv)",
   "matrixStatsRefresh": "Aktualisieren",
   "matrixStatsRetryNow": "Jetzt wiederholen",

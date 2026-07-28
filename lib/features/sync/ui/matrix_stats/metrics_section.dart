@@ -103,9 +103,16 @@ class SyncMetricsSection extends StatelessWidget {
           runSpacing: tokens.spacing.step1,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text(
-              title,
-              style: tokens.typography.styles.subtitle.subtitle1,
+            // The legend defines every counter rendered below it. It used to
+            // hang off an action button whose onPressed was empty — the button
+            // was removed, the definitions belong on the section they explain.
+            Tooltip(
+              message: messages.matrixStatsLegendTooltip,
+              triggerMode: TooltipTriggerMode.tap,
+              child: Text(
+                title,
+                style: tokens.typography.styles.subtitle.subtitle1,
+              ),
             ),
             Text(
               lastUpdated == null

@@ -47,7 +47,7 @@
 - **Regression & Documentation Hardening** (Milestone 10)
   - Added resilience tests covering invite gating, activity idle sequencing, timeline error recovery, and the new client runner queue.
   - Recorded pre/post refactor memory benchmarks (`docs/architecture/sync_memory_audit.md`) to validate leak fixes.
-  - Published updated architecture documentation (`docs/architecture/sync_engine.md`) and linked provider wiring in the feature README.
+  - Published updated architecture documentation (`docs/architecture/sync_engine.md`, since superseded by `knowledge/features/sync/`) and linked provider wiring in the feature README.
 
 ## Recent Fixes & Enhancements
 
@@ -59,7 +59,7 @@
 - Matrix service unit tests register explicit mocktail fallbacks for `Timeline`, `Event`, and `MatrixMessageContext`, avoiding brittle matcher usage.
 - Added dedicated `MatrixMessageSender` unit tests covering room overrides, attachment resend rules, and error propagation, eliminating the silent failure paths from earlier commits.
 - Added race-condition and activity-gating coverage (`client_runner_test.dart`, `matrix_timeline_listener_test.dart`) plus timeline error-recovery regression tests.
-- Published architecture/memory documentation: `docs/architecture/sync_engine.md` and `docs/architecture/sync_memory_audit.md`.
+- Published architecture/memory documentation: `docs/architecture/sync_engine.md` (since superseded by `knowledge/features/sync/`) and `docs/architecture/sync_memory_audit.md`.
 
 ## Next Up
 

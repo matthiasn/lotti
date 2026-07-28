@@ -3331,6 +3331,7 @@
   "matrixStatsEntryLinkNoops": "Operazioni EntryLink senza effetto",
   "matrixStatsForceRescan": "Forza Rescan",
   "matrixStatsForceRescanTooltip": "Forza rescan e cattura ora",
+  "matrixStatsLegendTooltip": "Legenda:\n• dbApplied = righe di database scritte\n• dbIgnoredByVectorClock = dati in entrata più vecchi o identici ignorati dal database\n• conflictsCreated = orologi vettoriali concorrenti registrati\n• dbMissingBase = saltato in attesa di una dipendenza mancante\n• dbEntryLinkNoop = collegamento già presente, nulla di scritto\n• droppedByType.<type> = scarti per tipo dopo i tentativi o l’ignorare messaggi vecchi\n• queueActive = eventi in entrata ancora da applicare\n• signalConnectivity = solleciti di sincronizzazione dopo il ritorno della connessione",
   "matrixStatsQueueActive": "Coda (attiva)",
   "matrixStatsRefresh": "Rifiuti",
   "matrixStatsRetryNow": "Recuperare ora",

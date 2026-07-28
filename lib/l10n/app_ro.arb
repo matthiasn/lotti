@@ -2946,6 +2946,7 @@
   "matrixStatsEntryLinkNoops": "Operațiuni fără efect EntryLink",
   "matrixStatsForceRescan": "Forțează rescanarea",
   "matrixStatsForceRescanTooltip": "Forțează acum rescanarea și recuperarea",
+  "matrixStatsLegendTooltip": "Legendă:\n• dbApplied = rânduri scrise în baza de date\n• dbIgnoredByVectorClock = date de intrare vechi sau identice ignorate de baza de date\n• conflictsCreated = ceasuri vectoriale concurente înregistrate\n• dbMissingBase = omis în așteptarea unei dependențe lipsă\n• dbEntryLinkNoop = legătura există deja, nu s-a scris nimic\n• droppedByType.<type> = elemente eliminate pe tip după reîncercări sau ignorarea mesajelor vechi\n• queueActive = evenimente primite care așteaptă să fie aplicate\n• signalConnectivity = impulsuri de sincronizare după revenirea conexiunii",
   "matrixStatsQueueActive": "Coadă (activă)",
   "matrixStatsRefresh": "Reîmprospătează",
   "matrixStatsRetryNow": "Reîncearcă acum",

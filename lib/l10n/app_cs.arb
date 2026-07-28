@@ -2953,6 +2953,7 @@
   "matrixStatsEntryLinkNoops": "Prázdné operace EntryLink",
   "matrixStatsForceRescan": "Vynutit nové skenování",
   "matrixStatsForceRescanTooltip": "Vynutit nové skenování a dohnání nyní",
+  "matrixStatsLegendTooltip": "Legenda:\n• dbApplied = zapsané řádky databáze\n• dbIgnoredByVectorClock = starší nebo stejné příchozí údaje ignorované databází\n• conflictsCreated = zaznamenané souběžné vektorové hodiny\n• dbMissingBase = přeskočeno při čekání na chybějící závislost\n• dbEntryLinkNoop = propojení už existuje, nic se nezapsalo\n• droppedByType.<type> = zahozené zprávy podle typu po opakováních nebo ignorování starších zpráv\n• queueActive = příchozí události čekající na použití\n• signalConnectivity = podněty k synchronizaci po obnovení připojení",
   "matrixStatsQueueActive": "Fronta (aktivní)",
   "matrixStatsRefresh": "Obnovit",
   "matrixStatsRetryNow": "Zkusit znovu",
