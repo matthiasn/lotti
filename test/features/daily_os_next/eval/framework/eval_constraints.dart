@@ -796,7 +796,12 @@ final _unrelatedRemainderScopePattern = RegExp(
 final _conflictTradePattern = RegExp(
   r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|'
   r'left\s+(?:out|unfinished|incomplete|unscheduled)|'
-  r'(?:(?:is|are|was|were|be|been|being)\s+)?not\s+'
+  r'(?:(?:(?:is|are|was|were|be|been|being)\s+)?not|'
+  r'(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)'
+  r'(?:\s+be)?|'
+  r'(?:(?:is|are|was|were)\s+unable\s+to|'
+  r'(?:isn|aren|wasn|weren)[\x27’]?t\s+able\s+to)'
+  r'(?:\s+be)?)\s+'
   'schedul(?:e|ed|ing)|'
   r'trade|conflict(?:s|ed|ing)?(?![-\s]+free\b)|'
   'shorten(?:s|ed|ing)?|'
@@ -1194,6 +1199,21 @@ bool _partialMentionDescribesPlacement(String prose, Match match) {
 
 bool _tradeEvidenceDescribesTaskOrWork(String prose, Match match) {
   final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
+  final wording = (match.group(0) ?? '').toLowerCase();
+  if (wording.startsWith('for ')) {
+    final prefix = prose.substring(range.start, match.start);
+    if (!RegExp(
+      r'\b(?:is|are|was|were|remain(?:s|ed|ing)?|left|'
+      'schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+      'plan(?:s|ned|ning)?|plac(?:e|ed|ing)|'
+      'defer(?:s|red|ring)?|omit(?:s|ted|ting)?|'
+      'drop(?:s|ped|ping)?|move(?:s|d|ing)?|'
+      r'roll(?:s|ed|ing)?|carr(?:y|ies|ied|ying))\s*$',
+      caseSensitive: false,
+    ).hasMatch(prefix)) {
+      return false;
+    }
+  }
   final suffix = prose.substring(match.end, range.end);
   if (!RegExp(r'^\s+\w').hasMatch(suffix)) return true;
   return RegExp(
@@ -1289,6 +1309,48 @@ bool _hasTaskBoundAllocationDenial(
       continue;
     }
     return true;
+  }
+  final allocationFailurePattern = RegExp(
+    r'\b(?:(?:the|this|that)\s+)?'
+    r'(?:allocation|placement|scheduling|completion)\s+'
+    r'(?:(?:has|had)\s+)?fail(?:s|ed|ing)?\b',
+    caseSensitive: false,
+  );
+  for (final failure in allocationFailurePattern.allMatches(prose)) {
+    if (_evidenceIsSpeculative(prose, failure) ||
+        _tradeEvidenceHasExplicitNonTaskSubject(
+          prose,
+          failure,
+          taskId: taskId,
+          taskTitle: taskTitle,
+        ) ||
+        _evidenceNamesAnotherTask(
+          prose,
+          failure,
+          taskId: taskId,
+          taskTitle: taskTitle,
+          corpus: corpus,
+        )) {
+      continue;
+    }
+    final range = _matchClauseRange(
+      prose,
+      failure,
+      boundaries: ',.;!?\n',
+    );
+    final prefix = prose.substring(range.start, failure.start);
+    if (RegExp(
+      r'\b(?:meeting|workday|calendar|appointment|event|session)\s*$',
+      caseSensitive: false,
+    ).hasMatch(prefix)) {
+      continue;
+    }
+    if (RegExp(
+      r'^\s*(?:(?:and|but|yet|so)\s+)?$',
+      caseSensitive: false,
+    ).hasMatch(prefix)) {
+      return true;
+    }
   }
   return false;
 }
@@ -1619,6 +1681,7 @@ bool _splitHasUnrelatedScope(
     } else if (start >= evidence.end &&
         !RegExp(
           r'^\s*(?:(?:is|are|was|were|will|be|been|being|has|have|had|'
+          'do|does|did|'
           'only|just|merely|already|actually|currently|now|'
           'estimate|estimated|successfully|explicitly|deliberately|'
           r'intentionally|firmly|definitively|concretely)\s+)*$',

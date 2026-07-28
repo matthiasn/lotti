@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T12:13:58+02:00 }
+generated: { by: codex/5, at: 2026-07-28T12:28:46+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -102,15 +102,19 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `60 of 120` recording minutes, cannot supply task-allocation context, nor can
   later meeting scheduling borrow an earlier `60 of 120` recording count. A
   grammatical auxiliary/adverb bridge such as `were successfully scheduled`
-  remains affirmative, and exact quantity modifiers such as `scheduled exactly
-  60 of 120 minutes` may bridge the action to its arithmetic, while a failure
-  qualifier such as `were unsuccessfully scheduled` does not. Obligation alone
+  or `60 of 120 minutes do fit` remains affirmative, and exact quantity
+  modifiers such as `scheduled exactly 60 of 120 minutes` may bridge the action
+  to its arithmetic, while a failure qualifier such as
+  `were unsuccessfully scheduled` does not. Obligation alone
   is not evidence that placement happened: `must schedule`, `needs to
   schedule`, and `is required to schedule` cannot validate allocation
   arithmetic. Failure qualifiers are rejected on either side of the action, so
   neither `unsuccessfully scheduled 60 of 120 minutes` nor
-  `failed scheduling 60 of 120 minutes` is allocation evidence. A later action
-  describing “the rest” cannot validate earlier omitted arithmetic.
+  `failed scheduling 60 of 120 minutes` is allocation evidence. A standalone
+  task-bound failure predicate retracts earlier arithmetic too:
+  `scheduled 60 of 120 minutes, but the allocation failed` is not credit. A
+  later action describing “the rest” cannot validate earlier omitted
+  arithmetic.
   Unrelated meeting/workday scope is likewise associated with its nearest
   allocation action, so later meeting arithmetic does not poison an
   earlier valid task split. Unbound splits are ignored before their values are
@@ -259,8 +263,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   remainder dispositions. A disposition word must govern the task or unfinished
   work: domain language such as `task-c documents deferred revenue` or
   `task-c documents unscheduled maintenance`, and purpose phrases such as
-  `formats notes for later reference`, do not disclose that task-c itself was
-  deferred or left unscheduled. The same object binding rejects domain phrases
+  `formats notes for later reference` or terminal `formats notes for later`, do
+  not disclose that task-c itself was deferred or left unscheduled. A
+  `for later` disposition must be governed by a scheduling, movement, copula,
+  or remainder predicate. The same object binding rejects domain phrases
   such as `reviews trade policy` and `carries over balances`. Negative-fit
   evidence is subject-bound too: `task-c doesn't fit` remains affirmative, but
   `task-c validates that the payload cannot fit in memory` describes the
@@ -295,9 +301,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `Cannot fit`, `will not fit`, `conflicts`, and `conflicting` are affirmative
   disclosures, including label-bound forms such as `task-c: Cannot fit today`,
   as is an explicit omission such as `task-c was not scheduled due to
-  capacity`, unless an outer falsehood construction such as `not true that
-  task-c cannot fit` or `not true that task-c was not scheduled` denies the
-  whole claim.
+  capacity`. Inability forms such as `cannot be scheduled`, `can't be
+  scheduled`, or `was unable to be scheduled` disclose the same omission,
+  unless an outer falsehood construction such as `not true that task-c cannot
+  fit` or `not true that task-c was not scheduled` denies the whole claim.
   The detail records every credited
   partial and every shortening denied credit, so the judge bundle preserves the
   accounting evidence rather than only the final pass/fail.

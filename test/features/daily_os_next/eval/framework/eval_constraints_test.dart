@@ -1887,6 +1887,52 @@ void main() {
       });
     }
 
+    test('rejects an allocation failure after the arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c scheduled 60 of 120 minutes, but the allocation '
+                  'failed.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('ignores a non-task allocation failure after arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c scheduled 60 of 120 minutes, but the meeting '
+                  'allocation failed.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('rejects an attempted allocation action', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2511,6 +2557,29 @@ void main() {
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
+
+    for (final auxiliary in ['do', 'does', 'did']) {
+      test('accepts an emphatic $auxiliary allocation bridge', () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason: 'task-c: 60 of 120 minutes $auxiliary fit.',
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
+
+        expect(result.passed, isTrue);
+        expect(result.detail, contains('task-c 60min partial of 120min'));
+      });
+    }
 
     test('rejects a negative adverb in a trailing allocation bridge', () {
       final result = scoreWithinCapacityByEstimate(
@@ -4126,6 +4195,35 @@ void main() {
       expect(result.detail, contains('task-c'));
     });
 
+    for (final inability in [
+      'cannot be scheduled',
+      "can't be scheduled",
+      "couldn't be scheduled",
+      'was unable to be scheduled',
+      "wasn't able to be scheduled",
+    ]) {
+      test('accepts an inability-based scheduling omission: $inability', () {
+        final result = scoreSurfacedConflict(
+          outcome(
+            blocks: [
+              block(
+                id: 'context',
+                startHour: 9,
+                endHour: 10,
+                reason: 'task-c $inability due to capacity.',
+              ),
+            ],
+            corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+            decidedTaskIds: const ['task-c'],
+            requiresConflictSurfaced: true,
+          ),
+        );
+
+        expect(result.passed, isTrue);
+        expect(result.detail, contains('task-c'));
+      });
+    }
+
     test('rejects a denial of an explicit not-scheduled trade', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -4491,6 +4589,34 @@ void main() {
               endHour: 10,
               taskId: 'task-c',
               reason: 'task-c formats notes for later reference.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('does not treat a terminal purpose phrase as trade evidence', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c formats notes for later.',
             ),
           ],
           corpus: const [
