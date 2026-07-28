@@ -754,6 +754,14 @@ final _unrelatedSplitScopePattern = RegExp(
   caseSensitive: false,
 );
 
+final _conflictTradePattern = RegExp(
+  r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|left|remain(?:s|ed|ing)?|'
+  'trade|conflict|shorten(?:s|ed|ing)?|'
+  r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
+  r'(?:do|does|did)\s+not)\s+fit)\b',
+  caseSensitive: false,
+);
+
 typedef _EstimatedTaskPlacement = ({
   List<EvalCorpusTask> corpus,
   int allocatedMinutes,
@@ -1084,6 +1092,7 @@ bool _referenceAttributesEvidence(
     final trimmed = between.trim();
     return trimmed.isEmpty ||
         _taskAllocationActionPattern.hasMatch(between) ||
+        RegExp(r'^[\x27’]s$', caseSensitive: false).hasMatch(trimmed) ||
         RegExp(r'^[:–—-]+$').hasMatch(trimmed);
   }
   if (referenceStart < evidence.end) return true;
@@ -1237,11 +1246,15 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
     for (final block in outcome.blocks)
       '${block.reason ?? ''} ${block.note ?? ''}',
   ].join(' ').toLowerCase();
+  final hasTradeDisclosure =
+      _partialMentionPattern.hasMatch(prose) ||
+      _partialRemainderDispositionPattern.hasMatch(prose) ||
+      _conflictTradePattern.hasMatch(prose);
   final namedCasualties = [
     for (final taskId in deferred)
       if (prose.contains(taskId.toLowerCase()) ||
           _titleNamed(outcome, taskId, prose))
-        taskId,
+        if (!shortenedTasks.contains(taskId) || hasTradeDisclosure) taskId,
   ];
   return EvalConstraintResult(
     id: id,

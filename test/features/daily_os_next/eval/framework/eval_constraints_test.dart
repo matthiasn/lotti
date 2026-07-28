@@ -1981,6 +1981,10 @@ void main() {
             'Task D completed 60 of 120 minutes; '
             'Task C is deferred.',
       ),
+      (
+        name: 'another task possessive completed-estimate split',
+        reason: "task-d's 60 of 120 minutes are scheduled.",
+      ),
     ]) {
       test('charges ${badDisclosure.name} at the full estimate', () {
         final result = scoreWithinCapacityByEstimate(
@@ -2413,6 +2417,34 @@ void main() {
       );
 
       expect(result.isApplicable, isTrue);
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('naming shortened work without a trade does not surface it', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'deck',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-deck',
+              reason: 'Focused work on Prepare the board deck.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-deck',
+              title: 'Prepare the board deck',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-deck'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
       expect(result.passed, isFalse);
       expect(result.detail, contains('without naming a casualty'));
     });
