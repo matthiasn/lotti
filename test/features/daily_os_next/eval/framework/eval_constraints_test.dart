@@ -1503,6 +1503,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('allows a partial explanation with a negative quantifier', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Partial because not all work fits; '
+                  '60 minutes remain for later.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('allows a partial remainder qualified for today', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1683,6 +1706,36 @@ void main() {
               reason:
                   '60 of 120 minutes are scheduled while '
                   'Prepare the board deck is deferred.',
+            ),
+          ],
+          corpus: const [
+            ...tasks,
+            EvalCorpusTask(
+              taskId: 'task-deck',
+              title: 'Prepare the board deck',
+              estimateMinutes: 120,
+            ),
+          ],
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('keeps ownership when a deferred casualty appears first', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Although Prepare the board deck is deferred, '
+                  '60 of 120 minutes are scheduled for this task.',
             ),
           ],
           corpus: const [
@@ -2319,6 +2372,47 @@ void main() {
         ),
       );
 
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('an undisclosed shortening still requires a named casualty', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'deck',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-deck',
+              reason: 'Focused work.',
+            ),
+            block(
+              id: 'report',
+              startHour: 10,
+              endHour: 11,
+              taskId: 'task-report',
+              reason: 'Focused work.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-deck',
+              title: 'Prepare the board deck',
+              estimateMinutes: 120,
+            ),
+            EvalCorpusTask(
+              taskId: 'task-report',
+              title: 'Close the quarterly',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.isApplicable, isTrue);
       expect(result.passed, isFalse);
       expect(result.detail, contains('without naming a casualty'));
     });

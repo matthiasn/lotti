@@ -871,7 +871,7 @@ bool _hasAuditablePartialDisclosure({
     var reasonMentionsPartial = false;
     var reasonHasBoundRemainder = false;
     for (final match in _partialMentionPattern.allMatches(reason)) {
-      if (_matchClauseIsNegated(reason, match)) return false;
+      if (_partialMentionIsNegated(reason, match)) return false;
       reasonMentionsPartial = true;
     }
     for (final match in _partialOfEstimatePattern.allMatches(reason)) {
@@ -934,6 +934,18 @@ bool _hasAuditablePartialDisclosure({
     }
   }
   return hasMatchingSplit || hasBoundPartialRemainder;
+}
+
+bool _partialMentionIsNegated(String reason, Match match) {
+  final range = _matchClauseRange(reason, match, boundaries: ',.;!?\n');
+  final segment = reason.substring(range.start, range.end);
+  for (final negation in _negationWordPattern.allMatches(segment)) {
+    final negationEnd = range.start + negation.end;
+    if (negationEnd > match.start) continue;
+    final between = reason.substring(negationEnd, match.start);
+    if (_wordPattern.allMatches(between).length <= 3) return true;
+  }
+  return false;
 }
 
 bool _matchClauseIsNegated(String reason, Match match) {
@@ -1067,6 +1079,13 @@ bool _referenceAttributesEvidence(
   required int referenceStart,
   required int referenceEnd,
 }) {
+  if (referenceEnd <= evidence.start) {
+    final between = reason.substring(referenceEnd, evidence.start);
+    final trimmed = between.trim();
+    return trimmed.isEmpty ||
+        _taskAllocationActionPattern.hasMatch(between) ||
+        RegExp(r'^[:–—-]+$').hasMatch(trimmed);
+  }
   if (referenceStart < evidence.end) return true;
   final between = reason.substring(evidence.end, referenceStart);
   return RegExp(
@@ -1200,13 +1219,13 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
   // identify at least one piece of work that was actually left out or only
   // partially represented.
   final placed = _placedTaskIds(outcome);
-  final auditedPartials = {
+  final shortenedTasks = {
     for (final entry in _estimatedTaskPlacements(outcome).entries)
-      if (_isAuditedPartial(entry.value)) entry.key,
+      if (entry.value.allocatedMinutes < entry.value.estimateMinutes) entry.key,
   };
   final deferred = [
     for (final taskId in outcome.inputs.decidedTaskIds)
-      if (!placed.contains(taskId) || auditedPartials.contains(taskId)) taskId,
+      if (!placed.contains(taskId) || shortenedTasks.contains(taskId)) taskId,
   ];
   if (deferred.isEmpty) {
     return const EvalConstraintResult.notApplicable(

@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T03:33:04+02:00 }
+generated: { by: codex/5, at: 2026-07-28T03:44:38+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -83,11 +83,12 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   their values are checked, and allocation explicitly scoped to another
   subject or another corpus task, named by id or full title, cannot earn credit
   for the placed task. The block's task is the default arithmetic subject; a
-  corpus reference overrides it only when it leads the evidence or is attached
-  by `for` or `of`. This allows one clause to audit the current split and name a
-  deferred casualty after `while`. The same attribution applies to remainder
-  evidence. The partial mention and task-bound remainder must occur in the same
-  block reason; unrelated workday-capacity prose cannot supply the remainder.
+  corpus reference overrides it only when it is adjacent, linked by an
+  allocation action, or attached by `for` or `of`. This allows one clause to
+  audit the current split and name a deferred casualty before or after it. The
+  same attribution applies to remainder evidence. The partial mention and
+  task-bound remainder must occur in the same block reason; unrelated
+  workday-capacity prose cannot supply the remainder.
   Task qualifiers may sit inside the arithmetic, as in
   `60 minutes of this task remain`; leading forms may also qualify the noun, as
   in `the remaining work is 60 minutes`. Remainder arithmetic explicitly scoped
@@ -100,22 +101,24 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `cannot be scheduled` and
   `do not have enough room to schedule 60 of 120` invalidate a split, without
   letting a later explanation that the full task `cannot fit` invalidate
-  affirmative arithmetic. Split syntax cannot provide its own task
-  context: an allocation word or task reference must appear outside the matched
-  numbers. Explicit other-subject scope also outranks a nearby `partial`
-  keyword, so `remain for the meeting` cannot earn task remainder credit while
-  `partial for today` remains valid.
+  affirmative arithmetic. A `partial` keyword is negated only by a preceding
+  negator, so `partial because not all work fits` remains affirmative. Split
+  syntax cannot provide its own task context: an allocation word or task
+  reference must appear outside the matched numbers. Explicit other-subject
+  scope also outranks a nearby `partial` keyword, so `remain for the meeting`
+  cannot earn task remainder credit while `partial for today` remains valid.
   Negated or vague “partial” prose, silence,
   contradictory numbers, buffer or calendar blocks carrying a task id,
   allocations below 10% of the estimate, and overlapping blocks for one task
   are charged at the full estimate or receive no placement score. Estimated
   charges are compared with the clock-bounded `plannableMinutes`, not nominal
   full-day capacity, so a late-start scenario cannot silently compress work
-  into the remaining window. An audited
-  partial remainder also counts as deferred work for `surfacedConflict`, so a
-  plan that represents every task only partially must still name the trade or
-  escalate it. The constraint detail records every credited partial and every
-  shortening denied credit, so the judge bundle preserves the accounting
+  into the remaining window. Every structurally shortened decided task counts
+  as deferred work for `surfacedConflict`, whether or not its disclosure earns
+  audited partial credit, so a plan that represents every task only partially
+  must still name the trade or escalate it. The constraint detail records every
+  credited partial and every shortening denied credit, so the judge bundle
+  preserves the accounting
   evidence rather than only the final pass/fail.
 - **Weak semantic outcomes are not ranking evidence.** `surfacedConflict`
   passes either when an accepted `attentionNeeded`
