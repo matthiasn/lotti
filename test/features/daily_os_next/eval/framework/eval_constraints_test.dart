@@ -2082,6 +2082,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects a considered allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c considered scheduling 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('rejects an inability-only allocation action', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2641,6 +2662,31 @@ void main() {
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
+
+    for (final historicalScope in ['yesterday', 'last week']) {
+      test('rejects allocation arithmetic scoped to $historicalScope', () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason:
+                    'task-c was scheduled 60 of 120 minutes '
+                    '$historicalScope.',
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('task-c allocated 60min of 120min'));
+      });
+    }
 
     test('rejects arithmetic not governing a later allocation action', () {
       final result = scoreWithinCapacityByEstimate(
@@ -3391,6 +3437,70 @@ void main() {
       expect(result.passed, isFalse);
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
+
+    for (final auditBlock
+        in <
+          ({
+            String label,
+            PlannedBlockType type,
+            String? taskId,
+          })
+        >[
+          (
+            label: 'another task',
+            type: PlannedBlockType.ai,
+            taskId: 'task-d',
+          ),
+          (
+            label: 'a buffer',
+            type: PlannedBlockType.buffer,
+            taskId: null,
+          ),
+        ]) {
+      test(
+        'a task-named note on ${auditBlock.label} vetoes partial credit',
+        () {
+          final result = scoreWithinCapacityByEstimate(
+            outcome(
+              blocks: [
+                block(
+                  id: 'partial',
+                  startHour: 9,
+                  endHour: 10,
+                  taskId: 'task-c',
+                  reason: 'task-c scheduled 60 of 120 minutes.',
+                ),
+                block(
+                  id: 'audit-block',
+                  startHour: 10,
+                  endHour: 11,
+                  type: auditBlock.type,
+                  taskId: auditBlock.taskId,
+                  reason: 'Plan context.',
+                  note: 'task-c was not scheduled after all.',
+                ),
+              ],
+              corpus: const [
+                EvalCorpusTask(
+                  taskId: 'task-c',
+                  title: 'Core',
+                  estimateMinutes: 120,
+                ),
+                EvalCorpusTask(
+                  taskId: 'task-d',
+                  title: 'Dependency',
+                  estimateMinutes: 60,
+                ),
+              ],
+              capacityMinutes: 120,
+            ),
+          );
+
+          expect(result.passed, isFalse);
+          expect(result.detail, contains('task-c allocated 60min of 120min'));
+        },
+      );
+    }
 
     test('a speculative note denial does not veto partial credit', () {
       final result = scoreWithinCapacityByEstimate(
@@ -4441,6 +4551,30 @@ void main() {
       expect(result.detail, contains('task-c'));
     });
 
+    test('accepts coordinated task omission subjects', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c and task-d were omitted due to capacity.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(taskId: 'task-c', title: 'Core'),
+            EvalCorpusTask(taskId: 'task-d', title: 'Dependency'),
+          ],
+          decidedTaskIds: const ['task-c', 'task-d'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, allOf(contains('task-c'), contains('task-d')));
+    });
+
     test('accepts an explicit not-scheduled trade', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -4466,6 +4600,8 @@ void main() {
       'cannot be scheduled',
       "can't be scheduled",
       "couldn't be scheduled",
+      'could not be scheduled',
+      'will not be scheduled',
       'was unable to be scheduled',
       "wasn't able to be scheduled",
     ]) {
@@ -4572,6 +4708,7 @@ void main() {
       'task-c was supposed to be omitted.',
       'task-c was meant to be omitted.',
       'task-c was going to be omitted.',
+      'task-c considered deferring.',
     ]) {
       test('rejects a non-asserted trade disposition: $reason', () {
         final result = scoreSurfacedConflict(
@@ -4933,6 +5070,34 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('accepts a task-bound scheduling-conflict noun', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c has a scheduling conflict with the meeting.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
     });
 
     test('does not treat a trade object as a trade disposition', () {

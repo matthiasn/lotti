@@ -793,18 +793,39 @@ final _unrelatedRemainderScopePattern = RegExp(
   caseSensitive: false,
 );
 
+final _historicalAllocationScopePattern = RegExp(
+  r'^\s*(?:yesterday|previously|earlier(?:\s+today)?|last\s+'
+  '(?:week|month|year|(?:mon|tues|wednes|thurs|fri|satur|sun)day))'
+  r'\s*(?=$|because\b|due\s+to\b|owing\s+to\b)',
+  caseSensitive: false,
+);
+
+final _tradeSubjectPrefixPattern = RegExp(
+  r'^(.*?)\s+(?:(?:(?:is|are|was|were)(?:\s+being)?|'
+  r'(?:has|have|had)\s+been(?:\s+being)?|will\s+be(?:\s+being)?)'
+  r'(?:\s+(?:not|only|merely|just|still))?'
+  r'(?:\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+  'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))?|'
+  '(?:has|have|had|leave(?:s|d|ing)?|left)|'
+  '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+  r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))\s*$',
+  caseSensitive: false,
+);
+
 final _conflictTradePattern = RegExp(
   r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|'
   r'left\s+(?:(?:(?:some|the|this|that|its|our|my|your|their|remaining)\s+)*'
   r'(?:task|work|remainder|rest|portion|part)\s+)?'
   '(?:out|unfinished|incomplete|unscheduled)|'
   r'(?:(?:(?:is|are|was|were|be|been|being)\s+)?not|'
+  r'(?:can|could|will|shall)\s+not(?:\s+be)?|'
   r'(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)'
   r'(?:\s+be)?|'
   r'(?:(?:is|are|was|were)\s+unable\s+to|'
   r'(?:isn|aren|wasn|weren)[\x27’]?t\s+able\s+to)'
   r'(?:\s+be)?)\s+'
   'schedul(?:e|ed|ing)|'
+  r'(?:has|have|had)\s+(?:(?:a|the)\s+)?scheduling\s+conflict|'
   r'conflict(?:s|ed|ing)(?![-\s]+free\b)|'
   'shorten(?:s|ed|ing)?|'
   r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
@@ -836,7 +857,32 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
   final allocatedByTask = <String, int>{};
   final blocksByTask = <String, List<PlannedBlock>>{};
   final disclosuresByTask = <String, List<_PlacementDisclosure>>{};
+
+  void addDisclosure(
+    String taskId, {
+    required bool canQualify,
+    required String prose,
+  }) {
+    disclosuresByTask.putIfAbsent(taskId, () => []).add((
+      canQualify: canQualify,
+      prose: prose,
+    ));
+  }
+
   for (final block in _scheduled(outcome)) {
+    final note = block.note?.trim();
+    final noteTaskIds = <String>{
+      if (note != null && note.isNotEmpty)
+        for (final task in outcome.inputs.corpus)
+          if (_taskIdNamed(task.taskId, note) ||
+              _titleNamed(outcome, task.taskId, note))
+            task.taskId,
+    };
+    if (note != null && note.isNotEmpty) {
+      for (final taskId in noteTaskIds) {
+        addDisclosure(taskId, canQualify: false, prose: note);
+      }
+    }
     if (block.type != PlannedBlockType.ai &&
         block.type != PlannedBlockType.manual) {
       continue;
@@ -852,17 +898,10 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
     blocksByTask.putIfAbsent(taskId, () => []).add(block);
     final reason = block.reason?.trim();
     if (reason != null && reason.isNotEmpty) {
-      disclosuresByTask.putIfAbsent(taskId, () => []).add((
-        canQualify: true,
-        prose: reason,
-      ));
+      addDisclosure(taskId, canQualify: true, prose: reason);
     }
-    final note = block.note?.trim();
-    if (note != null && note.isNotEmpty) {
-      disclosuresByTask.putIfAbsent(taskId, () => []).add((
-        canQualify: false,
-        prose: note,
-      ));
+    if (note != null && note.isNotEmpty && noteTaskIds.isEmpty) {
+      addDisclosure(taskId, canQualify: false, prose: note);
     }
   }
   return {
@@ -1615,6 +1654,7 @@ bool _evidenceActionIsAsserted(
         '(?:(?:intend(?:s|ed|ing)?|aim(?:s|ed|ing)?|'
         'hop(?:e|es|ed|ing)|want(?:s|ed|ing)?|expect(?:s|ed|ing)?|'
         'propos(?:e|es|ed|ing)|plan(?:s|ned|ning)?|'
+        'consider(?:s|ed|ing)?|'
         'attempt(?:s|ed|ing)?|tr(?:y|ies|ied|ying)|'
         'fail(?:s|ed|ing)?|refus(?:e|es|ed|ing)|'
         r'declin(?:e|es|ed|ing))(?:\s+to)?'
@@ -1652,6 +1692,14 @@ bool _splitHasUnrelatedScope(
   );
   if (evidenceAction == null) return false;
   final range = _matchClauseRange(reason, evidence, boundaries: ',.;!?\n');
+  final scopeEnd = evidence.end > evidenceAction.end
+      ? evidence.end
+      : evidenceAction.end;
+  if (_historicalAllocationScopePattern.hasMatch(
+    reason.substring(scopeEnd, range.end),
+  )) {
+    return true;
+  }
   final currentTaskDistance = _nearestTaskReferenceDistance(
     reason,
     evidence,
@@ -2533,26 +2581,39 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
     }
   }
 
-  bool belongsToTask(Match match) =>
-      !_evidenceFallsInsideTaskReference(
-        prose,
-        match,
-        taskId: taskId,
-        taskTitle: task.title,
-      ) &&
-      !_tradeEvidenceHasExplicitNonTaskSubject(
-        prose,
-        match,
-        taskId: taskId,
-        taskTitle: task.title,
-      ) &&
-      !_evidenceNamesAnotherTask(
-        prose,
-        match,
-        taskId: taskId,
-        taskTitle: task.title,
-        corpus: outcome.inputs.corpus,
-      );
+  bool belongsToTask(Match match) {
+    if (_evidenceFallsInsideTaskReference(
+          prose,
+          match,
+          taskId: taskId,
+          taskTitle: task.title,
+        ) ||
+        _tradeEvidenceHasExplicitNonTaskSubject(
+          prose,
+          match,
+          taskId: taskId,
+          taskTitle: task.title,
+          corpus: outcome.inputs.corpus,
+        )) {
+      return false;
+    }
+    if (_tradeEvidenceHasCoordinatedTaskSubject(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+      corpus: outcome.inputs.corpus,
+    )) {
+      return true;
+    }
+    return !_evidenceNamesAnotherTask(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+      corpus: outcome.inputs.corpus,
+    );
+  }
 
   bool clauseIsNegated(Match match) => _matchClauseIsNegated(
     prose,
@@ -2706,6 +2767,7 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   Match evidence, {
   required String taskId,
   required String taskTitle,
+  List<EvalCorpusTask> corpus = const [],
 }) {
   final range = _matchClauseRange(prose, evidence, boundaries: ',.;!?\n');
   final prefix = prose.substring(range.start, evidence.start).trim();
@@ -2722,17 +2784,17 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   )) {
     return true;
   }
-  final subjectMatch = RegExp(
-    r'^(.*?)\s+(?:(?:(?:is|are|was|were)(?:\s+being)?|'
-    r'(?:has|have|had)\s+been(?:\s+being)?|will\s+be(?:\s+being)?)'
-    r'(?:\s+(?:not|only|merely|just|still))?'
-    r'(?:\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-    'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))?|'
-    '(?:has|have|had|leave(?:s|d|ing)?|left)|'
-    '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-    r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))\s*$',
+  var rawSubject = prefix;
+  for (final complementizer in RegExp(
+    r'\bthat\s+',
     caseSensitive: false,
-  ).firstMatch(prefix);
+  ).allMatches(prefix)) {
+    rawSubject = prefix.substring(complementizer.end).trim();
+  }
+  if (_subjectStartsWithExplicitNonTaskHead(rawSubject)) {
+    return true;
+  }
+  final subjectMatch = _tradeSubjectPrefixPattern.firstMatch(prefix);
   if (subjectMatch == null) return false;
   final subject = subjectMatch.group(1)?.trim() ?? '';
   if (RegExp(
@@ -2751,11 +2813,101 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   )) {
     return true;
   }
+  if (_subjectIsOnlyCorpusTaskReferences(subject, corpus)) {
+    return false;
+  }
   return !_subjectStartsWithTaskReference(
     subject,
     taskId: taskId,
     taskTitle: taskTitle,
   );
+}
+
+bool _subjectStartsWithExplicitNonTaskHead(String subject) => RegExp(
+  r'^(?:(?:and|but|yet|so)\s+)?'
+  r'(?:(?:the|this|that|a|an|its|our|my|your|their)\s+)?'
+  '(?:day|meeting|workday|calendar|appointment|break|event|agenda|'
+  r'schedule|session)\b',
+  caseSensitive: false,
+).hasMatch(subject);
+
+bool _tradeEvidenceHasCoordinatedTaskSubject(
+  String prose,
+  Match evidence, {
+  required String taskId,
+  required String taskTitle,
+  required List<EvalCorpusTask> corpus,
+}) {
+  final range = _matchClauseRange(prose, evidence, boundaries: ',.;!?\n');
+  final prefix = prose.substring(range.start, evidence.start).trim();
+  final subjectMatch = _tradeSubjectPrefixPattern.firstMatch(prefix);
+  final subject = subjectMatch?.group(1)?.trim();
+  if (subject == null || !_subjectIsOnlyCorpusTaskReferences(subject, corpus)) {
+    return false;
+  }
+  return _subjectContainsTaskReference(
+    subject,
+    taskId: taskId,
+    taskTitle: taskTitle,
+  );
+}
+
+bool _subjectIsOnlyCorpusTaskReferences(
+  String subject,
+  List<EvalCorpusTask> corpus,
+) {
+  final conjuncts = subject.split(
+    RegExp(r'\s+(?:and|&)\s+', caseSensitive: false),
+  );
+  if (conjuncts.length < 2) return false;
+  return conjuncts.every((conjunct) {
+    return corpus.any(
+      (task) => _subjectMatchesTaskReference(
+        conjunct,
+        taskId: task.taskId,
+        taskTitle: task.title,
+      ),
+    );
+  });
+}
+
+bool _subjectContainsTaskReference(
+  String subject, {
+  required String taskId,
+  required String taskTitle,
+}) {
+  return subject.split(RegExp(r'\s+(?:and|&)\s+', caseSensitive: false)).any((
+    conjunct,
+  ) {
+    return _subjectMatchesTaskReference(
+      conjunct,
+      taskId: taskId,
+      taskTitle: taskTitle,
+    );
+  });
+}
+
+bool _subjectMatchesTaskReference(
+  String subject, {
+  required String taskId,
+  required String taskTitle,
+}) {
+  final normalized = subject.trim();
+  final title = taskTitle.trim();
+  const prefix = r'^(?:(?:the|this|that|its)\s+)?';
+  return RegExp(
+        prefix + RegExp.escape(taskId) + r'$',
+        caseSensitive: false,
+      ).hasMatch(normalized) ||
+      RegExp(
+        prefix + r'task\s+' + RegExp.escape(title) + r'$',
+        caseSensitive: false,
+      ).hasMatch(normalized) ||
+      _allowsBareTaskTitle(title) &&
+          RegExp(
+            prefix + RegExp.escape(title) + r'$',
+            caseSensitive: false,
+          ).hasMatch(normalized);
 }
 
 bool _subjectStartsWithPossessiveTaskReferenceToNonTaskHead(

@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T14:36:12+02:00 }
+generated: { by: codex/5, at: 2026-07-28T15:04:54+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -92,8 +92,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-c might be partially scheduled`. Modal remainder arithmetic such as
   `task-c might have 60 minutes remaining` is likewise hypothetical and cannot
   qualify or contradict a placement. Intended, planned, aimed, hoped,
-  wanted, expected, proposed, attempted, tried, failed, refused, or declined
-  actions are likewise not affirmative. Neither are expectation forms such as
+  wanted, expected, proposed, considered, attempted, tried, failed, refused,
+  or declined actions are likewise not affirmative. Neither are expectation
+  forms such as
   `was supposed to schedule`, `was meant to schedule`, or
   `was going to schedule`, inability complements such as
   `was unable to schedule`, `was not able to schedule`, or
@@ -122,8 +123,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   arithmetic.
   Unrelated meeting/workday scope is likewise associated with its nearest
   allocation action, so later meeting arithmetic does not poison an
-  earlier valid task split. Unbound splits are ignored before their values are
-  checked, and allocation explicitly scoped to another subject or another
+  earlier valid task split. Explicit trailing historical scope is rejected too:
+  `scheduled 60 of 120 minutes yesterday` and the equivalent `last week`
+  describe prior allocation rather than the current block. Unbound splits are
+  ignored before their values are checked, and allocation explicitly scoped to
+  another subject or another
   corpus task, named by id or full title, cannot earn credit for the placed
   task. Explicit current-task scope wins over a later temporal meeting modifier,
   such as `during the meeting`, but not over an explicit allocation destination:
@@ -150,7 +154,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   partial mention and task-bound remainder must occur in the same block reason,
   as required by the model-facing prompt. Notes cannot earn partial credit, but
   their concrete arithmetic and denials remain audit evidence that can veto a
-  reason. A task-bound standalone allocation denial such as
+  reason. An explicitly task-named note is routed to that task across every
+  scheduled block, including notes on another task or a buffer; an unbound note
+  remains attached to its enclosing work block. A task-bound standalone
+  allocation denial such as
   `task-c was not scheduled after all` therefore retracts reason-field partial
   arithmetic even when the note contains no split or remainder of its own; the
   same applies to `not completed` because completion can supply allocation
@@ -255,6 +262,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   plan prose cannot satisfy that disclosure.
   Trade language in the same reason is attributed to its nearest corpus task,
   so one task's deferred disposition cannot disclose another task's shortening.
+  A coordinated subject made entirely of corpus task references is attributed
+  to every named task, so `task-c and task-d were omitted` surfaces both
+  casualties without admitting a mixed subject such as a meeting and a task.
   Label punctuation binds too, so `Partial: task-d` remains owned by `task-d`
   rather than the task attached to the enclosing block.
   Trade-shaped words inside the task's own id or full-title span are only
@@ -315,8 +325,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   clause. Attempt and failure complements are likewise not actual
   dispositions: neither `attempted to be omitted`, `failed to be omitted`, the
   near miss `was almost omitted`, expectations such as `was supposed to be
-  omitted`, `was meant to be omitted`, or `was going to be omitted`, nor the
-  direct requirement `requires deferring` surfaces a trade. The same rules
+  omitted`, `was meant to be omitted`, or `was going to be omitted`,
+  consideration such as `considered deferring`, nor the direct requirement
+  `requires deferring` surfaces a trade. The same rules
   reject allocation prose such as `almost scheduled 60 of 120 minutes`,
   `was supposed to schedule 60 of 120 minutes`,
   `was meant to schedule 60 of 120 minutes`, and
@@ -335,10 +346,13 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `Cannot fit`, `will not fit`, `conflicts`, and `conflicting` are affirmative
   disclosures, including label-bound forms such as `task-c: Cannot fit today`.
   A bare conflict object is not: `task-c resolves conflict` describes subject
-  matter rather than a scheduling casualty. An explicit omission such as
+  matter rather than a scheduling casualty, while the task-bound predicate
+  `task-c has a scheduling conflict` does disclose one. An explicit omission
+  such as
   `task-c was not scheduled due to capacity` is affirmative too. Inability
   forms such as `cannot be scheduled`, `can't be
-  scheduled`, or `was unable to be scheduled` disclose the same omission,
+  scheduled`, `could not be scheduled`, `will not be scheduled`, or
+  `was unable to be scheduled` disclose the same omission,
   unless an outer falsehood construction such as `not true that task-c cannot
   fit` or `not true that task-c was not scheduled` denies the whole claim. All
   equivalent negative-scheduling forms, including `unable` wording without a
