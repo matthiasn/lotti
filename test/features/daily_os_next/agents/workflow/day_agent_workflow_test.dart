@@ -31,6 +31,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
+import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1898,6 +1899,7 @@ void main() {
               args: any(named: 'args'),
               wakeDayId: any(named: 'wakeDayId'),
               runKey: any(named: 'runKey'),
+              processingJobId: any(named: 'processingJobId'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -1949,6 +1951,7 @@ void main() {
               args: any(named: 'args'),
               wakeDayId: any(named: 'wakeDayId'),
               runKey: any(named: 'runKey'),
+              processingJobId: any(named: 'processingJobId'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -1965,9 +1968,16 @@ void main() {
 
           final result = await execute(
             workflow(directiveService: directiveService),
+            triggerTokens: {
+              dayAgentPlanningDayToken(dayId),
+              dayAgentProcessingJobToken('job-1'),
+            },
           );
 
           expect(result.success, isTrue);
+          expect(sentPrompt().json('trigger_tokens'), [
+            dayAgentPlanningDayToken(dayId),
+          ]);
           verify(
             () => directiveService.executeTool(
               agentId: agentId,
@@ -1975,6 +1985,7 @@ void main() {
               args: {'dayId': dayId, 'status': 'dayClosed'},
               wakeDayId: dayId,
               runKey: runKey,
+              processingJobId: 'job-1',
             ),
           ).called(1);
         },
@@ -2827,8 +2838,12 @@ void main() {
         );
         final inferenceRepo =
             conversationRepository.sendMessageCalls.single.inferenceRepo;
-        expect(inferenceRepo, isA<CloudInferenceWrapper>());
-        final wrapper = inferenceRepo as CloudInferenceWrapper;
+        expect(inferenceRepo, isA<DayAgentTimeoutInferenceRepository>());
+        final bounded = inferenceRepo as DayAgentTimeoutInferenceRepository;
+        expect(bounded.wakeKind, DayAgentWakeKind.general);
+        expect(bounded.timeout, const Duration(seconds: 60));
+        expect(bounded.delegate, isA<CloudInferenceWrapper>());
+        final wrapper = bounded.delegate as CloudInferenceWrapper;
         // testAiModel defaults to AiConfigModel.geminiThinkingMode == low.
         expect(wrapper.geminiThinkingMode, GeminiThinkingMode.low);
 
@@ -2960,6 +2975,13 @@ void main() {
           'priority': 'P2',
         },
       ]);
+      final systemPrompt = conversationRepository.lastSystemMessage!;
+      expect(systemPrompt, contains('Capture matching rules:'));
+      expect(systemPrompt, contains('`parse_capture_to_items`'));
+      expect(systemPrompt, isNot(contains('Drafting rules:')));
+      expect(systemPrompt, isNot(contains('`draft_day_plan`')));
+      expect(systemPrompt, isNot(contains('Refine rules:')));
+      expect(systemPrompt, isNot(contains('Your memory (append-only')));
     });
 
     group('capture wake parse enforcement', () {
@@ -3023,6 +3045,14 @@ void main() {
 
           expect(result.success, isTrue);
           expect(conversationRepository.sendMessageCalls, hasLength(2));
+          final systemPrompt = conversationRepository.lastSystemMessage!;
+          expect(systemPrompt, contains('Capture matching rules:'));
+          expect(systemPrompt, contains('`parse_capture_to_items`'));
+          expect(systemPrompt, isNot(contains('Drafting rules:')));
+          expect(systemPrompt, isNot(contains('`draft_day_plan`')));
+          expect(systemPrompt, isNot(contains('Refine rules:')));
+          expect(systemPrompt, isNot(contains('`summarize_recent_patterns`')));
+          expect(systemPrompt, isNot(contains('Your memory (append-only')));
           expect(
             conversationRepository.sendMessageCalls.first.toolChoice,
             isNull,
@@ -3832,6 +3862,14 @@ void main() {
 
           expect(result.success, isTrue);
           expect(conversationRepository.sendMessageCalls, hasLength(2));
+          final systemPrompt = conversationRepository.lastSystemMessage!;
+          expect(systemPrompt, contains('Drafting rules:'));
+          expect(systemPrompt, contains('`draft_day_plan`'));
+          expect(systemPrompt, isNot(contains('Capture matching rules:')));
+          expect(systemPrompt, isNot(contains('`parse_capture_to_items`')));
+          expect(systemPrompt, isNot(contains('Refine rules:')));
+          expect(systemPrompt, isNot(contains('`summarize_recent_patterns`')));
+          expect(systemPrompt, isNot(contains('Your memory (append-only')));
           expect(
             conversationRepository.sendMessageCalls.first.toolChoice,
             isNull,
@@ -4099,6 +4137,16 @@ void main() {
         );
 
         expect(result.success, isTrue);
+        final systemPrompt = conversationRepository.lastSystemMessage!;
+        expect(systemPrompt, contains('Refine rules:'));
+        expect(systemPrompt, contains('`propose_plan_diff`'));
+        expect(systemPrompt, isNot(contains('Capture matching rules:')));
+        expect(systemPrompt, isNot(contains('`parse_capture_to_items`')));
+        expect(systemPrompt, isNot(contains('`draft_day_plan`')));
+        expect(
+          systemPrompt,
+          isNot(contains('On `drafting:<dayId>` wakes')),
+        );
         final refinePayload =
             sentPrompt().json('refine')! as Map<String, dynamic>;
         expect(refinePayload['requested'], isTrue);
@@ -5450,7 +5498,7 @@ void main() {
         // The gated block keeps exactly one blank line on each seam.
         expect(
           conversationRepository.lastSystemMessage,
-          contains('shut down a day.\n\nWeek context'),
+          contains('self-evident.\n\nWeek context'),
         );
         expect(
           conversationRepository.lastSystemMessage,
@@ -5469,7 +5517,7 @@ void main() {
         // No double blank line where the gated block collapsed to nothing.
         expect(
           conversationRepository.lastSystemMessage,
-          contains('shut down a day.\n\nYour memory'),
+          contains('self-evident.\n\nYour memory'),
         );
       });
     });
@@ -5536,7 +5584,7 @@ void main() {
           // The gated block keeps exactly one blank line on the seam.
           expect(
             conversationRepository.lastSystemMessage,
-            contains('shut down a day.\n\nBlocked-work rules'),
+            contains('self-evident.\n\nBlocked-work rules'),
           );
 
           await execute(workflow());

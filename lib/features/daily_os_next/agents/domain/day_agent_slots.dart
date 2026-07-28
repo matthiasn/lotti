@@ -55,6 +55,15 @@ const dayStatusEventIdPrefix = 'day_status:';
 String dayStatusEventId(String dayId, String suffix) =>
     '$dayStatusEventIdPrefix$dayId:$suffix';
 
+/// Stable day-status event ID for one durable processing job.
+///
+/// A draft attempt may raise status before its required plan artifact, then
+/// fail and retry under a fresh wake run key. Keying that status to the
+/// durable job makes each attempt upsert the same event instead of appending
+/// duplicate escalations.
+String dayStatusEventIdForProcessingJob(String dayId, String processingJobId) =>
+    dayStatusEventId(dayId, 'job:$processingJobId');
+
 /// Monday 00:00 local time of the calendar week containing [date].
 ///
 /// Weeks are ISO weeks (Monday-start), matching the digest's "recent weeks"

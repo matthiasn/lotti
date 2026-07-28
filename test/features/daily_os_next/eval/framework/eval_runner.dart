@@ -109,6 +109,8 @@ class EvalRunResult {
     required this.wakes,
     required this.jobStatus,
     required this.jobAttempts,
+    required this.jobLastFailureClass,
+    required this.jobLastError,
     required this.consumption,
     this.error,
   });
@@ -131,6 +133,10 @@ class EvalRunResult {
   /// Terminal status of the draft job, or null when no job was found.
   final String? jobStatus;
   final int? jobAttempts;
+
+  /// Most recent failed attempt, retained even when a later retry succeeded.
+  final String? jobLastFailureClass;
+  final String? jobLastError;
 
   /// Consumption events recorded during this run. Empty for scripted models,
   /// which never reach a provider.
@@ -458,6 +464,8 @@ Future<EvalRunResult> _runCell(
       wakes: recorder.wakes,
       jobStatus: job?.status.name,
       jobAttempts: job?.attempts,
+      jobLastFailureClass: job?.lastFailureClass?.name,
+      jobLastError: job?.lastError,
       consumption: List.unmodifiable(
         attribution?.recordedInteractions ?? const <AiConsumptionEvent>[],
       ),
@@ -503,6 +511,8 @@ EvalRunResult _failedResult(
     wakes: const [],
     jobStatus: null,
     jobAttempts: null,
+    jobLastFailureClass: null,
+    jobLastError: null,
     consumption: const [],
     error: error.toString(),
   );

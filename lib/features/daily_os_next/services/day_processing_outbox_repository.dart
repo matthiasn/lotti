@@ -597,8 +597,7 @@ class DayProcessingOutboxRepository {
     final rows = await db.customWriteReturning(
       'UPDATE day_processing_jobs SET '
       "status = 'running', updated_at = ?1, generation = generation + 1, "
-      'claim_token = ?2, lease_until = ?3, '
-      'last_error = NULL, last_failure_class = NULL '
+      'claim_token = ?2, lease_until = ?3 '
       'WHERE id = ($selector) '
       'RETURNING $_columns',
       variables: variables,
@@ -620,8 +619,6 @@ class DayProcessingOutboxRepository {
       resultEntityId: resultEntityId,
       clearClaimToken: true,
       clearLeaseUntil: true,
-      clearLastError: true,
-      clearLastFailureClass: true,
     );
   });
 

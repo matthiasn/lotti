@@ -95,6 +95,16 @@ void main() {
         isNot(dayStatusEventId('dayplan-2026-05-25', 'b')),
       );
     });
+
+    test('durable retries share one processing-job-scoped event id', () {
+      expect(
+        dayStatusEventIdForProcessingJob(
+          'dayplan-2026-05-25',
+          'draft_dayplan-2026-05-25',
+        ),
+        'day_status:dayplan-2026-05-25:job:draft_dayplan-2026-05-25',
+      );
+    });
   });
 
   group('weekStartFor', () {

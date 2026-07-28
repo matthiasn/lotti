@@ -363,6 +363,32 @@ void main() {
     expect(await repository.claimNext(), isNotNull);
   });
 
+  test(
+    'a successful retry preserves the classified cause of the prior attempt',
+    () async {
+      await enqueue();
+      final firstClaim = await repository.claimNext();
+      await repository.markFailure(
+        jobId: firstClaim!.job.id,
+        claimToken: firstClaim.token,
+        failureClass: DayProcessingFailureClass.timeout,
+        error: 'draft inference stalled for 30s',
+        retryDelay: Duration.zero,
+      );
+
+      final retryClaim = await repository.claimNext();
+      final succeeded = await repository.markSucceeded(
+        jobId: retryClaim!.job.id,
+        claimToken: retryClaim.token,
+      );
+
+      expect(succeeded.status, DayProcessingJobStatus.succeeded);
+      expect(succeeded.attempts, 1);
+      expect(succeeded.lastFailureClass, DayProcessingFailureClass.timeout);
+      expect(succeeded.lastError, 'draft inference stalled for 30s');
+    },
+  );
+
   test('orders ready work by due time and then stable job id', () async {
     await enqueue();
     final claim = await repository.claimNext();

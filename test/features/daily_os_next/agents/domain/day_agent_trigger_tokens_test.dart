@@ -44,6 +44,46 @@ void main() {
         '${dayAgentDecidedCaptureItemPrefix}parsed-abc',
       );
     });
+
+    test('processing-job token round-trips the durable job id', () {
+      const jobId = 'draft_dayplan-2026-05-25';
+      final token = dayAgentProcessingJobToken(jobId);
+
+      expect(token, '$dayAgentProcessingJobPrefix$jobId');
+      expect(processingJobIdFromTriggerTokens({token}), jobId);
+    });
+  });
+
+  group('processingJobIdFromTriggerTokens', () {
+    test('returns null when no durable job token is present', () {
+      expect(
+        processingJobIdFromTriggerTokens({
+          dayAgentDraftingToken('dayplan-2026-05-25'),
+        }),
+        isNull,
+      );
+    });
+
+    test('rejects ambiguous merged durable job tokens', () {
+      expect(
+        () => processingJobIdFromTriggerTokens({
+          dayAgentProcessingJobToken('job-a'),
+          dayAgentProcessingJobToken('job-b'),
+        }),
+        throwsStateError,
+      );
+    });
+
+    test('ignores empty job ids and trims the selected id', () {
+      expect(
+        processingJobIdFromTriggerTokens({
+          dayAgentProcessingJobPrefix,
+          '$dayAgentProcessingJobPrefix   ',
+          '$dayAgentProcessingJobPrefix  job-a  ',
+        }),
+        'job-a',
+      );
+    });
   });
 
   group('hasDraftingTokenForDay', () {

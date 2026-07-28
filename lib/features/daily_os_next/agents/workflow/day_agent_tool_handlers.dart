@@ -9,6 +9,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
     required String threadId,
     required String runKey,
     required String dayId,
+    required String? processingJobId,
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
@@ -57,6 +58,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         args: args,
         wakeDayId: dayId,
         runKey: runKey,
+        processingJobId: processingJobId,
       );
       return DayAgentToolResult(
         success: result.success,

@@ -120,7 +120,10 @@ void main() {
           ),
         ).captured;
         expect(captured[0], dayAgentCaptureSubmittedReason);
-        expect(captured[1], {dayAgentCaptureSubmittedToken('cap-1')});
+        expect(captured[1], {
+          dayAgentCaptureSubmittedToken('cap-1'),
+          dayAgentProcessingJobToken('job-1'),
+        });
       },
     );
 
@@ -166,6 +169,7 @@ void main() {
           dayAgentCaptureSubmittedToken('cap-1'),
           dayAgentDecidedTaskToken('task-1'),
           dayAgentDecidedCaptureItemToken('item-1'),
+          dayAgentProcessingJobToken('job-1'),
         });
       },
     );
@@ -202,6 +206,7 @@ void main() {
         expect(captured[1], {
           dayAgentPlanningDayToken('dayplan-2026-07-22'),
           dayAgentDraftingToken('dayplan-2026-07-22'),
+          dayAgentProcessingJobToken('job-1'),
         });
       },
     );
@@ -242,6 +247,7 @@ void main() {
           dayAgentPlanningDayToken('dayplan-2026-07-22'),
           dayAgentRefineToken('dayplan-2026-07-22'),
           dayAgentCaptureSubmittedToken('cap-refine'),
+          dayAgentProcessingJobToken('job-1'),
         });
       },
     );

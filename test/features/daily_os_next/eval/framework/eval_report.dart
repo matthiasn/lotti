@@ -597,6 +597,8 @@ class EvalReport {
       'job': {
         'status': result.jobStatus,
         'attempts': result.jobAttempts,
+        'lastFailureClass': result.jobLastFailureClass,
+        'lastError': result.jobLastError,
         'latencyMs': result.latency.inMilliseconds,
         'error': result.error,
       },

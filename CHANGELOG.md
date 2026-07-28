@@ -58,6 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing when there is nothing on the clipboard to paste.
 
 ### Changed
+- **Daily OS planning now abandons silent AI requests quickly and retries
+  cleanly.** A provider that returned nothing could hold a plan for about two
+  minutes before the app tried again, and a retry could repeat the same
+  overcommit warning. Drafts and refinements now detect a silent response in
+  30 seconds, cancel it before late tool calls can land, and keep each planning
+  step focused on only the instructions and tools it can actually use.
 - **The "Enable Sync Actor" setting is gone.** The advanced-settings toggle
   never did anything — the isolate-based sync it was meant to switch on was
   never finished or connected — so it is removed rather than left as a switch

@@ -1,9 +1,17 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
+import 'package:openai_dart/openai_dart.dart';
 
-import '../../../agents/test_data/entity_factories.dart';
+import '../../../agents/test_utils.dart';
 
 // The rest of day_agent_workflow_models.dart (tool exceptions, observation
 // trimming, scheduled-wake carry-over, counter GC) is exercised through
@@ -149,4 +157,209 @@ void main() {
       );
     });
   });
+
+  group('day-agent inference timeout', () {
+    test('uses a materially shorter bound for drafting than general wakes', () {
+      const policy = DayAgentInferenceTimeoutPolicy();
+
+      expect(
+        policy.forKind(DayAgentWakeKind.capture),
+        const Duration(seconds: 20),
+      );
+      expect(
+        policy.forKind(DayAgentWakeKind.draft),
+        const Duration(seconds: 30),
+      );
+      expect(
+        policy.forKind(DayAgentWakeKind.refine),
+        const Duration(seconds: 30),
+      );
+      expect(
+        policy.forKind(DayAgentWakeKind.general),
+        const Duration(seconds: 60),
+      );
+    });
+
+    test('rejects a non-positive deadline', () {
+      expect(
+        () => DayAgentTimeoutInferenceRepository(
+          delegate: const _StreamInferenceRepository(Stream.empty()),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: Duration.zero,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('generateText cancels the deadline when the provider completes', () {
+      fakeAsync((async) {
+        final source = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+        );
+        final chunks = <CreateChatCompletionStreamResponse>[];
+        final errors = <Object>[];
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _StreamInferenceRepository(source.stream),
+          wakeKind: DayAgentWakeKind.capture,
+          timeout: const Duration(seconds: 20),
+        );
+
+        repository
+            .generateText(
+              prompt: 'capture',
+              model: 'glm-5.2',
+              temperature: 0.3,
+              systemMessage: null,
+              provider: testInferenceProvider(),
+            )
+            .listen(
+              chunks.add,
+              onError: errors.add,
+            );
+        source
+          ..add(_thinkingChunk('glm-5.2'))
+          ..close();
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 21))
+          ..flushMicrotasks();
+
+        expect(chunks, hasLength(1));
+        expect(errors, isEmpty);
+      });
+    });
+
+    test('classifies and cancels a provider stream at the total deadline', () {
+      fakeAsync((async) {
+        var upstreamCancelled = false;
+        final source = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+          onCancel: () {
+            upstreamCancelled = true;
+          },
+        );
+        final errors = <Object>[];
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _StreamInferenceRepository(source.stream),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: const Duration(seconds: 30),
+        );
+
+        final subscription = repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'glm-5.2',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+
+        async
+          ..elapse(const Duration(seconds: 29))
+          ..flushMicrotasks();
+        expect(errors, isEmpty);
+
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+        expect(errors, hasLength(1));
+        expect(errors.single, isA<TimeoutException>());
+        expect(errors.single, isA<DayAgentInferenceTimedOutException>());
+        expect(errors.single.toString(), contains('draft'));
+        expect(errors.single.toString(), contains('30s'));
+        expect(
+          upstreamCancelled,
+          isTrue,
+          reason:
+              'The inner timeout must cancel the provider stream so a late '
+              'tool batch cannot mutate after the retry starts.',
+        );
+
+        unawaited(subscription.cancel());
+        unawaited(source.close());
+      });
+    });
+
+    test('stream activity does not extend the total deadline', () {
+      fakeAsync((async) {
+        var upstreamCancelled = false;
+        final source = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+          onCancel: () {
+            upstreamCancelled = true;
+          },
+        );
+        final errors = <Object>[];
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _StreamInferenceRepository(source.stream),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: const Duration(seconds: 30),
+        );
+
+        repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'qwen3.5-397b-a17b',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+
+        for (var i = 0; i < 5; i++) {
+          async.elapse(const Duration(seconds: 5));
+          source.add(_thinkingChunk('qwen3.5-397b-a17b'));
+          async.flushMicrotasks();
+          expect(errors, isEmpty);
+        }
+        async
+          ..elapse(const Duration(seconds: 5))
+          ..flushMicrotasks();
+
+        expect(errors.single, isA<DayAgentInferenceTimedOutException>());
+        expect(upstreamCancelled, isTrue);
+        unawaited(source.close());
+      });
+    });
+  });
+}
+
+CreateChatCompletionStreamResponse _thinkingChunk(String model) =>
+    CreateChatCompletionStreamResponse(
+      id: 'thinking',
+      created: 0,
+      model: model,
+      choices: const [],
+    );
+
+class _StreamInferenceRepository implements InferenceRepositoryInterface {
+  const _StreamInferenceRepository(this.stream);
+
+  final Stream<CreateChatCompletionStreamResponse> stream;
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateText({
+    required String prompt,
+    required String model,
+    required double temperature,
+    required String? systemMessage,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+  }) => stream;
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
+    InferenceImpactCollector? impactCollector,
+  }) => stream;
 }

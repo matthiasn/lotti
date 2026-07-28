@@ -147,7 +147,12 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       // changing trigger set never evicts the large stable blocks above it.
       ..addJson(
         DayAgentPromptTags.triggerTokens,
-        triggerTokens.toList()..sort(),
+        triggerTokens
+            .where(
+              (token) => !token.startsWith(dayAgentProcessingJobPrefix),
+            )
+            .toList()
+          ..sort(),
       )
       // The day's planning floor, next to the wall-clock it is derived from.
       // Rendered for every wake that could place a block, not just drafting:

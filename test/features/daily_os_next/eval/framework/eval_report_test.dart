@@ -69,6 +69,8 @@ void main() {
     Duration latency = const Duration(milliseconds: 100),
     String? error,
     String? jobStatus = 'succeeded',
+    String? jobLastFailureClass,
+    String? jobLastError,
   }) {
     final req = forRequest ?? request();
     return EvalRunResult(
@@ -92,6 +94,8 @@ void main() {
           ],
       jobStatus: jobStatus,
       jobAttempts: 0,
+      jobLastFailureClass: jobLastFailureClass,
+      jobLastError: jobLastError,
       consumption: const [],
       error: error,
     );
@@ -518,6 +522,8 @@ void main() {
             pass(EvalConstraintIds.withinCapacity),
             fail(EvalConstraintIds.requiredWorkPlaced, 'not placed: task-1'),
           ],
+          jobLastFailureClass: 'timeout',
+          jobLastError: 'draft inference produced no stream activity for 30s',
         ),
       ], generatedAt: generatedAt);
 
@@ -559,6 +565,17 @@ void main() {
       expect(
         (entry['constraints']! as Map)[EvalConstraintIds.requiredWorkPlaced],
         containsPair('detail', 'not placed: task-1'),
+      );
+      expect(
+        entry['job'],
+        containsPair('lastFailureClass', 'timeout'),
+      );
+      expect(
+        entry['job'],
+        containsPair(
+          'lastError',
+          'draft inference produced no stream activity for 30s',
+        ),
       );
     });
 

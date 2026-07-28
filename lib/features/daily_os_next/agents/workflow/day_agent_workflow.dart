@@ -22,6 +22,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake_context.dart';
@@ -85,6 +86,7 @@ class DayAgentWorkflow {
     this.logSummarizer,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
+    this.inferenceTimeouts = const DayAgentInferenceTimeoutPolicy(),
   });
 
   /// Agent repository.
@@ -149,6 +151,9 @@ class DayAgentWorkflow {
   /// Compaction watermarks — see `TaskAgentWorkflow` for the rationale.
   final int compactionTailBudgetTokens;
   final int compactionTailRetainTokens;
+
+  /// Per-mode provider-stream total deadlines.
+  final DayAgentInferenceTimeoutPolicy inferenceTimeouts;
 
   static const minScheduledWakeLeadTime = Duration(minutes: 15);
   static const maxScheduledWakeWritesPerDay = 4;
@@ -366,7 +371,26 @@ class DayAgentWorkflow {
         ? await _weekContext(planDate: dayDate, now: now)
         : null;
     final dayAudioEntries = await _dayAudioEntries(resolvedDayId);
-    final systemPrompt = _buildSystemPrompt(templateCtx, agentId: agentId);
+    final requiresCaptureParse = _requiresCaptureParse(
+      wakeContext: wakeContext,
+      captureContext: captureContext,
+    );
+    final requiresDraftDayPlan = _requiresDraftDayPlan(
+      wakeContext: wakeContext,
+    );
+    final wakeKind = requiresCaptureParse
+        ? DayAgentWakeKind.capture
+        : requiresDraftDayPlan
+        ? DayAgentWakeKind.draft
+        : wakeContext.isRefineWake
+        ? DayAgentWakeKind.refine
+        : DayAgentWakeKind.general;
+    final systemPrompt = _buildSystemPrompt(
+      templateCtx,
+      agentId: agentId,
+      wakeContext: wakeContext,
+      captureContext: captureContext,
+    );
     final userMessage = _buildUserMessage(
       dayId: resolvedDayId,
       planDate: dayDate,
@@ -409,27 +433,28 @@ class DayAgentWorkflow {
         runKey: runKey,
         domainLogger: domainLogger,
         terminalToolNames: {
-          if (_requiresCaptureParse(
-            wakeContext: wakeContext,
-            captureContext: captureContext,
-          ))
-            DayAgentToolNames.parseCaptureToItems,
-          if (_requiresDraftDayPlan(wakeContext: wakeContext))
-            DayAgentToolNames.draftDayPlan,
+          if (requiresCaptureParse) DayAgentToolNames.parseCaptureToItems,
+          if (requiresDraftDayPlan) DayAgentToolNames.draftDayPlan,
         },
         executeToolHandler: (toolName, args, manager) => _executeToolHandler(
           agentId: agentId,
           threadId: threadId,
           runKey: runKey,
           dayId: resolvedDayId,
+          processingJobId: wakeContext.processingJobId,
           toolName: toolName,
           args: args,
         ),
       );
 
-      final inferenceRepo = CloudInferenceWrapper(
+      final cloudInferenceRepo = CloudInferenceWrapper(
         cloudRepository: cloudInferenceRepository,
         geminiThinkingMode: resolvedProfile.thinkingModel?.geminiThinkingMode,
+      );
+      final inferenceRepo = DayAgentTimeoutInferenceRepository(
+        delegate: cloudInferenceRepo,
+        wakeKind: wakeKind,
+        timeout: inferenceTimeouts.forKind(wakeKind),
       );
 
       if (templateCtx != null) {
@@ -465,10 +490,7 @@ class DayAgentWorkflow {
         rethrowInferenceErrors: true,
       );
 
-      if (_requiresCaptureParse(
-        wakeContext: wakeContext,
-        captureContext: captureContext,
-      )) {
+      if (requiresCaptureParse) {
         if (!strategy.didPersistCaptureParse) {
           // The resolved capture context is the single source of truth for
           // which capture this wake parses; re-extracting from the token set
@@ -495,7 +517,7 @@ class DayAgentWorkflow {
         }
       }
 
-      if (_requiresDraftDayPlan(wakeContext: wakeContext)) {
+      if (requiresDraftDayPlan) {
         if (!strategy.didPersistDraftDayPlan) {
           final retryUsage = await _forceDraftDayPlanIfMissing(
             conversationId: conversationId,

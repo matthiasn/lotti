@@ -73,6 +73,13 @@ const dayAgentDecidedTaskPrefix = 'decided_task:';
 /// considers "decided" but which does not have a persisted task ID yet.
 const dayAgentDecidedCaptureItemPrefix = 'decided_capture_item:';
 
+/// Wake trigger token prefix carrying the durable outbox job behind a wake.
+///
+/// The job id is not model context. It gives retrying wakes one stable
+/// idempotency scope for side effects that may precede the terminal artifact,
+/// such as `raise_day_status`.
+const dayAgentProcessingJobPrefix = 'processing_job:';
+
 /// Creates the planning-day workspace trigger token for [dayId].
 String dayAgentPlanningDayToken(String dayId) {
   return '$dayAgentPlanningDayPrefix$dayId';
@@ -106,6 +113,11 @@ String dayAgentDecidedTaskToken(String taskId) {
 /// Creates the decided capture-item trigger token for [parsedItemId].
 String dayAgentDecidedCaptureItemToken(String parsedItemId) {
   return '$dayAgentDecidedCaptureItemPrefix$parsedItemId';
+}
+
+/// Creates the durable processing-job trigger token for [jobId].
+String dayAgentProcessingJobToken(String jobId) {
+  return '$dayAgentProcessingJobPrefix$jobId';
 }
 
 /// Whether [triggerTokens] requests a drafting wake for the [dayId]
@@ -153,6 +165,19 @@ List<String> decidedTaskIdsFromTriggerTokens(Set<String> triggerTokens) =>
 List<String> decidedCaptureItemIdsFromTriggerTokens(
   Set<String> triggerTokens,
 ) => _idsForPrefix(triggerTokens, dayAgentDecidedCaptureItemPrefix)..sort();
+
+/// Extracts the one durable processing-job id carried by a wake.
+///
+/// A wake created outside the outbox has no such id. Multiple distinct ids
+/// are invalid rather than arbitrarily selecting one: they would collapse
+/// unrelated intents into the same idempotency scope.
+String? processingJobIdFromTriggerTokens(Set<String> triggerTokens) {
+  final ids = _idsForPrefix(triggerTokens, dayAgentProcessingJobPrefix).toSet();
+  if (ids.length > 1) {
+    throw StateError('Ambiguous processing job ids: ${ids.toList()..sort()}');
+  }
+  return ids.isEmpty ? null : ids.first;
+}
 
 List<String> _idsForPrefix(Set<String> tokens, String prefix) {
   final out = <String>[];

@@ -388,6 +388,7 @@ void main() {
       String agentId = perDayAgent,
       String? wakeDayId = dayId,
       String? runKey,
+      String? processingJobId,
     }) {
       return withClock(
         Clock.fixed(now),
@@ -397,6 +398,7 @@ void main() {
           args: args,
           wakeDayId: wakeDayId,
           runKey: runKey,
+          processingJobId: processingJobId,
         ),
       );
     }
@@ -422,6 +424,44 @@ void main() {
         ]);
         expect(event.raisedAt, now);
         expect(notifications, containsAll([dayId, event.id]));
+      },
+    );
+
+    test(
+      'durable-job retries upsert one status event instead of duplicating it',
+      () async {
+        const processingJobId = 'draft_dayplan-2026-07-23';
+        const args = <String, dynamic>{
+          'dayId': dayId,
+          'status': 'attentionNeeded',
+          'reasons': ['overCommitted'],
+          'note': 'The selected work does not fit.',
+        };
+
+        final first = await executeRaise(
+          args,
+          runKey: 'attempt-1',
+          processingJobId: processingJobId,
+        );
+        final retry = await executeRaise(
+          args,
+          runKey: 'attempt-2',
+          processingJobId: processingJobId,
+        );
+
+        expect(first.success, isTrue, reason: first.output);
+        expect(retry.success, isTrue, reason: retry.output);
+        final events = upserted.whereType<DayStatusEventEntity>().toList();
+        expect(
+          events,
+          hasLength(2),
+          reason: 'both attempts reached the writer',
+        );
+        expect(
+          events.map((event) => event.id).toSet(),
+          {'day_status:$dayId:job:$processingJobId'},
+          reason: 'the synced upsert key, not the wake run key, owns identity',
+        );
       },
     );
 
