@@ -1431,13 +1431,10 @@ bool _hasTaskBoundAllocationDenial(
       failure,
       boundaries: ',.;!?\n',
     );
-    final prefix = prose.substring(range.start, failure.start);
-    if (RegExp(
-      r'\b(?:meeting|workday|calendar|appointment|event|session)\s*$',
-      caseSensitive: false,
-    ).hasMatch(prefix)) {
+    if (_allocationFailureHasExplicitNonTaskScope(prose, failure, range)) {
       continue;
     }
+    final prefix = prose.substring(range.start, failure.start);
     if (RegExp(
       r'^\s*(?:(?:and|but|yet|so)\s+)?$',
       caseSensitive: false,
@@ -1446,6 +1443,26 @@ bool _hasTaskBoundAllocationDenial(
     }
   }
   return false;
+}
+
+bool _allocationFailureHasExplicitNonTaskScope(
+  String prose,
+  Match failure,
+  ({int start, int end}) range,
+) {
+  const nonTaskHead = '(?:meeting|workday|calendar|appointment|event|session)';
+  final prefix = prose.substring(range.start, failure.start);
+  if (RegExp(
+    '$nonTaskHead\\s*\$',
+    caseSensitive: false,
+  ).hasMatch(prefix)) {
+    return true;
+  }
+  final suffix = prose.substring(failure.end, range.end);
+  return RegExp(
+    r'^\s+for\s+(?:(?:the|this|that|a|an)\s+)?' + nonTaskHead + r'\b',
+    caseSensitive: false,
+  ).hasMatch(suffix);
 }
 
 bool _allocationActionIsDirectlyDenied(String prose, Match action) {
@@ -1558,6 +1575,10 @@ bool _matchClauseIsNegated(
       continue;
     }
     if (negationEnd <= match.start &&
+        _negationEndsAtContrastiveTradePredicate(between)) {
+      continue;
+    }
+    if (negationEnd <= match.start &&
         _longNegatedComplementPattern.hasMatch(between)) {
       return true;
     }
@@ -1621,6 +1642,10 @@ bool _negativeTradeDisclosureIsDenied(String prose, Match match) {
         _negationQualifiesRatherThanNegates(negation, between)) {
       continue;
     }
+    if (end <= match.start &&
+        _negationEndsAtContrastiveTradePredicate(between)) {
+      continue;
+    }
     if (start >= match.end &&
         RegExp(
           r'^\s*(?:because|since|as|due\s+to|owing\s+to)\s*$',
@@ -1631,6 +1656,17 @@ bool _negativeTradeDisclosureIsDenied(String prose, Match match) {
     if (_wordPattern.allMatches(between).length <= 3) return true;
   }
   return false;
+}
+
+bool _negationEndsAtContrastiveTradePredicate(String between) {
+  final contrast = RegExp(
+    r'\bbut\s*$',
+    caseSensitive: false,
+  ).firstMatch(between);
+  if (contrast == null) return false;
+  final deniedPredicate = between.substring(0, contrast.start);
+  return _partialTradeDispositionPattern.hasMatch(deniedPredicate) ||
+      _conflictTradePattern.hasMatch(deniedPredicate);
 }
 
 bool _splitIsTaskBound(

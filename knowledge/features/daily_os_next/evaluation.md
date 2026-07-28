@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T17:10:59+02:00 }
+generated: { by: codex/5, at: 2026-07-28T17:30:47+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -127,6 +127,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `failed scheduling 60 of 120 minutes` is allocation evidence. A standalone
   task-bound failure predicate retracts earlier arithmetic too:
   `scheduled 60 of 120 minutes, but the allocation failed` is not credit. A
+  failure explicitly scoped to a non-task subject does not retract the task:
+  `the allocation failed for the meeting` is meeting evidence even when the
+  non-task head follows the failure predicate. A
   later action describing “the rest” cannot validate earlier omitted
   arithmetic.
   Unrelated meeting/workday scope is likewise associated with its nearest
@@ -317,7 +320,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   not disclose that task-c itself was deferred or left unscheduled. Active
   dispositions may govern a token-bounded task id or full title directly, so
   `We omitted task-c due to capacity` and `We omitted Core due to capacity`
-  name the casualty when those references identify the current task. A
+  name the casualty when those references identify the current task.
+  Conjunction-delimited objects retain each governed task, so
+  `We omitted task-a and task-c` names task-c too. A
   `for later` disposition must be governed by a scheduling, movement, copula,
   or remainder predicate. The same object binding rejects domain phrases
   such as `reviews trade policy`, `evaluates a trade`, and `carries over
@@ -365,7 +370,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   was fully scheduled after all` is contradictory rather than a surfaced
   casualty. Denials do not cancel a different asserted disposition:
   `task-c was not dropped; it was deferred to tomorrow` still surfaces the
-  actual deferral.
+  actual deferral. A contrastive replacement predicate is the same boundary:
+  `task-c was not dropped but deferred to a later day` denies only the drop.
   Correlative negation covers both dispositions, so
   `task-c was neither omitted nor deferred` asserts neither trade.
   Necessity idioms are affirmative rather than negated: `We had no choice but

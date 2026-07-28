@@ -2125,6 +2125,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('ignores a postpositive non-task allocation failure', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c scheduled 60 of 120 minutes, but the allocation '
+                  'failed for the meeting.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('rejects an attempted allocation action', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -4755,6 +4778,30 @@ void main() {
       expect(result.detail, contains('task-c'));
     });
 
+    test('accepts a task id in a coordinated active omission object', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'We omitted task-a and task-c due to capacity.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(taskId: 'task-a', title: 'Alpha'),
+            EvalCorpusTask(taskId: 'task-c', title: 'Core'),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
     test('accepts a full task title as an active omission object', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -5816,6 +5863,27 @@ void main() {
               estimateMinutes: 120,
             ),
           ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
+    test('ends negation at a contrastive replacement disposition', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c was not dropped but deferred to a later day.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
           decidedTaskIds: const ['task-c'],
           requiresConflictSurfaced: true,
         ),
