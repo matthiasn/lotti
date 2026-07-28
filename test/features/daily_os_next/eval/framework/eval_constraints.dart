@@ -665,14 +665,15 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
     final taskId = entry.key;
     final allocated = entry.value.allocatedMinutes;
     final estimate = entry.value.estimateMinutes;
-    fullEstimateMinutes += estimate - allocated;
+    final estimateShortfall = estimate > allocated ? estimate - allocated : 0;
+    fullEstimateMinutes += estimateShortfall;
     if (_isAuditedPartial(entry.value)) {
       partials.add(
         '$taskId ${allocated}min partial of ${estimate}min '
         '(${estimate - allocated}min remain)',
       );
     } else {
-      chargedMinutes += estimate - allocated;
+      chargedMinutes += estimateShortfall;
       if (allocated > 0 && allocated < estimate) {
         undisclosedShortenings.add(
           '$taskId allocated ${allocated}min of ${estimate}min',
@@ -2343,7 +2344,7 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
     r'(?:\s+(?:only|merely|just|still))?'
     r'(?:\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
     'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))?|'
-    '(?:has|have|had)|'
+    '(?:has|have|had|leave(?:s|d|ing)?|left)|'
     '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
     r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))\s*$',
     caseSensitive: false,

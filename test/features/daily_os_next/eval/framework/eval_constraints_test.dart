@@ -1329,6 +1329,38 @@ void main() {
       expect(result.passed, isTrue);
     });
 
+    test('an overlong allocation cannot cancel another estimate shortfall', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(id: 'long', startHour: 9, endHour: 13, taskId: 'task-long'),
+            block(
+              id: 'short',
+              startHour: 13,
+              endHour: 17,
+              taskId: 'task-short',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-long',
+              title: 'Long allocation',
+              estimateMinutes: 120,
+            ),
+            EvalCorpusTask(
+              taskId: 'task-short',
+              title: 'Short allocation',
+              estimateMinutes: 360,
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('600min'));
+      expect(result.detail, contains('over by 120'));
+    });
+
     test('uses the clock-bounded planning window after a late start', () {
       const lateTasks = [
         EvalCorpusTask(
@@ -2883,6 +2915,29 @@ void main() {
               reason:
                   'task-c is partial; '
                   'the meeting has 60 minutes remaining.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('a meeting that leaves a remainder cannot earn partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c is partial; '
+                  'the meeting leaves 60 minutes remaining.',
             ),
           ],
           corpus: tasks,

@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T09:08:16+02:00 }
+generated: { by: codex/5, at: 2026-07-28T09:21:04+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -174,7 +174,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   full-day capacity. Scheduled non-task blocks retain their written duration in
   that charge while estimated task allocations are replaced by their estimate
   or audited-partial value, so buffers and calendar blocks cannot disappear
-  from effective capacity. A late-start scenario therefore cannot silently
+  from effective capacity. An allocation longer than its estimate retains its
+  actual duration and cannot cancel another task's estimate shortfall. A
+  late-start scenario therefore cannot silently
   compress work into the remaining window. Every structurally shortened decided task counts
   as deferred work for `surfacedConflict`, whether or not its disclosure earns
   audited partial credit, so a plan that represents every task only partially
@@ -205,7 +207,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   remains a meeting claim; copula modifiers do not change that head, so `the
   meeting was only partial` is rejected too.
   Ordinary possessive verbs retain their head subject as well, so
-  `the meeting has 60 minutes remaining` cannot supply the task's remainder.
+  `the meeting has 60 minutes remaining` cannot supply the task's remainder;
+  remainder-producing verbs such as `the meeting leaves 60 minutes remaining`
+  retain the meeting subject too.
   Bare continuity such as `remains scheduled` is not a trade: numeric remainder
   arithmetic matching the structural remainder, or an actual
   omit/defer/shorten/conflict disposition, is required. Likewise, `left
