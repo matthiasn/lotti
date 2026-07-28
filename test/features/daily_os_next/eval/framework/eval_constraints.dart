@@ -712,6 +712,8 @@ final _negationWordPattern = RegExp(
   caseSensitive: false,
 );
 
+final _wordPattern = RegExp(r'\b\w+\b');
+
 final _partialRemainderDispositionPattern = RegExp(
   r'\b(?:for\s+(?:later|tomorrow|another\s+day|a\s+(?:later|future)\s+day)|'
   r'(?:roll(?:s|ed|ing)?|move(?:s|d|ing)?|carr(?:y|ies|ied|ying))\s+'
@@ -884,9 +886,19 @@ bool _hasAuditablePartialDisclosure({
 }
 
 bool _matchClauseIsNegated(String reason, Match match) {
-  return _negationWordPattern.hasMatch(
-    _matchClause(reason, match, boundaries: ',.;!?\n'),
-  );
+  final range = _matchClauseRange(reason, match, boundaries: ',.;!?\n');
+  final segment = reason.substring(range.start, range.end);
+  for (final negation in _negationWordPattern.allMatches(segment)) {
+    final negationStart = range.start + negation.start;
+    final negationEnd = range.start + negation.end;
+    final between = negationEnd <= match.start
+        ? reason.substring(negationEnd, match.start)
+        : negationStart >= match.end
+        ? reason.substring(match.end, negationStart)
+        : '';
+    if (_wordPattern.allMatches(between).length <= 3) return true;
+  }
+  return false;
 }
 
 bool _splitIsTaskBound(String reason, Match match) {
@@ -897,8 +909,9 @@ bool _splitIsTaskBound(String reason, Match match) {
 
 bool _remainderIsTaskBound(String reason, Match match) {
   final clause = _matchClause(reason, match);
-  return _partialMentionPattern.hasMatch(clause) ||
-      _partialRemainderDispositionPattern.hasMatch(clause);
+  if (_partialRemainderDispositionPattern.hasMatch(clause)) return true;
+  if (_unrelatedRemainderScopePattern.hasMatch(clause)) return false;
+  return _partialMentionPattern.hasMatch(clause);
 }
 
 bool _remainderIsRelatedToTask(String reason, Match match) {
@@ -915,6 +928,15 @@ String _matchClause(
   Match match, {
   String boundaries = '.;!?\n',
 }) {
+  final range = _matchClauseRange(reason, match, boundaries: boundaries);
+  return reason.substring(range.start, range.end);
+}
+
+({int start, int end}) _matchClauseRange(
+  String reason,
+  Match match, {
+  required String boundaries,
+}) {
   var clauseStart = 0;
   for (var i = match.start - 1; i >= 0; i--) {
     if (boundaries.contains(reason[i])) {
@@ -929,7 +951,7 @@ String _matchClause(
       break;
     }
   }
-  return reason.substring(clauseStart, clauseEnd);
+  return (start: clauseStart, end: clauseEnd);
 }
 
 /// Work the scenario says any competent plan must include.

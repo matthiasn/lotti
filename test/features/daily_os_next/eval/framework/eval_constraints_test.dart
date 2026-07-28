@@ -1480,6 +1480,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('allows a later explanation that the full task cannot fit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Partial: 60 of 120 minutes are scheduled because '
+                  'the full task cannot fit today.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('accepts an inflected carry disposition for the remainder', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1659,6 +1682,12 @@ void main() {
         reason:
             'Partial progress is recorded; '
             '60 minutes remain in the workday.',
+      ),
+      (
+        name: 'a nearby partial with a meeting remainder',
+        reason:
+            'This placement is partial, '
+            '60 minutes remain for the meeting.',
       ),
       (
         name: 'an unrelated workday completed-estimate split',
