@@ -776,7 +776,7 @@ final _unrelatedRemainderScopePattern = RegExp(
 
 final _conflictTradePattern = RegExp(
   r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|left|'
-  'trade|conflict|shorten(?:s|ed|ing)?|'
+  'trade|conflict(?:s|ed|ing)?|shorten(?:s|ed|ing)?|'
   r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
   r'(?:do|does|did)\s+not)\s+fit)\b',
   caseSensitive: false,
@@ -901,6 +901,14 @@ bool _hasAuditablePartialDisclosure({
     var reasonMentionsPartial = false;
     var reasonHasBoundRemainder = false;
     for (final match in _partialMentionPattern.allMatches(reason)) {
+      if (_tradeEvidenceHasExplicitNonTaskSubject(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+      )) {
+        continue;
+      }
       if (_evidenceNamesAnotherTask(
         reason,
         match,
@@ -914,13 +922,19 @@ bool _hasAuditablePartialDisclosure({
       reasonMentionsPartial = true;
     }
     for (final match in _partialOfEstimatePattern.allMatches(reason)) {
-      if (!_splitIsTaskBound(
-        reason,
-        match,
-        taskId: taskId,
-        taskTitle: taskTitle,
-        corpus: corpus,
-      )) {
+      if (_tradeEvidenceHasExplicitNonTaskSubject(
+            reason,
+            match,
+            taskId: taskId,
+            taskTitle: taskTitle,
+          ) ||
+          !_splitIsTaskBound(
+            reason,
+            match,
+            taskId: taskId,
+            taskTitle: taskTitle,
+            corpus: corpus,
+          )) {
         continue;
       }
       if (_matchClauseIsNegated(reason, match)) return false;
@@ -933,6 +947,14 @@ bool _hasAuditablePartialDisclosure({
       hasMatchingSplit = true;
     }
     for (final match in _partialRemainingPattern.allMatches(reason)) {
+      if (_tradeEvidenceHasExplicitNonTaskSubject(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+      )) {
+        continue;
+      }
       if (_evidenceNamesAnotherTask(
         reason,
         match,
@@ -951,6 +973,14 @@ bool _hasAuditablePartialDisclosure({
       }
     }
     for (final match in _partialLeadingRemainingPattern.allMatches(reason)) {
+      if (_tradeEvidenceHasExplicitNonTaskSubject(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+      )) {
+        continue;
+      }
       if (_evidenceNamesAnotherTask(
         reason,
         match,
@@ -991,7 +1021,14 @@ bool _partialMentionIsNegated(String reason, Match match) {
 }
 
 bool _negationQualifiesRatherThanNegates(Match negation, String between) {
-  if ((negation.group(0) ?? '').toLowerCase() != 'not') return false;
+  final negator = (negation.group(0) ?? '').toLowerCase();
+  if (negator == 'no') {
+    return RegExp(
+      r'^\s*more\s+than\b',
+      caseSensitive: false,
+    ).hasMatch(between);
+  }
+  if (negator != 'not') return false;
   return RegExp(r'^\s*only\b', caseSensitive: false).hasMatch(between) ||
       RegExp(
         r'^\s*all\b.*\bfit(?:s|ting)?\b\s+'
@@ -1798,80 +1835,60 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
   caseSensitive: false,
 ).hasMatch(prose);
 
-bool _hasAffirmativeTradeDisclosure(
+({bool affirmative, bool denied}) _tradeDisclosureEvidence(
   EvalRunOutcome outcome,
   String taskId,
   String prose,
 ) {
   final task = outcome.inputs.taskById(taskId);
-  if (task == null) return false;
+  if (task == null) return (affirmative: false, denied: false);
   final placement = _estimatedTaskPlacements(outcome)[taskId];
   final structuralRemainder = placement == null
       ? null
       : placement.estimateMinutes - placement.allocatedMinutes;
+  var hasAffirmativeEvidence = false;
+  var hasDeniedEvidence = false;
+
+  bool belongsToTask(Match match) =>
+      !_tradeEvidenceHasExplicitNonTaskSubject(
+        prose,
+        match,
+        taskId: taskId,
+        taskTitle: task.title,
+      ) &&
+      !_evidenceNamesAnotherTask(
+        prose,
+        match,
+        taskId: taskId,
+        taskTitle: task.title,
+        corpus: outcome.inputs.corpus,
+      );
+
   for (final match in _partialMentionPattern.allMatches(prose)) {
-    if (_tradeEvidenceHasExplicitNonTaskSubject(
-      prose,
-      match,
-      taskId: taskId,
-      taskTitle: task.title,
-    )) {
-      continue;
+    if (!belongsToTask(match)) continue;
+    if (_partialMentionIsNegated(prose, match)) {
+      hasDeniedEvidence = true;
+    } else {
+      hasAffirmativeEvidence = true;
     }
-    if (_evidenceNamesAnotherTask(
-      prose,
-      match,
-      taskId: taskId,
-      taskTitle: task.title,
-      corpus: outcome.inputs.corpus,
-    )) {
-      continue;
-    }
-    if (!_partialMentionIsNegated(prose, match)) return true;
   }
   for (final match in _partialTradeDispositionPattern.allMatches(prose)) {
-    if (_tradeEvidenceHasExplicitNonTaskSubject(
-      prose,
-      match,
-      taskId: taskId,
-      taskTitle: task.title,
-    )) {
-      continue;
+    if (!belongsToTask(match)) continue;
+    if (_matchClauseIsNegated(prose, match)) {
+      hasDeniedEvidence = true;
+    } else {
+      hasAffirmativeEvidence = true;
     }
-    if (_evidenceNamesAnotherTask(
-      prose,
-      match,
-      taskId: taskId,
-      taskTitle: task.title,
-      corpus: outcome.inputs.corpus,
-    )) {
-      continue;
-    }
-    if (!_matchClauseIsNegated(prose, match)) return true;
   }
   for (final pattern in [
     _partialRemainingPattern,
     _partialLeadingRemainingPattern,
   ]) {
     for (final match in pattern.allMatches(prose)) {
-      if (_tradeEvidenceHasExplicitNonTaskSubject(
-            prose,
-            match,
-            taskId: taskId,
-            taskTitle: task.title,
-          ) ||
+      if (!belongsToTask(match) ||
           _unrelatedRemainderScopePattern.hasMatch(
             _matchClause(prose, match),
           )) {
-        continue;
-      }
-      if (_evidenceNamesAnotherTask(
-        prose,
-        match,
-        taskId: taskId,
-        taskTitle: task.title,
-        corpus: outcome.inputs.corpus,
-      )) {
         continue;
       }
       final declaredRemainder = int.tryParse(match.group(1) ?? '');
@@ -1879,38 +1896,34 @@ bool _hasAffirmativeTradeDisclosure(
           declaredRemainder <= 0 ||
           structuralRemainder != null &&
               declaredRemainder != structuralRemainder) {
+        hasDeniedEvidence = true;
         continue;
       }
-      if (!_matchClauseIsNegated(prose, match)) return true;
+      if (_matchClauseIsNegated(prose, match)) {
+        hasDeniedEvidence = true;
+      } else {
+        hasAffirmativeEvidence = true;
+      }
     }
   }
   for (final match in _conflictTradePattern.allMatches(prose)) {
-    if (_tradeEvidenceHasExplicitNonTaskSubject(
-      prose,
-      match,
-      taskId: taskId,
-      taskTitle: task.title,
-    )) {
-      continue;
-    }
-    if (_evidenceNamesAnotherTask(
-      prose,
-      match,
-      taskId: taskId,
-      taskTitle: task.title,
-      corpus: outcome.inputs.corpus,
-    )) {
-      continue;
-    }
+    if (!belongsToTask(match)) continue;
     final matchedTrade = match.group(0) ?? '';
     final negativeFitDisclosure =
         _negationWordPattern.hasMatch(matchedTrade) &&
         RegExp(r'\bfit\b', caseSensitive: false).hasMatch(matchedTrade);
-    if (negativeFitDisclosure || !_matchClauseIsNegated(prose, match)) {
-      return true;
+    if (negativeFitDisclosure) {
+      hasAffirmativeEvidence = true;
+    } else if (_matchClauseIsNegated(prose, match)) {
+      hasDeniedEvidence = true;
+    } else {
+      hasAffirmativeEvidence = true;
     }
   }
-  return false;
+  return (
+    affirmative: hasAffirmativeEvidence,
+    denied: hasDeniedEvidence,
+  );
 }
 
 bool _tradeEvidenceHasExplicitNonTaskSubject(
@@ -1929,9 +1942,18 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   );
   if (currentTaskDistance != null) return false;
   final prefix = prose.substring(range.start, evidence.start).trim();
+  if (RegExp(
+    r'^not\s+only\s+(?:is|are|was|were)$',
+    caseSensitive: false,
+  ).hasMatch(prefix)) {
+    return false;
+  }
   final subjectMatch = RegExp(
-    r'^(.*?)\s+(?:is|are|was|were|has\s+been|have\s+been|had\s+been|'
-    r'will\s+be)\s*$',
+    r'^(.*?)\s+(?:(?:is|are|was|were|has\s+been|have\s+been|had\s+been|'
+    r'will\s+be)(?:\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+    'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))?|'
+    '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+    r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))\s*$',
     caseSensitive: false,
   ).firstMatch(prefix);
   if (subjectMatch == null) return false;
@@ -1949,17 +1971,22 @@ bool _taskTradeIsNamed(
   String taskId, {
   required bool requireTradeDisclosure,
 }) {
+  var hasAffirmativeNamedDisclosure = false;
+  var hasDeniedNamedDisclosure = false;
   for (final block in outcome.blocks) {
-    final prose = '${block.reason ?? ''} ${block.note ?? ''}'.toLowerCase();
-    final namesTask =
-        _taskIdNamed(taskId, prose) || _titleNamed(outcome, taskId, prose);
-    if (!namesTask) continue;
-    if (!requireTradeDisclosure ||
-        _hasAffirmativeTradeDisclosure(outcome, taskId, prose)) {
-      return true;
+    for (final disclosure in [block.reason, block.note]) {
+      final prose = disclosure?.trim().toLowerCase();
+      if (prose == null || prose.isEmpty) continue;
+      final namesTask =
+          _taskIdNamed(taskId, prose) || _titleNamed(outcome, taskId, prose);
+      if (!namesTask) continue;
+      if (!requireTradeDisclosure) return true;
+      final evidence = _tradeDisclosureEvidence(outcome, taskId, prose);
+      hasAffirmativeNamedDisclosure |= evidence.affirmative;
+      hasDeniedNamedDisclosure |= evidence.denied;
     }
   }
-  return false;
+  return hasAffirmativeNamedDisclosure && !hasDeniedNamedDisclosure;
 }
 
 /// Blocks that consume capacity — `dropped` ones are recorded but not

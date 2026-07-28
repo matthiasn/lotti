@@ -621,6 +621,7 @@ class EvalReport {
     'end': block.endTime.toIso8601String(),
     'taskId': block.taskId,
     'reason': block.reason,
+    'note': block.note,
   };
 
   String toMarkdown() {
@@ -655,7 +656,10 @@ class EvalReport {
         'understood the trade. `surfacedConflict` and `directiveHonoured` are '
         'heuristic throughout. `blockerBeforeBlocked` is mixed: an actual '
         'ordering pass or unexcused failure is objective, while a pass through '
-        'its prose bypass is heuristic. Inspect the judge bundle before '
+        'its prose bypass is heuristic. `withinCapacityByEstimate` is also '
+        'mixed: full-estimate outcomes are objective, while a pass that depends '
+        'on free-form partial arithmetic is heuristic. Inspect the judge bundle '
+        'before '
         'treating a heuristic green as reasoning quality. Heuristic outcomes '
         'remain visible below but are excluded from the objective leaderboard.',
       )

@@ -46,15 +46,17 @@ void main() {
     planDate: planDate,
   );
 
-  PlannedBlock block({String id = 'b1', String? taskId}) => PlannedBlock(
-    id: id,
-    categoryId: 'cat-work',
-    startTime: DateTime(2026, 7, 26, 10),
-    endTime: DateTime(2026, 7, 26, 11),
-    title: 'Focus',
-    taskId: taskId,
-    reason: 'because',
-  );
+  PlannedBlock block({String id = 'b1', String? taskId, String? note}) =>
+      PlannedBlock(
+        id: id,
+        categoryId: 'cat-work',
+        startTime: DateTime(2026, 7, 26, 10),
+        endTime: DateTime(2026, 7, 26, 11),
+        title: 'Focus',
+        taskId: taskId,
+        reason: 'because',
+        note: note,
+      );
 
   EvalRunResult result({
     required List<EvalConstraintResult> constraints,
@@ -481,6 +483,13 @@ void main() {
       expect(markdown, contains('Inspect the judge bundle'));
       expect(
         markdown,
+        contains(
+          '`withinCapacityByEstimate` is also mixed: full-estimate outcomes '
+          'are objective',
+        ),
+      );
+      expect(
+        markdown,
         contains('| surfacedConflict | heuristic · inspect |'),
       );
       expect(
@@ -496,7 +505,7 @@ void main() {
     test('carries everything needed to judge without re-running', () {
       final report = EvalReport.fromResults([
         result(
-          blocks: [block(taskId: 'task-1')],
+          blocks: [block(taskId: 'task-1', note: 'Partial: 30m remain.')],
           toolCalls: const [
             EvalToolCall(
               name: 'draft_day_plan',
@@ -543,6 +552,10 @@ void main() {
             'illegal — the persisted plan is legal either way',
       );
       expect((entry['plan']! as List).single, containsPair('taskId', 'task-1'));
+      expect(
+        (entry['plan']! as List).single,
+        containsPair('note', 'Partial: 30m remain.'),
+      );
       expect(
         (entry['constraints']! as Map)[EvalConstraintIds.requiredWorkPlaced],
         containsPair('detail', 'not placed: task-1'),

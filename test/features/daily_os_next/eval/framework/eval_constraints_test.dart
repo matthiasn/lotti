@@ -1533,6 +1533,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('accepts a leading exact-cap allocation', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'No more than 60 of 120 minutes are scheduled; '
+                  '60 minutes remain.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('accepts affirmative not-only allocation wording', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1736,6 +1759,29 @@ void main() {
 
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('rejects a partial claim owned by a meeting', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'The meeting is partial. '
+                  '60 minutes remain for task-c.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
     test('charges a countdown before a meeting at the full estimate', () {
@@ -2914,6 +2960,93 @@ void main() {
       expect(result.detail, contains('without naming a casualty'));
     });
 
+    test('does not combine task naming and trade across fields', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Focused work on task-c.',
+              note: 'Partial attendance only.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('accepts a task-named trade in the note', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Focused work.',
+              note: 'task-c is partial.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
+    test('rejects contradictory task-named claims across fields', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c is partial.',
+              note: 'task-c is not partial.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
     test('does not find a casualty id inside another task id', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -3092,6 +3225,36 @@ void main() {
       expect(result.detail, contains('without naming a casualty'));
     });
 
+    test('does not borrow a scheduled meeting disposition', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Focused work on task-c; '
+                  'the meeting is scheduled for later.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
     test('accepts a remainder-subject disposition', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -3180,6 +3343,72 @@ void main() {
       expect(result.passed, isFalse);
       expect(result.detail, contains('without naming a casualty'));
     });
+
+    for (final reason in [
+      'task-c is partial; task-c is not partial.',
+      'task-c is not partial; task-c is partial.',
+    ]) {
+      test('contradictory partial claims do not disclose: $reason', () {
+        final result = scoreSurfacedConflict(
+          outcome(
+            blocks: [
+              block(
+                id: 'task-c-block',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason: reason,
+              ),
+            ],
+            corpus: const [
+              EvalCorpusTask(
+                taskId: 'task-c',
+                title: 'C',
+                estimateMinutes: 120,
+              ),
+            ],
+            decidedTaskIds: const ['task-c'],
+            requiresConflictSurfaced: true,
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('without naming a casualty'));
+      });
+    }
+
+    for (final reason in [
+      'task-c conflicts with the client meeting.',
+      'task-c is conflicting with the meeting.',
+    ]) {
+      test('accepts an inflected conflict disclosure: $reason', () {
+        final result = scoreSurfacedConflict(
+          outcome(
+            blocks: [
+              block(
+                id: 'task-c-block',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason: reason,
+              ),
+            ],
+            corpus: const [
+              EvalCorpusTask(
+                taskId: 'task-c',
+                title: 'C',
+                estimateMinutes: 120,
+              ),
+            ],
+            decidedTaskIds: const ['task-c'],
+            requiresConflictSurfaced: true,
+          ),
+        );
+
+        expect(result.passed, isTrue);
+        expect(result.detail, contains('task-c'));
+      });
+    }
 
     test('denied conflict does not disclose a shortening', () {
       final result = scoreSurfacedConflict(

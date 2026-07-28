@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T05:48:44+02:00 }
+generated: { by: codex/5, at: 2026-07-28T06:07:12+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -99,11 +99,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   to the other task, while an ambiguous shared title is handled conservatively.
   This allows one clause to audit the current split and name a deferred casualty
   before or after it. The same attribution applies to remainder evidence. The
-  partial mention and task-bound remainder must occur in the same block reason,
-  and the partial mention cannot be borrowed from a claim attributed to another
-  corpus task; unrelated meeting/workday remainder scope is rejected before a
-  later disposition can bind it, and unrelated workday-capacity prose cannot
-  supply the remainder.
+  partial mention and task-bound remainder must occur in the same block reason
+  or note field, and the partial mention cannot be borrowed from a claim
+  attributed to another corpus task or an explicit non-task subject. Unrelated
+  meeting/workday remainder scope is rejected before a later disposition can
+  bind it, and unrelated workday-capacity prose cannot supply the remainder.
   Task qualifiers may sit inside the arithmetic, as in
   `60 minutes of this task remain`; leading forms may also qualify the noun, as
   in `the remaining work is 60 minutes`. Remainder arithmetic explicitly scoped
@@ -119,7 +119,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   affirmative arithmetic. Likewise, `60 of 120 are scheduled and no more`
   remains affirmative because the later `no` follows the allocation action
   instead of negating it; `not only` is likewise affirmative emphasis rather
-  than negation. A negative fit quantifier that explains the partial, such as
+  than negation, and leading `no more than` is an exact quantitative cap. A
+  negative fit quantifier that explains the partial, such as
   `not all work fits so 60 of 120 are scheduled`, also leaves the concrete
   allocation affirmative. A `partial` keyword is negated only by a preceding
   negator, so `partial because not all work fits` remains affirmative. Split
@@ -139,23 +140,28 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   audited partial credit, so a plan that represents every task only partially
   must still name the trade or escalate it. Merely repeating a shortened task's
   title is not a trade: the prose must also disclose partial, deferred, omitted,
-  remaining, shortened, or conflicting work in the same block reason or note
-  that names the task by token-bounded id or full title. A name occurring only
-  inside another task id or word, task-binding grammar such as `for this task`,
-  and trade wording in unrelated plan prose cannot satisfy that disclosure.
+  remaining, shortened, or conflicting work in the same individual block
+  reason or note field that names the task by token-bounded id or full title.
+  The scorer does not combine a task name in one field with unbound trade prose
+  in the other. A name occurring only inside another task id or word,
+  task-binding grammar such as `for this task`, and trade wording in unrelated
+  plan prose cannot satisfy that disclosure.
   Trade language in the same reason is attributed to its nearest corpus task,
   so one task's deferred disposition cannot disclose another task's shortening.
   Label punctuation binds too, so `Partial: task-d` remains owned by `task-d`
   rather than the task attached to the enclosing block.
   An explicit non-task subject is rejected too: `the meeting is deferred`
   cannot disclose the shortening merely because the same reason names a task,
-  while `the remainder is deferred` remains task-trade evidence.
+  and neither can `the meeting is scheduled for later`; `the remainder is
+  deferred` remains task-trade evidence.
   Bare continuity such as `remains scheduled` is not a trade: numeric remainder
   arithmetic matching the structural remainder, or an actual
   omit/defer/shorten/conflict disposition, is required.
-  It must also be affirmative: `not partial` and `no conflict` explicitly deny
-  the trade and receive no credit, while `cannot fit` is itself an affirmative
-  disclosure of the constraint. The constraint detail records every credited
+  It must also be affirmative and internally consistent: `not partial` and
+  `no conflict` explicitly deny the trade, and an affirmative claim plus its
+  denial receives no credit in either order or across two task-named fields.
+  `Cannot fit`, `conflicts`, and `conflicting` are affirmative disclosures.
+  The detail records every credited
   partial and every shortening denied credit, so the judge bundle preserves the
   accounting evidence rather than only the final pass/fail.
 - **Weak semantic outcomes are not ranking evidence.** `surfacedConflict`
@@ -178,6 +184,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   excluded from the objective headline rate only when parsing free-form partial
   prose changes full-estimate accounting from a failure to a pass; an audited
   partial whose full estimate already fits remains objective.
+  Markdown reports name both mixed constraints and the judge bundle serializes
+  every scored block reason and note, so reviewers can inspect the evidence
+  behind an excluded heuristic pass.
 - **Fabrication is judged against what the model was shown.** The task corpus
   renders only inside the capture context, so a wake without a capture sees only
   its decided tasks — which do carry `status` and `blockedBy`, but not
@@ -309,8 +318,9 @@ on.
 
 So the report emits a **judge bundle**: one self-sufficient JSON object per
 (scenario, model, variant, sample) carrying the scenario and its intent, the exact
-prompts, every tool call including rejections and their text, the persisted plan,
-and that run's constraint results and cost. Each constraint result is labelled
+prompts, every tool call including rejections and their text, the persisted plan
+including each block reason and note, and that run's constraint results and cost.
+Each constraint result is labelled
 `objective` or `heuristic`; heuristic entries repeat their caveat beside the
 evidence so a detached bundle cannot make a string match look like a semantic
 judgement.
