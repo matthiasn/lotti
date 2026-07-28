@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T07:04:19+02:00 }
+generated: { by: codex/5, at: 2026-07-28T07:15:39+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -74,9 +74,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   the cheapest way to make an impossible day fit is to claim each task is shorter
   than it is. The one exception is an auditable partial placement: the block
   duration may replace the full estimate only when its reason gives concrete
-  minute arithmetic (`60m of 120m scheduled`, or an affirmative `partial` plus
-  a task-bound remainder such as `60m remain for later`, `Remaining 60m move to
-  tomorrow`, `60m still remain`, `60m will still remain`, or
+  minute arithmetic (`60m of 120m scheduled`, `60m out of 120m scheduled`, or
+  an affirmative `partial` plus a task-bound remainder such as
+  `60m remain for later`, `Remaining 60m move to tomorrow`,
+  `60m still remain`, `60m will still remain`, or
   `Remaining 60m are carried over`) that agrees with both the summed duration
   of that task's work blocks and the corpus estimate. A numeric
   completed/estimate split must describe task allocation,
@@ -124,8 +125,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   affirmative arithmetic. Likewise, `60 of 120 are scheduled and no more`
   remains affirmative because the later `no` follows the allocation action
   instead of negating it; `not only` is likewise affirmative emphasis rather
-  than negation, and leading `no more than` is an exact quantitative cap. A
-  negative fit quantifier that explains the partial, such as
+  than negation, and leading `no more than` is an exact quantitative cap.
+  Likewise, `60 minutes remain and no more fits today` leaves the concrete
+  remainder affirmative because the later limit explains the capacity trade
+  instead of denying that unfinished work exists. A negative fit quantifier
+  that explains the partial, such as
   `not all work fits so 60 of 120 are scheduled`, also leaves the concrete
   allocation affirmative. `Partial`, `partially`, and `partly` are accepted
   disclosure forms. Bare `partial` must be a standalone label or explanation,
@@ -178,7 +182,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   omit/defer/shorten/conflict disposition, is required. Likewise, `left
   unchanged` and moving a block to another clock slot are continuity or
   rescheduling, while `left unfinished` and moving work to tomorrow are actual
-  remainder dispositions.
+  remainder dispositions. A disposition word must govern the task or unfinished
+  work: domain language such as `task-c documents deferred revenue` does not
+  disclose that task-c itself was deferred.
   It must also be affirmative and internally consistent: `not partial` and
   `no conflict` explicitly deny the trade, `conflict-free` is an antonym rather
   than a disclosure, and an affirmative claim plus its denial receives no

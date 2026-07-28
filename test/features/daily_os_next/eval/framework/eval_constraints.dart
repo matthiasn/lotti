@@ -698,7 +698,7 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
 }
 
 final _partialOfEstimatePattern = RegExp(
-  r'\b(\d+)(?:\s*(?:m|mins?|minutes?))?\s+of\s+(?:the\s+)?'
+  r'\b(\d+)(?:\s*(?:m|mins?|minutes?))?\s+(?:out\s+)?of\s+(?:the\s+)?'
   r'(\d+)(?:\s+estimated)?\s*[-–—]?\s*(?:m|mins?|minutes?)\b',
   caseSensitive: false,
 );
@@ -1087,6 +1087,24 @@ bool _partialMentionDescribesPlacement(String prose, Match match) {
       isStandaloneLabelOrExplanation;
 }
 
+bool _tradeDispositionDescribesTaskOrWork(String prose, Match match) {
+  final wording = (match.group(0) ?? '').toLowerCase();
+  if (!wording.startsWith('defer')) return true;
+
+  final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
+  final suffix = prose.substring(match.end, range.end);
+  if (!RegExp(r'^\s+\w').hasMatch(suffix)) return true;
+  return RegExp(
+        r'^\s+(?:(?:the|this|that|their|our|my|your)\s+)?'
+        r'(?:task|work|remainder|rest|portion|part)\b',
+        caseSensitive: false,
+      ).hasMatch(suffix) ||
+      RegExp(
+        r'^\s+(?:to|until|for|because|after|before|so|and)\b',
+        caseSensitive: false,
+      ).hasMatch(suffix);
+}
+
 bool _negationQualifiesRatherThanNegates(Match negation, String between) {
   final negator = (negation.group(0) ?? '').toLowerCase();
   if (negator == 'no') {
@@ -1120,6 +1138,14 @@ bool _matchClauseIsNegated(String reason, Match match) {
       continue;
     }
     if (negationStart >= match.end &&
+        _followingNegationExplainsCapacityLimit(
+          reason,
+          negationStart: negationStart,
+          clauseEnd: range.end,
+        )) {
+      continue;
+    }
+    if (negationStart >= match.end &&
         _taskAllocationActionPattern.hasMatch(between)) {
       continue;
     }
@@ -1130,6 +1156,20 @@ bool _matchClauseIsNegated(String reason, Match match) {
     }
   }
   return false;
+}
+
+bool _followingNegationExplainsCapacityLimit(
+  String prose, {
+  required int negationStart,
+  required int clauseEnd,
+}) {
+  final suffix = prose.substring(negationStart, clauseEnd);
+  return RegExp(
+    r'^no\s+more'
+    r'(?:\s+(?:of\s+(?:this|the)\s+)?(?:task|work))?\s+'
+    r'(?:(?:can|will)\s+)?fit(?:s|ting)?\b',
+    caseSensitive: false,
+  ).hasMatch(suffix);
 }
 
 bool _negativeFitDisclosureIsDenied(String prose, Match match) {
@@ -1999,7 +2039,10 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
     }
   }
   for (final match in _partialTradeDispositionPattern.allMatches(prose)) {
-    if (!belongsToTask(match)) continue;
+    if (!belongsToTask(match) ||
+        !_tradeDispositionDescribesTaskOrWork(prose, match)) {
+      continue;
+    }
     if (_matchClauseIsNegated(prose, match)) {
       hasDeniedEvidence = true;
     } else {
