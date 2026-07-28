@@ -110,6 +110,27 @@ mixin _JournalDbConfigFlags on _$JournalDb {
     }
   }
 
+  /// Deletes a flag row that the app no longer defines.
+  ///
+  /// Flags are seeded with [insertFlagIfNotExists], which never removes
+  /// anything, and the settings UI lists whatever rows the table holds. So
+  /// dropping a flag from `initConfigFlags` is not enough: every existing
+  /// install would keep showing a toggle that no code reads. Retiring a flag
+  /// means naming it in `retiredConfigFlags` so this runs on the next start.
+  ///
+  /// Returns true if a row was actually removed.
+  Future<bool> deleteConfigFlag(String flagName) async {
+    await _ensureConfigFlagsLoaded();
+    final deleted = await (delete(
+      configFlags,
+    )..where((t) => t.name.equals(flagName))).go();
+    if (deleted == 0) return false;
+
+    _configFlagsByName.remove(flagName);
+    _emitConfigFlags();
+    return true;
+  }
+
   Future<int> upsertConfigFlag(ConfigFlag configFlag) async {
     await _ensureConfigFlagsLoaded();
     final result = await into(configFlags).insertOnConflictUpdate(configFlag);

@@ -78,37 +78,7 @@ Basic UI smoke test that creates a journal entry through the UI.
 - Navigation failures
 - Basic widget rendering issues
 
-### 4. Matrix Actor Isolate Network Test (`matrix_actor_isolate_network_test.dart`)
-
-**What it tests:**
-
-Spawns two production `SyncActorHost` isolates (`lib/features/sync/actor/sync_actor_host.dart`)
-that simulate two devices of the *same* Matrix user, then drives a single-user two-device flow
-entirely through actor commands (`ping`, `init`, `createRoom`, `joinRoom`, `startVerification`,
-`acceptVerification`, `acceptSas`, `sendText`, `kickOutbox`, `getHealth`,
-`getVerificationState`):
-
-- Actor-style isolate command handling (`SendPort`/`ReceivePort`) and host event streams
-- A reachability precheck against `/_matrix/client/versions` (the test fails fast if the
-  homeserver is unreachable); login itself happens inside each isolate via the `init` command
-  using `TEST_USER`/`TEST_PASSWORD` dart-defines
-- Implicit background sync after `init` (the test waits for `syncLoopActive` via `getHealth`)
-- Peer device-key discovery and a single-pass SAS emoji verification flow, asserting the
-  matched emoji fingerprints converge on both hosts
-- Bidirectional `sendText` (DeviceA → DeviceB and back), asserting `incomingMessage` host
-  events with a retry loop during sync warm-up
-- Durable outbox delivery: seeds outbox rows in each isolate's `SyncDatabase`, calls
-  `kickOutbox`, and asserts `sendAck` / `incomingMessage` counts on both hosts
-- Actor health/encryption telemetry (`encryptionEnabled`, `deviceKeys`)
-
-**Problems this catches:**
-- Isolate network/runtime regressions
-- Regressions in the production `SyncActorHost` command/event protocol
-- Actor message-loop shutdown/cleanup bugs
-- Durable outbox send/receive regressions across isolates
-- Environment-level connectivity regressions to the local Matrix server
-
-### 5. Manual Screenshots (`manual_screenshots_test.dart`)
+### 4. Manual Screenshots (`manual_screenshots_test.dart`)
 
 A legacy full-shell screenshot-capture tool rather than a CI verification suite. It runs the full app shell
 with an in-memory harness and a single `testWidgets` case (`captures AI provider onboarding states
@@ -136,7 +106,7 @@ The Matrix tests require a Docker Compose environment with:
 ### Running the Tests
 
 All run scripts live in `integration_test/`. Most (`run_matrix_tests.sh`,
-`run_matrix_actor_isolate_test.sh`, `setup_toxiproxy_docker.sh`) resolve their own location and
+`setup_toxiproxy_docker.sh`) resolve their own location and
 `cd` into `integration_test/docker` as needed; `run_resilience_tests.sh` instead references the
 compose file by path (`docker compose -f docker/docker-compose.yml`) and runs the test from the
 project root.
@@ -152,22 +122,14 @@ project root.
    ./run_matrix_tests.sh
    ```
 
-3. **Run the Matrix actor isolate network test:**
-   ```shell
-   ./run_matrix_actor_isolate_test.sh
-   ```
-   This script creates one temporary Matrix user in docker and passes
-   `TEST_USER`/`TEST_PASSWORD` to the test. Both simulated devices log in as
-   the same user.
-
-4. **Run the resilience tests:**
+3. **Run the resilience tests:**
    ```shell
    ./run_resilience_tests.sh
    ```
    This script creates four temporary user pairs in docker and runs
    `sync_resilience_test.dart` with `TEST_USER1` through `TEST_USER8`.
 
-5. **Run with simulated bad network:**
+4. **Run with simulated bad network:**
    ```shell
    # Set up Toxiproxy (applies 200ms latency and 300 KB/s bandwidth)
    ./setup_toxiproxy_docker.sh

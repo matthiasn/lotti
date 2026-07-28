@@ -58,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing when there is nothing on the clipboard to paste.
 
 ### Changed
+- **The "Enable Sync Actor" setting is gone.** The advanced-settings toggle
+  never did anything — the isolate-based sync it was meant to switch on was
+  never finished or connected — so it is removed rather than left as a switch
+  with nothing behind it.
 - **The sync statistics legend moved onto the panel it explains.** The
   "Legend" button in Matrix Stats did nothing when tapped — the definitions of
   each counter only ever appeared as a hover tooltip, so on a phone they were

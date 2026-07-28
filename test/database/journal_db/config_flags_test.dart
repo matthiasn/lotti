@@ -79,7 +79,6 @@ void main() {
         enableDailyOsPageFlag: false,
         enableEventsFlag: false,
         enableSessionRatingsFlag: false,
-        enableSyncActorFlag: false,
         enableProjectsFlag: false,
         logSlowQueriesFlag: false,
         enableEmbeddingsFlag: false,
@@ -160,5 +159,47 @@ void main() {
         expect(secondNames, firstNames);
       },
     );
+
+    test('deletes a retired flag left behind by an older install', () async {
+      // Flags are only ever seeded, never removed, and the settings page
+      // lists whatever rows the table holds. So dropping a flag's seed call
+      // is not enough — an upgraded install would keep rendering a toggle
+      // that no code reads. Simulate that install by writing the row back.
+      const retired = 'enable_sync_actor';
+      await db.upsertConfigFlag(
+        const ConfigFlag(
+          name: retired,
+          description: 'Enable Sync Actor (isolate-based sync)?',
+          status: true,
+        ),
+      );
+      expect(await db.getConfigFlagByName(retired), isNotNull);
+
+      await initConfigFlags(db, inMemoryDatabase: true);
+
+      expect(await db.getConfigFlagByName(retired), isNull);
+      final names = (await db.watchConfigFlags().first)
+          .map((f) => f.name)
+          .toSet();
+      expect(names, isNot(contains(retired)));
+    });
+
+    test('every retired flag name is gone from the seeded set', () async {
+      // Guards the reverse mistake: a flag named in `retiredConfigFlags`
+      // while still being seeded would be deleted and re-inserted on every
+      // start, flapping the settings list.
+      await initConfigFlags(db, inMemoryDatabase: true);
+      final names = (await db.watchConfigFlags().first)
+          .map((f) => f.name)
+          .toSet();
+
+      for (final retired in retiredConfigFlags) {
+        expect(
+          names,
+          isNot(contains(retired)),
+          reason: '$retired is retired but still seeded by initConfigFlags',
+        );
+      }
+    });
   });
 }

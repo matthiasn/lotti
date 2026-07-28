@@ -98,11 +98,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: enableSyncActorFlag,
-    description: 'Enable Sync Actor (isolate-based sync)?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: enableProjectsFlag,
     description: 'Enable Projects?',
     status: false,
