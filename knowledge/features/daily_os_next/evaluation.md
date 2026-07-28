@@ -74,18 +74,25 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   the cheapest way to make an impossible day fit is to claim each task is shorter
   than it is. The one exception is an auditable partial placement: the block
   duration may replace the full estimate only when its reason gives concrete
-  minute arithmetic (`60m of 120m`, or an affirmative `partial` plus a
-  task-bound remainder such as `60m remain for later` or `Remaining 60m move to
-  tomorrow`) that agrees with both the summed duration of that task's work
-  blocks and the corpus estimate. The partial mention and task-bound remainder
-  must occur in the same block reason; unrelated workday-capacity prose cannot
+  minute arithmetic (`60m of 120m scheduled`, or an affirmative `partial` plus
+  a task-bound remainder such as `60m remain for later`, `Remaining 60m move to
+  tomorrow`, or `Remaining 60m are carried over`) that agrees with both the
+  summed duration of that task's work blocks and the corpus estimate. A numeric
+  completed/estimate split must describe task allocation, not coincidentally
+  equal workday capacity. The partial mention and task-bound remainder must
+  occur in the same block reason; unrelated workday-capacity prose cannot
   supply the remainder. Every concrete split and remainder in the task's
   disclosure must agree; one matching fragment cannot override a contradictory
-  remainder elsewhere in the same disclosure. Negated arithmetic clauses
-  (including `cannot`), negated or vague “partial” prose, silence, contradictory
-  numbers, buffer or calendar blocks carrying a task id, allocations below 10%
-  of the estimate, and overlapping blocks for one task are charged at the full
-  estimate or receive no placement score. An audited
+  remainder elsewhere in the same disclosure. Negation is scoped to the
+  punctuation segment containing the evidence, so `cannot be scheduled`
+  invalidates a split without letting a later `no room` description invalidate
+  affirmative arithmetic. Negated or vague “partial” prose, silence,
+  contradictory numbers, buffer or calendar blocks carrying a task id,
+  allocations below 10% of the estimate, and overlapping blocks for one task
+  are charged at the full estimate or receive no placement score. Estimated
+  charges are compared with the clock-bounded `plannableMinutes`, not nominal
+  full-day capacity, so a late-start scenario cannot silently compress work
+  into the remaining window. An audited
   partial remainder also counts as deferred work for `surfacedConflict`, so a
   plan that represents every task only partially must still name the trade or
   escalate it. The constraint detail records every credited partial and every

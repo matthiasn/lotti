@@ -668,7 +668,7 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
       }
     }
   }
-  final capacity = outcome.inputs.capacityMinutes;
+  final capacity = outcome.inputs.plannableMinutes;
   final evidence = [
     if (partials.isNotEmpty) 'audited partials: ${partials.join(', ')}',
     if (undisclosedShortenings.isNotEmpty)
@@ -713,9 +713,17 @@ final _negationWordPattern = RegExp(
 
 final _partialRemainderDispositionPattern = RegExp(
   r'\b(?:for\s+(?:later|tomorrow|another\s+day|a\s+(?:later|future)\s+day)|'
-  r'(?:roll|move|carry)(?:s|d|ed|ing)?\s+(?:over|to)\b|'
+  r'(?:roll(?:s|ed|ing)?|move(?:s|d|ing)?|carr(?:y|ies|ied|ying))\s+'
+  r'(?:over|to)\b|'
   r'defer(?:s|red|ring)?\b|unscheduled\b|'
   r'(?:of|for)\s+(?:this|the)\s+(?:task|work)\b)',
+  caseSensitive: false,
+);
+
+final _taskAllocationContextPattern = RegExp(
+  r'\b(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+  'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)|'
+  r'fit(?:s|ting)?|estimate(?:d)?|task)\b',
   caseSensitive: false,
 );
 
@@ -832,7 +840,9 @@ bool _hasAuditablePartialDisclosure({
           declaredEstimate != estimateMinutes) {
         return false;
       }
-      hasMatchingSplit = true;
+      if (_splitIsTaskBound(reason, match)) {
+        hasMatchingSplit = true;
+      }
     }
     for (final match in _partialRemainingPattern.allMatches(reason)) {
       if (_matchClauseIsNegated(reason, match)) return false;
@@ -858,7 +868,13 @@ bool _hasAuditablePartialDisclosure({
 }
 
 bool _matchClauseIsNegated(String reason, Match match) {
-  return _negationWordPattern.hasMatch(_matchClause(reason, match));
+  return _negationWordPattern.hasMatch(
+    _matchClause(reason, match, boundaries: ',.;!?\n'),
+  );
+}
+
+bool _splitIsTaskBound(String reason, Match match) {
+  return _taskAllocationContextPattern.hasMatch(_matchClause(reason, match));
 }
 
 bool _remainderIsTaskBound(String reason, Match match) {
@@ -867,8 +883,11 @@ bool _remainderIsTaskBound(String reason, Match match) {
       _partialRemainderDispositionPattern.hasMatch(clause);
 }
 
-String _matchClause(String reason, Match match) {
-  const boundaries = '.;!?\n';
+String _matchClause(
+  String reason,
+  Match match, {
+  String boundaries = '.;!?\n',
+}) {
   var clauseStart = 0;
   for (var i = match.start - 1; i >= 0; i--) {
     if (boundaries.contains(reason[i])) {

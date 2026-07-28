@@ -1327,6 +1327,62 @@ void main() {
       expect(result.passed, isTrue);
     });
 
+    test('uses the clock-bounded planning window after a late start', () {
+      const lateTasks = [
+        EvalCorpusTask(
+          taskId: 'invoice',
+          title: 'Send invoice',
+          estimateMinutes: 30,
+        ),
+        EvalCorpusTask(
+          taskId: 'reply',
+          title: 'Reply to client',
+          estimateMinutes: 25,
+        ),
+        EvalCorpusTask(
+          taskId: 'migration',
+          title: 'Finish migration',
+          estimateMinutes: 180,
+        ),
+      ];
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'invoice',
+              startHour: 15,
+              endHour: 16,
+              taskId: 'invoice',
+            ).copyWith(
+              startTime: DateTime(2026, 7, 18, 15, 5),
+              endTime: DateTime(2026, 7, 18, 15, 35),
+            ),
+            block(
+              id: 'reply',
+              startHour: 15,
+              endHour: 16,
+              taskId: 'reply',
+            ).copyWith(
+              startTime: DateTime(2026, 7, 18, 15, 35),
+              endTime: DateTime(2026, 7, 18, 16),
+            ),
+            block(
+              id: 'migration',
+              startHour: 16,
+              endHour: 17,
+              taskId: 'migration',
+            ),
+          ],
+          corpus: lateTasks,
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('235min against 115min'));
+      expect(result.detail, contains('over by 120'));
+    });
+
     test(
       'charges an explicit partial placement at its represented minutes',
       () {
@@ -1390,6 +1446,52 @@ void main() {
               reason:
                   'Partial placement: 60 of 120 estimated minutes. '
                   'Remaining 60 min roll to a future day.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('allows unrelated negation outside the partial arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Partial: 60 of 120 minutes are scheduled, '
+                  'with no room for the remaining work.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('accepts an inflected carry disposition for the remainder', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'This placement is partial. '
+                  'Remaining 60 minutes are carried over to tomorrow.',
             ),
           ],
           corpus: tasks,
@@ -1488,6 +1590,12 @@ void main() {
         reason:
             'Partial progress is recorded; '
             '60 minutes remain in the workday.',
+      ),
+      (
+        name: 'an unrelated workday completed-estimate split',
+        reason:
+            'Only 60 of the 120 minutes are available in the workday; '
+            'this task is deferred.',
       ),
     ]) {
       test('charges ${badDisclosure.name} at the full estimate', () {
