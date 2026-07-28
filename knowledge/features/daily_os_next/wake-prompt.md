@@ -8,6 +8,10 @@ status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
 stale_after: 2026-10-26
 sources:
+  - id: system-prompt
+    resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
+    title: Mode-specific system prompt and tool gating
+    last_modified: 2026-07-29
   - id: sections
     resource: ../../../lib/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart
     title: Prompt section tags
@@ -29,6 +33,32 @@ sources:
     title: ADR 0026 — Author-time memory links
     last_modified: 2026-06-09
 ---
+
+# The system prompt matches the wake mode
+
+The tool capability list is generated from the same `_isToolEnabled` decision
+that builds the API tool schema. A wake is therefore never told about a tool it
+cannot call.
+
+Mode-specific behavioral prose follows the same boundary:
+
+| Wake | System-prompt contract |
+|---|---|
+| Capture submitted | Capture matching rules, the dense-capture example, and the terminal `parse_capture_to_items` rule |
+| Drafting | Planning and drafting rules, the overcommit example, and the terminal `draft_day_plan` rule |
+| Refine | Planning and refine rules; no capture or full-draft contract |
+| Coordinator digest | Digest, week-context, and memory rules; no capture or plan-mutation contract |
+| General planning | Planning plus the configured week/memory capabilities |
+
+Capture and drafting intentionally omit memory prose and planning defaults when
+those tools or values cannot affect their single terminal artifact. This is
+both a correctness boundary and a latency boundary: an instruction-dense draft
+wake no longer spends turns on capture parsing, reconcile, pattern summaries,
+or memory work that its schema does not expose.
+
+The durable outbox's internal `processing_job:<jobId>` trigger participates in
+wake context and idempotency but is filtered out of `<trigger_tokens>` before
+the user message is rendered. It is workflow provenance, not model context.
 
 # The payload is tagged plaintext, not JSON
 

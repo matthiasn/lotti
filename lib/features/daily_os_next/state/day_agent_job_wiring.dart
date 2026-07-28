@@ -42,7 +42,10 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
       final (reason, tokens) = switch (job.payload) {
         ParseCapturePayload(:final captureId) => (
           dayAgentCaptureSubmittedReason,
-          {dayAgentCaptureSubmittedToken(captureId)},
+          {
+            dayAgentCaptureSubmittedToken(captureId),
+            dayAgentProcessingJobToken(job.id),
+          },
         ),
         DraftPlanPayload(
           :final captureId,
@@ -61,6 +64,7 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
               for (final id in decidedCaptureItemIds)
                 if (id.trim().isNotEmpty)
                   dayAgentDecidedCaptureItemToken(id.trim()),
+              dayAgentProcessingJobToken(job.id),
             },
           ),
         RefinePlanPayload(:final transcriptCaptureId) => (
@@ -71,6 +75,7 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
             if (transcriptCaptureId != null &&
                 transcriptCaptureId.trim().isNotEmpty)
               dayAgentCaptureSubmittedToken(transcriptCaptureId.trim()),
+            dayAgentProcessingJobToken(job.id),
           },
         ),
         TranscribeAudioPayload() => throw StateError(

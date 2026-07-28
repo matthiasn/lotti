@@ -37,6 +37,7 @@
   <releases>
     <release version="0.9.1071" date="2026-07-26">
       <description>
+        <p>Changed: Daily OS planning now abandons silent AI requests quickly and retries cleanly. A provider that returned nothing could hold a plan for about two minutes before the app tried again, and a retry could repeat the same overcommit warning. Drafts and refinements now detect a silent response in 30 seconds, cancel it before late tool calls can land, and keep each planning step focused on only the instructions and tools it can actually use.</p>
         <p>Changed: Daily OS is opt-in again while its planning quality is improved. Existing installs that had enabled it keep that choice, while new installs start without the Daily OS navigation entry. It can be enabled explicitly from Settings → Advanced → Config flags.</p>
         <p>Fixed: the bottom navigation bar no longer collides with Android's system buttons. On phones that show the recents/home/back bar at the bottom — Samsung devices among them — the app's own bar sat partly underneath it, so its labels were crowded and taps near the bottom went to the system bar instead of the app. The bar now keeps clear of the whole system area.</p>
         <p>Changed: the "Enable Sync Actor" setting is gone. The advanced-settings toggle never did anything — the isolate-based sync it was meant to switch on was never finished or connected — so it is removed rather than left as a switch with nothing behind it.</p>

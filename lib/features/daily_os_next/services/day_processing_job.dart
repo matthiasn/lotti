@@ -303,6 +303,11 @@ class DayProcessingJob {
   final String? claimToken;
   final DateTime? leaseUntil;
   final DateTime? retryNotBefore;
+
+  /// Most recent classified failure for this intent, retained after a later
+  /// successful retry so Activity and evaluation can explain [attempts].
+  ///
+  /// A fresh/re-armed intent clears both fields.
   final DayProcessingFailureClass? lastFailureClass;
   final String? lastError;
 

@@ -15,11 +15,11 @@ sources:
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Day-agent prompt builder
-    last_modified: 2026-07-27
+    last_modified: 2026-07-29
   - id: workflow
     resource: ../../../lib/features/daily_os_next/agents/workflow
     title: Day-agent workflow and terminal-tool strategy
-    last_modified: 2026-07-27
+    last_modified: 2026-07-29
   - id: processing-runtime
     resource: ../../../lib/features/daily_os_next/services/day_processing_runtime.dart
     title: Durable processing runtime
@@ -80,7 +80,8 @@ Each user-facing wake now has a narrow tool surface:
 |---|---|
 | Capture submitted | `parse_capture_to_items` only |
 | Drafting | `create_task_from_phrase`, `raise_day_status`, `draft_day_plan` |
-| Refine | Normal day-agent tools except `parse_capture_to_items` and `draft_day_plan`; the plan mutation is `propose_plan_diff` |
+| Refine | `create_task_from_phrase`, `propose_plan_diff`, durable knowledge/recall, `write_day_summary`, and `raise_day_status` |
+| Coordinator digest | Durable knowledge/recall, summaries, directives, status, and optional pre-warm scheduling — never capture or plan mutation |
 
 The parser and drafter tools are **terminal artifacts only in their owning wake
 mode**. Once either one is accepted there, `DayAgentStrategy` completes that
@@ -94,6 +95,20 @@ drafting wake can re-parse, triage, search and summarize before it plans, and
 continuing after the final write adds another provider call after the requested
 artifact already exists. Refine never exposes the full-draft writer, so it
 cannot overwrite its baseline instead of producing a reviewable diff.
+
+The prose is narrowed with the schema, not merely the tool definitions. Capture
+wakes see only capture rules and their worked example; drafting wakes see only
+planning/drafting rules and their overcommit example; refine and digest each see
+their own contract. This prevents a draft model from following an advertised
+capture instruction for a tool that is intentionally absent.
+
+Inference also has a mode-specific **total** bound: 20 seconds for capture,
+30 seconds for draft/refine, and 60 seconds for a general wake. Streamed
+reasoning does not extend the deadline: reasoning that never reaches the
+terminal artifact is still user-visible waiting. Crossing the bound cancels the
+provider stream inside the conversation. This is distinct from the
+orchestrator's outer hard timeout: cancellation at the inference edge prevents
+a late tool batch from mutating after the outbox has started a retry.
 
 Durable scheduling has a matching no-lost-signal invariant. When an outbox
 change arrives while `DayProcessingRuntime` is already draining, the runtime

@@ -1,9 +1,176 @@
+import 'dart:async';
+
 import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
+import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
+
+/// Model-facing mode of one day-agent wake.
+enum DayAgentWakeKind { capture, draft, refine, general }
+
+/// Maximum provider-stream lifetime for each wake kind.
+///
+/// This deadline includes streamed reasoning. A model that keeps emitting
+/// thought chunks without producing the terminal artifact cannot extend the
+/// user's wait to the wake orchestrator's two-minute hard abort.
+class DayAgentInferenceTimeoutPolicy {
+  const DayAgentInferenceTimeoutPolicy({
+    this.capture = const Duration(seconds: 20),
+    this.draft = const Duration(seconds: 30),
+    this.refine = const Duration(seconds: 30),
+    this.general = const Duration(seconds: 60),
+  });
+
+  final Duration capture;
+  final Duration draft;
+  final Duration refine;
+  final Duration general;
+
+  Duration forKind(DayAgentWakeKind kind) => switch (kind) {
+    DayAgentWakeKind.capture => capture,
+    DayAgentWakeKind.draft => draft,
+    DayAgentWakeKind.refine => refine,
+    DayAgentWakeKind.general => general,
+  };
+}
+
+/// Classified provider deadline failure for one day-agent wake.
+class DayAgentInferenceTimedOutException extends TimeoutException {
+  DayAgentInferenceTimedOutException({
+    required this.wakeKind,
+    required Duration timeout,
+  }) : super(
+         '${wakeKind.name} inference exceeded its '
+         '${timeout.inSeconds}s deadline',
+         timeout,
+       );
+
+  final DayAgentWakeKind wakeKind;
+}
+
+/// Applies a mode-specific total deadline to day-agent inference streams.
+///
+/// The timer starts when the conversation listens and does not reset for
+/// streamed thought or content chunks. Crossing it cancels the upstream
+/// provider subscription before reporting the classified timeout, so a late
+/// tool batch cannot mutate after the outbox starts a retry.
+class DayAgentTimeoutInferenceRepository
+    implements InferenceRepositoryInterface {
+  DayAgentTimeoutInferenceRepository({
+    required this.delegate,
+    required this.wakeKind,
+    required this.timeout,
+  }) {
+    if (timeout <= Duration.zero) {
+      throw ArgumentError.value(
+        timeout,
+        'timeout',
+        'must be positive',
+      );
+    }
+  }
+
+  final InferenceRepositoryInterface delegate;
+  final DayAgentWakeKind wakeKind;
+  final Duration timeout;
+
+  Stream<CreateChatCompletionStreamResponse> _bound(
+    Stream<CreateChatCompletionStreamResponse> source,
+  ) {
+    late final StreamController<CreateChatCompletionStreamResponse> controller;
+    StreamSubscription<CreateChatCompletionStreamResponse>? subscription;
+    Timer? deadline;
+
+    controller = StreamController<CreateChatCompletionStreamResponse>(
+      sync: true,
+      onListen: () {
+        deadline = Timer(timeout, () {
+          final cancellation = subscription?.cancel();
+          if (cancellation != null) unawaited(cancellation);
+          controller.addError(
+            DayAgentInferenceTimedOutException(
+              wakeKind: wakeKind,
+              timeout: timeout,
+            ),
+          );
+          unawaited(controller.close());
+        });
+        subscription = source.listen(
+          controller.add,
+          onError: controller.addError,
+          onDone: () {
+            deadline?.cancel();
+            unawaited(controller.close());
+          },
+        );
+      },
+      onCancel: () async {
+        deadline?.cancel();
+        await subscription?.cancel();
+      },
+    );
+    return controller.stream;
+  }
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
+    InferenceImpactCollector? impactCollector,
+  }) => _bound(
+    delegate.generateTextWithMessages(
+      messages: messages,
+      model: model,
+      temperature: temperature,
+      provider: provider,
+      maxCompletionTokens: maxCompletionTokens,
+      tools: tools,
+      toolChoice: toolChoice,
+      thoughtSignatures: thoughtSignatures,
+      signatureCollector: signatureCollector,
+      turnIndex: turnIndex,
+      impactCollector: impactCollector,
+    ),
+  );
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateText({
+    required String prompt,
+    required String model,
+    required double temperature,
+    required String? systemMessage,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+  }) => _bound(
+    delegate.generateText(
+      prompt: prompt,
+      model: model,
+      temperature: temperature,
+      systemMessage: systemMessage,
+      provider: provider,
+      maxCompletionTokens: maxCompletionTokens,
+      tools: tools,
+      toolChoice: toolChoice,
+    ),
+  );
+}
 
 /// Raised when a day-agent tool call fails (bad arguments, unknown tool, or a
 /// failed side effect). Carries a human-readable [message] surfaced back to the

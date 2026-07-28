@@ -17,6 +17,7 @@ class DailyOsPlannerWakeContext {
     this.captureIds = const [],
     this.decidedTaskIds = const [],
     this.decidedCaptureItemIds = const [],
+    this.processingJobId,
   });
 
   /// Builds a context from [triggerTokens] for a [dayId] the caller has
@@ -42,6 +43,7 @@ class DailyOsPlannerWakeContext {
       decidedCaptureItemIds: decidedCaptureItemIdsFromTriggerTokens(
         triggerTokens,
       ),
+      processingJobId: processingJobIdFromTriggerTokens(triggerTokens),
     );
   }
 
@@ -68,6 +70,13 @@ class DailyOsPlannerWakeContext {
 
   /// Decided parsed-capture-item IDs advertised on the wake.
   final List<String> decidedCaptureItemIds;
+
+  /// Durable outbox job whose attempt opened this wake, when present.
+  ///
+  /// Retries of the same job carry the same id while each wake has a new
+  /// [runKey]. Side effects that can occur before the terminal artifact use
+  /// this as their idempotency scope.
+  final String? processingJobId;
 
   /// Whether the wake requests drafting for this context's day workspace.
   bool get isDraftingWake => hasDraftingTokenForDay(triggerTokens, dayId);

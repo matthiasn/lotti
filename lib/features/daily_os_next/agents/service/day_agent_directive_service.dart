@@ -82,13 +82,15 @@ class DayAgentDirectiveService {
   ///
   /// [wakeDayId] is the wake's workspace day — `raise_day_status` may only
   /// target it (an agent cannot speak for another day). [runKey] scopes the
-  /// one-status-event-per-wake cap.
+  /// one-status-event-per-wake cap. [processingJobId] gives retries of one
+  /// durable intent a stable upsert key.
   Future<DayAgentDirectToolResult> executeTool({
     required String agentId,
     required String toolName,
     required Map<String, dynamic> args,
     String? wakeDayId,
     String? runKey,
+    String? processingJobId,
   }) async {
     try {
       final data = switch (toolName) {
@@ -98,6 +100,7 @@ class DayAgentDirectiveService {
           args,
           wakeDayId: wakeDayId,
           runKey: runKey,
+          processingJobId: processingJobId,
         ),
         _ => throw DayAgentDirectiveException('unknown tool "$toolName"'),
       };
@@ -235,6 +238,7 @@ class DayAgentDirectiveService {
     Map<String, dynamic> args, {
     String? wakeDayId,
     String? runKey,
+    String? processingJobId,
   }) async {
     final dayId = requiredStringArg(args, 'dayId');
     if (dateFromDayId(dayId) == null) {
@@ -278,6 +282,9 @@ class DayAgentDirectiveService {
       status: status,
       reasons: reasons,
       note: note,
+      eventId: processingJobId == null
+          ? null
+          : dayStatusEventIdForProcessingJob(dayId, processingJobId),
     );
     return {
       'id': event.id,
@@ -292,11 +299,12 @@ class DayAgentDirectiveService {
     required DayStatusKind status,
     List<DayStatusReason> reasons = const [],
     String note = '',
+    String? eventId,
   }) async {
     final now = clock.now();
     final event =
         AgentDomainEntity.dayStatusEvent(
-              id: dayStatusEventId(dayId, _uuid.v4()),
+              id: eventId ?? dayStatusEventId(dayId, _uuid.v4()),
               agentId: agentId,
               dayId: dayId,
               status: status,

@@ -15,11 +15,15 @@ sources:
   - id: repo
     resource: ../../../lib/features/daily_os_next/services/day_processing_outbox_repository.dart
     title: DayProcessingOutboxRepository
-    last_modified: 2026-07-25
+    last_modified: 2026-07-29
   - id: executor
     resource: ../../../lib/features/daily_os_next/services/day_agent_job_executor.dart
     title: DayAgentJobExecutor
     last_modified: 2026-07-25
+  - id: job-wiring
+    resource: ../../../lib/features/daily_os_next/state/day_agent_job_wiring.dart
+    title: Durable job wake tokens
+    last_modified: 2026-07-29
   - id: adr-0044
     resource: ../../../docs/adr/0044-day-processing-outbox-storage.md
     title: ADR 0044 — Day processing outbox storage
@@ -158,6 +162,19 @@ sequenceDiagram
   more attempt) and caps retries (`maxAttempts`, default 5) by downgrading to
   `deterministic` — because unlike transcription's free backoff, **every agent
   retry spends model tokens**.
+
+Every agent-job wake also carries `processing_job:<jobId>`. The per-attempt
+`runKey` remains the provenance key for plans and diffs, while the durable job
+id scopes side effects that may happen before the terminal artifact. In
+particular, `raise_day_status` upserts
+`day_status:<dayId>:job:<jobId>`: a retry can revise the status from its failed
+attempt, but cannot append a duplicate escalation.
+
+The outbox retains `last_failure_class` and `last_error` when a retry later
+succeeds. `attempts` still counts failed provider requests, and a new user
+request that re-arms the deterministic job clears all three fields. This makes
+a successful eval row explain that it recovered from a classified timeout
+instead of hiding the first attempt.
 
 ## Two independent drain lanes
 

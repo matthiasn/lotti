@@ -28,8 +28,8 @@ const dayAgentOmissionRules = '''
 /// Public so source-mirrored tests can prevent the prompt from drifting back
 /// to abstract rules that do not demonstrate instruction retention.
 @visibleForTesting
-const dayAgentPlanningExamples = '''
-Worked examples:
+const dayAgentCaptureExample = '''
+Worked example:
 - Dense capture: "Keep 12:00-12:40 completely free for lunch; batch the three
   candidate replies into one 25-minute block; spend up to 30 minutes sketching
   onboarding ideas only if the vendor quote has arrived; reserve 45 minutes
@@ -37,6 +37,11 @@ Worked examples:
   as five separate items, preserving the protected interval, batching,
   conditional dependency, duration limit, and stop boundary. Do not collapse
   or discard any clause because the transcript is conversational.
+''';
+
+@visibleForTesting
+const dayAgentDraftExample = '''
+Worked example:
 - Overcommitted draft: 105 minutes remain, while three selected items total
   150 minutes. Place the 60-minute archive cleanup and 45-minute tax-form
   review, then use `raise_day_status` with `overCommitted` and name the
@@ -45,6 +50,11 @@ Worked examples:
   selected item is either placed, explicitly partial, or explicitly named as
   omitted or conflicting.
 ''';
+
+/// Combined fixture retained for source-mirrored prompt regression tests.
+@visibleForTesting
+const dayAgentPlanningExamples =
+    '$dayAgentCaptureExample\n$dayAgentDraftExample';
 
 @visibleForTesting
 const dayAgentCaptureTerminalRule = '''
@@ -65,49 +75,44 @@ const dayAgentDraftTerminalRule = '''
 /// definitions for [DayAgentWorkflow]. Split from the main workflow file for
 /// size; all members are library-private.
 extension DayAgentPromptBuilder on DayAgentWorkflow {
-  String _buildSystemPrompt(TemplateContext? ctx, {required String agentId}) {
-    const captureToolLines =
-        '- `submit_capture`: persist a user capture transcript and enqueue parsing.\n'
-        '- `parse_capture_to_items`: persist capture phrases parsed from the current capture-submitted wake.\n'
-        '- `match_to_corpus`: find existing task candidates for a phrase.\n'
-        '- `link_capture_phrase_to_task`: attach a parsed capture item to a task.\n'
-        "- `break_capture_link`: remove a parsed capture item's task link.\n"
-        '- `surface_pending_decisions`: list overdue, in-progress, missed recurring, and due-today tasks for reconcile.\n'
-        '- `apply_triage`: apply a reconcile action to a task.\n'
-        '- `create_task_from_phrase`: create a real task from a new capture phrase.';
-    const planToolLines =
-        '- `draft_day_plan`: persist a drafted day plan with blocks and reasons.\n'
-        '- `summarize_recent_patterns`: return learning cards from recent day drafts.';
-    const knowledgeToolLines =
-        '- `propose_knowledge`: durably remember how the user wants to be '
-        'planned. Use source "userStated" only when the user told you '
-        'directly; every entry awaits their confirmation in the panel.';
-    const weekContextToolLines =
-        '- `write_day_summary`: your contemporaneous note on a day (today or '
-        'yesterday only) — what happened and why, one paragraph, max 500 '
-        'characters.';
-    const directiveToolLines =
-        '- `issue_day_directive`: issue or revise your distilled directive '
-        'for one day — commitments, capacity budget, carry-over, '
-        'constraints, attention notes. Bounded facts only; never '
-        'transcripts.';
-    const statusToolLines =
-        "- `raise_day_status`: raise a typed status event for this wake's "
-        'day (the coordinator reads it at its next digest). '
-        '`attentionNeeded` needs typed reasons; silence already means fine. '
-        'At most one event per wake.';
-    final toolLines = <String>[
-      '- `record_observations`: private memory for learnings and uncertainty.',
-      '- `set_next_wake`: schedule the next useful pre-warm wake.',
-      '- `search_memory`: recall past detail folded out of the summary by keyword, or pass `ids` to pull up specific entries (e.g. to follow a [[relation:id]] link).',
-      if (captureService != null) captureToolLines,
-      if (planService != null) planToolLines,
-      if (knowledgeService != null) knowledgeToolLines,
-      if (weekContextService != null) weekContextToolLines,
-      if (directiveService != null && agentId == dailyOsPlannerAgentId)
-        directiveToolLines,
-      if (directiveService != null) statusToolLines,
-    ];
+  String _buildSystemPrompt(
+    TemplateContext? ctx, {
+    required String agentId,
+    required DailyOsPlannerWakeContext wakeContext,
+    required CaptureContext? captureContext,
+  }) {
+    final isCaptureWake = _requiresCaptureParse(
+      wakeContext: wakeContext,
+      captureContext: captureContext,
+    );
+    final isDraftWake = wakeContext.isDraftingWake;
+    final isRefineWake = wakeContext.isRefineWake;
+    final isDigestWake =
+        wakeContext.isDigestWake && agentId == dailyOsPlannerAgentId;
+    final isPlanningWake = !isCaptureWake && !isDigestWake;
+    final enabledToolNames = dayAgentTools
+        .where(
+          (tool) => _isToolEnabled(
+            tool.name,
+            agentId: agentId,
+            wakeContext: wakeContext,
+            captureContext: captureContext,
+          ),
+        )
+        .map((tool) => tool.name)
+        .toSet();
+    final toolLines = dayAgentTools
+        .where((tool) => enabledToolNames.contains(tool.name))
+        .map((tool) => '- `${tool.name}`: ${tool.description}')
+        .join('\n');
+    final hasMemoryTools = enabledToolNames.intersection(const {
+      DayAgentToolNames.recordObservations,
+      DayAgentToolNames.searchMemory,
+      DayAgentToolNames.proposeKnowledge,
+    }).isNotEmpty;
+    final hasWeekContextTool = enabledToolNames.contains(
+      DayAgentToolNames.writeDaySummary,
+    );
     final scaffold =
         '''
 You are the Daily OS planner: one durable agent that plans across days and
@@ -119,7 +124,8 @@ this wake targets.
 
 Tool capabilities (this wake receives only the relevant subset):
 
-${toolLines.join('\n')}
+${toolLines.isEmpty ? '- No tools are available for this wake.' : toolLines}
+${isCaptureWake ? '''
 
 Capture matching rules:
 - Use the embedded task corpus when parsing a submitted capture.
@@ -136,9 +142,11 @@ $dayAgentCaptureTerminalRule
   that existing task. When the evidence is ambiguous, prefer a low-confidence
   match or a new item so the user can choose instead of silently reviving old
   work.
+$dayAgentCaptureExample''' : ''}
+${isPlanningWake ? '''
 
-Drafting rules:
-- Every `ai` block passed to `draft_day_plan` must include a concrete reason.
+Planning rules:
+- Every generated `ai` block must include a concrete reason.
 - Keep blocks inside the local plan day and within the user's capacity.
 - `<planning_window>` governs where today's work may start, on every wake that
   can place a block — drafting, refine, or a scheduled planning wake alike.
@@ -186,6 +194,10 @@ $dayAgentOmissionRules
   instead of overpacking the plan.
 - Buffer and manual blocks may omit reasons when their purpose is
   self-evident.
+''' : ''}
+${isDraftWake ? '''
+
+Drafting rules:
 - When this wake's user message carries a `<drafting>` section (i.e. the trigger
   tokens include `drafting:<dayId>`), your priority is to call
   `draft_day_plan` once with the full updated block list — replacing or
@@ -203,7 +215,8 @@ $dayAgentOmissionRules
   wake; the complete planning context is already in this message.
 $dayAgentDraftTerminalRule
 
-$dayAgentPlanningExamples
+$dayAgentDraftExample''' : ''}
+${isRefineWake ? '''
 
 Refine rules:
 - When this wake's user message carries a `<refine>` section (i.e. the trigger
@@ -219,7 +232,8 @@ Refine rules:
   your own. After the user commits, the plan is in shepherding mode and
   further edits require an explicit refine.
 - Shutdown and agenda mutation tools are not available yet. Do not claim you
-  shut down a day.${dependencyResolver == null ? '' : '''
+  shut down a day.''' : ''}
+${isPlanningWake && dependencyResolver != null ? '''
 
 
 Blocked-work rules (ADR 0043):
@@ -234,7 +248,8 @@ Blocked-work rules (ADR 0043):
   that cannot start, and say why in another block's `reason`.
 - When a decided/committed task is blocked, prefer placing the blocker
   instead and say so in the block's reason — unless that blocker is itself
-  shown as blocked, in which case the rule above applies to it too.'''}${directiveService != null && agentId == dailyOsPlannerAgentId ? '''
+  shown as blocked, in which case the rule above applies to it too.''' : ''}
+${isDigestWake ? '''
 
 
 Digest rules (`<digest>` present — your coordinator ritual, ADR 0032):
@@ -258,7 +273,8 @@ Digest rules (`<digest>` present — your coordinator ritual, ADR 0032):
 - A directive commitment on a task blocked for planning should target its
   blocker instead, or name the blocker explicitly in an attention note so
   the per-day agent inherits the dependency context from the directive
-  itself.'''}''' : ''}${weekContextService == null ? '' : '''
+  itself.'''}''' : ''}
+${hasWeekContextTool ? '''
 
 
 Week context (`<recent_days>` / `<week_ahead>`):
@@ -275,7 +291,8 @@ Week context (`<recent_days>` / `<week_ahead>`):
   only. Do not restate the numbers — the facts line already carries them. If
   yesterday has no note yet, write it on any wake while it is still writable.
 - Your `Agent note:` lines in `<recent_days>` are your own past testimony; the
-  facts line next to them wins on any contradiction.'''}
+  facts line next to them wins on any contradiction.''' : ''}
+${hasMemoryTools ? '''
 
 Your memory (append-only — you add, never overwrite):
 - Keep each observation atomic: one idea per note, so it can be linked and
@@ -297,10 +314,12 @@ Your memory (append-only — you add, never overwrite):
 - Actually follow your links: when an entry cites `[[relation:id]]`, call
   `search_memory` with `ids` to pull those entries up before deciding.
 
-Record private observations and schedule one useful future wake when warranted.
+Record private observations and schedule one useful future wake when warranted.''' : ''}
 
+${isPlanningWake || isDigestWake ? '''
 Planning defaults:
-${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
+${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
+            .replaceAll(RegExp(r'\n{3,}'), '\n\n');
 
     if (ctx == null) return scaffold;
 
@@ -364,12 +383,32 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
         DayAgentToolNames.draftDayPlan,
       }.contains(toolName);
     }
-    if (wakeContext.isRefineWake &&
-        toolName == DayAgentToolNames.draftDayPlan) {
-      // Refine wakes edit an existing plan through `propose_plan_diff`.
-      // Re-exposing the full-draft writer lets a model overwrite the baseline
-      // before it proposes the reviewable diff the user requested.
-      return false;
+    if (wakeContext.isRefineWake) {
+      // Refine wakes have one reviewable artifact to produce. Keep only the
+      // tools needed to materialise newly requested work, explain a conflict,
+      // persist the diff, or retain genuinely durable context.
+      return const {
+        DayAgentToolNames.createTaskFromPhrase,
+        DayAgentToolNames.proposePlanDiff,
+        DayAgentToolNames.proposeKnowledge,
+        DayAgentToolNames.recordObservations,
+        DayAgentToolNames.searchMemory,
+        DayAgentToolNames.writeDaySummary,
+        DayAgentToolNames.raiseDayStatus,
+      }.contains(toolName);
+    }
+    if (wakeContext.isDigestWake && agentId == dailyOsPlannerAgentId) {
+      // A coordinator digest distils directives and summaries. Capture and
+      // plan mutation tools are both irrelevant and actively misleading.
+      return const {
+        DayAgentToolNames.recordObservations,
+        DayAgentToolNames.setNextWake,
+        DayAgentToolNames.searchMemory,
+        DayAgentToolNames.proposeKnowledge,
+        DayAgentToolNames.writeDaySummary,
+        DayAgentToolNames.issueDayDirective,
+        DayAgentToolNames.raiseDayStatus,
+      }.contains(toolName);
     }
     if (toolName == DayAgentToolNames.parseCaptureToItems) {
       return false;
@@ -425,7 +464,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required String conversationId,
     required String modelId,
     required AiConfigInferenceProvider provider,
-    required CloudInferenceWrapper inferenceRepo,
+    required InferenceRepositoryInterface inferenceRepo,
     required List<ChatCompletionTool> tools,
     required DayAgentStrategy strategy,
     required String captureId,
@@ -478,7 +517,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required String conversationId,
     required String modelId,
     required AiConfigInferenceProvider provider,
-    required CloudInferenceWrapper inferenceRepo,
+    required InferenceRepositoryInterface inferenceRepo,
     required List<ChatCompletionTool> tools,
     required DayAgentStrategy strategy,
     required String? consumptionAgentId,

@@ -368,6 +368,53 @@ void main() {
     );
 
     test(
+      'a classified timeout retries immediately and a later success retains '
+      'the recovered cause',
+      () async {
+        var executorRuns = 0;
+        final processor = DayProcessingOutboxProcessor(
+          repository: repository,
+          transcribe: (_) async => 'unused',
+          attachTranscript: (_, _) async => true,
+          randomUnit: () => 0,
+          agentJobExecutor: (job) async {
+            executorRuns++;
+            return executorRuns == 1
+                ? const DayAgentJobFailed(
+                    failureClass: DayProcessingFailureClass.timeout,
+                    error: 'draft inference exceeded its 30s deadline',
+                  )
+                : const DayAgentJobSucceeded(resultEntityId: 'plan-1');
+          },
+        );
+        await enqueueParse();
+
+        expect(
+          await processor.processNext(
+            kinds: const {DayProcessingJobKind.parseCapture},
+          ),
+          DayProcessingRunResult.deferred,
+        );
+        expect(
+          await processor.processNext(
+            kinds: const {DayProcessingJobKind.parseCapture},
+          ),
+          DayProcessingRunResult.succeeded,
+        );
+
+        final saved = await repository.getById('parse_cap-1');
+        expect(executorRuns, 2);
+        expect(saved!.status, DayProcessingJobStatus.succeeded);
+        expect(saved.attempts, 1);
+        expect(saved.lastFailureClass, DayProcessingFailureClass.timeout);
+        expect(
+          saved.lastError,
+          'draft inference exceeded its 30s deadline',
+        );
+      },
+    );
+
+    test(
       'no registered executor fails the job instead of hanging silently',
       () async {
         final processor = DayProcessingOutboxProcessor(
