@@ -53,7 +53,6 @@ what it does for a user; these describe how it runs.
 
 # Exploratory
 
-* [Character animation](character.md) - a deterministic 2D skeletal engine.
 * [Knowledge-graph explorer](knowledge_graph_poc.md) - a walkable ego-centric graph view.
 
 # Related
