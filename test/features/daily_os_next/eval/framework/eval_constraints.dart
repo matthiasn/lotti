@@ -637,9 +637,10 @@ EvalConstraintResult scoreRespectsEstimates(EvalRunOutcome outcome) {
 /// per-task ratio while summing to exactly the 480-minute capacity. Summing
 /// estimates instead makes the arithmetic honest — 720 minutes of work does
 /// not fit in 480 however the blocks are labelled. A shortened task is charged
-/// at its represented minutes only when its reason gives concrete minute
-/// arithmetic that agrees with both the block duration and corpus estimate;
-/// vague or contradictory partial prose keeps the full-estimate charge.
+/// at its represented minutes only when its reason or note gives concrete
+/// minute arithmetic that agrees with both the block duration and corpus
+/// estimate; vague or contradictory partial prose keeps the full-estimate
+/// charge.
 EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.withinCapacityByEstimate;
   final noPlan = _requirePlan(outcome, id);
@@ -651,6 +652,10 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
       'no placed task carries an estimate',
     );
   }
+  final fullEstimateMinutes = placements.values.fold(
+    0,
+    (total, placement) => total + placement.estimateMinutes,
+  );
   var chargedMinutes = 0;
   final partials = <String>[];
   final undisclosedShortenings = <String>[];
@@ -682,7 +687,7 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
   return EvalConstraintResult(
     id: id,
     passed: chargedMinutes <= capacity,
-    heuristic: chargedMinutes <= capacity && partials.isNotEmpty,
+    heuristic: chargedMinutes <= capacity && fullEstimateMinutes > capacity,
     detail:
         '${placements.length} placed task(s) charged at ${chargedMinutes}min against '
         '${capacity}min capacity'
@@ -812,9 +817,11 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
       ifAbsent: () => block.endTime.difference(block.startTime).inMinutes,
     );
     blocksByTask.putIfAbsent(taskId, () => []).add(block);
-    final reason = block.reason?.trim();
-    if (reason != null && reason.isNotEmpty) {
-      reasonsByTask.putIfAbsent(taskId, () => []).add(reason);
+    for (final disclosure in [block.reason, block.note]) {
+      final prose = disclosure?.trim();
+      if (prose != null && prose.isNotEmpty) {
+        reasonsByTask.putIfAbsent(taskId, () => []).add(prose);
+      }
     }
   }
   return {
@@ -1231,7 +1238,8 @@ bool _referenceAttributesEvidence(
         r'\bto\s*(?:the\s+)?$',
         caseSensitive: false,
       ).hasMatch(between);
-  return prepositionAttaches || allocationToAttaches;
+  final labelAttaches = RegExp(r'^\s*[:–—-]\s*$').hasMatch(between);
+  return prepositionAttaches || allocationToAttaches || labelAttaches;
 }
 
 bool _remainderIsTaskBound(String reason, Match match) {

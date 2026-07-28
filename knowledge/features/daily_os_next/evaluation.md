@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T05:38:35+02:00 }
+generated: { by: codex/5, at: 2026-07-28T05:48:44+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -108,10 +108,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `60 minutes of this task remain`; leading forms may also qualify the noun, as
   in `the remaining work is 60 minutes`. Remainder arithmetic explicitly scoped
   to another subject such as a meeting or workday is ignored. Every concrete
-  task-bound split and remainder in the task's disclosure must agree; one
-  matching fragment cannot override a contradictory remainder elsewhere in the
-  same disclosure. Consequently, `30 of 120 minutes remain` cannot be credited
-  as 30 completed minutes. Negation binds to nearby evidence and to the
+  task-bound split and remainder across the block reason and note must agree;
+  one matching fragment cannot override a contradictory remainder elsewhere in
+  the task's disclosure. Consequently, `30 of 120 minutes remain` cannot be
+  credited as 30 completed minutes. Negation binds to nearby evidence and to the
   allocation action leading into it. Thus both
   `cannot be scheduled` and
   `do not have enough room to schedule 60 of 120` invalidate a split, without
@@ -145,6 +145,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   and trade wording in unrelated plan prose cannot satisfy that disclosure.
   Trade language in the same reason is attributed to its nearest corpus task,
   so one task's deferred disposition cannot disclose another task's shortening.
+  Label punctuation binds too, so `Partial: task-d` remains owned by `task-d`
+  rather than the task attached to the enclosing block.
   An explicit non-task subject is rejected too: `the meeting is deferred`
   cannot disclose the shortening merely because the same reason names a task,
   while `the remainder is deferred` remains task-trade evidence.
@@ -172,9 +174,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   leaderboard. A reviewer must inspect the plan, changes, reasons, and status
   notes before calling a heuristic green result good reasoning.
   `withinCapacityByEstimate` is mixed for the same reason: full-estimate
-  accounting and failures remain objective, but a pass that depends on parsing
-  free-form partial-placement prose is marked heuristic and excluded from the
-  objective headline rate.
+  accounting and failures remain objective. A pass is marked heuristic and
+  excluded from the objective headline rate only when parsing free-form partial
+  prose changes full-estimate accounting from a failure to a pass; an audited
+  partial whose full estimate already fits remains objective.
 - **Fabrication is judged against what the model was shown.** The task corpus
   renders only inside the capture context, so a wake without a capture sees only
   its decided tasks — which do carry `status` and `blockedBy`, but not

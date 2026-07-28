@@ -17,6 +17,7 @@ void main() {
     required int startHour,
     required int endHour,
     String? taskId,
+    String? note,
     String? reason,
     String? title,
     PlannedBlockType type = PlannedBlockType.ai,
@@ -27,6 +28,7 @@ void main() {
     startTime: DateTime(2026, 7, 18, startHour),
     endTime: DateTime(2026, 7, 18, endHour),
     taskId: taskId,
+    note: note,
     reason: reason,
     title: title ?? id,
     type: type,
@@ -1441,6 +1443,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('an objectively fitting partial remains objective', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Partial: 60 of 120 minutes are scheduled; '
+                  '60 minutes remain for later.',
+            ),
+          ],
+          corpus: tasks,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.heuristic, isFalse);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('accepts compact completed-of-estimate minute arithmetic', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2183,6 +2208,94 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('does not borrow a postpositive task partial label', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Partial: task-d; 60 minutes remain for later.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('accepts a postpositive current-task partial label', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Partial: task-c; 60 minutes remain for later.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('audits contradictory remainder arithmetic in the note', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Partial: 60 of 120 minutes are scheduled.',
+              note: '90 minutes remain for this task.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('accepts matching partial arithmetic in the note', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Focused work on task-c.',
+              note:
+                  'Partial: 60 of 120 minutes are scheduled; '
+                  '60 minutes remain for later.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
     test('preserves distinct task ids when titles collide', () {
