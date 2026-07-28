@@ -1229,6 +1229,13 @@ bool _tradeEvidenceDescribesTaskOrWork(String prose, Match match) {
         caseSensitive: false,
       ).hasMatch(suffix) ||
       RegExp(
+        r'^\s+(?:entirely|completely|fully|actually|definitely|explicitly|'
+        'ultimately|finally|temporarily)'
+        r'(?:\s*$|\s+(?:to|until|for|because|due\s+to|owing\s+to|after|'
+        r'before|so|and|but|yet|with|against|over)\b)',
+        caseSensitive: false,
+      ).hasMatch(suffix) ||
+      RegExp(
         r'^\s+by\s+(?:'
         r'\d+(?:[.,]\d+)?\s*(?:%|percent|minutes?|hours?)|'
         r'(?:an?|half\s+an)\s+hour)\b',
@@ -1319,9 +1326,12 @@ bool _hasTaskBoundAllocationDenial(
     return true;
   }
   final allocationFailurePattern = RegExp(
-    r'\b(?:(?:the|this|that)\s+)?'
+    r'\b(?:(?:(?:the|this|that)\s+)?'
     r'(?:allocation|placement|scheduling|completion)\s+'
-    r'(?:(?:has|had)\s+)?fail(?:s|ed|ing)?\b',
+    r'(?:(?:has|had)\s+)?fail(?:s|ed|ing)?|'
+    r'fail(?:s|ed|ing)?\s+to\s+(?:be\s+)?'
+    '(?:schedul(?:e|ed)|allocat(?:e|ed)|complet(?:e|ed)|'
+    r'plan(?:ned)?|plac(?:e|ed)))\b',
     caseSensitive: false,
   );
   for (final failure in allocationFailurePattern.allMatches(prose)) {
@@ -1584,6 +1594,8 @@ bool _evidenceActionIsAsserted(
   return !_evidenceStartIsSpeculative(prose, actionStart) &&
       !RegExp(
         r'\b(?:almost|nearly|not\s+quite|unsuccessfully|'
+        r'(?:(?:is|are|was|were)\s+)?supposed\s+to'
+        r'(?:\s+(?:be|being|get|getting))?|'
         '(?:(?:intend(?:s|ed|ing)?|aim(?:s|ed|ing)?|'
         'hop(?:e|es|ed|ing)|want(?:s|ed|ing)?|expect(?:s|ed|ing)?|'
         'propos(?:e|es|ed|ing)|plan(?:s|ned|ning)?|'
@@ -1851,6 +1863,7 @@ bool _referenceAttributesEvidence(
 }
 
 bool _remainderIsTaskBound(String reason, Match match) {
+  if (_remainderHasExplicitNonTaskObject(reason, match)) return false;
   final clause = _matchClause(reason, match);
   if (_unrelatedRemainderScopePattern.hasMatch(clause)) return false;
   if (_partialRemainderDispositionPattern.hasMatch(clause)) return true;
@@ -1858,8 +1871,20 @@ bool _remainderIsTaskBound(String reason, Match match) {
 }
 
 bool _remainderIsRelatedToTask(String reason, Match match) {
+  if (_remainderHasExplicitNonTaskObject(reason, match)) return false;
   if (_remainderIsTaskBound(reason, match)) return true;
   return !_unrelatedRemainderScopePattern.hasMatch(_matchClause(reason, match));
+}
+
+bool _remainderHasExplicitNonTaskObject(String reason, Match match) {
+  final range = _matchClauseRange(reason, match, boundaries: ',.;!?\n');
+  final prefix = reason.substring(range.start, match.start);
+  return RegExp(
+    r'\b(?:a|an|the|this|that)\s+'
+    r'(?!(?:task|work|placement|block|remainder|rest|portion|part)\b)'
+    r'[\w-]+(?:\s+[\w-]+){0,3}\s+with\s*$',
+    caseSensitive: false,
+  ).hasMatch(prefix);
 }
 
 bool _remainderDescribesContinuity(String reason, Match match) {
@@ -2522,6 +2547,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
     for (final match in pattern.allMatches(prose)) {
       if (!belongsToTask(match) ||
           _remainderDescribesContinuity(prose, match) ||
+          !_remainderIsRelatedToTask(prose, match) ||
           _evidenceIsSpeculative(prose, match) ||
           _unrelatedRemainderScopePattern.hasMatch(
             _matchClause(prose, match),
@@ -2557,11 +2583,15 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
         hasEmbeddedNegation &&
         RegExp(r'\bfit\b', caseSensitive: false).hasMatch(matchedTrade);
     final negativeSchedulingDisclosure =
-        hasEmbeddedNegation &&
         RegExp(
           r'\bschedul(?:e|ed|ing)\b',
           caseSensitive: false,
-        ).hasMatch(matchedTrade);
+        ).hasMatch(matchedTrade) &&
+        (hasEmbeddedNegation ||
+            RegExp(
+              r'\bunable\s+to\b',
+              caseSensitive: false,
+            ).hasMatch(matchedTrade));
     if (negativeFitDisclosure) {
       if (!_negativeFitEvidenceDescribesTaskOrWork(
         prose,

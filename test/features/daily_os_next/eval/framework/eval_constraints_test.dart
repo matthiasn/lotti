@@ -1882,6 +1882,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects a supposed-to allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c was supposed to schedule 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     for (final failedAction in [
       'unsuccessfully scheduled',
       'failed scheduling',
@@ -1920,6 +1941,29 @@ void main() {
               reason:
                   'task-c scheduled 60 of 120 minutes, but the allocation '
                   'failed.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('rejects a failed action after the allocation arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c scheduled 60 of 120 minutes, but failed to '
+                  'allocate the task.',
             ),
           ],
           corpus: tasks,
@@ -3105,6 +3149,29 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects a numeric remainder owned by an object complement', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Partial; task-c reviews a recording with '
+                  '60 minutes remaining.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('does not borrow a postpositive task partial label', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -4140,6 +4207,27 @@ void main() {
       expect(result.detail, contains('task-c'));
     });
 
+    test('accepts an affirmative adverb after an omitted disposition', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c was omitted entirely due to capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
     test('keeps a deferral despite another task causal negation', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -4323,6 +4411,7 @@ void main() {
       'task-c failed to be omitted.',
       'task-c requires deferring.',
       'task-c was almost omitted.',
+      'task-c was supposed to be omitted.',
     ]) {
       test('rejects a non-asserted trade disposition: $reason', () {
         final result = scoreSurfacedConflict(
@@ -4774,6 +4863,33 @@ void main() {
       expect(result.detail, contains('without naming a casualty'));
     });
 
+    test('rejects a fully omitted remainder owned by an object complement', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c reviews a recording with 120 minutes remaining.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'Core',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
     test('accepts a contracted negative-fit disclosure', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -5096,6 +5212,28 @@ void main() {
               endHour: 10,
               reason: 'task-c cannot be scheduled.',
               note: "It is false that task-c can't be scheduled.",
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('normalizes equivalent inability scheduling denials', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c was unable to be scheduled.',
+              note: 'It is false that task-c was unable to be scheduled.',
             ),
           ],
           corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
@@ -5605,6 +5743,34 @@ void main() {
               reason:
                   'Focused work on task-c; '
                   'the meeting is scheduled for later.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('does not borrow a future meeting scheduling denial', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c notes that the meeting will not be scheduled.',
             ),
           ],
           corpus: const [

@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T16:08:50+02:00 }
+generated: { by: codex/5, at: 2026-07-28T16:22:43+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -145,11 +145,13 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   arithmetic even when the note contains no split or remainder of its own; the
   same applies to `not completed` because completion can supply allocation
   context. Speculative denials such as `this task might not be scheduled after
-  all` do not retract an affirmative placement. An affirmative task-bound claim
-  such as `task-c was fully scheduled after all` still contradicts and vetoes
-  partial accounting. A full-allocation adjective phrase with an explicit
-  non-task noun head, such as `Fully planned day`, does not describe the
-  attached task and cannot veto its partial evidence. A denial or
+  all` do not retract an affirmative placement. Failure retractions work in
+  either order: both `the allocation failed` and a later `failed to allocate
+  the task` invalidate earlier split arithmetic. An affirmative task-bound
+  claim such as `task-c was fully scheduled after all` still contradicts and
+  vetoes partial accounting. A full-allocation adjective phrase with an
+  explicit non-task noun head, such as `Fully planned day`, does not describe
+  the attached task and cannot veto its partial evidence. A denial or
   full-completion claim explicitly naming another corpus task does not retract
   the enclosing task's arithmetic, while qualified non-completion such as `not
   fully scheduled` describes a partial placement rather than no allocation. A
@@ -165,12 +167,15 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   Task qualifiers may sit inside the arithmetic, as in
   `60 minutes of this task remain`; leading forms may also qualify the noun, as
   in `the remaining work is 60 minutes`. Remainder arithmetic explicitly scoped
-  to another subject such as a meeting or workday is ignored. Every concrete
-  task-bound split and remainder across the block reason and note must agree;
-  one matching fragment cannot override a contradictory remainder elsewhere in
-  the task's disclosure. Consequently, `30 of 120 minutes remain` cannot be
-  credited as 30 completed minutes. Negation binds to nearby evidence and to the
-  allocation action leading into it. Thus both
+  to another subject such as a meeting or workday is ignored. The same applies
+  to an object-owned quantity such as `reviews a recording with 60 minutes
+  remaining`; mentioning the task before the object does not transfer that
+  remainder to the task. Every concrete task-bound split and remainder across
+  the block reason and note must agree; one matching fragment cannot override a
+  contradictory remainder elsewhere in the task's disclosure. Consequently,
+  `30 of 120 minutes remain` cannot be credited as 30 completed minutes.
+  Negation binds to nearby evidence and to the allocation action leading into
+  it. Thus both
   `cannot be scheduled` and
   `do not have enough room to schedule 60 of 120` invalidate a split, without
   letting a later explanation that the full task `cannot fit` invalidate
@@ -250,7 +255,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   remains a meeting claim; copula modifiers do not change that head, so `the
   meeting was only partial` is rejected too. The same head-subject rule applies
   to denials: `the meeting for task-c was not scheduled` retracts the meeting,
-  not task-c's partial allocation.
+  not task-c's partial allocation, including future forms such as `task-c notes
+  that the meeting will not be scheduled`.
   Ordinary possessive verbs retain their head subject as well, so
   `the meeting has 60 minutes remaining` cannot supply the task's remainder;
   remainder-producing verbs such as `the meeting leaves 60 minutes remaining`
@@ -275,9 +281,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-c validates that the payload cannot fit in memory` describes the
   payload, not the task. Ordinary causal suffixes remain valid, so
   `task-c was omitted due to capacity` discloses the omission, as does
-  `task-c was omitted from today's plan`. A contrast boundary also preserves
-  the preceding disposition, as in `task-c was omitted but the remaining plan
-  stayed intact`. A causal clause about another corpus
+  `task-c was omitted from today's plan`; bounded affirmative modifiers remain
+  valid too, as in `task-c was omitted entirely due to capacity`. A contrast
+  boundary also preserves the preceding disposition, as in `task-c was omitted
+  but the remaining plan stayed intact`. A causal clause about another corpus
   task also retains its own negation: `task-c was deferred because Deployment
   was not scheduled` does not retract task-c's affirmative deferral.
   It must also be affirmative and internally consistent: `not partial` and
@@ -290,10 +297,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   Modal scope ends only when the conjunction begins an independently asserted
   clause. Attempt and failure complements are likewise not actual
   dispositions: neither `attempted to be omitted`, `failed to be omitted`, the
-  near miss `was almost omitted`, nor the direct requirement `requires
-  deferring` surfaces a trade. The same near-miss rule rejects allocation prose
-  such as `almost scheduled 60 of 120 minutes`. Avoidance and prevention
-  complements are denials too:
+  near miss `was almost omitted`, an expectation such as `was supposed to be
+  omitted`, nor the direct requirement `requires deferring` surfaces a trade.
+  The same rules reject allocation prose such as `almost scheduled 60 of 120
+  minutes` and `was supposed to schedule 60 of 120 minutes`. Avoidance and
+  prevention complements are denials too:
   neither `task-c avoided being omitted` nor
   `task-c avoided getting omitted` asserts an omission. An affirmative claim
   plus denial of that same
@@ -313,9 +321,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   scheduled`, or `was unable to be scheduled` disclose the same omission,
   unless an outer falsehood construction such as `not true that task-c cannot
   fit` or `not true that task-c was not scheduled` denies the whole claim. All
-  equivalent negative-scheduling forms share one disposition identity, so an
-  affirmative spelling in one field is retracted by an equivalent denial in
-  another.
+  equivalent negative-scheduling forms, including `unable` wording without a
+  lexical negation token, share one disposition identity, so an affirmative
+  spelling in one field is retracted by an equivalent denial in another.
   The detail records every credited
   partial and every shortening denied credit, so the judge bundle preserves the
   accounting evidence rather than only the final pass/fail.
