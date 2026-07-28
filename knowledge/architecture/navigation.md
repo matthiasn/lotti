@@ -92,7 +92,9 @@ inserts that row as `false` only when it is absent, so new installs do not enter
 the still-experimental planner while an existing install that previously opted
 in keeps its stored `true`. Turning the flag off while `/calendar` is selected
 normalizes the active route back to `/tasks`, just like the other removable
-destinations.
+destinations. The global Daily OS command uses the same live flag as its
+availability predicate, so shortcuts, menus and the command palette cannot
+dispatch the removed destination's `-1` index.
 
 # Locations and path patterns
 

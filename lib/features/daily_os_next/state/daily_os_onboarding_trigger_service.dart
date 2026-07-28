@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
@@ -134,17 +135,22 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
   final providerReadyFuture = ref.watch(
     dailyOsOnboardingProviderReadyProvider.future,
   );
+  final dailyOsFlag = ref.watch(configFlagProvider(enableDailyOsPageFlag));
+  final onboardingFlag = ref.watch(
+    configFlagProvider(dailyOsOnboardingEnabledFlag),
+  );
   // Sequenced behind What's New and the general FTUE welcome: establish those
   // subscriptions synchronously too so this re-evaluates when either resolves.
   final whatsNewFuture = ref.watch(whatsNewControllerProvider.future);
   final welcomeOwedFuture = ref.watch(shouldAutoShowOnboardingProvider.future);
 
-  final dailyOsEnabled = await db.getConfigFlag(enableDailyOsPageFlag);
+  final dailyOsEnabled =
+      dailyOsFlag.value ?? await db.getConfigFlag(enableDailyOsPageFlag);
   if (!dailyOsEnabled) return false;
 
-  final onboardingEnabled = await db.getConfigFlag(
-    dailyOsOnboardingEnabledFlag,
-  );
+  final onboardingEnabled =
+      onboardingFlag.value ??
+      await db.getConfigFlag(dailyOsOnboardingEnabledFlag);
   if (!onboardingEnabled) return false;
 
   // What's New still owns the first overlay slot while it has unseen content

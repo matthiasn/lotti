@@ -34,7 +34,10 @@ The surface is an opt-in rollout behind the historical
 `enable_daily_os_page` config row. The row seeds `false` when absent, while
 `insertFlagIfNotExists` preserves a stored `true` from an earlier rollout.
 `NavService` omits the `/calendar` destination while it is off; enabling it in
-*Settings → Advanced → Config flags* adds the destination reactively.
+*Settings → Advanced → Config flags* adds the destination and its global
+navigation command reactively. Onboarding eligibility watches that same flag,
+so an already-running app re-evaluates the walkthrough immediately when the
+surface is enabled.
 
 The one shared piece is the day-plan aggregate in `lib/classes/day_plan.dart`.
 That model is already the durable representation of a day, so Daily OS Next

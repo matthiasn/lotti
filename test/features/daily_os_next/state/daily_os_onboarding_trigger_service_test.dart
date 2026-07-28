@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -191,14 +193,23 @@ void main() {
       bool whatsNewUnseen = false,
       int everPlanCount = 0,
       DraftPlan? todayPlan,
+      Stream<bool>? dailyOsFlagStream,
     }) {
       final mockJournalDb = MockJournalDb();
       when(
         () => mockJournalDb.getConfigFlag(enableDailyOsPageFlag),
       ).thenAnswer((_) async => dailyOsEnabled);
       when(
+        () => mockJournalDb.watchConfigFlag(enableDailyOsPageFlag),
+      ).thenAnswer(
+        (_) => dailyOsFlagStream ?? Stream.value(dailyOsEnabled),
+      );
+      when(
         () => mockJournalDb.getConfigFlag(dailyOsOnboardingEnabledFlag),
       ).thenAnswer((_) async => onboardingEnabled);
+      when(
+        () => mockJournalDb.watchConfigFlag(dailyOsOnboardingEnabledFlag),
+      ).thenAnswer((_) => Stream.value(onboardingEnabled));
       // What's New only blocks when its feature is on AND it has unseen
       // content (mirrors the general FTUE welcome's own guard).
       when(
@@ -255,6 +266,28 @@ void main() {
     test('false when the Daily OS rollout flag is off', () async {
       final container = createContainer(dailyOsEnabled: false);
       expect(await read(container), isFalse);
+    });
+
+    test('re-evaluates when the Daily OS rollout flag turns on', () async {
+      final rollout = StreamController<bool>.broadcast(sync: true);
+      addTearDown(rollout.close);
+      final container = createContainer(
+        dailyOsEnabled: false,
+        dailyOsFlagStream: rollout.stream,
+      );
+      final subscription = container.listen(
+        shouldAutoShowDailyOsOnboardingProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+
+      final initialRead = read(container);
+      rollout.add(false);
+      expect(await initialRead, isFalse);
+
+      rollout.add(true);
+      await container.pump();
+      expect(await read(container), isTrue);
     });
 
     test('false while the general FTUE welcome is still owed', () async {

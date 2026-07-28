@@ -239,7 +239,9 @@ welcome), the spotlight mounts over the empty-Day CTA, coach strips render insid
 the create modal, and the modal's typed result drives completion or a skip. The
 walkthrough config flag seeds **off**. Candidate eligibility also requires the
 separate `enable_daily_os_page` rollout flag, so an install whose Daily OS
-destination is hidden cannot be auto-invited into it. Still deferred: the
+destination is hidden cannot be auto-invited into it. Both flag dependencies
+are watched streams, so changing either advanced toggle re-evaluates the
+long-lived eligibility provider without an app restart. Still deferred: the
 completion celebration beat and the Settings replay entry.
 
 | Piece | Role |
