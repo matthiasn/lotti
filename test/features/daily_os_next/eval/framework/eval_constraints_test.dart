@@ -1589,6 +1589,27 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('rejects speculative remainder arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Partial; task-c might have 60 minutes remaining.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     for (final wording in ['partially', 'partly']) {
       test('accepts $wording scheduled work with a matching remainder', () {
         final result = scoreWithinCapacityByEstimate(
@@ -2394,6 +2415,27 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('accepts an affirmative adverb in a trailing allocation bridge', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c: 60 of 120 minutes were successfully scheduled.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
     test('accepts a task qualifier before the remainder verb', () {
@@ -3904,6 +3946,7 @@ void main() {
     for (final reason in [
       'task-c might be omitted.',
       'task-c could be deferred.',
+      'task-c may ultimately need to be deferred.',
     ]) {
       test('rejects a speculative trade disposition: $reason', () {
         final result = scoreSurfacedConflict(

@@ -1022,7 +1022,8 @@ bool _hasAuditablePartialDisclosure({
             taskId: taskId,
             taskTitle: taskTitle,
           ) ||
-          _remainderDescribesContinuity(reason, match)) {
+          _remainderDescribesContinuity(reason, match) ||
+          _evidenceIsSpeculative(reason, match)) {
         continue;
       }
       if (_evidenceNamesAnotherTask(
@@ -1055,7 +1056,8 @@ bool _hasAuditablePartialDisclosure({
             taskId: taskId,
             taskTitle: taskTitle,
           ) ||
-          _remainderDescribesContinuity(reason, match)) {
+          _remainderDescribesContinuity(reason, match) ||
+          _evidenceIsSpeculative(reason, match)) {
         continue;
       }
       if (_evidenceNamesAnotherTask(
@@ -1289,13 +1291,31 @@ bool _allocationActionIsDirectlyDenied(String prose, Match action) {
 }
 
 bool _evidenceIsSpeculative(String prose, Match match) {
-  final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
-  final prefix = prose.substring(range.start, match.start);
-  return RegExp(
-    r'\b(?:might|may|could|would|should|can)'
-    r'(?:\s+\w+){0,2}\s*$',
+  return _evidenceStartIsSpeculative(prose, match.start);
+}
+
+bool _evidenceStartIsSpeculative(String prose, int evidenceStart) {
+  var clauseStart = 0;
+  for (var i = evidenceStart - 1; i >= 0; i--) {
+    if (',.;!?\n'.contains(prose[i])) {
+      clauseStart = i + 1;
+      break;
+    }
+  }
+  final prefix = prose.substring(clauseStart, evidenceStart);
+  for (final modal in RegExp(
+    r'\b(?:might|may|could|would|should|can)\b',
     caseSensitive: false,
-  ).hasMatch(prefix);
+  ).allMatches(prefix)) {
+    final complement = prefix.substring(modal.end);
+    if (!RegExp(
+      r'\b(?:and|but|yet|however|while|although|though|so|therefore|then)\b',
+      caseSensitive: false,
+    ).hasMatch(complement)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool _negationQualifiesRatherThanNegates(Match negation, String between) {
@@ -1473,11 +1493,7 @@ bool _allocationActionIsAsserted(
     }
   }
   final prefix = prose.substring(clauseStart, action.start);
-  return !RegExp(
-        r'\b(?:might|may|could|would|should|can)'
-        r'(?:\s+\w+){0,2}\s*$',
-        caseSensitive: false,
-      ).hasMatch(prefix) &&
+  return !_evidenceStartIsSpeculative(prose, action.start) &&
       !RegExp(
         r'\b(?:intend(?:s|ed|ing)?|aim(?:s|ed|ing)?|'
         'hop(?:e|es|ed|ing)|want(?:s|ed|ing)?|expect(?:s|ed|ing)?|'
@@ -1576,7 +1592,7 @@ bool _splitHasUnrelatedScope(
         !RegExp(
           r'^\s*(?:(?:is|are|was|were|will|be|been|being|has|have|had|'
           'only|just|merely|already|actually|currently|now|'
-          r'estimate|estimated)\s+)*$',
+          r'estimate|estimated|[a-z]+ly)\s+)*$',
           caseSensitive: false,
         ).hasMatch(reason.substring(evidence.end, start))) {
       continue;

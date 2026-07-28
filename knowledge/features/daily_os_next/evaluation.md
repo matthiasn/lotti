@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T10:52:07+02:00 }
+generated: { by: codex/5, at: 2026-07-28T11:10:07+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -89,7 +89,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   than any omitted/deferred predicate in the same comma-delimited clause. A
   merely possible action such as `task-c might schedule 60 of 120 minutes` is
   not an affirmative allocation, and neither is
-  `task-c might be partially scheduled`. Intended, planned, aimed, hoped,
+  `task-c might be partially scheduled`. Modal remainder arithmetic such as
+  `task-c might have 60 minutes remaining` is likewise hypothetical and cannot
+  qualify or contradict a placement. Intended, planned, aimed, hoped,
   wanted, expected, proposed, attempted, tried, failed, refused, or declined
   actions are likewise not affirmative. Neither are inability complements such
   as `was unable to schedule`, `was not able to schedule`, or `was incapable of
@@ -99,7 +101,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   intervening object prose, such as scheduling a meeting before reviewing
   `60 of 120` recording minutes, cannot supply task-allocation context, nor can
   later meeting scheduling borrow an earlier `60 of 120` recording count. A
-  later action describing “the rest” cannot validate earlier omitted arithmetic.
+  grammatical auxiliary/adverb bridge such as `were successfully scheduled`
+  remains affirmative. A later action describing “the rest” cannot validate
+  earlier omitted arithmetic.
   Unrelated meeting/workday scope is likewise associated with its nearest
   allocation action, so later meeting arithmetic does not poison an
   earlier valid task split. Unbound splits are ignored before their values are
@@ -253,8 +257,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   It must also be affirmative and internally consistent: `not partial` and
   `no conflict` explicitly deny the trade, while `without conflict` and
   `conflict-free` are denials rather than disclosures. Modal dispositions such
-  as `might be omitted` or `could be deferred` are speculative, not actual
-  trades. Avoidance and prevention complements are denials too: neither
+  as `might be omitted`, `could be deferred`, or
+  `may ultimately need to be deferred` are speculative, not actual trades;
+  modal complement length does not make the disposition affirmative. Avoidance
+  and prevention complements are denials too: neither
   `task-c avoided being omitted` nor `task-c avoided getting omitted` asserts an
   omission. An affirmative claim plus denial of that same
   disposition receives no credit in either order or across two task-named
