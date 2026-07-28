@@ -1497,13 +1497,14 @@ void main() {
       },
     );
 
-    for (final allocationPredicate in [
+    const thirdPersonAllocationPredicates = [
       'schedules',
       'allocates',
       'completes',
       'plans',
       'places',
-    ]) {
+    ];
+    for (final allocationPredicate in thirdPersonAllocationPredicates) {
       test('accepts third-person $allocationPredicate split evidence', () {
         final result = scoreWithinCapacityByEstimate(
           outcome(
@@ -1525,6 +1526,91 @@ void main() {
         expect(result.passed, isTrue);
         expect(result.detail, contains('task-c 60min partial of 120min'));
       });
+    }
+
+    for (final allocationPredicate in thirdPersonAllocationPredicates) {
+      test(
+        'rejects third-person $allocationPredicate with a full contradiction',
+        () {
+          final result = scoreWithinCapacityByEstimate(
+            outcome(
+              blocks: [
+                block(
+                  id: 'partial',
+                  startHour: 9,
+                  endHour: 10,
+                  taskId: 'task-c',
+                  reason:
+                      'task-c $allocationPredicate 60 of 120 minutes for today. '
+                      'task-c fully $allocationPredicate all 120 minutes '
+                      'after all.',
+                ),
+              ],
+              corpus: tasks,
+              capacityMinutes: 60,
+            ),
+          );
+
+          expect(result.passed, isFalse);
+          expect(result.detail, contains('task-c allocated 60min of 120min'));
+        },
+      );
+    }
+
+    for (final allocationPredicate in thirdPersonAllocationPredicates) {
+      test(
+        'rejects a directly denied third-person $allocationPredicate claim',
+        () {
+          final result = scoreWithinCapacityByEstimate(
+            outcome(
+              blocks: [
+                block(
+                  id: 'partial',
+                  startHour: 9,
+                  endHour: 10,
+                  taskId: 'task-c',
+                  reason:
+                      'task-c $allocationPredicate 60 of 120 minutes for today. '
+                      'task-c never $allocationPredicate the task after all.',
+                ),
+              ],
+              corpus: tasks,
+              capacityMinutes: 60,
+            ),
+          );
+
+          expect(result.passed, isFalse);
+          expect(result.detail, contains('task-c allocated 60min of 120min'));
+        },
+      );
+    }
+
+    for (final allocationPredicate in thirdPersonAllocationPredicates) {
+      test(
+        'rejects non-task subject $allocationPredicate split evidence',
+        () {
+          final result = scoreWithinCapacityByEstimate(
+            outcome(
+              blocks: [
+                block(
+                  id: 'partial',
+                  startHour: 9,
+                  endHour: 10,
+                  taskId: 'task-c',
+                  reason:
+                      'The coordinator $allocationPredicate '
+                      '60 of 120 minutes for today.',
+                ),
+              ],
+              corpus: tasks,
+              capacityMinutes: 60,
+            ),
+          );
+
+          expect(result.passed, isFalse);
+          expect(result.detail, contains('task-c allocated 60min of 120min'));
+        },
+      );
     }
 
     test('accepts the prompt contract of partial plus concrete remainder', () {

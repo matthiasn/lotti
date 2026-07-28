@@ -780,19 +780,24 @@ final _partialRemainderDispositionPattern = RegExp(
   caseSensitive: false,
 );
 
+const _placementActionSource =
+    'schedul(?:e|es|ed|ing)|'
+    'allocat(?:e|es|ed|ing)|'
+    'complet(?:e|es|ed|ing)|'
+    'plan(?:s|ned|ning)?|'
+    'plac(?:e|es|ed|ing)';
+
 final _taskAllocationActionPattern = RegExp(
-  r'\b(?:schedul(?:e|es|ed|ing)|allocat(?:e|es|ed|ing)|'
-  'complet(?:e|es|ed|ing)|plan(?:s|ned|ning)?|plac(?:e|es|ed|ing)|'
+  r'\b(?:'
+  '$_placementActionSource|'
   r'fit(?:s|ting)?)\b',
   caseSensitive: false,
 );
 
 final _fullAllocationPattern = RegExp(
   r'\b(?:(?:fully|entirely|completely)\s+'
-  '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-  'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing))|'
-  '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-  r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing))\s+'
+  '(?:$_placementActionSource)|'
+  '(?:$_placementActionSource)\\s+'
   r'in\s+full)\b',
   caseSensitive: false,
 );
@@ -854,11 +859,9 @@ final _tradeSubjectPrefixPattern = RegExp(
   r'^(.*?)\s+(?:(?:(?:is|are|was|were)(?:\s+being)?|'
   r'(?:has|have|had)\s+been(?:\s+being)?|will\s+be(?:\s+being)?)'
   r'(?:\s+(?:not|only|merely|just|still))?'
-  r'(?:\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-  'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))?|'
+  '(?:\\s+(?:$_placementActionSource))?|'
   '(?:has|have|had|leave(?:s|d|ing)?|left)|'
-  '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-  r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))\s*$',
+  '(?:$_placementActionSource))\\s*\$',
   caseSensitive: false,
 );
 
@@ -1324,8 +1327,8 @@ bool _partialMentionDescribesPlacement(String prose, Match match) {
   final suffix = prose.substring(match.end, range.end);
   if (wording == 'partially' || wording == 'partly') {
     return RegExp(
-      r'^\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-      'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)|'
+      r'^\s+(?:'
+      '$_placementActionSource|'
       r'fit(?:s|ting)?|defer(?:s|red|ring)?|done|unfinished)\b',
       caseSensitive: false,
     ).hasMatch(suffix);
@@ -1362,8 +1365,7 @@ bool _tradeEvidenceDescribesTaskOrWork(
     final prefix = prose.substring(range.start, match.start);
     if (!RegExp(
       r'\b(?:is|are|was|were|remain(?:s|ed|ing)?|left|'
-      'schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-      'plan(?:s|ned|ning)?|plac(?:e|ed|ing)|'
+      '$_placementActionSource|'
       'defer(?:s|red|ring)?|omit(?:s|ted|ting)?|'
       'drop(?:s|ped|ping)?|move(?:s|d|ing)?|'
       r'roll(?:s|ed|ing)?|carr(?:y|ies|ied|ying))\s*$',
@@ -1445,8 +1447,9 @@ bool _hasTaskBoundAllocationDenial(
   required List<EvalCorpusTask> corpus,
 }) {
   final placementActionPattern = RegExp(
-    r'\b(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-    r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing))\b',
+    r'\b(?:'
+    '$_placementActionSource'
+    r')\b',
     caseSensitive: false,
   );
   for (final action in placementActionPattern.allMatches(prose)) {
