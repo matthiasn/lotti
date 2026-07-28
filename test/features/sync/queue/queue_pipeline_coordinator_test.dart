@@ -29,6 +29,7 @@ import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import 'test_utils.dart';
 
 class _MockSessionManager extends Mock implements MatrixSessionManager {}
 
@@ -1330,23 +1331,15 @@ void main() {
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
 
-        final event = MockEvent();
-        when(() => event.eventId).thenReturn(r'$bootstrap');
-        when(() => event.roomId).thenReturn(roomId);
-        when(() => event.type).thenReturn(EventTypes.Message);
-        when(
-          () => event.originServerTs,
-        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(10));
-        when(() => event.content).thenReturn(<String, dynamic>{
-          'msgtype': 'org.matrix.lotti.sync',
-        });
-        when(event.toJson).thenReturn(<String, dynamic>{
-          'event_id': r'$bootstrap',
-          'room_id': roomId,
-          'origin_server_ts': 10,
-          'type': EventTypes.Message,
-          'content': {'msgtype': 'org.matrix.lotti.sync'},
-        });
+        // Must carry the real `syncMessageType`. A fixture with any other
+        // msgtype is classified as non-payload and dropped by
+        // `enqueueBatch` as filteredOutByType — the walk then looks
+        // successful while the queue stays empty.
+        final event = buildSyncEvent(
+          eventId: r'$bootstrap',
+          roomId: roomId,
+          originTsMs: 10,
+        );
         when(() => timeline.events).thenReturn(<Event>[event]);
         when(() => timeline.canRequestHistory).thenReturn(false);
         when(timeline.cancelSubscriptions).thenAnswer((_) {});
@@ -1358,7 +1351,16 @@ void main() {
 
         expect(result.stopReason, BootstrapStopReason.serverExhausted);
         expect(infos, hasLength(1));
+        // `totalEventsSoFar` counts what the sink SAW, not what it accepted,
+        // so it cannot carry this test's claim on its own: assert the row
+        // actually landed in the queue.
         expect(infos.single.totalEventsSoFar, 1);
+        final stats = await realQueue.depthSnapshot();
+        expect(
+          stats.total,
+          1,
+          reason: 'the page must be appended to the queue, not merely seen',
+        );
       },
     );
 
@@ -1457,23 +1459,11 @@ void main() {
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
 
-        final event = MockEvent();
-        when(() => event.eventId).thenReturn(r'$bootstrap2');
-        when(() => event.roomId).thenReturn(roomId);
-        when(() => event.type).thenReturn(EventTypes.Message);
-        when(
-          () => event.originServerTs,
-        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(20));
-        when(() => event.content).thenReturn(<String, dynamic>{
-          'msgtype': 'org.matrix.lotti.sync',
-        });
-        when(event.toJson).thenReturn(<String, dynamic>{
-          'event_id': r'$bootstrap2',
-          'room_id': roomId,
-          'origin_server_ts': 20,
-          'type': EventTypes.Message,
-          'content': {'msgtype': 'org.matrix.lotti.sync'},
-        });
+        final event = buildSyncEvent(
+          eventId: r'$bootstrap2',
+          roomId: roomId,
+          originTsMs: 20,
+        );
         when(() => timeline.events).thenReturn(<Event>[event]);
         when(() => timeline.canRequestHistory).thenReturn(false);
         when(timeline.cancelSubscriptions).thenAnswer((_) {});
@@ -1483,6 +1473,10 @@ void main() {
         );
 
         expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        // A throwing progress callback must not cost the page: the row still
+        // reaches the queue.
+        final stats = await realQueue.depthSnapshot();
+        expect(stats.total, 1);
       },
     );
   });
