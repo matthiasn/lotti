@@ -4774,6 +4774,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Kalendervyer';
 
   @override
+  String get designSystemCalloutInfoSample =>
+      'En informativ ton: kant och ikon bär färgen, meddelandet förblir lättläst.';
+
+  @override
   String get designSystemCaptionDescriptionSample =>
       'Tar bort alla användare som inte publicerats i detta projekt. Lägg till användare för att publicera det igen.';
 

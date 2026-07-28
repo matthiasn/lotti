@@ -4827,6 +4827,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Zobrazení kalendáře';
 
   @override
+  String get designSystemCalloutInfoSample =>
+      'Informační tón: rámeček a ikona nesou barvu, zpráva zůstává dobře čitelná.';
+
+  @override
   String get designSystemCaptionDescriptionSample =>
       'Odebrání všech uživatelů zrušilo publikování tohoto projektu. Přidejte uživatele pro opětovné publikování.';
 

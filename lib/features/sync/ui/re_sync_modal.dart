@@ -327,7 +327,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
       children: [
         Icon(
           Icons.check_circle_outline_rounded,
-          size: tokens.spacing.step9,
+          size: IconSizes.xxxl,
           color: tokens.colors.alert.success.defaultColor,
         ),
         SizedBox(height: tokens.spacing.step5),
@@ -386,18 +386,18 @@ class _ReSyncProgressRow extends StatelessWidget {
         if (isComplete)
           Icon(
             Icons.check_circle_outline_rounded,
-            size: tokens.spacing.step5,
+            size: IconSizes.s,
             color: tokens.colors.alert.success.defaultColor,
           )
         else if (progress != null)
-          DesignSystemSpinner(
-            size: tokens.spacing.step5,
-            strokeWidth: tokens.spacing.step1,
+          const DesignSystemSpinner(
+            size: IconSizes.s,
+            strokeWidth: BorderWidths.emphasis,
           )
         else
           Icon(
             Icons.circle_outlined,
-            size: tokens.spacing.step5,
+            size: IconSizes.s,
             color: tokens.colors.text.lowEmphasis,
           ),
         SizedBox(width: tokens.spacing.step3),

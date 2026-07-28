@@ -8,6 +8,12 @@ enum DesignSystemBadgeTone {
   danger,
   warning,
   success,
+
+  /// Hueless status: for states that are merely *not yet something* rather
+  /// than good, bad or noteworthy. Exists so a quiet status cannot borrow an
+  /// identity or alert grammar — "Unverified (no keys)" must not dress like
+  /// "This device".
+  neutral,
 }
 
 enum _DesignSystemBadgeType {
@@ -323,27 +329,49 @@ class _BadgeStyleSpec {
       };
     }
 
-    final (accentColor, inkColor) = switch (tone) {
-      DesignSystemBadgeTone.primary => (
-        tokens.colors.alert.info.defaultColor,
-        tokens.colors.alert.info.ink,
+    if (tone == DesignSystemBadgeTone.neutral) {
+      // No alert ramp to bind: the border is the outlined button's quiet
+      // stroke, the label the metadata ink. A neutral badge whispers — but
+      // the dot is the one shape where the fill IS the entire cue, so it
+      // takes the medium-emphasis ink: the decorative ramp composites below
+      // the 3:1 graphical-object floor on level-02 hosts in both themes.
+      return switch (type) {
+        _DesignSystemBadgeType.dot => _BadgeStyleSpec(
+          backgroundColor: tokens.colors.text.mediumEmphasis,
+          foregroundColor: Colors.transparent,
+          borderColor: null,
+        ),
+        _DesignSystemBadgeType.number ||
+        _DesignSystemBadgeType.filled ||
+        _DesignSystemBadgeType.icon => _BadgeStyleSpec(
+          backgroundColor: tokens.colors.surface.enabled,
+          foregroundColor: tokens.colors.text.mediumEmphasis,
+          borderColor: null,
+        ),
+        _DesignSystemBadgeType.outlined => _BadgeStyleSpec(
+          backgroundColor: null,
+          foregroundColor: tokens.colors.text.mediumEmphasis,
+          borderColor: tokens.colors.text.lowEmphasis,
+        ),
+      };
+    }
+
+    // The remaining tones all bind an alert ramp. Secondary and neutral
+    // returned above, so this map carries exactly the ramp tones — a switch
+    // here would need unreachable throw arms for the two special cases.
+    final alert = tokens.colors.alert;
+    final (accentColor, inkColor) = {
+      DesignSystemBadgeTone.primary: (alert.info.defaultColor, alert.info.ink),
+      DesignSystemBadgeTone.danger: (alert.error.defaultColor, alert.error.ink),
+      DesignSystemBadgeTone.warning: (
+        alert.warning.defaultColor,
+        alert.warning.ink,
       ),
-      DesignSystemBadgeTone.danger => (
-        tokens.colors.alert.error.defaultColor,
-        tokens.colors.alert.error.ink,
+      DesignSystemBadgeTone.success: (
+        alert.success.defaultColor,
+        alert.success.ink,
       ),
-      DesignSystemBadgeTone.warning => (
-        tokens.colors.alert.warning.defaultColor,
-        tokens.colors.alert.warning.ink,
-      ),
-      DesignSystemBadgeTone.success => (
-        tokens.colors.alert.success.defaultColor,
-        tokens.colors.alert.success.ink,
-      ),
-      DesignSystemBadgeTone.secondary => throw StateError(
-        'Secondary tone must be handled separately.',
-      ),
-    };
+    }[tone]!;
 
     return switch (type) {
       _DesignSystemBadgeType.dot => _BadgeStyleSpec(

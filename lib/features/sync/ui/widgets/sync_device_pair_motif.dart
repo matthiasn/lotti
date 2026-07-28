@@ -121,7 +121,7 @@ class _SyncDevicePairMotifState extends State<SyncDevicePairMotif>
       children: [
         Icon(
           Icons.smartphone_rounded,
-          size: tokens.spacing.step8,
+          size: IconSizes.xxl,
           color: deviceInk,
         ),
         SizedBox(width: tokens.spacing.step4),
@@ -129,7 +129,7 @@ class _SyncDevicePairMotifState extends State<SyncDevicePairMotif>
         SizedBox(width: tokens.spacing.step4),
         Icon(
           Icons.laptop_mac_rounded,
-          size: tokens.spacing.step9,
+          size: IconSizes.xxxl,
           color: deviceInk,
         ),
       ],

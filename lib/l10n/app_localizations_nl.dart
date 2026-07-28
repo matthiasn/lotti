@@ -4786,6 +4786,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Agendaweergaven';
 
   @override
+  String get designSystemCalloutInfoSample =>
+      'Een informatieve toon: rand en pictogram dragen de kleur, het bericht blijft goed leesbaar.';
+
+  @override
   String get designSystemCaptionDescriptionSample =>
       'Verwijderen van alle gebruikers ongepubliceerd dit project. Voeg gebruikers om het opnieuw te publiceren.';
 

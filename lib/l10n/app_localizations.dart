@@ -8195,6 +8195,12 @@ abstract class AppLocalizations {
   /// **'Calendar Views'**
   String get designSystemCalendarViewsTitle;
 
+  /// Widgetbook preview copy for the informational inline callout.
+  ///
+  /// In en, this message translates to:
+  /// **'An informational tone: the border and glyph carry the hue, the message stays high-emphasis.'**
+  String get designSystemCalloutInfoSample;
+
   /// No description provided for @designSystemCaptionDescriptionSample.
   ///
   /// In en, this message translates to:

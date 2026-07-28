@@ -2148,6 +2148,7 @@
   "designSystemBreadcrumbTrailTitle": "Chemin du fil d'Ariane",
   "designSystemCalendarPickerLabel": "Sélecteur de calendrier",
   "designSystemCalendarViewsTitle": "Vues du calendrier",
+  "designSystemCalloutInfoSample": "Un ton informatif : la bordure et l'icône portent la couleur, le message reste bien lisible.",
   "designSystemCaptionDescriptionSample": "La suppression de tous les utilisateurs a dépublié ce projet. Ajoute des utilisateurs pour republier.",
   "designSystemCaptionIconLeftLabel": "Icône à gauche",
   "designSystemCaptionIconTopLabel": "Icône en haut",

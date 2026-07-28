@@ -4852,6 +4852,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Vizualizări calendar';
 
   @override
+  String get designSystemCalloutInfoSample =>
+      'Un ton informativ: chenarul și pictograma poartă culoarea, mesajul rămâne ușor lizibil.';
+
+  @override
   String get designSystemCaptionDescriptionSample =>
       'Eliminarea tuturor utilizatorilor a retras publicarea acestui proiect. Adăugați utilizatori pentru a republica.';
 

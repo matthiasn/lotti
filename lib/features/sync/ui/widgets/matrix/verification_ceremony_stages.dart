@@ -54,7 +54,7 @@ class VerificationCeremonyHeader extends StatelessWidget {
         children: [
           Icon(
             Icons.devices_other_rounded,
-            size: tokens.spacing.step6,
+            size: IconSizes.l,
             color: tokens.colors.text.mediumEmphasis,
           ),
           SizedBox(width: tokens.spacing.step4),

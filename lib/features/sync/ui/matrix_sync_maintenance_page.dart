@@ -124,7 +124,7 @@ class _MatrixSyncMaintenanceBodyState extends State<MatrixSyncMaintenanceBody>
             leading: SettingsIcon(icon: item.icon),
             trailing: Icon(
               Icons.chevron_right_rounded,
-              size: tokens.spacing.step6,
+              size: IconSizes.l,
               color: tokens.colors.text.lowEmphasis,
             ),
             // Keep `showDivider` stable so hover never shifts layout

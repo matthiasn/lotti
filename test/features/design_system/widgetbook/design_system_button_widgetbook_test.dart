@@ -25,6 +25,7 @@ const _expectedComponentNames = [
   'Dropdowns',
   'File upload',
   'Header',
+  'Inline Callout',
   'List',
   'Navigation Sidebar',
   'Progress bar',

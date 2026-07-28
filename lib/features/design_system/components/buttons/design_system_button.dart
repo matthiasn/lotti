@@ -9,6 +9,12 @@ enum DesignSystemButtonVariant {
   /// Transparent body with a neutral hairline border — a labeled action that
   /// must read as a button without spending a fill or the interactive accent.
   outlined,
+
+  /// The outlined grammar carrying the interactive accent on its border and
+  /// label — a demoted-but-*positive* action. Exists for slots beside a
+  /// danger primary, where the neutral [outlined] treatment reads as Cancel:
+  /// "Verify" next to "Remove" must still look like a good idea.
+  constructiveOutlined,
   danger,
   dangerSecondary,
   dangerTertiary,
@@ -385,14 +391,16 @@ class _ButtonVariantSpec {
         DesignSystemButtonVariant.dangerSecondary => true,
         DesignSystemButtonVariant.tertiary ||
         DesignSystemButtonVariant.outlined ||
+        DesignSystemButtonVariant.constructiveOutlined ||
         DesignSystemButtonVariant.dangerTertiary => false,
       };
+      final isOutlined =
+          variant == DesignSystemButtonVariant.outlined ||
+          variant == DesignSystemButtonVariant.constructiveOutlined;
       return _ButtonVariantSpec(
         foregroundColor: tokens.colors.text.lowEmphasis,
         backgroundColor: isFilled ? tokens.colors.surface.enabled : null,
-        borderColor: variant == DesignSystemButtonVariant.outlined
-            ? tokens.colors.text.lowEmphasis
-            : null,
+        borderColor: isOutlined ? tokens.colors.text.lowEmphasis : null,
       );
     }
 
@@ -444,6 +452,16 @@ class _ButtonVariantSpec {
             ? null
             : surfaceColor,
         borderColor: tokens.colors.text.lowEmphasis,
+      ),
+      DesignSystemButtonVariant.constructiveOutlined => _ButtonVariantSpec(
+        // The accent rides border and label together, tracking the
+        // interaction state like the tertiary text button does — the
+        // outlined shape demotes it, the hue keeps it a good idea.
+        foregroundColor: interactiveColor,
+        backgroundColor: visualState == DesignSystemButtonVisualState.idle
+            ? null
+            : surfaceColor,
+        borderColor: interactiveColor,
       ),
       DesignSystemButtonVariant.danger => _ButtonVariantSpec(
         foregroundColor: tokens.colors.text.onInteractiveAlert,

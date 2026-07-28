@@ -2547,6 +2547,10 @@
   "designSystemBreadcrumbTrailTitle": "Breadcrumb Trail",
   "designSystemCalendarPickerLabel": "Calendar Picker",
   "designSystemCalendarViewsTitle": "Calendar Views",
+  "designSystemCalloutInfoSample": "An informational tone: the border and glyph carry the hue, the message stays high-emphasis.",
+  "@designSystemCalloutInfoSample": {
+    "description": "Widgetbook preview copy for the informational inline callout."
+  },
   "designSystemCaptionDescriptionSample": "Removing all users unpublished this project. Add users to publish it again.",
   "designSystemCaptionIconLeftLabel": "Left icon",
   "designSystemCaptionIconTopLabel": "Top icon",

@@ -188,9 +188,12 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
           tone: DesignSystemBadgeTone.success,
         )
       else if (keyless)
+        // Neutral, not secondary: keyless "Unverified" is a quiet status,
+        // and dressing it like the outlined "This device" identity chip made
+        // state and identity read as one category.
         DesignSystemBadge.outlined(
           label: messages.syncDevicesUnverifiedChip,
-          tone: DesignSystemBadgeTone.secondary,
+          tone: DesignSystemBadgeTone.neutral,
         )
       else
         DesignSystemBadge.filled(
@@ -251,12 +254,12 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                   padding: EdgeInsets.zero,
                   onPressed: _busy ? null : () => _deleteDevice(context),
                   icon: _busy
-                      ? DesignSystemSpinner(
-                          size: tokens.spacing.step5 + tokens.spacing.step1,
+                      ? const DesignSystemSpinner(
+                          size: IconSizes.m,
                         )
                       : Icon(
                           Icons.delete_outline_rounded,
-                          size: tokens.spacing.step5 + tokens.spacing.step1,
+                          size: IconSizes.m,
                           color: tokens.colors.text.lowEmphasis,
                         ),
                 ),
@@ -327,9 +330,12 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                     label: messages.deleteDeviceLabel,
                   ),
                   if (canVerify)
+                    // Constructive-outlined, not neutral outlined: beside a
+                    // danger primary the neutral treatment read as Cancel,
+                    // and Verify is the *good* way out of this card.
                     DesignSystemButton(
                       size: DesignSystemButtonSize.large,
-                      variant: DesignSystemButtonVariant.outlined,
+                      variant: DesignSystemButtonVariant.constructiveOutlined,
                       onPressed: _busy ? null : () => _verifyDevice(context),
                       label: messages.settingsMatrixVerifyLabel,
                     ),

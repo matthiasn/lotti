@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
@@ -345,6 +346,13 @@ void main() {
       expect(find.text('Unverified'), findsOneWidget);
       expect(find.text('Verify'), findsNothing);
       expect(find.byKey(const Key('matrix_delete_device')), findsOneWidget);
+
+      // Neutral, not the identity chip's secondary: keyless "Unverified" is
+      // a quiet status, and status must not dress like identity.
+      final chip = tester.widget<DesignSystemBadge>(
+        find.widgetWithText(DesignSystemBadge, 'Unverified'),
+      );
+      expect(chip.tone, DesignSystemBadgeTone.neutral);
     });
 
     testWidgets('a stale unverified device promotes removal to the labeled '
@@ -366,6 +374,16 @@ void main() {
       );
       expect(find.text('Remove from sync'), findsOneWidget);
       expect(find.text('Verify'), findsOneWidget);
+
+      // Beside a danger primary the neutral outlined treatment read as
+      // Cancel; the demoted Verify carries the constructive accent instead.
+      final verifyButton = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Verify'),
+      );
+      expect(
+        verifyButton.variant,
+        DesignSystemButtonVariant.constructiveOutlined,
+      );
 
       // The labeled button still runs through the confirmation modal.
       await tester.tap(find.byKey(const Key('matrix_remove_device_primary')));

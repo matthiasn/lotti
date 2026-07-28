@@ -4854,6 +4854,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Vues du calendrier';
 
   @override
+  String get designSystemCalloutInfoSample =>
+      'Un ton informatif : la bordure et l\'icône portent la couleur, le message reste bien lisible.';
+
+  @override
   String get designSystemCaptionDescriptionSample =>
       'La suppression de tous les utilisateurs a dépublié ce projet. Ajoute des utilisateurs pour republier.';
 

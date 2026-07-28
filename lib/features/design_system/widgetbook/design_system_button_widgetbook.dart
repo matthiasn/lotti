@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_divider_wi
 import 'package:lotti/features/design_system/widgetbook/design_system_dropdown_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_file_upload_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_header_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_inline_callout_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_list_item_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_navigation_sidebar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_navigation_tab_bar_widgetbook.dart';
@@ -58,6 +59,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
         buildDesignSystemSearchWidgetbookComponent(),
         buildDesignSystemToastWidgetbookComponent(),
         buildDesignSystemDividerWidgetbookComponent(),
+        buildDesignSystemInlineCalloutWidgetbookComponent(),
         buildDesignSystemDropdownWidgetbookComponent(),
         buildDesignSystemFileUploadWidgetbookComponent(),
         buildDesignSystemSplitButtonWidgetbookComponent(),
@@ -242,6 +244,7 @@ String _labelForVariant(DesignSystemButtonVariant variant) {
     DesignSystemButtonVariant.secondary => 'Secondary',
     DesignSystemButtonVariant.tertiary => 'Tertiary',
     DesignSystemButtonVariant.outlined => 'Outlined',
+    DesignSystemButtonVariant.constructiveOutlined => 'Constructive outlined',
     DesignSystemButtonVariant.danger => 'Danger',
     DesignSystemButtonVariant.dangerSecondary => 'Danger secondary',
     DesignSystemButtonVariant.dangerTertiary => 'Danger tertiary',

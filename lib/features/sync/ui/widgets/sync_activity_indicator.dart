@@ -161,14 +161,14 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                   // focus-in / focus-out.
                   border: Border.all(
                     color: focused ? accent : Colors.transparent,
-                    width: tokens.spacing.step1,
+                    width: BorderWidths.emphasis,
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.sync_rounded,
-                      size: tokens.spacing.step5,
+                      size: IconSizes.s,
                       color: hasWork ? accent : tokens.colors.text.lowEmphasis,
                     ),
                     SizedBox(width: tokens.spacing.step3),
@@ -228,7 +228,7 @@ class _QueueMetric extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: tokens.spacing.step4,
+            size: IconSizes.xs,
             color: tokens.colors.text.lowEmphasis,
           ),
           SizedBox(width: tokens.spacing.step1),

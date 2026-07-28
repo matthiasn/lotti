@@ -177,6 +177,10 @@ void main() {
             fg: tokens.colors.text.highEmphasis,
             bg: null,
           ),
+          DesignSystemButtonVariant.constructiveOutlined: (
+            fg: tokens.colors.interactive.enabled,
+            bg: null,
+          ),
           DesignSystemButtonVariant.danger: (
             fg: tokens.colors.text.onInteractiveAlert,
             bg: tokens.colors.alert.error.defaultColor,
@@ -233,6 +237,37 @@ void main() {
         }
       });
     }
+
+    testWidgets('constructive outlined carries the accent on its border, not '
+        'the neutral stroke', (tester) async {
+      // The variant exists for slots beside a danger primary, where the
+      // neutral outlined treatment reads as Cancel. The accent border is
+      // the whole difference — without it this is just `outlined`.
+      const buttonKey = Key('constructive-outlined');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemButton(
+            key: buttonKey,
+            label: 'Verify',
+            variant: DesignSystemButtonVariant.constructiveOutlined,
+            onPressed: _noop,
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      final ink = tester.widget<Ink>(
+        find.descendant(of: find.byKey(buttonKey), matching: find.byType(Ink)),
+      );
+      final decoration = ink.decoration! as ShapeDecoration;
+      final shape = decoration.shape as RoundedRectangleBorder;
+      expect(
+        shape.side.color,
+        dsTokensLight.colors.interactive.enabled,
+      );
+      expect(decoration.color, Colors.transparent);
+    });
 
     testWidgets('danger content preserves contrast across interactive surface '
         'states', (tester) async {

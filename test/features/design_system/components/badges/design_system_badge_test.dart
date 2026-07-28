@@ -237,6 +237,75 @@ void main() {
       );
     });
 
+    testWidgets('renders the neutral outlined badge without an alert hue', (
+      tester,
+    ) async {
+      // Neutral exists so a quiet status ("Unverified, no keys yet") cannot
+      // borrow the identity grammar of the secondary outlined chip or an
+      // alert tone it has not earned: grey stroke, metadata ink, no fill.
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.outlined(
+          label: 'Neutral',
+          tone: DesignSystemBadgeTone.neutral,
+        ),
+      );
+
+      final decoration = _badgeDecoration(tester);
+      final border = decoration.border! as Border;
+      final richText = _findTextNode(tester, 'Neutral');
+
+      expect(decoration.color, isNull);
+      expect(border.top.color, dsTokensLight.colors.text.lowEmphasis);
+      expectTextStyle(
+        richText.text.style!,
+        dsTokensLight.typography.styles.others.caption,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+    });
+
+    testWidgets('renders the neutral filled badge on the surface overlay', (
+      tester,
+    ) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.filled(
+          label: 'Neutral',
+          tone: DesignSystemBadgeTone.neutral,
+        ),
+      );
+
+      final decoration = _badgeDecoration(tester);
+      final richText = _findTextNode(tester, 'Neutral');
+
+      expect(decoration.color, dsTokensLight.colors.surface.enabled);
+      expectTextStyle(
+        richText.text.style!,
+        dsTokensLight.typography.styles.others.caption,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+    });
+
+    testWidgets('renders the neutral dot at graphical-object contrast', (
+      tester,
+    ) async {
+      // The dot is the one neutral shape whose fill is the entire cue, so
+      // it takes the medium-emphasis ink — the decorative ramp composites
+      // below the 3:1 floor on level-02 hosts in both themes.
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.dot(
+          tone: DesignSystemBadgeTone.neutral,
+          semanticLabel: 'Neutral status',
+        ),
+      );
+
+      expect(
+        _badgeDecoration(tester).color,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+    });
+
     testWidgets('renders the success icon badge from tokens', (tester) async {
       await _pumpBadge(
         tester,

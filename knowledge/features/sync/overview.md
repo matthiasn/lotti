@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-07-28T21:20:00Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-src
@@ -148,8 +148,9 @@ Four properties are deliberate:
 - **Add device is not platform-gated.** Any paired device can present a code,
   so a surviving phone can onboard a replacement for a dead desktop.
 - **Both devices warn, and the warning touches the credential.** The inviting
-  side keeps a lock-badged `SyncCallout` glued directly under its pairing
-  card; the joining side renders the caveat *inside* the warning-bordered
+  side keeps a lock-badged `DesignSystemInlineCallout` (the design-system
+  component the sync-local callout was promoted into) glued directly under
+  its pairing card; the joining side renders the caveat *inside* the warning-bordered
   well that holds the paste field (manual) or directly under the viewfinder
   (camera), so the warning physically shares a frame with the secret it is
   about. The weight belongs on the joining device because that is the side an

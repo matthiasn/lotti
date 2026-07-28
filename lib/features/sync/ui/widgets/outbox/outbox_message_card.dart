@@ -86,7 +86,7 @@ class _OutboxMessageCardState extends State<OutboxMessageCard> {
                       _expanded
                           ? Icons.expand_less_rounded
                           : Icons.expand_more_rounded,
-                      size: tokens.spacing.step4,
+                      size: IconSizes.xs,
                       color: colors.text.lowEmphasis,
                     ),
                   ],

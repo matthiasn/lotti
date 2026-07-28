@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_callout.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 
@@ -148,9 +148,9 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
           ? null
           : () => unawaited(_refresh()),
       icon: _refreshing
-          ? DesignSystemSpinner(
-              size: tokens.spacing.step5,
-              strokeWidth: tokens.spacing.step1,
+          ? const DesignSystemSpinner(
+              size: IconSizes.s,
+              strokeWidth: BorderWidths.emphasis,
             )
           : const Icon(MdiIcons.refresh),
     );
@@ -274,10 +274,10 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
         ),
         if (blocked) ...[
           SizedBox(height: tokens.spacing.step3),
-          SyncCallout(
+          DesignSystemInlineCallout(
+            key: const Key('sync_devices_paused_banner'),
             icon: Icons.warning_rounded,
             text: bannerText,
-            calloutKey: const Key('sync_devices_paused_banner'),
           ),
         ],
         if (justJoined != null) ...[
@@ -383,7 +383,7 @@ class _JustJoinedBanner extends StatelessWidget {
               children: [
                 Icon(
                   Icons.auto_awesome_rounded,
-                  size: tokens.spacing.step6,
+                  size: IconSizes.l,
                   color: tokens.colors.interactive.enabled,
                 ),
                 SizedBox(width: tokens.spacing.step4),
@@ -414,7 +414,7 @@ class _JustJoinedBanner extends StatelessWidget {
                   onPressed: onDismiss,
                   icon: Icon(
                     Icons.close_rounded,
-                    size: tokens.spacing.step5,
+                    size: IconSizes.s,
                     color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),

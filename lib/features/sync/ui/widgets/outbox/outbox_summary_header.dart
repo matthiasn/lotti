@@ -38,7 +38,7 @@ class OutboxSummaryHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(_icon(summary.state), color: accent, size: tokens.spacing.step5),
+          Icon(_icon(summary.state), color: accent, size: IconSizes.s),
           SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Text(

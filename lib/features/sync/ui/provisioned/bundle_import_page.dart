@@ -351,7 +351,7 @@ class _OnlyOwnCodeWarning extends StatelessWidget {
       children: [
         Icon(
           Icons.lock_outline_rounded,
-          size: tokens.spacing.step5,
+          size: IconSizes.s,
           color: tokens.colors.alert.warning.defaultColor,
         ),
         SizedBox(width: tokens.spacing.step3),
@@ -608,7 +608,7 @@ class _ViewfinderBrackets extends StatelessWidget {
         color: tokens.colors.interactive.enabled,
         cornerLength: tokens.spacing.step7,
         cornerRadius: tokens.radii.l,
-        strokeWidth: tokens.spacing.step1,
+        strokeWidth: BorderWidths.emphasis,
         inset: tokens.spacing.step5,
       ),
     );
@@ -716,7 +716,7 @@ class _CameraUnavailable extends StatelessWidget {
           children: [
             Icon(
               Icons.no_photography_outlined,
-              size: tokens.spacing.step8,
+              size: IconSizes.xxl,
               color: tokens.colors.text.mediumEmphasis,
             ),
             SizedBox(height: tokens.spacing.step3),
@@ -931,7 +931,7 @@ class _DecodedView extends StatelessWidget {
           children: [
             Icon(
               Icons.warning_amber_rounded,
-              size: tokens.spacing.step4,
+              size: IconSizes.xs,
               color: tokens.colors.alert.warning.defaultColor,
             ),
             SizedBox(width: tokens.spacing.step2),
