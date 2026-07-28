@@ -2192,10 +2192,6 @@
   "dailyOsNextTimelineActual": "Nutid",
   "dailyOsNextTimelineArrange": "Arrangera block",
   "dailyOsNextTimelineBoth": "Plan och verklighet",
-  "dailyOsNextTimelineMeridiemAm": "AM",
-  "dailyOsNextTimelineMeridiemAmShort": "på",
-  "dailyOsNextTimelineMeridiemPm": "PM",
-  "dailyOsNextTimelineMeridiemPmShort": "pm",
   "dailyOsNextTimelinePlanned": "Plan",
   "dailyOsNextTimelineSessionOf": "Session {index} av {total}",
   "@dailyOsNextTimelineSessionOf": {

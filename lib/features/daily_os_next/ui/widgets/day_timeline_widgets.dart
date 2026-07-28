@@ -325,7 +325,7 @@ class _SharedHourRail extends StatelessWidget {
                       borderRadius: BorderRadius.circular(tokens.radii.xs),
                     ),
                     child: Text(
-                      _formatNow(now!),
+                      formatTimelineNowLabel(now!),
                       style: tokens.typography.styles.body.bodySmall.copyWith(
                         color: tokens.colors.alert.error.ink,
                         fontWeight: tokens.typography.weight.bold,
@@ -339,12 +339,6 @@ class _SharedHourRail extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatNow(DateTime now) {
-    final h = now.hour.toString().padLeft(2, '0');
-    final m = now.minute.toString().padLeft(2, '0');
-    return '$h:$m';
   }
 }
 

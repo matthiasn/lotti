@@ -13,6 +13,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
@@ -35,6 +36,26 @@ DraftPlan _emptyPlan() => DraftPlan(
   bands: const [],
   capacityMinutes: 240,
   scheduledMinutes: 0,
+);
+
+/// A plan holding one afternoon block, so the read-only plan list the idle
+/// phase renders actually has a clock range to format.
+DraftPlan _planWithAfternoonBlock() => DraftPlan(
+  dayDate: DateTime(2026, 5, 26),
+  blocks: [
+    TimeBlock(
+      id: 'blk_focus',
+      title: 'Deep focus',
+      start: DateTime(2026, 5, 26, 14, 30),
+      end: DateTime(2026, 5, 26, 16, 5),
+      type: TimeBlockType.manual,
+      state: TimeBlockState.drafted,
+      category: _category,
+    ),
+  ],
+  bands: const [],
+  capacityMinutes: 240,
+  scheduledMinutes: 95,
 );
 
 PlanDiff _diffWithTwoChanges(DraftPlan plan) => PlanDiff(
@@ -135,6 +156,7 @@ Widget _wrap(
   List<Override> overrides = const [],
   Size size = const Size(1280, 900),
   CaptureController Function()? captureFactory,
+  bool use24Hour = false,
 }) {
   return ProviderScope(
     overrides: [
@@ -143,7 +165,10 @@ Widget _wrap(
     ],
     child: makeTestableWidget2(
       child,
-      mediaQueryData: MediaQueryData(size: size),
+      mediaQueryData: MediaQueryData(
+        size: size,
+        alwaysUse24HourFormat: use24Hour,
+      ),
     ),
   );
 }
@@ -691,6 +716,58 @@ void main() {
         expect(find.byType(DiffRow), findsNWidgets(2));
       },
     );
+  });
+
+  group('RefineModalContent current-plan clock', () {
+    /// The idle phase renders the read-only plan list, which is the only
+    /// surface in Refine that prints a block's clock range.
+    Future<Text> rangeRow(
+      WidgetTester tester, {
+      required bool use24Hour,
+    }) async {
+      await tester.pumpWidget(
+        _wrap(
+          Scaffold(
+            body: RefineModalContent(draft: _planWithAfternoonBlock()),
+          ),
+          use24Hour: use24Hour,
+        ),
+      );
+      await tester.pump();
+      return tester.widget<Text>(find.textContaining('–').first);
+    }
+
+    testWidgets('follows a 24-hour device', (tester) async {
+      final row = await rangeRow(tester, use24Hour: true);
+
+      expect(row.data, '14:30–16:05');
+    });
+
+    testWidgets('follows a 12-hour device', (tester) async {
+      final row = await rangeRow(tester, use24Hour: false);
+
+      // The bug: this list built its own `DateFormat.Hm`, which is hard-wired
+      // to 24-hour, so the *same* block read "2:30 PM" on the agenda card and
+      // "14:30" here — on every device, in every language.
+      expect(row.data, contains('2:30'));
+      expect(row.data, contains('PM'));
+      expect(row.data, isNot(contains('14:30')));
+    });
+
+    testWidgets('renders exactly what the shared formatter produces', (
+      tester,
+    ) async {
+      final row = await rangeRow(tester, use24Hour: false);
+
+      // Pins the de-duplication: the plan list must not drift back into a
+      // private formatter that disagrees with the rest of Daily OS.
+      final expected = formatClockRange(
+        tester.element(find.byType(RefineModalContent)),
+        DateTime(2026, 5, 26, 14, 30),
+        DateTime(2026, 5, 26, 16, 5),
+      );
+      expect(row.data, expected);
+    });
   });
 
   group('RefineModalContent', () {

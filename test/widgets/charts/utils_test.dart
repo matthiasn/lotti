@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show ExploreConfig, Glados, any;
 import 'package:lotti/widgets/charts/utils.dart';
 
 import '../../test_data/test_data.dart';
+import '../../widget_test_utils.dart';
 import 'utils_test_helpers.dart';
 
 void main() {
@@ -270,8 +272,75 @@ void main() {
       expect(chartDateFormatterYMD(millis), 'Mar 15, 2024');
     });
 
-    test('chartDateFormatterFull includes the time of day', () {
-      expect(chartDateFormatterFull(millis), 'Mar 15, 09:05');
+    /// Resolves the tooltip label under an explicit device clock and locale —
+    /// the formatter now needs a context for both halves.
+    Future<String> fullLabel(
+      WidgetTester tester, {
+      required bool use24Hour,
+      Locale? locale,
+    }) async {
+      late String label;
+      Widget probe = Builder(
+        builder: (context) {
+          label = chartDateFormatterFull(context, millis);
+          return const SizedBox.shrink();
+        },
+      );
+      if (locale != null) {
+        final inner = probe;
+        probe = Builder(
+          builder: (context) => Localizations.override(
+            context: context,
+            locale: locale,
+            child: inner,
+          ),
+        );
+      }
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          probe,
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            alwaysUse24HourFormat: use24Hour,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return label;
+    }
+
+    testWidgets('chartDateFormatterFull follows a 12-hour device', (
+      tester,
+    ) async {
+      final label = await fullLabel(tester, use24Hour: false);
+
+      // The bug: the clock half was a hard-wired `HH:mm`, so this tooltip
+      // read "Mar 15, 09:05" even for a user on a 12-hour device.
+      expect(label, 'Mar 15, 9:05 AM');
+    });
+
+    testWidgets('chartDateFormatterFull follows a 24-hour device', (
+      tester,
+    ) async {
+      final label = await fullLabel(tester, use24Hour: true);
+
+      expect(label, 'Mar 15, 09:05');
+    });
+
+    testWidgets('chartDateFormatterFull localizes month name and order', (
+      tester,
+    ) async {
+      final label = await fullLabel(
+        tester,
+        use24Hour: true,
+        locale: const Locale('de'),
+      );
+
+      // Two separate defects in the date half: it carried no locale at all
+      // (every language got the English month), and a literal 'MMM dd'
+      // pattern pins month-before-day even once the locale is passed. German
+      // writes the day first, so the skeleton has to choose the order too.
+      expect(label, startsWith('15. März'));
+      expect(label, endsWith('09:05'));
     });
   });
 

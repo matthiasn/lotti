@@ -4378,18 +4378,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextTimelineBoth => 'Plán a skutečnost';
 
   @override
-  String get dailyOsNextTimelineMeridiemAm => 'AM';
-
-  @override
-  String get dailyOsNextTimelineMeridiemAmShort => 'am';
-
-  @override
-  String get dailyOsNextTimelineMeridiemPm => 'PM';
-
-  @override
-  String get dailyOsNextTimelineMeridiemPmShort => 'pm';
-
-  @override
   String get dailyOsNextTimelinePlanned => 'Plán';
 
   @override

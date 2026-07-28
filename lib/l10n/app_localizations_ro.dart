@@ -4392,18 +4392,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextTimelineBoth => 'Plan și real';
 
   @override
-  String get dailyOsNextTimelineMeridiemAm => 'AM';
-
-  @override
-  String get dailyOsNextTimelineMeridiemAmShort => 'am';
-
-  @override
-  String get dailyOsNextTimelineMeridiemPm => 'PM';
-
-  @override
-  String get dailyOsNextTimelineMeridiemPmShort => 'pm';
-
-  @override
   String get dailyOsNextTimelinePlanned => 'Plan';
 
   @override

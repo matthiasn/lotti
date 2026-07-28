@@ -146,13 +146,22 @@ Widget _wrap(
   Widget child, {
   Size size = const Size(1280, 1200),
   ProviderContainer? container,
+  bool use24Hour = true,
 }) {
   // The timeline's blocks are ConsumerWidgets (they publish task-focus
   // intents on tap), so every render needs a ProviderScope. When a test
   // wants to read the published intent it passes its own [container].
+  //
+  // Defaults to a 24-hour device so the clock labels these tests assert on
+  // are stable literals. The block chips and the now-chip follow the device
+  // (see the 'device clock' group); only the hour rail is a fixed 24-hour
+  // axis, because its `24:00` end-of-day marker has no 12-hour spelling.
   final app = makeTestableWidget2(
     child,
-    mediaQueryData: MediaQueryData(size: size),
+    mediaQueryData: MediaQueryData(
+      size: size,
+      alwaysUse24HourFormat: use24Hour,
+    ),
   );
   if (container != null) {
     return UncontrolledProviderScope(container: container, child: app);
@@ -568,6 +577,53 @@ void main() {
         hourLabel.style?.fontWeight,
         tokens.typography.styles.others.caption.fontWeight,
       );
+    });
+
+    group('device clock', () {
+      Future<void> pumpAt12Hour(WidgetTester tester) async {
+        _setView(tester, const Size(1280, 900));
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draft(),
+              clock: () => DateTime(2026, 5, 25, 9, 35),
+            ),
+            size: const Size(1280, 900),
+            use24Hour: false,
+          ),
+        );
+        await tester.pump();
+      }
+
+      testWidgets('block chips follow a 12-hour device', (tester) async {
+        await pumpAt12Hour(tester);
+
+        // The bug: the chip built `HH:mm` by hand, so it read "08:30–10:00"
+        // on every device — and disagreed with the diff row proposing it,
+        // which was hard-wired the other way.
+        expect(find.text('8:30 AM–10:00 AM'), findsOneWidget);
+        expect(find.text('08:30–10:00'), findsNothing);
+      });
+
+      testWidgets('the hour rail stays a 24-hour axis', (tester) async {
+        await pumpAt12Hour(tester);
+
+        // Deliberate: the rail's `24:00` end-of-day marker has no 12-hour
+        // spelling a reader could tell apart from midnight, so the axis keeps
+        // one fixed notation even when the chips on it do not.
+        expect(find.text('09:00'), findsOneWidget);
+        expect(find.text('10:00'), findsOneWidget);
+      });
+
+      testWidgets('the now-marker stays in the rail notation', (tester) async {
+        await pumpAt12Hour(tester);
+
+        // The now-marker substitutes for an hour label, so it follows the
+        // axis rather than the device. Making it device-aware also clipped
+        // it: `9:35 AM` is wider than the rail gutter it is positioned in.
+        expect(find.text('09:35'), findsAtLeastNWidgets(1));
+        expect(find.text('9:35 AM'), findsNothing);
+      });
     });
 
     testWidgets('now-chip suppresses the hour label it would occlude', (

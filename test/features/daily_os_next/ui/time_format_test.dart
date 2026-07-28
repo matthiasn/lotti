@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 
 import '../../../widget_test_utils.dart';
@@ -51,29 +50,98 @@ void main() {
   });
 
   group('formatClockRange', () {
-    testWidgets('formats a locale-aware en-dash separated range', (
-      tester,
-    ) async {
+    final start = DateTime(2026, 5, 26, 9, 14);
+    final end = DateTime(2026, 5, 26, 10, 5);
+
+    /// Resolves the range under an explicit device clock and app locale.
+    ///
+    /// The clock rides on the MediaQuery above the app (the platform half of
+    /// [MediaQueryData]) exactly as the real device setting does; the locale
+    /// is overridden inside it so both halves of the decision are controlled.
+    Future<String> resolve(
+      WidgetTester tester, {
+      required bool use24Hour,
+      Locale? locale,
+    }) async {
       late String label;
+      Widget probe = Builder(
+        builder: (context) {
+          label = formatClockRange(context, start, end);
+          return const SizedBox.shrink();
+        },
+      );
+      if (locale != null) {
+        final inner = probe;
+        probe = Builder(
+          builder: (context) => Localizations.override(
+            context: context,
+            locale: locale,
+            child: inner,
+          ),
+        );
+      }
       await tester.pumpWidget(
         makeTestableWidget2(
-          Builder(
-            builder: (context) {
-              label = formatClockRange(
-                context,
-                DateTime(2026, 5, 26, 9, 14),
-                DateTime(2026, 5, 26, 10, 5),
-              );
-              return const SizedBox.shrink();
-            },
+          probe,
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            alwaysUse24HourFormat: use24Hour,
           ),
         ),
       );
-      final formatter = DateFormat.jm('en_US');
-      final expected =
-          '${formatter.format(DateTime(2026, 5, 26, 9, 14))}–'
-          '${formatter.format(DateTime(2026, 5, 26, 10, 5))}';
-      expect(label, expected);
+      await tester.pumpAndSettle();
+      return label;
+    }
+
+    testWidgets('a 12-hour device keeps the AM/PM range', (tester) async {
+      final label = await resolve(tester, use24Hour: false);
+
+      expect(label, contains('9:14'));
+      expect(label, contains('AM'));
+      expect(label, isNot(contains('09:14')));
+    });
+
+    testWidgets('a 24-hour device drops AM/PM entirely', (tester) async {
+      final label = await resolve(tester, use24Hour: true);
+
+      // The bug: `DateFormat.jm('en_US')` is hard-wired to 12-hour, so a
+      // block planned for 09:14–10:05 read back as "9:14 AM–10:05 AM" on a
+      // 24-hour device no matter what the device was set to.
+      expect(label, '09:14–10:05');
+      expect(label, isNot(contains('AM')));
+    });
+
+    testWidgets('the same range renders differently under the two clocks', (
+      tester,
+    ) async {
+      final twelveHour = await resolve(tester, use24Hour: false);
+      final twentyFourHour = await resolve(tester, use24Hour: true);
+
+      // Guards the whole point of the fix: before it the device setting made
+      // no difference at all and these two were identical.
+      expect(twelveHour, isNot(twentyFourHour));
+    });
+
+    testWidgets('a locale with no AM/PM form ignores a 12-hour device', (
+      tester,
+    ) async {
+      final label = await resolve(
+        tester,
+        use24Hour: false,
+        locale: const Locale('de'),
+      );
+
+      // German has no AM/PM form to fall back to, so the locale wins over the
+      // device flag — the range must not be forced back into 12-hour.
+      expect(label, '09:14–10:05');
+    });
+
+    testWidgets('separates the endpoints with an en dash, not a hyphen', (
+      tester,
+    ) async {
+      final label = await resolve(tester, use24Hour: true);
+
+      expect(label, contains('–'));
+      expect(label, isNot(contains('-')));
     });
   });
 }

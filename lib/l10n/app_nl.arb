@@ -2191,10 +2191,6 @@
   "dailyOsNextTimelineActual": "Werkelijk",
   "dailyOsNextTimelineArrange": "Blokjes ordenen",
   "dailyOsNextTimelineBoth": "Plan en werkelijke",
-  "dailyOsNextTimelineMeridiemAm": "AM",
-  "dailyOsNextTimelineMeridiemAmShort": "am",
-  "dailyOsNextTimelineMeridiemPm": "PM",
-  "dailyOsNextTimelineMeridiemPmShort": "pm",
   "dailyOsNextTimelinePlanned": "Plan",
   "dailyOsNextTimelineSessionOf": "Directoraat {index} van {total}",
   "@dailyOsNextTimelineSessionOf": {

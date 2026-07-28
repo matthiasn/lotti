@@ -189,9 +189,12 @@ void main() {
 
         final item = items.first!;
         final dateSpan = item.children![1];
-        // chartDateFormatterFull produces "MMM dd, HH:mm".
+        // chartDateFormatterFull renders the month in the app's language and
+        // the clock on the device's setting — this harness is a 12-hour device,
+        // where the old hard-wired `HH:mm` would still have said "14:30".
         expect(dateSpan.toPlainText(), contains('Mar 15'));
-        expect(dateSpan.toPlainText(), contains('14:30'));
+        expect(dateSpan.toPlainText(), contains('2:30'));
+        expect(dateSpan.toPlainText(), contains('PM'));
       },
     );
 

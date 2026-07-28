@@ -2192,10 +2192,6 @@
   "dailyOsNextTimelineActual": "Attualità",
   "dailyOsNextTimelineArrange": "Blocchi d'arrangiamento",
   "dailyOsNextTimelineBoth": "Piano e reale",
-  "dailyOsNextTimelineMeridiemAm": "AMORE",
-  "dailyOsNextTimelineMeridiemAmShort": "Sono io.",
-  "dailyOsNextTimelineMeridiemPm": "Pomeriggio",
-  "dailyOsNextTimelineMeridiemPmShort": "14:00",
   "dailyOsNextTimelinePlanned": "Piano",
   "dailyOsNextTimelineSessionOf": "Sessione {index} di {total}",
   "@dailyOsNextTimelineSessionOf": {

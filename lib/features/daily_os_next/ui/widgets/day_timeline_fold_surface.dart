@@ -13,6 +13,20 @@ String formatTimelineHourLabel(int hour) {
   return '${displayHour.toString().padLeft(2, '0')}:00';
 }
 
+/// The now-marker's label, in the rail's own 24-hour notation — `15:20`.
+///
+/// Deliberately *not* the device-aware `formatClock`, unlike the block chips
+/// and diff rows. The now-marker is a member of the hour-label set rather than
+/// a piece of content: it is drawn in the same gutter, at the same type tier,
+/// and suppresses the hour label it would occlude, so it has to be spelled the
+/// way the surrounding axis is. It is also sized for that gutter — a 12-hour
+/// `3:20 PM` is wide enough to be clipped by the rail.
+String formatTimelineNowLabel(DateTime now) {
+  final h = now.hour.toString().padLeft(2, '0');
+  final m = now.minute.toString().padLeft(2, '0');
+  return '$h:$m';
+}
+
 class FoldRegionLayer extends StatelessWidget {
   const FoldRegionLayer({
     required this.foldingState,

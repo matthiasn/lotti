@@ -3,7 +3,7 @@ import 'dart:core';
 import 'dart:math';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -79,9 +79,23 @@ String chartDateFormatterYMD(num millis) {
   return DateFormat.yMMMd().format(day);
 }
 
-String chartDateFormatterFull(num millis) {
+/// A day-and-month date plus a clock label for a chart tooltip, in the app's
+/// language and on the device's clock.
+///
+/// Takes a [context] because both halves need one: the date half was
+/// previously formatted with no locale at all, so a German or French user got
+/// English month abbreviations, and the clock half was a hard-wired `HH:mm`,
+/// so a 12-hour device still read "16:45".
+///
+/// The date half is the `MMMd` *skeleton*, not a literal `'MMM dd'` pattern:
+/// a pattern fixes the field order as well as the language, so German would
+/// render "März 15" instead of the native "15. März". A skeleton lets the
+/// locale choose the order too.
+String chartDateFormatterFull(BuildContext context, num millis) {
   final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
-  return DateFormat('MMM dd, HH:mm').format(day);
+  final locale = Localizations.localeOf(context).toString();
+  final date = DateFormat.MMMd(locale).format(day);
+  return '$date, ${TimeOfDay.fromDateTime(day).format(context)}';
 }
 
 List<Observation> aggregateSumByHour(
