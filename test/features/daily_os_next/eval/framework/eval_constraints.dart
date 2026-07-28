@@ -1113,6 +1113,7 @@ bool _hasTaskBoundFullAllocationClaim(
           taskTitle: taskTitle,
           corpus: corpus,
         ) ||
+        !_evidenceActionIsAsserted(prose, match.start) ||
         _evidenceIsSpeculative(prose, match) ||
         _matchClauseIsNegated(
           prose,
@@ -1487,7 +1488,7 @@ bool _splitIsTaskBound(
 
 bool _splitHasAffirmativeAllocation(String reason, Match match) {
   final action = _nearestAllocationActionMatch(reason, match);
-  if (action == null || !_allocationActionIsAsserted(reason, action)) {
+  if (action == null || !_evidenceActionIsAsserted(reason, action.start)) {
     return false;
   }
   final omission = _nearestPatternMatch(
@@ -1498,38 +1499,41 @@ bool _splitHasAffirmativeAllocation(String reason, Match match) {
   return omission == null || action.distance < omission.distance;
 }
 
-bool _allocationActionIsAsserted(
+bool _evidenceActionIsAsserted(
   String prose,
-  ({int start, int end, int distance}) action,
+  int actionStart,
 ) {
   var clauseStart = 0;
-  for (var i = action.start - 1; i >= 0; i--) {
+  for (var i = actionStart - 1; i >= 0; i--) {
     if (',.;!?\n'.contains(prose[i])) {
       clauseStart = i + 1;
       break;
     }
   }
-  final prefix = prose.substring(clauseStart, action.start);
-  return !_evidenceStartIsSpeculative(prose, action.start) &&
+  final prefix = prose.substring(clauseStart, actionStart);
+  return !_evidenceStartIsSpeculative(prose, actionStart) &&
       !RegExp(
-        r'\b(?:intend(?:s|ed|ing)?|aim(?:s|ed|ing)?|'
+        r'\b(?:unsuccessfully|'
+        '(?:(?:intend(?:s|ed|ing)?|aim(?:s|ed|ing)?|'
         'hop(?:e|es|ed|ing)|want(?:s|ed|ing)?|expect(?:s|ed|ing)?|'
         'propos(?:e|es|ed|ing)|plan(?:s|ned|ning)?|'
         'attempt(?:s|ed|ing)?|tr(?:y|ies|ied|ying)|'
         'fail(?:s|ed|ing)?|refus(?:e|es|ed|ing)|'
-        r'declin(?:e|es|ed|ing))\s+to\s*$',
+        r'declin(?:e|es|ed|ing))(?:\s+to)?'
+        r'(?:\s+(?:be|being|get|getting))?))\s*$',
         caseSensitive: false,
       ).hasMatch(prefix) &&
       !RegExp(
         r'\b(?:must|need(?:s|ed)?\s+to|'
         r'(?:has|have|had)\s+to|(?:is|are|was|were)\s+required\s+to|'
-        r'ought\s+to)\s*$',
+        r'ought\s+to)(?:\s+(?:be|being|get|getting))?\s*$',
         caseSensitive: false,
       ).hasMatch(prefix) &&
       !RegExp(
         r'\b(?:(?:(?:is|are|was|were|be|been|being)\s+)?'
         r'(?:unable\s+to|not\s+able\s+to|incapable\s+of)|'
-        r'(?:isn|aren|wasn|weren)[\x27’]?t\s+able\s+to)\s*$',
+        r'(?:isn|aren|wasn|weren)[\x27’]?t\s+able\s+to)'
+        r'(?:\s+(?:be|being|get|getting))?\s*$',
         caseSensitive: false,
       ).hasMatch(prefix) &&
       !_avoidanceComplementPattern.hasMatch(prefix);
@@ -2342,6 +2346,7 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
 typedef _TradeDisclosureEvidence = ({
   Set<String> affirmative,
   Set<String> denied,
+  bool retractsAll,
 });
 
 _TradeDisclosureEvidence _tradeDisclosureEvidence(
@@ -2350,7 +2355,13 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   String prose,
 ) {
   final task = outcome.inputs.taskById(taskId);
-  if (task == null) return (affirmative: <String>{}, denied: <String>{});
+  if (task == null) {
+    return (
+      affirmative: <String>{},
+      denied: <String>{},
+      retractsAll: false,
+    );
+  }
   final placement = _estimatedTaskPlacements(outcome)[taskId];
   final structuralRemainder = placement == null
       ? task.estimateMinutes
@@ -2422,6 +2433,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   for (final match in _partialTradeDispositionPattern.allMatches(prose)) {
     if (!belongsToTask(match) ||
         !_tradeEvidenceDescribesTaskOrWork(prose, match) ||
+        !_evidenceActionIsAsserted(prose, match.start) ||
         _evidenceIsSpeculative(prose, match)) {
       continue;
     }
@@ -2462,7 +2474,11 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
     }
   }
   for (final match in _conflictTradePattern.allMatches(prose)) {
-    if (!belongsToTask(match) || _evidenceIsSpeculative(prose, match)) continue;
+    if (!belongsToTask(match) ||
+        !_evidenceActionIsAsserted(prose, match.start) ||
+        _evidenceIsSpeculative(prose, match)) {
+      continue;
+    }
     final matchedTrade = match.group(0) ?? '';
     final hasEmbeddedNegation = _negationWordPattern.hasMatch(matchedTrade);
     final negativeFitDisclosure =
@@ -2505,6 +2521,12 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   return (
     affirmative: affirmativeEvidence,
     denied: deniedEvidence,
+    retractsAll: _hasTaskBoundFullAllocationClaim(
+      prose,
+      taskId: taskId,
+      taskTitle: task.title,
+      corpus: outcome.inputs.corpus,
+    ),
   );
 }
 
@@ -2556,7 +2578,8 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   if (subjectMatch == null) return false;
   final subject = subjectMatch.group(1)?.trim() ?? '';
   if (RegExp(
-    r'^(?:(?:the|this|that|its)\s+)?'
+    r'^(?:(?:and|but|yet|so)\s+)?'
+    r'(?:(?:the|this|that|its)\s+)?'
     r'(?:task|work|placement|block|remainder|remaining\s+(?:task|work)|'
     r'rest|portion|part|it)\b',
     caseSensitive: false,
@@ -2600,6 +2623,7 @@ bool _taskTradeIsNamed(
 ) {
   final affirmativeNamedDispositions = <String>{};
   final deniedNamedDispositions = <String>{};
+  var retractsAllDispositions = false;
   for (final block in outcome.blocks) {
     for (final disclosure in [block.reason, block.note]) {
       final prose = disclosure?.trim().toLowerCase();
@@ -2610,11 +2634,13 @@ bool _taskTradeIsNamed(
       final evidence = _tradeDisclosureEvidence(outcome, taskId, prose);
       affirmativeNamedDispositions.addAll(evidence.affirmative);
       deniedNamedDispositions.addAll(evidence.denied);
+      retractsAllDispositions |= evidence.retractsAll;
     }
   }
-  return affirmativeNamedDispositions
-      .difference(deniedNamedDispositions)
-      .isNotEmpty;
+  return !retractsAllDispositions &&
+      affirmativeNamedDispositions
+          .difference(deniedNamedDispositions)
+          .isNotEmpty;
 }
 
 /// Blocks that consume capacity — `dropped` ones are recorded but not

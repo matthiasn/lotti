@@ -1861,6 +1861,32 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    for (final failedAction in [
+      'unsuccessfully scheduled',
+      'failed scheduling',
+    ]) {
+      test('rejects a leading failure qualifier: $failedAction', () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason: 'task-c $failedAction 60 of 120 minutes.',
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('task-c allocated 60min of 120min'));
+      });
+    }
+
     test('rejects an attempted allocation action', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -4173,6 +4199,32 @@ void main() {
       });
     }
 
+    for (final reason in [
+      'task-c attempted to be omitted.',
+      'task-c failed to be omitted.',
+    ]) {
+      test('rejects a non-asserted trade disposition: $reason', () {
+        final result = scoreSurfacedConflict(
+          outcome(
+            blocks: [
+              block(
+                id: 'context',
+                startHour: 9,
+                endHour: 10,
+                reason: reason,
+              ),
+            ],
+            corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+            decidedTaskIds: const ['task-c'],
+            requiresConflictSurfaced: true,
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('without naming a casualty'));
+      });
+    }
+
     test('is not applicable when nothing was actually left out', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -4776,6 +4828,50 @@ void main() {
               estimateMinutes: 120,
             ),
           ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('rejects a trade retracted by full completion', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason:
+                  'task-c was omitted, but it was fully scheduled after all.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('rejects a cross-field full-completion retraction', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c was omitted due to capacity.',
+              note: 'task-c was fully scheduled after all.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
           decidedTaskIds: const ['task-c'],
           requiresConflictSurfaced: true,
         ),
