@@ -840,6 +840,16 @@ final _leadingFutureAllocationScopePattern = RegExp(
   caseSensitive: false,
 );
 
+final _tomorrowAllocationScopePattern = RegExp(
+  r'^\s*tomorrow\s*(?=$|because\b|due\s+to\b|owing\s+to\b)',
+  caseSensitive: false,
+);
+
+final _leadingTomorrowAllocationScopePattern = RegExp(
+  r'(?:^|[.;!?\n])\s*tomorrow\s*,\s*$',
+  caseSensitive: false,
+);
+
 final _tradeSubjectPrefixPattern = RegExp(
   r'^(.*?)\s+(?:(?:(?:is|are|was|were)(?:\s+being)?|'
   r'(?:has|have|had)\s+been(?:\s+being)?|will\s+be(?:\s+being)?)'
@@ -882,6 +892,7 @@ typedef _EstimatedTaskPlacement = ({
   List<_PlacementDisclosure> disclosures,
   int estimateMinutes,
   bool hasOverlappingBlocks,
+  DateTime? now,
   String taskId,
   String taskTitle,
 });
@@ -968,6 +979,7 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
           hasOverlappingBlocks: _hasOverlappingIntervals(
             blocksByTask[entry.key] ?? const [],
           ),
+          now: outcome.inputs.now,
           taskId: taskId,
           taskTitle: taskTitle,
         ),
@@ -1005,6 +1017,7 @@ bool _isAuditedPartial(_EstimatedTaskPlacement placement) =>
       taskId: placement.taskId,
       taskTitle: placement.taskTitle,
       corpus: placement.corpus,
+      now: placement.now,
     );
 
 /// Whether prose makes a shortened placement safe to charge as partial.
@@ -1024,6 +1037,7 @@ bool _hasAuditablePartialDisclosure({
   required String taskId,
   required String taskTitle,
   required List<EvalCorpusTask> corpus,
+  required DateTime? now,
 }) {
   final remainingMinutes = estimateMinutes - allocatedMinutes;
   var hasMatchingSplit = false;
@@ -1094,6 +1108,7 @@ bool _hasAuditablePartialDisclosure({
             taskId: taskId,
             taskTitle: taskTitle,
             corpus: corpus,
+            tomorrowIsFuture: now != null,
           )) {
         continue;
       }
@@ -1751,6 +1766,7 @@ bool _splitIsTaskBound(
   required String taskId,
   required String taskTitle,
   required List<EvalCorpusTask> corpus,
+  required bool tomorrowIsFuture,
 }) {
   return !_evidenceHasExplicitNonTaskObject(reason, match) &&
       _splitHasAffirmativeAllocation(
@@ -1764,6 +1780,7 @@ bool _splitIsTaskBound(
         match,
         taskId: taskId,
         taskTitle: taskTitle,
+        tomorrowIsFuture: tomorrowIsFuture,
       ) &&
       !_evidenceNamesAnotherTask(
         reason,
@@ -1891,6 +1908,7 @@ bool _splitHasUnrelatedScope(
   Match evidence, {
   required String taskId,
   required String taskTitle,
+  required bool tomorrowIsFuture,
 }) {
   final evidenceAction = _nearestAllocationActionMatch(
     reason,
@@ -1907,6 +1925,7 @@ bool _splitHasUnrelatedScope(
     reason,
     evidence,
     evidenceEnd: scopeEnd,
+    tomorrowIsFuture: tomorrowIsFuture,
   )) {
     return true;
   }
@@ -1957,6 +1976,7 @@ bool _evidenceHasNonCurrentAllocationScope(
   String prose,
   Match evidence, {
   int? evidenceEnd,
+  bool tomorrowIsFuture = false,
 }) {
   if (_evidenceHasHistoricalScope(
     prose,
@@ -1971,9 +1991,15 @@ bool _evidenceHasNonCurrentAllocationScope(
   )) {
     return true;
   }
-  return _leadingFutureAllocationScopePattern.hasMatch(
-    prose.substring(0, range.start),
-  );
+  final leadingScope = prose.substring(0, range.start);
+  if (_leadingFutureAllocationScopePattern.hasMatch(leadingScope)) {
+    return true;
+  }
+  if (!tomorrowIsFuture) return false;
+  return _tomorrowAllocationScopePattern.hasMatch(
+        prose.substring(evidenceEnd ?? evidence.end, range.end),
+      ) ||
+      _leadingTomorrowAllocationScopePattern.hasMatch(leadingScope);
 }
 
 ({int start, int end, int distance})? _nearestPatternMatch(
@@ -2208,7 +2234,10 @@ bool _referenceAttributesEvidence(
 }
 
 bool _remainderIsTaskBound(String reason, Match match) {
-  if (_evidenceHasExplicitNonTaskObject(reason, match)) return false;
+  if (_evidenceHasExplicitNonTaskObject(reason, match) ||
+      _remainderHasExplicitNonTaskSubject(reason, match)) {
+    return false;
+  }
   final clause = _matchClause(reason, match);
   if (_unrelatedRemainderScopePattern.hasMatch(clause)) return false;
   if (_partialRemainderDispositionPattern.hasMatch(clause)) return true;
@@ -2216,9 +2245,25 @@ bool _remainderIsTaskBound(String reason, Match match) {
 }
 
 bool _remainderIsRelatedToTask(String reason, Match match) {
-  if (_evidenceHasExplicitNonTaskObject(reason, match)) return false;
+  if (_evidenceHasExplicitNonTaskObject(reason, match) ||
+      _remainderHasExplicitNonTaskSubject(reason, match)) {
+    return false;
+  }
   if (_remainderIsTaskBound(reason, match)) return true;
   return !_unrelatedRemainderScopePattern.hasMatch(_matchClause(reason, match));
+}
+
+bool _remainderHasExplicitNonTaskSubject(String reason, Match match) {
+  final range = _matchClauseRange(reason, match, boundaries: ',.;!?\n');
+  final prefix = reason.substring(range.start, match.start);
+  return RegExp(
+    r'^\s*(?:(?:and|but|yet|so)\s+)?'
+    r'(?:(?:the|a|an|this|that|its)\s+)?'
+    r'(?!(?:task|work|placement|block|remainder|remaining|rest|portion|part)\b)'
+    r'[\w-]+(?:\s+[\w-]+){0,3}\s+'
+    r'(?:shows?|reports?|displays?|reads?|has|have|had)\s*$',
+    caseSensitive: false,
+  ).hasMatch(prefix);
 }
 
 bool _evidenceHasExplicitNonTaskObject(String reason, Match match) {
@@ -2943,6 +2988,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   for (final match in _conflictTradePattern.allMatches(prose)) {
     if (!belongsToTask(match) ||
         _evidenceHasHistoricalScope(prose, match) ||
+        _conflictEvidenceIsObject(prose, match) ||
         !_evidenceActionIsAsserted(prose, match.start) ||
         _evidenceIsSpeculative(prose, match)) {
       continue;
@@ -3023,11 +3069,13 @@ String _tradeDispositionKey(Match match) {
   if (wording.contains('defer') || wording.contains('postpon')) {
     return 'deferred';
   }
-  if (wording.contains('unscheduled')) return 'unscheduled';
-  if (wording.contains('omit')) return 'omitted';
-  if (wording.contains('drop')) return 'dropped';
   if (wording.contains('unfinished')) return 'unfinished';
-  if (wording.contains('left')) return 'left-out';
+  if (wording.contains('unscheduled') ||
+      wording.contains('omit') ||
+      wording.contains('drop') ||
+      wording.contains('left')) {
+    return 'omitted';
+  }
   if (wording.contains('conflict')) return 'conflict';
   if (wording.contains('shorten')) return 'shortened';
   if (wording.contains('roll')) return 'rolled-over';
@@ -3035,6 +3083,24 @@ String _tradeDispositionKey(Match match) {
   if (wording.contains('move')) return 'moved';
   if (wording.startsWith('for ')) return 'for-later';
   return wording;
+}
+
+bool _conflictEvidenceIsObject(String prose, Match match) {
+  if (!RegExp(
+    r'^conflicts$',
+    caseSensitive: false,
+  ).hasMatch(match.group(0) ?? '')) {
+    return false;
+  }
+  final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
+  final prefix = prose.substring(range.start, match.start);
+  return RegExp(
+    r'\b(?:address(?:es|ed|ing)?|describe(?:s|d|ing)?|'
+    'discuss(?:es|ed|ing)?|document(?:s|ed|ing)?|'
+    'handle(?:s|d|ing)?|list(?:s|ed|ing)?|mention(?:s|ed|ing)?|'
+    r'resolve(?:s|d|ing)?|review(?:s|ed|ing)?|track(?:s|ed|ing)?)\s*$',
+    caseSensitive: false,
+  ).hasMatch(prefix);
 }
 
 bool _tradeEvidenceHasExplicitNonTaskSubject(

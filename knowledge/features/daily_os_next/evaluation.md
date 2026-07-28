@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T22:03:45+02:00 }
+generated: { by: codex/5, at: 2026-07-28T22:12:29+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -221,9 +221,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   in `the remaining work is 60 minutes`. Remainder arithmetic explicitly scoped
   to another subject such as a meeting or workday is ignored. The same applies
   to an object-owned quantity such as `reviews a recording with 60 minutes
-  remaining`; mentioning the task before the object does not transfer that
-  remainder to the task. Every concrete task-bound split and remainder across
-  the block reason and note must agree; one matching fragment cannot override a
+  remaining`, or subject-owned arithmetic such as `the battery shows 60 minutes
+  remaining`; a nearby placement claim does not transfer either remainder to
+  the task. Every concrete task-bound split and remainder across the block
+  reason and note must agree; one matching fragment cannot override a
   contradictory remainder elsewhere in the task's disclosure. Consequently,
   `30 of 120 minutes remain` cannot be credited as 30 completed minutes.
   Negation binds to nearby evidence and to the allocation action leading into
@@ -255,6 +256,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   action, but cannot replace it. Explicit other-subject scope also outranks a
   nearby `partial` keyword, so `remain for`, `before`, or `until` a meeting
   cannot earn task remainder credit while `partial for today` remains valid.
+  Future allocation scope cannot earn current-day partial credit. `Tomorrow`
+  is future scope when the evaluator has a same-day `now`, but remains the
+  current plan day for a future-day fixture whose `now` is absent.
   Bare numeric remainders in another field of the same task block are still
   audited, because a contradictory note must not be hidden from matching
   arithmetic in the reason. Numeric continuity such as `60 minutes remain
@@ -410,9 +414,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   carried-over work. Coordinated task subjects may use comma-separated and
   Oxford-comma lists; every corpus task in
   `task-a, task-b, and task-c were omitted` is a named casualty.
-  A bare conflict object is not: `task-c resolves conflict` describes subject
-  matter rather than a scheduling casualty, while the task-bound predicate
-  `task-c has a scheduling conflict` does disclose one. An explicit omission
+  A bare conflict object is not: `task-c resolves conflict` and `task-c
+  resolves conflicts` describe subject matter rather than a scheduling
+  casualty, while the task-bound predicate `task-c has a scheduling conflict`
+  does disclose one. An explicit omission
   such as
   `task-c was not scheduled due to capacity` is affirmative too. Inability
   forms such as `cannot be scheduled`, `can't be
@@ -423,6 +428,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   equivalent negative-scheduling forms, including `unable` wording without a
   lexical negation token, share one disposition identity, so an affirmative
   spelling in one field is retracted by an equivalent denial in another.
+  Omission synonyms (`omitted`, `dropped`, `unscheduled`, and `left out`) share
+  an identity as well; deferral and unfinished-work dispositions remain
+  distinct.
   The detail records every credited
   partial and every shortening denied credit, so the judge bundle preserves the
   accounting evidence rather than only the final pass/fail.

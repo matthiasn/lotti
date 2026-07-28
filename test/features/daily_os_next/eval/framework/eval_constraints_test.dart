@@ -1789,6 +1789,49 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects tomorrow-dated allocation evidence on a same-day run', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c will schedule 60 of 120 minutes tomorrow.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+          now: DateTime(2026, 7, 18, 8),
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('accepts tomorrow allocation evidence on a future-day run', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c will schedule 60 of 120 minutes tomorrow.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('rejects imperative allocation evidence', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -3543,6 +3586,29 @@ void main() {
               reason:
                   'Partial; task-c reviews a recording with '
                   '60 minutes remaining.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('rejects a numeric remainder owned by an unrelated subject', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'This placement is partial; '
+                  'the battery shows 60 minutes remaining.',
             ),
           ],
           corpus: tasks,
@@ -5776,6 +5842,34 @@ void main() {
       expect(result.detail, contains('without naming a casualty'));
     });
 
+    test('does not treat plural conflict objects as trade dispositions', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c resolves conflicts.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
     test('accepts a task-bound scheduling-conflict noun', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -6261,6 +6355,28 @@ void main() {
               endHour: 10,
               reason: 'task-c was omitted due to capacity.',
               note: 'task-c was fully scheduled after all.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('normalizes synonymous cross-field omission denials', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c was omitted due to capacity.',
+              note: 'task-c was not left out after all.',
             ),
           ],
           corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
