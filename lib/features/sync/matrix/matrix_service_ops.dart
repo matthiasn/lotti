@@ -312,6 +312,11 @@ class MatrixServiceOps {
 
     await _cancelActiveVerificationsFor(deviceId);
 
+    // Only a delete the homeserver actually performed proves the credential
+    // was checked. "Already absent" is treated as success below, but it can
+    // come back from a peer's concurrent deletion without this password ever
+    // having been validated — so it must not authorise a credential repair.
+    var credentialValidated = false;
     try {
       await gateway.deleteDevice(
         deviceId,
@@ -320,6 +325,7 @@ class MatrixServiceOps {
           identifier: AuthenticationUserIdentifier(user: config.user),
         ),
       );
+      credentialValidated = true;
     } on MatrixException catch (error) {
       // A cache-only entry exists precisely because the homeserver no longer
       // knows the session — "not found" means already deleted, and the
@@ -340,7 +346,9 @@ class MatrixServiceOps {
       subDomain: 'deleteDevice',
     );
 
-    if (reauthPassword != null && reauthPassword != config.password) {
+    if (credentialValidated &&
+        reauthPassword != null &&
+        reauthPassword != config.password) {
       await _repairStoredPassword(config, reauthPassword);
     }
 
@@ -367,7 +375,11 @@ class MatrixServiceOps {
   ///
   /// Failures are logged and swallowed: the device is already gone from the
   /// homeserver, and reporting a storage error would tell the user their
-  /// removal failed when it did not.
+  /// removal failed when it did not. A failed write is followed by an attempt
+  /// to put the previous config back — `SecureStorage.writeValue` deletes the
+  /// key before writing it, so giving up after a half-completed replacement
+  /// would leave the account with no persisted credentials at all and no way
+  /// to reconnect after a restart.
   Future<void> _repairStoredPassword(
     MatrixConfig config,
     String password,
@@ -386,6 +398,16 @@ class MatrixServiceOps {
         stackTrace: stackTrace,
         subDomain: 'deleteDevice.reauthPersist',
       );
+      try {
+        await service().setConfig(config);
+      } catch (restoreError, restoreStackTrace) {
+        loggingService.error(
+          LogDomain.sync,
+          restoreError,
+          stackTrace: restoreStackTrace,
+          subDomain: 'deleteDevice.reauthRestore',
+        );
+      }
     }
   }
 

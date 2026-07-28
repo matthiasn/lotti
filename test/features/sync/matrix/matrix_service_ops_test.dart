@@ -675,6 +675,86 @@ void main() {
       );
 
       test(
+        'an already-absent device does not authorise a credential repair',
+        () async {
+          // A peer deleting the same session first answers M_NOT_FOUND, which
+          // this method treats as success — but the homeserver never checked
+          // the password, so a typo must not replace a working credential.
+          when(
+            () => gateway.deleteDevice(any(), auth: any(named: 'auth')),
+          ).thenThrow(
+            MatrixException.fromJson(
+              const {'errcode': 'M_NOT_FOUND', 'error': 'Unknown device'},
+            ),
+          );
+
+          await buildDeleteOps().deleteDeviceById(
+            'DEV1',
+            reauthPassword: 'mistyped',
+          );
+
+          verifyNever(() => svc.setConfig(any()));
+        },
+      );
+
+      test(
+        'a failed repair puts the previous config back rather than leaving '
+        'none at all',
+        () async {
+          // SecureStorage deletes the key before writing it, so abandoning a
+          // half-written replacement would strand the account with nothing to
+          // reconnect with after a restart.
+          when(
+            () => svc.setConfig(
+              any(
+                that: predicate<MatrixConfig>((c) => c.password == 'rotated'),
+              ),
+            ),
+          ).thenThrow(Exception('keychain'));
+
+          await buildDeleteOps().deleteDeviceById(
+            'DEV1',
+            reauthPassword: 'rotated',
+          );
+
+          final restored =
+              verify(
+                    () => svc.setConfig(
+                      captureAny(
+                        that: predicate<MatrixConfig>(
+                          (c) => c.password == 'secret',
+                        ),
+                      ),
+                    ),
+                  ).captured.single
+                  as MatrixConfig;
+          expect(restored.password, 'secret');
+          expect(restored.user, userId);
+        },
+      );
+
+      test(
+        'logs when even the restore fails, so the loss is not silent',
+        () async {
+          when(() => svc.setConfig(any())).thenThrow(Exception('keychain'));
+
+          await buildDeleteOps().deleteDeviceById(
+            'DEV1',
+            reauthPassword: 'rotated',
+          );
+
+          verify(
+            () => logging.error(
+              any<LogDomain>(),
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'deleteDevice.reauthRestore',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'a typed password is enough to remove a device even when no password '
         'was ever stored',
         () async {

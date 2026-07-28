@@ -364,6 +364,73 @@ void main() {
       expect(find.text('Pixel 7 removed from sync'), findsNothing);
     });
 
+    testWidgets('a removal that lands after the sheet is dismissed is still '
+        'reported', (tester) async {
+      // Closing the sheet mid-retry pops the modal while the homeserver call
+      // is still running; the removal it completes must not be lost.
+      final gate = Completer<void>();
+      when(
+        () => mockMatrixService.deleteDeviceById(
+          'DEVICE1',
+          reauthPassword: any(named: 'reauthPassword'),
+        ),
+      ).thenAnswer((_) => gate.future);
+
+      var refreshed = false;
+      await reachReauthSheet(
+        tester,
+        refreshListCallback: () => refreshed = true,
+      );
+
+      await tester.enterText(
+        find.byKey(const Key('sync_reauth_password')),
+        'rotated-secret',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('sync_reauth_submit')));
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('sync_reauth_password')), findsNothing);
+      expect(refreshed, isFalse);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(refreshed, isTrue);
+      expect(find.text('Pixel 7 removed from sync'), findsOneWidget);
+    });
+
+    testWidgets('a server error inside the sheet reads as a connection '
+        'problem, not a bad password', (tester) async {
+      when(
+        () => mockMatrixService.deleteDeviceById(
+          'DEVICE1',
+          reauthPassword: any(named: 'reauthPassword'),
+        ),
+      ).thenThrow(
+        MatrixException.fromJson(
+          const {'errcode': 'M_LIMIT_EXCEEDED', 'error': 'Too many requests'},
+        ),
+      );
+
+      await reachReauthSheet(tester);
+      await submitPassword(tester, 'rotated-secret');
+
+      expect(
+        find.text(
+          "The device couldn't be removed. Check your connection and try "
+          'again.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text("That password didn't work. Check it and try again."),
+        findsNothing,
+      );
+    });
+
     testWidgets('a failure that is not about the password reads as a '
         'connection problem', (tester) async {
       when(

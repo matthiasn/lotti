@@ -130,28 +130,39 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
   ) async {
     final matrixService = ref.read(matrixServiceProvider);
     final messages = context.messages;
+    var removed = false;
 
-    final removed = await showSyncReauthModal(
+    Future<String?> retry(String password) async {
+      try {
+        await matrixService.deleteDeviceById(
+          device.deviceId,
+          reauthPassword: password,
+        );
+        removed = true;
+        return null;
+      } on MatrixException catch (e, stackTrace) {
+        _logRemovalFailure(e, stackTrace);
+        return e.errcode == _forbidden
+            ? messages.syncReauthInvalidPassword
+            : messages.deviceDeleteFailedGeneric;
+      } catch (e, stackTrace) {
+        _logRemovalFailure(e, stackTrace);
+        return messages.deviceDeleteFailedGeneric;
+      }
+    }
+
+    // The homeserver call outlives the sheet: closing it, tapping its barrier
+    // or going back mid-retry pops the modal while the removal is still in
+    // flight. The outcome is therefore tracked here rather than taken from
+    // the modal's result, and awaited before it is read — otherwise a
+    // dismissed sheet would silently drop a removal that did succeed.
+    Future<String?>? attempt;
+    await showSyncReauthModal(
       context: context,
       deviceName: deviceName,
-      onSubmit: (password) async {
-        try {
-          await matrixService.deleteDeviceById(
-            device.deviceId,
-            reauthPassword: password,
-          );
-          return null;
-        } on MatrixException catch (e, stackTrace) {
-          _logRemovalFailure(e, stackTrace);
-          return e.errcode == _forbidden
-              ? messages.syncReauthInvalidPassword
-              : messages.deviceDeleteFailedGeneric;
-        } catch (e, stackTrace) {
-          _logRemovalFailure(e, stackTrace);
-          return messages.deviceDeleteFailedGeneric;
-        }
-      },
+      onSubmit: (password) => attempt = retry(password),
     );
+    await attempt;
 
     if (!removed) return;
     widget.refreshListCallback();

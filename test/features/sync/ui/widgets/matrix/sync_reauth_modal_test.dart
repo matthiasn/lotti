@@ -70,6 +70,22 @@ void main() {
       expect(submitted, ['rotated-secret']);
     });
 
+    testWidgets('submits from the keyboard, so the field can be finished '
+        'without reaching for the button', (tester) async {
+      final submitted = <String>[];
+      await pumpForm(tester, (value) async {
+        submitted.add(value);
+        return null;
+      });
+
+      await tester.enterText(find.byKey(password), 'rotated-secret');
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(submitted, ['rotated-secret']);
+    });
+
     testWidgets('keeps the sheet open and shows why, when the retry is '
         'refused', (tester) async {
       await pumpForm(tester, (_) async => 'That password did not work.');

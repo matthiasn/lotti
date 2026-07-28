@@ -17469,7 +17469,7 @@ abstract class AppLocalizations {
   /// **'Theming selection'**
   String get syncPayloadThemingSelection;
 
-  /// Body of the re-authentication sheet shown when removing a device failed because the stored sync password is out of date.
+  /// Body of the re-authentication sheet (dialog on desktop) shown when removing a device failed because the stored sync password is out of date.
   ///
   /// In en, this message translates to:
   /// **'The sync server didn\'t accept the saved password. Enter the current password for your sync account to remove {deviceName}.'**

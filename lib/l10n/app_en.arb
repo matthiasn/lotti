@@ -4922,7 +4922,7 @@
   "syncPayloadThemingSelection": "Theming selection",
   "syncReauthExplanation": "The sync server didn't accept the saved password. Enter the current password for your sync account to remove {deviceName}.",
   "@syncReauthExplanation": {
-    "description": "Body of the re-authentication sheet shown when removing a device failed because the stored sync password is out of date.",
+    "description": "Body of the re-authentication sheet (dialog on desktop) shown when removing a device failed because the stored sync password is out of date.",
     "placeholders": {
       "deviceName": {
         "type": "String"

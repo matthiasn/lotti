@@ -432,11 +432,23 @@ clean it up:
   `ui/widgets/matrix/sync_reauth_modal.dart` instead of ending in a toast. The
   sheet stays open across failed attempts, attaching the reason to the field,
   so a mistyped password costs one correction rather than the whole
-  confirm-and-delete flow. **A successful re-auth repairs the stored config**
-  — the homeserver accepting the password proves it is the account's — so
-  later interactive operations no longer prompt. That write is best-effort:
-  the device is already gone, so a storage failure is logged
-  (`deleteDevice.reauthPersist`) rather than reported as a failed removal.
+  confirm-and-delete flow. The retry outlives the sheet — dismissing it
+  mid-flight must not drop a removal that then succeeds — so `DeviceCard`
+  tracks the outcome itself and awaits the in-flight call rather than reading
+  the modal's result.
+- **Credential repair.** **A delete the homeserver actually performed repairs
+  the stored config** — accepting the password proves it is the account's —
+  so later interactive operations no longer prompt. Two conditions bound it.
+  The repair requires the *delete* to have succeeded, not merely the method:
+  `M_NOT_FOUND` is treated as success but can come from a peer's concurrent
+  deletion without the password ever being validated, so it must not
+  authorise a write. And the write is best-effort in both directions: the
+  device is already gone, so a failure is logged
+  (`deleteDevice.reauthPersist`) rather than reported as a failed removal —
+  and because `SecureStorage.writeValue` deletes the key before writing it, a
+  failed write is followed by an attempt to put the previous config back
+  (`deleteDevice.reauthRestore`), so a half-completed replacement cannot
+  strand the account with no credentials to reconnect with.
 - **Guards.** The current session can never delete itself (use logout), and
   the `DeviceKeys`-based wrapper refuses devices of another user. Deletion
   needs *some* password — stored or typed — and is refused with an

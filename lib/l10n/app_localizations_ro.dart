@@ -10443,7 +10443,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String syncVerifyStaleMessage(String deviceName) {
-    return '$deviceName nu a mai dat semne de ceva vreme. Verificarea funcționează doar cât timp este pornit, online și are Lotti deschis — altfel verificarea emoji așteaptă un răspuns care nu mai vine.';
+    return '$deviceName nu a mai dat semne de ceva vreme. Verificarea funcționează doar cât timp este pornit, online și are Lotti deschis — altfel verificarea cu emoji așteaptă un răspuns care nu mai vine.';
   }
 
   @override

@@ -10194,7 +10194,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String syncReauthExplanation(String deviceName) {
-    return 'De synchronisatieserver accepteerde het opgeslagen wachtwoord niet. Voer het huidige wachtwoord van je synchronisatieaccount in om $deviceName te verwijderen.';
+    return 'De synchronisatieserver accepteerde het opgeslagen wachtwoord niet. Voer het huidige wachtwoord van je synchronisatieaccount in om $deviceName uit de synchronisatie te verwijderen.';
   }
 
   @override
@@ -10202,7 +10202,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dat wachtwoord werkte niet. Controleer het en probeer het opnieuw.';
 
   @override
-  String get syncReauthPasswordLabel => 'Wachtwoord synchronisatieaccount';
+  String get syncReauthPasswordLabel =>
+      'Wachtwoord voor je synchronisatieaccount';
 
   @override
   String get syncReauthTitle => 'Bevestig dat jij het bent';
@@ -10281,7 +10282,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String syncVerifyStaleMessage(String deviceName) {
-    return '$deviceName heeft zich al een tijd niet gemeld. Verifiëren werkt alleen als het aan staat, online is en Lotti toont — anders wacht de emojicontrole op een antwoord dat nooit komt.';
+    return '$deviceName heeft zich al een tijd niet gemeld. Verifiëren werkt alleen zolang het wakker is, online is en Lotti toont — anders wacht de emojicontrole op een antwoord dat nooit komt.';
   }
 
   @override

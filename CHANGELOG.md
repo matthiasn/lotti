@@ -68,8 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   this one keeps syncing on its existing session but can no longer prove who
   it is when removing a device — and the attempt ended in a message telling
   you to go and do it somewhere else. It now asks for your current sync
-  password and completes the removal on the spot, remembering the password so
-  the next one just works.
+  password and completes the removal on the spot, and tries to save that
+  password so the next removal does not have to ask again.
 - **Verifying a device that looks dead warns you first.** The emoji check
   needs the other device awake, online and showing Lotti. Starting one against
   a device the server has not heard from in weeks left you watching a screen

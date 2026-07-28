@@ -4149,7 +4149,7 @@
   "syncVerifyPromptLine1": "Ambele ecrane afișează șapte emoji-uri.",
   "syncVerifyPromptQuestion": "Aceleași emoji-uri, în aceeași ordine?",
   "syncVerifyStaleConfirm": "Verificați oricum",
-  "syncVerifyStaleMessage": "{deviceName} nu a mai dat semne de ceva vreme. Verificarea funcționează doar cât timp este pornit, online și are Lotti deschis — altfel verificarea emoji așteaptă un răspuns care nu mai vine.",
+  "syncVerifyStaleMessage": "{deviceName} nu a mai dat semne de ceva vreme. Verificarea funcționează doar cât timp este pornit, online și are Lotti deschis — altfel verificarea cu emoji așteaptă un răspuns care nu mai vine.",
   "syncVerifyStaleTitle": "Este posibil ca acest dispozitiv să fie offline",
   "syncVerifyTheyDiffer": "Diferă — anulați",
   "syncVerifyTheyMatch": "Coincid",
