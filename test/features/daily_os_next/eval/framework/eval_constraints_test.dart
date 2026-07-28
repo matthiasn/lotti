@@ -3137,6 +3137,28 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('a fully planned-for-day note preserves task partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '60 of 120 minutes are scheduled.',
+              note: 'Fully planned for the day.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('another task denial does not veto partial credit', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -3279,6 +3301,28 @@ void main() {
         expect(result.detail, contains('task-c allocated 60min of 120min'));
       },
     );
+
+    test('a subjectless completion denial vetoes partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '60 of 120 minutes are completed.',
+              note: 'Not completed after all.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
 
     test(
       'note-only partial arithmetic does not satisfy the reason contract',
@@ -3987,10 +4031,33 @@ void main() {
       expect(result.detail, contains('task-c'));
     });
 
+    test('accepts an omission before a contrast predicate', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason:
+                  'task-c was omitted but the remaining plan stayed intact.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
     for (final reason in [
       'task-c might be omitted.',
       'task-c could be deferred.',
       'task-c may ultimately need to be deferred.',
+      'task-c may need to be shortened and ultimately deferred.',
     ]) {
       test('rejects a speculative trade disposition: $reason', () {
         final result = scoreSurfacedConflict(
@@ -4367,6 +4434,27 @@ void main() {
               startHour: 9,
               endHour: 10,
               reason: "task-c doesn't fit today.",
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'C')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
+    test('accepts label punctuation before negative-fit disclosure', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c: Cannot fit today.',
             ),
           ],
           corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'C')],

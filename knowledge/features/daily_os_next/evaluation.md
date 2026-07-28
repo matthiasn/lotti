@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T11:24:37+02:00 }
+generated: { by: codex/5, at: 2026-07-28T11:41:23+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -142,7 +142,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   attached task and cannot veto its partial evidence. A denial or
   full-completion claim explicitly naming another corpus task does not retract
   the enclosing task's arithmetic, while qualified non-completion such as `not
-  fully scheduled` describes a partial placement rather than no allocation.
+  fully scheduled` describes a partial placement rather than no allocation. A
+  prepositional non-task phrase such as `Fully planned for the day` is likewise
+  about the day. Subjectless attached denials such as `Not completed after all`
+  default to the block's task after non-task and other-task subjects have been
+  excluded.
   The
   partial mention cannot be borrowed from a claim attributed to
   another corpus task or an explicit non-task subject. Unrelated meeting/workday
@@ -256,7 +260,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-c validates that the payload cannot fit in memory` describes the
   payload, not the task. Ordinary causal suffixes remain valid, so
   `task-c was omitted due to capacity` discloses the omission, as does
-  `task-c was omitted from today's plan`. A causal clause about another corpus
+  `task-c was omitted from today's plan`. A contrast boundary also preserves
+  the preceding disposition, as in `task-c was omitted but the remaining plan
+  stayed intact`. A causal clause about another corpus
   task also retains its own negation: `task-c was deferred because Deployment
   was not scheduled` does not retract task-c's affirmative deferral.
   It must also be affirmative and internally consistent: `not partial` and
@@ -264,7 +270,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `conflict-free` are denials rather than disclosures. Modal dispositions such
   as `might be omitted`, `could be deferred`, or
   `may ultimately need to be deferred` are speculative, not actual trades;
-  modal complement length does not make the disposition affirmative. Avoidance
+  modal complement length and a coordinated predicate such as `may need to be
+  shortened and ultimately deferred` do not make the disposition affirmative.
+  Modal scope ends only when the conjunction begins an independently asserted
+  clause. Avoidance
   and prevention complements are denials too: neither
   `task-c avoided being omitted` nor `task-c avoided getting omitted` asserts an
   omission. An affirmative claim plus denial of that same
@@ -273,8 +282,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-c was not dropped; it was deferred to tomorrow` still surfaces the
   actual deferral.
   `Cannot fit`, `will not fit`, `conflicts`, and `conflicting` are affirmative
-  disclosures, unless an outer falsehood construction such as `not true that
-  task-c cannot fit` denies the whole claim.
+  disclosures, including label-bound forms such as `task-c: Cannot fit today`,
+  unless an outer falsehood construction such as `not true that task-c cannot
+  fit` denies the whole claim.
   The detail records every credited
   partial and every shortening denied credit, so the judge bundle preserves the
   accounting evidence rather than only the final pass/fail.

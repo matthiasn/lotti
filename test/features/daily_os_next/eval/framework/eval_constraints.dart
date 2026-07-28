@@ -1133,7 +1133,8 @@ bool _fullAllocationClaimHasExplicitNonTaskHead(
   final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
   final suffix = prose.substring(match.end, range.end);
   return RegExp(
-    r'^\s+(?:(?:the|a|an|this|that)\s+)?'
+    r'^\s+(?:(?:for|throughout)\s+)?'
+    r'(?:(?:the|a|an|this|that)\s+)?'
     '(?:day|meeting|workday|calendar|appointment|break|event|agenda|'
     r'schedule|session)\b',
     caseSensitive: false,
@@ -1199,7 +1200,7 @@ bool _tradeEvidenceDescribesTaskOrWork(String prose, Match match) {
       ).hasMatch(suffix) ||
       RegExp(
         r'^\s+(?:to|until|for|because|due\s+to|owing\s+to|after|before|so|and|'
-        r'with|against|over)\b',
+        r'but|yet|with|against|over)\b',
         caseSensitive: false,
       ).hasMatch(suffix) ||
       RegExp(
@@ -1219,7 +1220,10 @@ bool _negativeFitEvidenceDescribesTaskOrWork(
   final prefix = prose.substring(range.start, match.start).trimRight();
   for (final pattern in _taskReferencePatterns(taskId, taskTitle)) {
     for (final reference in pattern.allMatches(prefix)) {
-      if (reference.end == prefix.length) return true;
+      final separator = prefix.substring(reference.end);
+      if (RegExp(r'^\s*(?:[:\-–—]\s*)?$').hasMatch(separator)) {
+        return true;
+      }
     }
   }
   return RegExp(
@@ -1281,14 +1285,7 @@ bool _hasTaskBoundAllocationDenial(
     )) {
       continue;
     }
-    final prefix = prose.substring(range.start, action.start);
-    if (RegExp(
-      r'\b(?:(?:the|this|that|its)\s+)?'
-      r'(?:task(?!-)|work|placement|block|it)\b',
-      caseSensitive: false,
-    ).hasMatch(prefix)) {
-      return true;
-    }
+    return true;
   }
   return false;
 }
@@ -1324,7 +1321,10 @@ bool _evidenceStartIsSpeculative(String prose, int evidenceStart) {
   ).allMatches(prefix)) {
     final complement = prefix.substring(modal.end);
     if (!RegExp(
-      r'\b(?:and|but|yet|however|while|although|though|so|therefore|then)\b',
+      r'\b(?:so|therefore)\b|'
+      r'\b(?:and|but|yet|while|although|though)\s+'
+      r'(?:(?:the|this|that|a|an)\s+)?[\w-]+\s+'
+      r'(?:is|are|was|were|has|have|had|will|does|do|did)\b',
       caseSensitive: false,
     ).hasMatch(complement)) {
       return true;
