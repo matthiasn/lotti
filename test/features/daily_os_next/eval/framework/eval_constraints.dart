@@ -693,6 +693,7 @@ final _partialOfEstimatePattern = RegExp(
 
 final _partialRemainingPattern = RegExp(
   r'\b(\d+)\s*(?:m|mins?|minutes?)\s+'
+  r'(?:(?:of|for)\s+(?:this|the)\s+(?:task|work)\s+)?'
   r'(?:(?:is|are)\s+)?(?:left|remain(?:s|ing)?)\b',
   caseSensitive: false,
 );
@@ -716,7 +717,7 @@ final _partialRemainderDispositionPattern = RegExp(
   r'(?:roll(?:s|ed|ing)?|move(?:s|d|ing)?|carr(?:y|ies|ied|ying))\s+'
   r'(?:over|to)\b|'
   r'defer(?:s|red|ring)?\b|unscheduled\b|'
-  r'(?:of|for)\s+(?:this|the)\s+(?:task|work)\b)',
+  r'(?:of|for|in)\s+(?:this|the)\s+(?:task|work)\b)',
   caseSensitive: false,
 );
 
@@ -724,6 +725,11 @@ final _taskAllocationContextPattern = RegExp(
   r'\b(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
   'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)|'
   r'fit(?:s|ting)?|estimate(?:d)?|task)\b',
+  caseSensitive: false,
+);
+
+final _unrelatedRemainderScopePattern = RegExp(
+  r'\b(?:in|during|for)\s+(?!(?:this|the)\s+(?:task|work)\b)',
   caseSensitive: false,
 );
 
@@ -845,6 +851,7 @@ bool _hasAuditablePartialDisclosure({
       }
     }
     for (final match in _partialRemainingPattern.allMatches(reason)) {
+      if (!_remainderIsRelatedToTask(reason, match)) continue;
       if (_matchClauseIsNegated(reason, match)) return false;
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
@@ -853,6 +860,7 @@ bool _hasAuditablePartialDisclosure({
       }
     }
     for (final match in _partialLeadingRemainingPattern.allMatches(reason)) {
+      if (!_remainderIsRelatedToTask(reason, match)) continue;
       if (_matchClauseIsNegated(reason, match)) return false;
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
@@ -881,6 +889,15 @@ bool _remainderIsTaskBound(String reason, Match match) {
   final clause = _matchClause(reason, match);
   return _partialMentionPattern.hasMatch(clause) ||
       _partialRemainderDispositionPattern.hasMatch(clause);
+}
+
+bool _remainderIsRelatedToTask(String reason, Match match) {
+  if (_remainderIsTaskBound(reason, match)) return true;
+  if (_unrelatedRemainderScopePattern.hasMatch(_matchClause(reason, match))) {
+    return false;
+  }
+  return _partialMentionPattern.hasMatch(reason) ||
+      _taskAllocationContextPattern.hasMatch(reason);
 }
 
 String _matchClause(

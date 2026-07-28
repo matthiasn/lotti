@@ -5,13 +5,13 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-27T15:38:00+02:00 }
+generated: { by: codex/5, at: 2026-07-28T02:11:14+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
     resource: ../../../test/features/daily_os_next/eval
     title: Day-planning eval framework and live runner
-    last_modified: 2026-07-27
+    last_modified: 2026-07-28
   - id: integration
     resource: ../../../test/features/daily_os_next/integration
     title: Full durable multi-agent integration fixtures
@@ -81,9 +81,12 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   completed/estimate split must describe task allocation, not coincidentally
   equal workday capacity. The partial mention and task-bound remainder must
   occur in the same block reason; unrelated workday-capacity prose cannot
-  supply the remainder. Every concrete split and remainder in the task's
-  disclosure must agree; one matching fragment cannot override a contradictory
-  remainder elsewhere in the same disclosure. Negation is scoped to the
+  supply the remainder. Task qualifiers may sit inside the arithmetic
+  (`60 minutes of this task remain`), while remainder arithmetic explicitly
+  scoped to another subject such as a meeting or workday is ignored. Every
+  concrete task-bound split and remainder in the task's disclosure must agree;
+  one matching fragment cannot override a contradictory remainder elsewhere in
+  the same disclosure. Negation is scoped to the
   punctuation segment containing the evidence, so `cannot be scheduled`
   invalidates a split without letting a later `no room` description invalidate
   affirmative arithmetic. Negated or vague “partial” prose, silence,
