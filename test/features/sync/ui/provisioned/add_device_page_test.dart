@@ -680,6 +680,29 @@ void main() {
       );
       expect(code.left, greaterThan(qr.right));
     });
+
+    testWidgets('reduced motion parks the timeline dot', (tester) async {
+      // The active stop's pulse must respect the OS animation veto — and
+      // actually stop its controller, or the "waiting" screen ticks forever.
+      useTallSurface(tester);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SingleChildScrollView(
+            child: AddDeviceView(pollInterval: Duration(days: 1)),
+          ),
+          overrides: overrides(calls: _Calls()),
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            disableAnimations: true,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Settles only because the dot's controller is parked; a live
+      // repeat(reverse: true) would make this time out.
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('add_device_timeline')), findsOneWidget);
+    });
   });
 
   group('AddDeviceActionBar', () {
@@ -774,6 +797,43 @@ void main() {
       await tester.tap(find.byKey(const Key('add_device_poll_retry')));
       await tester.pump();
       expect(retries, 1);
+    });
+
+    testWidgets('the hand-off pair stacks below the wide-card width', (
+      tester,
+    ) async {
+      // Two large labeled buttons in one phone-width row ellipsize both
+      // labels; below the pairing card's breakpoint they stack, full width.
+      final signal = AddDeviceJoinSignal()..value = AddDeviceJoinState.waiting;
+      addTearDown(signal.dispose);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: kAddDeviceWideCard - 40,
+            child: AddDeviceActionBar(
+              signal: signal,
+              onSendMessages: (_) async {},
+              onSendSettings: (_) async {},
+            ),
+          ),
+          overrides: overrides(calls: _Calls(), devices: existing),
+        ),
+      );
+      await tester.pump();
+
+      final settings = tester.getRect(
+        find.byKey(const Key('add_device_send_settings')),
+      );
+      final messages = tester.getRect(
+        find.byKey(const Key('add_device_send_messages')),
+      );
+      expect(settings.bottom, lessThanOrEqualTo(messages.top));
+      expect(
+        settings.left,
+        messages.left,
+        reason: 'stacked and stretched, not side by side',
+      );
+      expect(settings.width, messages.width);
     });
 
     testWidgets('wears the lock while the hand-off is gated', (

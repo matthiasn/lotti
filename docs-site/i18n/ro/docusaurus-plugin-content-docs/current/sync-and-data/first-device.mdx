@@ -24,10 +24,11 @@ Rulat de un administrator al homeserver-ului:
 3. scrie într-un fișier un **bundle de provizionare** — textul pe care
    Lotti îl acceptă drept cod de asociere.
 
-README-ul de lângă instrument documentează fiecare argument și modurile
+README-ul de lângă instrument documentează configurarea inițială, fiecare argument și modurile
 sigure de a furniza parola de administrator. O rulare minimă arată astfel:
 
 ```bash
+cd tools/matrix_provisioner
 python provision.py \
   --homeserver https://matrix.example.com \
   --admin-user admin \
@@ -44,11 +45,14 @@ la dumneavoastră cu grija descrisă mai jos.
 Pe dispozitivul care urmează să devină primul, deschideți **Setări → Setări
 sincronizare → Dispozitive** și alegeți **Configurați sincronizarea**.
 Lipiți textul bundle-ului în câmpul pentru cod — pe telefon, unde se
-deschide întâi camera, ajungeți acolo prin **Lipiți codul în schimb**. De
-aici fluxul este parcursul obișnuit de asociere: verificați ce descrie
-codul, conectați-vă și [verificați dispozitivul](./sync.mdx).
+deschide întâi camera, ajungeți acolo prin **Lipiți codul în schimb**.
+Verificați ce descrie codul și conectați-vă — pentru primul dispozitiv,
+parcursul se încheie aici. Nu există verificare cu emoji: verificarea
+compară două dintre dispozitivele dumneavoastră, iar deocamdată aveți doar
+unul. Ceremonia apare prima dată când asociați al doilea dispozitiv prin
+[Adăugați un dispozitiv](./add-device.mdx).
 
-O diferență merită cunoscută: consumarea unui bundle de provizionare
+Tot util de știut: consumarea unui bundle de provizionare
 proaspăt **rotește parola contului** în cadrul conectării. Fișierul
 bundle-ului este epuizat după prima utilizare — datele de autentificare
 valabile există apoi doar pe acel dispozitiv, iar fiecare dispozitiv

@@ -22,10 +22,11 @@ Run by a homeserver admin, it:
 3. writes a **provisioning bundle** — the text Lotti accepts as a pairing
    code — to a file.
 
-The README next to the tool documents every argument and the safe ways to
+The README next to the tool documents the one-time setup, every argument and the safe ways to
 supply the admin password. A minimal run looks like:
 
 ```bash
+cd tools/matrix_provisioner
 python provision.py \
   --homeserver https://matrix.example.com \
   --admin-user admin \
@@ -42,11 +43,13 @@ you with the care described below.
 On the device that should become your first, open **Settings → Sync
 Settings → Devices** and choose **Set up sync**. Paste the bundle's text
 into the code field — on a phone, where the camera opens first, choose
-**Paste the code instead** to get there. From that point the flow is the
-ordinary pairing journey: review what the code describes, connect, and
-[verify](./sync.mdx#verify-the-new-device).
+**Paste the code instead** to get there. Review what the code describes,
+then connect — and that is the whole journey for a first device. There is
+no emoji verification here: verification compares two of your devices, and
+you only have one. The ceremony makes its first appearance when you pair
+your second device with [Add a device](./add-device.mdx).
 
-One difference is worth knowing: consuming a fresh provisioning bundle
+Also worth knowing: consuming a fresh provisioning bundle
 **rotates the account password** as part of connecting. The bundle file is
 spent after its first use — the live credential then exists only on that
 device, and every further device pairs from an existing one with

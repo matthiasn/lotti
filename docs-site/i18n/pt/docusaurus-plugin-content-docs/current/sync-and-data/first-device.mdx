@@ -24,10 +24,11 @@ Executada por um admin do homeserver:
 3. escreve num ficheiro um **bundle de provisionamento** — o texto que o
    Lotti aceita como código de emparelhamento.
 
-O README ao lado da ferramenta documenta cada argumento e as formas seguras
+O README ao lado da ferramenta documenta a configuração inicial, cada argumento e as formas seguras
 de fornecer a palavra-passe de admin. Uma execução mínima é assim:
 
 ```bash
+cd tools/matrix_provisioner
 python provision.py \
   --homeserver https://matrix.example.com \
   --admin-user admin \
@@ -45,10 +46,13 @@ No dispositivo que vai ser o teu primeiro, abre **Definições →
 Configurações de sincronização → Dispositivos** e escolhe **Configurar
 sincronização**. Cola o texto do bundle no campo do código — num telemóvel,
 onde a câmara abre primeiro, escolhe **Colar o código em alternativa** para
-lá chegar. A partir daí o fluxo é o percurso normal de emparelhamento: rever
-o que o código descreve, ligar e [verificar](./sync.mdx).
+lá chegar. Revê o que o código descreve e liga — para um primeiro
+dispositivo, o percurso acaba aí. Não há verificação por emojis aqui: a
+verificação compara dois dos teus dispositivos, e só tens um. A cerimónia
+aparece pela primeira vez quando emparelhas o teu segundo dispositivo com
+[Adicionar um dispositivo](./add-device.mdx).
 
-Vale a pena conhecer uma diferença: consumir um bundle de provisionamento
+Também vale a pena saber: consumir um bundle de provisionamento
 fresco **roda a palavra-passe da conta** ao ligar. O ficheiro do bundle fica
 gasto após o primeiro uso — a credencial viva passa a existir apenas nesse
 dispositivo, e cada dispositivo seguinte emparelha a partir de um existente

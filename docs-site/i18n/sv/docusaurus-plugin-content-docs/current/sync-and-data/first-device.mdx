@@ -22,10 +22,11 @@ Körd av en homeserver-admin:
 3. skriver en **provisioneringsbundle** — texten Lotti godtar som
    parkopplingskod — till en fil.
 
-README-filen bredvid verktyget dokumenterar varje argument och de säkra
+README-filen bredvid verktyget dokumenterar engångsinstallationen, varje argument och de säkra
 sätten att ange admin-lösenordet. En minimal körning ser ut så här:
 
 ```bash
+cd tools/matrix_provisioner
 python provision.py \
   --homeserver https://matrix.example.com \
   --admin-user admin \
@@ -42,11 +43,13 @@ som beskrivs nedan.
 På enheten som ska bli din första, öppna **Inställningar →
 Synkroniseringsinställningar → Enheter** och välj **Konfigurera synk**.
 Klistra in bundlens text i kodfältet — på en telefon, där kameran öppnas
-först, väljer du **Klistra in koden i stället** för att komma dit. Därifrån
-är flödet den vanliga parkopplingsresan: granska vad koden beskriver, anslut
-och [verifiera](./sync.mdx).
+först, väljer du **Klistra in koden i stället** för att komma dit. Granska
+vad koden beskriver och anslut — för en första enhet är det hela resan. Här
+finns ingen emojiverifiering: den jämför två av dina enheter, och du har
+bara en. Ceremonin dyker upp första gången när du parkopplar din andra
+enhet med [Lägg till en enhet](./add-device.mdx).
 
-En skillnad är värd att känna till: att använda en färsk
+Också värt att veta: att använda en färsk
 provisioneringsbundle **roterar kontots lösenord** som en del av
 anslutningen. Bundlefilen är förbrukad efter första användningen — den
 gällande inloggningen finns då bara på den enheten, och varje följande enhet

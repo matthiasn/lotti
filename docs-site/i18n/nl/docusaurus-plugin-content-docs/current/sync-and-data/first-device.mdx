@@ -23,11 +23,12 @@ Uitgevoerd door een homeserver-admin:
 3. schrijft het een **provisioningbundle** — de tekst die Lotti als
    koppelcode accepteert — naar een bestand.
 
-De README naast het gereedschap documenteert elk argument en de veilige
+De README naast het gereedschap documenteert de eenmalige installatie, elk argument en de veilige
 manieren om het admin-wachtwoord aan te leveren. Een minimale run ziet er zo
 uit:
 
 ```bash
+cd tools/matrix_provisioner
 python provision.py \
   --homeserver https://matrix.example.com \
   --admin-user admin \
@@ -45,10 +46,13 @@ Open op het apparaat dat je eerste moet worden **Instellingen →
 Instellingen synchroniseren → Apparaten** en kies **Synchronisatie
 instellen**. Plak de tekst van de bundle in het codeveld — op een telefoon,
 waar eerst de camera opent, kom je daar via **Plak de code in plaats
-daarvan**. Vanaf dat punt is het de gewone koppelreis: nakijken wat de code
-beschrijft, verbinden en [verifiëren](./sync.mdx).
+daarvan**. Kijk na wat de code beschrijft en verbind — voor een eerste
+apparaat is dat meteen de hele reis. Emoji-verificatie is er hier niet: die
+vergelijkt twee van je apparaten, en je hebt er pas één. De ceremonie
+verschijnt voor het eerst wanneer je je tweede apparaat koppelt met
+[Een apparaat toevoegen](./add-device.mdx).
 
-Eén verschil is het weten waard: het gebruiken van een verse
+Ook goed om te weten: het gebruiken van een verse
 provisioningbundle **roteert het accountwachtwoord** tijdens het verbinden.
 Het bundlebestand is daarmee op na het eerste gebruik — het geldige
 inloggegeven bestaat dan alleen op dat apparaat, en elk volgend apparaat

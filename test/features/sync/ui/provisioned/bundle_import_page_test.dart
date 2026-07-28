@@ -15,7 +15,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -40,6 +42,9 @@ void main() {
   );
 
   setUpAll(() {
+    registerAllFallbackValues();
+    // Not part of the shared inventory: a real instance of a config class
+    // only sync tests stub with `any()`.
     registerFallbackValue(
       const MatrixConfig(homeServer: '', user: '', password: ''),
     );
@@ -424,6 +429,8 @@ void main() {
       // user review. A fixed label + right-aligned value row squeezed the
       // identifier into a sliver (or overflowed) once a long localized
       // label met an accessibility text scale; the pair must stack instead.
+      // French, because "Compte de synchronisation" at double scale is what
+      // actually exceeded a phone-width sheet.
       tester.view
         ..physicalSize = const Size(390, 2400)
         ..devicePixelRatio = 1.0;
@@ -442,6 +449,7 @@ void main() {
             ),
           ),
           overrides: defaultOverrides(),
+          locale: const Locale('fr'),
         ),
       );
       await tester.pump();
@@ -889,6 +897,65 @@ void main() {
       );
       expect(manual.label, context.messages.syncPairOpenManual);
       expect(manual.onPressed, isNotNull);
+    });
+
+    testWidgets('the manual button opens the first-device guide, not the '
+        'manual root', (tester) async {
+      // A root landing still left the user hunting for the one page that
+      // explains where a first code comes from.
+      final mockUrlLauncher = MockUrlLauncher();
+      final originalInstance = UrlLauncherPlatform.instance;
+      UrlLauncherPlatform.instance = mockUrlLauncher;
+      addTearDown(() => UrlLauncherPlatform.instance = originalInstance);
+      when(
+        () => mockUrlLauncher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      await pumpImport(tester);
+      await tester.ensureVisible(
+        find.byKey(const Key('bundle_import_open_manual')),
+      );
+      await tester.tap(find.byKey(const Key('bundle_import_open_manual')));
+      await tester.pump();
+
+      final url =
+          verify(
+                () => mockUrlLauncher.launchUrl(captureAny(), any()),
+              ).captured.single
+              as String;
+      expect(url, endsWith('sync-and-data/first-device'));
+    });
+
+    test('the viewfinder painter compares its look fields for a new '
+        'delegate', () {
+      // The contract the framework consults when a rebuild hands the render
+      // object a new painter delegate: repaint when any of the visual
+      // fields (color, corner length, corner radius, stroke width, inset)
+      // differs from the previous delegate's, and skip the redraw when the
+      // two delegates would paint identically.
+      ViewfinderBracketsPainter make({
+        Color color = const Color(0xFF00FF00),
+        double cornerLength = 24,
+        double cornerRadius = 12,
+        double strokeWidth = 2,
+        double inset = 16,
+      }) => ViewfinderBracketsPainter(
+        color: color,
+        cornerLength: cornerLength,
+        cornerRadius: cornerRadius,
+        strokeWidth: strokeWidth,
+        inset: inset,
+      );
+
+      expect(make().shouldRepaint(make()), isFalse);
+      expect(
+        make(color: const Color(0xFFFF0000)).shouldRepaint(make()),
+        isTrue,
+      );
+      expect(make(cornerLength: 32).shouldRepaint(make()), isTrue);
+      expect(make(cornerRadius: 8).shouldRepaint(make()), isTrue);
+      expect(make(strokeWidth: 3).shouldRepaint(make()), isTrue);
+      expect(make(inset: 20).shouldRepaint(make()), isTrue);
     });
 
     testWidgets('a provisioning reset clears the stale decoded bundle', (
