@@ -919,6 +919,7 @@ bool _hasAuditablePartialDisclosure({
       reason,
       taskId: taskId,
       taskTitle: taskTitle,
+      corpus: corpus,
     )) {
       return false;
     }
@@ -1150,6 +1151,7 @@ bool _hasTaskBoundAllocationDenial(
   String prose, {
   required String taskId,
   required String taskTitle,
+  required List<EvalCorpusTask> corpus,
 }) {
   final placementActionPattern = RegExp(
     r'\b(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
@@ -1168,6 +1170,25 @@ bool _hasTaskBoundAllocationDenial(
         ) !=
         null) {
       return true;
+    }
+    final clause = prose.substring(range.start, range.end);
+    final explicitlyNamesOtherTask = corpus
+        .where((task) => task.taskId != taskId)
+        .any(
+          (task) => _taskReferencePatterns(
+            task.taskId,
+            task.title,
+          ).any((pattern) => pattern.hasMatch(clause)),
+        );
+    if (explicitlyNamesOtherTask) continue;
+    if (_evidenceNamesAnotherTask(
+      prose,
+      action,
+      taskId: taskId,
+      taskTitle: taskTitle,
+      corpus: corpus,
+    )) {
+      continue;
     }
     final prefix = prose.substring(range.start, action.start);
     if (RegExp(
@@ -1213,6 +1234,10 @@ bool _negationQualifiesRatherThanNegates(Match negation, String between) {
   }
   if (negator != 'not') return false;
   return RegExp(r'^\s*only\b', caseSensitive: false).hasMatch(between) ||
+      RegExp(
+        r'^\s*(?:fully|entirely|completely)\b',
+        caseSensitive: false,
+      ).hasMatch(between) ||
       RegExp(
         r'^\s*all\b.*\bfit(?:s|ting)?\b\s+'
         r'(?:so|therefore|thus|but)\s*$',
@@ -2318,6 +2343,7 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
     r'(?:\s+(?:only|merely|just|still))?'
     r'(?:\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
     'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))?|'
+    '(?:has|have|had)|'
     '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
     r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))\s*$',
     caseSensitive: false,

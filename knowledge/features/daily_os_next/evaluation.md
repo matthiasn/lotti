@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T08:56:46+02:00 }
+generated: { by: codex/5, at: 2026-07-28T09:08:16+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -118,7 +118,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-c was not scheduled after all` therefore retracts reason-field partial
   arithmetic even when the note contains no split or remainder of its own; the
   same applies to `not completed` because completion can supply allocation
-  context. The
+  context. A denial explicitly naming another corpus task does not retract the
+  enclosing task's arithmetic, while qualified non-completion such as
+  `not fully scheduled` describes a partial placement rather than no allocation.
+  The
   partial mention cannot be borrowed from a claim attributed to
   another corpus task or an explicit non-task subject. Unrelated meeting/workday
   remainder scope is rejected before a later disposition can bind it, and
@@ -201,6 +204,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   does not replace the head subject, so `the meeting for task-c is partial`
   remains a meeting claim; copula modifiers do not change that head, so `the
   meeting was only partial` is rejected too.
+  Ordinary possessive verbs retain their head subject as well, so
+  `the meeting has 60 minutes remaining` cannot supply the task's remainder.
   Bare continuity such as `remains scheduled` is not a trade: numeric remainder
   arithmetic matching the structural remainder, or an actual
   omit/defer/shorten/conflict disposition, is required. Likewise, `left
