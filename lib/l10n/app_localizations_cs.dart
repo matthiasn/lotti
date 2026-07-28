@@ -2476,13 +2476,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get backfillAgentClocksDescription =>
-      'Označ agentní entity a odkazy uložené bez vektorových hodin, aby je tvá ostatní zařízení mohla seřadit a přijmout.';
+      'Doplň vektorové hodiny agentním entitám a odkazům, které byly uloženy bez nich, aby je tvá ostatní zařízení mohla seřadit a přijmout.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Vektorové hodiny agentů se nepodařilo opravit';
 
   @override
   String get backfillAgentClocksTitle => 'Vektorové hodiny agentů';
 
   @override
-  String get backfillAgentClocksTrigger => 'Opravit hodiny';
+  String get backfillAgentClocksTrigger => 'Opravit vektorové hodiny';
 
   @override
   String get backfillAskPeersConfirmAccept => 'Zeptat se peerů';

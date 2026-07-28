@@ -2488,13 +2488,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get backfillAgentClocksDescription =>
-      'Horodate les entités et liens d\'agent enregistrés sans horloge vectorielle, pour que tes autres appareils puissent les ordonner et les recevoir.';
+      'Complète les entités et liens d\'agent enregistrés sans horloge vectorielle, pour que tes autres appareils puissent les ordonner et les recevoir.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Impossible de réparer les horloges vectorielles des agents';
 
   @override
   String get backfillAgentClocksTitle => 'Horloges vectorielles des agents';
 
   @override
-  String get backfillAgentClocksTrigger => 'Réparer les horloges';
+  String get backfillAgentClocksTrigger => 'Réparer les horloges vectorielles';
 
   @override
   String get backfillAskPeersConfirmAccept => 'Demander aux pairs';

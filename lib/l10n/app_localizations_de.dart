@@ -2472,13 +2472,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get backfillAgentClocksDescription =>
-      'Versieh Agent-Einträge und -Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.';
+      'Versieh Agenten-Entitäten und Agenten-Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.';
 
   @override
-  String get backfillAgentClocksTitle => 'Agent-Vektoruhren';
+  String get backfillAgentClocksFailed =>
+      'Agenten-Vektoruhren konnten nicht repariert werden';
 
   @override
-  String get backfillAgentClocksTrigger => 'Uhren reparieren';
+  String get backfillAgentClocksTitle => 'Agenten-Vektoruhren';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Vektoruhren reparieren';
 
   @override
   String get backfillAskPeersConfirmAccept => 'Peers fragen';

@@ -2441,13 +2441,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backfillAgentClocksDescription =>
-      'Stamp agent entities and links that were saved without a vector clock, so your other devices can order and receive them.';
+      'Add a vector clock to agent entities and links that were saved without one, so your other devices can order and receive them.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Could not repair agent vector clocks';
 
   @override
   String get backfillAgentClocksTitle => 'Agent vector clocks';
 
   @override
-  String get backfillAgentClocksTrigger => 'Repair clocks';
+  String get backfillAgentClocksTrigger => 'Repair vector clocks';
 
   @override
   String get backfillAskPeersConfirmAccept => 'Ask peers';

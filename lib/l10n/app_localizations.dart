@@ -4293,8 +4293,14 @@ abstract class AppLocalizations {
   /// No description provided for @backfillAgentClocksDescription.
   ///
   /// In en, this message translates to:
-  /// **'Stamp agent entities and links that were saved without a vector clock, so your other devices can order and receive them.'**
+  /// **'Add a vector clock to agent entities and links that were saved without one, so your other devices can order and receive them.'**
   String get backfillAgentClocksDescription;
+
+  /// No description provided for @backfillAgentClocksFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not repair agent vector clocks'**
+  String get backfillAgentClocksFailed;
 
   /// No description provided for @backfillAgentClocksTitle.
   ///
@@ -4305,7 +4311,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillAgentClocksTrigger.
   ///
   /// In en, this message translates to:
-  /// **'Repair clocks'**
+  /// **'Repair vector clocks'**
   String get backfillAgentClocksTrigger;
 
   /// No description provided for @backfillAskPeersConfirmAccept.

@@ -81,7 +81,7 @@ void main() {
         find.text('Are you sure you want to delete this?'),
         findsOneWidget,
       );
-      expect(find.text('DELETE'), findsOneWidget);
+      expect(find.text('Delete'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     });
@@ -113,7 +113,7 @@ void main() {
 
       // Verify no warning icon for non-destructive operations
       expect(find.text('Continue with this action?'), findsOneWidget);
-      expect(find.text('CONTINUE'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
     });
 
@@ -205,7 +205,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap confirm button
-      await tester.tap(find.text('CONFIRM'));
+      await tester.tap(find.text('Confirm'));
       await tester.pump();
 
       // Verify progress page is shown
@@ -249,7 +249,7 @@ void main() {
 
       final confirmFinder = find.widgetWithText(
         DesignSystemButton,
-        'CONFIRM',
+        'Confirm',
       );
 
       var confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
@@ -261,7 +261,7 @@ void main() {
       confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
       expect(confirmButton.onPressed, isNotNull);
 
-      await tester.tap(find.text('CONFIRM'));
+      await tester.tap(find.text('Confirm'));
       await tester.pumpAndSettle();
 
       expect(operationRan, isTrue);
@@ -299,7 +299,7 @@ void main() {
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('CONFIRM'));
+      await tester.tap(find.text('Confirm'));
       await tester.pump();
 
       expect(find.text('Operation done'), findsOneWidget);
@@ -340,7 +340,7 @@ void main() {
 
       // Find the confirm button and verify it uses error color
       final confirmButtonFinder = find.ancestor(
-        of: find.text('DELETE'),
+        of: find.text('Delete'),
         matching: find.byType(DesignSystemButton),
       );
       final confirmButton = tester.widget<DesignSystemButton>(
@@ -382,7 +382,7 @@ void main() {
 
       // Find the confirm button and verify it uses primary color
       final confirmButtonFinder = find.ancestor(
-        of: find.text('CONTINUE'),
+        of: find.text('Continue'),
         matching: find.byType(DesignSystemButton),
       );
       final confirmButton = tester.widget<DesignSystemButton>(
@@ -420,7 +420,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap confirm button
-      await tester.tap(find.text('CONFIRM'));
+      await tester.tap(find.text('Confirm'));
       await tester.pumpAndSettle();
 
       // Verify modal still completes (exception is handled)

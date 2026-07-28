@@ -1343,9 +1343,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Geavanceerd herstel",
-  "backfillAgentClocksDescription": "Voorzie agent-items en -koppelingen die zonder vectorklok zijn opgeslagen alsnog van een klok, zodat je andere apparaten ze kunnen ordenen en ontvangen.",
+  "backfillAgentClocksDescription": "Geef agent-entiteiten en -koppelingen die zonder vectorklok zijn opgeslagen alsnog een vectorklok, zodat je andere apparaten ze kunnen ordenen en ontvangen.",
+  "backfillAgentClocksFailed": "Kon de vectorklokken van agents niet herstellen",
   "backfillAgentClocksTitle": "Vectorklokken van agents",
-  "backfillAgentClocksTrigger": "Klokken herstellen",
+  "backfillAgentClocksTrigger": "Vectorklokken herstellen",
   "backfillAskPeersConfirmAccept": "Vragen aan gelijken",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Hiermee wordt 1 onherstelbare vermelding in het sequentielogboek weer als ontbrekend gemarkeerd, zodat de normale inhaalslag andere apparaten opnieuw bevraagt. Apparaten die de gegevens nog hebben, reageren; echt onherstelbare vermeldingen worden na het amnestievenster van zeven dagen opnieuw als onherstelbaar aangemerkt.} other{Hiermee worden alle {count} onherstelbare vermeldingen in het sequentielogboek weer als ontbrekend gemarkeerd, zodat de normale inhaalslag andere apparaten opnieuw bevraagt. Apparaten die de gegevens nog hebben, reageren; echt onherstelbare vermeldingen worden na het amnestievenster van zeven dagen opnieuw als onherstelbaar aangemerkt.}}",
   "@backfillAskPeersConfirmContent": {

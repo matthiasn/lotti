@@ -2462,13 +2462,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get backfillAgentClocksDescription =>
-      'Voorzie agent-items en -koppelingen die zonder vectorklok zijn opgeslagen alsnog van een klok, zodat je andere apparaten ze kunnen ordenen en ontvangen.';
+      'Geef agent-entiteiten en -koppelingen die zonder vectorklok zijn opgeslagen alsnog een vectorklok, zodat je andere apparaten ze kunnen ordenen en ontvangen.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Kon de vectorklokken van agents niet herstellen';
 
   @override
   String get backfillAgentClocksTitle => 'Vectorklokken van agents';
 
   @override
-  String get backfillAgentClocksTrigger => 'Klokken herstellen';
+  String get backfillAgentClocksTrigger => 'Vectorklokken herstellen';
 
   @override
   String get backfillAskPeersConfirmAccept => 'Vragen aan gelijken';

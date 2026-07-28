@@ -7,6 +7,7 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
@@ -23,6 +24,7 @@ void main() {
 
   late MockMaintenance mockMaintenance;
   late MockAgentRepository mockAgentRepository;
+  late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
 
   Future<void> pumpModal(WidgetTester tester) async {
     await tester.pumpWidget(
@@ -31,6 +33,9 @@ void main() {
         overrides: [
           maintenanceProvider.overrideWithValue(mockMaintenance),
           agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+          syncMaintenanceRepositoryProvider.overrideWithValue(
+            mockSyncMaintenanceRepository,
+          ),
         ],
       ),
     );
@@ -55,6 +60,19 @@ void main() {
     ensureDomainLoggerRegistered();
     mockMaintenance = MockMaintenance();
     mockAgentRepository = MockAgentRepository();
+    mockSyncMaintenanceRepository = MockSyncMaintenanceRepository();
+    when(
+      () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockSyncMaintenanceRepository.backfillAgentLinkClocks(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer((_) async {});
     when(
       () => mockMaintenance.reSyncInterval(
         start: any(named: 'start'),
@@ -361,6 +379,9 @@ void main() {
         overrides: [
           maintenanceProvider.overrideWithValue(mockMaintenance),
           agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+          syncMaintenanceRepositoryProvider.overrideWithValue(
+            mockSyncMaintenanceRepository,
+          ),
         ],
       ),
     );
@@ -404,6 +425,47 @@ void main() {
           onProgress: any(named: 'onProgress'),
         ),
       ).called(1);
+
+      // No agent data is being sent, so there is nothing to stamp.
+      verifyNever(
+        () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      );
+    },
+  );
+
+  testWidgets(
+    'agent clocks are stamped before the sweep enqueues agent rows',
+    (tester) async {
+      // A null-clock agent row is applied by the peer but skipped by the
+      // sequence log, so it lands invisible to gap detection. The repair used
+      // to ride along in the "Send settings" sheet, which meant it only ran if
+      // the user happened to send settings first. Order matters: stamping
+      // after the sweep would enqueue the unstamped copies.
+      await pumpModal(tester);
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+      await tester.pump();
+
+      verifyInOrder([
+        () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+        () => mockSyncMaintenanceRepository.backfillAgentLinkClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+        () => mockMaintenance.reSyncInterval(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+          agentRepository: mockAgentRepository,
+          includeJournalEntities: any(named: 'includeJournalEntities'),
+          includeAgentEntities: true,
+          onProgress: any(named: 'onProgress'),
+        ),
+      ]);
     },
   );
 

@@ -1168,9 +1168,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Récupération avancée",
-  "backfillAgentClocksDescription": "Horodate les entités et liens d'agent enregistrés sans horloge vectorielle, pour que tes autres appareils puissent les ordonner et les recevoir.",
+  "backfillAgentClocksDescription": "Complète les entités et liens d'agent enregistrés sans horloge vectorielle, pour que tes autres appareils puissent les ordonner et les recevoir.",
+  "backfillAgentClocksFailed": "Impossible de réparer les horloges vectorielles des agents",
   "backfillAgentClocksTitle": "Horloges vectorielles des agents",
-  "backfillAgentClocksTrigger": "Réparer les horloges",
+  "backfillAgentClocksTrigger": "Réparer les horloges vectorielles",
   "backfillAskPeersConfirmAccept": "Demander aux pairs",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Bascule 1 entrée du journal de séquence irrésoluble vers manquante pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d'amnistie de 7 jours.} other{Bascule les {count} entrées du journal de séquence irrésolubles vers manquantes pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d'amnistie de 7 jours.}}",
   "@backfillAskPeersConfirmContent": {

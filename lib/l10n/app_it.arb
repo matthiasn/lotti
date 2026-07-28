@@ -1344,9 +1344,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Recupero avanzato",
-  "backfillAgentClocksDescription": "Applica un orologio vettoriale alle entità e ai collegamenti agente salvati senza, così i tuoi altri dispositivi possono ordinarli e riceverli.",
+  "backfillAgentClocksDescription": "Applica un orologio vettoriale alle entità e ai collegamenti degli agenti che ne sono privi, così i tuoi altri dispositivi possono ordinarli e riceverli.",
+  "backfillAgentClocksFailed": "Impossibile riparare gli orologi vettoriali degli agenti",
   "backfillAgentClocksTitle": "Orologi vettoriali degli agenti",
-  "backfillAgentClocksTrigger": "Ripara orologi",
+  "backfillAgentClocksTrigger": "Ripara gli orologi vettoriali",
   "backfillAskPeersConfirmAccept": "Chiedi ai colleghi",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Questa operazione riporta 1 voce irrisolvibile del log di sequenza allo stato mancante, in modo che il normale ciclo di recupero richieda di nuovo i peer. I peer che hanno ancora il contenuto risponderanno; le voci realmente irrecuperabili saranno nuovamente ritirate dopo i 7 giorni di tolleranza.} other{Questa operazione riporta {count} voci irrisolvibili del log di sequenza allo stato mancante, in modo che il normale ciclo di recupero richieda di nuovo i peer. I peer che hanno ancora il contenuto risponderanno; le voci realmente irrecuperabili saranno nuovamente ritirate dopo i 7 giorni di tolleranza.}}",
   "@backfillAskPeersConfirmContent": {

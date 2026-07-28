@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/components/checkboxes/design_system
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -92,6 +93,20 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     });
 
     try {
+      if (_includeAgentEntities) {
+        // Stamp any agent row still holding a null vector clock before the
+        // sweep enqueues it. A null-clock row is applied by the peer but
+        // skipped by the sequence log (sync_event_processor_agent_handlers
+        // .dart:599), so it lands invisible to gap detection and backfill.
+        //
+        // This repair used to ride along in the "Send settings" sheet, which
+        // meant it only ran if the user happened to send settings first. It
+        // belongs here, immediately before the only path that sends agent
+        // data — and it no-ops when nothing is missing a clock.
+        final repo = ref.read(syncMaintenanceRepositoryProvider);
+        await repo.backfillAgentEntityClocks();
+        await repo.backfillAgentLinkClocks();
+      }
       await ref
           .read(maintenanceProvider)
           .reSyncInterval(

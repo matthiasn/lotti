@@ -2451,13 +2451,17 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get backfillAgentClocksDescription =>
-      'Stempl agent-elementer og -links, der blev gemt uden vektorur, så dine andre enheder kan sortere og modtage dem.';
+      'Giv agent-entiteter og -links, der blev gemt uden vektorur, et vektorur, så dine andre enheder kan sortere og modtage dem.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Agenternes vektorure kunne ikke repareres';
 
   @override
   String get backfillAgentClocksTitle => 'Agenternes vektorure';
 
   @override
-  String get backfillAgentClocksTrigger => 'Reparer ure';
+  String get backfillAgentClocksTrigger => 'Reparer vektorure';
 
   @override
   String get backfillAskPeersConfirmAccept => 'Spørg jævnaldrende';

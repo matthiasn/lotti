@@ -2475,13 +2475,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get backfillAgentClocksDescription =>
-      'Marca as entidades e ligações de agente guardadas sem relógio vetorial, para que os teus outros dispositivos as possam ordenar e receber.';
+      'Adiciona um relógio vetorial às entidades e ligações de agente guardadas sem um, para que os teus outros dispositivos as possam ordenar e receber.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Não foi possível reparar os relógios vetoriais dos agentes';
 
   @override
   String get backfillAgentClocksTitle => 'Relógios vetoriais dos agentes';
 
   @override
-  String get backfillAgentClocksTrigger => 'Reparar relógios';
+  String get backfillAgentClocksTrigger => 'Reparar relógios vetoriais';
 
   @override
   String get backfillAskPeersConfirmAccept => 'Pergunte aos colegas';

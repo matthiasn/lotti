@@ -1168,9 +1168,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Erweiterte Wiederherstellung",
-  "backfillAgentClocksDescription": "Versieh Agent-Einträge und -Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.",
-  "backfillAgentClocksTitle": "Agent-Vektoruhren",
-  "backfillAgentClocksTrigger": "Uhren reparieren",
+  "backfillAgentClocksDescription": "Versieh Agenten-Entitäten und Agenten-Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.",
+  "backfillAgentClocksFailed": "Agenten-Vektoruhren konnten nicht repariert werden",
+  "backfillAgentClocksTitle": "Agenten-Vektoruhren",
+  "backfillAgentClocksTrigger": "Vektoruhren reparieren",
   "backfillAskPeersConfirmAccept": "Peers fragen",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Setzt 1 unlösbaren Sequenzlog-Eintrag zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.} other{Setzt alle {count} unlösbaren Sequenzlog-Einträge zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.}}",
   "@backfillAskPeersConfirmContent": {

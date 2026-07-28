@@ -298,16 +298,21 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
   /// half-repaired state as a choice.
   Future<void> _repairAgentClocks(BuildContext context) async {
     final messages = context.messages;
+    final syncController = ProviderScope.containerOf(
+      context,
+    ).read(syncControllerProvider.notifier);
     setState(() => _isRepairingAgentClocks = true);
     try {
-      await ProviderScope.containerOf(context)
-          .read(syncControllerProvider.notifier)
-          .syncAll(
-            selectedSteps: const {
-              SyncStep.backfillAgentEntityClocks,
-              SyncStep.backfillAgentLinkClocks,
-            },
-          );
+      await syncController.syncAll(
+        selectedSteps: const {
+          SyncStep.backfillAgentEntityClocks,
+          SyncStep.backfillAgentLinkClocks,
+        },
+      );
+      // syncAll parks the shared controller at progress == 100 with these
+      // steps selected. SyncModal reads the same provider, so without this
+      // the next "Send settings" would open showing this repair's leftovers.
+      syncController.reset();
       if (!context.mounted) return;
       context.showToast(
         tone: DesignSystemToastTone.success,
@@ -315,9 +320,12 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
       );
     } catch (e) {
       if (!context.mounted) return;
+      // A localized title: SyncError.toString() is a hard-coded English
+      // sentence, so surfacing it directly gave every non-English locale an
+      // English failure toast.
       context.showToast(
         tone: DesignSystemToastTone.error,
-        title: e.toString(),
+        title: messages.backfillAgentClocksFailed,
       );
     } finally {
       if (mounted) setState(() => _isRepairingAgentClocks = false);

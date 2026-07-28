@@ -2487,13 +2487,17 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get backfillAgentClocksDescription =>
-      'Applica un orologio vettoriale alle entità e ai collegamenti agente salvati senza, così i tuoi altri dispositivi possono ordinarli e riceverli.';
+      'Applica un orologio vettoriale alle entità e ai collegamenti degli agenti che ne sono privi, così i tuoi altri dispositivi possono ordinarli e riceverli.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Impossibile riparare gli orologi vettoriali degli agenti';
 
   @override
   String get backfillAgentClocksTitle => 'Orologi vettoriali degli agenti';
 
   @override
-  String get backfillAgentClocksTrigger => 'Ripara orologi';
+  String get backfillAgentClocksTrigger => 'Ripara gli orologi vettoriali';
 
   @override
   String get backfillAskPeersConfirmAccept => 'Chiedi ai colleghi';

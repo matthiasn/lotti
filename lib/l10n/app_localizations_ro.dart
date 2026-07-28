@@ -2485,13 +2485,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backfillAgentClocksDescription =>
-      'Marcați entitățile și legăturile de agent salvate fără ceas vectorial, pentru ca celelalte dispozitive să le poată ordona și primi.';
+      'Completați entitățile și legăturile de agent salvate fără ceas vectorial, pentru ca celelalte dispozitive să le poată ordona și primi.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Ceasurile vectoriale ale agenților nu au putut fi reparate';
 
   @override
   String get backfillAgentClocksTitle => 'Ceasurile vectoriale ale agenților';
 
   @override
-  String get backfillAgentClocksTrigger => 'Reparați ceasurile';
+  String get backfillAgentClocksTrigger => 'Reparați ceasurile vectoriale';
 
   @override
   String get backfillAskPeersConfirmAccept => 'Întreabă colegii';

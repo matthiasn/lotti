@@ -64,6 +64,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   overcommit warning. Drafts and refinements now detect a silent response in
   30 seconds, cancel it before late tool calls can land, and keep each planning
   step focused on only the instructions and tools it can actually use.
+- **Repairing agent sync data has its own place, and runs when it matters.**
+  The "Choose what to sync" list mixed two unrelated things: settings to send,
+  and a repair for agent items saved without the marker other devices use to
+  order them. The repair moved to Sync Settings → Backfill sync, and now also
+  runs automatically just before "Send message history" sends agent data — so
+  it no longer depends on having sent settings first.
+- **The sync screens follow the app's own button and layout rules again.**
+  On the Devices page the "Add device" button is no longer an oversized bright
+  pill, "Stop syncing this device" lines up with the cards above it instead of
+  sitting indented, the "This device" marker no longer outshouts everything
+  around it, and the two dates on each device card are finally the same size.
+  In "Choose what to sync", the list was centred, which made shorter labels
+  look like they were nested under longer ones; the checkboxes now share one
+  left edge. Confirm buttons across the sync and maintenance dialogs no longer
+  SHOUT or stretch the full width.
 - **The "Enable Sync Actor" setting is gone.** The advanced-settings toggle
   never did anything — the isolate-based sync it was meant to switch on was
   never finished or connected — so it is removed rather than left as a switch

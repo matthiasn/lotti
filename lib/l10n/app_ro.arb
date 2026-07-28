@@ -1168,9 +1168,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Recuperare avansată",
-  "backfillAgentClocksDescription": "Marcați entitățile și legăturile de agent salvate fără ceas vectorial, pentru ca celelalte dispozitive să le poată ordona și primi.",
+  "backfillAgentClocksDescription": "Completați entitățile și legăturile de agent salvate fără ceas vectorial, pentru ca celelalte dispozitive să le poată ordona și primi.",
+  "backfillAgentClocksFailed": "Ceasurile vectoriale ale agenților nu au putut fi reparate",
   "backfillAgentClocksTitle": "Ceasurile vectoriale ale agenților",
-  "backfillAgentClocksTrigger": "Reparați ceasurile",
+  "backfillAgentClocksTrigger": "Reparați ceasurile vectoriale",
   "backfillAskPeersConfirmAccept": "Întreabă colegii",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Aceasta resetează 1 intrare nerezolvabilă din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.} few{Aceasta resetează cele {count} intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.} other{Aceasta resetează cele {count} de intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.}}",
   "@backfillAskPeersConfirmContent": {
