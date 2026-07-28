@@ -750,6 +750,12 @@ final _taskAllocationActionPattern = RegExp(
   caseSensitive: false,
 );
 
+final _omittedAllocationPattern = RegExp(
+  r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|'
+  r'defer(?:s|red|ring)?|unscheduled|left\s+out)\b',
+  caseSensitive: false,
+);
+
 final _unrelatedRemainderScopePattern = RegExp(
   r'\b(?:in|during|for)\s+'
   r'(?:(?:the|a|an|my|our|their|your)\s+)?'
@@ -1005,8 +1011,7 @@ bool _splitIsTaskBound(
   required List<EvalCorpusTask> corpus,
 }) {
   final clause = _matchClause(reason, match);
-  final context = _matchClauseExcludingMatch(reason, match);
-  return _taskAllocationActionPattern.hasMatch(context) &&
+  return _splitHasAffirmativeAllocation(reason, match) &&
       !_unrelatedSplitScopePattern.hasMatch(clause) &&
       !_evidenceNamesAnotherTask(
         reason,
@@ -1015,6 +1020,42 @@ bool _splitIsTaskBound(
         taskTitle: taskTitle,
         corpus: corpus,
       );
+}
+
+bool _splitHasAffirmativeAllocation(String reason, Match match) {
+  final actionDistance = _nearestPatternDistance(
+    reason,
+    match,
+    _taskAllocationActionPattern,
+  );
+  if (actionDistance == null) return false;
+  final omissionDistance = _nearestPatternDistance(
+    reason,
+    match,
+    _omittedAllocationPattern,
+  );
+  return omissionDistance == null || actionDistance < omissionDistance;
+}
+
+int? _nearestPatternDistance(
+  String reason,
+  Match evidence,
+  RegExp pattern,
+) {
+  final range = _matchClauseRange(reason, evidence, boundaries: ',.;!?\n');
+  final clause = reason.substring(range.start, range.end);
+  int? nearest;
+  for (final match in pattern.allMatches(clause)) {
+    final start = range.start + match.start;
+    final end = range.start + match.end;
+    final distance = end <= evidence.start
+        ? evidence.start - end
+        : start >= evidence.end
+        ? start - evidence.end
+        : 0;
+    if (nearest == null || distance < nearest) nearest = distance;
+  }
+  return nearest;
 }
 
 bool _evidenceNamesAnotherTask(
@@ -1155,12 +1196,6 @@ String _matchClause(
 }) {
   final range = _matchClauseRange(reason, match, boundaries: boundaries);
   return reason.substring(range.start, range.end);
-}
-
-String _matchClauseExcludingMatch(String reason, Match match) {
-  final range = _matchClauseRange(reason, match, boundaries: '.;!?\n');
-  return '${reason.substring(range.start, match.start)} '
-      '${reason.substring(match.end, range.end)}';
 }
 
 ({int start, int end}) _matchClauseRange(
@@ -1694,6 +1729,25 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
   caseSensitive: false,
 ).hasMatch(prose);
 
+bool _hasAffirmativeTradeDisclosure(String prose) {
+  for (final match in _partialMentionPattern.allMatches(prose)) {
+    if (!_partialMentionIsNegated(prose, match)) return true;
+  }
+  for (final match in _partialTradeDispositionPattern.allMatches(prose)) {
+    if (!_matchClauseIsNegated(prose, match)) return true;
+  }
+  for (final match in _conflictTradePattern.allMatches(prose)) {
+    final matchedTrade = match.group(0) ?? '';
+    final negativeFitDisclosure =
+        _negationWordPattern.hasMatch(matchedTrade) &&
+        RegExp(r'\bfit\b', caseSensitive: false).hasMatch(matchedTrade);
+    if (negativeFitDisclosure || !_matchClauseIsNegated(prose, match)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool _taskTradeIsNamed(
   EvalRunOutcome outcome,
   String taskId, {
@@ -1704,10 +1758,7 @@ bool _taskTradeIsNamed(
     final namesTask =
         _taskIdNamed(taskId, prose) || _titleNamed(outcome, taskId, prose);
     if (!namesTask) continue;
-    if (!requireTradeDisclosure ||
-        _partialMentionPattern.hasMatch(prose) ||
-        _partialTradeDispositionPattern.hasMatch(prose) ||
-        _conflictTradePattern.hasMatch(prose)) {
+    if (!requireTradeDisclosure || _hasAffirmativeTradeDisclosure(prose)) {
       return true;
     }
   }

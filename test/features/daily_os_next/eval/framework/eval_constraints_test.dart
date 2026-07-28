@@ -1909,6 +1909,32 @@ void main() {
       expect(result.detail, contains('task-c allocated 30min of 120min'));
     });
 
+    test(
+      'does not borrow a later allocation action for omitted arithmetic',
+      () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason:
+                    '30 of 120 minutes are omitted while the rest is '
+                    'scheduled for this task.',
+              ).copyWith(endTime: DateTime(2026, 7, 18, 9, 30)),
+            ],
+            corpus: tasks,
+            capacityMinutes: 30,
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('task-c allocated 30min of 120min'));
+      },
+    );
+
     test('does not borrow another task partial mention', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2599,6 +2625,62 @@ void main() {
             ),
           ],
           decidedTaskIds: const ['task-deck'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('negated partial does not disclose a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c is not partial.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('denied conflict does not disclose a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'There is no conflict for task-c.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
           requiresConflictSurfaced: true,
         ),
       );
