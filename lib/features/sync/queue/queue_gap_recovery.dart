@@ -160,20 +160,25 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
       logging: _logging,
       decryptEvent: _decryptBootstrapEvent,
     );
-    final innerSink = _attachmentIngestor == null
-        ? queueSink
+    final attachmentSink = _attachmentIngestor == null
+        ? null
         : AttachmentAwareBootstrapSink(
-                inner: queueSink,
-                processAttachment: _processAttachment,
-              )
-              as BootstrapSink;
+            inner: queueSink,
+            processAttachment: _processAttachment,
+          );
+    final innerSink = attachmentSink ?? queueSink;
     final countingSink = TotalAcceptedCountingSink(innerSink);
-    final result = await CatchUpStrategy.collectForwardForBootstrap(
-      room: room,
-      sink: countingSink,
-      logging: _logging,
-      anchorEventId: anchorEventId,
-    );
+    late final BootstrapResult result;
+    try {
+      result = await CatchUpStrategy.collectForwardForBootstrap(
+        room: room,
+        sink: countingSink,
+        logging: _logging,
+        anchorEventId: anchorEventId,
+      );
+    } finally {
+      _trackBootstrapAttachmentSink(attachmentSink);
+    }
     _logging.log(
       LogDomain.sync,
       'queue.bootstrap.forward.done '
@@ -226,24 +231,29 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
       logging: _logging,
       decryptEvent: _decryptBootstrapEvent,
     );
-    final innerSink = _attachmentIngestor == null
-        ? queueSink
+    final attachmentSink = _attachmentIngestor == null
+        ? null
         : AttachmentAwareBootstrapSink(
-                inner: queueSink,
-                processAttachment: _processAttachment,
-              )
-              as BootstrapSink;
+            inner: queueSink,
+            processAttachment: _processAttachment,
+          );
+    final innerSink = attachmentSink ?? queueSink;
     // Count accepted events across every page so we can detect the
     // "boundaryReached with totalAccepted==0" case that marks the
     // bridge barren — the gap-recovery trigger reads this flag.
     final countingSink = TotalAcceptedCountingSink(innerSink);
-    final result = await CatchUpStrategy.collectHistoryForBootstrap(
-      room: room,
-      sink: countingSink,
-      logging: _logging,
-      untilTimestamp: untilTimestamp,
-      overallTimeout: SyncTuning.backwardWalkTimeout,
-    );
+    late final BootstrapResult result;
+    try {
+      result = await CatchUpStrategy.collectHistoryForBootstrap(
+        room: room,
+        sink: countingSink,
+        logging: _logging,
+        untilTimestamp: untilTimestamp,
+        overallTimeout: SyncTuning.backwardWalkTimeout,
+      );
+    } finally {
+      _trackBootstrapAttachmentSink(attachmentSink);
+    }
     _updateBarrenBridgeFlag(
       untilTimestamp: untilTimestamp,
       result: result,

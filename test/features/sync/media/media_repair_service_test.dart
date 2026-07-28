@@ -90,6 +90,23 @@ void main() {
     });
   });
 
+  test('flushes pending misses without waiting for the debounce', () async {
+    final service = buildService();
+    addTearDown(service.dispose);
+
+    service
+      ..reportMissing(entryId: 'image-1', relativePath: '/images/1')
+      ..reportMissing(entryId: 'audio-1', relativePath: '/audio/1');
+
+    expect(requests, isEmpty);
+
+    await service.flushPendingForTesting();
+
+    expect(requests, hasLength(1));
+    expect(requests.single.entryIds, ['image-1', 'audio-1']);
+    expect(service.debugPending, isEmpty);
+  });
+
   test('splits a backlog across successive requests at the batch cap', () {
     fakeAsync((async) {
       final service = buildService(maxBatchSize: 2);

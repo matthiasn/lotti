@@ -625,42 +625,51 @@ void main() {
 
   test(
     'a second trigger that lands while a bridge is in-flight is coalesced '
-    'into exactly one rerun after the in-flight pass completes',
+    'into exactly one rerun and both explicit callers await the full cascade',
     () async {
       final room = MockRoom();
       when(() => room.id).thenReturn(roomId);
       final firstCallGate = Completer<void>();
+      final firstCallStarted = Completer<void>();
+      final rerunGate = Completer<void>();
+      final rerunStarted = Completer<void>();
+      var callCount = 0;
       final runner = _RecordingRunner()
         ..override = (Room r, BridgeMarker m) async {
-          if (r.id == roomId && !firstCallGate.isCompleted) {
-            // First call: wait for the gate.
-            // Second and later calls resolve immediately.
+          callCount++;
+          if (callCount == 1) {
+            firstCallStarted.complete();
+            await firstCallGate.future;
+          } else {
+            rerunStarted.complete();
+            await rerunGate.future;
           }
           return true;
         };
-      // Override the override: first call gated, subsequent immediate.
-      var callCount = 0;
-      runner.override = (Room r, BridgeMarker m) async {
-        callCount++;
-        if (callCount == 1) await firstCallGate.future;
-        return true;
-      };
       final coordinator = buildCoordinator(
         resolveRoom: () async => room,
         runner: runner,
       );
       final firstBridge = coordinator.bridgeNow();
-      await Future<void>.delayed(Duration.zero);
-      unawaited(coordinator.bridgeNow());
-      await Future<void>.delayed(Duration.zero);
+      await firstCallStarted.future;
+      var coalescedCallCompleted = false;
+      final coalescedBridge = coordinator.bridgeNow().then(
+        (_) => coalescedCallCompleted = true,
+      );
       expect(callCount, 1);
+
       firstCallGate.complete();
-      await firstBridge;
-      for (var i = 0; i < 20; i++) {
-        await Future<void>.delayed(Duration.zero);
-        if (callCount >= 2) break;
-      }
+      await rerunStarted.future;
       expect(callCount, 2);
+      expect(
+        coalescedCallCompleted,
+        isFalse,
+        reason: 'the coalesced caller must not outrun its scheduled rerun',
+      );
+
+      rerunGate.complete();
+      await Future.wait([firstBridge, coalescedBridge]);
+      expect(coalescedCallCompleted, isTrue);
     },
   );
 

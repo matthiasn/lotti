@@ -91,6 +91,9 @@ class _FakeAttachmentIngestor implements AttachmentIngestor {
   }
 
   @override
+  Future<void> whenIdle() => Future<void>.value();
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -4362,8 +4365,10 @@ void main() {
         final realQueue = InboundQueue(db: syncDb, logging: logging);
         addTearDown(realQueue.dispose);
         final firstProcessed = Completer<Event>();
+        final processGate = Completer<void>();
         final ingestor = _FakeAttachmentIngestor(
           firstProcessed: firstProcessed,
+          processGate: processGate.future,
         );
 
         final coordinator = QueuePipelineCoordinator(
@@ -4428,6 +4433,19 @@ void main() {
         // The forward walk emitted page [e1] (anchor itself is
         // filtered) → ingestor.process must have fired for that event.
         expect(await firstProcessed.future, same(e1));
+        var drainCompleted = false;
+        final drain = coordinator.drainBootstrapAttachmentWorkForTesting().then(
+          (_) => drainCompleted = true,
+        );
+        await Future<void>.value();
+        expect(
+          drainCompleted,
+          isFalse,
+          reason: 'the test seam must wait for fire-and-forget page workers',
+        );
+        processGate.complete();
+        await drain;
+        expect(drainCompleted, isTrue);
         expect(ingestor.processCalls, hasLength(1));
         expect(ingestor.processCalls.single[#event], same(e1));
       },

@@ -30,6 +30,8 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/media/media_repair_service.dart';
+import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -63,9 +65,26 @@ import '../test/utils/utils.dart';
 import 'matrix_test_room.dart';
 
 const _uuid = Uuid();
+const _onePixelPngBase64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC'
+    'AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
+final _eventProcessors = Expando<SyncEventProcessor>(
+  'matrixIntegrationEventProcessor',
+);
 
 int _messageEntryCount(SyncMessage message) =>
     message is SyncOutboxBundle ? message.children.length : 1;
+
+Iterable<SyncMessage> _flattenMessages(Iterable<SyncMessage> messages) sync* {
+  for (final message in messages) {
+    if (message is SyncOutboxBundle) {
+      yield* _flattenMessages(message.children);
+    } else {
+      yield message;
+    }
+  }
+}
 
 /// Observes the production outbox sender without changing its send semantics.
 ///
@@ -84,6 +103,7 @@ class _ObservedOutboxMessageSender implements OutboxMessageSender {
   int sentEvents = 0;
   int sentEntries = 0;
   final List<int> bundleSizes = [];
+  final List<SyncMessage> sentMessages = [];
 
   @override
   Future<bool> send(SyncMessage message) async {
@@ -94,6 +114,7 @@ class _ObservedOutboxMessageSender implements OutboxMessageSender {
       final entryCount = _messageEntryCount(message);
       sentEntries += entryCount;
       bundleSizes.add(entryCount);
+      sentMessages.add(message);
     }
     return sent;
   }
@@ -169,6 +190,67 @@ class _DeviceOutbox {
       documentsDirectory: documentsDirectory,
       deviceName: deviceName,
     );
+  }
+}
+
+/// Installs both halves of media self-healing on one simulated device.
+///
+/// Production wires these collaborators in `get_it.dart`. The Matrix
+/// integration harness constructs each device manually, so it must reproduce
+/// that wiring explicitly or a missing-media signal is observed and dropped.
+class _DeviceMediaRepair {
+  _DeviceMediaRepair._({
+    required this._eventProcessor,
+    required this._repairService,
+  });
+
+  factory _DeviceMediaRepair.wire({
+    required MatrixService matrixService,
+    required OutboxService outboxService,
+    required JournalDb journalDb,
+    required VectorClockService vectorClockService,
+    required Directory documentsDirectory,
+    required DomainLogger loggingService,
+    required Duration debounce,
+  }) {
+    final eventProcessor = _eventProcessors[matrixService];
+    if (eventProcessor == null) {
+      throw StateError('Matrix integration event processor was not recorded');
+    }
+    final repairService = MediaRepairService(
+      outboxService: outboxService,
+      vectorClockService: vectorClockService,
+      loggingService: loggingService,
+      debounce: debounce,
+    );
+    eventProcessor
+      ..missingMediaListener = repairService.reportMissing
+      ..mediaRequestHandler = MediaRequestHandler(
+        journalDb: journalDb,
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        documentsDirectory: documentsDirectory,
+        loggingService: loggingService,
+      );
+    return _DeviceMediaRepair._(
+      eventProcessor: eventProcessor,
+      repairService: repairService,
+    );
+  }
+
+  final SyncEventProcessor _eventProcessor;
+  final MediaRepairService _repairService;
+
+  Set<String> get pendingEntryIds => _repairService.debugPending;
+
+  Future<void> flushPendingForTesting() =>
+      _repairService.flushPendingForTesting();
+
+  void dispose() {
+    _eventProcessor
+      ..missingMediaListener = null
+      ..mediaRequestHandler = null;
+    _repairService.dispose();
   }
 }
 
@@ -275,7 +357,7 @@ Future<MatrixService> _createMatrixService({
     queueCoordinator = onCoordinatorBuilt(queueCoordinator);
   }
 
-  return MatrixService(
+  final service = MatrixService(
     matrixConfig: config,
     gateway: gateway,
     loggingService: loggingService,
@@ -291,6 +373,8 @@ Future<MatrixService> _createMatrixService({
     sessionManager: sessionManager,
     queueCoordinator: queueCoordinator,
   );
+  _eventProcessors[service] = eventProcessor;
+  return service;
 }
 
 /// Domain logger that echoes sync-pipeline lines to test stdout.
@@ -321,6 +405,8 @@ class _EchoDomainLogger extends DomainLogger {
     'queue.bootstrap',
     'queue.coordinator',
     'bootstrap',
+    'mediaRepair',
+    'mediaRequest',
     'saveRoom',
   ];
 
@@ -881,10 +967,7 @@ void main() {
           ),
           entryText: const EntryText(plainText: 'Matrix image fixture'),
         );
-        final bytes = base64Decode(
-          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC'
-          'AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-        );
+        final bytes = base64Decode(_onePixelPngBase64);
 
         final received = await _sendMediaEntity(
           entity: image,
@@ -1630,6 +1713,245 @@ void main() {
       timeout: const Timeout(Duration(minutes: 30)),
       skip: skipReason ?? false,
     );
+
+    test(
+      'Missing image and audio files self-heal through peer requests after '
+      'Bob restarts',
+      () async {
+        const repairTimeout = Duration(minutes: 5);
+        final imageId = const Uuid().v1();
+        final audioId = const Uuid().v1();
+        final imageTimestamp = DateTime.utc(2025, 2, 1, 14);
+        final audioTimestamp = DateTime.utc(2025, 2, 1, 15);
+        final image = JournalImage(
+          meta: _nextMediaMetadata(
+            device: aliceOutbox,
+            id: imageId,
+            timestamp: imageTimestamp,
+          ),
+          data: ImageData(
+            capturedAt: imageTimestamp,
+            imageId: imageId,
+            imageFile: '$imageId.png',
+            imageDirectory: '/images/2025-02-01/',
+          ),
+          entryText: const EntryText(
+            plainText: 'Peer-repair Matrix image fixture',
+          ),
+        );
+        final audio = JournalAudio(
+          meta: _nextMediaMetadata(
+            device: aliceOutbox,
+            id: audioId,
+            timestamp: audioTimestamp,
+          ),
+          data: AudioData(
+            dateFrom: audioTimestamp,
+            dateTo: audioTimestamp.add(const Duration(seconds: 1)),
+            audioFile: '$audioId.wav',
+            audioDirectory: '/audio/2025-02-01/',
+            duration: const Duration(seconds: 1),
+            language: 'en',
+          ),
+          entryText: const EntryText(
+            plainText: 'Peer-repair Matrix audio fixture',
+          ),
+        );
+        final imageBytes = base64Decode(_onePixelPngBase64);
+        final audioBytes = base64Decode(TestAudioData.shortSilenceWav);
+
+        if (!bobOutboxInitialized) {
+          bobOutbox = await _DeviceOutbox.create(
+            matrixService: bob,
+            journalDb: bobDb,
+            syncDb: bobSyncDb,
+            documentsDirectory: bobDocumentsDirectory,
+            userActivityService: sharedUserActivityService,
+            loggingService: getIt<DomainLogger>(),
+            vectorClockService: bobVectorClockService,
+            deviceName: 'bobDeviceV2',
+          );
+          bobOutboxInitialized = true;
+        }
+        await _sendMediaEntity(
+          entity: image,
+          bytes: imageBytes,
+          sender: aliceOutbox,
+          receiver: bobOutbox,
+          receiverService: bob,
+          timeout: repairTimeout,
+        );
+        await _sendMediaEntity(
+          entity: audio,
+          bytes: audioBytes,
+          sender: aliceOutbox,
+          receiver: bobOutbox,
+          receiverService: bob,
+          timeout: repairTimeout,
+        );
+
+        final bobImageFile = _mediaFileFor(bobOutbox, image);
+        final bobAudioFile = _mediaFileFor(bobOutbox, audio);
+        await bobOutbox.service.dispose();
+        bobOutboxInitialized = false;
+        expect(
+          bobImageFile.existsSync() && bobAudioFile.existsSync(),
+          isTrue,
+          reason: 'both blobs must reach Bob before the repair scenario starts',
+        );
+        await bob.dispose();
+        bobInitialized = false;
+        await bobImageFile.delete();
+        await bobAudioFile.delete();
+
+        // Recreate the receiving app so its process-local AttachmentIndex no
+        // longer contains either original descriptor. Marker-anchored startup
+        // catch-up begins after those historical events and cannot repair the
+        // files by replaying them.
+        bob = await _createBobService(
+          documentsDirectory: bobDocumentsDirectory,
+          config: config2,
+          loggingService: getIt<DomainLogger>(),
+          journalDb: bobDb,
+          settingsDb: bobSettingsDb,
+          secureStorage: secureStorageMock,
+          activityService: sharedUserActivityService,
+          updateNotifications: mockUpdateNotifications,
+          aiConfigRepository: sharedAiConfigRepository,
+          singleInstance: false,
+          syncDb: bobSyncDb,
+          vectorClockService: bobVectorClockService,
+        );
+        bobInitialized = true;
+        await bob.init();
+        expect(bob.debugPipeline, isNotNull);
+        await bob.queueCoordinator.triggerBridge();
+        await bob.queueCoordinator.drainBootstrapAttachmentWorkForTesting();
+        expect(bobImageFile.existsSync(), isFalse);
+        expect(bobAudioFile.existsSync(), isFalse);
+
+        bobOutbox = await _DeviceOutbox.create(
+          matrixService: bob,
+          journalDb: bobDb,
+          syncDb: bobSyncDb,
+          documentsDirectory: bobDocumentsDirectory,
+          userActivityService: sharedUserActivityService,
+          loggingService: getIt<DomainLogger>(),
+          vectorClockService: bobVectorClockService,
+          deviceName: 'bobDeviceV2',
+        );
+        bobOutboxInitialized = true;
+
+        final repairWiring = <_DeviceMediaRepair>[];
+        addTearDown(() {
+          for (final wiring in repairWiring.reversed) {
+            wiring.dispose();
+          }
+        });
+        // Debounce timing has deterministic fake-time unit coverage. Arm a
+        // window that cannot race this test, then flush explicitly once both
+        // missing-entry signals have been observed.
+        const integrationDebounce = Duration(days: 1);
+        final aliceRepair = _DeviceMediaRepair.wire(
+          matrixService: alice,
+          outboxService: aliceOutbox.service,
+          journalDb: aliceDb,
+          vectorClockService: aliceVectorClockService,
+          documentsDirectory: aliceDocumentsDirectory,
+          loggingService: getIt<DomainLogger>(),
+          debounce: integrationDebounce,
+        );
+        final bobRepair = _DeviceMediaRepair.wire(
+          matrixService: bob,
+          outboxService: bobOutbox.service,
+          journalDb: bobDb,
+          vectorClockService: bobVectorClockService,
+          documentsDirectory: bobDocumentsDirectory,
+          loggingService: getIt<DomainLogger>(),
+          debounce: integrationDebounce,
+        );
+        repairWiring
+          ..add(aliceRepair)
+          ..add(bobRepair);
+
+        final bobSentBeforeRepair = bobOutbox.sender.sentMessages.length;
+        final aliceSentBeforeRepair = aliceOutbox.sender.sentMessages.length;
+        final updated = await _sendMediaMetadataUpdates(
+          entities: [image, audio],
+          sender: aliceOutbox,
+          timeout: repairTimeout,
+        );
+        final missingEntryIds = {imageId, audioId};
+        await waitUntilAsync(
+          () async {
+            final observed = bobRepair.pendingEntryIds.containsAll(
+              missingEntryIds,
+            );
+            if (!observed) {
+              await bob.forceRescan();
+              await bob.retryNow();
+            }
+            return observed;
+          },
+          timeout: repairTimeout,
+        );
+        expect(bobRepair.pendingEntryIds, missingEntryIds);
+        await bobRepair.flushPendingForTesting();
+        await bobOutbox.service.enqueueNextSendRequest(delay: Duration.zero);
+        await waitUntilAsync(
+          () async {
+            final updatedImage = await bobDb.journalEntityById(imageId);
+            final updatedAudio = await bobDb.journalEntityById(audioId);
+            final repaired =
+                updatedImage?.meta.vectorClock == updated[0].meta.vectorClock &&
+                updatedAudio?.meta.vectorClock == updated[1].meta.vectorClock &&
+                bobImageFile.existsSync() &&
+                bobAudioFile.existsSync();
+            if (!repaired) {
+              await aliceOutbox.service.enqueueNextSendRequest(
+                delay: Duration.zero,
+              );
+              await bobOutbox.service.enqueueNextSendRequest(
+                delay: Duration.zero,
+              );
+              await alice.forceRescan();
+              await bob.forceRescan();
+              await alice.retryNow();
+              await bob.retryNow();
+            }
+            return repaired;
+          },
+          timeout: repairTimeout,
+        );
+
+        final repairRequests = _flattenMessages(
+          bobOutbox.sender.sentMessages.skip(bobSentBeforeRepair),
+        ).whereType<SyncMediaRequest>().toList();
+        expect(repairRequests, hasLength(1));
+        expect(repairRequests.single.entryIds.toSet(), missingEntryIds);
+
+        final repairResponses =
+            _flattenMessages(
+                  aliceOutbox.sender.sentMessages.skip(aliceSentBeforeRepair),
+                )
+                .whereType<SyncJournalEntity>()
+                .where(
+                  (message) =>
+                      message.includeAttachments == true &&
+                      missingEntryIds.contains(message.id),
+                )
+                .toList();
+        expect(
+          repairResponses.map((message) => message.id).toSet(),
+          missingEntryIds,
+          reason: 'Alice must answer both requested entries with attachments',
+        );
+        expect(await bobImageFile.readAsBytes(), orderedEquals(imageBytes));
+        expect(await bobAudioFile.readAsBytes(), orderedEquals(audioBytes));
+      },
+      timeout: const Timeout(Duration(minutes: 15)),
+      skip: skipReason ?? false,
+    );
   });
 }
 
@@ -1825,6 +2147,80 @@ Future<JournalEntity> _sendMediaEntity({
     reason: 'Matrix must transfer the exact media payload between sandboxes',
   );
   return received!;
+}
+
+Future<List<JournalEntity>> _sendMediaMetadataUpdates({
+  required List<JournalEntity> entities,
+  required _DeviceOutbox sender,
+  required Duration timeout,
+}) async {
+  await _setMatrixSyncEnabled(sender.journalDb, enabled: false);
+  final updated = <JournalEntity>[];
+  try {
+    final actionableBefore = await sender.syncDb.getOutboxItems(
+      limit: entities.length + 1,
+      statuses: const [
+        OutboxStatus.pending,
+        OutboxStatus.sending,
+        OutboxStatus.error,
+      ],
+    );
+    expect(
+      actionableBefore,
+      isEmpty,
+      reason: '${sender.deviceName} outbox must start drained',
+    );
+
+    for (final entity in entities) {
+      final counter = sender.nextCounter++;
+      final metadata = entity.meta.copyWith(
+        updatedAt: entity.meta.updatedAt.add(Duration(minutes: counter)),
+        vectorClock: VectorClock({sender.deviceName: counter}),
+      );
+      final next = switch (entity) {
+        JournalImage() => entity.copyWith(meta: metadata),
+        JournalAudio() => entity.copyWith(meta: metadata),
+        _ => throw ArgumentError.value(
+          entity,
+          'entity',
+          'Expected JournalImage or JournalAudio',
+        ),
+      };
+      updated.add(next);
+
+      await saveJournalEntityJson(
+        next,
+        documentsDirectory: sender.documentsDirectory,
+      );
+      await sender.journalDb.updateJournalEntity(next);
+      await sender.service.enqueueMessage(
+        SyncMessage.journalEntity(
+          id: next.meta.id,
+          status: SyncEntryStatus.update,
+          vectorClock: next.meta.vectorClock,
+          jsonPath: relativeEntityPath(next),
+          originatingHostId: sender.deviceName,
+        ),
+      );
+    }
+
+    final pending = await sender.syncDb.getOutboxItems(
+      limit: entities.length + 1,
+      statuses: const [OutboxStatus.pending],
+    );
+    expect(pending, hasLength(entities.length));
+    expect(
+      pending.every((row) => row.filePath == null),
+      isTrue,
+      reason: 'ordinary metadata edits must not resend immutable media blobs',
+    );
+  } finally {
+    await _setMatrixSyncEnabled(sender.journalDb, enabled: true);
+  }
+
+  await sender.service.enqueueNextSendRequest(delay: Duration.zero);
+  await _waitForOutboxDrain(sender, timeout: timeout);
+  return updated;
 }
 
 Future<void> _stageTestMessages(int n, {required _DeviceOutbox device}) async {
