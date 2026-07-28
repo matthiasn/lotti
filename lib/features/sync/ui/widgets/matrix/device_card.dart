@@ -7,9 +7,11 @@ import 'package:lotti/features/design_system/components/spinners/design_system_s
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_reauth_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
 import 'package:lotti/get_it.dart';
@@ -24,6 +26,10 @@ import 'package:matrix/matrix.dart';
 /// a phone card would cramp; above it the stacked layout wastes most of the
 /// row.
 const double kDeviceCardWideBreakpoint = 420;
+
+/// The homeserver's answer when user-interactive authentication is rejected —
+/// for a device removal that means the stored password, not the request.
+const String _forbidden = 'M_FORBIDDEN';
 
 /// One session of the sync account: name, trust state, last-seen, and the
 /// actions that apply to it.
@@ -76,53 +82,136 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
     if (!confirmed || !context.mounted || _busy) return;
 
     setState(() => _busy = true);
+    final refused = await _attemptRemoval(context, matrixService, deviceName);
+    // The card stops reading as "working" before the recovery sheet opens:
+    // from here the removal is waiting on the user, not on the homeserver.
+    if (mounted) setState(() => _busy = false);
+
+    if (refused && context.mounted) {
+      // The homeserver refused the *credential*, not the removal: the stored
+      // password was rotated elsewhere while this device kept syncing on its
+      // access token. That is recoverable by typing the current password, so
+      // the flow continues instead of dead-ending in a toast.
+      await _reauthenticateAndRemove(context, deviceName);
+    }
+  }
+
+  /// Runs one removal attempt, reporting the outcome to the user.
+  ///
+  /// Returns true when the homeserver rejected the stored credential and the
+  /// caller should offer the re-authentication sheet.
+  Future<bool> _attemptRemoval(
+    BuildContext context,
+    MatrixService matrixService,
+    String deviceName,
+  ) async {
     try {
       await matrixService.deleteDeviceById(device.deviceId);
       widget.refreshListCallback();
-      if (context.mounted) {
-        context.showToast(
-          tone: DesignSystemToastTone.success,
-          title: context.messages.deviceDeletedSuccess(deviceName),
-        );
-      }
+      if (context.mounted) _showRemovedToast(context, deviceName);
     } on MatrixException catch (e, stackTrace) {
       // The raw exception goes to the log, not to a toast: `M_LIMIT_EXCEEDED:
       // Too many requests` told the user nothing they could act on.
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
-        e,
-        stackTrace: stackTrace,
-        subDomain: 'deleteDevice',
-      );
-      if (context.mounted) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: e.errcode == 'M_FORBIDDEN'
-              ? context.messages.deviceDeleteFailedForbidden
-              : context.messages.deviceDeleteFailedGeneric,
-        );
-      }
+      _logRemovalFailure(e, stackTrace);
+      if (e.errcode == _forbidden) return true;
+      if (context.mounted) _showRemovalFailed(context);
     } catch (e, stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
-        e,
-        stackTrace: stackTrace,
-        subDomain: 'deleteDevice',
-      );
-      if (context.mounted) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: context.messages.deviceDeleteFailedGeneric,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
+      _logRemovalFailure(e, stackTrace);
+      if (context.mounted) _showRemovalFailed(context);
     }
+    return false;
+  }
+
+  /// Re-runs the removal behind a password prompt, staying open until the
+  /// homeserver accepts or the user backs out.
+  Future<void> _reauthenticateAndRemove(
+    BuildContext context,
+    String deviceName,
+  ) async {
+    final matrixService = ref.read(matrixServiceProvider);
+    final messages = context.messages;
+    var removed = false;
+
+    Future<String?> retry(String password) async {
+      try {
+        await matrixService.deleteDeviceById(
+          device.deviceId,
+          reauthPassword: password,
+        );
+        removed = true;
+        return null;
+      } on MatrixException catch (e, stackTrace) {
+        _logRemovalFailure(e, stackTrace);
+        return e.errcode == _forbidden
+            ? messages.syncReauthInvalidPassword
+            : messages.deviceDeleteFailedGeneric;
+      } catch (e, stackTrace) {
+        _logRemovalFailure(e, stackTrace);
+        return messages.deviceDeleteFailedGeneric;
+      }
+    }
+
+    // The homeserver call outlives the sheet: closing it, tapping its barrier
+    // or going back mid-retry pops the modal while the removal is still in
+    // flight. The outcome is therefore tracked here rather than taken from
+    // the modal's result, and awaited before it is read — otherwise a
+    // dismissed sheet would silently drop a removal that did succeed.
+    Future<String?>? attempt;
+    await showSyncReauthModal(
+      context: context,
+      deviceName: deviceName,
+      onSubmit: (password) => attempt = retry(password),
+    );
+    await attempt;
+
+    if (!removed) return;
+    widget.refreshListCallback();
+    if (context.mounted) _showRemovedToast(context, deviceName);
+  }
+
+  void _showRemovedToast(BuildContext context, String deviceName) {
+    context.showToast(
+      tone: DesignSystemToastTone.success,
+      title: context.messages.deviceDeletedSuccess(deviceName),
+    );
+  }
+
+  void _showRemovalFailed(BuildContext context) {
+    context.showToast(
+      tone: DesignSystemToastTone.error,
+      title: context.messages.deviceDeleteFailedGeneric,
+    );
+  }
+
+  void _logRemovalFailure(Object error, StackTrace stackTrace) {
+    getIt<DomainLogger>().error(
+      LogDomain.sync,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'deleteDevice',
+    );
   }
 
   Future<void> _verifyDevice(BuildContext context) async {
     final keys = device.keys;
     if (keys == null || _busy) return;
+
+    // A session the homeserver has not heard from in weeks almost certainly
+    // cannot answer an emoji ceremony, and a waiting ceremony looks identical
+    // to one that is merely slow. Say so before the modal opens rather than
+    // leaving the user to guess how long "connecting" is worth.
+    if (device.isStaleAt(widget.now)) {
+      final messages = context.messages;
+      final proceed = await showConfirmationModal(
+        context: context,
+        title: messages.syncVerifyStaleTitle,
+        message: messages.syncVerifyStaleMessage(device.titleLabel),
+        confirmLabel: messages.syncVerifyStaleConfirm,
+        cancelLabel: messages.settingsMatrixCancel,
+        isDestructive: false,
+      );
+      if (!proceed || !context.mounted) return;
+    }
 
     final lock = ref.read(matrixVerificationModalLockProvider.notifier);
     if (!lock.tryAcquire()) return;

@@ -5334,10 +5334,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get deviceDeleteFailedForbidden =>
-      'Le serveur de synchronisation a refusé cette modification. Retire cet appareil de la synchronisation depuis l’appareil lui-même, ou réappaire-le avec un nouveau code d’appairage.';
-
-  @override
   String get deviceDeleteFailedGeneric =>
       'Impossible de retirer cet appareil. Vérifie ta connexion et réessaie.';
 
@@ -10361,6 +10357,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Sélection de thème';
 
   @override
+  String syncReauthExplanation(String deviceName) {
+    return 'Le serveur de synchronisation n’a pas accepté le mot de passe enregistré. Saisis le mot de passe actuel de ton compte de synchronisation pour retirer $deviceName.';
+  }
+
+  @override
+  String get syncReauthInvalidPassword =>
+      'Ce mot de passe n’a pas fonctionné. Vérifie-le et réessaie.';
+
+  @override
+  String get syncReauthPasswordLabel =>
+      'Mot de passe du compte de synchronisation';
+
+  @override
+  String get syncReauthTitle => 'Confirme que c’est toi';
+
+  @override
   String get syncSetupCta => 'Configurer la synchronisation';
 
   @override
@@ -10427,6 +10439,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncVerifyPromptQuestion => 'Mêmes émojis, même ordre ?';
+
+  @override
+  String get syncVerifyStaleConfirm => 'Vérifier quand même';
+
+  @override
+  String syncVerifyStaleMessage(String deviceName) {
+    return '$deviceName ne s’est pas manifesté depuis un moment. La vérification ne marche que s’il est allumé, en ligne et sur Lotti — sinon la comparaison d’émojis attend une réponse qui ne viendra jamais.';
+  }
+
+  @override
+  String get syncVerifyStaleTitle => 'Cet appareil est peut-être hors ligne';
 
   @override
   String get syncVerifyTheyDiffer => 'Ils diffèrent — annuler';

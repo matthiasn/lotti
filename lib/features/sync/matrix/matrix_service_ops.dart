@@ -274,7 +274,18 @@ class MatrixServiceOps {
   /// in-flight emoji verification against the device is cancelled first: a
   /// dead session can never answer, and the hung ceremony would otherwise
   /// keep polling a device that is about to disappear.
-  Future<void> deleteDeviceById(String deviceId) async {
+  ///
+  /// [reauthPassword] replaces the stored credential for this call's
+  /// user-interactive authentication. The UI supplies it after the homeserver
+  /// answered `M_FORBIDDEN`, which means the persisted password no longer
+  /// matches the account — the password was rotated elsewhere while this
+  /// device kept syncing on its access token. A successful deletion proves
+  /// the supplied password *is* the account's, so it is written back to the
+  /// stored config and every later interactive operation works unprompted.
+  Future<void> deleteDeviceById(
+    String deviceId, {
+    String? reauthPassword,
+  }) async {
     if (deviceId == gateway.currentDeviceId) {
       throw ArgumentError(
         'Cannot delete device $deviceId: it is the session this app is '
@@ -290,7 +301,8 @@ class MatrixServiceOps {
       );
     }
 
-    if (config.password.isEmpty) {
+    final password = reauthPassword ?? config.password;
+    if (password.isEmpty) {
       throw UnsupportedError(
         'Cannot delete device $deviceId: Password authentication required '
         'but no password is available. SSO/token authentication not yet '
@@ -300,14 +312,20 @@ class MatrixServiceOps {
 
     await _cancelActiveVerificationsFor(deviceId);
 
+    // Only a delete the homeserver actually performed proves the credential
+    // was checked. "Already absent" is treated as success below, but it can
+    // come back from a peer's concurrent deletion without this password ever
+    // having been validated — so it must not authorise a credential repair.
+    var credentialValidated = false;
     try {
       await gateway.deleteDevice(
         deviceId,
         auth: AuthenticationPassword(
-          password: config.password,
+          password: password,
           identifier: AuthenticationUserIdentifier(user: config.user),
         ),
       );
+      credentialValidated = true;
     } on MatrixException catch (error) {
       // A cache-only entry exists precisely because the homeserver no longer
       // knows the session — "not found" means already deleted, and the
@@ -328,6 +346,12 @@ class MatrixServiceOps {
       subDomain: 'deleteDevice',
     );
 
+    if (credentialValidated &&
+        reauthPassword != null &&
+        reauthPassword != config.password) {
+      await _repairStoredPassword(config, reauthPassword);
+    }
+
     // Bounded: the deletion has already succeeded on the homeserver, so a
     // network drop during the cache refresh must not hang the caller — the
     // cache converges on a later sync regardless.
@@ -343,6 +367,47 @@ class MatrixServiceOps {
         'already succeeded, cache converges on a later sync',
         subDomain: 'deleteDevice.refreshTimeout',
       );
+    }
+  }
+
+  /// Writes a password the homeserver just accepted back into the stored
+  /// config, so the next interactive operation no longer has to ask.
+  ///
+  /// Failures are logged and swallowed: the device is already gone from the
+  /// homeserver, and reporting a storage error would tell the user their
+  /// removal failed when it did not. A failed write is followed by an attempt
+  /// to put the previous config back — `SecureStorage.writeValue` deletes the
+  /// key before writing it, so giving up after a half-completed replacement
+  /// would leave the account with no persisted credentials at all and no way
+  /// to reconnect after a restart.
+  Future<void> _repairStoredPassword(
+    MatrixConfig config,
+    String password,
+  ) async {
+    try {
+      await service().setConfig(config.copyWith(password: password));
+      loggingService.log(
+        LogDomain.sync,
+        'stored sync password replaced after interactive re-authentication',
+        subDomain: 'deleteDevice.reauth',
+      );
+    } catch (error, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'deleteDevice.reauthPersist',
+      );
+      try {
+        await service().setConfig(config);
+      } catch (restoreError, restoreStackTrace) {
+        loggingService.error(
+          LogDomain.sync,
+          restoreError,
+          stackTrace: restoreStackTrace,
+          subDomain: 'deleteDevice.reauthRestore',
+        );
+      }
     }
   }
 

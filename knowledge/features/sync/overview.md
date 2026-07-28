@@ -5,13 +5,13 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-07-28T21:20:00Z }
+generated: { by: claude-code/fable-5, at: 2026-07-29T09:30:00Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-src
     resource: ../../../lib/features/sync
     title: Sync feature source
-    last_modified: 2026-07-27
+    last_modified: 2026-07-29
   - id: get-it
     resource: ../../../lib/get_it.dart
     title: Default bootstrap wiring
@@ -403,7 +403,9 @@ clean it up:
     Verifying --> Excluded: cancelled, refused, or times out
     Verifying --> Recovering: emoji ceremony succeeds
     Excluded --> Deleting: user confirms removal (own-account sessions only)
-    Deleting --> Excluded: UIA rejected (e.g. stale password)
+    Deleting --> Reauthenticating: UIA rejected (M_FORBIDDEN — stored password is stale)
+    Reauthenticating --> Deleting: user supplies the account's current password
+    Reauthenticating --> Excluded: user cancels the password prompt
     Deleting --> Recovering: homeserver accepts the delete
     Recovering --> Trusted: keys refreshed, lifecycle reconciled, rescan
     Recovering --> ConvergesLater: refresh fails or exceeds deleteDeviceRecoveryTimeout
@@ -421,18 +423,49 @@ clean it up:
   `SyncTuning.deleteDeviceRecoveryTimeout`: once the homeserver accepted the
   delete, a network drop must not hang the caller; the cache converges on a
   later sync.
+- **Interactive re-authentication.** `M_FORBIDDEN` on the delete means the
+  homeserver rejected the *credential*, not the request: the account password
+  was rotated on another device while this one kept syncing on its access
+  token, so the persisted password no longer matches. `deleteDeviceById`
+  therefore takes an optional `reauthPassword` that replaces the stored one
+  for that call, and `device_card.dart` opens
+  `ui/widgets/matrix/sync_reauth_modal.dart` instead of ending in a toast. The
+  sheet stays open across failed attempts, attaching the reason to the field,
+  so a mistyped password costs one correction rather than the whole
+  confirm-and-delete flow. The retry outlives the sheet — dismissing it
+  mid-flight must not drop a removal that then succeeds — so `DeviceCard`
+  tracks the outcome itself and awaits the in-flight call rather than reading
+  the modal's result.
+- **Credential repair.** **A delete the homeserver actually performed repairs
+  the stored config** — accepting the password proves it is the account's —
+  so later interactive operations no longer prompt. Two conditions bound it.
+  The repair requires the *delete* to have succeeded, not merely the method:
+  `M_NOT_FOUND` is treated as success but can come from a peer's concurrent
+  deletion without the password ever being validated, so it must not
+  authorise a write. And the write is best-effort in both directions: the
+  device is already gone, so a failure is logged
+  (`deleteDevice.reauthPersist`) rather than reported as a failed removal —
+  and because `SecureStorage.writeValue` deletes the key before writing it, a
+  failed write is followed by an attempt to put the previous config back
+  (`deleteDevice.reauthRestore`), so a half-completed replacement cannot
+  strand the account with no credentials to reconnect with.
 - **Guards.** The current session can never delete itself (use logout), and
-  the `DeviceKeys`-based wrapper refuses devices of another user. Deletion is
-  impossible without a stored password (SSO/token UIA is not implemented).
+  the `DeviceKeys`-based wrapper refuses devices of another user. Deletion
+  needs *some* password — stored or typed — and is refused with an
+  `UnsupportedError` when neither exists (SSO/token UIA is not implemented).
 - **UI.** `ui/widgets/matrix/sync_devices_list.dart` renders the inventory on
   the provisioned-status page with a warning banner while any unverified
   device is excluded from key sharing; `ui/widgets/matrix/device_card.dart` flips its action
   hierarchy for stale unverified devices — removal becomes the labeled
   primary action, verification is demoted — because a device silent past
   `syncDeviceStaleThreshold` will never complete a ceremony, so removal is
-  the realistic way to clear it. Removal never "resumes sync": verified
-  peers keep syncing throughout (ADR 0045). Verifying instead restores that
-  device's own access to new entries.
+  the realistic way to clear it. Verification on such a device is gated by a
+  pre-flight warning for the same reason: the ceremony needs the peer awake
+  and online, and a waiting ceremony is indistinguishable from a slow one, so
+  the cost is stated before the modal opens rather than discovered in it.
+  Removal never "resumes sync": verified peers keep syncing throughout
+  (ADR 0045). Verifying instead restores that device's own access to new
+  entries.
 
 # Concepts
 

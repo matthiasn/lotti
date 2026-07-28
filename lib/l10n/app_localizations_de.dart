@@ -5279,10 +5279,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get deviceDeleteFailedForbidden =>
-      'Der Sync-Server hat diese Änderung abgelehnt. Entferne das Gerät direkt auf dem Gerät aus der Synchronisierung oder koppel es mit einem neuen Kopplungscode erneut.';
-
-  @override
   String get deviceDeleteFailedGeneric =>
       'Das Gerät konnte nicht entfernt werden. Prüfe deine Verbindung und versuche es erneut.';
 
@@ -10226,6 +10222,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Designauswahl';
 
   @override
+  String syncReauthExplanation(String deviceName) {
+    return 'Der Sync-Server hat das gespeicherte Passwort nicht akzeptiert. Gib das aktuelle Passwort deines Sync-Kontos ein, um $deviceName zu entfernen.';
+  }
+
+  @override
+  String get syncReauthInvalidPassword =>
+      'Dieses Passwort hat nicht funktioniert. Prüf es und versuch es noch einmal.';
+
+  @override
+  String get syncReauthPasswordLabel => 'Passwort des Sync-Kontos';
+
+  @override
+  String get syncReauthTitle => 'Bist du das?';
+
+  @override
   String get syncSetupCta => 'Sync einrichten';
 
   @override
@@ -10292,6 +10303,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncVerifyPromptQuestion => 'Gleiche Emoji, gleiche Reihenfolge?';
+
+  @override
+  String get syncVerifyStaleConfirm => 'Trotzdem bestätigen';
+
+  @override
+  String syncVerifyStaleMessage(String deviceName) {
+    return '$deviceName hat sich eine Weile nicht gemeldet. Das Bestätigen klappt nur, solange es wach und online ist und Lotti zeigt — sonst wartet der Emoji-Abgleich auf eine Antwort, die nie kommt.';
+  }
+
+  @override
+  String get syncVerifyStaleTitle => 'Dieses Gerät ist vielleicht offline';
 
   @override
   String get syncVerifyTheyDiffer => 'Sie unterscheiden sich — abbrechen';

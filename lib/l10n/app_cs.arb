@@ -2330,7 +2330,6 @@
       }
     }
   },
-  "deviceDeleteFailedForbidden": "Server synchronizace tuto změnu odmítl. Odeber zařízení ze synchronizace přímo na něm, nebo ho znovu spáruj novým párovacím kódem.",
   "deviceDeleteFailedGeneric": "Zařízení se nepodařilo odebrat. Zkontroluj připojení a zkus to znovu.",
   "deviceDeleteQuestion": "Odebrat {deviceName} z tvého synchronizačního účtu? Zařízení bude odhlášeno a před další synchronizací ho bude nutné znovu spárovat.",
   "@deviceDeleteQuestion": {
@@ -4131,6 +4130,10 @@
   "syncPayloadSavedTaskFilterDelete": "Smazání uloženého filtru úkolů",
   "syncPayloadSyncNodeProfile": "Profil synchronizačního uzlu",
   "syncPayloadThemingSelection": "Výběr tématu",
+  "syncReauthExplanation": "Server synchronizace uložené heslo nepřijal. Zadej aktuální heslo ke svému synchronizačnímu účtu a odeber {deviceName}.",
+  "syncReauthInvalidPassword": "Toto heslo nefungovalo. Zkontroluj ho a zkus to znovu.",
+  "syncReauthPasswordLabel": "Heslo k synchronizačnímu účtu",
+  "syncReauthTitle": "Potvrď, že jsi to ty",
   "syncSetupCta": "Nastavit synchronizaci",
   "syncSetupEmptyFootnote": "Běží na tvém vlastním synchronizačním serveru · nic neopouští tvá zařízení nešifrované",
   "syncSetupEmptyHint": "Tvůj deník na každém tvém zařízení. End-to-end šifrovaný, jen mezi tvými zařízeními — bez cloudového účtu.",
@@ -4152,6 +4155,9 @@
   "syncVerifyModalTitle": "Potvrď své zařízení",
   "syncVerifyPromptLine1": "Obě obrazovky zobrazují sedm emoji.",
   "syncVerifyPromptQuestion": "Stejná emoji, stejné pořadí?",
+  "syncVerifyStaleConfirm": "Přesto ověřit",
+  "syncVerifyStaleMessage": "{deviceName} se už nějakou dobu neozvalo. Ověření funguje, jen když je zapnuté, online a má otevřenou Lotti — jinak bude kontrola emoji čekat na odpověď, která nikdy nepřijde.",
+  "syncVerifyStaleTitle": "Toto zařízení může být offline",
   "syncVerifyTheyDiffer": "Liší se — zrušit",
   "syncVerifyTheyMatch": "Shodují se",
   "syncWizardStepCheck": "Zkontrolovat",

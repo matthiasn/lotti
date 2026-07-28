@@ -5314,10 +5314,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get deviceDeleteFailedForbidden =>
-      'Il server di sincronizzazione ha rifiutato la modifica. Rimuovi il dispositivo dalla sincronizzazione dal dispositivo stesso, oppure riabbinalo con un nuovo codice.';
-
-  @override
   String get deviceDeleteFailedGeneric =>
       'Non è stato possibile rimuovere il dispositivo. Controlla la connessione e riprova.';
 
@@ -10306,6 +10302,22 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncPayloadThemingSelection => 'La selezione dei nomi';
 
   @override
+  String syncReauthExplanation(String deviceName) {
+    return 'Il server di sincronizzazione non ha accettato la password salvata. Inserisci la password attuale del tuo account di sincronizzazione per rimuovere $deviceName.';
+  }
+
+  @override
+  String get syncReauthInvalidPassword =>
+      'Quella password non ha funzionato. Controllala e riprova.';
+
+  @override
+  String get syncReauthPasswordLabel =>
+      'Password dell’account di sincronizzazione';
+
+  @override
+  String get syncReauthTitle => 'Conferma che sei tu';
+
+  @override
   String get syncSetupCta => 'Configura la sincronizzazione';
 
   @override
@@ -10374,6 +10386,18 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncVerifyPromptQuestion => 'Stesse emoji, stesso ordine?';
+
+  @override
+  String get syncVerifyStaleConfirm => 'Verifica comunque';
+
+  @override
+  String syncVerifyStaleMessage(String deviceName) {
+    return '$deviceName non si fa vivo da un po’. La verifica funziona solo se è acceso, online e con Lotti aperta — altrimenti il controllo delle emoji aspetta una risposta che non arriverà mai.';
+  }
+
+  @override
+  String get syncVerifyStaleTitle =>
+      'Questo dispositivo potrebbe essere offline';
 
   @override
   String get syncVerifyTheyDiffer => 'Sono diverse — annulla';

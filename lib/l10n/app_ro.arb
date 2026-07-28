@@ -2323,7 +2323,6 @@
       }
     }
   },
-  "deviceDeleteFailedForbidden": "Serverul de sincronizare a refuzat această modificare. Eliminați dispozitivul din sincronizare chiar de pe el sau reasociați-l cu un cod de asociere nou.",
   "deviceDeleteFailedGeneric": "Dispozitivul nu a putut fi eliminat. Verificați conexiunea și încercați din nou.",
   "deviceDeleteQuestion": "Eliminați {deviceName} din contul dvs. de sincronizare? Dispozitivul va fi deconectat și va trebui asociat din nou înainte de a putea sincroniza.",
   "@deviceDeleteQuestion": {
@@ -4124,6 +4123,10 @@
   "syncPayloadSavedTaskFilterDelete": "Ștergere filtru de sarcini salvat",
   "syncPayloadSyncNodeProfile": "Profilul nodului de sincronizare",
   "syncPayloadThemingSelection": "Selecție temă",
+  "syncReauthExplanation": "Serverul de sincronizare nu a acceptat parola salvată. Introduceți parola actuală a contului de sincronizare pentru a elimina {deviceName}.",
+  "syncReauthInvalidPassword": "Această parolă nu a funcționat. Verificați-o și încercați din nou.",
+  "syncReauthPasswordLabel": "Parola contului de sincronizare",
+  "syncReauthTitle": "Confirmați-vă identitatea",
   "syncSetupCta": "Configurați sincronizarea",
   "syncSetupEmptyFootnote": "Rulează pe propriul server de sincronizare · nimic nu părăsește dispozitivele dumneavoastră necriptat",
   "syncSetupEmptyHint": "Jurnalul dumneavoastră pe fiecare dispozitiv pe care îl dețineți. Criptat integral, doar între dispozitivele dumneavoastră — fără cont în cloud.",
@@ -4145,6 +4148,9 @@
   "syncVerifyModalTitle": "Confirmați dispozitivul",
   "syncVerifyPromptLine1": "Ambele ecrane afișează șapte emoji-uri.",
   "syncVerifyPromptQuestion": "Aceleași emoji-uri, în aceeași ordine?",
+  "syncVerifyStaleConfirm": "Verificați oricum",
+  "syncVerifyStaleMessage": "{deviceName} nu a mai dat semne de ceva vreme. Verificarea funcționează doar cât timp este pornit, online și are Lotti deschis — altfel verificarea cu emoji așteaptă un răspuns care nu mai vine.",
+  "syncVerifyStaleTitle": "Este posibil ca acest dispozitiv să fie offline",
   "syncVerifyTheyDiffer": "Diferă — anulați",
   "syncVerifyTheyMatch": "Coincid",
   "syncWizardStepCheck": "Verificați",

@@ -2323,7 +2323,6 @@
       }
     }
   },
-  "deviceDeleteFailedForbidden": "El servidor de sincronización rechazó este cambio. Quita el dispositivo de la sincronización desde el propio dispositivo, o vuelve a emparejarlo con un código nuevo.",
   "deviceDeleteFailedGeneric": "No se pudo quitar el dispositivo. Comprueba tu conexión e inténtalo de nuevo.",
   "deviceDeleteQuestion": "¿Quitar {deviceName} de tu cuenta de sincronización? El dispositivo cerrará sesión y tendrá que emparejarse de nuevo antes de poder sincronizar.",
   "@deviceDeleteQuestion": {
@@ -4124,6 +4123,10 @@
   "syncPayloadSavedTaskFilterDelete": "Eliminación de filtro de tareas guardado",
   "syncPayloadSyncNodeProfile": "Perfil del nodo de sincronización",
   "syncPayloadThemingSelection": "Selección de tema",
+  "syncReauthExplanation": "El servidor de sincronización no aceptó la contraseña guardada. Introduce la contraseña actual de tu cuenta de sincronización para quitar {deviceName}.",
+  "syncReauthInvalidPassword": "Esa contraseña no funcionó. Compruébala e inténtalo de nuevo.",
+  "syncReauthPasswordLabel": "Contraseña de la cuenta de sincronización",
+  "syncReauthTitle": "Confirma que eres tú",
   "syncSetupCta": "Configurar sincronización",
   "syncSetupEmptyFootnote": "Funciona en tu propio servidor de sincronización · nada sale de tus dispositivos sin cifrar",
   "syncSetupEmptyHint": "Tu diario en todos tus dispositivos. Cifrado de extremo a extremo, solo entre tus dispositivos: sin cuenta en la nube.",
@@ -4145,6 +4148,9 @@
   "syncVerifyModalTitle": "Confirma tu dispositivo",
   "syncVerifyPromptLine1": "Ambas pantallas muestran siete emojis.",
   "syncVerifyPromptQuestion": "¿Los mismos emojis, en el mismo orden?",
+  "syncVerifyStaleConfirm": "Verificar de todos modos",
+  "syncVerifyStaleMessage": "{deviceName} lleva un tiempo sin dar señales. La verificación solo funciona mientras está encendido, conectado y con Lotti abierta; si no, la comprobación de emojis espera una respuesta que nunca llega.",
+  "syncVerifyStaleTitle": "Puede que este dispositivo esté sin conexión",
   "syncVerifyTheyDiffer": "Difieren: cancelar",
   "syncVerifyTheyMatch": "Coinciden",
   "syncWizardStepCheck": "Comprobar",

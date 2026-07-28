@@ -2563,7 +2563,6 @@
       }
     }
   },
-  "deviceDeleteFailedForbidden": "Synkroniseringsserveren afviste ændringen. Fjern enheden fra synkronisering på selve enheden, eller par den igen med en ny parringskode.",
   "deviceDeleteFailedGeneric": "Enheden kunne ikke fjernes. Tjek din forbindelse, og prøv igen.",
   "deviceDeleteQuestion": "Vil du fjerne {deviceName} fra din synkroniseringskonto? Enheden logges ud og skal parres igen, før den kan synkronisere.",
   "@deviceDeleteQuestion": {
@@ -4675,6 +4674,10 @@
   "syncPayloadSavedTaskFilterDelete": "Slet filter for gemte opgaver",
   "syncPayloadSyncNodeProfile": "Synkroniseringsnodeprofil",
   "syncPayloadThemingSelection": "Valg af tema",
+  "syncReauthExplanation": "Synkroniseringsserveren accepterede ikke den gemte adgangskode. Indtast den aktuelle adgangskode til din synkroniseringskonto for at fjerne {deviceName}.",
+  "syncReauthInvalidPassword": "Den adgangskode virkede ikke. Tjek den, og prøv igen.",
+  "syncReauthPasswordLabel": "Adgangskode til synkroniseringskonto",
+  "syncReauthTitle": "Bekræft, at det er dig",
   "syncSetupCta": "Konfigurer synkronisering",
   "syncSetupEmptyFootnote": "Kører på din egen synkroniseringsserver · intet forlader dine enheder ukrypteret",
   "syncSetupEmptyHint": "Din dagbog på alle dine enheder. End-to-end-krypteret, kun mellem dine enheder — ingen cloudkonto.",
@@ -4696,6 +4699,9 @@
   "syncVerifyModalTitle": "Bekræft din enhed",
   "syncVerifyPromptLine1": "Begge skærme viser syv emojier.",
   "syncVerifyPromptQuestion": "Samme emojier, samme rækkefølge?",
+  "syncVerifyStaleConfirm": "Bekræft alligevel",
+  "syncVerifyStaleMessage": "{deviceName} har ikke meldt sig i et stykke tid. Bekræftelse virker kun, mens den er vågen, online og viser Lotti — ellers venter emoji-tjekket på et svar, der aldrig kommer.",
+  "syncVerifyStaleTitle": "Denne enhed er måske offline",
   "syncVerifyTheyDiffer": "De er forskellige — annullér",
   "syncVerifyTheyMatch": "De matcher",
   "syncWizardStepCheck": "Tjek",

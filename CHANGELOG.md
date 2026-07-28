@@ -63,6 +63,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   each counter only ever appeared as a hover tooltip, so on a phone they were
   unreachable. The button is gone and the definitions now sit on the "Sync
   Metrics" heading directly above the counters, where a tap shows them.
+- **A device removal the server refuses can now be finished, not just
+  reported.** If the sync account's password was changed on another device,
+  this one keeps syncing on its existing session but can no longer prove who
+  it is when removing a device — and the attempt ended in a message telling
+  you to go and do it somewhere else. It now asks for your current sync
+  password and completes the removal on the spot, and tries to save that
+  password so the next removal does not have to ask again.
+- **Verifying a device that looks dead warns you first.** The emoji check
+  needs the other device awake, online and showing Lotti. Starting one against
+  a device the server has not heard from in weeks left you watching a screen
+  that would never answer. Lotti now says so before opening it, and you can
+  still go ahead.
 - **The device list tells status and identity apart.** A device that has no
   encryption keys yet wears a quiet grey "Unverified" chip instead of
   borrowing the exact dress of the "This device" marker, so a glance down the

@@ -2562,7 +2562,6 @@
       }
     }
   },
-  "deviceDeleteFailedForbidden": "De synchronisatieserver weigerde deze wijziging. Verwijder dit apparaat op het apparaat zelf uit de synchronisatie, of koppel het opnieuw met een nieuwe koppelcode.",
   "deviceDeleteFailedGeneric": "Het apparaat kon niet worden verwijderd. Controleer je verbinding en probeer het opnieuw.",
   "deviceDeleteQuestion": "{deviceName} uit je synchronisatieaccount verwijderen? Het apparaat wordt afgemeld en moet opnieuw worden gekoppeld voordat het kan synchroniseren.",
   "@deviceDeleteQuestion": {
@@ -4674,6 +4673,10 @@
   "syncPayloadSavedTaskFilterDelete": "Opgeslagen taakfilter verwijderen",
   "syncPayloadSyncNodeProfile": "Knoopprofiel synchroniseren",
   "syncPayloadThemingSelection": "Themaselectie",
+  "syncReauthExplanation": "De synchronisatieserver accepteerde het opgeslagen wachtwoord niet. Voer het huidige wachtwoord van je synchronisatieaccount in om {deviceName} uit de synchronisatie te verwijderen.",
+  "syncReauthInvalidPassword": "Dat wachtwoord werkte niet. Controleer het en probeer het opnieuw.",
+  "syncReauthPasswordLabel": "Wachtwoord voor je synchronisatieaccount",
+  "syncReauthTitle": "Bevestig dat jij het bent",
   "syncSetupCta": "Synchronisatie instellen",
   "syncSetupEmptyFootnote": "Draait op je eigen synchronisatieserver · niets verlaat je apparaten onversleuteld",
   "syncSetupEmptyHint": "Je dagboek op elk apparaat dat je bezit. End-to-end versleuteld, alleen tussen jouw apparaten — zonder cloudaccount.",
@@ -4695,6 +4698,9 @@
   "syncVerifyModalTitle": "Bevestig je apparaat",
   "syncVerifyPromptLine1": "Beide schermen tonen zeven emoji's.",
   "syncVerifyPromptQuestion": "Dezelfde emoji's, dezelfde volgorde?",
+  "syncVerifyStaleConfirm": "Toch verifiëren",
+  "syncVerifyStaleMessage": "{deviceName} heeft zich al een tijd niet gemeld. Verifiëren werkt alleen zolang het wakker is, online is en Lotti toont — anders wacht de emojicontrole op een antwoord dat nooit komt.",
+  "syncVerifyStaleTitle": "Dit apparaat is mogelijk offline",
   "syncVerifyTheyDiffer": "Ze verschillen — annuleren",
   "syncVerifyTheyMatch": "Ze komen overeen",
   "syncWizardStepCheck": "Controleren",

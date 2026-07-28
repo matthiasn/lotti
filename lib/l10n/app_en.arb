@@ -2725,7 +2725,6 @@
       }
     }
   },
-  "deviceDeleteFailedForbidden": "The sync server refused this change. Remove this device from sync on the device itself, or re-pair with a fresh pairing code.",
   "deviceDeleteFailedGeneric": "The device couldn't be removed. Check your connection and try again.",
   "deviceDeleteQuestion": "Remove {deviceName} from your sync account? It will be signed out and will need to be paired again before it can sync.",
   "@deviceDeleteQuestion": {
@@ -4921,6 +4920,18 @@
   "syncPayloadSavedTaskFilterDelete": "Saved task filter delete",
   "syncPayloadSyncNodeProfile": "Sync node profile",
   "syncPayloadThemingSelection": "Theming selection",
+  "syncReauthExplanation": "The sync server didn't accept the saved password. Enter the current password for your sync account to remove {deviceName}.",
+  "@syncReauthExplanation": {
+    "description": "Body of the re-authentication sheet (dialog on desktop) shown when removing a device failed because the stored sync password is out of date.",
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
+  "syncReauthInvalidPassword": "That password didn't work. Check it and try again.",
+  "syncReauthPasswordLabel": "Sync account password",
+  "syncReauthTitle": "Confirm it's you",
   "syncSetupCta": "Set up sync",
   "syncSetupEmptyFootnote": "Runs on your own sync server · nothing leaves your devices unencrypted",
   "syncSetupEmptyHint": "Your journal on every device you own. End-to-end encrypted, between your devices only — no cloud account.",
@@ -4942,6 +4953,17 @@
   "syncVerifyModalTitle": "Confirm your device",
   "syncVerifyPromptLine1": "Both screens show seven emoji.",
   "syncVerifyPromptQuestion": "Same emoji, same order?",
+  "syncVerifyStaleConfirm": "Verify anyway",
+  "syncVerifyStaleMessage": "{deviceName} hasn't checked in for a while. Verifying only works while it is awake, online and showing Lotti — otherwise the emoji check waits for an answer that never comes.",
+  "@syncVerifyStaleMessage": {
+    "description": "Pre-flight warning before starting an emoji verification against a device that has not been seen recently.",
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
+  "syncVerifyStaleTitle": "This device may be offline",
   "syncVerifyTheyDiffer": "They differ — cancel",
   "syncVerifyTheyMatch": "They match",
   "syncWizardStepCheck": "Check",

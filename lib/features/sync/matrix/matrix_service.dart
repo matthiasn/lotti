@@ -582,8 +582,14 @@ class MatrixService {
   Future<void> deleteDevice(DeviceKeys deviceKeys) =>
       _ops.deleteDevice(deviceKeys);
 
-  Future<void> deleteDeviceById(String deviceId) =>
-      _ops.deleteDeviceById(deviceId);
+  /// Removes the session [deviceId] from the sync account.
+  ///
+  /// Pass [reauthPassword] to authenticate with a password the user just
+  /// entered instead of the stored one — the recovery path after the
+  /// homeserver rejected the persisted credential. See
+  /// [MatrixServiceOps.deleteDeviceById].
+  Future<void> deleteDeviceById(String deviceId, {String? reauthPassword}) =>
+      _ops.deleteDeviceById(deviceId, reauthPassword: reauthPassword);
 
   Future<List<SyncDeviceInfo>> getSyncDevices() => _ops.getSyncDevices();
 
