@@ -3122,6 +3122,33 @@ void main() {
       );
     });
 
+    test('does not treat an allocation verb inside a task id as evidence', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-fit',
+              reason: 'task-fit 60 of 120 minutes.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-fit',
+              title: 'Core',
+              estimateMinutes: 120,
+            ),
+          ],
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-fit allocated 60min of 120min'));
+    });
+
     test('does not treat a partial index as capacity evidence', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -3388,6 +3415,31 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test(
+      'an outer falsehood full-completion note preserves partial credit',
+      () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason: '60 of 120 minutes are scheduled.',
+                note: 'It is false that task-c was fully scheduled.',
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
+
+        expect(result.passed, isTrue);
+        expect(result.detail, contains('task-c 60min partial of 120min'));
+      },
+    );
+
     test('a fully planned day note preserves task partial credit', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -3399,6 +3451,28 @@ void main() {
               taskId: 'task-c',
               reason: '60 of 120 minutes are scheduled.',
               note: 'Fully planned day.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('a fully planned possessive day note preserves partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '60 of 120 minutes are scheduled.',
+              note: 'Fully planned our day.',
             ),
           ],
           corpus: tasks,
@@ -3539,6 +3613,27 @@ void main() {
               reason:
                   'task-c is partial; '
                   'the meeting leaves 60 minutes remaining.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('a possessive task meeting cannot own allocation arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: "task-c's meeting has 60 of 120 minutes scheduled.",
             ),
           ],
           corpus: tasks,

@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T13:56:16+02:00 }
+generated: { by: codex/5, at: 2026-07-28T14:02:56+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -127,6 +127,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   such as `during the meeting`, but not over an explicit allocation destination:
   `task-c: 60 of 120 minutes are scheduled for the meeting` remains
   meeting-scoped evidence.
+  Allocation-action words that occur inside the current task's id or full title
+  are references, not predicates: `task-fit 60 of 120 minutes` contains no
+  assertion that the work was placed. A possessive task reference also retains
+  its following head noun, so `task-c's meeting has 60 of 120 minutes
+  scheduled` remains meeting evidence rather than task-c allocation.
   The block's task is the default arithmetic subject; a corpus reference
   overrides it when it is comma-led, adjacent, linked by an allocation action
   (including postpositive `allocated to Task D`), possessive, attached by `for`
@@ -152,16 +157,19 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   either order: both `the allocation failed` and a later `failed to allocate
   the task` invalidate earlier split arithmetic. An affirmative task-bound
   claim such as `task-c was fully scheduled after all` still contradicts and
-  vetoes partial accounting. A full-allocation adjective phrase with an
-  explicit non-task noun head, such as `Fully planned day`, does not describe
-  the attached task and cannot veto its partial evidence. A denial or
-  full-completion claim explicitly naming another corpus task does not retract
-  the enclosing task's arithmetic, while qualified non-completion such as `not
-  fully scheduled` describes a partial placement rather than no allocation. A
-  prepositional non-task phrase such as `Fully planned for the day` is likewise
-  about the day. Subjectless attached denials such as `Not completed after all`
-  default to the block's task after non-task and other-task subjects have been
-  excluded.
+  vetoes partial accounting. An outer falsehood such as
+  `It is false that task-c was fully scheduled` denies that completion and
+  therefore cannot veto valid partial evidence. A full-allocation adjective
+  phrase with an explicit non-task noun head, such as `Fully planned day` or
+  `Fully planned our day`, does not describe the attached task and cannot veto
+  its partial evidence; ordinary possessive determiners are accepted before
+  those full-plan heads. A denial or full-completion claim explicitly naming
+  another corpus task does not retract the enclosing task's arithmetic, while
+  qualified non-completion such as `not fully scheduled` describes a partial
+  placement rather than no allocation. A prepositional non-task phrase such as
+  `Fully planned for the day` is likewise about the day. Subjectless attached
+  denials such as `Not completed after all` default to the block's task after
+  non-task and other-task subjects have been excluded.
   The
   partial mention cannot be borrowed from a claim attributed to
   another corpus task or an explicit non-task subject. Unrelated meeting/workday

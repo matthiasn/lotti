@@ -1128,7 +1128,8 @@ bool _hasTaskBoundFullAllocationClaim(
           taskId: taskId,
           taskTitle: taskTitle,
           corpus: corpus,
-        )) {
+        ) ||
+        _negativeTradeDisclosureIsDenied(prose, match)) {
       continue;
     }
     return true;
@@ -1144,7 +1145,7 @@ bool _fullAllocationClaimHasExplicitNonTaskHead(
   final suffix = prose.substring(match.end, range.end);
   return RegExp(
     r'^\s+(?:(?:for|throughout)\s+)?'
-    r'(?:(?:the|a|an|this|that)\s+)?'
+    r'(?:(?:the|a|an|this|that|my|your|his|her|its|our|their)\s+)?'
     '(?:day|meeting|workday|calendar|appointment|break|event|agenda|'
     r'schedule|session)\b',
     caseSensitive: false,
@@ -1550,7 +1551,12 @@ bool _splitIsTaskBound(
   required String taskTitle,
   required List<EvalCorpusTask> corpus,
 }) {
-  return _splitHasAffirmativeAllocation(reason, match) &&
+  return _splitHasAffirmativeAllocation(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+      ) &&
       !_splitHasUnrelatedScope(
         reason,
         match,
@@ -1566,8 +1572,18 @@ bool _splitIsTaskBound(
       );
 }
 
-bool _splitHasAffirmativeAllocation(String reason, Match match) {
-  final action = _nearestAllocationActionMatch(reason, match);
+bool _splitHasAffirmativeAllocation(
+  String reason,
+  Match match, {
+  required String taskId,
+  required String taskTitle,
+}) {
+  final action = _nearestAllocationActionMatch(
+    reason,
+    match,
+    taskId: taskId,
+    taskTitle: taskTitle,
+  );
   if (action == null || !_evidenceActionIsAsserted(reason, action.start)) {
     return false;
   }
@@ -1628,7 +1644,12 @@ bool _splitHasUnrelatedScope(
   required String taskId,
   required String taskTitle,
 }) {
-  final evidenceAction = _nearestAllocationActionMatch(reason, evidence);
+  final evidenceAction = _nearestAllocationActionMatch(
+    reason,
+    evidence,
+    taskId: taskId,
+    taskTitle: taskTitle,
+  );
   if (evidenceAction == null) return false;
   final range = _matchClauseRange(reason, evidence, boundaries: ',.;!?\n');
   final currentTaskDistance = _nearestTaskReferenceDistance(
@@ -1683,14 +1704,25 @@ bool _splitHasUnrelatedScope(
 
 ({int start, int end, int distance})? _nearestAllocationActionMatch(
   String reason,
-  Match evidence,
-) {
+  Match evidence, {
+  required String taskId,
+  required String taskTitle,
+}) {
   final range = _matchClauseRange(reason, evidence, boundaries: ',.;!?\n');
   final clause = reason.substring(range.start, range.end);
   ({int start, int end, int distance})? nearest;
   for (final match in _taskAllocationActionPattern.allMatches(clause)) {
     final start = range.start + match.start;
     final end = range.start + match.end;
+    if (_rangeFallsInsideTaskReference(
+      reason,
+      start: start,
+      end: end,
+      taskId: taskId,
+      taskTitle: taskTitle,
+    )) {
+      continue;
+    }
     if (end <= evidence.start) {
       if (!RegExp(
         r'^\s*(?:(?:only|just|merely|about|approximately|roughly|'
@@ -1818,9 +1850,25 @@ bool _evidenceFallsInsideTaskReference(
   required String taskId,
   required String taskTitle,
 }) {
+  return _rangeFallsInsideTaskReference(
+    prose,
+    start: evidence.start,
+    end: evidence.end,
+    taskId: taskId,
+    taskTitle: taskTitle,
+  );
+}
+
+bool _rangeFallsInsideTaskReference(
+  String prose, {
+  required int start,
+  required int end,
+  required String taskId,
+  required String taskTitle,
+}) {
   for (final pattern in _taskReferencePatterns(taskId, taskTitle)) {
     for (final reference in pattern.allMatches(prose)) {
-      if (reference.start <= evidence.start && reference.end >= evidence.end) {
+      if (reference.start <= start && reference.end >= end) {
         return true;
       }
     }
@@ -2666,6 +2714,13 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   ).hasMatch(prefix)) {
     return false;
   }
+  if (_subjectStartsWithPossessiveTaskReferenceToNonTaskHead(
+    prefix,
+    taskId: taskId,
+    taskTitle: taskTitle,
+  )) {
+    return true;
+  }
   final subjectMatch = RegExp(
     r'^(.*?)\s+(?:(?:(?:is|are|was|were)(?:\s+being)?|'
     r'(?:has|have|had)\s+been(?:\s+being)?|will\s+be(?:\s+being)?)'
@@ -2688,11 +2743,44 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   ).hasMatch(subject)) {
     return false;
   }
+  if (_subjectStartsWithPossessiveTaskReferenceToNonTaskHead(
+    subject,
+    taskId: taskId,
+    taskTitle: taskTitle,
+  )) {
+    return true;
+  }
   return !_subjectStartsWithTaskReference(
     subject,
     taskId: taskId,
     taskTitle: taskTitle,
   );
+}
+
+bool _subjectStartsWithPossessiveTaskReferenceToNonTaskHead(
+  String subject, {
+  required String taskId,
+  required String taskTitle,
+}) {
+  final title = taskTitle.trim();
+  final taskReferences = [
+    RegExp.escape(taskId),
+    r'task\s+' + RegExp.escape(title),
+    if (_allowsBareTaskTitle(title)) RegExp.escape(title),
+  ];
+  for (final taskReference in taskReferences) {
+    if (RegExp(
+      r'^(?:(?:the|this|that|its)\s+)?'
+      '$taskReference'
+      r'[\x27’]s\s+'
+      '(?:day|meeting|workday|calendar|appointment|break|event|'
+      r'agenda|schedule|session)\b',
+      caseSensitive: false,
+    ).hasMatch(subject)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool _subjectStartsWithTaskReference(
