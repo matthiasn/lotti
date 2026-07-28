@@ -72,6 +72,11 @@ class _InsightsPeriodPickerBodyState
             today: clock.now(),
             selectedDay: selectedStart,
             firstDayOfWeekIndex: firstDayOfWeekIndex,
+            // The sheet is a card the user pages through month by month, so
+            // its height has to be constant: otherwise it grows a row on the
+            // months that need six and the chevrons move out from under the
+            // pointer mid-browse.
+            reserveFullMonthHeight: true,
             onPreviousMonth: () => _shiftMonth(-1),
             onNextMonth: () => _shiftMonth(1),
             onDaySelected: (day) {
