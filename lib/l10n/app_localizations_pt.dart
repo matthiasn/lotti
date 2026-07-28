@@ -7046,12 +7046,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get manageLinks => 'Gerenciar links…';
 
   @override
-  String get matrixStatsCatchupBatches => 'Lotes de recuperação';
-
-  @override
-  String get matrixStatsCircuitOpens => 'Aberturas de circuito';
-
-  @override
   String get matrixStatsConflicts => 'Conflitos';
 
   @override
@@ -7082,12 +7076,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get matrixStatsEntryLinkNoops => 'Operações sem efeito de EntryLink';
 
   @override
-  String get matrixStatsFailures => 'Falhas';
-
-  @override
-  String get matrixStatsFlushes => 'Descargas';
-
-  @override
   String get matrixStatsForceRescan => 'Forçar nova verificação';
 
   @override
@@ -7102,21 +7090,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Legenda:\n• processed.<type> = mensagens de sincronização processadas por tipo de carga\n• droppedByType.<type> = descartes por tipo após novas tentativas ou ao ignorar mensagens antigas\n• dbApplied = linhas gravadas no banco de dados\n• dbIgnoredByVectorClock = dados recebidos mais antigos ou idênticos ignorados pelo banco de dados\n• conflictsCreated = vetores de relógio simultâneos registrados\n• dbMissingBase = ignorado enquanto aguarda uma dependência ou linha de base ausente\n• staleAttachmentPurges = descritores obsoletos em cache removidos antes da atualização';
 
   @override
-  String get matrixStatsProcessed => 'Processado';
-
-  @override
-  String matrixStatsProcessedByType(Object type) {
-    return 'Processado ($type)';
-  }
-
-  @override
   String get matrixStatsRefresh => 'Atualizar';
-
-  @override
-  String get matrixStatsReliability => 'Confiabilidade';
-
-  @override
-  String get matrixStatsRetriesScheduled => 'Novas tentativas agendadas';
 
   @override
   String get matrixStatsRetryNow => 'Tentar novamente agora';
@@ -7126,39 +7100,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Tente novamente as falhas pendentes agora';
 
   @override
-  String get matrixStatsSignalLatencyLast => 'Latência do sinal (últimos ms)';
-
-  @override
-  String get matrixStatsSignalLatencyMax => 'Latência do sinal (máx. ms)';
-
-  @override
-  String get matrixStatsSignalLatencyMin => 'Latência do sinal (mín. ms)';
-
-  @override
   String get matrixStatsSignals => 'Sinais';
 
   @override
-  String get matrixStatsSignalsClientStream => 'Sinais (fluxo do cliente)';
-
-  @override
   String get matrixStatsSignalsConnectivity => 'Sinais (conectividade)';
-
-  @override
-  String get matrixStatsSignalsTimelineCallbacks =>
-      'Sinais (callbacks da linha do tempo)';
-
-  @override
-  String get matrixStatsSkipped => 'Ignorado';
-
-  @override
-  String get matrixStatsSkippedRetryCap =>
-      'Ignorado (limite de novas tentativas)';
-
-  @override
-  String get matrixStatsStaleAttachmentPurges => 'Limpezas de anexos obsoletos';
-
-  @override
-  String get matrixStatsThroughput => 'Taxa de transferência';
 
   @override
   String get matrixStatsTopKpis => 'Principais KPIs';

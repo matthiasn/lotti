@@ -52,7 +52,6 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
                 }
               }
               final dbMissingBase = diag['dbMissingBase'] ?? '0';
-              final stalePurges = diag['staleAttachmentPurges'] ?? '0';
               final ignoredCount =
                   int.tryParse(diag['lastIgnoredCount'] ?? '0') ?? 0;
               // Prefetch details removed.
@@ -72,7 +71,6 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('dbMissingBase: $dbMissingBase'),
-                              Text('staleAttachmentPurges: $stalePurges'),
                             ],
                           ),
                         ),

@@ -57,11 +57,10 @@ class MetricTile extends StatelessWidget {
 
   Color _tone(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    if (toneKey == 'failures' || toneKey == 'circuitOpens') return cs.error;
+    // Conflicts are the one outcome that needs the user's attention; a drop
+    // is informational, everything else is routine throughput.
+    if (toneKey == 'conflictsCreated') return cs.error;
     if (toneKey.startsWith('droppedByType')) return cs.tertiary;
-    if (toneKey == 'skipped' || toneKey == 'skippedByRetryLimit') {
-      return cs.secondary;
-    }
     return cs.primary;
   }
 

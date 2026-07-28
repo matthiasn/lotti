@@ -12,7 +12,6 @@ void main() {
   ) async {
     final text = [
       'dbMissingBase=2',
-      'staleAttachmentPurges=5',
       'lastIgnoredCount=2',
       'lastIgnored.1=a',
       'lastIgnored.2=bb',
@@ -44,7 +43,6 @@ void main() {
     // Expanding triggers exactly one fetch and renders the parsed values.
     expect(fetchCount, 1);
     expect(find.text('dbMissingBase: 2'), findsOneWidget);
-    expect(find.text('staleAttachmentPurges: 5'), findsOneWidget);
     expect(find.text('Last Ignored:'), findsOneWidget);
     expect(find.text('a'), findsOneWidget);
     expect(find.text('bb'), findsOneWidget);
@@ -52,7 +50,7 @@ void main() {
   });
 
   testWidgets('DiagnosticsPanel defaults missing keys to 0', (tester) async {
-    // No dbMissingBase / staleAttachmentPurges / lastIgnoredCount keys.
+    // No dbMissingBase / lastIgnoredCount keys.
     Future<String> fetch() async => 'unrelatedKey=7';
 
     await tester.pumpWidget(
@@ -67,7 +65,6 @@ void main() {
 
     // Absent numeric keys fall back to '0'.
     expect(find.text('dbMissingBase: 0'), findsOneWidget);
-    expect(find.text('staleAttachmentPurges: 0'), findsOneWidget);
     // No ignored entries → the "Last Ignored:" section is omitted.
     expect(find.text('Last Ignored:'), findsNothing);
   });

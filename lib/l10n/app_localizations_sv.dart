@@ -6981,12 +6981,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get manageLinks => 'Hantera länkar…';
 
   @override
-  String get matrixStatsCatchupBatches => 'Upphämtande omgångar';
-
-  @override
-  String get matrixStatsCircuitOpens => 'Banan öppnas';
-
-  @override
   String get matrixStatsConflicts => 'Konflikter';
 
   @override
@@ -7017,12 +7011,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get matrixStatsEntryLinkNoops => 'EntryLink No-ops';
 
   @override
-  String get matrixStatsFailures => 'Misslyckanden';
-
-  @override
-  String get matrixStatsFlushes => 'Flushes';
-
-  @override
   String get matrixStatsForceRescan => 'Force Omscan';
 
   @override
@@ -7036,21 +7024,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Legend:\n• bearbetad. <type> = bearbetade synkmeddelanden efter nyttolasttyp\n• droppadeByType. <type> = per typ droppar efter omförsök eller äldre meddelande ignorerar\n• dbApplied = databasrader skrivna\n• dbIgnoredByVectorClock = äldre eller identisk inkommande data ignoreras av databasen\n• conflictsCreated = samtidiga vektorklockor loggade\n• dbMissingBase = hoppas över medan man väntar på en saknad beroende eller basrad\n• staleAttachmentPurges = cachade föråldrade deskriptorer rensade före uppdatering';
 
   @override
-  String get matrixStatsProcessed => 'Bearbetad';
-
-  @override
-  String matrixStatsProcessedByType(Object type) {
-    return 'Behandlad ($type)';
-  }
-
-  @override
   String get matrixStatsRefresh => 'Uppdatera';
-
-  @override
-  String get matrixStatsReliability => 'Tillförlitlighet';
-
-  @override
-  String get matrixStatsRetriesScheduled => 'Omprövningar schemalagda';
 
   @override
   String get matrixStatsRetryNow => 'Försök igen nu';
@@ -7060,39 +7034,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Försök igen väntade misslyckanden nu';
 
   @override
-  String get matrixStatsSignalLatencyLast => 'Signallatens (senaste ms)';
-
-  @override
-  String get matrixStatsSignalLatencyMax => 'Signallatens (max ms)';
-
-  @override
-  String get matrixStatsSignalLatencyMin => 'Signallatens (min ms)';
-
-  @override
   String get matrixStatsSignals => 'Signaler';
 
   @override
-  String get matrixStatsSignalsClientStream => 'Signaler (klientström)';
-
-  @override
   String get matrixStatsSignalsConnectivity => 'Signaler (anslutning)';
-
-  @override
-  String get matrixStatsSignalsTimelineCallbacks =>
-      'Signaler (tidslinje-återkopplingar)';
-
-  @override
-  String get matrixStatsSkipped => 'Hoppade över';
-
-  @override
-  String get matrixStatsSkippedRetryCap => 'Hoppade över (omprövad kap)';
-
-  @override
-  String get matrixStatsStaleAttachmentPurges =>
-      'Uttjukna anknytningsutrensningar';
-
-  @override
-  String get matrixStatsThroughput => 'Genomströmning';
 
   @override
   String get matrixStatsTopKpis => 'Topp-KPI:er';

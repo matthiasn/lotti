@@ -20,23 +20,16 @@ void main() {
   // DB apply. Values are distinct so tile-scoped assertions are unambiguous.
   final fullMetrics = <String, int>{
     // KPIs
-    'processed': 12,
-    'failures': 1,
-    'retriesScheduled': 3,
-    // Throughput
-    'flushes': 2,
-    'catchupBatches': 1,
-    'processed.journalEntity': 7,
-    // Reliability
-    'skipped': 0,
-    'skippedByRetryLimit': 0,
-    'circuitOpens': 0,
-    'droppedByType.entryLink': 1,
-    // DB
     'dbApplied': 9,
-    'dbIgnoredByVectorClock': 2,
     'conflictsCreated': 1,
+    'queueActive': 4,
+    // DB apply group
+    'dbIgnoredByVectorClock': 2,
     'dbMissingBase': 0,
+    'dbEntryLinkNoop': 5,
+    'droppedByType.entryLink': 1,
+    // Signals group
+    'signalConnectivity': 3,
   };
 
   Future<void> pumpFull(
@@ -113,42 +106,43 @@ void main() {
       await pumpFull(tester);
 
       expect(find.text('Top KPIs'), findsOneWidget);
-      expect(_metricValue('processed', '12'), findsWidgets);
-      expect(_metricValue('failures', '1'), findsWidgets);
-      expect(_metricValue('retriesScheduled', '3'), findsWidgets);
+      expect(_metricValue('dbApplied', '9'), findsWidgets);
+      expect(_metricValue('conflictsCreated', '1'), findsWidgets);
+      expect(_metricValue('queueActive', '4'), findsWidgets);
     });
   });
 
   group('SyncMetricsSection groups', () {
-    testWidgets('renders Throughput labels and values', (tester) async {
+    testWidgets('renders the dropped-by-type tile under DB Apply', (
+      tester,
+    ) async {
       await pumpFull(tester);
 
-      expect(find.text('Throughput'), findsOneWidget);
-      expect(find.text('Catch-up Batches'), findsOneWidget);
-      expect(find.text('Processed (journalEntity)'), findsOneWidget);
-      expect(_metricValue('flushes', '2'), findsWidgets);
-      expect(_metricValue('catchupBatches', '1'), findsWidgets);
-      expect(_metricValue('processed.journalEntity', '7'), findsWidgets);
-    });
-
-    testWidgets('renders Reliability and dropped-by-type tile', (tester) async {
-      await pumpFull(tester);
-
-      expect(find.text('Reliability'), findsOneWidget);
-      // droppedByType.* belongs to the DB Apply group, not Reliability.
       expect(find.text('Dropped (entryLink)'), findsOneWidget);
       expect(_metricValue('droppedByType.entryLink', '1'), findsWidgets);
-      expect(_metricValue('skipped', '0'), findsWidgets);
-      expect(_metricValue('circuitOpens', '0'), findsWidgets);
+    });
+
+    testWidgets('no longer renders the removed pre-queue groups', (
+      tester,
+    ) async {
+      // Throughput and Reliability grouped counters that nothing incremented
+      // once the inbound queue became the only receive path; they rendered as
+      // permanent zeros and read as "nothing is happening".
+      await pumpFull(tester);
+
+      expect(find.text('Throughput'), findsNothing);
+      expect(find.text('Reliability'), findsNothing);
     });
 
     testWidgets('renders DB Apply labels and values', (tester) async {
       await pumpFull(tester);
 
       expect(find.text('DB Apply'), findsOneWidget);
-      expect(find.text('DB Applied'), findsOneWidget);
+      // dbApplied and conflictsCreated are also Top KPIs, so their labels
+      // legitimately appear twice — once in the KPI block, once in the group.
+      expect(find.text('DB Applied'), findsNWidgets(2));
+      expect(find.text('Conflicts'), findsNWidgets(2));
       expect(find.text('DB Ignored (VectorClock)'), findsOneWidget);
-      expect(find.text('Conflicts'), findsOneWidget);
       expect(_metricValue('dbApplied', '9'), findsWidgets);
       expect(_metricValue('dbIgnoredByVectorClock', '2'), findsWidgets);
       expect(_metricValue('conflictsCreated', '1'), findsWidgets);
@@ -235,10 +229,8 @@ void main() {
       expect(find.text('Top KPIs'), findsNothing);
       // Null lastUpdated renders the em-dash placeholder.
       expect(find.textContaining('Last updated: \u2014'), findsOneWidget);
-      // The fixed group headers still render (with empty grids), but the
+      // The DB Apply header still renders (with an empty grid), but the
       // conditional Signals group is absent.
-      expect(find.text('Throughput'), findsOneWidget);
-      expect(find.text('Reliability'), findsOneWidget);
       expect(find.text('DB Apply'), findsOneWidget);
       expect(find.text('Signals'), findsNothing);
     },
@@ -252,9 +244,7 @@ void main() {
           SingleChildScrollView(
             child: SyncMetricsSection(
               metrics: const {
-                'signalClientStream': 5,
-                // Zero-valued signals are filtered out of the group.
-                'signalConnectivity': 0,
+                'signalConnectivity': 5,
               },
               lastUpdated: DateTime(2025, 1, 1, 12),
               title: 'Sync Metrics',
@@ -271,56 +261,46 @@ void main() {
       await tester.pump();
 
       expect(find.text('Signals'), findsOneWidget);
-      expect(find.text('Signals (client stream)'), findsOneWidget);
-      expect(find.text('Signals (connectivity)'), findsNothing);
+      expect(find.text('Signals (connectivity)'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'renders localized labels for every non-zero signal metric',
+    'renders the connectivity signal only when it has actually fired',
     (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: SyncMetricsSection(
-              metrics: const {
-                'signalClientStream': 5,
-                'signalTimelineCallbacks': 4,
-                'signalConnectivity': 3,
-                'signalLatencyLastMs': 22,
-                'signalLatencyMinMs': 11,
-                'signalLatencyMaxMs': 44,
-              },
-              lastUpdated: DateTime(2025, 1, 1, 12),
-              title: 'Sync Metrics',
-              lastUpdatedLabel: 'Last updated:',
-              onForceRescan: _noop,
-              onRetryNow: _noop,
-              onCopyDiagnostics: _noop,
-              onRefresh: _noop,
-              fetchDiagnostics: _emptyDiagnostics,
+      Future<void> pumpWith(Map<String, int> metrics) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            SingleChildScrollView(
+              child: SyncMetricsSection(
+                metrics: metrics,
+                lastUpdated: DateTime(2025, 1, 1, 12),
+                title: 'Sync Metrics',
+                lastUpdatedLabel: 'Last updated:',
+                onForceRescan: _noop,
+                onRetryNow: _noop,
+                onCopyDiagnostics: _noop,
+                onRefresh: _noop,
+                fetchDiagnostics: _emptyDiagnostics,
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
+      }
 
+      await pumpWith(const {'signalConnectivity': 3});
       final messages = tester.element(find.byType(SyncMetricsSection)).messages;
-      expect(
-        find.text(messages.matrixStatsSignalsClientStream),
-        findsOneWidget,
-      );
-      expect(
-        find.text(messages.matrixStatsSignalsTimelineCallbacks),
-        findsOneWidget,
-      );
       expect(
         find.text(messages.matrixStatsSignalsConnectivity),
         findsOneWidget,
       );
-      expect(find.text(messages.matrixStatsSignalLatencyLast), findsOneWidget);
-      expect(find.text(messages.matrixStatsSignalLatencyMin), findsOneWidget);
-      expect(find.text(messages.matrixStatsSignalLatencyMax), findsOneWidget);
+
+      // A zero is suppressed rather than shown: the whole point of the
+      // dead-counter cleanup is that the panel never renders a confident zero
+      // for something that has not happened.
+      await pumpWith(const {'signalConnectivity': 0});
+      expect(find.text(messages.matrixStatsSignalsConnectivity), findsNothing);
     },
   );
 }

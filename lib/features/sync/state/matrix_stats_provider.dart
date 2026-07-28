@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:meta/meta.dart';
 
 /// Streams live message-count [MatrixStats] from the Matrix service for the
 /// stats UI.
@@ -55,58 +54,3 @@ final matrixDiagnosticsTextProvider = FutureProvider<String>((ref) async {
   final svc = ref.watch(matrixServiceProvider);
   return svc.getSyncDiagnosticsText();
 });
-
-/// Rolling in-memory history for a few KPI metrics to power sparklines.
-/// Kept UI-side to avoid coupling to the pipeline internals.
-final syncMetricsHistoryProvider =
-    NotifierProvider<SyncMetricsHistory, Map<String, List<int>>>(
-      SyncMetricsHistory.new,
-      name: 'syncMetricsHistoryProvider',
-    );
-
-class SyncMetricsHistory extends Notifier<Map<String, List<int>>> {
-  @override
-  Map<String, List<int>> build() {
-    // Listen for typed metrics updates and append KPI values.
-    ref.listen<AsyncValue<SyncMetrics?>>(
-      matrixSyncMetricsFutureProvider,
-      (prev, next) {
-        next.whenData((v) {
-          if (!ref.mounted) return;
-          if (v == null) return;
-          final map = v.toMap();
-          const keys = ['processed', 'failures', 'retriesScheduled'];
-          final updated = Map<String, List<int>>.from(state);
-          for (final k in keys) {
-            final val = map[k] ?? 0;
-            final list = List<int>.from(updated[k] ?? const <int>[])..add(val);
-            if (list.length > 24) list.removeAt(0);
-            updated[k] = list;
-          }
-          state = updated;
-        });
-      },
-      fireImmediately: true,
-    );
-
-    return <String, List<int>>{};
-  }
-
-  @visibleForTesting
-  void clear() => state = <String, List<int>>{};
-
-  /// Appends metrics values to history. Exposed for testing.
-  @visibleForTesting
-  void appendFromMetrics(SyncMetrics metrics) {
-    final map = metrics.toMap();
-    const keys = ['processed', 'failures', 'retriesScheduled'];
-    final updated = Map<String, List<int>>.from(state);
-    for (final k in keys) {
-      final val = map[k] ?? 0;
-      final list = List<int>.from(updated[k] ?? const <int>[])..add(val);
-      if (list.length > 24) list.removeAt(0);
-      updated[k] = list;
-    }
-    state = updated;
-  }
-}
