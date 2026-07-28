@@ -1861,6 +1861,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects a near-miss allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c almost scheduled 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     for (final failedAction in [
       'unsuccessfully scheduled',
       'failed scheduling',
@@ -4301,6 +4322,7 @@ void main() {
       'task-c attempted to be omitted.',
       'task-c failed to be omitted.',
       'task-c requires deferring.',
+      'task-c was almost omitted.',
     ]) {
       test('rejects a non-asserted trade disposition: $reason', () {
         final result = scoreSurfacedConflict(
@@ -4646,6 +4668,34 @@ void main() {
               endHour: 10,
               taskId: 'task-c',
               reason: 'task-c resolves conflict.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('does not treat a trade object as a trade disposition', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c evaluates a trade.',
             ),
           ],
           corpus: const [
@@ -5024,6 +5074,28 @@ void main() {
               endHour: 10,
               reason: 'task-c was omitted due to capacity.',
               note: 'task-c was fully scheduled after all.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('normalizes equivalent cross-field scheduling denials', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c cannot be scheduled.',
+              note: "It is false that task-c can't be scheduled.",
             ),
           ],
           corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],

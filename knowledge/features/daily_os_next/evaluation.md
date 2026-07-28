@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T15:52:34+02:00 }
+generated: { by: codex/5, at: 2026-07-28T16:08:50+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -269,8 +269,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   not disclose that task-c itself was deferred or left unscheduled. A
   `for later` disposition must be governed by a scheduling, movement, copula,
   or remainder predicate. The same object binding rejects domain phrases
-  such as `reviews trade policy` and `carries over balances`. Negative-fit
-  evidence is subject-bound too: `task-c doesn't fit` remains affirmative, but
+  such as `reviews trade policy`, `evaluates a trade`, and `carries over
+  balances`. Negative-fit evidence is subject-bound too: `task-c doesn't fit`
+  remains affirmative, but
   `task-c validates that the payload cannot fit in memory` describes the
   payload, not the task. Ordinary causal suffixes remain valid, so
   `task-c was omitted due to capacity` discloses the omission, as does
@@ -288,9 +289,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   shortened and ultimately deferred` do not make the disposition affirmative.
   Modal scope ends only when the conjunction begins an independently asserted
   clause. Attempt and failure complements are likewise not actual
-  dispositions: neither `attempted to be omitted`, `failed to be omitted`, nor
-  the direct requirement `requires deferring` surfaces a trade. Avoidance and
-  prevention complements are denials too:
+  dispositions: neither `attempted to be omitted`, `failed to be omitted`, the
+  near miss `was almost omitted`, nor the direct requirement `requires
+  deferring` surfaces a trade. The same near-miss rule rejects allocation prose
+  such as `almost scheduled 60 of 120 minutes`. Avoidance and prevention
+  complements are denials too:
   neither `task-c avoided being omitted` nor
   `task-c avoided getting omitted` asserts an omission. An affirmative claim
   plus denial of that same
@@ -309,7 +312,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   forms such as `cannot be scheduled`, `can't be
   scheduled`, or `was unable to be scheduled` disclose the same omission,
   unless an outer falsehood construction such as `not true that task-c cannot
-  fit` or `not true that task-c was not scheduled` denies the whole claim.
+  fit` or `not true that task-c was not scheduled` denies the whole claim. All
+  equivalent negative-scheduling forms share one disposition identity, so an
+  affirmative spelling in one field is retracted by an equivalent denial in
+  another.
   The detail records every credited
   partial and every shortening denied credit, so the judge bundle preserves the
   accounting evidence rather than only the final pass/fail.

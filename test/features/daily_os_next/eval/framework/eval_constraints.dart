@@ -805,7 +805,7 @@ final _conflictTradePattern = RegExp(
   r'(?:isn|aren|wasn|weren)[\x27’]?t\s+able\s+to)'
   r'(?:\s+be)?)\s+'
   'schedul(?:e|ed|ing)|'
-  r'trade|conflict(?:s|ed|ing)(?![-\s]+free\b)|'
+  r'conflict(?:s|ed|ing)(?![-\s]+free\b)|'
   'shorten(?:s|ed|ing)?|'
   r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
   r'(?:do|does|did|will|shall)\s+not|'
@@ -1583,7 +1583,7 @@ bool _evidenceActionIsAsserted(
   final prefix = prose.substring(clauseStart, actionStart);
   return !_evidenceStartIsSpeculative(prose, actionStart) &&
       !RegExp(
-        r'\b(?:unsuccessfully|'
+        r'\b(?:almost|nearly|not\s+quite|unsuccessfully|'
         '(?:(?:intend(?:s|ed|ing)?|aim(?:s|ed|ing)?|'
         'hop(?:e|es|ed|ing)|want(?:s|ed|ing)?|expect(?:s|ed|ing)?|'
         'propos(?:e|es|ed|ing)|plan(?:s|ned|ning)?|'
@@ -2579,7 +2579,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
     } else if (negativeSchedulingDisclosure) {
       if (!_tradeEvidenceDescribesTaskOrWork(prose, match)) continue;
       record(
-        _tradeDispositionKey(match),
+        'not-scheduled',
         denied: _negativeTradeDisclosureIsDenied(prose, match),
       );
     } else if (!_tradeEvidenceDescribesTaskOrWork(prose, match)) {
@@ -2614,7 +2614,6 @@ String _tradeDispositionKey(Match match) {
   if (wording.contains('left')) return 'left-out';
   if (wording.contains('conflict')) return 'conflict';
   if (wording.contains('shorten')) return 'shortened';
-  if (wording.contains('trade')) return 'trade';
   if (wording.contains('roll')) return 'rolled-over';
   if (wording.contains('carr')) return 'carried-over';
   if (wording.contains('move')) return 'moved';
