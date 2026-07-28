@@ -2621,6 +2621,27 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('accepts for directly introducing allocation arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c was scheduled for 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('rejects arithmetic not governing a later allocation action', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -5512,6 +5533,36 @@ void main() {
               endHour: 10,
               taskId: 'task-c',
               reason: 'task-c was left unfinished.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
+    test('denied left-out does not cancel left-unfinished', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c was not left out; '
+                  'task-c was left unfinished.',
             ),
           ],
           corpus: const [

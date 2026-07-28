@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T14:02:56+02:00 }
+generated: { by: codex/5, at: 2026-07-28T14:36:12+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -105,9 +105,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   context, nor can later meeting scheduling borrow an earlier `60 of 120`
   recording count. A grammatical auxiliary/adverb bridge such as
   `were successfully scheduled` or `60 of 120 minutes do fit` remains
-  affirmative, and exact quantity
-  modifiers such as `scheduled exactly 60 of 120 minutes` may bridge the action
-  to its arithmetic, while a failure qualifier such as
+  affirmative. A direct quantity preposition or exact quantity modifier, such as
+  `scheduled for 60 of 120 minutes` or
+  `scheduled exactly 60 of 120 minutes`, may bridge the action to its
+  arithmetic without admitting arbitrary intervening object prose, while a
+  failure qualifier such as
   `were unsuccessfully scheduled` does not. Obligation alone
   is not evidence that placement happened: `must schedule`, `needs to
   schedule`, and `is required to schedule` cannot validate allocation
@@ -277,7 +279,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   omit/defer/shorten/conflict disposition, is required. Likewise, `left
   unchanged` and moving a block to another clock slot are continuity or
   rescheduling, while `left unfinished`, `left some work unfinished`, and moving
-  work to tomorrow are actual remainder dispositions. A quantitative complement
+  work to tomorrow are actual remainder dispositions. Unfinished work remains
+  distinct from full omission, so `not left out; left unfinished` still
+  discloses the unfinished remainder. A quantitative complement
   such as `shortened by 60 minutes` also remains a task-bound disposition. A
   disposition word must govern the task or unfinished work: domain language
   such as `task-c documents deferred revenue` or

@@ -1725,7 +1725,7 @@ bool _splitHasUnrelatedScope(
     }
     if (end <= evidence.start) {
       if (!RegExp(
-        r'^\s*(?:(?:only|just|merely|about|approximately|roughly|'
+        r'^\s*(?:for\s+)?(?:(?:only|just|merely|about|approximately|roughly|'
         r'exactly|precisely)\s+)?$',
         caseSensitive: false,
       ).hasMatch(reason.substring(end, evidence.start))) {
@@ -2690,6 +2690,7 @@ String _tradeDispositionKey(Match match) {
   if (wording.contains('unscheduled')) return 'unscheduled';
   if (wording.contains('omit')) return 'omitted';
   if (wording.contains('drop')) return 'dropped';
+  if (wording.contains('unfinished')) return 'unfinished';
   if (wording.contains('left')) return 'left-out';
   if (wording.contains('conflict')) return 'conflict';
   if (wording.contains('shorten')) return 'shortened';
