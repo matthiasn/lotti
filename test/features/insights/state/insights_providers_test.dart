@@ -285,6 +285,118 @@ void main() {
       expect(dayStart(selection.range.endDayExclusive), DateTime(2026, 6, 8));
     });
 
+    // The granularity switch has to pick an anchor day out of the period being
+    // left. Anchoring on the range's first day reads the wrong day out of
+    // every period wider than a day — from the current year it landed on
+    // January 1st — so the anchor is today whenever the period still contains
+    // it, and the range start only for a period already in the past.
+    group('selectUnit anchor', () {
+      /// Switches to [from], then to [to], and returns the resulting range.
+      InsightsRange rangeAfter({
+        required InsightsPeriodUnit from,
+        required InsightsPeriodUnit to,
+        DateTime? jumpTo,
+        Override? firstDayOfWeek,
+      }) {
+        final container = makeContainer(firstDayOfWeek: firstDayOfWeek);
+        withClock(Clock.fixed(fixedNow), () {
+          final notifier = container.read(
+            insightsRangeControllerProvider.notifier,
+          )..selectUnit(from);
+          if (jumpTo != null) notifier.jumpTo(jumpTo);
+          notifier.selectUnit(to);
+        });
+        return container.read(insightsRangeControllerProvider).range;
+      }
+
+      test('the current year to Day lands on today, not January 1st', () {
+        final range = rangeAfter(
+          from: InsightsPeriodUnit.year,
+          to: InsightsPeriodUnit.day,
+        );
+
+        expect(dayStart(range.startDay), DateTime(2026, 6, 7));
+        expect(range.dayCount, 1);
+      });
+
+      test('the current month to Day lands on today, not the 1st', () {
+        final range = rangeAfter(
+          from: InsightsPeriodUnit.month,
+          to: InsightsPeriodUnit.day,
+        );
+
+        expect(dayStart(range.startDay), DateTime(2026, 6, 7));
+      });
+
+      test('the current week to Day lands on today', () {
+        final range = rangeAfter(
+          from: InsightsPeriodUnit.week,
+          to: InsightsPeriodUnit.day,
+        );
+
+        expect(dayStart(range.startDay), DateTime(2026, 6, 7));
+      });
+
+      test('a past month to Day keeps that month, not today', () {
+        // Browsing history must not teleport to today when the granularity
+        // changes — the user is looking at March, so March is the anchor.
+        final range = rangeAfter(
+          from: InsightsPeriodUnit.month,
+          to: InsightsPeriodUnit.day,
+          jumpTo: DateTime(2026, 3, 14),
+        );
+
+        expect(dayStart(range.startDay), DateTime(2026, 3));
+      });
+
+      test('a past year to Day keeps January 1st of that year', () {
+        final range = rangeAfter(
+          from: InsightsPeriodUnit.year,
+          to: InsightsPeriodUnit.day,
+          jumpTo: DateTime(2024, 8, 9),
+        );
+
+        expect(dayStart(range.startDay), DateTime(2024));
+      });
+
+      test('a future period keeps its own start rather than today', () {
+        // `isInProgress` is false ahead of today as well as behind it; the
+        // anchor must fall back to the range start in both directions.
+        final range = rangeAfter(
+          from: InsightsPeriodUnit.month,
+          to: InsightsPeriodUnit.day,
+          jumpTo: DateTime(2026, 9, 20),
+        );
+
+        expect(dayStart(range.startDay), DateTime(2026, 9));
+      });
+
+      test('widening from today lands on the period containing today', () {
+        final range = rangeAfter(
+          from: InsightsPeriodUnit.day,
+          to: InsightsPeriodUnit.month,
+        );
+
+        expect(dayStart(range.startDay), DateTime(2026, 6));
+        expect(dayStart(range.endDayExclusive), DateTime(2026, 7));
+      });
+
+      test('the week anchor honours a Sunday-first region', () {
+        // fixedNow is a Sunday: Monday-first puts it at the *end* of its week,
+        // Sunday-first at the start. Proves the region index reaches the
+        // re-derivation rather than a hardcoded Monday.
+        final range = rangeAfter(
+          from: InsightsPeriodUnit.month,
+          to: InsightsPeriodUnit.week,
+          firstDayOfWeek: firstDayOfWeekIndexProvider.overrideWith(
+            (ref) => DateTime.sunday % 7,
+          ),
+        );
+
+        expect(dayStart(range.startDay), DateTime(2026, 6, 7));
+      });
+    });
+
     test('selectUnit re-derives the period for the new granularity', () {
       final container = makeContainer();
       withClock(Clock.fixed(fixedNow), () {

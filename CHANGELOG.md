@@ -249,6 +249,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   disagreed. Blocks and proposals now both follow your device. The hour scale
   down the side of the timeline stays 24-hour: it is a ruler, and its
   end-of-day mark has no unambiguous 12-hour spelling.
+- **Switching Time Analysis to Day shows today.** Choosing Day took you to the
+  first day of whatever you were looking at — January 1st from the year view,
+  the 1st of the month from a month — so the page you landed on was almost
+  never the one you wanted. It now opens on today whenever the period you are
+  in still includes it. Looking at a past period still keeps your place there
+  rather than jumping you back to today.
+- **The date picker in Time Analysis no longer changes size as you browse.**
+  Months need five or six rows of dates depending on their length and which
+  weekday they start on, and the card grew and shrank to match — so paging
+  through months moved the arrows out from under the pointer. The card now
+  reserves room for the longest month and keeps one height throughout.
 
 ## [0.9.1070]
 ### Fixed

@@ -51,4 +51,64 @@ void main() {
     expect(selection.unit.name, 'week');
     expect(dayStart(selection.range.startDay), DateTime(2026, 6, 15));
   });
+
+  group('card height', () {
+    /// Pumps the picker opened on the month containing [now].
+    Future<void> pumpAt(WidgetTester tester, DateTime now) async {
+      final container = ProviderContainer(
+        overrides: [
+          firstDayOfWeekIndexProvider.overrideWith(
+            (ref) => DateTime.monday % 7,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(
+              const Material(child: InsightsPeriodPickerBody()),
+            ),
+          ),
+        );
+        await tester.pump();
+      });
+    }
+
+    // Monday-first 2026 needs six week rows only in March, August and
+    // November; every other month fits in five. Both directions of that
+    // boundary have to hold the card still, so each test below pairs a
+    // five-row month with a six-row one — pairing two five-row months would
+    // pass with `reserveFullMonthHeight` switched back off.
+    testWidgets('paging back from a 6-row to a 5-row month holds height', (
+      tester,
+    ) async {
+      // March 2026 (six week rows) → February 2026 (five), via the backwards
+      // chevron.
+      await pumpAt(tester, DateTime(2026, 3, 15, 16));
+      final march = tester.getSize(find.byType(GridView)).height;
+
+      await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+      await tester.pump();
+
+      expect(find.text('February 2026'), findsOneWidget);
+      expect(tester.getSize(find.byType(GridView)).height, march);
+    });
+
+    testWidgets('paging from a 5-row to a 6-row month does not resize it', (
+      tester,
+    ) async {
+      // February 2026 (five week rows) → March 2026 (six) is the step that
+      // grew the card and moved the chevrons out from under the pointer.
+      await pumpAt(tester, DateTime(2026, 2, 15, 16));
+      final february = tester.getSize(find.byType(GridView)).height;
+
+      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+      await tester.pump();
+
+      expect(find.text('March 2026'), findsOneWidget);
+      expect(tester.getSize(find.byType(GridView)).height, february);
+    });
+  });
 }

@@ -136,10 +136,14 @@ InsightsRange elapsedPortion(InsightsRange range, DateTime now) {
 
 /// Whether [range] still reaches today — i.e. it is the current, still-
 /// unfolding period (today's data isn't final) rather than a completed one.
-/// Drives both the "(so far)" period-label suffix and the compare basis
-/// ("same days" vs "full period"); using one predicate keeps the label and the
-/// comparison from ever disagreeing (e.g. a current week reading "(so far)" yet
-/// comparing on the "full period").
+/// False ahead of today as well as behind it: a period jumped to in the future
+/// contains no "now" either.
+///
+/// Drives the "(so far)" period-label suffix, the compare basis ("same days"
+/// vs "full period") and the anchor a granularity switch re-derives around
+/// (`InsightsRangeController.selectUnit`); using one predicate keeps them from
+/// ever disagreeing (e.g. a current week reading "(so far)" yet comparing on
+/// the "full period").
 bool isInProgress(InsightsRange range, DateTime now) =>
     range.endDayExclusive > epochDay(now) && range.startDay <= epochDay(now);
 

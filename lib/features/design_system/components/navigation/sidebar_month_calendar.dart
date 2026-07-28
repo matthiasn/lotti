@@ -23,6 +23,7 @@ class SidebarMonthCalendar extends StatelessWidget {
     this.markedDays = const <DateTime>{},
     this.today,
     this.firstDayOfWeekIndex,
+    this.reserveFullMonthHeight = false,
     super.key,
   });
 
@@ -55,6 +56,24 @@ class SidebarMonthCalendar extends StatelessWidget {
   /// the region from Flutter's locale APIs.
   final int? firstDayOfWeekIndex;
 
+  /// Pads the day grid out to a constant [_maxWeekRows] rows, so the calendar
+  /// occupies the same height in every month.
+  ///
+  /// A month needs between four and six week rows depending on its length and
+  /// which weekday it starts on — February 2026 fits in five, March 2026 needs
+  /// six. Left to size itself the calendar therefore grows and shrinks as you
+  /// page through months, which moves everything below it and makes the
+  /// chevrons jump out from under the pointer.
+  ///
+  /// Off by default: a host that simply stacks the calendar (the navigation
+  /// sidebar) can absorb the reflow, and reserving a row it rarely needs would
+  /// cost it real estate. Hosts that present the calendar as a card turn it on.
+  final bool reserveFullMonthHeight;
+
+  /// The most week rows any month can occupy: 31 days starting on the last
+  /// column spills into a sixth week.
+  static const _maxWeekRows = 6;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -78,6 +97,12 @@ class SidebarMonthCalendar extends StatelessWidget {
       firstDayOfWeekIndex: firstDayOfWeekIndex,
     );
     final narrowWeekdays = materialLocalizations.narrowWeekdays;
+    // Blank cells after the last day, so every month fills the same number of
+    // week rows. Never negative: the widest month (offset 6 + 31 days = 37)
+    // still fits inside the 42 cells six rows provide.
+    final trailingBlankDayCount = reserveFullMonthHeight
+        ? _maxWeekRows * DateTime.daysPerWeek - firstDayOffset - daysInMonth
+        : 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -135,6 +160,8 @@ class SidebarMonthCalendar extends StatelessWidget {
                 isMarked: marked.contains(cellDay),
                 onTap: onDaySelected,
               ),
+            for (var i = 0; i < trailingBlankDayCount; i++)
+              const SizedBox.shrink(),
           ],
         ),
       ],

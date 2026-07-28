@@ -273,5 +273,157 @@ void main() {
         findsOneWidget,
       );
     });
+
+    // A month occupies four to six week rows depending on its length and
+    // starting weekday, so an unpadded grid changes height as the host pages
+    // through months. [reserveFullMonthHeight] pads every month out to the
+    // six-row worst case.
+    group('reserveFullMonthHeight', () {
+      /// Rendered height of the day grid for [month].
+      Future<double> gridHeight(
+        WidgetTester tester,
+        DateTime month, {
+        required bool reserve,
+        int firstDayOfWeekIndex = 1,
+      }) async {
+        await tester.pumpWidget(
+          _wrap(
+            SidebarMonthCalendar(
+              month: month,
+              today: DateTime(2026, 2, 15),
+              firstDayOfWeekIndex: firstDayOfWeekIndex,
+              reserveFullMonthHeight: reserve,
+              onPreviousMonth: () {},
+              onNextMonth: () {},
+              onDaySelected: (_) {},
+            ),
+          ),
+        );
+        return tester.getSize(find.byType(GridView)).height;
+      }
+
+      // Monday-first 2026: February needs five week rows, March six — the
+      // pair that made the picker card jump a whole row mid-browse.
+      testWidgets('a short and a long month render at the same height', (
+        tester,
+      ) async {
+        final february = await gridHeight(
+          tester,
+          DateTime(2026, 2),
+          reserve: true,
+        );
+        final march = await gridHeight(
+          tester,
+          DateTime(2026, 3),
+          reserve: true,
+        );
+
+        expect(february, march);
+      });
+
+      testWidgets('without it those months differ — the defect', (
+        tester,
+      ) async {
+        final february = await gridHeight(
+          tester,
+          DateTime(2026, 2),
+          reserve: false,
+        );
+        final march = await gridHeight(
+          tester,
+          DateTime(2026, 3),
+          reserve: false,
+        );
+
+        expect(february, lessThan(march));
+      });
+
+      testWidgets('every month of a year renders at one height', (
+        tester,
+      ) async {
+        final heights = <double>{};
+        for (var month = 1; month <= 12; month++) {
+          heights.add(
+            await gridHeight(tester, DateTime(2026, month), reserve: true),
+          );
+        }
+
+        expect(heights, hasLength(1));
+      });
+
+      testWidgets('holds a six-week month without clipping a day', (
+        tester,
+      ) async {
+        // March 2026 starts on a Sunday and has 31 days — the case that spills
+        // into a sixth week. The padding must not displace the real days.
+        await gridHeight(tester, DateTime(2026, 3), reserve: true);
+
+        expect(find.text('1'), findsOneWidget);
+        expect(find.text('31'), findsOneWidget);
+      });
+
+      testWidgets('the reserved space is empty, not extra tappable days', (
+        tester,
+      ) async {
+        // February has 28 days; the padding must add blanks, not cells that
+        // would answer to a tap or read out to a screen reader.
+        final tapped = <DateTime>[];
+        await tester.pumpWidget(
+          _wrap(
+            SidebarMonthCalendar(
+              month: DateTime(2026, 2),
+              today: DateTime(2026, 2, 15),
+              firstDayOfWeekIndex: 1,
+              reserveFullMonthHeight: true,
+              onPreviousMonth: () {},
+              onNextMonth: () {},
+              onDaySelected: tapped.add,
+            ),
+          ),
+        );
+
+        expect(find.text('29'), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(GridView),
+            matching: find.byType(InkWell),
+          ),
+          findsNWidgets(28),
+        );
+
+        // Monday-first February 2026 starts on a Sunday, so the day cells run
+        // from index 6 to 33 of the 42-cell grid and the whole sixth week row
+        // is padding. Tapping into it must reach nothing — a padding cell that
+        // was a real `_DayCell` would report a day here.
+        final grid = tester.getRect(find.byType(GridView));
+        final rowHeight = grid.height / 7; // weekday header + six week rows
+        await tester.tapAt(
+          Offset(grid.center.dx, grid.bottom - rowHeight / 2),
+        );
+        await tester.pump();
+
+        expect(tapped, isEmpty);
+      });
+
+      testWidgets('a Sunday-first region is padded to the same height', (
+        tester,
+      ) async {
+        // The leading blank count differs by region, so the trailing padding
+        // has to be derived from it rather than assumed.
+        final monday = await gridHeight(
+          tester,
+          DateTime(2026, 5),
+          reserve: true,
+        );
+        final sunday = await gridHeight(
+          tester,
+          DateTime(2026, 5),
+          reserve: true,
+          firstDayOfWeekIndex: 0,
+        );
+
+        expect(monday, sunday);
+      });
+    });
   });
 }

@@ -104,9 +104,10 @@ final insightsBucketsProvider = StreamProvider.autoDispose
 /// Weeks start on the device region's first weekday (Monday across most of
 /// Europe, Sunday in the US), read from [firstDayOfWeekIndexProvider] so the
 /// dashboard matches the rest of the app. The stepper drives this:
-/// [selectUnit] re-derives the period for a new granularity (keeping the
-/// current anchor), [step] browses prev/next by one whole period, and
-/// [selectToDate] jumps to the current month-to-date / year-to-date.
+/// [selectUnit] re-derives the period for a new granularity, anchored on today
+/// while the current period still contains it, [step] browses prev/next by one
+/// whole period, and [selectToDate] jumps to the current month-to-date /
+/// year-to-date.
 class InsightsRangeController extends Notifier<InsightsPeriodSelection> {
   // 0 = Sunday … 6 = Saturday; Monday until the region resolves. Held in a
   // field rather than re-read in build() so the async region lookup
@@ -185,14 +186,26 @@ class InsightsRangeController extends Notifier<InsightsPeriodSelection> {
         )
       : null;
 
-  /// Switches the browsed granularity, re-deriving the period that contains
-  /// the current range's start day.
+  /// Switches the browsed granularity, re-deriving the period around the day
+  /// the user is effectively looking at.
+  ///
+  /// That anchor is **today** whenever the current period still contains it,
+  /// and the range's first day otherwise. Anchoring unconditionally on the
+  /// range start (as this used to) reads the wrong day out of every period
+  /// wider than a day: from the current year, "Day" landed on January 1st
+  /// rather than today, and from the current month on the 1st. Browsing a
+  /// *past* period keeps the old behaviour — switching granularity there
+  /// should stay where you are, not teleport to today.
   void selectUnit(InsightsPeriodUnit unit) {
+    final now = clock.now();
+    final anchor = isInProgress(state.range, now)
+        ? now
+        : dayStart(state.range.startDay);
     state = state.copyWith(
       unit: unit,
       range: periodContaining(
         unit,
-        dayStart(state.range.startDay),
+        anchor,
         firstDayOfWeekIndex: _firstDayOfWeekIndex,
       ),
     );
