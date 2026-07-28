@@ -1,5 +1,10 @@
 # Knowledge Bundle Update Log
 
+## 2026-07-29
+* **Removal**: Removed the Character animation concept after its unused
+  implementation was deleted, so the bundle no longer describes or links to a
+  feature that is absent from the repository.
+
 ## 2026-07-26
 * **Enforcement**: The metadata that makes drift detectable now fails the build
   instead of being reported and ignored — a missing or empty `title`,
