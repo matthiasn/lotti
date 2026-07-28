@@ -9994,6 +9994,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Ukončit synchronizaci na tomto zařízení?';
 
   @override
+  String get syncDeviceRemovalInProgress => 'Odebírání zařízení…';
+
+  @override
   String syncDevicesCount(num count, String server) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

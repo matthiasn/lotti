@@ -4566,6 +4566,7 @@
   "syncAddDeviceUnlockHint": "Wordt ontgrendeld na de emoji-match — daarvoor kan het nieuwe apparaat ze toch niet ontsleutelen.",
   "syncDeleteConfigConfirm": "Stoppen met synchroniseren",
   "syncDeleteConfigQuestion": "Synchroniseren op dit apparaat stoppen?",
+  "syncDeviceRemovalInProgress": "Apparaat wordt verwijderd…",
   "syncDevicesCount": "{count, plural, one{1 apparaat op {server}} other{{count} apparaten op {server}}}",
   "syncDevicesJustJoined": "{deviceName} is zojuist toegetreden en geverifieerd",
   "syncDevicesJustJoinedHint": "Geef het nu je instellingen en berichtgeschiedenis.",

@@ -4011,6 +4011,7 @@
   "syncAddDeviceUnlockHint": "Wird nach dem Emoji-Abgleich freigeschaltet — vorher könnte das neue Gerät sie ohnehin nicht entschlüsseln.",
   "syncDeleteConfigConfirm": "Sync beenden",
   "syncDeleteConfigQuestion": "Sync auf diesem Gerät beenden?",
+  "syncDeviceRemovalInProgress": "Gerät wird entfernt …",
   "syncDevicesCount": "{count, plural, one{1 Gerät auf {server}} other{{count} Geräte auf {server}}}",
   "syncDevicesJustJoined": "{deviceName} ist gerade beigetreten und verifiziert",
   "syncDevicesJustJoinedHint": "Übergib ihm jetzt deine Einstellungen und deinen Nachrichtenverlauf.",

@@ -631,6 +631,33 @@ void main() {
     expect(find.text('1 device on matrix.example.com'), findsOneWidget);
   });
 
+  testWidgets('the count skips sessions the server no longer lists', (
+    tester,
+  ) async {
+    // The roster can carry a cache-only leftover — unverified keys the
+    // homeserver already dropped. "N devices on <server>" must not claim
+    // the server has what it explicitly does not.
+    const cacheOnly = SyncDeviceInfo(
+      deviceId: 'STALE',
+      displayName: 'Stale cache entry',
+      isCurrentDevice: false,
+      verified: false,
+      onServer: false,
+    );
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([
+        currentDevice,
+        cacheOnly,
+      ]),
+    );
+
+    // Both rows render — removal needs the card — but only the session the
+    // server still lists is counted as being on it.
+    expect(find.byType(DeviceCard), findsNWidgets(2));
+    expect(find.text('1 device on example.com'), findsOneWidget);
+  });
+
   testWidgets('the header wraps rather than overflowing at large text', (
     tester,
   ) async {

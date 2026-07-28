@@ -10020,6 +10020,9 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Dejar de sincronizar este dispositivo?';
 
   @override
+  String get syncDeviceRemovalInProgress => 'Eliminando el dispositivo…';
+
+  @override
   String syncDevicesCount(num count, String server) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -4011,6 +4011,7 @@
   "syncAddDeviceUnlockHint": "Se deblochează după potrivirea emoji-urilor — înainte de asta, noul dispozitiv oricum nu le-ar putea decripta.",
   "syncDeleteConfigConfirm": "Opriți sincronizarea",
   "syncDeleteConfigQuestion": "Opriți sincronizarea pe acest dispozitiv?",
+  "syncDeviceRemovalInProgress": "Se elimină dispozitivul…",
   "syncDevicesCount": "{count, plural, one{1 dispozitiv pe {server}} few{{count} dispozitive pe {server}} other{{count} de dispozitive pe {server}}}",
   "syncDevicesJustJoined": "{deviceName} tocmai s-a conectat și este verificat",
   "syncDevicesJustJoinedHint": "Predați-i acum setările și istoricul mesajelor dumneavoastră.",

@@ -17037,6 +17037,12 @@ abstract class AppLocalizations {
   /// **'Stop syncing this device?'**
   String get syncDeleteConfigQuestion;
 
+  /// Tooltip/semantics label while a device removal request is running (can take many seconds).
+  ///
+  /// In en, this message translates to:
+  /// **'Removing device…'**
+  String get syncDeviceRemovalInProgress;
+
   /// Roster subtitle: device count plus the sync server host.
   ///
   /// In en, this message translates to:

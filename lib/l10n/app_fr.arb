@@ -4011,6 +4011,7 @@
   "syncAddDeviceUnlockHint": "Se débloque après la correspondance des émojis — avant cela, le nouvel appareil ne pourrait de toute façon pas les déchiffrer.",
   "syncDeleteConfigConfirm": "Arrêter la synchronisation",
   "syncDeleteConfigQuestion": "Arrêter la synchronisation sur cet appareil ?",
+  "syncDeviceRemovalInProgress": "Suppression de l'appareil…",
   "syncDevicesCount": "{count, plural, one{1 appareil sur {server}} other{{count} appareils sur {server}}}",
   "syncDevicesJustJoined": "{deviceName} vient de se connecter et est vérifié",
   "syncDevicesJustJoinedHint": "Transmets-lui maintenant tes réglages et ton historique de messages.",

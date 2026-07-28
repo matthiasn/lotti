@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -240,14 +241,24 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                 SizedBox(width: tokens.spacing.step2),
                 IconButton(
                   key: const Key('matrix_delete_device'),
-                  tooltip: messages.deleteDeviceLabel,
+                  // Removal can sit in the server's key-refresh timeout for
+                  // many seconds; a frozen glyph read as "nothing happened".
+                  // The tooltip doubles as the semantics label, so assistive
+                  // technology hears the busy state too.
+                  tooltip: _busy
+                      ? messages.syncDeviceRemovalInProgress
+                      : messages.deleteDeviceLabel,
                   padding: EdgeInsets.zero,
                   onPressed: _busy ? null : () => _deleteDevice(context),
-                  icon: Icon(
-                    Icons.delete_outline_rounded,
-                    size: tokens.spacing.step5 + tokens.spacing.step1,
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
+                  icon: _busy
+                      ? DesignSystemSpinner(
+                          size: tokens.spacing.step5 + tokens.spacing.step1,
+                        )
+                      : Icon(
+                          Icons.delete_outline_rounded,
+                          size: tokens.spacing.step5 + tokens.spacing.step1,
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
                 ),
               ],
             ],

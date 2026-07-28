@@ -1,13 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -128,6 +132,47 @@ void main() {
       verify(() => mockMatrixService.deleteDeviceById('DEVICE1')).called(1);
       expect(refreshed, isTrue);
       expect(find.text('Pixel 7 removed from sync'), findsOneWidget);
+    });
+
+    testWidgets('a slow removal shows a spinner, not a frozen glyph', (
+      tester,
+    ) async {
+      // deleteDeviceById can sit in the server's key-refresh timeout for
+      // up to 15 seconds. During that window the corner icon must read as
+      // "working", and its tooltip — the semantics label — must say so.
+      final gate = Completer<void>();
+      when(
+        () => mockMatrixService.deleteDeviceById('DEVICE1'),
+      ).thenAnswer((_) => gate.future);
+
+      await pumpCard(tester, buildDevice(), refreshListCallback: () {});
+
+      await tester.tap(find.byKey(const Key('matrix_delete_device')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('REMOVE FROM SYNC'));
+      await tester.pump();
+      await tester.pump();
+
+      final busyButton = tester.widget<IconButton>(
+        find.byKey(const Key('matrix_delete_device')),
+      );
+      expect(busyButton.onPressed, isNull);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('matrix_delete_device')),
+          matching: find.byType(DesignSystemSpinner),
+        ),
+        findsOneWidget,
+      );
+      final context = tester.element(find.byType(DeviceCard));
+      expect(
+        busyButton.tooltip,
+        context.messages.syncDeviceRemovalInProgress,
+      );
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(DesignSystemSpinner), findsNothing);
     });
 
     testWidgets('cancelling the confirmation leaves the device alone', (

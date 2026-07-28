@@ -238,7 +238,14 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
             children: [
               if (serverHost != null)
                 Text(
-                  messages.syncDevicesCount(devices.length, serverHost),
+                  // Only sessions the homeserver still lists: the roster can
+                  // also carry cache-only leftovers (unverified keys the
+                  // server no longer knows), and "N devices on <server>"
+                  // must not count what the server explicitly does not have.
+                  messages.syncDevicesCount(
+                    devices.where((device) => device.onServer).length,
+                    serverHost,
+                  ),
                   key: const Key('sync_devices_count'),
                   style: tokens.typography.styles.body.bodySmall.copyWith(
                     color: tokens.colors.text.mediumEmphasis,

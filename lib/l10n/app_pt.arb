@@ -4566,6 +4566,7 @@
   "syncAddDeviceUnlockHint": "Desbloqueia depois de os emojis coincidirem — antes disso, o dispositivo novo nem os conseguiria decifrar.",
   "syncDeleteConfigConfirm": "Parar de sincronizar",
   "syncDeleteConfigQuestion": "Parar de sincronizar este dispositivo?",
+  "syncDeviceRemovalInProgress": "A remover o dispositivo…",
   "syncDevicesCount": "{count, plural, one{1 dispositivo em {server}} other{{count} dispositivos em {server}}}",
   "syncDevicesJustJoined": "{deviceName} acabou de se juntar e está verificado",
   "syncDevicesJustJoinedHint": "Passa-lhe agora as tuas definições e o histórico de mensagens.",

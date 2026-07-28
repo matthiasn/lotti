@@ -4018,6 +4018,7 @@
   "syncAddDeviceUnlockHint": "Odemkne se po shodě emoji — do té doby by je nové zařízení stejně nerozšifrovalo.",
   "syncDeleteConfigConfirm": "Ukončit synchronizaci",
   "syncDeleteConfigQuestion": "Ukončit synchronizaci na tomto zařízení?",
+  "syncDeviceRemovalInProgress": "Odebírání zařízení…",
   "syncDevicesCount": "{count, plural, one{1 zařízení na {server}} few{{count} zařízení na {server}} other{{count} zařízení na {server}}}",
   "syncDevicesJustJoined": "{deviceName} se právě připojilo a je ověřené",
   "syncDevicesJustJoinedHint": "Předej mu teď svá nastavení a historii zpráv.",

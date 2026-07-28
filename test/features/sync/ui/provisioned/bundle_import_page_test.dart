@@ -417,6 +417,52 @@ void main() {
       );
     });
 
+    testWidgets('the context rows survive a large text scale intact', (
+      tester,
+    ) async {
+      // The account and server are the values this screen exists to let the
+      // user review. A fixed label + right-aligned value row squeezed the
+      // identifier into a sliver (or overflowed) once a long localized
+      // label met an accessibility text scale; the pair must stack instead.
+      tester.view
+        ..physicalSize = const Size(390, 2400)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            // Scrollable because the production sheet scrolls; the test
+            // scaffold's fixed height is not the surface under test — the
+            // horizontal fit of the context rows is.
+            child: SingleChildScrollView(
+              child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            ),
+          ),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), validBase64);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final context = tester.element(find.byType(BundleImportWidget));
+      final importButton = find.text(
+        context.messages.provisionedSyncImportButton,
+      );
+      await tester.ensureVisible(importButton);
+      await tester.tap(importButton);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.takeException(), isNull, reason: 'no overflow');
+      // The identifier is intact, not ellipsized into uncheckability.
+      expect(find.text('@alice:example.com'), findsOneWidget);
+    });
+
     testWidgets('the check code matches what the other device derives', (
       tester,
     ) async {

@@ -9799,6 +9799,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncDeleteConfigQuestion => 'Stop syncing this device?';
 
   @override
+  String get syncDeviceRemovalInProgress => 'Removing device…';
+
+  @override
   String syncDevicesCount(num count, String server) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

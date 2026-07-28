@@ -4567,6 +4567,7 @@
   "syncAddDeviceUnlockHint": "Si sblocca dopo la corrispondenza delle emoji: prima, il nuovo dispositivo non potrebbe comunque decifrarli.",
   "syncDeleteConfigConfirm": "Interrompi la sincronizzazione",
   "syncDeleteConfigQuestion": "Interrompere la sincronizzazione su questo dispositivo?",
+  "syncDeviceRemovalInProgress": "Rimozione del dispositivo…",
   "syncDevicesCount": "{count, plural, one{1 dispositivo su {server}} other{{count} dispositivi su {server}}}",
   "syncDevicesJustJoined": "{deviceName} si è appena collegato ed è verificato",
   "syncDevicesJustJoinedHint": "Passagli ora le tue impostazioni e la cronologia dei messaggi.",

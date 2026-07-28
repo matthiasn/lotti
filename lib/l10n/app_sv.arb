@@ -4567,6 +4567,7 @@
   "syncAddDeviceUnlockHint": "Låses upp efter emoji-matchningen — innan dess kan den nya enheten ändå inte dekryptera dem.",
   "syncDeleteConfigConfirm": "Sluta synka",
   "syncDeleteConfigQuestion": "Sluta synka den här enheten?",
+  "syncDeviceRemovalInProgress": "Tar bort enheten…",
   "syncDevicesCount": "{count, plural, one{1 enhet på {server}} other{{count} enheter på {server}}}",
   "syncDevicesJustJoined": "{deviceName} anslöt nyss och är verifierad",
   "syncDevicesJustJoinedHint": "Ge den dina inställningar och meddelandehistorik nu.",

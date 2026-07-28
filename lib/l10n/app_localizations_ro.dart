@@ -10051,6 +10051,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Opriți sincronizarea pe acest dispozitiv?';
 
   @override
+  String get syncDeviceRemovalInProgress => 'Se elimină dispozitivul…';
+
+  @override
   String syncDevicesCount(num count, String server) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -90,8 +90,10 @@ void main() {
       // The position lives in paint — fill and weight — which a screen
       // reader cannot perceive. Without this node it would announce three
       // equal captions and no "which step am I on".
+      //
+      // Disposed at the end of the body, not via addTearDown: the
+      // framework's end-of-test handle check runs before tear-downs.
       final handle = tester.ensureSemantics();
-      addTearDown(handle.dispose);
       await pumpTrack(tester, SyncWizardStep.check);
 
       final context = tester.element(find.byType(SyncWizardProgressTrack));
@@ -110,6 +112,8 @@ void main() {
         find.bySemanticsLabel(context.messages.syncWizardStepGetCode),
         findsNothing,
       );
+
+      handle.dispose();
     });
 
     testWidgets('gives only the active label full emphasis', (tester) async {

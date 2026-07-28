@@ -957,21 +957,24 @@ class _ContextRow extends StatelessWidget {
     final tokens = context.designTokens;
     final styles = tokens.typography.styles.body;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: styles.bodySmall.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
+    // A Wrap, not a Row: at large text scales a long localized label would
+    // otherwise take its full intrinsic width and squeeze the identifier —
+    // the one value this screen exists to let the user review. When the
+    // pair no longer fits side by side, the value drops to its own line.
+    return SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        spacing: tokens.spacing.step4,
+        children: [
+          Text(
+            label,
+            style: styles.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
           ),
-        ),
-        SizedBox(width: tokens.spacing.step4),
-        Flexible(
-          child: Text(
+          Text(
             value,
-            textAlign: TextAlign.end,
             // Mono, so the account and server read as exact identifiers: a
             // proportional face with hyphen line-breaks undermined the one
             // screen whose typography must guarantee exact comparison.
@@ -982,8 +985,8 @@ class _ContextRow extends StatelessWidget {
               color: tokens.colors.text.highEmphasis,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

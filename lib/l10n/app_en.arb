@@ -4788,6 +4788,10 @@
   "syncAddDeviceUnlockHint": "Unlocks after the emoji match — before that, the new device can't decrypt them anyway.",
   "syncDeleteConfigConfirm": "Stop syncing",
   "syncDeleteConfigQuestion": "Stop syncing this device?",
+  "syncDeviceRemovalInProgress": "Removing device…",
+  "@syncDeviceRemovalInProgress": {
+    "description": "Tooltip/semantics label while a device removal request is running (can take many seconds)."
+  },
   "syncDevicesCount": "{count, plural, one{1 device on {server}} other{{count} devices on {server}}}",
   "@syncDevicesCount": {
     "description": "Roster subtitle: device count plus the sync server host.",
