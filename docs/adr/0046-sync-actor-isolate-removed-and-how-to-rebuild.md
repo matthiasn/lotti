@@ -85,11 +85,13 @@ lines was the design, not the code.
 - ~7400 lines leave the repo; future sync changes stop needing a second,
   unreachable implementation.
 - Existing installs carry a stale `enable_sync_actor` row. Flags are seeded
-  with `insertFlagIfNotExists`, which never deletes, and the settings page
-  lists whatever rows the table holds — so removing the seed alone would leave
-  a live toggle wired to nothing. `initConfigFlags` now ends by deleting every
-  name in `retiredConfigFlags`, which is the mechanism to use whenever a flag
-  is retired.
+  with `insertFlagIfNotExists`, which never deletes, so removing the seed
+  alone leaves the row in every upgraded install forever — stored, emitted by
+  `watchConfigFlags`, and readable by name. It was never a *visible* toggle:
+  `FlagsBody` renders only the names in its `defaultDisplayedItems` whitelist,
+  and `enable_sync_actor` was never on it. `initConfigFlags` now ends by
+  deleting every name in `retiredConfigFlags` — storage cleanup, and the
+  mechanism to use whenever a flag is retired.
 - If jank appears later, the rebuild starts from this document rather than
   from a stale branch.
 
@@ -109,12 +111,20 @@ Establish that the remaining cost is still a render-thread problem.
 
 ### What proved sound
 
-**Direct DB writes, no apply/ack protocol.** The actor opens its own
-connections to the same `db.sqlite` and `settings.sqlite` files and writes
-through them. SQLite handles this: WAL mode, `busy_timeout = 5000` and
-`synchronous = NORMAL` are set in `_setupDatabase()`, so readers do not block
-writers. This removed an entire class of complexity from the original design
-and should be kept.
+**Direct DB writes, no apply/ack protocol.** The design was for the actor to
+open its own connections to the same SQLite files as the main isolate and
+write through them, rather than shipping every change back over a port. SQLite
+handles this: WAL mode, `busy_timeout = 5000` and `synchronous = NORMAL` are
+set in `_setupDatabase()`, so readers do not block writers. This removed an
+entire class of complexity from the original design and should be kept.
+
+Be precise about how far this was actually proven, because a rebuild will
+inherit the gap. **The only database the actor ever opened was
+`SyncDatabase`** — `SyncActorCommandHandler` constructed it through a
+`SyncDatabaseFactory`, and `OutboundQueue` claimed and updated outbox rows
+through it directly. `JournalDb` and `SettingsDb` from a second isolate is
+plan phase 4, which never landed (see above). So cross-isolate writes are
+demonstrated for the outbox and *inferred* for the journal.
 
 **Notification-driven UI refresh.** All sync-affected Drift `watch()` calls
 were replaced with `notificationDrivenStream()` fed by `UpdateNotifications`
@@ -131,11 +141,32 @@ Wire format detail worth keeping: send `List<String>`, not `Set`, because
 **A flat command/event protocol over `SendPort`.** Commands carry
 `{command, requestId, replyTo, ...payload}`; responses carry
 `{ok, requestId, error?, errorCode?, ...result}`; events carry
-`{event, ...payload}`. No priority queues or QoS. A linear state model —
-`uninitialized → initializing → idle → syncing → stopping → disposed` — with
+`{event, ...payload}`. No priority queues or QoS. A small state model with
 out-of-state commands answered `errorCode: 'INVALID_STATE'`. This was enough
 for login, room join, SAS verification and send/receive, and did not need to
 grow.
+
+The states were `uninitialized`, `initializing`, `idle`, `syncing`,
+`stopping`, `disposed`, but they were **not** a single linear chain, and a
+rebuild that assumes one will get the valid-command table wrong:
+
+```mermaid
+stateDiagram-v2
+  [*] --> uninitialized
+  uninitialized --> initializing: init
+  initializing --> syncing: init completes, background sync started
+  initializing --> uninitialized: init fails
+  syncing --> idle: stopSync
+  idle --> syncing: startSync
+  syncing --> stopping: dispose
+  idle --> stopping: dispose
+  stopping --> disposed
+  disposed --> [*]
+```
+
+`init` went straight to `syncing` — it started background sync as part of
+initialization — so `idle` was reachable **only** by an explicit `stopSync`,
+and `startSync` was rejected unless the actor was already `idle`.
 
 **Integration-test-driven development.** The docker-backed two-client test was
 the specification, and each phase extended it. That kept the actor honest
@@ -148,25 +179,33 @@ behind a flag is not a matter of skipping `MatrixService.init()`:
 
 - `OutboxService`'s *constructor* calls `_startRunner()` (creating a
   `ClientRunner` and a watchdog timer) and subscribes to connectivity, login
-  state, and `watchOutboxCount()`. Constructing it starts sending.
-- `MatrixService`'s *constructor* builds the `MatrixStreamConsumer` pipeline,
-  schedules an unawaited startup `forceRescan()`, and subscribes to
-  connectivity.
+  state, and `watchOutboxCount()`. **Constructing it starts sending.**
+- `MatrixService`'s *constructor* subscribes to connectivity and builds the
+  `MatrixStreamConsumer` pipeline object. It does **not** start that pipeline
+  and does not kick off a rescan: `init()` does, via `_startQueuePipeline()`,
+  and `get_it_helpers.dart` calls `init()` separately.
 
 The invariant is: **when actor mode is active there must be exactly zero
 legacy sync producers running**, and the actor is sole owner of the Matrix
-client, sync loop and outbound sends. That requires preventing *construction*,
-not just initialization — which in turn breaks every consumer that resolves
-those singletons unconditionally (`main.dart`'s provider override, the
+client, sync loop and outbound sends. The two services need different
+treatment to get there, and conflating them is what makes the problem look
+harder than it is. For `MatrixService`, skipping `init()` is sufficient to
+keep it inert — construction leaves an idle pipeline object and a
+connectivity listener, neither of which sends or syncs. For `OutboxService`,
+only preventing *construction* works, and that is what breaks consumers
+resolving the singleton unconditionally (`main.dart`'s provider override, the
 `beamer_app` login-gate toast, sync maintenance, and the room/stats
-providers). Each needs a no-op stub or a conditional. Any rebuild should
-extract a `startSyncServices()` seam first and test that the flag-on path
-completes startup without constructing either service.
+providers). Any rebuild should extract a `startSyncServices()` seam first and
+test that the flag-on path completes startup without constructing
+`OutboxService` or calling `MatrixService.init()`.
 
 Read-only consumers of `SyncDatabase` and `JournalDb` may keep running. The
-outbox monitor page writes (`updateOutboxItem`, `deleteOutboxItemById`), which
-is safe only as long as the actor does not touch `SyncDatabase` — the original
-plan deliberately kept it out of scope, and a rebuild should too.
+outbox monitor page also writes (`updateOutboxItem`, `deleteOutboxItemById`),
+and that is the one genuine conflict: the actor's own `OutboundQueue` claimed
+and updated the same outbox rows. Ownership of `SyncDatabase` has to be
+settled explicitly in a rebuild — either the actor owns the outbox and the
+monitor page becomes read-only, or the monitor keeps its writes and the two
+coordinate through row claims. It cannot be left implicit as it was.
 
 ### What has changed since, and must be decided up front
 

@@ -2,7 +2,13 @@
 
 ## Context
 
-We are preparing for the Actor-Based Sync Isolate (see `docs/implementation_plans/2026-02-12_actor_based_sync_isolate_plan.md`). The sync actor will open its own `JournalDb` and `SettingsDb` connections to the same SQLite files as the main isolate. Without WAL mode, this causes "Database is Locked" errors. Additionally, read pools offload heavy reads to background isolates, keeping the UI thread responsive during sync.
+**Historical note (2026-07-29):** the actor isolate this plan was written for has
+since been removed, and its plan file with it — see
+[ADR 0046](../adr/0046-sync-actor-isolate-removed-and-how-to-rebuild.md) for what
+was kept of that design. WAL mode and read pools were adopted on their own
+merits and remain in place; the motivation below is recorded as it stood.
+
+We were preparing for the Actor-Based Sync Isolate. The sync actor would open its own `JournalDb` and `SettingsDb` connections to the same SQLite files as the main isolate. Without WAL mode, this causes "Database is Locked" errors. Additionally, read pools offload heavy reads to background isolates, keeping the UI thread responsive during sync.
 
 **Current state**: `openDbConnection()` in `common.dart` calls `NativeDatabase.createInBackground(file)` with no setup callback, no WAL, and no read pools. Drift 2.21.0 is declared (supports `readPool`, introduced in 2.20.0).
 

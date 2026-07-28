@@ -194,13 +194,16 @@ Future<void> initConfigFlags(
   }
 }
 
-/// Flags the app no longer defines, removed from existing installs on start.
+/// Flags the app no longer defines, deleted from existing installs on start.
 ///
-/// Deleting a flag's `insertFlagIfNotExists` call only stops *new* installs
-/// from getting it. The settings page lists whatever rows `config_flags`
-/// holds, so without this an upgraded install keeps a toggle that no code
-/// reads. Entries can be dropped from this list once every install that could
-/// still carry the row has upgraded past it.
+/// This is storage cleanup, not a fix for a visible toggle: `FlagsBody`
+/// renders only the names in its `defaultDisplayedItems` whitelist, so a row
+/// the app has stopped defining is already invisible there. Deleting a flag's
+/// `insertFlagIfNotExists` call stops *new* installs from getting the row, but
+/// upgraded installs keep it forever — still stored, still emitted by
+/// `watchConfigFlags`, and still readable by name. Entries can be dropped from
+/// this list once every install that could still carry the row has upgraded
+/// past it.
 const retiredConfigFlags = <String>[
   // Removed with the sync actor isolate (ADR 0046). Never read by any code
   // path: the actor it would have gated was never wired into the app.

@@ -85,7 +85,6 @@ lib/features/sync/
 ├── sequence/    # (hostId, counter) accounting
 ├── backfill/    # gap requests and responses
 ├── media/       # self-healing fetch for missing image/audio blobs
-├── actor/       # isolate-based implementation (not the default path)
 ├── model/       # SyncMessage and node profiles
 ├── state/       # Riverpod controllers
 └── ui/          # settings, stats, conflicts, outbox monitor

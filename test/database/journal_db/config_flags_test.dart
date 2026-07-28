@@ -184,20 +184,33 @@ void main() {
       expect(names, isNot(contains(retired)));
     });
 
-    test('every retired flag name is gone from the seeded set', () async {
-      // Guards the reverse mistake: a flag named in `retiredConfigFlags`
-      // while still being seeded would be deleted and re-inserted on every
-      // start, flapping the settings list.
+    test('a retired flag is never seeded, not even transiently', () async {
+      // Asserting the final table state cannot catch the mistake this guards:
+      // a flag left in the seed calls *and* listed as retired is inserted and
+      // then deleted within the same `initConfigFlags` run, so the table ends
+      // up correct while every start pays an insert, a delete and two stream
+      // emissions. Watch what the flag stream actually emits instead.
+      for (final retired in retiredConfigFlags) {
+        await db.deleteConfigFlag(retired);
+      }
+
+      final emitted = <String>{};
+      final subscription = db.watchConfigFlags().listen((flags) {
+        emitted.addAll(flags.map((flag) => flag.name));
+      });
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+
       await initConfigFlags(db, inMemoryDatabase: true);
-      final names = (await db.watchConfigFlags().first)
-          .map((f) => f.name)
-          .toSet();
+      await pumpEventQueue();
 
       for (final retired in retiredConfigFlags) {
         expect(
-          names,
+          emitted,
           isNot(contains(retired)),
-          reason: '$retired is retired but still seeded by initConfigFlags',
+          reason:
+              '$retired is retired but still seeded by initConfigFlags, so '
+              'every start inserts and then deletes it again',
         );
       }
     });
