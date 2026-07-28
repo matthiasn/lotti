@@ -1,0 +1,62 @@
+---
+title: Primul dumneavoastră dispozitiv
+description: De unde provine primul cod de asociere când niciun dispozitiv nu este încă conectat — instrumentul de provizionare de pe partea de server și ce se face cu bundle-ul pe care îl scrie.
+---
+
+# Primul dumneavoastră dispozitiv
+
+Fiecare dispozitiv de după primul își primește codul de asociere de la un
+dispozitiv pe care îl folosiți deja — acel parcurs este
+[Adăugați un dispozitiv](./add-device.mdx). Primul este diferit: nu există
+alt dispozitiv care să genereze un cod. Sincronizarea Lotti este
+auto-găzduită, așa că primul cod vine de pe partea de server — creat de
+persoana care administrează homeserver-ul dumneavoastră Synapse.
+
+## Ce face instrumentul de provizionare
+
+Lotti include un CLI de administrare, **provizionerul Matrix**, în depozit
+la
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Rulat de un administrator al homeserver-ului:
+
+1. creează un cont Matrix nou, dedicat sincronizării,
+2. creează camera de sincronizare criptată și
+3. scrie într-un fișier un **bundle de provizionare** — textul pe care
+   Lotti îl acceptă drept cod de asociere.
+
+README-ul de lângă instrument documentează fiecare argument și modurile
+sigure de a furniza parola de administrator. O rulare minimă arată astfel:
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+Dacă nu administrați propriul homeserver, acest pas nu vă revine — cereți
+bundle-ul persoanei care operează serverul și tratați calea pe care ajunge
+la dumneavoastră cu grija descrisă mai jos.
+
+## Folosiți bundle-ul drept primul cod de asociere
+
+Pe dispozitivul care urmează să devină primul, deschideți **Setări → Setări
+sincronizare → Dispozitive** și alegeți **Configurați sincronizarea**.
+Lipiți textul bundle-ului în câmpul pentru cod — pe telefon, unde se
+deschide întâi camera, ajungeți acolo prin **Lipiți codul în schimb**. De
+aici fluxul este parcursul obișnuit de asociere: verificați ce descrie
+codul, conectați-vă și [verificați dispozitivul](./sync.mdx).
+
+O diferență merită cunoscută: consumarea unui bundle de provizionare
+proaspăt **rotește parola contului** în cadrul conectării. Fișierul
+bundle-ului este epuizat după prima utilizare — datele de autentificare
+valabile există apoi doar pe acel dispozitiv, iar fiecare dispozitiv
+următor se asociază de la unul existent prin
+[Adăugați un dispozitiv](./add-device.mdx). Ștergeți fișierul bundle-ului
+imediat ce primul dispozitiv este conectat; o copie uitată nu se mai poate
+autentifica, dar nu există niciun motiv să o păstrați.
+
+Până la acea primă utilizare, tratați bundle-ul ca pe o parolă: se
+autentifică în contul de sincronizare — țineți-l departe de conversații,
+capturi de ecran și ecrane partajate.

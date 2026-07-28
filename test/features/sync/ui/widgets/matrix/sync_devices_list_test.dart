@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -55,6 +56,10 @@ void main() {
     when(
       () => mockMatrixService.getSyncDevices(),
     ).thenAnswer((_) async => []);
+    // The header derives the sync server from the account id.
+    final mockClient = MockMatrixClient();
+    when(() => mockMatrixService.client).thenReturn(mockClient);
+    when(() => mockClient.userID).thenReturn('@alice:example.com');
   });
 
   Future<void> pumpList(
@@ -585,6 +590,368 @@ void main() {
         DesignSystemButtonVariant.primary,
       );
     }
+  });
+
+  testWidgets('the header counts the devices on their server', (tester) async {
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([
+        currentDevice,
+        const SyncDeviceInfo(
+          deviceId: 'OTHER',
+          displayName: 'Old laptop',
+          isCurrentDevice: false,
+          verified: true,
+        ),
+      ]),
+    );
+
+    // With no resolved homeserver, the account-id domain is the fallback.
+    expect(find.byKey(const Key('sync_devices_count')), findsOneWidget);
+    expect(find.text('2 devices on example.com'), findsOneWidget);
+  });
+
+  testWidgets('the header names the homeserver over the account-id domain', (
+    tester,
+  ) async {
+    // A Matrix ID's domain can differ from the host actually serving the
+    // account; the roster must name the server it talks to.
+    final mockClient = MockMatrixClient();
+    when(() => mockMatrixService.client).thenReturn(mockClient);
+    when(() => mockClient.userID).thenReturn('@alice:example.com');
+    when(
+      () => mockClient.homeserver,
+    ).thenReturn(Uri.parse('https://matrix.example.com'));
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([currentDevice]),
+    );
+
+    expect(find.text('1 device on matrix.example.com'), findsOneWidget);
+  });
+
+  testWidgets('the count skips sessions the server no longer lists', (
+    tester,
+  ) async {
+    // The roster can carry a cache-only leftover — unverified keys the
+    // homeserver already dropped. "N devices on <server>" must not claim
+    // the server has what it explicitly does not.
+    const cacheOnly = SyncDeviceInfo(
+      deviceId: 'STALE',
+      displayName: 'Stale cache entry',
+      isCurrentDevice: false,
+      verified: false,
+      onServer: false,
+    );
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([
+        currentDevice,
+        cacheOnly,
+      ]),
+    );
+
+    // Both rows render — removal needs the card — but only the session the
+    // server still lists is counted as being on it.
+    expect(find.byType(DeviceCard), findsNWidgets(2));
+    expect(find.text('1 device on example.com'), findsOneWidget);
+  });
+
+  testWidgets('the header wraps rather than overflowing at large text', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(390, 2400)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      makeTestableWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: SizedBox(
+            width: 390,
+            child: SyncDevicesList(now: () => now),
+          ),
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          syncDevicesControllerProvider.overrideWith(
+            () => _FakeSyncDevicesController([currentDevice]),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // The count breaks onto its own run instead of two unshrinkable
+    // controls forcing a horizontal RenderFlex overflow.
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('sync_devices_add_device')), findsOneWidget);
+  });
+
+  testWidgets('lays the cards out in two columns on a wide pane', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1200, 1600)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // The scaffold harness caps content at 800 points — narrower than two
+    // wide-layout cards — so this pumps the pane width directly.
+    await tester.pumpWidget(
+      makeTestableWidget(
+        SizedBox(
+          width: 1100,
+          child: SyncDevicesList(now: () => now),
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          syncDevicesControllerProvider.overrideWith(
+            () => _FakeSyncDevicesController([
+              currentDevice,
+              const SyncDeviceInfo(
+                deviceId: 'OTHER',
+                displayName: 'Old laptop',
+                isCurrentDevice: false,
+                verified: true,
+              ),
+            ]),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final first = tester.getRect(find.byType(DeviceCard).first);
+    final second = tester.getRect(find.byType(DeviceCard).last);
+    // Side by side, not stacked: a wide detail pane must not render the
+    // roster as full-width rows with most of the canvas empty.
+    expect(second.left, greaterThan(first.right));
+  });
+
+  testWidgets('keeps a single column where two would cramp the cards', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(600, 1600)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([
+        currentDevice,
+        const SyncDeviceInfo(
+          deviceId: 'OTHER',
+          displayName: 'Old laptop',
+          isCurrentDevice: false,
+          verified: true,
+        ),
+      ]),
+    );
+
+    final first = tester.getRect(find.byType(DeviceCard).first);
+    final second = tester.getRect(find.byType(DeviceCard).last);
+    expect(second.top, greaterThan(first.bottom));
+  });
+
+  group('just-joined hand-off banner', () {
+    Future<ProviderContainer> pumpWithContainer(
+      WidgetTester tester, {
+      required List<SyncDeviceInfo> initial,
+    }) async {
+      final container = ProviderContainer(
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          syncDevicesControllerProvider.overrideWith(
+            () => _FakeSyncDevicesController(initial),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidgetWithScaffold(
+            SingleChildScrollView(child: SyncDevicesList(now: () => now)),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      return container;
+    }
+
+    const joinedPhone = SyncDeviceInfo(
+      deviceId: 'NEWPHONE',
+      displayName: 'Pixel 9 Pro',
+      isCurrentDevice: false,
+      verified: false,
+    );
+    const verifiedPhone = SyncDeviceInfo(
+      deviceId: 'NEWPHONE',
+      displayName: 'Pixel 9 Pro',
+      isCurrentDevice: false,
+      verified: true,
+    );
+
+    testWidgets('appears when a device verifies while the roster is open', (
+      tester,
+    ) async {
+      // The moment the Add-device sheet used to own — and lost the instant
+      // it was closed. The roster is where the hand-off must survive.
+      final container = await pumpWithContainer(
+        tester,
+        initial: [currentDevice, joinedPhone],
+      );
+      expect(
+        find.byKey(const Key('sync_devices_just_joined')),
+        findsNothing,
+      );
+
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = const AsyncData<List<SyncDeviceInfo>>([
+        currentDevice,
+        verifiedPhone,
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('sync_devices_just_joined')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Pixel 9 Pro'), findsWidgets);
+      // Both hand-off actions ride on the banner.
+      expect(
+        find.byKey(const Key('sync_devices_send_settings')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('sync_devices_send_messages')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('stays away for a roster that was already verified', (
+      tester,
+    ) async {
+      // A device that was verified before the list opened is old news; the
+      // banner is for the fresh arrival, not a permanent fixture.
+      await pumpWithContainer(
+        tester,
+        initial: [currentDevice, verifiedPhone],
+      );
+
+      expect(
+        find.byKey(const Key('sync_devices_just_joined')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('offers the hand-off again for a second fresh device', (
+      tester,
+    ) async {
+      // Latching only the first arrival — or keeping a dismissal across
+      // devices — silently drops the hand-off for every device paired
+      // after it in the same roster session.
+      const secondJoined = SyncDeviceInfo(
+        deviceId: 'TABLET',
+        displayName: 'Pixel Tablet',
+        isCurrentDevice: false,
+        verified: false,
+      );
+      const secondVerified = SyncDeviceInfo(
+        deviceId: 'TABLET',
+        displayName: 'Pixel Tablet',
+        isCurrentDevice: false,
+        verified: true,
+      );
+
+      final container = await pumpWithContainer(
+        tester,
+        initial: [currentDevice, joinedPhone, secondJoined],
+      );
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = const AsyncData<List<SyncDeviceInfo>>([
+        currentDevice,
+        verifiedPhone,
+        secondJoined,
+      ]);
+      await tester.pump();
+      await tester.pump();
+      expect(find.textContaining('Pixel 9 Pro'), findsWidgets);
+
+      await tester.tap(
+        find.byKey(const Key('sync_devices_just_joined_dismiss')),
+      );
+      await tester.pump();
+
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = const AsyncData<List<SyncDeviceInfo>>([
+        currentDevice,
+        verifiedPhone,
+        secondVerified,
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('sync_devices_just_joined')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Pixel Tablet'), findsWidgets);
+    });
+
+    testWidgets('can be dismissed and stays dismissed', (tester) async {
+      final container = await pumpWithContainer(
+        tester,
+        initial: [currentDevice, joinedPhone],
+      );
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = const AsyncData<List<SyncDeviceInfo>>([
+        currentDevice,
+        verifiedPhone,
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(
+        find.byKey(const Key('sync_devices_just_joined_dismiss')),
+      );
+      await tester.pump();
+      expect(
+        find.byKey(const Key('sync_devices_just_joined')),
+        findsNothing,
+      );
+
+      // A later roster refresh must not resurrect it.
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = const AsyncData<List<SyncDeviceInfo>>([
+        currentDevice,
+        verifiedPhone,
+      ]);
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.byKey(const Key('sync_devices_just_joined')),
+        findsNothing,
+      );
+    });
   });
 
   testWidgets('Add device opens the pairing sheet', (tester) async {

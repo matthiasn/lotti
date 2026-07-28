@@ -165,6 +165,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                       widget.deviceKeys.deviceId ??
                       '',
                   userId: widget.deviceKeys.userId,
+                  deviceId: widget.deviceKeys.deviceId,
                 ),
                 SizedBox(height: tokens.spacing.step5),
                 if (runner == null)
@@ -217,7 +218,6 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                   ),
                 if (outcome == KeyVerificationOutcome.pending && emojis != null)
                   VerificationEmojiStage(
-                    prompt: context.messages.settingsMatrixVerifyConfirm,
                     emojis: emojis,
                     awaitingOtherDevice: _awaitingOtherDevice,
                     onAccept: () => unawaited(_acceptEmojiVerification(runner)),
@@ -228,11 +228,6 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                   ),
                 if (isSuccess)
                   VerificationSuccessStage(
-                    message: context.messages
-                        .settingsMatrixVerificationSuccessLabel(
-                          widget.deviceKeys.deviceDisplayName ?? '',
-                          widget.deviceKeys.deviceId ?? '',
-                        ),
                     onConfirm: () {
                       unawaited(refreshUnverifiedDevices());
                       runner?.stopTimer();

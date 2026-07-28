@@ -372,6 +372,12 @@ void main() {
       when(
         () => matrixService.syncRoomId,
       ).thenReturn(configured ? '!room:example.com' : null);
+      // The roster header names the server it talks to, read from the client.
+      // `homeserver` stays unstubbed: mocktail returns null for nullable
+      // getters, exercising the account-id-domain fallback.
+      final matrixClient = MockMatrixClient();
+      when(() => matrixClient.userID).thenReturn('@alice:example.com');
+      when(() => matrixService.client).thenReturn(matrixClient);
       when(matrixService.getUnverifiedDevices).thenReturn([]);
       when(
         matrixService.getSyncDevices,

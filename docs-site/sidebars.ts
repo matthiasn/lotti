@@ -60,6 +60,7 @@ const sidebars: SidebarsConfig = {
       label: 'Sync & data',
       items: [
         'sync-and-data/add-device',
+        'sync-and-data/first-device',
         'sync-and-data/sync',
         'sync-and-data/conflicts',
         'sync-and-data/maintenance',

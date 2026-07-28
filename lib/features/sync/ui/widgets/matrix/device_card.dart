@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:matrix/matrix.dart';
 
@@ -128,7 +130,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
     try {
       await showVerificationModalSheet(
         context: context,
-        title: context.messages.settingsMatrixVerifyLabel,
+        title: context.messages.syncVerifyModalTitle,
         child: VerificationModal(keys),
       );
     } finally {
@@ -197,6 +199,12 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
         ),
     ];
 
+    // Healthy cards keep removal available but quiet: an icon in the card's
+    // corner rather than a labeled button competing with Verify. The
+    // escalated card below keeps its labeled danger primary, because there
+    // removal *is* the primary act.
+    final cornerDelete = canDelete && !removalIsPrimary;
+
     return SyncFlowSection(
       accentColor: device.excludedFromSync
           ? tokens.colors.alert.warning.defaultColor
@@ -206,47 +214,54 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Wide enough, the name and its trust state share a row: on a
-          // desktop card the stacked version left roughly two thirds of the
-          // width empty while keeping the card its full mobile height.
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final title = Text(
-                device.titleLabel,
-                style: tokens.typography.styles.subtitle.subtitle2,
-                softWrap: true,
-              );
-              final badges = Wrap(
-                spacing: tokens.spacing.step3,
-                runSpacing: tokens.spacing.step2,
-                children: trustBadges,
-              );
-
-              if (constraints.maxWidth < kDeviceCardWideBreakpoint) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DeviceIconTile(device: device),
+              SizedBox(width: tokens.spacing.step4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    title,
+                    Text(
+                      device.titleLabel,
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                      softWrap: true,
+                    ),
                     SizedBox(height: tokens.spacing.step2),
-                    badges,
+                    Wrap(
+                      spacing: tokens.spacing.step3,
+                      runSpacing: tokens.spacing.step2,
+                      children: trustBadges,
+                    ),
                   ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Loose, not Expanded: the badges belong beside the name,
-                  // not pinned to the far edge with a void between them.
-                  Flexible(child: title),
-                  SizedBox(width: tokens.spacing.step3),
-                  // Also flexible: as a plain Row child the Wrap got unbounded
-                  // constraints and laid every badge out in one run, so a long
-                  // translation or a large text scale overflowed instead of
-                  // wrapping.
-                  Flexible(child: badges),
-                ],
-              );
-            },
+                ),
+              ),
+              if (cornerDelete) ...[
+                SizedBox(width: tokens.spacing.step2),
+                IconButton(
+                  key: const Key('matrix_delete_device'),
+                  // Removal can sit in the server's key-refresh timeout for
+                  // many seconds; a frozen glyph read as "nothing happened".
+                  // The tooltip doubles as the semantics label, so assistive
+                  // technology hears the busy state too.
+                  tooltip: _busy
+                      ? messages.syncDeviceRemovalInProgress
+                      : messages.deleteDeviceLabel,
+                  padding: EdgeInsets.zero,
+                  onPressed: _busy ? null : () => _deleteDevice(context),
+                  icon: _busy
+                      ? DesignSystemSpinner(
+                          size: tokens.spacing.step5 + tokens.spacing.step1,
+                        )
+                      : Icon(
+                          Icons.delete_outline_rounded,
+                          size: tokens.spacing.step5 + tokens.spacing.step1,
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                ),
+              ],
+            ],
           ),
           if (metaLine != null) ...[
             SizedBox(height: tokens.spacing.step2),
@@ -295,7 +310,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
               ),
             ),
           ],
-          if (canDelete || canVerify) ...[
+          if (removalIsPrimary || canVerify) ...[
             SizedBox(height: tokens.spacing.step4),
             Wrap(
               spacing: tokens.spacing.step3,
@@ -318,40 +333,52 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                       onPressed: _busy ? null : () => _verifyDevice(context),
                       label: messages.settingsMatrixVerifyLabel,
                     ),
-                ] else ...[
-                  if (canVerify)
-                    DesignSystemButton(
-                      size: DesignSystemButtonSize.large,
-                      onPressed: _busy ? null : () => _verifyDevice(context),
-                      label: messages.settingsMatrixVerifyLabel,
-                    ),
-                  if (canDelete)
-                    DesignSystemButton(
-                      key: const Key('matrix_delete_device'),
-                      // Match a sibling Verify's height; standing alone on a
-                      // healthy card it stays small so destruction is never
-                      // the focal element of a card needing nothing done.
-                      // Borderless, and on the card's own text rail: with the
-                      // button's internal padding the label sat visibly right
-                      // of the name, badges and last-seen above it.
-                      alignsLabelToLeadingEdge: true,
-                      // Borderless on a healthy card: a routine cleanup
-                      // action must not read louder than "Add device" on the
-                      // page around it. The blocking case above keeps its
-                      // fill, because there removal *is* the primary act.
-                      // The icon keeps the destructive reading legible
-                      // without relying on hue alone.
-                      variant: DesignSystemButtonVariant.dangerTertiary,
-                      leadingIcon: Icons.link_off_rounded,
-                      isLoading: _busy,
-                      onPressed: () => _deleteDevice(context),
-                      label: messages.deleteDeviceLabel,
-                    ),
-                ],
+                ] else if (canVerify)
+                  DesignSystemButton(
+                    size: DesignSystemButtonSize.large,
+                    onPressed: _busy ? null : () => _verifyDevice(context),
+                    label: messages.settingsMatrixVerifyLabel,
+                  ),
               ],
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// The card's leading figure: a rounded tile with a device glyph, so the
+/// roster reads as a grid of machines rather than rows of prose. The current
+/// session gets its own platform's silhouette; peers get the generic pair.
+class _DeviceIconTile extends StatelessWidget {
+  const _DeviceIconTile({required this.device});
+
+  final SyncDeviceInfo device;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.surface.enabled,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+      ),
+      child: SizedBox(
+        width: tokens.spacing.step8,
+        height: tokens.spacing.step8,
+        child: Center(
+          child: Icon(
+            device.isCurrentDevice
+                ? (isDesktop
+                      ? Icons.laptop_mac_rounded
+                      : Icons.smartphone_rounded)
+                : Icons.devices_other_rounded,
+            size: tokens.typography.lineHeight.subtitle2,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
       ),
     );
   }

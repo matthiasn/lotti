@@ -389,6 +389,27 @@ void main() {
 
       expect(calls.regenerate, 1);
     });
+
+    testWidgets('narrates the wait as a three-stop timeline', (tester) async {
+      // Waiting, joined, verified: the body tells the whole story so the
+      // pinned bar only has to explain its locked buttons.
+      await pumpAddDevice(tester);
+
+      final context = tester.element(find.byType(AddDeviceView));
+      expect(find.byKey(const Key('add_device_timeline')), findsOneWidget);
+      expect(
+        find.text(context.messages.syncAddDeviceTimelineWaiting),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.syncAddDeviceTimelineJoined),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.syncAddDeviceTimelineVerified),
+        findsOneWidget,
+      );
+    });
   });
 
   group('AddDeviceView join signal', () {
@@ -711,11 +732,14 @@ void main() {
     testWidgets('carries the live status the body cannot show on a phone', (
       tester,
     ) async {
-      // The body's own strip is below the fold on a phone, so the pinned bar
-      // is the only place the inviting user can see whether anything is
-      // happening.
+      // The body's own timeline can sit below the fold on a phone, so the
+      // pinned bar is the only place the inviting user can see whether
+      // anything is happening.
       await pumpBar(tester, devices: existing);
-      expect(find.byKey(const Key('add_device_waiting')), findsOneWidget);
+      expect(
+        find.byKey(const Key('add_device_send_settings_pending')),
+        findsOneWidget,
+      );
 
       await pumpBar(
         tester,
@@ -723,7 +747,10 @@ void main() {
         state: AddDeviceJoinState.joined,
       );
       expect(find.byKey(const Key('add_device_joined')), findsOneWidget);
-      expect(find.byKey(const Key('add_device_waiting')), findsNothing);
+      expect(
+        find.byKey(const Key('add_device_send_settings_pending')),
+        findsNothing,
+      );
     });
 
     testWidgets('offers a retry when the roster cannot be read', (
@@ -749,30 +776,21 @@ void main() {
       expect(retries, 1);
     });
 
-    testWidgets('carries one status tier and no second position line', (
+    testWidgets('wears the lock while the hand-off is gated', (
       tester,
     ) async {
-      // The bar is a single status-plus-actions tier: the old lead-in was a
-      // third line about the same controls, and the stack's height was what
-      // sliced the QR above it in half on short windows.
+      // The lock glyph carries the "not yet" story on the buttons
+      // themselves; the caption below says why in one line.
       await pumpBar(tester, devices: existing);
 
-      final context = tester.element(find.byType(AddDeviceActionBar));
-      expect(
-        find.byKey(const Key('add_device_send_settings_pending')),
-        findsOneWidget,
-      );
-      // No second fraction: the body already carries "Now · Show the code".
-      expect(
-        find.text(context.messages.syncAddDeviceStepScan),
-        findsNothing,
-      );
+      expect(find.byIcon(Icons.lock_outline), findsNWidgets(2));
+      expect(find.byIcon(Icons.sync_alt_rounded), findsNothing);
     });
 
     testWidgets('is quiet, and says so, while it cannot be pressed', (
       tester,
     ) async {
-      // The status line and the buttons have to agree. Outlined rather than
+      // The caption and the buttons have to agree. Outlined rather than
       // secondary: the component paints an enabled secondary with the same
       // fill it paints a disabled filled button, so a live action would have
       // read as inert.
@@ -788,7 +806,7 @@ void main() {
         DesignSystemButtonVariant.outlined,
       );
       expect(
-        find.text(context.messages.syncAddDeviceSendSettingsPending),
+        find.text(context.messages.syncAddDeviceUnlockHint),
         findsOneWidget,
       );
     });

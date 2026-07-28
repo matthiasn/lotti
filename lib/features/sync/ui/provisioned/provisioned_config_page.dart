@@ -10,14 +10,20 @@ import 'package:lotti/features/sync/state/matrix_verification_relaunch_provider.
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
-import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/auto_verification_launcher.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_wizard_progress_track.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
+
+/// Below this width the error bar stacks its two remedies: their labels are
+/// deliberately spelled out ("Retry this code" / "Enter a new code"), and
+/// side by side on a phone sheet they truncate into indistinguishability.
+const double kSyncErrorActionRowMinWidth = 420;
 
 SliverWoltModalSheetPage provisionedConfigPage({
   required BuildContext context,
@@ -44,10 +50,10 @@ class _ConfigActionBar extends ConsumerWidget {
 
   final ValueNotifier<int> pageIndexNotifier;
 
-  /// Whether the paired screen still lists an unfinished step. The `done`
+  /// Whether the paired screen still gates on the emoji ceremony. The `done`
   /// ending is the only one with a checklist; `ready` (first device) has
   /// nothing outstanding and keeps the accent on Go to Devices.
-  bool _checklistOpen(WidgetRef ref) {
+  bool _ceremonyOutstanding(WidgetRef ref) {
     final state = ref.watch(provisioningControllerProvider);
     final isDone = state.maybeWhen(done: () => true, orElse: () => false);
     if (!isDone) return false;
@@ -60,84 +66,138 @@ class _ConfigActionBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(provisioningControllerProvider);
-    final isComplete = state.when(
-      initial: () => false,
-      bundleDecoded: (_) => false,
-      loggingIn: () => false,
-      joiningRoom: () => false,
-      rotatingPassword: () => false,
+    final isComplete = state.maybeWhen(
       ready: (_) => true,
       done: () => true,
-      error: (_) => false,
+      orElse: () => false,
     );
-    final isError = state.when(
-      initial: () => false,
-      bundleDecoded: (_) => false,
-      loggingIn: () => false,
-      joiningRoom: () => false,
-      rotatingPassword: () => false,
-      ready: (_) => false,
-      done: () => false,
-      error: (_) => true,
-    );
+    final isError = state.maybeWhen(error: (_) => true, orElse: () => false);
 
     // Going back is only safe where rescanning is the remedy. Mid-flight it
     // drops the user onto a live scanner while `configureFromBundle` runs;
     // from the success state, pressing Connect again logs out the working
     // session and retries with a password that has already been rotated away.
-    final canGoBack = state.when(
+    final canGoBack = state.maybeWhen(
       initial: () => true,
       bundleDecoded: (_) => true,
-      loggingIn: () => false,
-      joiningRoom: () => false,
-      rotatingPassword: () => false,
-      ready: (_) => false,
-      done: () => false,
-      error: (_) => true,
+      orElse: () => false,
     );
+
+    if (isError) {
+      // The accent belongs on "Enter a new code": a rejected login usually
+      // means the code predates a password rotation (the first pairing from
+      // a CLI bundle rotates it) or was mangled in transit, and both are
+      // fixed by fetching a fresh code — never by re-attempting this one.
+      // Retry stays for the transient-network case, demoted: as the accent
+      // it re-attempted exactly the credential that just failed.
+      final retry = DesignSystemButton(
+        key: const Key('provisioned_config_retry'),
+        onPressed: () =>
+            ref.read(provisioningControllerProvider.notifier).retry(),
+        label: context.messages.syncPairRetryThisCode,
+        variant: DesignSystemButtonVariant.secondary,
+        size: DesignSystemButtonSize.large,
+      );
+      final newCode = DesignSystemButton(
+        key: const Key('provisioned_config_new_code'),
+        onPressed: () {
+          // Reset first: the import page listens for the return to
+          // the initial state and clears its stale decoded bundle.
+          ref.read(provisioningControllerProvider.notifier).reset();
+          pageIndexNotifier.value = 0;
+        },
+        label: context.messages.syncPairEnterNewCode,
+        size: DesignSystemButtonSize.large,
+      );
+      return SyncStickyBar(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // The whole point of this bar is the distinction between the two
+            // remedies — two ellipsized halves of a phone-width row erase it,
+            // and German/Swedish labels don't fit side by side. Stack below
+            // the same breakpoint the pairing card uses, accent on top.
+            if (constraints.maxWidth < kSyncErrorActionRowMinWidth) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  newCode,
+                  SizedBox(height: context.designTokens.spacing.step3),
+                  retry,
+                ],
+              );
+            }
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(child: retry),
+                SizedBox(width: context.designTokens.spacing.step2),
+                Flexible(child: newCode),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
+    final ceremonyOutstanding = _ceremonyOutstanding(ref);
 
     return SyncStickyBar(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
-            child: DesignSystemButton(
-              onPressed: canGoBack ? () => pageIndexNotifier.value = 0 : null,
-              label: context.messages.syncPairBack,
-              variant: DesignSystemButtonVariant.secondary,
-              size: DesignSystemButtonSize.large,
-            ),
+            child: ceremonyOutstanding
+                // Back is unsafe from the done state, and the ceremony is the
+                // one thing left — the quiet slot points at the roster
+                // instead.
+                ? DesignSystemButton(
+                    onPressed: () => pageIndexNotifier.value = 2,
+                    label: context.messages.syncPairGoToDevices,
+                    variant: DesignSystemButtonVariant.secondary,
+                    size: DesignSystemButtonSize.large,
+                  )
+                : DesignSystemButton(
+                    onPressed: canGoBack
+                        ? () => pageIndexNotifier.value = 0
+                        : null,
+                    label: context.messages.syncPairBack,
+                    variant: DesignSystemButtonVariant.secondary,
+                    size: DesignSystemButtonSize.large,
+                  ),
           ),
           SizedBox(width: context.designTokens.spacing.step2),
           Flexible(
-            // One accent slot, filled by whatever the user should press next.
-            // In the error state that is Retry — as a grey pill inside the
-            // card it was the quietest control on a screen whose only way
-            // forward it is, under a disabled accent going nowhere. While the
-            // paired checklist still has open items, the required action
-            // lives on the *other* device, so Go to Devices stays enabled
-            // but quiet rather than shining the accent away from it.
-            child: isError
+            // One accent slot, filled by whatever the user should press next:
+            // the ceremony while it gates everything, the roster afterwards.
+            //
+            // Disabled until a ceremony target exists: right after the
+            // handover the peer's device keys are often still in flight, the
+            // unverified list is empty, and a relaunch request would vanish
+            // into a launcher with nothing to relaunch. The launcher opens
+            // the ceremony on its own the moment the keys land; the button
+            // enables at the same moment, for reopening a dismissed sheet.
+            child: ceremonyOutstanding
                 ? DesignSystemButton(
-                    key: const Key('provisioned_config_retry'),
-                    onPressed: () => ref
-                        .read(provisioningControllerProvider.notifier)
-                        .retry(),
-                    label: context.messages.provisionedSyncRetry,
+                    key: const Key('provisioned_config_show_emoji'),
+                    onPressed:
+                        (ref.watch(matrixUnverifiedControllerProvider).value ??
+                                [])
+                            .isEmpty
+                        ? null
+                        : () => ref
+                              .read(matrixVerificationRelaunchProvider.notifier)
+                              .request(),
+                    label: context.messages.syncPairShowEmoji,
                     size: DesignSystemButtonSize.large,
                   )
                 : DesignSystemButton(
                     onPressed: isComplete
                         ? () => pageIndexNotifier.value = 2
                         : null,
-                    // Named for where it lands. "Next Page" says nothing about
-                    // what the user is about to see, on the one screen where
-                    // the remaining work is described in terms of that
-                    // destination.
+                    // Named for where it lands. "Next Page" says nothing
+                    // about what the user is about to see.
                     label: context.messages.syncPairGoToDevices,
-                    variant: _checklistOpen(ref)
-                        ? DesignSystemButtonVariant.outlined
-                        : DesignSystemButtonVariant.primary,
                     size: DesignSystemButtonSize.large,
                   ),
           ),
@@ -160,16 +220,25 @@ class ProvisionedConfigWidget extends ConsumerWidget {
     final state = ref.watch(provisioningControllerProvider);
     final messages = context.messages;
 
+    // The three endings own their screens; the progress track belongs to the
+    // journey and disappears once the journey has ended one way or another.
+    final inFlight = state.maybeWhen(
+      ready: (_) => false,
+      done: () => false,
+      error: (_) => false,
+      orElse: () => true,
+    );
+
     final body = state.when(
-      initial: () => const _ProgressStep(label: ''),
-      bundleDecoded: (_) => const _ProgressStep(label: ''),
-      loggingIn: () => _ProgressStep(
+      initial: () => const _ConnectingView(label: ''),
+      bundleDecoded: (_) => const _ConnectingView(label: ''),
+      loggingIn: () => _ConnectingView(
         label: messages.provisionedSyncLoggingIn,
       ),
-      joiningRoom: () => _ProgressStep(
+      joiningRoom: () => _ConnectingView(
         label: messages.provisionedSyncJoiningRoom,
       ),
-      rotatingPassword: () => _ProgressStep(
+      rotatingPassword: () => _ConnectingView(
         label: messages.provisionedSyncRotatingPassword,
       ),
       // `ready` and `done` are not the same ending. `ready` follows a fresh
@@ -184,36 +253,27 @@ class ProvisionedConfigWidget extends ConsumerWidget {
       // config — so pairing the next device belongs to "Add device" on the
       // roster, not to a second QR on the screen that just consumed one.
       ready: (_) => const _FirstDeviceView(),
-      done: () => _PairedView(pageIndexNotifier: pageIndexNotifier),
+      done: () => const _PairedView(),
       error: (error) => _ErrorView(error: error),
-    );
-
-    // The same position line the scan and confirm screens carry — but naming
-    // what step 3 is *doing*. A constant "Finish" printed above a spinner, a
-    // red error card, or a card headed "Two things left" is a lie in all three.
-    final stepLabel = state.when(
-      initial: () => messages.syncPairStepConnecting,
-      bundleDecoded: (_) => messages.syncPairStepConnecting,
-      loggingIn: () => messages.syncPairStepConnecting,
-      joiningRoom: () => messages.syncPairStepConnecting,
-      rotatingPassword: () => messages.syncPairStepConnecting,
-      ready: (_) => messages.syncPairStepDone,
-      done: () => messages.syncPairStepAlmost,
-      error: (_) => messages.syncPairStepFailed,
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SyncPairStepIndicator(label: stepLabel),
+        if (inFlight) ...[
+          const SyncWizardProgressTrack(active: SyncWizardStep.connect),
+          SizedBox(height: context.designTokens.spacing.sectionGap),
+        ],
         body,
       ],
     );
   }
 }
 
-class _ProgressStep extends StatelessWidget {
-  const _ProgressStep({required this.label});
+/// The wait, narrated by the journey's own figure: dots streaming from this
+/// device toward the account it is joining, over the phase currently running.
+class _ConnectingView extends StatelessWidget {
+  const _ConnectingView({required this.label});
 
   final String label;
 
@@ -221,27 +281,22 @@ class _ProgressStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return SyncFlowSection(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    return Column(
+      children: [
+        SizedBox(height: tokens.spacing.step6),
+        const SyncDevicePairMotif(
+          state: SyncDevicePairMotifState.connecting,
+        ),
+        if (label.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.step6),
-          // One indicator. The determinate bar that used to sit under the
-          // spinner mapped internal phases onto a fraction the eyebrow
-          // already carried, so the screen showed two disagreeing measures
-          // of the same wait.
-          const DesignSystemSpinner(),
-          if (label.isNotEmpty) ...[
-            SizedBox(height: tokens.spacing.step6),
-            Text(
-              label,
-              style: tokens.typography.styles.subtitle.subtitle1,
-              textAlign: TextAlign.center,
-            ),
-          ],
-          SizedBox(height: tokens.spacing.step6),
+          Text(
+            label,
+            style: tokens.typography.styles.subtitle.subtitle1,
+            textAlign: TextAlign.center,
+          ),
         ],
-      ),
+        SizedBox(height: tokens.spacing.step6),
+      ],
     );
   }
 }
@@ -249,7 +304,8 @@ class _ProgressStep extends StatelessWidget {
 /// The end of a fresh provisioning run: this device is the account, and
 /// nothing is outstanding. Deliberately not [_PairedView] — there is no peer
 /// to verify against and none to receive settings from, so both of that
-/// screen's remaining steps would be unperformable.
+/// screen's remaining steps would be unperformable. Quiet success, no false
+/// checklist.
 class _FirstDeviceView extends StatelessWidget {
   const _FirstDeviceView();
 
@@ -260,54 +316,52 @@ class _FirstDeviceView extends StatelessWidget {
 
     return Column(
       key: const Key('paired_first_device'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              size: tokens.spacing.step5,
-              color: tokens.colors.alert.success.defaultColor,
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(
-              child: Text(
-                messages.syncPairedFirstDeviceTitle,
-                style: tokens.typography.styles.subtitle.subtitle1,
-              ),
-            ),
-          ],
+        SizedBox(height: tokens.spacing.step6),
+        _StateFigure(
+          background: tokens.colors.surface.selected,
+          child: Icon(
+            Icons.check_rounded,
+            size: tokens.spacing.step7,
+            color: tokens.colors.interactive.enabled,
+          ),
         ),
-        SizedBox(height: tokens.spacing.step4),
-        SyncFlowSection(
+        SizedBox(height: tokens.spacing.step5),
+        Text(
+          messages.syncPairedFirstDeviceTitle,
+          textAlign: TextAlign.center,
+          style: tokens.typography.styles.heading.heading3,
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step6),
           child: Text(
             messages.syncPairedFirstDeviceBody,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.highEmphasis,
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
         ),
+        SizedBox(height: tokens.spacing.step4),
       ],
     );
   }
 }
 
-/// Success, plus the two things that are genuinely still outstanding: the SAS
-/// ceremony (auto-launched here) and the settings push, which only the other
-/// device can perform.
+/// Success, honest about the gate: connected, plus the two steps that stand
+/// between this device and readable entries — the SAS ceremony (auto-launched
+/// here, re-launchable from the bar's accent) and the settings push only the
+/// other device can perform.
 class _PairedView extends ConsumerWidget {
-  const _PairedView({required this.pageIndexNotifier});
-
-  final ValueNotifier<int> pageIndexNotifier;
+  const _PairedView();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    // One source for "is the ceremony done", used by the card's title and by
-    // the step body. Computed separately, they contradicted each other: the
-    // card said "Two things left" and carried an imperative at full weight
-    // while a green check one line below said the same step was complete.
+    // One source for "is the ceremony done", used by the checklist and the
+    // sticky bar. Computed separately, they contradicted each other.
     final devices = ref.watch(syncDevicesControllerProvider).value;
     final verified =
         devices?.any((d) => !d.isCurrentDevice && d.verified) ?? false;
@@ -316,66 +370,241 @@ class _PairedView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const AutoVerificationLauncher(),
-        // A single quiet line: connecting is the part that is already
-        // finished, and it must not out-shout the card below it, which says
-        // this device still cannot read anything.
         Row(
           children: [
-            Icon(
-              Icons.check_circle_rounded,
-              size: tokens.spacing.step5,
-              color: tokens.colors.alert.success.defaultColor,
+            _StateFigure(
+              size: tokens.spacing.step9,
+              background: tokens.colors.surface.selected,
+              child: Icon(
+                Icons.check_rounded,
+                size: tokens.spacing.step6,
+                color: tokens.colors.interactive.enabled,
+              ),
             ),
-            SizedBox(width: tokens.spacing.step3),
+            SizedBox(width: tokens.spacing.step4),
             Expanded(
-              child: Text(
-                messages.provisionedSyncDone,
-                style: tokens.typography.styles.subtitle.subtitle1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    messages.provisionedSyncDone,
+                    style: tokens.typography.styles.heading.heading3,
+                  ),
+                  if (!verified)
+                    Text(
+                      messages.syncPairedStepsLeft,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
         ),
-        SizedBox(height: tokens.spacing.step4),
-        SyncFlowSection(
+        SizedBox(height: tokens.spacing.step5),
+        // The gate, drawn as a gate: the ceremony leads with the accent
+        // while it blocks everything; the settings hand-off waits behind a
+        // lock until the ceremony opens it.
+        SyncWell(
+          padding: EdgeInsets.zero,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // No meta-title. "Two things left" / "One thing left" was a
-              // third header on the page that spent the reader's first
-              // fixation counting work instead of naming it — the eyebrow
-              // already says "Finish on your other device", so the card
-              // leads directly with the next actionable step.
-              //
-              // Once verification is done, the outstanding item leads and
-              // the finished one closes, demoted to a muted done-row.
-              //
-              // Numerals only while the list is genuinely ordered — "2."
-              // with the first item completed sent the reader hunting for a
-              // missing first item.
-              if (verified) ...[
-                _NextStep(
-                  index: 2,
-                  bulleted: true,
-                  title: messages.syncPairedSettingsStepTitle,
-                  text: messages.syncPairedSettingsStep,
-                  detail: messages.syncPairedSettingsStepFallback,
-                ),
-                SizedBox(height: tokens.spacing.step4),
-                const _VerifyStep(verified: true),
-              ] else ...[
-                const _VerifyStep(verified: false),
-                SizedBox(height: tokens.spacing.step4),
-                _NextStep(
-                  index: 2,
-                  title: messages.syncPairedSettingsStepTitle,
-                  text: messages.syncPairedSettingsStep,
-                  detail: messages.syncPairedSettingsStepFallback,
-                ),
-              ],
+              _VerifyStep(verified: verified),
+              Divider(
+                height: tokens.spacing.step1 / 2,
+                thickness: tokens.spacing.step1 / 2,
+                color: tokens.colors.decorative.level01,
+              ),
+              _GateStep(
+                index: 2,
+                state: verified ? _GateState.active : _GateState.locked,
+                title: messages.syncPairedSettingsStepTitle,
+                body: messages.syncPairedSettingsStep,
+                detail: verified
+                    ? messages.syncPairedSettingsStepFallback
+                    : null,
+              ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A circular tinted figure behind a state icon — the endings' shared anchor.
+class _StateFigure extends StatelessWidget {
+  const _StateFigure({
+    required this.background,
+    required this.child,
+    this.size,
+  });
+
+  final Color background;
+  final Widget child;
+  final double? size;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final side = size ?? tokens.spacing.step10;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+      child: SizedBox(
+        width: side,
+        height: side,
+        child: Center(child: child),
+      ),
+    );
+  }
+}
+
+enum _GateState { active, locked, done }
+
+/// One rung of the paired screen's gate checklist: numbered marker, title,
+/// caption — with the accent edge while it is the thing to do, a lock while
+/// it cannot be done yet, and a check once it is behind the user.
+class _GateStep extends StatelessWidget {
+  const _GateStep({
+    required this.index,
+    required this.state,
+    required this.title,
+    required this.body,
+    super.key,
+    this.detail,
+    this.statusChild,
+  });
+
+  final int index;
+  final _GateState state;
+  final String title;
+  final String body;
+
+  /// A fallback route, kept off the main line: inlining it forced the item
+  /// to wrap to seven short lines on the narrowest measure in the journey.
+  final String? detail;
+
+  /// Live progress content rendered under the body (spinner, fallback).
+  final Widget? statusChild;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final locked = state == _GateState.locked;
+    final done = state == _GateState.done;
+    final detail = this.detail;
+    final statusChild = this.statusChild;
+
+    final Widget marker;
+    if (done) {
+      marker = Icon(
+        Icons.check_circle_rounded,
+        size: tokens.spacing.step6,
+        color: tokens.colors.alert.success.defaultColor,
+      );
+    } else {
+      final ring = locked
+          ? tokens.colors.decorative.level02
+          : tokens.colors.interactive.enabled;
+      marker = DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: ring, width: tokens.spacing.step1),
+        ),
+        child: SizedBox(
+          width: tokens.spacing.step6,
+          height: tokens.spacing.step6,
+          child: Center(
+            child: Text(
+              '$index',
+              style: tokens.typography.styles.others.caption.copyWith(
+                fontWeight: tokens.typography.weight.bold,
+                color: locked
+                    ? tokens.colors.text.mediumEmphasis
+                    : tokens.colors.interactive.enabled,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: state == _GateState.active
+            ? Border(
+                left: BorderSide(
+                  color: tokens.colors.interactive.enabled,
+                  width: tokens.spacing.step1,
+                ),
+              )
+            : null,
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.cardPadding),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            marker,
+            SizedBox(width: tokens.spacing.step4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: tokens.typography.styles.subtitle.subtitle2
+                              .copyWith(
+                                color: locked || done
+                                    ? tokens.colors.text.mediumEmphasis
+                                    : tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                      ),
+                      if (locked) ...[
+                        SizedBox(width: tokens.spacing.step2),
+                        Icon(
+                          Icons.lock_outline_rounded,
+                          size: tokens.spacing.step4,
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                      ],
+                    ],
+                  ),
+                  SizedBox(height: tokens.spacing.step1),
+                  Text(
+                    body,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: locked
+                          ? tokens.colors.text.lowEmphasis
+                          : tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                  if (detail != null) ...[
+                    SizedBox(height: tokens.spacing.step2),
+                    Text(
+                      detail,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                  ],
+                  if (statusChild != null) ...[
+                    SizedBox(height: tokens.spacing.step3),
+                    statusChild,
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -385,8 +614,7 @@ class _PairedView extends ConsumerWidget {
 /// on the step that gates readability is what made this feel broken.
 const Duration kVerifyStallTimeout = Duration(seconds: 20);
 
-/// Step 1 with live state, in three branches: waiting, awaiting the user's
-/// confirmation, and done.
+/// Step 1 with live state, in three branches: waiting, stalled, and done.
 ///
 /// The done branch is not cosmetic. Absence from `getUnverifiedDevices()` means
 /// *both* "keys have not arrived yet" and "the ceremony succeeded", so a
@@ -434,215 +662,83 @@ class _VerifyStepState extends ConsumerState<_VerifyStep> {
       ..invalidate(syncDevicesControllerProvider);
   }
 
-  /// Reopens the ceremony for a device that is already awaiting confirmation.
-  /// Re-querying cannot help there — the prompt arrived and was dismissed.
-  void _showAgain() =>
-      ref.read(matrixVerificationRelaunchProvider.notifier).request();
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final unverified = ref.watch(matrixUnverifiedControllerProvider).value;
     final verified = widget.verified;
-    final awaitingConfirmation = unverified != null && unverified.isNotEmpty;
-    // The live state of a security-critical step; at lowEmphasis it was the
-    // faintest thing on the page while being the only part still moving.
     final statusStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
 
-    if (verified) _stallTimer?.cancel();
-
-    // The fallback names the roster rather than rendering a second door to it:
-    // the sticky bar's "Go to Devices" is a few centimetres away, and two
-    // controls with the same label read as two different destinations.
-    Widget fallback({required bool dismissed}) => Column(
-      key: const Key('paired_verify_fallback'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(messages.syncPairedVerifyFallback, style: statusStyle),
-        SizedBox(height: tokens.spacing.step2),
-        // Two different situations, two different remedies. A prompt that
-        // arrived and was dismissed needs reopening; one that never arrived
-        // needs the trust state re-read.
-        DesignSystemButton(
-          key: const Key('paired_verify_recheck'),
-          label: dismissed
-              ? messages.syncPairShowEmojiAgain
-              : messages.syncPairCheckAgain,
-          variant: DesignSystemButtonVariant.outlined,
-          onPressed: dismissed ? _showAgain : _recheck,
-        ),
-      ],
-    );
-
     if (verified) {
-      // Past tense, through the same row component as its sibling: appending a
-      // green line under a live imperative left the screen asserting two
-      // opposite things about the same fact, on two different grids.
-      return _NextStep(
+      _stallTimer?.cancel();
+      return _GateStep(
         key: const Key('paired_verify_done'),
         index: 1,
-        text: messages.syncPairedVerifyStepDone,
-        done: true,
+        state: _GateState.done,
+        title: messages.syncPairedVerifyStepTitle,
+        body: messages.syncPairedVerifyStepDone,
       );
     }
 
-    final Widget status;
-    if (awaitingConfirmation) {
-      status = fallback(dismissed: true);
-    } else {
-      status = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            key: const Key('paired_verify_waiting'),
-            children: [
-              DesignSystemSpinner(
-                size: tokens.spacing.step4,
-                strokeWidth: tokens.spacing.step1 / 2,
+    final status = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // The spinner stays even once stalled — the ceremony may still
+        // arrive — but waiting stops being the only story on screen.
+        Row(
+          key: const Key('paired_verify_waiting'),
+          children: [
+            DesignSystemSpinner(
+              size: tokens.spacing.step4,
+              strokeWidth: tokens.spacing.step1 / 2,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            Expanded(
+              child: Text(
+                messages.syncPairedVerifyWaiting,
+                style: statusStyle,
               ),
-              SizedBox(width: tokens.spacing.step2),
-              Expanded(
-                child: Text(
-                  messages.syncPairedVerifyWaiting,
-                  style: statusStyle,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
+        ),
+        if (_stalled) ...[
+          SizedBox(height: tokens.spacing.step3),
           // A prompt that never comes is the one case where waiting is not
           // the answer, and it was the only case with no remedy on screen.
-          if (_stalled) ...[
-            SizedBox(height: tokens.spacing.step2),
-            fallback(dismissed: false),
-          ],
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _NextStep(
-          index: 1,
-          title: messages.syncPairedVerifyStepTitle,
-          text: messages.syncPairedVerifyStep,
-        ),
-        SizedBox(height: tokens.spacing.step2),
-        Padding(
-          padding: EdgeInsets.only(left: tokens.spacing.step6),
-          child: status,
-        ),
-      ],
-    );
-  }
-}
-
-class _NextStep extends StatelessWidget {
-  const _NextStep({
-    required this.index,
-    required this.text,
-    super.key,
-    this.title,
-    this.detail,
-    this.done = false,
-    this.bulleted = false,
-  });
-
-  final int index;
-
-  /// Bold anchor line above [text]. Steps used to be single 30-word
-  /// sentences at one grey tier; a scannable title with a one-line caption
-  /// is what stops the card reading as a wall of prose.
-  final String? title;
-
-  final String text;
-
-  /// A fallback route, kept off the main line: inlining it forced the item to
-  /// wrap to seven short lines on the narrowest measure in the journey.
-  final String? detail;
-
-  /// Swaps the ordinal for a check and drops the ink — but keeps the type
-  /// rank, so a completed row still sits on the list's grid rather than
-  /// becoming a smaller, dimmer thing nested under it.
-  final bool done;
-
-  /// Swaps the ordinal for a neutral marker. A single outstanding item does
-  /// not need a number, and numbering it "2." contradicts the count above it.
-  final bool bulleted;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final detail = this.detail;
-    final body = tokens.typography.styles.body.bodyMedium;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (done)
-          Icon(
-            Icons.check_circle_rounded,
-            size: tokens.spacing.step5,
-            color: tokens.colors.alert.success.defaultColor,
-          )
-        else if (bulleted)
-          Icon(
-            Icons.radio_button_unchecked_rounded,
-            size: tokens.spacing.step5,
-            color: tokens.colors.text.mediumEmphasis,
-          )
-        else
-          Text(
-            '$index.',
-            style: body.copyWith(color: tokens.colors.text.mediumEmphasis),
-          ),
-        SizedBox(width: tokens.spacing.step3),
-        Expanded(
-          child: Column(
+          // The dismissed-prompt case is served by the bar's accent.
+          Column(
+            key: const Key('paired_verify_fallback'),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (title != null) ...[
-                Text(
-                  title!,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: done
-                        ? tokens.colors.text.mediumEmphasis
-                        : tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                SizedBox(height: tokens.spacing.step1),
-              ],
-              Text(
-                text,
-                style: body.copyWith(
-                  color: done || title != null
-                      ? tokens.colors.text.mediumEmphasis
-                      : tokens.colors.text.highEmphasis,
-                ),
+              Text(messages.syncPairedVerifyFallback, style: statusStyle),
+              SizedBox(height: tokens.spacing.step2),
+              DesignSystemButton(
+                key: const Key('paired_verify_recheck'),
+                label: messages.syncPairCheckAgain,
+                variant: DesignSystemButtonVariant.outlined,
+                onPressed: _recheck,
               ),
-              if (detail != null) ...[
-                SizedBox(height: tokens.spacing.step2),
-                Text(
-                  detail,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ],
             ],
           ),
-        ),
+        ],
       ],
+    );
+
+    return _GateStep(
+      index: 1,
+      state: _GateState.active,
+      title: messages.syncPairedVerifyStepTitle,
+      body: messages.syncPairedVerifyStep,
+      statusChild: status,
     );
   }
 }
 
-/// The failure card: what went wrong and why, without its own button — the
-/// remedy lives in the sticky bar's accent slot, the position every other
-/// screen of the wizard has trained the user to press.
+/// The failure ending: what went wrong and why, without its own button — the
+/// remedies live in the sticky bar, where "Enter a new code" carries the
+/// accent because a stale code is the usual culprit.
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.error});
 
@@ -658,33 +754,38 @@ class _ErrorView extends StatelessWidget {
         messages.provisionedSyncErrorConfigurationFailed,
     };
 
-    return SyncFlowSection(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(height: tokens.spacing.step6),
-          Icon(
+    return Column(
+      children: [
+        SizedBox(height: tokens.spacing.step6),
+        _StateFigure(
+          background: tokens.colors.alert.error.defaultColor.withValues(
+            alpha: 0.16,
+          ),
+          child: Icon(
             Icons.error_outline,
-            size: tokens.spacing.step10,
+            size: tokens.spacing.step7,
             color: tokens.colors.alert.error.defaultColor,
           ),
-          SizedBox(height: tokens.spacing.step6),
-          Text(
-            messages.provisionedSyncError,
-            textAlign: TextAlign.center,
-            style: tokens.typography.styles.subtitle.subtitle1,
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          Text(
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        Text(
+          messages.provisionedSyncError,
+          textAlign: TextAlign.center,
+          style: tokens.typography.styles.heading.heading3,
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step6),
+          child: Text(
             errorMessage,
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: tokens.spacing.step6),
-        ],
-      ),
+        ),
+        SizedBox(height: tokens.spacing.step4),
+      ],
     );
   }
 }

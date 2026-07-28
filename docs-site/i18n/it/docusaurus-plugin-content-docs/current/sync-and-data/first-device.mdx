@@ -1,0 +1,62 @@
+---
+title: Il tuo primo dispositivo
+description: Da dove arriva il primissimo codice di associazione quando nessun dispositivo è ancora connesso — lo strumento di provisioning lato server e cosa fare del bundle che scrive.
+---
+
+# Il tuo primo dispositivo
+
+Ogni dispositivo dopo il primo riceve il codice di associazione da un
+dispositivo che usi già — quel percorso è
+[Aggiungere un dispositivo](./add-device.mdx). Il primo è diverso: non c'è
+nessun altro dispositivo che possa generare un codice. La sincronizzazione
+di Lotti è self-hosted, quindi il primo codice arriva dal lato server —
+creato da chi gestisce il tuo homeserver Synapse.
+
+## Cosa fa lo strumento di provisioning
+
+Lotti include una CLI di amministrazione, il **provisioner Matrix**, nel
+repository in
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Eseguita da un admin dell'homeserver:
+
+1. crea un account Matrix nuovo dedicato alla sincronizzazione,
+2. crea la stanza di sincronizzazione cifrata, e
+3. scrive in un file un **bundle di provisioning** — il testo che Lotti
+   accetta come codice di associazione.
+
+Il README accanto allo strumento documenta ogni argomento e i modi sicuri di
+fornire la password admin. Un'esecuzione minima è così:
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+Se non gestisci un homeserver tuo, questo passaggio non spetta a te — chiedi
+il bundle a chi opera il server, e tratta il percorso con cui ti arriva con
+la cura descritta sotto.
+
+## Usare il bundle come primo codice di associazione
+
+Sul dispositivo che diventerà il tuo primo, apri **Impostazioni →
+Impostazioni di sincronizzazione → Dispositivi** e scegli **Configura la
+sincronizzazione**. Incolla il testo del bundle nel campo del codice — su un
+telefono, dove prima si apre la fotocamera, scegli **Incolla invece il
+codice** per arrivarci. Da lì il flusso è il normale percorso di
+associazione: rivedere cosa descrive il codice, connettersi e
+[verificare](./sync.mdx).
+
+Vale la pena conoscere una differenza: consumare un bundle di provisioning
+fresco **ruota la password dell'account** al momento della connessione. Il
+file del bundle è quindi esaurito dopo il primo uso — la credenziale viva
+esiste solo su quel dispositivo, e ogni dispositivo successivo si associa da
+uno esistente con [Aggiungere un dispositivo](./add-device.mdx). Elimina il
+file del bundle appena il primo dispositivo è connesso; una copia rimasta in
+giro non può più accedere, ma non c'è motivo di tenerla.
+
+Fino a quel primo uso, tratta il bundle come una password: accede
+all'account di sincronizzazione — tienilo fuori da chat, screenshot e
+schermi condivisi.

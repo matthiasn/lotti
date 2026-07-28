@@ -1,0 +1,58 @@
+---
+title: Your first device
+description: Where the very first pairing code comes from when no device is connected yet — the server-side provisioning tool, and what to do with the bundle it writes.
+---
+
+# Your first device
+
+Every device after the first gets its pairing code from a device you already
+use — that flow is [Add a device](./add-device.mdx). The first one is
+different: there is no other device to mint a code. Lotti's sync is
+self-hosted, so the first code comes from the server side, created by
+whoever runs your Synapse homeserver.
+
+## What the provisioning tool does
+
+Lotti ships an admin CLI, the **Matrix provisioner**, in the repository at
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Run by a homeserver admin, it:
+
+1. creates a fresh Matrix account dedicated to sync,
+2. creates the encrypted sync room, and
+3. writes a **provisioning bundle** — the text Lotti accepts as a pairing
+   code — to a file.
+
+The README next to the tool documents every argument and the safe ways to
+supply the admin password. A minimal run looks like:
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+If you do not run your own homeserver, this step is not yours to do — ask
+the person who operates the server for the bundle, and treat how it reaches
+you with the care described below.
+
+## Use the bundle as your first pairing code
+
+On the device that should become your first, open **Settings → Sync
+Settings → Devices** and choose **Set up sync**. Paste the bundle's text
+into the code field — on a phone, where the camera opens first, choose
+**Paste the code instead** to get there. From that point the flow is the
+ordinary pairing journey: review what the code describes, connect, and
+[verify](./sync.mdx#verify-the-new-device).
+
+One difference is worth knowing: consuming a fresh provisioning bundle
+**rotates the account password** as part of connecting. The bundle file is
+spent after its first use — the live credential then exists only on that
+device, and every further device pairs from an existing one with
+[Add a device](./add-device.mdx). Delete the bundle file once the first
+device is connected; a copy that lingers can no longer sign in, but there
+is no reason to keep it.
+
+Until that first use, treat the bundle like a password: it signs in to the
+sync account, so keep it out of chats, screenshots and shared screens.

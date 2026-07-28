@@ -94,82 +94,100 @@ class ProvisionedStatusWidget extends ConsumerWidget {
           const AutoVerificationLauncher(),
           const SyncDevicesList(),
           SizedBox(height: tokens.spacing.sectionGap),
+          // The destructive zone sits below its own hairline at the very
+          // end: signing this device out is never the reason the page was
+          // opened, and the divider is what keeps it from reading as one
+          // more card action.
+          DecoratedBox(
+            decoration: BoxDecoration(color: tokens.colors.decorative.level01),
+            child: SizedBox(
+              height: tokens.spacing.step1 / 2,
+              width: double.infinity,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step4),
           // One secondary grammar for the page's two support actions: both
           // compact, both on the content rail. Full-width and large gave the
           // disconnect the exact geometry of the "Add device" primary above.
           // A Wrap, not a Row: a long localized disconnect label ("Stop
           // syncing this device" is half again as long in German) overflowed
           // a Row whose first child took its intrinsic width unconditionally.
-          Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step2,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              DesignSystemButton(
-                // Destructive but rare, and never the reason someone opened
-                // this page: borderless, so the constructive "Add device"
-                // above stays the loudest control. Sized to match the
-                // diagnostics button beside it — at large + fullWidth it had
-                // the exact geometry of that primary. The icon keeps the
-                // destructive reading legible without relying on hue alone.
-                variant: DesignSystemButtonVariant.dangerTertiary,
-                size: DesignSystemButtonSize.medium,
-                leadingIcon: Icons.link_off_rounded,
-                onPressed: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (dialogContext) => AlertDialog(
-                      title: Text(messages.syncDeleteConfigQuestion),
-                      content: Text(messages.syncDisconnectExplanation),
-                      actions: [
-                        DesignSystemButton(
-                          label: messages.settingsMatrixCancel,
-                          variant: DesignSystemButtonVariant.tertiary,
-                          onPressed: () =>
-                              Navigator.of(dialogContext).pop(false),
-                        ),
-                        DesignSystemButton(
-                          label: messages.syncDeleteConfigConfirm,
-                          variant: DesignSystemButtonVariant.danger,
-                          onPressed: () =>
-                              Navigator.of(dialogContext).pop(true),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed ?? false) {
-                    try {
-                      await matrixService.deleteConfig();
-                    } catch (e, stackTrace) {
-                      // Silent failure left the pane showing a "configured"
-                      // view of a config that had not been torn down, with
-                      // nothing said and nothing logged.
-                      getIt<DomainLogger>().error(
-                        LogDomain.sync,
-                        e,
-                        stackTrace: stackTrace,
-                        subDomain: 'deleteConfig',
-                      );
-                      if (context.mounted) {
-                        context.showToast(
-                          tone: DesignSystemToastTone.error,
-                          title: messages.syncDisconnectFailed,
+          // Stretched, so spaceBetween can push the diagnostics link to the
+          // far edge while both fit on one run.
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: tokens.spacing.step3,
+              runSpacing: tokens.spacing.step2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                DesignSystemButton(
+                  // Destructive but rare, and never the reason someone opened
+                  // this page: borderless, so the constructive "Add device"
+                  // above stays the loudest control. Sized to match the
+                  // diagnostics button beside it — at large + fullWidth it had
+                  // the exact geometry of that primary. The icon keeps the
+                  // destructive reading legible without relying on hue alone.
+                  variant: DesignSystemButtonVariant.dangerTertiary,
+                  size: DesignSystemButtonSize.medium,
+                  leadingIcon: Icons.link_off_rounded,
+                  onPressed: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: Text(messages.syncDeleteConfigQuestion),
+                        content: Text(messages.syncDisconnectExplanation),
+                        actions: [
+                          DesignSystemButton(
+                            label: messages.settingsMatrixCancel,
+                            variant: DesignSystemButtonVariant.tertiary,
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(false),
+                          ),
+                          DesignSystemButton(
+                            label: messages.syncDeleteConfigConfirm,
+                            variant: DesignSystemButtonVariant.danger,
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(true),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed ?? false) {
+                      try {
+                        await matrixService.deleteConfig();
+                      } catch (e, stackTrace) {
+                        // Silent failure left the pane showing a "configured"
+                        // view of a config that had not been torn down, with
+                        // nothing said and nothing logged.
+                        getIt<DomainLogger>().error(
+                          LogDomain.sync,
+                          e,
+                          stackTrace: stackTrace,
+                          subDomain: 'deleteConfig',
                         );
+                        if (context.mounted) {
+                          context.showToast(
+                            tone: DesignSystemToastTone.error,
+                            title: messages.syncDisconnectFailed,
+                          );
+                        }
+                        return;
                       }
-                      return;
+                      if (!context.mounted) return;
+                      ref.read(provisioningControllerProvider.notifier).reset();
+                      if (!embedded) await Navigator.of(context).maybePop();
                     }
-                    if (!context.mounted) return;
-                    ref.read(provisioningControllerProvider.notifier).reset();
-                    if (!embedded) await Navigator.of(context).maybePop();
-                  }
-                },
-                label: messages.provisionedSyncDisconnect,
-              ),
-              // Last and smallest: a diagnostics dump is the least likely
-              // reason anyone opens this sheet, and as the first bordered pill
-              // in the row it won a weight contest against the account action.
-              const DiagnosticInfoButton(),
-            ],
+                  },
+                  label: messages.provisionedSyncDisconnect,
+                ),
+                // Last and smallest: a diagnostics dump is the least likely
+                // reason anyone opens this sheet, and as the first bordered pill
+                // in the row it won a weight contest against the account action.
+                const DiagnosticInfoButton(),
+              ],
+            ),
           ),
         ],
       ),

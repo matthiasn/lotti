@@ -146,6 +146,26 @@ void main() {
         '${lottiManualBaseUrl}cs/',
       );
     });
+
+    test('a page path lands after the locale segment', () {
+      // Deep links stay locale-aware: the localized route serves English
+      // content for pages not yet translated, so the path never needs to
+      // choose between "right language" and "right page".
+      expect(
+        manualUriFor(
+          systemLocale: const Locale('de'),
+          path: 'sync-and-data/first-device',
+        ).toString(),
+        '${lottiManualBaseUrl}de/sync-and-data/first-device',
+      );
+      expect(
+        manualUriFor(
+          systemLocale: const Locale('en'),
+          path: 'sync-and-data/first-device',
+        ).toString(),
+        '${lottiManualBaseUrl}sync-and-data/first-device',
+      );
+    });
   });
 
   group('ManualLanguageController', () {

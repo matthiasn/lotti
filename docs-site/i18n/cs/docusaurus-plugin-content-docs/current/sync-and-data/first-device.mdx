@@ -1,0 +1,58 @@
+---
+title: Tvé první zařízení
+description: Odkud pochází úplně první párovací kód, když ještě není připojené žádné zařízení — nástroj pro provisioning na straně serveru a co udělat s bundlem, který zapíše.
+---
+
+# Tvé první zařízení
+
+Každé zařízení po tom prvním dostává párovací kód ze zařízení, které už
+používáš — ten postup popisuje [Přidat zařízení](./add-device.mdx). První je
+jiné: neexistuje žádné jiné zařízení, které by kód vytvořilo. Synchronizace
+Lotti je self-hosted, takže první kód přichází ze strany serveru — vytvoří
+ho ten, kdo provozuje tvůj Synapse homeserver.
+
+## Co dělá nástroj pro provisioning
+
+Lotti obsahuje administrátorské CLI, **Matrix provisioner**, v repozitáři na
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Spuštěn adminem homeserveru:
+
+1. vytvoří čerstvý účet Matrix vyhrazený pro synchronizaci,
+2. vytvoří šifrovanou synchronizační místnost a
+3. zapíše do souboru **provisioning bundle** — text, který Lotti přijímá
+   jako párovací kód.
+
+README vedle nástroje dokumentuje každý argument i bezpečné způsoby předání
+administrátorského hesla. Minimální spuštění vypadá takto:
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+Pokud vlastní homeserver neprovozuješ, tento krok není tvůj — požádej o
+bundle toho, kdo server spravuje, a s cestou, kterou se k tobě dostane,
+zacházej s péčí popsanou níže.
+
+## Použij bundle jako svůj první párovací kód
+
+Na zařízení, které se má stát tvým prvním, otevři **Nastavení → Nastavení
+synchronizace → Zařízení** a zvol **Nastavit synchronizaci**. Vlož text
+bundlu do pole pro kód — na telefonu, kde se nejdřív otevře fotoaparát, se
+tam dostaneš přes **Raději kód vložit**. Odtud je to běžná párovací cesta:
+zkontrolovat, co kód popisuje, připojit se a [ověřit](./sync.mdx).
+
+Jeden rozdíl stojí za to znát: použití čerstvého provisioning bundlu
+**rotuje heslo účtu** v rámci připojení. Soubor s bundlem je po prvním
+použití vyčerpaný — platné přihlašovací údaje pak existují jen na tom
+zařízení a každé další zařízení se páruje z existujícího přes
+[Přidat zařízení](./add-device.mdx). Jakmile je první zařízení připojené,
+soubor s bundlem smaž; zapomenutá kopie se už přihlásit nedokáže, ale není
+důvod si ji nechávat.
+
+Do toho prvního použití zacházej s bundlem jako s heslem: přihlašuje se jím
+k synchronizačnímu účtu — drž ho mimo chaty, snímky obrazovky a sdílené
+obrazovky.

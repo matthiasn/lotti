@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
@@ -86,8 +85,8 @@ void main() {
 
     await pumpModalWithRunner(tester, runner);
 
-    expect(find.text('Cancel'), findsOneWidget);
-    expect(find.text('Accept'), findsOneWidget);
+    expect(find.text('They differ — cancel'), findsOneWidget);
+    expect(find.text('They match'), findsOneWidget);
     expect(find.byKey(const Key('matrix_cancel_verification')), findsOneWidget);
   });
 
@@ -101,8 +100,15 @@ void main() {
 
     await pumpModalWithRunner(tester, runner);
 
-    expect(find.byIcon(MdiIcons.shieldCheck), findsOneWidget);
+    expect(
+      find.byKey(const Key('verification_success_stage')),
+      findsOneWidget,
+    );
     final context = tester.element(find.byType(IncomingVerificationModal));
+    expect(
+      find.text(context.messages.syncVerifiedCelebrationTitle),
+      findsOneWidget,
+    );
     expect(
       find.text(context.messages.settingsMatrixVerificationSuccessConfirm),
       findsOneWidget,
@@ -126,7 +132,8 @@ void main() {
 
       await pumpModalWithRunner(tester, runner);
 
-      await tester.tap(find.text('Accept'));
+      await tester.ensureVisible(find.text('They match'));
+      await tester.tap(find.text('They match'));
       await tester.pump();
 
       verify(runner.acceptEmojiVerification).called(1);
@@ -158,6 +165,9 @@ void main() {
         find.byKey(const Key('matrix_cancel_verification')),
         findsOneWidget,
       );
+      await tester.ensureVisible(
+        find.byKey(const Key('matrix_cancel_verification')),
+      );
       await tester.tap(find.byKey(const Key('matrix_cancel_verification')));
       await tester.pump();
 
@@ -187,8 +197,8 @@ void main() {
     await pumpModalWithRunner(tester, runner);
 
     expect(find.text('My Pixel'), findsOneWidget);
-    // The header names the account too, matching the outgoing ceremony.
-    expect(find.text('@alice:example.com'), findsOneWidget);
+    // The header names the account and session too, in one mono meta line.
+    expect(find.textContaining('@alice:example.com'), findsOneWidget);
   });
 
   testWidgets(
@@ -229,7 +239,7 @@ void main() {
 
       await pumpModalWithRunner(tester, runner);
 
-      final acceptFinder = find.text('Accept');
+      final acceptFinder = find.text('They match');
       expect(acceptFinder, findsOneWidget);
       await tester.ensureVisible(acceptFinder);
 
@@ -256,7 +266,7 @@ void main() {
       // so the button is interactive again and shows the "Accept" label rather
       // than the "continue verification" awaiting label.
       verify(runner.acceptEmojiVerification).called(1);
-      expect(find.text('Accept'), findsOneWidget);
+      expect(find.text('They match'), findsOneWidget);
       final context = tester.element(find.byType(IncomingVerificationModal));
       expect(
         find.text(context.messages.settingsMatrixContinueVerificationLabel),
@@ -289,7 +299,7 @@ void main() {
       await pumpModalWithRunner(tester, runner);
 
       // Tap Accept — sets _awaitingOtherDevice = true.
-      final acceptFinder = find.text('Accept');
+      final acceptFinder = find.text('They match');
       expect(acceptFinder, findsOneWidget);
       await tester.ensureVisible(acceptFinder);
       await tester.tap(acceptFinder);
@@ -321,7 +331,10 @@ void main() {
 
       await pumpModalWithRunner(tester, runner);
 
-      expect(find.byIcon(MdiIcons.shieldCheck), findsOneWidget);
+      expect(
+        find.byKey(const Key('verification_success_stage')),
+        findsOneWidget,
+      );
 
       final confirmFinder = find.text('Got it');
       expect(confirmFinder, findsOneWidget);
@@ -545,7 +558,10 @@ void main() {
       find.text(context.messages.settingsMatrixVerificationCancelledLabel),
       findsOneWidget,
     );
-    expect(find.byIcon(MdiIcons.shieldCheck), findsNothing);
+    expect(
+      find.byKey(const Key('verification_success_stage')),
+      findsNothing,
+    );
     expect(
       find.byKey(const Key('matrix_incoming_cancelled_confirm')),
       findsOneWidget,

@@ -2,12 +2,15 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
+import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_wizard_progress_track.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
@@ -414,6 +417,52 @@ void main() {
       );
     });
 
+    testWidgets('the context rows survive a large text scale intact', (
+      tester,
+    ) async {
+      // The account and server are the values this screen exists to let the
+      // user review. A fixed label + right-aligned value row squeezed the
+      // identifier into a sliver (or overflowed) once a long localized
+      // label met an accessibility text scale; the pair must stack instead.
+      tester.view
+        ..physicalSize = const Size(390, 2400)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            // Scrollable because the production sheet scrolls; the test
+            // scaffold's fixed height is not the surface under test — the
+            // horizontal fit of the context rows is.
+            child: SingleChildScrollView(
+              child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            ),
+          ),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), validBase64);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final context = tester.element(find.byType(BundleImportWidget));
+      final importButton = find.text(
+        context.messages.provisionedSyncImportButton,
+      );
+      await tester.ensureVisible(importButton);
+      await tester.tap(importButton);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.takeException(), isNull, reason: 'no overflow');
+      // The identifier is intact, not ellipsized into uncheckability.
+      expect(find.text('@alice:example.com'), findsOneWidget);
+    });
+
     testWidgets('the check code matches what the other device derives', (
       tester,
     ) async {
@@ -740,18 +789,26 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('names the step before a code has been read', (tester) async {
+    testWidgets('the track marks Get code before a code has been read', (
+      tester,
+    ) async {
       await pumpImport(tester);
 
+      final track = tester.widget<SyncWizardProgressTrack>(
+        find.byType(SyncWizardProgressTrack),
+      );
+      expect(track.active, SyncWizardStep.getCode);
+      // All three stations stay visible — the track is the wayfinding.
       final context = tester.element(find.byType(BundleImportWidget));
+      expect(find.text(context.messages.syncWizardStepGetCode), findsOneWidget);
+      expect(find.text(context.messages.syncWizardStepCheck), findsOneWidget);
       expect(
-        find.text(context.messages.syncPairStepScan),
+        find.text(context.messages.syncWizardStepConnect),
         findsOneWidget,
       );
-      expect(find.text(context.messages.syncPairStepConfirm), findsNothing);
     });
 
-    testWidgets('advances the step once a code is decoded', (tester) async {
+    testWidgets('advances the track once a code is decoded', (tester) async {
       await pumpImport(tester);
 
       await tester.enterText(find.byType(TextField), validBase64);
@@ -762,8 +819,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(context.messages.syncPairStepConfirm), findsOneWidget);
-      expect(find.text(context.messages.syncPairStepScan), findsNothing);
+      final track = tester.widget<SyncWizardProgressTrack>(
+        find.byType(SyncWizardProgressTrack),
+      );
+      expect(track.active, SyncWizardStep.check);
     });
 
     testWidgets('warns which codes are safe to accept', (tester) async {
@@ -809,7 +868,58 @@ void main() {
       final discard = tester.widget<DesignSystemButton>(
         find.byKey(const Key('bundle_import_discard')),
       );
-      expect(discard.variant, DesignSystemButtonVariant.outlined);
+      expect(discard.variant, DesignSystemButtonVariant.secondary);
+      // The comparison question sits with the code itself.
+      expect(
+        find.text(context.messages.syncPairSameCodeQuestion),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the first-device branch carries a real manual button', (
+      tester,
+    ) async {
+      // "See the manual" used to end in prose with nothing to tap — two of
+      // five test personas abandoned the flow at exactly that sentence.
+      await pumpImport(tester);
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      final manual = tester.widget<DesignSystemButton>(
+        find.byKey(const Key('bundle_import_open_manual')),
+      );
+      expect(manual.label, context.messages.syncPairOpenManual);
+      expect(manual.onPressed, isNotNull);
+    });
+
+    testWidgets('a provisioning reset clears the stale decoded bundle', (
+      tester,
+    ) async {
+      // "Enter a new code" on the failed connect screen resets the
+      // controller and lands back here; without the listener the page still
+      // showed the code the user is trying to replace.
+      await pumpImport(tester);
+
+      await tester.enterText(find.byType(TextField), validBase64);
+      await tester.pump();
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(
+        find.text(context.messages.provisionedSyncImportButton),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(context.messages.syncPairConnectButton));
+      await tester.pump();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(BundleImportWidget)),
+      );
+      container.read(provisioningControllerProvider.notifier).reset();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsOneWidget);
+      expect(
+        find.byKey(const Key('bundle_import_check_code')),
+        findsNothing,
+      );
     });
   });
 }

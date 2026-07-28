@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -64,9 +64,17 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(const Key('sync_setup_cta')), findsOneWidget);
-      // Composes the design system's one empty-state grammar rather than a
-      // hand-rolled icon/text ramp.
-      expect(find.byType(DesignSystemEmptyState), findsOneWidget);
+      // The two-device motif anchors the pane — the same figure the connect
+      // step and the verified celebration carry — with its gap still open.
+      final motif = tester.widget<SyncDevicePairMotif>(
+        find.byType(SyncDevicePairMotif),
+      );
+      expect(motif.state, SyncDevicePairMotifState.idle);
+      // And the quiet trust line closes the pitch.
+      expect(
+        find.text(context.messages.syncSetupEmptyFootnote),
+        findsOneWidget,
+      );
     });
 
     group('smart page detection', () {

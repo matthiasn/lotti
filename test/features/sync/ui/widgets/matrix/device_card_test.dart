@@ -1,13 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -128,6 +132,47 @@ void main() {
       verify(() => mockMatrixService.deleteDeviceById('DEVICE1')).called(1);
       expect(refreshed, isTrue);
       expect(find.text('Pixel 7 removed from sync'), findsOneWidget);
+    });
+
+    testWidgets('a slow removal shows a spinner, not a frozen glyph', (
+      tester,
+    ) async {
+      // deleteDeviceById can sit in the server's key-refresh timeout for
+      // up to 15 seconds. During that window the corner icon must read as
+      // "working", and its tooltip — the semantics label — must say so.
+      final gate = Completer<void>();
+      when(
+        () => mockMatrixService.deleteDeviceById('DEVICE1'),
+      ).thenAnswer((_) => gate.future);
+
+      await pumpCard(tester, buildDevice(), refreshListCallback: () {});
+
+      await tester.tap(find.byKey(const Key('matrix_delete_device')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('REMOVE FROM SYNC'));
+      await tester.pump();
+      await tester.pump();
+
+      final busyButton = tester.widget<IconButton>(
+        find.byKey(const Key('matrix_delete_device')),
+      );
+      expect(busyButton.onPressed, isNull);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('matrix_delete_device')),
+          matching: find.byType(DesignSystemSpinner),
+        ),
+        findsOneWidget,
+      );
+      final context = tester.element(find.byType(DeviceCard));
+      expect(
+        busyButton.tooltip,
+        context.messages.syncDeviceRemovalInProgress,
+      );
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(DesignSystemSpinner), findsNothing);
     });
 
     testWidgets('cancelling the confirmation leaves the device alone', (
@@ -344,17 +389,15 @@ void main() {
         find.byKey(const Key('matrix_remove_device_primary')),
         findsNothing,
       );
-      // Borderless: removing a healthy device is routine cleanup and must not
-      // outweigh "Add device" on the page around it. The blocking case keeps
-      // its fill, because there removal *is* the primary act.
-      expect(
-        tester
-            .widget<DesignSystemButton>(
-              find.byKey(const Key('matrix_delete_device')),
-            )
-            .variant,
-        DesignSystemButtonVariant.dangerTertiary,
+      // An icon in the card's corner: removing a healthy device is routine
+      // cleanup and must not outweigh "Add device" on the page around it.
+      // The blocking case keeps its labeled danger fill, because there
+      // removal *is* the primary act.
+      final delete = tester.widget<IconButton>(
+        find.byKey(const Key('matrix_delete_device')),
       );
+      expect(delete.onPressed, isNotNull);
+      expect(delete.tooltip, isNotNull);
     });
 
     testWidgets('a blocking device keeps the loud removal button', (
@@ -404,16 +447,16 @@ void main() {
       expect(badge.top, greaterThanOrEqualTo(name.bottom));
     });
 
-    testWidgets('puts the name and its badges on one row when wide', (
-      tester,
-    ) async {
+    testWidgets('anchors the card on a device icon tile', (tester) async {
       await pumpAtWidth(tester, kDeviceCardWideBreakpoint + 120);
 
+      // The tile leads the card; the name and its badges stack beside it so
+      // the roster reads as a grid of machines rather than rows of prose.
       final name = tester.getRect(find.text('Pixel 7'));
       final badge = tester.getRect(find.text('Verified'));
-      // Same row: the badge starts to the right of the name, not below it.
-      expect(badge.left, greaterThan(name.right));
-      expect(badge.top, lessThan(name.bottom));
+      final icon = tester.getRect(find.byIcon(Icons.devices_other_rounded));
+      expect(icon.right, lessThan(name.left));
+      expect(badge.top, greaterThanOrEqualTo(name.bottom));
     });
 
     testWidgets('wraps badges rather than overflowing at large text', (

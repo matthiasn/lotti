@@ -1,0 +1,63 @@
+---
+title: Dein erstes Gerät
+description: Woher der allererste Pairing-Code kommt, wenn noch kein Gerät verbunden ist — das serverseitige Provisionierungswerkzeug und was mit dem erzeugten Bundle zu tun ist.
+---
+
+# Dein erstes Gerät
+
+Jedes Gerät nach dem ersten bekommt seinen Pairing-Code von einem Gerät, das
+du bereits nutzt — dieser Ablauf ist [Gerät hinzufügen](./add-device.mdx).
+Das erste ist anders: Es gibt kein anderes Gerät, das einen Code erzeugen
+könnte. Lottis Synchronisierung ist selbst gehostet, der erste Code kommt
+deshalb von der Serverseite — erstellt von der Person, die deinen
+Synapse-Homeserver betreibt.
+
+## Was das Provisionierungswerkzeug tut
+
+Lotti liefert ein Admin-CLI mit, den **Matrix-Provisioner**, im Repository
+unter
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Von einem Homeserver-Admin ausgeführt:
+
+1. erstellt es ein frisches Matrix-Konto nur für die Synchronisierung,
+2. erstellt den verschlüsselten Sync-Raum und
+3. schreibt ein **Provisionierungs-Bundle** — den Text, den Lotti als
+   Pairing-Code akzeptiert — in eine Datei.
+
+Das README neben dem Werkzeug dokumentiert jedes Argument und die sicheren
+Wege, das Admin-Passwort zu übergeben. Ein minimaler Aufruf sieht so aus:
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+Wenn du keinen eigenen Homeserver betreibst, ist dieser Schritt nicht
+deiner — bitte die Person, die den Server betreibt, um das Bundle, und
+behandle den Weg, auf dem es dich erreicht, mit der unten beschriebenen
+Sorgfalt.
+
+## Das Bundle als ersten Pairing-Code verwenden
+
+Öffne auf dem Gerät, das dein erstes werden soll, **Einstellungen →
+Synchronisierungseinstellungen → Geräte** und wähle **Sync einrichten**.
+Füge den Text des Bundles in das Codefeld ein — auf dem Telefon, wo sich
+zuerst die Kamera öffnet, kommst du mit **Code stattdessen einfügen**
+dorthin. Ab da ist der Ablauf die gewohnte Pairing-Reise: prüfen, was der
+Code beschreibt, verbinden und [verifizieren](./sync.mdx).
+
+Ein Unterschied ist wissenswert: Das Einlösen eines frischen
+Provisionierungs-Bundles **rotiert das Kontopasswort** beim Verbinden. Die
+Bundle-Datei ist nach dem ersten Gebrauch verbraucht — die gültigen
+Zugangsdaten existieren dann nur auf diesem Gerät, und jedes weitere Gerät
+koppelt sich über [Gerät hinzufügen](./add-device.mdx) an ein vorhandenes.
+Lösche die Bundle-Datei, sobald das erste Gerät verbunden ist; eine
+liegengebliebene Kopie kann sich nicht mehr anmelden, aber es gibt keinen
+Grund, sie zu behalten.
+
+Bis zu diesem ersten Gebrauch behandle das Bundle wie ein Passwort: Es
+meldet sich am Sync-Konto an — halte es aus Chats, Screenshots und
+geteilten Bildschirmen heraus.

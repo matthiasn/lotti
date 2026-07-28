@@ -1,0 +1,60 @@
+---
+title: Din första enhet
+description: Var den allra första parkopplingskoden kommer ifrån när ingen enhet är ansluten ännu — provisioneringsverktyget på serversidan och vad du gör med bundlen det skriver.
+---
+
+# Din första enhet
+
+Varje enhet efter den första får sin parkopplingskod från en enhet du redan
+använder — det flödet är [Lägg till en enhet](./add-device.mdx). Den första
+är annorlunda: det finns ingen annan enhet som kan skapa en kod. Lottis
+synkronisering är självhostad, så den första koden kommer från serversidan —
+skapad av den som driver din Synapse-homeserver.
+
+## Vad provisioneringsverktyget gör
+
+Lotti levererar ett admin-CLI, **Matrix-provisioneraren**, i repositoriet på
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Körd av en homeserver-admin:
+
+1. skapar den ett färskt Matrix-konto enbart för synkronisering,
+2. skapar det krypterade synkroniseringsrummet, och
+3. skriver en **provisioneringsbundle** — texten Lotti godtar som
+   parkopplingskod — till en fil.
+
+README-filen bredvid verktyget dokumenterar varje argument och de säkra
+sätten att ange admin-lösenordet. En minimal körning ser ut så här:
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+Driver du ingen egen homeserver är det här steget inte ditt — be den som
+sköter servern om bundlen, och hantera vägen den når dig på med den omsorg
+som beskrivs nedan.
+
+## Använd bundlen som din första parkopplingskod
+
+På enheten som ska bli din första, öppna **Inställningar →
+Synkroniseringsinställningar → Enheter** och välj **Konfigurera synk**.
+Klistra in bundlens text i kodfältet — på en telefon, där kameran öppnas
+först, väljer du **Klistra in koden i stället** för att komma dit. Därifrån
+är flödet den vanliga parkopplingsresan: granska vad koden beskriver, anslut
+och [verifiera](./sync.mdx).
+
+En skillnad är värd att känna till: att använda en färsk
+provisioneringsbundle **roterar kontots lösenord** som en del av
+anslutningen. Bundlefilen är förbrukad efter första användningen — den
+gällande inloggningen finns då bara på den enheten, och varje följande enhet
+parkopplas från en befintlig med [Lägg till en enhet](./add-device.mdx).
+Radera bundlefilen så snart den första enheten är ansluten; en kvarglömd
+kopia kan inte längre logga in, men det finns ingen anledning att behålla
+den.
+
+Fram till den första användningen ska du behandla bundlen som ett lösenord:
+den loggar in på synkroniseringskontot — håll den borta från chattar,
+skärmbilder och delade skärmar.

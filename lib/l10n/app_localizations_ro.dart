@@ -8343,11 +8343,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Opriți sincronizarea pe acest dispozitiv';
 
   @override
-  String get provisionedSyncDone => 'Acest dispozitiv este conectat';
+  String get provisionedSyncDone => 'Conectat';
 
   @override
-  String get provisionedSyncError =>
-      'Nu s-a putut conecta la contul dvs. de sincronizare';
+  String get provisionedSyncError => 'Codul nu a funcționat';
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
@@ -8355,7 +8354,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Autentificarea cu acel cod a eșuat. Verificați dacă celălalt dispozitiv încă se sincronizează, redeschideți acolo Adăugați dispozitiv și folosiți codul afișat.';
+      'Serverul nu a acceptat datele de autentificare din cod. Un cod nu mai funcționează după ce parola contului se schimbă — generați un cod nou pe celălalt dispozitiv sau reîncercați dacă doar conexiunea a căzut.';
 
   @override
   String get provisionedSyncImportButton => 'Continuați';
@@ -9423,9 +9422,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsManualLanguageTitle => 'Limbă';
 
   @override
-  String get settingsMatrixAccept => 'Acceptă';
-
-  @override
   String get settingsMatrixAcceptVerificationLabel =>
       'Celălalt dispozitiv afișează emoji, continuați';
 
@@ -9503,22 +9499,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMatrixVerificationSuccessConfirm => 'Am înțeles';
-
-  @override
-  String settingsMatrixVerificationSuccessLabel(
-    String deviceName,
-    String deviceID,
-  ) {
-    return 'Ați verificat cu succes $deviceName ($deviceID)';
-  }
-
-  @override
-  String get settingsMatrixVerifyConfirm =>
-      'Confirmați pe celălalt dispozitiv că emoji-urile de mai jos sunt afișate pe ambele dispozitive, în aceeași ordine:';
-
-  @override
-  String get settingsMatrixVerifyIncomingConfirm =>
-      'Confirmați că emoji-urile de mai jos sunt afișate pe ambele dispozitive, în aceeași ordine:';
 
   @override
   String get settingsMatrixVerifyLabel => 'Verificați';
@@ -10018,7 +9998,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncAddDeviceIntro =>
-      'Instalați Lotti pe noul dispozitiv, deschideți acolo Setări → Setări sincronizare → Dispozitive și scanați acest cod.';
+      'Instalați Lotti acolo, deschideți Setări → Sincronizare → Dispozitive și alegeți „Configurați sincronizarea”.';
 
   @override
   String get syncAddDeviceRevealCode => 'Afișați codul de asociere ca text';
@@ -10029,7 +10009,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'Tratați acest cod ca pe parola dumneavoastră — doar propriul dispozitiv nou îl poate scana.';
+      'Acest cod este o cheie către contul dumneavoastră — arătați-l doar propriului dispozitiv nou.';
 
   @override
   String get syncAddDeviceSendMessages => 'Trimiteți istoricul mesajelor';
@@ -10038,30 +10018,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncAddDeviceSendSettings => 'Trimiteți setările';
 
   @override
-  String get syncAddDeviceSendSettingsHint =>
-      'După verificarea cu emoji a noului dispozitiv, trimiteți-i măsurabilele, categoriile, obiceiurile, panourile și setările AI.';
-
-  @override
-  String get syncAddDeviceSendSettingsPending =>
-      'Disponibil după ce noul dispozitiv se alătură și este verificat cu emoji.';
-
-  @override
   String get syncAddDeviceSendSettingsReady =>
       'Noul dispozitiv este verificat — gata de trimitere.';
-
-  @override
-  String get syncAddDeviceStepScan => 'Acum · Afișați codul';
 
   @override
   String get syncAddDeviceStepScanTitle =>
       'Scanați acest cod pe noul dispozitiv';
 
   @override
+  String get syncAddDeviceTimelineJoined =>
+      'S-a conectat — confirmați emoji-urile pe ambele ecrane';
+
+  @override
+  String get syncAddDeviceTimelineVerified => 'Verificat — gata de predare';
+
+  @override
+  String get syncAddDeviceTimelineWaiting => 'Se așteaptă noul dispozitiv…';
+
+  @override
   String get syncAddDeviceUnavailable =>
       'Configurați sincronizarea pe acest dispozitiv înainte de a adăuga altul.';
 
   @override
-  String get syncAddDeviceWaiting => 'Se așteaptă noul dispozitiv…';
+  String get syncAddDeviceUnlockHint =>
+      'Se deblochează după potrivirea emoji-urilor — înainte de asta, noul dispozitiv oricum nu le-ar putea decripta.';
 
   @override
   String get syncDeleteConfigConfirm => 'Opriți sincronizarea';
@@ -10069,6 +10049,30 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Opriți sincronizarea pe acest dispozitiv?';
+
+  @override
+  String get syncDeviceRemovalInProgress => 'Se elimină dispozitivul…';
+
+  @override
+  String syncDevicesCount(num count, String server) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de dispozitive pe $server',
+      few: '$count dispozitive pe $server',
+      one: '1 dispozitiv pe $server',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesJustJoined(String deviceName) {
+    return '$deviceName tocmai s-a conectat și este verificat';
+  }
+
+  @override
+  String get syncDevicesJustJoinedHint =>
+      'Predați-i acum setările și istoricul mesajelor dumneavoastră.';
 
   @override
   String get syncDevicesKeylessHint =>
@@ -10210,7 +10214,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairCheckCode =>
-      'Verificați dacă este identic pe celălalt dispozitiv';
+      'Noul dispozitiv afișează același cod înainte de a se conecta — comparați-le.';
 
   @override
   String get syncPairCheckCodeLabel => 'Cod de verificare';
@@ -10224,14 +10228,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Clipboardul nu a putut fi citit. Lipiți codul direct în câmp.';
 
   @override
-  String get syncPairConnectButton => 'Conectați acest dispozitiv';
+  String get syncPairConnectButton => 'Codurile coincid — conectați';
 
   @override
-  String get syncPairDiscardCode => 'Introduceți alt cod de asociere';
+  String get syncPairDiscardCode => 'Nu coincid';
 
   @override
   String get syncPairedFirstDeviceBody =>
-      'Deocamdată este singurul dispozitiv din contul dvs. de sincronizare. Adăugați altul oricând doriți – tot ce scrieți aici îl va aștepta.';
+      'Este primul dispozitiv din contul dumneavoastră. Adăugați altul oricând doriți — tot ce scrieți aici îl va aștepta.';
 
   @override
   String get syncPairedFirstDeviceTitle =>
@@ -10239,15 +10243,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Categoriile, obiceiurile, panourile și configurația AI sosesc de acolo.';
+      'Categorii, obiceiuri, panouri și configurarea AI — trimise de pe celălalt dispozitiv după potrivirea emoji-urilor.';
 
   @override
   String get syncPairedSettingsStepFallback =>
       'Dacă l-ați închis, pe celălalt dispozitiv deschideți Setări → Setări sincronizare → Întreținere, alegeți Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI, apoi alegeți Istoricul mesajelor.';
 
   @override
-  String get syncPairedVerifyDone =>
-      'Ambele dispozitive verificate – acest dispozitiv vă poate citi înregistrările';
+  String get syncPairedSettingsStepTitle => 'Primiți setările dumneavoastră';
+
+  @override
+  String get syncPairedStepsLeft =>
+      'Mai sunt doi pași până când acest dispozitiv vă poate citi jurnalul.';
 
   @override
   String get syncPairedVerifyFallback =>
@@ -10255,17 +10262,23 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Până nu confirmați pe ambele dispozitive, acesta nu vă poate citi însemnările.';
+      'Ambele dispozitive vor afișa șapte emoji-uri. Până când coincid, acest dispozitiv vede doar text criptat.';
 
   @override
   String get syncPairedVerifyStepDone =>
       'Emoji potrivite – acest dispozitiv vă poate citi înregistrările';
 
   @override
+  String get syncPairedVerifyStepTitle => 'Confirmați emoji-urile';
+
+  @override
   String get syncPairedVerifyWaiting => 'Se așteaptă apariția emoji-urilor…';
 
   @override
-  String get syncPairEnterManually => 'Introduceți codul manual';
+  String get syncPairEnterManually => 'Lipiți codul în schimb';
+
+  @override
+  String get syncPairEnterNewCode => 'Introduceți un cod nou';
 
   @override
   String get syncPairErrorMalformed =>
@@ -10276,58 +10289,62 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acest cod provine dintr-o altă versiune de Lotti. Actualizați ambele dispozitive și încercați din nou.';
 
   @override
+  String get syncPairFirstDeviceHint =>
+      'Nu există încă alt dispozitiv de pe care să copiați — primul cod vine din instrumentul de provizionare al serverului de sincronizare.';
+
+  @override
+  String get syncPairFirstDeviceTitle => 'Configurați primul dispozitiv?';
+
+  @override
   String get syncPairGoToDevices => 'Mergeți la Dispozitive';
 
   @override
   String get syncPairMismatchWarning =>
-      'Dacă acest lucru nu se potrivește, nu vă conectați – codul aparține altui cont.';
+      'Coduri diferite înseamnă că acesta nu provine de pe dispozitivul dumneavoastră. Nu vă conectați — obțineți un cod nou de pe propriul dispozitiv.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'Folosiți doar un cod de pe propriul dispozitiv — codul altcuiva trimite tot ce scrieți în contul acelei persoane.';
+      'Codul este o cheie către contul dumneavoastră. Folosiți doar un cod de pe propriul dispozitiv — codul altcuiva îi trimite tot ce scrieți.';
+
+  @override
+  String get syncPairOpenManual => 'Deschideți ghidul pentru primul dispozitiv';
 
   @override
   String get syncPairPasteTitle => 'Lipiți codul de asociere';
 
   @override
-  String get syncPairScanInstead => 'Scanați cu camera';
+  String get syncPairRetryThisCode => 'Reîncercați acest cod';
+
+  @override
+  String get syncPairReviewIntro =>
+      'Celălalt dispozitiv afișează un cod de control sub codul QR. Trebuie să fie exact acesta:';
+
+  @override
+  String get syncPairReviewTitle => 'Comparați înainte de a vă conecta';
+
+  @override
+  String get syncPairSameCodeQuestion => 'Același cod pe ambele ecrane?';
+
+  @override
+  String get syncPairScanHint =>
+      'Îndreptați camera spre codul QR de la „Adăugați un dispozitiv” de pe celălalt dispozitiv.';
+
+  @override
+  String get syncPairScanLink => 'Aveți cameră? Scanați codul QR în schimb';
 
   @override
   String get syncPairScannerRejected =>
       'Acesta este codul pe care l-ați refuzat. Scanați codul afișat de propriul dispozitiv sau lipiți-l mai jos.';
 
   @override
-  String get syncPairScanTitle =>
-      'Îndreptați camera spre codul de pe celălalt dispozitiv';
+  String get syncPairScanTitle => 'Scanați codul de asociere';
 
   @override
-  String get syncPairShowEmojiAgain => 'Afișați din nou emoji-urile';
-
-  @override
-  String get syncPairStepAlmost =>
-      'Pasul 3 din 3 · Finalizați pe celălalt dispozitiv';
-
-  @override
-  String get syncPairStepConfirm => 'Pasul 2 din 3 · Confirmare';
-
-  @override
-  String get syncPairStepConnecting => 'Pasul 3 din 3 · Se conectează';
-
-  @override
-  String get syncPairStepDone => 'Pasul 3 din 3 · Gata';
-
-  @override
-  String get syncPairStepFailed => 'Pasul 3 din 3 · Conectarea a eșuat';
-
-  @override
-  String get syncPairStepScan => 'Pasul 1 din 3 · Obțineți codul';
+  String get syncPairShowEmoji => 'Afișați emoji-urile';
 
   @override
   String get syncPairWhereToFind =>
-      'Codul se află sub „Adăugați dispozitiv\" pe un dispozitiv care sincronizează deja — copiați-l acolo și lipiți-l aici.';
-
-  @override
-  String get syncPairWillJoin => 'Acest dispozitiv se va alătura la:';
+      'Se află pe celălalt dispozitiv, la „Adăugați un dispozitiv” — copiați-l acolo și lipiți-l aici.';
 
   @override
   String get syncPayloadAgentBundle => 'Pachet agent';
@@ -10398,8 +10415,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncSetupCta => 'Configurați sincronizarea';
 
   @override
+  String get syncSetupEmptyFootnote =>
+      'Rulează pe propriul server de sincronizare · nimic nu părăsește dispozitivele dumneavoastră necriptat';
+
+  @override
   String get syncSetupEmptyHint =>
-      'Jurnalul dumneavoastră pe toate dispozitivele — criptat integral, doar între propriile dumneavoastră dispozitive.';
+      'Jurnalul dumneavoastră pe fiecare dispozitiv pe care îl dețineți. Criptat integral, doar între dispozitivele dumneavoastră — fără cont în cloud.';
 
   @override
   String get syncSetupEmptyTitle => 'Sincronizați-vă dispozitivele';
@@ -10441,6 +10462,44 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncStepSavedTaskFilters => 'Filtre de sarcini salvate';
+
+  @override
+  String get syncVerifiedCelebrationBody =>
+      'De acum înainte, tot ce scrieți se sincronizează — criptat integral, de la un dispozitiv la altul.';
+
+  @override
+  String get syncVerifiedCelebrationTitle =>
+      'Dispozitivele dumneavoastră au încredere unul în celălalt';
+
+  @override
+  String get syncVerifyModalTitle => 'Confirmați dispozitivul';
+
+  @override
+  String get syncVerifyPromptLine1 => 'Ambele ecrane afișează șapte emoji-uri.';
+
+  @override
+  String get syncVerifyPromptQuestion =>
+      'Aceleași emoji-uri, în aceeași ordine?';
+
+  @override
+  String get syncVerifyTheyDiffer => 'Diferă — anulați';
+
+  @override
+  String get syncVerifyTheyMatch => 'Coincid';
+
+  @override
+  String get syncWizardStepCheck => 'Verificați';
+
+  @override
+  String get syncWizardStepConnect => 'Conectați';
+
+  @override
+  String get syncWizardStepGetCode => 'Obțineți codul';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Pasul $step din 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive =>
@@ -11370,19 +11429,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get syncPairedVerifyStepTitle =>
-      'Comparați emoji-urile pe ambele dispozitive';
-
-  @override
-  String get syncPairedSettingsStepTitle =>
-      'Trimiteți setările de pe celălalt dispozitiv';
-
-  @override
-  String get syncPairFirstDeviceTitle => 'Configurați primul dispozitiv?';
-
-  @override
-  String get syncPairFirstDeviceHint =>
-      'Primul cod de asociere provine din instrumentul de provizionare al serverului de sincronizare — consultați manualul. Fiecare dispozitiv ulterior primește codul din aplicație.';
 }

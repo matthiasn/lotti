@@ -1,0 +1,62 @@
+---
+title: Je eerste apparaat
+description: Waar de allereerste koppelcode vandaan komt als er nog geen apparaat verbonden is — het provisioninggereedschap aan de serverkant en wat je doet met de bundle die het schrijft.
+---
+
+# Je eerste apparaat
+
+Elk apparaat na het eerste krijgt zijn koppelcode van een apparaat dat je al
+gebruikt — dat traject is [Een apparaat toevoegen](./add-device.mdx). Het
+eerste is anders: er is geen ander apparaat dat een code kan maken. Lotti's
+synchronisatie is self-hosted, dus de eerste code komt van de serverkant —
+gemaakt door degene die jouw Synapse-homeserver beheert.
+
+## Wat het provisioninggereedschap doet
+
+Lotti levert een admin-CLI mee, de **Matrix-provisioner**, in de repository
+op
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Uitgevoerd door een homeserver-admin:
+
+1. maakt het een vers Matrix-account aan, alleen voor synchronisatie,
+2. maakt het de versleutelde synchronisatiekamer aan, en
+3. schrijft het een **provisioningbundle** — de tekst die Lotti als
+   koppelcode accepteert — naar een bestand.
+
+De README naast het gereedschap documenteert elk argument en de veilige
+manieren om het admin-wachtwoord aan te leveren. Een minimale run ziet er zo
+uit:
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+Beheer je geen eigen homeserver, dan is deze stap niet aan jou — vraag de
+beheerder van de server om de bundle, en behandel de weg waarlangs die jou
+bereikt met de zorg die hieronder staat.
+
+## De bundle als je eerste koppelcode gebruiken
+
+Open op het apparaat dat je eerste moet worden **Instellingen →
+Instellingen synchroniseren → Apparaten** en kies **Synchronisatie
+instellen**. Plak de tekst van de bundle in het codeveld — op een telefoon,
+waar eerst de camera opent, kom je daar via **Plak de code in plaats
+daarvan**. Vanaf dat punt is het de gewone koppelreis: nakijken wat de code
+beschrijft, verbinden en [verifiëren](./sync.mdx).
+
+Eén verschil is het weten waard: het gebruiken van een verse
+provisioningbundle **roteert het accountwachtwoord** tijdens het verbinden.
+Het bundlebestand is daarmee op na het eerste gebruik — het geldige
+inloggegeven bestaat dan alleen op dat apparaat, en elk volgend apparaat
+koppelt vanaf een bestaand apparaat met
+[Een apparaat toevoegen](./add-device.mdx). Verwijder het bundlebestand
+zodra het eerste apparaat verbonden is; een achtergebleven kopie kan niet
+meer inloggen, maar er is geen reden om die te bewaren.
+
+Tot dat eerste gebruik behandel je de bundle als een wachtwoord: er kan mee
+worden ingelogd op het synchronisatieaccount — houd hem uit chats,
+schermafbeeldingen en gedeelde schermen.
