@@ -1032,10 +1032,31 @@ void main() {
     );
 
     test(
-      'Late Megolm key survives Bob restart and clears the durable floor',
+      'Late Megolm key restores a file-backed image after Bob restarts',
       () async {
         const lateKeyTimeout = Duration(minutes: 3);
         final bobCountBefore = await bobDb.getJournalCount();
+        final imageId = const Uuid().v1();
+        final imageTimestamp = DateTime.utc(2025, 2, 1, 14);
+        final image = JournalImage(
+          meta: _nextMediaMetadata(
+            device: aliceOutbox,
+            id: imageId,
+            timestamp: imageTimestamp,
+          ),
+          data: ImageData(
+            capturedAt: imageTimestamp,
+            imageId: imageId,
+            imageFile: '$imageId.png',
+            imageDirectory: '/images/2025-02-01/',
+          ),
+          entryText: const EntryText(
+            plainText: 'Late-key Matrix image fixture',
+          ),
+        );
+        final imageBytes = base64Decode(_onePixelPngBase64);
+        final bobImageFile = _mediaFileFor(bobOutbox, image);
+        expect(bobImageFile.existsSync(), isFalse);
         final bobDeviceId = bob.client.deviceID;
         expect(bobDeviceId, isNotNull);
 
@@ -1056,9 +1077,16 @@ void main() {
           await alice.client.encryption!.keyManager
               .clearOrUseOutboundGroupSession(roomId, wipe: true);
 
-          await _sendTestMessages(
-            1,
-            device: aliceOutbox,
+          await _stageMediaEntity(
+            entity: image,
+            bytes: imageBytes,
+            sender: aliceOutbox,
+          );
+          await aliceOutbox.service.enqueueNextSendRequest(
+            delay: Duration.zero,
+          );
+          await _waitForOutboxDrain(
+            aliceOutbox,
             timeout: lateKeyTimeout,
           );
 
@@ -1113,6 +1141,13 @@ void main() {
             floorBeforeRestart,
           );
 
+          // Pause Lotti's live receiver before importing the key. The Matrix
+          // SDK may retry cached timeline events as soon as a room key lands;
+          // the second cold restart below makes recovery belong to bootstrap
+          // rather than that live-event side effect.
+          await bob.queueCoordinator.stop();
+          expect(bob.queueCoordinator.isRunning, isFalse);
+
           await bobDevice.setVerified(true, false);
           final outboundSession = alice.client.encryption!.keyManager
               .getOutboundGroupSession(roomId)
@@ -1162,13 +1197,51 @@ void main() {
             isNotNull,
             reason: 'the restarted SDK must persist the real room key',
           );
+
+          expect(bobImageFile.existsSync(), isFalse);
+          await bob.dispose();
+          bobInitialized = false;
+          bob = await _createBobService(
+            documentsDirectory: bobDocumentsDirectory,
+            config: config2,
+            loggingService: getIt<DomainLogger>(),
+            journalDb: bobDb,
+            settingsDb: bobSettingsDb,
+            secureStorage: secureStorageMock,
+            activityService: sharedUserActivityService,
+            updateNotifications: mockUpdateNotifications,
+            aiConfigRepository: sharedAiConfigRepository,
+            singleInstance: false,
+            syncDb: bobSyncDb,
+            vectorClockService: bobVectorClockService,
+          );
+          bobInitialized = true;
+          await bob.init();
+          expect(bob.debugPipeline, isNotNull);
+          expect(bobImageFile.existsSync(), isFalse);
+
           await bob.queueCoordinator.triggerBridge();
 
           await waitUntilAsync(
-            () async =>
-                await bobDb.getJournalCount() == bobCountBefore + 1 &&
-                await bob.queueCoordinator.queue.resumeFloorTs(roomId) == null,
+            () async {
+              final received = await bobDb.journalEntityById(imageId);
+              return received is JournalImage &&
+                  bobImageFile.existsSync() &&
+                  bobImageFile.lengthSync() == imageBytes.length &&
+                  await bob.queueCoordinator.queue.resumeFloorTs(roomId) ==
+                      null;
+            },
             timeout: lateKeyTimeout,
+          );
+          final received = await bobDb.journalEntityById(imageId);
+          expect(received, isA<JournalImage>());
+          expect((received! as JournalImage).data, image.data);
+          expect(
+            await bobImageFile.readAsBytes(),
+            orderedEquals(imageBytes),
+            reason:
+                'cold-start bootstrap must hydrate the JSON and image before '
+                'the companion sync payload applies',
           );
           expect(
             await bob.queueCoordinator.queue.resumeFloorTs(roomId),
@@ -1930,7 +2003,7 @@ void main() {
         expect(repairRequests, hasLength(1));
         expect(repairRequests.single.entryIds.toSet(), missingEntryIds);
 
-        final repairResponses =
+        List<SyncJournalEntity> repairResponses() =>
             _flattenMessages(
                   aliceOutbox.sender.sentMessages.skip(aliceSentBeforeRepair),
                 )
@@ -1941,8 +2014,22 @@ void main() {
                       missingEntryIds.contains(message.id),
                 )
                 .toList();
+        await waitUntilAsync(
+          () async {
+            final responseIds = repairResponses()
+                .map((message) => message.id)
+                .toSet();
+            if (!responseIds.containsAll(missingEntryIds)) {
+              await aliceOutbox.service.enqueueNextSendRequest(
+                delay: Duration.zero,
+              );
+            }
+            return responseIds.containsAll(missingEntryIds);
+          },
+          timeout: repairTimeout,
+        );
         expect(
-          repairResponses.map((message) => message.id).toSet(),
+          repairResponses().map((message) => message.id).toSet(),
           missingEntryIds,
           reason: 'Alice must answer both requested entries with attachments',
         );
@@ -2063,6 +2150,57 @@ Future<JournalEntity> _sendMediaEntity({
     reason: 'the receiver must not start with the sender media file',
   );
 
+  await _stageMediaEntity(
+    entity: entity,
+    bytes: bytes,
+    sender: sender,
+  );
+
+  final sentEventsBefore = sender.sender.sentEvents;
+  final sentEntriesBefore = sender.sender.sentEntries;
+  final bundleCountBefore = sender.sender.bundleSizes.length;
+  await sender.service.enqueueNextSendRequest(delay: Duration.zero);
+  await _waitForOutboxDrain(sender, timeout: timeout);
+
+  expect(sender.sender.sentEvents - sentEventsBefore, 1);
+  expect(sender.sender.sentEntries - sentEntriesBefore, 1);
+  expect(
+    sender.sender.bundleSizes.sublist(bundleCountBefore),
+    [1],
+    reason: 'media rows must travel alone rather than in an outbox bundle',
+  );
+
+  JournalEntity? received;
+  await waitUntilAsync(
+    () async {
+      received = await receiver.journalDb.journalEntityById(entity.meta.id);
+      if (received != null &&
+          receiverFile.existsSync() &&
+          receiverFile.lengthSync() == bytes.length) {
+        return true;
+      }
+      await receiverService.forceRescan();
+      await receiverService.retryNow();
+      return false;
+    },
+    timeout: timeout,
+  );
+
+  expect(received, isNotNull);
+  expect(
+    await receiverFile.readAsBytes(),
+    orderedEquals(bytes),
+    reason: 'Matrix must transfer the exact media payload between sandboxes',
+  );
+  return received!;
+}
+
+Future<void> _stageMediaEntity({
+  required JournalEntity entity,
+  required List<int> bytes,
+  required _DeviceOutbox sender,
+}) async {
+  final sourceFile = _mediaFileFor(sender, entity);
   await _setMatrixSyncEnabled(sender.journalDb, enabled: false);
   try {
     final actionableBefore = await sender.syncDb.getOutboxItems(
@@ -2109,44 +2247,6 @@ Future<JournalEntity> _sendMediaEntity({
   } finally {
     await _setMatrixSyncEnabled(sender.journalDb, enabled: true);
   }
-
-  final sentEventsBefore = sender.sender.sentEvents;
-  final sentEntriesBefore = sender.sender.sentEntries;
-  final bundleCountBefore = sender.sender.bundleSizes.length;
-  await sender.service.enqueueNextSendRequest(delay: Duration.zero);
-  await _waitForOutboxDrain(sender, timeout: timeout);
-
-  expect(sender.sender.sentEvents - sentEventsBefore, 1);
-  expect(sender.sender.sentEntries - sentEntriesBefore, 1);
-  expect(
-    sender.sender.bundleSizes.sublist(bundleCountBefore),
-    [1],
-    reason: 'media rows must travel alone rather than in an outbox bundle',
-  );
-
-  JournalEntity? received;
-  await waitUntilAsync(
-    () async {
-      received = await receiver.journalDb.journalEntityById(entity.meta.id);
-      if (received != null &&
-          receiverFile.existsSync() &&
-          receiverFile.lengthSync() == bytes.length) {
-        return true;
-      }
-      await receiverService.forceRescan();
-      await receiverService.retryNow();
-      return false;
-    },
-    timeout: timeout,
-  );
-
-  expect(received, isNotNull);
-  expect(
-    await receiverFile.readAsBytes(),
-    orderedEquals(bytes),
-    reason: 'Matrix must transfer the exact media payload between sandboxes',
-  );
-  return received!;
 }
 
 Future<List<JournalEntity>> _sendMediaMetadataUpdates({

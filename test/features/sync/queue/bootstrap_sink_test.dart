@@ -242,6 +242,7 @@ void main() {
       );
       final decrypted = _buildEvent(eventId: r'$sealed', originTsMs: 2);
       final seen = <Event>[];
+      final decryptedEvents = <Event>[];
       final sink = QueueBootstrapSink(
         queue: queue,
         logging: logging,
@@ -249,12 +250,14 @@ void main() {
           seen.add(event);
           return decrypted;
         },
+        onDecryptedEvent: decryptedEvents.add,
       );
 
       final cont = await sink.onPage([encrypted], info(0, 1));
 
       expect(cont, isTrue);
       expect(seen, [same(encrypted)]);
+      expect(decryptedEvents, [same(decrypted)]);
       expect((await queue.stats()).total, 1);
       expect(await queue.resumeFloorTs('!roomA:example.org'), isNull);
       expect(sink.oldestUnresolvedTs, isNull);

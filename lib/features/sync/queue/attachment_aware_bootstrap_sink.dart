@@ -3,16 +3,23 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
+import 'package:lotti/features/sync/queue/bootstrap_sink.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:matrix/matrix.dart';
 
-/// Bootstrap sink wrapper that funnels each paginated event through the
-/// coordinator's attachment ingestor *before* forwarding to the inner sink.
+/// Bootstrap sink wrapper that funnels each plaintext paginated event through
+/// the coordinator's attachment ingestor before forwarding to the inner sink.
 /// This is the catch-up equivalent of the live-stream `_handleLiveEvent`
 /// hook: every attachment descriptor observed during
 /// `collectHistoryForBootstrap` is recorded + downloaded so the companion
 /// sync-payload events that the inner sink enqueues have their JSON on disk
 /// by the time the worker applies them.
+///
+/// Encrypted page events are not useful to attachment ingestion and are
+/// skipped here. When the inner [QueueBootstrapSink] successfully re-decrypts
+/// one, its `onDecryptedEvent` callback must call [addDecryptedEvent] so the
+/// resulting plaintext enters this same bounded worker pool before queue
+/// classification.
 ///
 /// Attachment processing is fire-and-forget relative to pagination — the
 /// inner sink's return value flows through unchanged and the caller is not
@@ -46,13 +53,27 @@ class AttachmentAwareBootstrapSink implements BootstrapSink {
 
   @override
   Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
-    // Enqueue the page and make sure we have workers draining it. Do this
-    // before delegating to the inner sink so attachment work for page N
-    // can overlap with the inner sink's work on page N and the network
-    // fetch for page N+1.
-    _pending.addAll(events);
-    _ensureWorkers();
+    for (final event in events) {
+      if (event.type != EventTypes.Encrypted) {
+        _add(event);
+      }
+    }
     return _inner.onPage(events, info);
+  }
+
+  /// Adds plaintext revealed by the inner sink's fresh decryption attempt.
+  ///
+  /// This is synchronous by design: the event is queued before the inner sink
+  /// classifies it, while the actual download remains asynchronous and bounded
+  /// by [_concurrency].
+  void addDecryptedEvent(Event event) {
+    assert(event.type != EventTypes.Encrypted, 'expected plaintext event');
+    _add(event);
+  }
+
+  void _add(Event event) {
+    _pending.add(event);
+    _ensureWorkers();
   }
 
   void _ensureWorkers() {

@@ -8,6 +8,7 @@ import 'package:matrix/matrix.dart';
 const _logSub = 'queue.bootstrap';
 
 typedef BootstrapEventDecryptor = Future<Event> Function(Event event);
+typedef BootstrapDecryptedEventHandler = void Function(Event event);
 
 /// [BootstrapSink] implementation that forwards each paginated page to
 /// `InboundQueue.appendBootstrapPage` and awaits back-pressure
@@ -27,6 +28,7 @@ class QueueBootstrapSink implements BootstrapSink {
     this.backPressureTimeout = const Duration(seconds: 30),
     this._cancelSignal,
     this.decryptEvent,
+    this.onDecryptedEvent,
   }) {
     // Register the cancel handler eagerly so cancellation that lands
     // between pages (while `_waitForDrain` is not currently awaiting)
@@ -42,6 +44,7 @@ class QueueBootstrapSink implements BootstrapSink {
   final Duration backPressureTimeout;
   final Future<void>? _cancelSignal;
   final BootstrapEventDecryptor? decryptEvent;
+  final BootstrapDecryptedEventHandler? onDecryptedEvent;
 
   bool _cancelled = false;
   int _lastAcceptedCount = 0;
@@ -69,7 +72,8 @@ class QueueBootstrapSink implements BootstrapSink {
     var unresolvedCount = 0;
     for (final originalEvent in events) {
       var event = originalEvent;
-      if (event.type == EventTypes.Encrypted && decryptEvent != null) {
+      final wasEncrypted = event.type == EventTypes.Encrypted;
+      if (wasEncrypted && decryptEvent != null) {
         try {
           event = await decryptEvent!(event);
         } catch (error, stackTrace) {
@@ -82,6 +86,9 @@ class QueueBootstrapSink implements BootstrapSink {
         }
       }
       if (event.type != EventTypes.Encrypted) {
+        if (wasEncrypted) {
+          onDecryptedEvent?.call(event);
+        }
         forQueue.add(event);
         continue;
       }
