@@ -1364,7 +1364,8 @@ bool _allocationActionIsAsserted(
         caseSensitive: false,
       ).hasMatch(prefix) &&
       !RegExp(
-        r'\b(?:fail(?:s|ed|ing)?|refus(?:e|es|ed|ing)|'
+        r'\b(?:attempt(?:s|ed|ing)?|tr(?:y|ies|ied|ying)|'
+        'fail(?:s|ed|ing)?|refus(?:e|es|ed|ing)|'
         r'declin(?:e|es|ed|ing))\s+to\s*$',
         caseSensitive: false,
       ).hasMatch(prefix);

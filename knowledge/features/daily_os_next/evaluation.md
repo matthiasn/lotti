@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T08:42:40+02:00 }
+generated: { by: codex/5, at: 2026-07-28T08:56:46+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -89,8 +89,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   than any omitted/deferred predicate in the same comma-delimited clause. A
   merely possible action such as `task-c might schedule 60 of 120 minutes` is
   not an affirmative allocation, and neither is
-  `task-c might be partially scheduled`. Failed, refused, or declined attempts
-  to schedule are likewise not affirmative. A later action describing “the rest” cannot
+  `task-c might be partially scheduled`. Attempted, tried, failed, refused, or
+  declined actions are likewise not affirmative. A later action describing “the rest” cannot
   validate earlier omitted
   arithmetic. Unrelated meeting/workday scope is likewise associated with its
   nearest allocation action, so later meeting arithmetic does not poison an

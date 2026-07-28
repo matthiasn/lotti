@@ -1781,6 +1781,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects an attempted allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c attempted to schedule 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('preserves a scheduling denial after dash punctuation', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2894,6 +2915,27 @@ void main() {
               endHour: 10,
               taskId: 'task-c',
               reason: '30 of the 120 minutes remain for this task.',
+            ).copyWith(endTime: DateTime(2026, 7, 18, 9, 30)),
+          ],
+          corpus: tasks,
+          capacityMinutes: 30,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 30min of 120min'));
+    });
+
+    test('does not treat a trailing schedule as completed allocation', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c: 30 of 120 minutes remain to be scheduled.',
             ).copyWith(endTime: DateTime(2026, 7, 18, 9, 30)),
           ],
           corpus: tasks,
