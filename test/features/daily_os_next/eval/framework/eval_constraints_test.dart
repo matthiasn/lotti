@@ -1514,6 +1514,52 @@ void main() {
       });
     }
 
+    test('does not treat partial dependency as placement evidence', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c is partially dependent on the API; '
+                  '60 minutes remain for later.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('rejects a progressive non-task partial subject', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'The meeting is being partially scheduled; '
+                  '60 minutes remain for task-c.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('an objectively fitting partial remains objective', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1579,6 +1625,48 @@ void main() {
 
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('accepts a prepositive estimate qualifier', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '60 minutes of an estimated 120 minutes are scheduled.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('rejects speculative partial arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c might schedule 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
     test('allows unrelated negation outside the partial arithmetic', () {
@@ -3362,6 +3450,34 @@ void main() {
       expect(result.detail, contains('without naming a casualty'));
     });
 
+    test('does not treat unscheduled maintenance as trade evidence', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c documents unscheduled maintenance.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
     test('accepts a trade outside a task title containing a trade word', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -3731,6 +3847,33 @@ void main() {
             ),
           ],
           decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('a bare mention does not disclose a fully omitted task', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-deck-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-deck',
+              reason:
+                  'Focused on task-deck after reviewing '
+                  'task-report requirements.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(taskId: 'task-deck', title: 'Deck'),
+            EvalCorpusTask(taskId: 'task-report', title: 'Report'),
+          ],
+          decidedTaskIds: const ['task-deck', 'task-report'],
           requiresConflictSurfaced: true,
         ),
       );

@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T07:15:39+02:00 }
+generated: { by: codex/5, at: 2026-07-28T07:33:30+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -74,8 +74,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   the cheapest way to make an impossible day fit is to claim each task is shorter
   than it is. The one exception is an auditable partial placement: the block
   duration may replace the full estimate only when its reason gives concrete
-  minute arithmetic (`60m of 120m scheduled`, `60m out of 120m scheduled`, or
-  an affirmative `partial` plus a task-bound remainder such as
+  minute arithmetic (`60m of 120m scheduled`,
+  `60m of an estimated 120m scheduled`, `60m out of 120m scheduled`, or an
+  affirmative `partial` plus a task-bound remainder such as
   `60m remain for later`, `Remaining 60m move to tomorrow`,
   `60m still remain`, `60m will still remain`, or
   `Remaining 60m are carried over`) that agrees with both the summed duration
@@ -85,7 +86,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   the surrounding clause must include an affirmative scheduled, allocated,
   completed, planned, placed, or fitting action that is nearer to the numbers
   than any omitted/deferred predicate in the same comma-delimited clause. A
-  later action describing “the rest” cannot validate earlier omitted
+  merely possible action such as `task-c might schedule 60 of 120 minutes` is
+  not an affirmative allocation. A later action describing “the rest” cannot
+  validate earlier omitted
   arithmetic. Unrelated meeting/workday scope is likewise associated with its
   nearest allocation action, so later meeting arithmetic does not poison an
   earlier valid task split. Unbound splits are ignored before their values are
@@ -135,7 +138,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   disclosure forms. Bare `partial` must be a standalone label or explanation,
   follow a copula, or modify a placement noun such as task, work, placement, or
   block; a task-owned noun phrase such as `task-c's partial index` is not
-  placement evidence. A partial keyword is negated only by a preceding negator,
+  placement evidence. Inflected forms must modify a placement action, so
+  `partially scheduled` qualifies while `partially dependent on the API` does
+  not. Progressive copulas remain subject-bearing: `the meeting is being
+  partially scheduled` is still a meeting claim, not task evidence. A partial
+  keyword is negated only by a preceding negator,
   so `partial because not all work fits` remains affirmative. Split syntax
   cannot provide its own allocation context: an affirmative allocation action
   must appear outside the matched numbers. A task reference can attribute that
@@ -159,6 +166,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   title is not a trade: the prose must also disclose partial, deferred, omitted,
   remaining, shortened, or conflicting work in the same individual block
   reason or note field that names the task by token-bounded id or full title.
+  The same disclosure requirement applies to fully omitted tasks; mentioning an
+  omitted task only as context for retained work does not surface the omission.
   The scorer does not combine a task name in one field with unbound trade prose
   in the other. A name occurring only inside another task id or word,
   task-binding grammar such as `for this task`, and trade wording in unrelated
@@ -183,8 +192,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   unchanged` and moving a block to another clock slot are continuity or
   rescheduling, while `left unfinished` and moving work to tomorrow are actual
   remainder dispositions. A disposition word must govern the task or unfinished
-  work: domain language such as `task-c documents deferred revenue` does not
-  disclose that task-c itself was deferred.
+  work: domain language such as `task-c documents deferred revenue` or
+  `task-c documents unscheduled maintenance` does not disclose that task-c
+  itself was deferred or left unscheduled.
   It must also be affirmative and internally consistent: `not partial` and
   `no conflict` explicitly deny the trade, `conflict-free` is an antonym rather
   than a disclosure, and an affirmative claim plus its denial receives no

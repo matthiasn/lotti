@@ -698,7 +698,8 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
 }
 
 final _partialOfEstimatePattern = RegExp(
-  r'\b(\d+)(?:\s*(?:m|mins?|minutes?))?\s+(?:out\s+)?of\s+(?:the\s+)?'
+  r'\b(\d+)(?:\s*(?:m|mins?|minutes?))?\s+(?:out\s+)?of\s+'
+  r'(?:(?:an?|the)\s+)?(?:estimated\s+)?'
   r'(\d+)(?:\s+estimated)?\s*[-–—]?\s*(?:m|mins?|minutes?)\b',
   caseSensitive: false,
 );
@@ -1064,13 +1065,21 @@ bool _partialMentionIsNegated(String reason, Match match) {
 
 bool _partialMentionDescribesPlacement(String prose, Match match) {
   final wording = (match.group(0) ?? '').toLowerCase();
-  if (wording == 'partially' || wording == 'partly') return true;
-
   final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
   final prefix = prose.substring(range.start, match.start);
   final suffix = prose.substring(match.end, range.end);
+  if (wording == 'partially' || wording == 'partly') {
+    return RegExp(
+      r'^\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+      'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)|'
+      r'fit(?:s|ting)?|defer(?:s|red|ring)?|done|unfinished)\b',
+      caseSensitive: false,
+    ).hasMatch(suffix);
+  }
+
   final followsCopula = RegExp(
-    r'\b(?:is|are|was|were|has\s+been|have\s+been|had\s+been|will\s+be)'
+    r'\b(?:(?:is|are|was|were)(?:\s+being)?|'
+    r'(?:has|have|had)\s+been(?:\s+being)?|will\s+be(?:\s+being)?)'
     r'(?:\s+(?:only|merely|just|still))?\s*$',
     caseSensitive: false,
   ).hasMatch(prefix);
@@ -1089,7 +1098,7 @@ bool _partialMentionDescribesPlacement(String prose, Match match) {
 
 bool _tradeDispositionDescribesTaskOrWork(String prose, Match match) {
   final wording = (match.group(0) ?? '').toLowerCase();
-  if (!wording.startsWith('defer')) return true;
+  if (!wording.startsWith('defer') && wording != 'unscheduled') return true;
 
   final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
   final suffix = prose.substring(match.end, range.end);
@@ -1143,6 +1152,9 @@ bool _matchClauseIsNegated(String reason, Match match) {
           negationStart: negationStart,
           clauseEnd: range.end,
         )) {
+      continue;
+    }
+    if (negationStart >= match.end && RegExp('[–—]').hasMatch(between)) {
       continue;
     }
     if (negationStart >= match.end &&
@@ -1225,13 +1237,34 @@ bool _splitHasAffirmativeAllocation(String reason, Match match) {
     match,
     _taskAllocationActionPattern,
   );
-  if (action == null) return false;
+  if (action == null || !_allocationActionIsAsserted(reason, action)) {
+    return false;
+  }
   final omission = _nearestPatternMatch(
     reason,
     match,
     _omittedAllocationPattern,
   );
   return omission == null || action.distance < omission.distance;
+}
+
+bool _allocationActionIsAsserted(
+  String prose,
+  ({int start, int end, int distance}) action,
+) {
+  var clauseStart = 0;
+  for (var i = action.start - 1; i >= 0; i--) {
+    if (',.;!?\n'.contains(prose[i])) {
+      clauseStart = i + 1;
+      break;
+    }
+  }
+  final prefix = prose.substring(clauseStart, action.start);
+  return !RegExp(
+    r'\b(?:might|may|could|would|should|can)'
+    r'(?:\s+\w+){0,2}\s*$',
+    caseSensitive: false,
+  ).hasMatch(prefix);
 }
 
 bool _splitHasUnrelatedScope(
@@ -1571,12 +1604,7 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
   }
   final namedCasualties = [
     for (final taskId in deferred)
-      if (_taskTradeIsNamed(
-        outcome,
-        taskId,
-        requireTradeDisclosure: shortenedTasks.contains(taskId),
-      ))
-        taskId,
+      if (_taskTradeIsNamed(outcome, taskId)) taskId,
   ];
   return EvalConstraintResult(
     id: id,
@@ -2115,8 +2143,9 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
     return false;
   }
   final subjectMatch = RegExp(
-    r'^(.*?)\s+(?:(?:is|are|was|were|has\s+been|have\s+been|had\s+been|'
-    r'will\s+be)(?:\s+(?:only|merely|just|still))?'
+    r'^(.*?)\s+(?:(?:(?:is|are|was|were)(?:\s+being)?|'
+    r'(?:has|have|had)\s+been(?:\s+being)?|will\s+be(?:\s+being)?)'
+    r'(?:\s+(?:only|merely|just|still))?'
     r'(?:\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
     'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))?|'
     '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
@@ -2166,9 +2195,8 @@ bool _subjectStartsWithTaskReference(
 
 bool _taskTradeIsNamed(
   EvalRunOutcome outcome,
-  String taskId, {
-  required bool requireTradeDisclosure,
-}) {
+  String taskId,
+) {
   var hasAffirmativeNamedDisclosure = false;
   var hasDeniedNamedDisclosure = false;
   for (final block in outcome.blocks) {
@@ -2178,7 +2206,6 @@ bool _taskTradeIsNamed(
       final namesTask =
           _taskIdNamed(taskId, prose) || _titleNamed(outcome, taskId, prose);
       if (!namesTask) continue;
-      if (!requireTradeDisclosure) return true;
       final evidence = _tradeDisclosureEvidence(outcome, taskId, prose);
       hasAffirmativeNamedDisclosure |= evidence.affirmative;
       hasDeniedNamedDisclosure |= evidence.denied;
