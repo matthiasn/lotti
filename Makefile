@@ -49,9 +49,13 @@ analyze:
 okf_check:
 	$(DART_CMD) run tool/okf/validate.dart knowledge
 
-# Parses every mermaid diagram in the bundle with mermaid itself. Separate from
-# okf_check because there is no Dart mermaid parser — a diagram that renders as
-# an error box is invisible to the Dart validator, and three shipped that way.
+# Parses every mermaid diagram in the knowledge bundle, the ADRs and the
+# architecture docs with mermaid itself. Separate from okf_check because there is
+# no Dart mermaid parser — a diagram that renders as an error box is invisible to
+# the Dart validator, and three shipped that way. The ADRs are gated for the same
+# reason: two of theirs rendered as error boxes while this watched knowledge/
+# alone. Implementation plans are deliberately out of scope — they are working
+# notes, not the durable map.
 .PHONY: mermaid_check
 mermaid_check:
 	cd tool/okf && npm ci --silent && npm test --silent && npm run --silent check

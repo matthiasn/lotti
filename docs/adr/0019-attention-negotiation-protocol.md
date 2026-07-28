@@ -81,7 +81,7 @@ sequenceDiagram
   Agent->>Planner: attention_request (impact, deadline-slack, energy-fit)
   Planner->>Verify: candidate DayPlan vs hard constraints
   Verify-->>Planner: violations
-  Planner->>Planner: rank by utility; compute VOI
+  Planner->>Planner: rank by utility, compute VOI
   alt VOI > interruption cost
     Planner->>User: ChangeSet
     User-->>Planner: ChangeDecision
