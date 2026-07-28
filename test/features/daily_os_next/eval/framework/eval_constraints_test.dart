@@ -1526,6 +1526,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('accepts a future-tense partial remainder', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'This placement is partial; '
+                  '60 minutes will remain.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('accepts an inflected carry disposition for the remainder', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1701,6 +1724,12 @@ void main() {
             'this block is only a placeholder.',
       ),
       (
+        name: 'a long-form negated completed-estimate split',
+        reason:
+            'We do not have enough room to schedule '
+            '60 of the 120 minutes for this task.',
+      ),
+      (
         name: 'an unrelated workday remainder',
         reason:
             'Partial progress is recorded; '
@@ -1727,6 +1756,12 @@ void main() {
       (
         name: 'unrelated estimated meeting arithmetic',
         reason: 'The meeting used 60 of 120 estimated minutes.',
+      ),
+      (
+        name: 'another task completed-estimate split',
+        reason:
+            'Task D completed 60 of 120 minutes; '
+            'Task C is deferred.',
       ),
     ]) {
       test('charges ${badDisclosure.name} at the full estimate', () {

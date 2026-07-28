@@ -694,7 +694,7 @@ final _partialOfEstimatePattern = RegExp(
 final _partialRemainingPattern = RegExp(
   r'\b(\d+)\s*(?:m|mins?|minutes?)\s+'
   r'(?:(?:of|for)\s+(?:this|the)\s+(?:task|work)\s+)?'
-  r'(?:(?:is|are)\s+)?(?:left|remain(?:s|ing)?)\b',
+  r'(?:(?:is|are|will)\s+)?(?:left|remain(?:s|ing)?)\b',
   caseSensitive: false,
 );
 
@@ -730,6 +730,13 @@ final _taskAllocationContextPattern = RegExp(
   caseSensitive: false,
 );
 
+final _taskAllocationActionPattern = RegExp(
+  r'\b(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+  'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)|'
+  r'fit(?:s|ting)?)\b',
+  caseSensitive: false,
+);
+
 final _unrelatedRemainderScopePattern = RegExp(
   r'\b(?:in|during|for)\s+'
   r'(?:(?:the|a|an|my|our|their|your)\s+)?'
@@ -747,10 +754,13 @@ final _unrelatedSplitScopePattern = RegExp(
 );
 
 typedef _EstimatedTaskPlacement = ({
+  List<EvalCorpusTask> corpus,
   int allocatedMinutes,
   int estimateMinutes,
   bool hasOverlappingBlocks,
   List<String> reasons,
+  String taskId,
+  String taskTitle,
 });
 
 /// Estimated scheduled work grouped by task, with all disclosure prose.
@@ -785,15 +795,21 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
   }
   return {
     for (final entry in allocatedByTask.entries)
-      if (outcome.inputs.taskById(entry.key)?.estimateMinutes
-          case final int estimate when estimate > 0)
+      if (outcome.inputs.taskById(entry.key) case EvalCorpusTask(
+        :final taskId,
+        title: final taskTitle,
+        estimateMinutes: final int estimate,
+      ) when estimate > 0)
         entry.key: (
+          corpus: outcome.inputs.corpus,
           allocatedMinutes: entry.value,
           estimateMinutes: estimate,
           hasOverlappingBlocks: _hasOverlappingIntervals(
             blocksByTask[entry.key] ?? const [],
           ),
           reasons: reasonsByTask[entry.key] ?? const [],
+          taskId: taskId,
+          taskTitle: taskTitle,
         ),
   };
 }
@@ -826,6 +842,9 @@ bool _isAuditedPartial(_EstimatedTaskPlacement placement) =>
       reasons: placement.reasons,
       allocatedMinutes: placement.allocatedMinutes,
       estimateMinutes: placement.estimateMinutes,
+      taskId: placement.taskId,
+      taskTitle: placement.taskTitle,
+      corpus: placement.corpus,
     );
 
 /// Whether prose makes a shortened placement safe to charge as partial.
@@ -840,6 +859,9 @@ bool _hasAuditablePartialDisclosure({
   required List<String> reasons,
   required int allocatedMinutes,
   required int estimateMinutes,
+  required String taskId,
+  required String taskTitle,
+  required List<EvalCorpusTask> corpus,
 }) {
   final remainingMinutes = estimateMinutes - allocatedMinutes;
   var hasMatchingSplit = false;
@@ -852,7 +874,15 @@ bool _hasAuditablePartialDisclosure({
       reasonMentionsPartial = true;
     }
     for (final match in _partialOfEstimatePattern.allMatches(reason)) {
-      if (!_splitIsTaskBound(reason, match)) continue;
+      if (!_splitIsTaskBound(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+        corpus: corpus,
+      )) {
+        continue;
+      }
       if (_matchClauseIsNegated(reason, match)) return false;
       final declaredAllocated = int.tryParse(match.group(1) ?? '');
       final declaredEstimate = int.tryParse(match.group(2) ?? '');
@@ -898,23 +928,65 @@ bool _matchClauseIsNegated(String reason, Match match) {
         : negationStart >= match.end
         ? reason.substring(match.end, negationStart)
         : '';
-    if (_wordPattern.allMatches(between).length <= 3) return true;
+    if (_wordPattern.allMatches(between).length <= 3 ||
+        negationEnd <= match.start &&
+            _taskAllocationActionPattern.hasMatch(between)) {
+      return true;
+    }
   }
   return false;
 }
 
-bool _splitIsTaskBound(String reason, Match match) {
+bool _splitIsTaskBound(
+  String reason,
+  Match match, {
+  required String taskId,
+  required String taskTitle,
+  required List<EvalCorpusTask> corpus,
+}) {
   final clause = _matchClause(reason, match);
   final context = _matchClauseExcludingMatch(reason, match);
   return _taskAllocationContextPattern.hasMatch(context) &&
-      !_unrelatedSplitScopePattern.hasMatch(clause);
+      !_unrelatedSplitScopePattern.hasMatch(clause) &&
+      !_namesAnotherTask(
+        clause,
+        taskId: taskId,
+        taskTitle: taskTitle,
+        corpus: corpus,
+      );
+}
+
+bool _namesAnotherTask(
+  String clause, {
+  required String taskId,
+  required String taskTitle,
+  required List<EvalCorpusTask> corpus,
+}) {
+  for (final task in corpus) {
+    if (task.taskId == taskId ||
+        task.title.trim().toLowerCase() == taskTitle.trim().toLowerCase()) {
+      continue;
+    }
+    final idPattern = RegExp(
+      r'(?:^|[^\w-])' + RegExp.escape(task.taskId) + r'(?=$|[^\w-])',
+      caseSensitive: false,
+    );
+    final titlePattern = RegExp(
+      r'\btask\s+' + RegExp.escape(task.title.trim()) + r'\b',
+      caseSensitive: false,
+    );
+    if (idPattern.hasMatch(clause) || titlePattern.hasMatch(clause)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool _remainderIsTaskBound(String reason, Match match) {
   final clause = _matchClause(reason, match);
   if (_partialRemainderDispositionPattern.hasMatch(clause)) return true;
   if (_unrelatedRemainderScopePattern.hasMatch(clause)) return false;
-  return _partialMentionPattern.hasMatch(clause);
+  return _partialMentionPattern.hasMatch(reason);
 }
 
 bool _remainderIsRelatedToTask(String reason, Match match) {

@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T02:45:22+02:00 }
+generated: { by: codex/5, at: 2026-07-28T02:59:09+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -76,25 +76,28 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   duration may replace the full estimate only when its reason gives concrete
   minute arithmetic (`60m of 120m scheduled`, or an affirmative `partial` plus
   a task-bound remainder such as `60m remain for later`, `Remaining 60m move to
-  tomorrow`, or `Remaining 60m are carried over`) that agrees with both the
-  summed duration of that task's work blocks and the corpus estimate. A numeric
-  completed/estimate split must describe task allocation, not coincidentally
-  equal workday capacity. Unbound splits are ignored before their values are
-  checked, and allocation explicitly scoped to another subject such as a
-  meeting cannot earn task credit. The partial mention and task-bound remainder
-  must occur in the same block reason; unrelated workday-capacity prose cannot
-  supply the remainder. Task qualifiers may sit inside the arithmetic
-  (`60 minutes of this task remain`), while remainder arithmetic explicitly
-  scoped to another subject such as a meeting or workday is ignored. Every
-  concrete task-bound split and remainder in the task's disclosure must agree;
-  one matching fragment cannot override a contradictory remainder elsewhere in
-  the same disclosure. Negation is bound by word proximity to the evidence, so
-  `cannot be scheduled` invalidates a split without letting a later explanation
-  that the full task `cannot fit` invalidate affirmative arithmetic. Split
-  syntax cannot provide its own task context: an allocation word or task
-  reference must appear outside the matched numbers. Explicit other-subject
-  scope also outranks a nearby `partial` keyword, so `remain for the meeting`
-  cannot earn task remainder credit while `partial for today` remains valid.
+  tomorrow`, `60m will remain`, or `Remaining 60m are carried over`) that agrees
+  with both the summed duration of that task's work blocks and the corpus
+  estimate. A numeric completed/estimate split must describe task allocation,
+  not coincidentally equal workday capacity. Unbound splits are ignored before
+  their values are checked, and allocation explicitly scoped to another
+  subject or another corpus task cannot earn credit for the placed task. The
+  partial mention and task-bound remainder must occur in the same block reason;
+  unrelated workday-capacity prose cannot supply the remainder. Task qualifiers
+  may sit inside the arithmetic (`60 minutes of this task remain`), while
+  remainder arithmetic explicitly scoped to another subject such as a meeting
+  or workday is ignored. Every concrete task-bound split and remainder in the
+  task's disclosure must agree; one matching fragment cannot override a
+  contradictory remainder elsewhere in the same disclosure. Negation binds to
+  nearby evidence and to the allocation action leading into it. Thus both
+  `cannot be scheduled` and
+  `do not have enough room to schedule 60 of 120` invalidate a split, without
+  letting a later explanation that the full task `cannot fit` invalidate
+  affirmative arithmetic. Split syntax cannot provide its own task
+  context: an allocation word or task reference must appear outside the matched
+  numbers. Explicit other-subject scope also outranks a nearby `partial`
+  keyword, so `remain for the meeting` cannot earn task remainder credit while
+  `partial for today` remains valid.
   Negated or vague “partial” prose, silence,
   contradictory numbers, buffer or calendar blocks carrying a task id,
   allocations below 10% of the estimate, and overlapping blocks for one task
