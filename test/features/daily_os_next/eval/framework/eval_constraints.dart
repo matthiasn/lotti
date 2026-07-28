@@ -1246,7 +1246,13 @@ bool _negationQualifiesRatherThanNegates(Match negation, String between) {
       ).hasMatch(between);
 }
 
-bool _matchClauseIsNegated(String reason, Match match) {
+bool _matchClauseIsNegated(
+  String reason,
+  Match match, {
+  String? taskId,
+  String? taskTitle,
+  List<EvalCorpusTask> corpus = const [],
+}) {
   final range = _matchClauseRange(reason, match, boundaries: ',.;!?\n');
   final prefix = reason.substring(range.start, match.start);
   if (RegExp(
@@ -1255,10 +1261,21 @@ bool _matchClauseIsNegated(String reason, Match match) {
   ).hasMatch(prefix)) {
     return true;
   }
-  final segment = reason.substring(range.start, range.end);
-  for (final negation in _negationWordPattern.allMatches(segment)) {
-    final negationStart = range.start + negation.start;
-    final negationEnd = range.start + negation.end;
+  for (final negation in _negationWordPattern.allMatches(reason, range.start)) {
+    if (negation.start >= range.end) break;
+    final negationStart = negation.start;
+    final negationEnd = negation.end;
+    if (taskId != null &&
+        taskTitle != null &&
+        _evidenceNamesAnotherTask(
+          reason,
+          negation,
+          taskId: taskId,
+          taskTitle: taskTitle,
+          corpus: corpus,
+        )) {
+      continue;
+    }
     final between = negationEnd <= match.start
         ? reason.substring(negationEnd, match.start)
         : negationStart >= match.end
@@ -1420,7 +1437,6 @@ bool _splitHasUnrelatedScope(
     taskId: taskId,
     taskTitle: taskTitle,
   );
-  if (currentTaskDistance != null) return false;
   for (final scope in _unrelatedRemainderScopePattern.allMatches(reason)) {
     if (scope.start < range.start || scope.end > range.end) continue;
     final scopeAction = _nearestPatternMatch(
@@ -1431,7 +1447,11 @@ bool _splitHasUnrelatedScope(
     if (scopeAction != null &&
         scopeAction.start == evidenceAction.start &&
         scopeAction.end == evidenceAction.end) {
-      return true;
+      final explicitlyAllocatedToScope = RegExp(
+        r'^for\b',
+        caseSensitive: false,
+      ).hasMatch(scope.group(0) ?? '');
+      return currentTaskDistance == null || explicitlyAllocatedToScope;
     }
   }
   return false;
@@ -2181,6 +2201,10 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   final structuralRemainder = placement == null
       ? task.estimateMinutes
       : placement.estimateMinutes - placement.allocatedMinutes;
+  final hasStructuralPartial =
+      placement != null &&
+      placement.allocatedMinutes > 0 &&
+      placement.allocatedMinutes < placement.estimateMinutes;
   final affirmativeEvidence = <String>{};
   final deniedEvidence = <String>{};
 
@@ -2220,8 +2244,17 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
         corpus: outcome.inputs.corpus,
       );
 
+  bool clauseIsNegated(Match match) => _matchClauseIsNegated(
+    prose,
+    match,
+    taskId: taskId,
+    taskTitle: task.title,
+    corpus: outcome.inputs.corpus,
+  );
+
   for (final match in _partialMentionPattern.allMatches(prose)) {
-    if (!belongsToTask(match) ||
+    if (!hasStructuralPartial ||
+        !belongsToTask(match) ||
         !_partialMentionDescribesPlacement(prose, match) ||
         _evidenceIsSpeculative(prose, match)) {
       continue;
@@ -2238,7 +2271,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
         _evidenceIsSpeculative(prose, match)) {
       continue;
     }
-    if (_matchClauseIsNegated(prose, match)) {
+    if (clauseIsNegated(match)) {
       record(_tradeDispositionKey(match), denied: true);
     } else {
       record(_tradeDispositionKey(match), denied: false);
@@ -2265,7 +2298,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
         denyAttachedDispositions(match);
         continue;
       }
-      if (_matchClauseIsNegated(prose, match)) {
+      if (clauseIsNegated(match)) {
         record('remainder', denied: true);
         denyAttachedDispositions(match);
       } else {
@@ -2295,7 +2328,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
       }
     } else if (!_tradeEvidenceDescribesTaskOrWork(prose, match)) {
       continue;
-    } else if (_matchClauseIsNegated(prose, match)) {
+    } else if (clauseIsNegated(match)) {
       record(_tradeDispositionKey(match), denied: true);
     } else {
       record(_tradeDispositionKey(match), denied: false);

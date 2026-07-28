@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T09:34:43+02:00 }
+generated: { by: codex/5, at: 2026-07-28T09:52:34+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -98,7 +98,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   earlier valid task split. Unbound splits are ignored before their values are
   checked, and allocation explicitly scoped to another subject or another
   corpus task, named by id or full title, cannot earn credit for the placed
-  task. Explicit current-task scope wins over a later temporal meeting modifier.
+  task. Explicit current-task scope wins over a later temporal meeting modifier,
+  such as `during the meeting`, but not over an explicit allocation destination:
+  `task-c: 60 of 120 minutes are scheduled for the meeting` remains
+  meeting-scoped evidence.
   The block's task is the default arithmetic subject; a corpus reference
   overrides it when it is comma-led, adjacent, linked by an allocation action
   (including postpositive `allocated to Task D`), possessive, attached by `for`
@@ -187,6 +190,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   reason or note field that names the task by token-bounded id or full title.
   The same disclosure requirement applies to fully omitted tasks; mentioning an
   omitted task only as context for retained work does not surface the omission.
+  A `partial` claim cannot disclose a fully omitted task because there is no
+  positive structural placement to shorten; it must instead name an actual
+  omission, deferral, or other applicable trade.
   Numeric remainder claims for a fully omitted estimated task must equal its
   full estimate; omission does not make arbitrary positive arithmetic valid.
   Hyphenated task ids also remain whole tokens: a title such as `Report` is not
@@ -228,7 +234,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-c validates that the payload cannot fit in memory` describes the
   payload, not the task. Ordinary causal suffixes remain valid, so
   `task-c was omitted due to capacity` discloses the omission, as does
-  `task-c was omitted from today's plan`.
+  `task-c was omitted from today's plan`. A causal clause about another corpus
+  task also retains its own negation: `task-c was deferred because Deployment
+  was not scheduled` does not retract task-c's affirmative deferral.
   It must also be affirmative and internally consistent: `not partial` and
   `no conflict` explicitly deny the trade, while `without conflict` and
   `conflict-free` are denials rather than disclosures. Modal dispositions such

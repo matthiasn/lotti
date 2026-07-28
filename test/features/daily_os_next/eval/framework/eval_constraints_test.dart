@@ -2263,6 +2263,28 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('rejects a task-labelled split allocated to a meeting', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c: 60 of 120 minutes are scheduled for the meeting.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('accepts a task qualifier before the remainder verb', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -3647,6 +3669,40 @@ void main() {
       expect(result.detail, contains('task-c'));
     });
 
+    test('keeps a deferral despite another task causal negation', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c was deferred because Deployment was not scheduled.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+            EvalCorpusTask(
+              taskId: 'task-d',
+              title: 'Deployment',
+              estimateMinutes: 60,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
     test('accepts an omission from the day plan', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -4511,6 +4567,34 @@ void main() {
             EvalCorpusTask(taskId: 'task-report', title: 'Report'),
           ],
           decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('a partial claim does not disclose a fully omitted task', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              type: PlannedBlockType.buffer,
+              reason: 'task-c is partial.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
           requiresConflictSurfaced: true,
         ),
       );
