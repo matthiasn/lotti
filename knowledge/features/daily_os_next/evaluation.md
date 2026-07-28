@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T16:33:33+02:00 }
+generated: { by: codex/5, at: 2026-07-28T16:50:50+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -118,8 +118,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `scheduled for 60 of 120 minutes` or
   `scheduled exactly 60 of 120 minutes`, may bridge the action to its
   arithmetic without admitting arbitrary intervening object prose, while a
-  failure qualifier such as
-  `were unsuccessfully scheduled` does not. Obligation alone
+  failure qualifier such as `were unsuccessfully scheduled` or the trailing
+  equivalent `were scheduled unsuccessfully` does not. Obligation alone
   is not evidence that placement happened: `must schedule`, `needs to
   schedule`, and `is required to schedule` cannot validate allocation
   arithmetic. Failure qualifiers are rejected on either side of the action, so
@@ -366,11 +366,17 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   casualty. Denials do not cancel a different asserted disposition:
   `task-c was not dropped; it was deferred to tomorrow` still surfaces the
   actual deferral.
+  Correlative negation covers both dispositions, so
+  `task-c was neither omitted nor deferred` asserts neither trade.
   `Cannot fit`, `will not fit`, `conflicts`, and `conflicting` are affirmative
   disclosures, including label-bound forms such as `task-c: Cannot fit today`.
   A causal explanation does not retract that disclosure:
   `task-c cannot be scheduled because no time remains` still names the omitted
   task even though its explanation contains `no`.
+  `Postponed` is normalized as a deferral alongside moved, deferred, and
+  carried-over work. Coordinated task subjects may use comma-separated and
+  Oxford-comma lists; every corpus task in
+  `task-a, task-b, and task-c were omitted` is a named casualty.
   A bare conflict object is not: `task-c resolves conflict` describes subject
   matter rather than a scheduling casualty, while the task-bound predicate
   `task-c has a scheduling conflict` does disclose one. An explicit omission

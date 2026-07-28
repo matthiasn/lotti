@@ -2034,6 +2034,28 @@ void main() {
       });
     }
 
+    test('rejects a trailing allocation failure qualifier', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c: 60 of 120 minutes were scheduled unsuccessfully.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('rejects an allocation failure after the arithmetic', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -4649,6 +4671,27 @@ void main() {
       expect(result.detail, contains('task-c'));
     });
 
+    test('accepts a postponed task as a deferred casualty', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c was postponed due to capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, allOf(contains('task-c'), contains('deferred')));
+    });
+
     test('accepts a task id as an active omission object', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -4791,6 +4834,35 @@ void main() {
       expect(result.detail, allOf(contains('task-c'), contains('task-d')));
     });
 
+    test('accepts an Oxford-comma task omission subject', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason:
+                  'task-a, task-b, and task-c were omitted due to capacity.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(taskId: 'task-a', title: 'Alpha'),
+            EvalCorpusTask(taskId: 'task-b', title: 'Beta'),
+            EvalCorpusTask(taskId: 'task-c', title: 'Core'),
+          ],
+          decidedTaskIds: const ['task-a', 'task-b', 'task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(
+        result.detail,
+        allOf(contains('task-a'), contains('task-b'), contains('task-c')),
+      );
+    });
+
     test('accepts an explicit not-scheduled trade', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -4875,6 +4947,27 @@ void main() {
               reason:
                   'It is not true that task-c was not scheduled due to '
                   'capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('rejects neither-nor trade dispositions', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c was neither omitted nor deferred.',
             ),
           ],
           corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],

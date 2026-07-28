@@ -730,7 +730,8 @@ final _partialMentionPattern = RegExp(
 );
 
 final _negationWordPattern = RegExp(
-  r'\b(?:not|no|never|cannot|(?:isn|wasn|weren|aren|doesn|don|didn|can|couldn|'
+  r'\b(?:not|no|never|neither|nor|cannot|'
+  '(?:isn|wasn|weren|aren|doesn|don|didn|can|couldn|'
   r'won|wouldn|shouldn|hasn|haven|hadn)[\x27’]?t)\b',
   caseSensitive: false,
 );
@@ -762,7 +763,7 @@ const _partialTradeDispositionSource =
     r'(?:roll(?:s|ed|ing)?|move(?:s|d|ing)?|carr(?:y|ies|ied|ying))\s+'
     r'(?:over|to\s+(?:later|tomorrow|another\s+day|'
     r'a\s+(?:later|future)\s+day))\b|'
-    r'defer(?:s|red|ring)?\b|unscheduled\b';
+    r'defer(?:s|red|ring)?\b|postpon(?:e|es|ed|ing)\b|unscheduled\b';
 
 final _partialTradeDispositionPattern = RegExp(
   r'\b(?:'
@@ -1683,6 +1684,12 @@ bool _evidenceActionIsAsserted(
   String prose,
   int actionStart,
 ) {
+  if (RegExp(
+    r'^\w+\s+unsuccessfully\b',
+    caseSensitive: false,
+  ).hasMatch(prose.substring(actionStart))) {
+    return false;
+  }
   var clauseStart = 0;
   for (var i = actionStart - 1; i >= 0; i--) {
     if (',.;!?\n'.contains(prose[i])) {
@@ -2656,6 +2663,15 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   }
 
   bool belongsToTask(Match match) {
+    if (_tradeEvidenceHasCoordinatedTaskSubject(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+      corpus: outcome.inputs.corpus,
+    )) {
+      return true;
+    }
     if (_evidenceFallsInsideTaskReference(
           prose,
           match,
@@ -2670,15 +2686,6 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
           corpus: outcome.inputs.corpus,
         )) {
       return false;
-    }
-    if (_tradeEvidenceHasCoordinatedTaskSubject(
-      prose,
-      match,
-      taskId: taskId,
-      taskTitle: task.title,
-      corpus: outcome.inputs.corpus,
-    )) {
-      return true;
     }
     return !_evidenceNamesAnotherTask(
       prose,
@@ -2843,7 +2850,9 @@ String _tradeDispositionKey(Match match) {
   if (wording.contains('partial') || wording.contains('partly')) {
     return 'partial';
   }
-  if (wording.contains('defer')) return 'deferred';
+  if (wording.contains('defer') || wording.contains('postpon')) {
+    return 'deferred';
+  }
   if (wording.contains('unscheduled')) return 'unscheduled';
   if (wording.contains('omit')) return 'omitted';
   if (wording.contains('drop')) return 'dropped';
@@ -2865,7 +2874,7 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   required String taskTitle,
   List<EvalCorpusTask> corpus = const [],
 }) {
-  final range = _matchClauseRange(prose, evidence, boundaries: ',.;!?\n');
+  final range = _matchClauseRange(prose, evidence, boundaries: '.;!?\n');
   final prefix = prose.substring(range.start, evidence.start).trim();
   if (RegExp(
     r'^not\s+only\s+(?:is|are|was|were)$',
@@ -2934,7 +2943,7 @@ bool _tradeEvidenceHasCoordinatedTaskSubject(
   required String taskTitle,
   required List<EvalCorpusTask> corpus,
 }) {
-  final range = _matchClauseRange(prose, evidence, boundaries: ',.;!?\n');
+  final range = _matchClauseRange(prose, evidence, boundaries: '.;!?\n');
   final prefix = prose.substring(range.start, evidence.start).trim();
   final subjectMatch = _tradeSubjectPrefixPattern.firstMatch(prefix);
   final subject = subjectMatch?.group(1)?.trim();
@@ -2953,7 +2962,10 @@ bool _subjectIsOnlyCorpusTaskReferences(
   List<EvalCorpusTask> corpus,
 ) {
   final conjuncts = subject.split(
-    RegExp(r'\s+(?:and|&)\s+', caseSensitive: false),
+    RegExp(
+      r'\s*(?:,\s*(?:and\s+)?|\s+(?:and|&)\s+)',
+      caseSensitive: false,
+    ),
   );
   if (conjuncts.length < 2) return false;
   return conjuncts.every((conjunct) {
@@ -2972,15 +2984,20 @@ bool _subjectContainsTaskReference(
   required String taskId,
   required String taskTitle,
 }) {
-  return subject.split(RegExp(r'\s+(?:and|&)\s+', caseSensitive: false)).any((
-    conjunct,
-  ) {
-    return _subjectMatchesTaskReference(
-      conjunct,
-      taskId: taskId,
-      taskTitle: taskTitle,
-    );
-  });
+  return subject
+      .split(
+        RegExp(
+          r'\s*(?:,\s*(?:and\s+)?|\s+(?:and|&)\s+)',
+          caseSensitive: false,
+        ),
+      )
+      .any((conjunct) {
+        return _subjectMatchesTaskReference(
+          conjunct,
+          taskId: taskId,
+          taskTitle: taskTitle,
+        );
+      });
 }
 
 bool _subjectMatchesTaskReference(
