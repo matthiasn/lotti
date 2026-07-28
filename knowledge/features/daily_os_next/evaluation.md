@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T22:39:29+02:00 }
+generated: { by: codex/5, at: 2026-07-28T23:19:59+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -118,7 +118,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `No-code prototype scheduled 60 of 120 minutes` remains affirmative, as does
   the partial label in `No-code prototype is partial`. Allocation predicates
   accept ordinary third-person present forms such as `schedules`, `allocates`,
-  `completes`, `plans`, and `places`. A
+  `completes`, `plans`, and `places`. One shared grammar applies those forms to
+  affirmative splits, full-allocation and direct-denial vetoes, and subject
+  extraction; `The coordinator schedules 60 of 120 minutes` therefore remains
+  coordinator-owned instead of defaulting to the block task. A
   selected allocation action must govern the numeric split on either side; an
   earlier action with intervening object prose, such as scheduling a meeting
   before reviewing `60 of 120` recording minutes, cannot supply task-allocation
