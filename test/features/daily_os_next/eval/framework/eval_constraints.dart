@@ -700,14 +700,16 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
 }
 
 final _partialOfEstimatePattern = RegExp(
-  r'\b(\d+)(?:\s*(?:m|mins?|minutes?))?\s+(?:out\s+)?of\s+'
+  r'(?<![\d.,])\b(\d+)(?:\s*(?:m|mins?|minutes?))?\s+'
+  r'(?:out\s+)?of\s+'
   r'(?:(?:an?|the)\s+)?(?:estimated\s+)?'
   r'(\d+)(?:\s+estimated)?\s*[-–—]?\s*(?:m|mins?|minutes?)\b',
   caseSensitive: false,
 );
 
 final _partialRemainingPattern = RegExp(
-  r'\b(\d+)\s*(?:(?:more|additional)\s+)?(?:m|mins?|minutes?)\s+'
+  r'(?<![\d.,])\b(\d+)\s*'
+  r'(?:(?:more|additional)\s+)?(?:m|mins?|minutes?)\s+'
   r'(?:(?:of|for)\s+(?:this|the)\s+(?:task|work)\s+)?'
   r'(?:(?:still|yet)\s+)?'
   r'(?:(?:is|are|will(?:\s+be)?)\s+)?'
@@ -730,6 +732,11 @@ final _partialMentionPattern = RegExp(
 final _negationWordPattern = RegExp(
   r'\b(?:not|no|never|cannot|(?:isn|wasn|weren|aren|doesn|don|didn|can|couldn|'
   r'won|wouldn|shouldn|hasn|haven|hadn)[\x27’]?t)\b',
+  caseSensitive: false,
+);
+
+final _outerFalsehoodPattern = RegExp(
+  r'\b(?:not\s+(?:actually\s+)?true|false)\s+that\b',
   caseSensitive: false,
 );
 
@@ -1493,6 +1500,9 @@ bool _matchClauseIsNegated(
 }) {
   final range = _matchClauseRange(reason, match, boundaries: ',.;!?\n');
   final prefix = reason.substring(range.start, match.start);
+  if (_outerFalsehoodPattern.hasMatch(prefix)) {
+    return true;
+  }
   if (RegExp(
     r'\b(?:(?:without)(?:\s+any)?|free\s+of)\s*$',
     caseSensitive: false,
@@ -1573,10 +1583,7 @@ bool _followingNegationExplainsCapacityLimit(
 bool _negativeTradeDisclosureIsDenied(String prose, Match match) {
   final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
   final prefix = prose.substring(range.start, match.start);
-  if (RegExp(
-    r'\b(?:not\s+(?:actually\s+)?true|false)\s+that\b',
-    caseSensitive: false,
-  ).hasMatch(prefix)) {
+  if (_outerFalsehoodPattern.hasMatch(prefix)) {
     return true;
   }
   final clause = prose.substring(range.start, range.end);
@@ -1693,7 +1700,7 @@ bool _evidenceActionIsAsserted(
 bool _evidenceClauseIsInterrogative(String prose, int evidenceStart) {
   for (var i = evidenceStart; i < prose.length; i++) {
     if (prose[i] == '?') return true;
-    if ('.;!\n'.contains(prose[i])) return false;
+    if (',.;!\n'.contains(prose[i])) return false;
   }
   return false;
 }

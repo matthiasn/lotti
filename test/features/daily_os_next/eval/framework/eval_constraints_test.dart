@@ -1518,6 +1518,27 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('rejects a numeric suffix inside a formatted remainder', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Partial: 1,060 minutes remain for later.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     for (final modifier in ['more', 'additional']) {
       test('accepts a $modifier-minutes remainder modifier', () {
         final result = scoreWithinCapacityByEstimate(
@@ -2663,6 +2684,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('keeps declarative evidence before a trailing question', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c scheduled 60 of 120 minutes, '
+                  'but why force the rest?',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     for (final historicalScope in ['yesterday', 'last week']) {
       test('rejects allocation arithmetic scoped to $historicalScope', () {
         final result = scoreWithinCapacityByEstimate(
@@ -3427,6 +3471,28 @@ void main() {
               taskId: 'task-c',
               reason: '60 of 120 minutes are scheduled.',
               note: 'task-c was not scheduled after all.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('an outer falsehood split note vetoes partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c scheduled 60 of 120 minutes.',
+              note: 'It is false that task-c scheduled 60 of 120 minutes.',
             ),
           ],
           corpus: tasks,

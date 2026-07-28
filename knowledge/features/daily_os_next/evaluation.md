@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T15:23:37+02:00 }
+generated: { by: codex/5, at: 2026-07-28T15:40:36+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -81,7 +81,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `60m still remain`, `60 more minutes remain`,
   `60 additional minutes remain`, `60m will still remain`, or
   `Remaining 60m are carried over`) that agrees with both the summed duration
-  of that task's work blocks and the corpus estimate. A numeric
+  of that task's work blocks and the corpus estimate. Numeric evidence must
+  start at a complete numeric token, so a thousands or decimal suffix such as
+  the `060` in `1,060 minutes remain` cannot restart a match. A numeric
   completed/estimate split must describe task allocation,
   not omitted/deferred arithmetic or coincidentally equal workday capacity, so
   the surrounding clause must include an affirmative scheduled, allocated,
@@ -97,7 +99,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   forms such as
   `was supposed to schedule`, `was meant to schedule`, or
   `was going to schedule`, nor interrogative clauses such as
-  `Was task-c omitted?`. Inability complements such as
+  `Was task-c omitted?`. A later comma-delimited rhetorical question does not
+  make an earlier declarative allocation clause interrogative. Inability
+  complements such as
   `was unable to schedule`, `was not able to schedule`, or
   `was incapable of scheduling`, nor actions the prose says were avoided or
   prevented, including passive `was prevented from being scheduled` wording. A
@@ -230,7 +234,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   audited, because a contradictory note must not be hidden from matching
   arithmetic in the reason. Numeric continuity such as `60 minutes remain
   scheduled` is not a remainder claim.
-  Negated or vague “partial” prose, silence,
+  Outer falsehoods such as `It is false that task-c scheduled 60 of 120
+  minutes` negate numeric split or remainder evidence and therefore veto
+  otherwise matching partial credit. Negated or vague “partial” prose, silence,
   contradictory numbers, buffer or calendar blocks carrying a task id,
   allocations below 10% of the estimate, and overlapping blocks for one task
   are charged at the full estimate or receive no placement score. Estimated
