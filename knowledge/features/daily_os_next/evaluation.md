@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T16:22:43+02:00 }
+generated: { by: codex/5, at: 2026-07-28T13:41:50+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -93,16 +93,18 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-c might have 60 minutes remaining` is likewise hypothetical and cannot
   qualify or contradict a placement. Intended, planned, aimed, hoped,
   wanted, expected, proposed, attempted, tried, failed, refused, or declined
-  actions are likewise not affirmative. Neither are inability complements such
-  as `was unable to schedule`, `was not able to schedule`, or `was incapable of
-  scheduling`, nor actions the prose says were avoided or prevented, including
-  passive `was prevented from being scheduled` wording. A selected allocation
-  action must govern the numeric split on either side; an earlier action with
-  intervening object prose, such as scheduling a meeting before reviewing
-  `60 of 120` recording minutes, cannot supply task-allocation context, nor can
-  later meeting scheduling borrow an earlier `60 of 120` recording count. A
-  grammatical auxiliary/adverb bridge such as `were successfully scheduled`
-  or `60 of 120 minutes do fit` remains affirmative, and exact quantity
+  actions are likewise not affirmative. Neither are expectation forms such as
+  `was supposed to schedule` or `was meant to schedule`, inability complements
+  such as `was unable to schedule`, `was not able to schedule`, or
+  `was incapable of scheduling`, nor actions the prose says were avoided or
+  prevented, including passive `was prevented from being scheduled` wording. A
+  selected allocation action must govern the numeric split on either side; an
+  earlier action with intervening object prose, such as scheduling a meeting
+  before reviewing `60 of 120` recording minutes, cannot supply task-allocation
+  context, nor can later meeting scheduling borrow an earlier `60 of 120`
+  recording count. A grammatical auxiliary/adverb bridge such as
+  `were successfully scheduled` or `60 of 120 minutes do fit` remains
+  affirmative, and exact quantity
   modifiers such as `scheduled exactly 60 of 120 minutes` may bridge the action
   to its arithmetic, while a failure qualifier such as
   `were unsuccessfully scheduled` does not. Obligation alone
@@ -297,11 +299,13 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   Modal scope ends only when the conjunction begins an independently asserted
   clause. Attempt and failure complements are likewise not actual
   dispositions: neither `attempted to be omitted`, `failed to be omitted`, the
-  near miss `was almost omitted`, an expectation such as `was supposed to be
-  omitted`, nor the direct requirement `requires deferring` surfaces a trade.
-  The same rules reject allocation prose such as `almost scheduled 60 of 120
-  minutes` and `was supposed to schedule 60 of 120 minutes`. Avoidance and
-  prevention complements are denials too:
+  near miss `was almost omitted`, expectations such as `was supposed to be
+  omitted` or `was meant to be omitted`, nor the direct requirement
+  `requires deferring` surfaces a trade. The same rules reject allocation prose
+  such as `almost scheduled 60 of 120 minutes`,
+  `was supposed to schedule 60 of 120 minutes`, and
+  `was meant to schedule 60 of 120 minutes`. Avoidance and prevention
+  complements are denials too:
   neither `task-c avoided being omitted` nor
   `task-c avoided getting omitted` asserts an omission. An affirmative claim
   plus denial of that same

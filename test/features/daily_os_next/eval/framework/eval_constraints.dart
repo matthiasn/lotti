@@ -1594,7 +1594,7 @@ bool _evidenceActionIsAsserted(
   return !_evidenceStartIsSpeculative(prose, actionStart) &&
       !RegExp(
         r'\b(?:almost|nearly|not\s+quite|unsuccessfully|'
-        r'(?:(?:is|are|was|were)\s+)?supposed\s+to'
+        r'(?:(?:is|are|was|were)\s+)?(?:supposed|meant)\s+to'
         r'(?:\s+(?:be|being|get|getting))?|'
         '(?:(?:intend(?:s|ed|ing)?|aim(?:s|ed|ing)?|'
         'hop(?:e|es|ed|ing)|want(?:s|ed|ing)?|expect(?:s|ed|ing)?|'

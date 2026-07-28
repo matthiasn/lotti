@@ -1903,6 +1903,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects a meant-to allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c was meant to schedule 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     for (final failedAction in [
       'unsuccessfully scheduled',
       'failed scheduling',
@@ -4412,6 +4433,7 @@ void main() {
       'task-c requires deferring.',
       'task-c was almost omitted.',
       'task-c was supposed to be omitted.',
+      'task-c was meant to be omitted.',
     ]) {
       test('rejects a non-asserted trade disposition: $reason', () {
         final result = scoreSurfacedConflict(
