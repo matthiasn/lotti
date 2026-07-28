@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
-import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -192,8 +193,8 @@ class VerificationEmojiStage extends StatelessWidget {
 /// by side they truncate on a phone sheet.
 const double kVerificationDecisionRowMinWidth = 420;
 
-/// The eight emoji as a four-column grid of glyph-plus-label cells, each on
-/// its own level-01 well so the sequence reads as eight discrete things to
+/// The SAS emoji as a four-column grid of glyph-plus-label cells, each on
+/// its own level-01 well so the sequence reads as discrete things to
 /// compare rather than one decorative strip.
 class VerificationEmojiGrid extends StatelessWidget {
   const VerificationEmojiGrid({required this.emojis, super.key});
@@ -231,10 +232,12 @@ class VerificationEmojiGrid extends StatelessWidget {
                         style: tokens.typography.styles.heading.heading2,
                       ),
                       SizedBox(height: tokens.spacing.step1),
+                      // Free to wrap: the word is the textual disambiguation
+                      // this security comparison relies on, and an ellipsized
+                      // label defeats exactly that. Cells grow with content.
                       Text(
                         emoji.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
                         style: tokens.typography.styles.others.caption.copyWith(
                           color: tokens.colors.text.mediumEmphasis,
                         ),
@@ -253,7 +256,7 @@ class VerificationEmojiGrid extends StatelessWidget {
 /// The terminal success stage — the one place in the journey the celebration
 /// system fires. The two-device motif closes into a solid line, brand sparks
 /// burst once, and the copy states the property that was just established.
-class VerificationSuccessStage extends StatefulWidget {
+class VerificationSuccessStage extends ConsumerStatefulWidget {
   const VerificationSuccessStage({
     required this.onConfirm,
     super.key,
@@ -262,23 +265,28 @@ class VerificationSuccessStage extends StatefulWidget {
   final VoidCallback onConfirm;
 
   @override
-  State<VerificationSuccessStage> createState() =>
+  ConsumerState<VerificationSuccessStage> createState() =>
       _VerificationSuccessStageState();
 }
 
-class _VerificationSuccessStageState extends State<VerificationSuccessStage> {
+class _VerificationSuccessStageState
+    extends ConsumerState<VerificationSuccessStage> {
   bool _celebrated = false;
 
   @override
   void initState() {
     super.initState();
-    // Fire-and-forget into the app overlay; a no-op under reduced motion.
+    // Fire-and-forget into the app overlay; a no-op under reduced motion —
+    // and gated by the app's own celebration master switch, with the user's
+    // customized spark parameters.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _celebrated) return;
       _celebrated = true;
+      final prefs = ref.read(celebrationPreferencesProvider);
+      if (!prefs.enabled) return;
       spawnCompletionBurst(
         context,
-        params: CelebrationParams.defaultsFor(CelebrationVariant.sparks),
+        params: prefs.paramsFor(CelebrationVariant.sparks),
       );
     });
   }

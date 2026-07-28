@@ -20,6 +20,11 @@ import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
+/// Below this width the error bar stacks its two remedies: their labels are
+/// deliberately spelled out ("Retry this code" / "Enter a new code"), and
+/// side by side on a phone sheet they truncate into indistinguishability.
+const double kSyncErrorActionRowMinWidth = 420;
+
 SliverWoltModalSheetPage provisionedConfigPage({
   required BuildContext context,
   required ValueNotifier<int> pageIndexNotifier,
@@ -83,35 +88,52 @@ class _ConfigActionBar extends ConsumerWidget {
       // closes its sheet, so the accent belongs on "Enter a new code".
       // Retrying the identical code is possible but demoted — as the accent
       // it re-attempted exactly the credential that just failed.
+      final retry = DesignSystemButton(
+        key: const Key('provisioned_config_retry'),
+        onPressed: () =>
+            ref.read(provisioningControllerProvider.notifier).retry(),
+        label: context.messages.syncPairRetryThisCode,
+        variant: DesignSystemButtonVariant.secondary,
+        size: DesignSystemButtonSize.large,
+      );
+      final newCode = DesignSystemButton(
+        key: const Key('provisioned_config_new_code'),
+        onPressed: () {
+          // Reset first: the import page listens for the return to
+          // the initial state and clears its stale decoded bundle.
+          ref.read(provisioningControllerProvider.notifier).reset();
+          pageIndexNotifier.value = 0;
+        },
+        label: context.messages.syncPairEnterNewCode,
+        size: DesignSystemButtonSize.large,
+      );
       return SyncStickyBar(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: DesignSystemButton(
-                key: const Key('provisioned_config_retry'),
-                onPressed: () =>
-                    ref.read(provisioningControllerProvider.notifier).retry(),
-                label: context.messages.syncPairRetryThisCode,
-                variant: DesignSystemButtonVariant.secondary,
-                size: DesignSystemButtonSize.large,
-              ),
-            ),
-            SizedBox(width: context.designTokens.spacing.step2),
-            Flexible(
-              child: DesignSystemButton(
-                key: const Key('provisioned_config_new_code'),
-                onPressed: () {
-                  // Reset first: the import page listens for the return to
-                  // the initial state and clears its stale decoded bundle.
-                  ref.read(provisioningControllerProvider.notifier).reset();
-                  pageIndexNotifier.value = 0;
-                },
-                label: context.messages.syncPairEnterNewCode,
-                size: DesignSystemButtonSize.large,
-              ),
-            ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // The whole point of this bar is the distinction between the two
+            // remedies — two ellipsized halves of a phone-width row erase it,
+            // and German/Swedish labels don't fit side by side. Stack below
+            // the same breakpoint the pairing card uses, accent on top.
+            if (constraints.maxWidth < kSyncErrorActionRowMinWidth) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  newCode,
+                  SizedBox(height: context.designTokens.spacing.step3),
+                  retry,
+                ],
+              );
+            }
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(child: retry),
+                SizedBox(width: context.designTokens.spacing.step2),
+                Flexible(child: newCode),
+              ],
+            );
+          },
         ),
       );
     }

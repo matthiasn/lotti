@@ -10262,7 +10262,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Les deux appareils vont afficher huit émojis. Tant qu\'ils ne correspondent pas, cet appareil ne voit que du texte chiffré.';
+      'Les deux appareils vont afficher sept émojis. Tant qu\'ils ne correspondent pas, cet appareil ne voit que du texte chiffré.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10475,7 +10475,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncVerifyModalTitle => 'Confirme ton appareil';
 
   @override
-  String get syncVerifyPromptLine1 => 'Les deux écrans affichent huit émojis.';
+  String get syncVerifyPromptLine1 => 'Les deux écrans affichent sept émojis.';
 
   @override
   String get syncVerifyPromptQuestion => 'Mêmes émojis, même ordre ?';

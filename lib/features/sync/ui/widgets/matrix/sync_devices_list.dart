@@ -71,12 +71,19 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
           device.verified &&
           (wasVerified == false ||
               (wasVerified == null && !initial.contains(identity)));
-      if (freshlyVerified) {
-        _justJoined ??= device;
+      if (freshlyVerified && _identityOf(_justJoined) != identity) {
+        // Each fresh arrival gets its own offer: latching only the first —
+        // or keeping a dismissal across devices — would silently drop the
+        // hand-off for every device paired after it.
+        _justJoined = device;
+        _handOffDismissed = false;
       }
       _lastVerified[identity] = device.verified;
     }
   }
+
+  static String? _identityOf(SyncDeviceInfo? device) =>
+      device == null ? null : _identity(device);
 
   Future<void> _refresh() async {
     // A card's post-deletion callback can arrive after the sheet closed.
@@ -180,12 +187,17 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
 
     _observeRoster(devices);
 
-    // The server this account lives on, read off the account id — the same
-    // value both pairing sides compare, so it needs no extra fetch.
-    final userId = ref.watch(matrixServiceProvider).client.userID;
-    final serverHost = userId == null || !userId.contains(':')
-        ? null
-        : userId.split(':').skip(1).join(':');
+    // The server this roster actually talks to. The homeserver is the
+    // authority — a Matrix ID's domain can differ from the host serving the
+    // account — with the account-id domain as the fallback while the client
+    // has not resolved one.
+    final client = ref.watch(matrixServiceProvider).client;
+    final userId = client.userID;
+    final serverHost =
+        client.homeserver?.host ??
+        (userId == null || !userId.contains(':')
+            ? null
+            : userId.split(':').skip(1).join(':'));
 
     final blockers = devices
         .where((device) => device.excludedFromSync)
@@ -210,33 +222,48 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // One header row: what this roster is (count, server) on the left,
-        // the page's single accent on the right. Pairing belongs where
-        // devices are managed — this is the surface a person opens when they
-        // think "I want my other device on here".
-        Row(
-          children: [
-            Expanded(
-              child: serverHost == null
-                  ? const SizedBox.shrink()
-                  : Text(
-                      messages.syncDevicesCount(devices.length, serverHost),
-                      key: const Key('sync_devices_count'),
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-            ),
-            refreshButton,
-            SizedBox(width: tokens.spacing.step2),
-            DesignSystemButton(
-              key: const Key('sync_devices_add_device'),
-              label: messages.syncAddDeviceAction,
-              size: DesignSystemButtonSize.large,
-              leadingIcon: Icons.add_rounded,
-              onPressed: () => unawaited(AddDeviceModal.show(context)),
-            ),
-          ],
+        // One header: what this roster is (count, server) beside the page's
+        // single accent. Pairing belongs where devices are managed — this is
+        // the surface a person opens when they think "I want my other device
+        // on here". A Wrap, not a Row: a long localized Add-device label or
+        // a large text scale must break the count onto its own run instead
+        // of overflowing two unshrinkable controls.
+        SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step2,
+            children: [
+              if (serverHost != null)
+                Text(
+                  messages.syncDevicesCount(devices.length, serverHost),
+                  key: const Key('sync_devices_count'),
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                )
+              else
+                // Keeps spaceBetween pushing the actions to the far edge
+                // even when there is no count to lead the row.
+                const SizedBox.shrink(),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: tokens.spacing.step2,
+                children: [
+                  refreshButton,
+                  DesignSystemButton(
+                    key: const Key('sync_devices_add_device'),
+                    label: messages.syncAddDeviceAction,
+                    size: DesignSystemButtonSize.large,
+                    leadingIcon: Icons.add_rounded,
+                    onPressed: () => unawaited(AddDeviceModal.show(context)),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         if (blocked) ...[
           SizedBox(height: tokens.spacing.step3),

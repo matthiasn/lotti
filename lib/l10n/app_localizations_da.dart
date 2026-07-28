@@ -10064,7 +10064,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Begge enheder viser om lidt otte emojier. Indtil de matcher, ser denne enhed kun krypteret tekst.';
+      'Begge enheder viser om lidt syv emojier. Indtil de matcher, ser denne enhed kun krypteret tekst.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10275,7 +10275,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncVerifyModalTitle => 'Bekræft din enhed';
 
   @override
-  String get syncVerifyPromptLine1 => 'Begge skærme viser otte emojier.';
+  String get syncVerifyPromptLine1 => 'Begge skærme viser syv emojier.';
 
   @override
   String get syncVerifyPromptQuestion => 'Samme emojier, samme rækkefølge?';

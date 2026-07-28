@@ -10124,7 +10124,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Beide Geräte zeigen gleich acht Emoji. Bis sie übereinstimmen, sieht dieses Gerät nur verschlüsselte Daten.';
+      'Beide Geräte zeigen gleich sieben Emoji. Bis sie übereinstimmen, sieht dieses Gerät nur verschlüsselte Daten.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10339,7 +10339,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncVerifyModalTitle => 'Bestätige dein Gerät';
 
   @override
-  String get syncVerifyPromptLine1 => 'Beide Bildschirme zeigen acht Emoji.';
+  String get syncVerifyPromptLine1 => 'Beide Bildschirme zeigen sieben Emoji.';
 
   @override
   String get syncVerifyPromptQuestion => 'Gleiche Emoji, gleiche Reihenfolge?';

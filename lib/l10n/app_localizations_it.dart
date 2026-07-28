@@ -10156,7 +10156,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncPairCheckCode =>
-      'Il nuovo dispositivo mostra lo stesso codice prima di collegarsi: confrontali.';
+      'Il nuovo dispositivo mostrerà lo stesso codice prima di collegarsi — confrontali.';
 
   @override
   String get syncPairCheckCodeLabel => 'Codice di controllo';
@@ -10204,7 +10204,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Entrambi i dispositivi stanno per mostrare otto emoji. Finché non coincidono, questo dispositivo vede solo testo cifrato.';
+      'Entrambi i dispositivi stanno per mostrare sette emoji. Finché non coincidono, questo dispositivo vede solo testo cifrato.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10421,7 +10421,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncVerifyPromptLine1 =>
-      'Entrambi gli schermi mostrano otto emoji.';
+      'Entrambi gli schermi mostrano sette emoji.';
 
   @override
   String get syncVerifyPromptQuestion => 'Stesse emoji, stesso ordine?';

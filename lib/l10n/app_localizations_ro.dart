@@ -10259,7 +10259,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Ambele dispozitive vor afișa opt emoji-uri. Până când coincid, acest dispozitiv vede doar text criptat.';
+      'Ambele dispozitive vor afișa șapte emoji-uri. Până când coincid, acest dispozitiv vede doar text criptat.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10472,7 +10472,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncVerifyModalTitle => 'Confirmați dispozitivul';
 
   @override
-  String get syncVerifyPromptLine1 => 'Ambele ecrane afișează opt emoji-uri.';
+  String get syncVerifyPromptLine1 => 'Ambele ecrane afișează șapte emoji-uri.';
 
   @override
   String get syncVerifyPromptQuestion =>

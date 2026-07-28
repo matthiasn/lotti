@@ -10064,7 +10064,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Båda enheterna visar strax åtta emojier. Tills de stämmer ser den här enheten bara krypterad text.';
+      'Båda enheterna visar strax sju emojier. Tills de stämmer ser den här enheten bara krypterad text.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10276,7 +10276,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncVerifyModalTitle => 'Bekräfta din enhet';
 
   @override
-  String get syncVerifyPromptLine1 => 'Båda skärmarna visar åtta emojier.';
+  String get syncVerifyPromptLine1 => 'Båda skärmarna visar sju emojier.';
 
   @override
   String get syncVerifyPromptQuestion => 'Samma emojier, samma ordning?';

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_ceremony_stages.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -9,8 +11,9 @@ import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
+  // Matrix SAS verification shows seven emoji.
   final emojis = List.generate(
-    8,
+    7,
     (index) => FakeKeyVerificationEmoji('🐧', 'penguin$index'),
   );
 
@@ -83,17 +86,48 @@ void main() {
       );
     });
 
-    testWidgets('renders all eight emoji with their word labels', (
+    testWidgets('renders all seven emoji with their word labels', (
       tester,
     ) async {
       // The labels are part of the comparison: two similar glyphs on two
       // screens are disambiguated by the word beneath them.
       await pumpStage(tester);
 
-      expect(find.text('🐧'), findsNWidgets(8));
-      for (var i = 0; i < 8; i++) {
+      expect(find.text('🐧'), findsNWidgets(7));
+      for (var i = 0; i < 7; i++) {
         expect(find.text('penguin$i'), findsOneWidget);
       }
+    });
+
+    testWidgets('long labels wrap instead of ellipsizing away the word', (
+      tester,
+    ) async {
+      // The word is the textual disambiguation the security comparison
+      // relies on; an ellipsized label defeats exactly that. Narrow sheet,
+      // long SAS name ("Paperclip" is real; longer exist in translations).
+      tester.view
+        ..physicalSize = const Size(320, 1600)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: VerificationEmojiGrid(
+              emojis: [
+                FakeKeyVerificationEmoji('📎', 'Büroklammer'),
+                ...emojis.skip(1),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull, reason: 'no overflow');
+      final label = tester.widget<Text>(find.text('Büroklammer'));
+      expect(label.maxLines, isNull);
+      expect(label.overflow, isNot(TextOverflow.ellipsis));
     });
 
     testWidgets('the decision pair states what each choice means', (
@@ -176,6 +210,56 @@ void main() {
       expect(confirmed, 1);
 
       // Drain the celebration burst so no ticker outlives the test.
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('honours the celebration master switch', (tester) async {
+      // Reduced motion is the OS's veto; the in-app celebration switch is
+      // the user's. Both must silence the burst.
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: VerificationSuccessStage(onConfirm: () {}),
+          ),
+          overrides: [
+            celebrationPreferencesProvider.overrideWithValue(
+              const CelebrationPreferences.allEnabled().copyWith(
+                enabled: false,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CompletionBurst), findsNothing);
+      // The stage itself still renders — only the burst is suppressed.
+      expect(
+        find.byKey(const Key('verification_success_stage')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('fires the burst when celebrations are on', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: VerificationSuccessStage(onConfirm: () {}),
+          ),
+          overrides: [
+            celebrationPreferencesProvider.overrideWithValue(
+              const CelebrationPreferences.allEnabled(),
+            ),
+          ],
+        ),
+      );
+      // Two frames to insert the overlay entry, then advance into the
+      // burst's visible window (it paints from ~12% of its 1400ms run).
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byType(CompletionBurst), findsOneWidget);
       await tester.pump(const Duration(seconds: 3));
     });
   });

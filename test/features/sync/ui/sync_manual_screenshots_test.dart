@@ -761,7 +761,6 @@ void main() {
       FakeKeyVerificationEmoji('🌍', _t('Earth', 'Erde')),
       FakeKeyVerificationEmoji('🌙', _t('Moon', 'Mond')),
       FakeKeyVerificationEmoji('⭐', _t('Star', 'Stern')),
-      FakeKeyVerificationEmoji('🔭', _t('Telescope', 'Teleskop')),
     ]);
     final keyVerification = MockKeyVerification();
     when(() => keyVerification.isDone).thenReturn(false);

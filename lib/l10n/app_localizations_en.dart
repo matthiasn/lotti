@@ -9994,7 +9994,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Both devices are about to show eight emoji. Until they match, this device sees only ciphertext.';
+      'Both devices are about to show seven emoji. Until they match, this device sees only ciphertext.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10203,7 +10203,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncVerifyModalTitle => 'Confirm your device';
 
   @override
-  String get syncVerifyPromptLine1 => 'Both screens show eight emoji.';
+  String get syncVerifyPromptLine1 => 'Both screens show seven emoji.';
 
   @override
   String get syncVerifyPromptQuestion => 'Same emoji, same order?';

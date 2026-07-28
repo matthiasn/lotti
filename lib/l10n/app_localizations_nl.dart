@@ -10097,7 +10097,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Beide apparaten laten zo acht emoji\'s zien. Tot ze overeenkomen, ziet dit apparaat alleen versleutelde tekst.';
+      'Beide apparaten laten zo zeven emoji\'s zien. Tot ze overeenkomen, ziet dit apparaat alleen versleutelde tekst.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10310,7 +10310,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncVerifyModalTitle => 'Bevestig je apparaat';
 
   @override
-  String get syncVerifyPromptLine1 => 'Beide schermen tonen acht emoji\'s.';
+  String get syncVerifyPromptLine1 => 'Beide schermen tonen zeven emoji\'s.';
 
   @override
   String get syncVerifyPromptQuestion =>

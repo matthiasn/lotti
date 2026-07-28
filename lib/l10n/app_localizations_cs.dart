@@ -10199,7 +10199,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Obě zařízení za chvíli zobrazí osm emoji. Dokud se neshodují, vidí tohle zařízení jen zašifrovaný text.';
+      'Obě zařízení za chvíli zobrazí sedm emoji. Dokud se neshodují, vidí tohle zařízení jen zašifrovaný text.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10409,7 +10409,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncVerifyModalTitle => 'Potvrď své zařízení';
 
   @override
-  String get syncVerifyPromptLine1 => 'Obě obrazovky zobrazují osm emoji.';
+  String get syncVerifyPromptLine1 => 'Obě obrazovky zobrazují sedm emoji.';
 
   @override
   String get syncVerifyPromptQuestion => 'Stejná emoji, stejné pořadí?';

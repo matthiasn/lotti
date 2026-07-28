@@ -17298,7 +17298,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncPairedVerifyStep.
   ///
   /// In en, this message translates to:
-  /// **'Both devices are about to show eight emoji. Until they match, this device sees only ciphertext.'**
+  /// **'Both devices are about to show seven emoji. Until they match, this device sees only ciphertext.'**
   String get syncPairedVerifyStep;
 
   /// No description provided for @syncPairedVerifyStepDone.
@@ -17688,7 +17688,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncVerifyPromptLine1.
   ///
   /// In en, this message translates to:
-  /// **'Both screens show eight emoji.'**
+  /// **'Both screens show seven emoji.'**
   String get syncVerifyPromptLine1;
 
   /// No description provided for @syncVerifyPromptQuestion.

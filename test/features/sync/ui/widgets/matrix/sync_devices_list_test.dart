@@ -606,10 +606,64 @@ void main() {
       ]),
     );
 
-    // Derived from the account id — the same value both pairing sides
-    // compare — so the roster says where these sessions actually live.
+    // With no resolved homeserver, the account-id domain is the fallback.
     expect(find.byKey(const Key('sync_devices_count')), findsOneWidget);
     expect(find.text('2 devices on example.com'), findsOneWidget);
+  });
+
+  testWidgets('the header names the homeserver over the account-id domain', (
+    tester,
+  ) async {
+    // A Matrix ID's domain can differ from the host actually serving the
+    // account; the roster must name the server it talks to.
+    final mockClient = MockMatrixClient();
+    when(() => mockMatrixService.client).thenReturn(mockClient);
+    when(() => mockClient.userID).thenReturn('@alice:example.com');
+    when(
+      () => mockClient.homeserver,
+    ).thenReturn(Uri.parse('https://matrix.example.com'));
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([currentDevice]),
+    );
+
+    expect(find.text('1 device on matrix.example.com'), findsOneWidget);
+  });
+
+  testWidgets('the header wraps rather than overflowing at large text', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(390, 2400)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      makeTestableWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: SizedBox(
+            width: 390,
+            child: SyncDevicesList(now: () => now),
+          ),
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          syncDevicesControllerProvider.overrideWith(
+            () => _FakeSyncDevicesController([currentDevice]),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // The count breaks onto its own run instead of two unshrinkable
+    // controls forcing a horizontal RenderFlex overflow.
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('sync_devices_add_device')), findsOneWidget);
   });
 
   testWidgets('lays the cards out in two columns on a wide pane', (
@@ -776,6 +830,62 @@ void main() {
         find.byKey(const Key('sync_devices_just_joined')),
         findsNothing,
       );
+    });
+
+    testWidgets('offers the hand-off again for a second fresh device', (
+      tester,
+    ) async {
+      // Latching only the first arrival — or keeping a dismissal across
+      // devices — silently drops the hand-off for every device paired
+      // after it in the same roster session.
+      const secondJoined = SyncDeviceInfo(
+        deviceId: 'TABLET',
+        displayName: 'Pixel Tablet',
+        isCurrentDevice: false,
+        verified: false,
+      );
+      const secondVerified = SyncDeviceInfo(
+        deviceId: 'TABLET',
+        displayName: 'Pixel Tablet',
+        isCurrentDevice: false,
+        verified: true,
+      );
+
+      final container = await pumpWithContainer(
+        tester,
+        initial: [currentDevice, joinedPhone, secondJoined],
+      );
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = const AsyncData<List<SyncDeviceInfo>>([
+        currentDevice,
+        verifiedPhone,
+        secondJoined,
+      ]);
+      await tester.pump();
+      await tester.pump();
+      expect(find.textContaining('Pixel 9 Pro'), findsWidgets);
+
+      await tester.tap(
+        find.byKey(const Key('sync_devices_just_joined_dismiss')),
+      );
+      await tester.pump();
+
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = const AsyncData<List<SyncDeviceInfo>>([
+        currentDevice,
+        verifiedPhone,
+        secondVerified,
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('sync_devices_just_joined')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Pixel Tablet'), findsWidgets);
     });
 
     testWidgets('can be dismissed and stays dismissed', (tester) async {

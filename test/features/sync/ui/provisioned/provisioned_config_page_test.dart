@@ -938,6 +938,35 @@ void main() {
     );
 
     testWidgets(
+      'the error remedies stack on a phone so neither label truncates',
+      (tester) async {
+        // Side by side on a phone sheet, "Retry this code" and "Enter a new
+        // code" ellipsize into indistinguishability — the exact distinction
+        // this bar exists to communicate.
+        tester.view
+          ..physicalSize = const Size(390, 844)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.error(ProvisioningError.loginFailed),
+        );
+
+        final newCode = tester.getRect(
+          find.byKey(const Key('provisioned_config_new_code')),
+        );
+        final retry = tester.getRect(
+          find.byKey(const Key('provisioned_config_retry')),
+        );
+        // Stacked, accent first; both full labels on screen.
+        expect(retry.top, greaterThanOrEqualTo(newCode.bottom));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
       'done with an unverified peer hands the accent to Show the emoji',
       (tester) async {
         // The ceremony is the one thing left, so the accent re-opens it;
