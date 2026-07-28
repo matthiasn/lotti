@@ -1410,6 +1410,13 @@ void main() {
         expect(result.detail, contains('task-c'));
         expect(result.detail, contains('60min partial'));
         expect(result.detail, contains('480min'));
+        expect(result.heuristic, isTrue);
+        expect(
+          EvalConstraintSignals.kindFor(
+            EvalConstraintIds.withinCapacityByEstimate,
+          ),
+          'mixed',
+        );
       },
     );
 
@@ -1637,6 +1644,29 @@ void main() {
 
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('charges a countdown before a meeting at the full estimate', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'This placement is partial; '
+                  '60 minutes remain before the meeting starts.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
     test('ignores unrelated completed-estimate arithmetic', () {
@@ -2736,6 +2766,34 @@ void main() {
             ),
           ],
           decidedTaskIds: const ['task-deck'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('continuity prose does not disclose a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c remains scheduled as planned.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
           requiresConflictSurfaced: true,
         ),
       );

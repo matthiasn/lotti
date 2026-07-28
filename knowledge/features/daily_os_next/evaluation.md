@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T05:03:50+02:00 }
+generated: { by: codex/5, at: 2026-07-28T05:15:43+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -122,8 +122,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   negator, so `partial because not all work fits` remains affirmative. Split
   syntax cannot provide its own task context: an allocation word or task
   reference must appear outside the matched numbers. Explicit other-subject
-  scope also outranks a nearby `partial` keyword, so `remain for the meeting`
-  cannot earn task remainder credit while `partial for today` remains valid.
+  scope also outranks a nearby `partial` keyword, so `remain for`, `before`, or
+  `until` a meeting cannot earn task remainder credit while `partial for today`
+  remains valid.
   Negated or vague “partial” prose, silence,
   contradictory numbers, buffer or calendar blocks carrying a task id,
   allocations below 10% of the estimate, and overlapping blocks for one task
@@ -141,6 +142,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   and trade wording in unrelated plan prose cannot satisfy that disclosure.
   Trade language in the same reason is attributed to its nearest corpus task,
   so one task's deferred disposition cannot disclose another task's shortening.
+  Bare continuity such as `remains scheduled` is not a trade: numeric remainder
+  arithmetic or an actual omit/defer/shorten/conflict disposition is required.
   It must also be affirmative: `not partial` and `no conflict` explicitly deny
   the trade and receive no credit, while `cannot fit` is itself an affirmative
   disclosure of the constraint. The constraint detail records every credited
@@ -161,6 +164,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   only those heuristic outcomes are excluded from the objective model
   leaderboard. A reviewer must inspect the plan, changes, reasons, and status
   notes before calling a heuristic green result good reasoning.
+  `withinCapacityByEstimate` is mixed for the same reason: full-estimate
+  accounting and failures remain objective, but a pass that depends on parsing
+  free-form partial-placement prose is marked heuristic and excluded from the
+  objective headline rate.
 - **Fabrication is judged against what the model was shown.** The task corpus
   renders only inside the capture context, so a wake without a capture sees only
   its decided tasks — which do carry `status` and `blockedBy`, but not

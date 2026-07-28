@@ -83,6 +83,7 @@ abstract final class EvalConstraintSignals {
 
   static const mixedIds = <String>{
     EvalConstraintIds.blockerBeforeBlocked,
+    EvalConstraintIds.withinCapacityByEstimate,
   };
 
   static const caveats = <String, String>{
@@ -91,6 +92,10 @@ abstract final class EvalConstraintSignals {
         'on a reason naming the blocker is heuristic: the match does not prove '
         'that the model understood the dependency or justified bypassing it; '
         'inspect the plan and reason in the judge bundle.',
+    EvalConstraintIds.withinCapacityByEstimate:
+        'Full-estimate accounting is objective. A pass that instead relies on '
+        'interpreting free-form partial-placement prose is heuristic; inspect '
+        'the reason and arithmetic in the judge bundle.',
     EvalConstraintIds.surfacedConflict:
         'Checks whether the output names omitted work or uses an accepted '
         'escalation reason. A match does not prove that the model understood '
@@ -677,6 +682,7 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
   return EvalConstraintResult(
     id: id,
     passed: chargedMinutes <= capacity,
+    heuristic: chargedMinutes <= capacity && partials.isNotEmpty,
     detail:
         '${placements.length} placed task(s) charged at ${chargedMinutes}min against '
         '${capacity}min capacity'
@@ -757,14 +763,14 @@ final _omittedAllocationPattern = RegExp(
 );
 
 final _unrelatedRemainderScopePattern = RegExp(
-  r'\b(?:in|during|for)\s+'
+  r'\b(?:in|during|for|before|until)\s+'
   r'(?:(?:the|a|an|my|our|their|your)\s+)?'
   r'(?:meeting|workday|calendar|appointment|break)\b',
   caseSensitive: false,
 );
 
 final _conflictTradePattern = RegExp(
-  r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|left|remain(?:s|ed|ing)?|'
+  r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|left|'
   'trade|conflict|shorten(?:s|ed|ing)?|'
   r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
   r'(?:do|does|did)\s+not)\s+fit)\b',
@@ -1797,6 +1803,23 @@ bool _hasAffirmativeTradeDisclosure(
       continue;
     }
     if (!_matchClauseIsNegated(prose, match)) return true;
+  }
+  for (final pattern in [
+    _partialRemainingPattern,
+    _partialLeadingRemainingPattern,
+  ]) {
+    for (final match in pattern.allMatches(prose)) {
+      if (_evidenceNamesAnotherTask(
+        prose,
+        match,
+        taskId: taskId,
+        taskTitle: task.title,
+        corpus: outcome.inputs.corpus,
+      )) {
+        continue;
+      }
+      if (!_matchClauseIsNegated(prose, match)) return true;
+    }
   }
   for (final match in _conflictTradePattern.allMatches(prose)) {
     if (_evidenceNamesAnotherTask(
