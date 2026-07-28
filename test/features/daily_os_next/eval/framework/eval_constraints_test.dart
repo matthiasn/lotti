@@ -1855,6 +1855,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects an inability-only allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c was unable to schedule 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('preserves a scheduling denial after dash punctuation', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2885,6 +2906,28 @@ void main() {
               taskId: 'task-c',
               reason: '60 of 120 minutes are scheduled.',
               note: 'task-c was not scheduled after all.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('a full-completion note vetoes reason-field partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '60 of 120 minutes are scheduled.',
+              note: 'task-c was fully scheduled after all.',
             ),
           ],
           corpus: tasks,
@@ -4585,6 +4628,34 @@ void main() {
               endHour: 10,
               type: PlannedBlockType.buffer,
               reason: 'task-c is partial.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('an avoided disposition does not disclose a fully omitted task', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              type: PlannedBlockType.buffer,
+              reason: 'task-c avoided being omitted.',
             ),
           ],
           corpus: const [

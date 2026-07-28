@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T09:52:34+02:00 }
+generated: { by: codex/5, at: 2026-07-28T10:05:24+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -91,9 +91,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   not an affirmative allocation, and neither is
   `task-c might be partially scheduled`. Intended, planned, aimed, hoped,
   wanted, expected, proposed, attempted, tried, failed, refused, or declined
-  actions are likewise not affirmative. A later action describing “the rest” cannot
-  validate earlier omitted
-  arithmetic. Unrelated meeting/workday scope is likewise associated with its
+  actions are likewise not affirmative. Neither are inability complements such
+  as `was unable to schedule`, `was not able to schedule`, or `was incapable of
+  scheduling`. A later action describing “the rest” cannot validate earlier
+  omitted arithmetic. Unrelated meeting/workday scope is likewise associated with its
   nearest allocation action, so later meeting arithmetic does not poison an
   earlier valid task split. Unbound splits are ignored before their values are
   checked, and allocation explicitly scoped to another subject or another
@@ -122,9 +123,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-c was not scheduled after all` therefore retracts reason-field partial
   arithmetic even when the note contains no split or remainder of its own; the
   same applies to `not completed` because completion can supply allocation
-  context. A denial explicitly naming another corpus task does not retract the
-  enclosing task's arithmetic, while qualified non-completion such as
-  `not fully scheduled` describes a partial placement rather than no allocation.
+  context. An affirmative task-bound claim such as `task-c was fully scheduled
+  after all` also contradicts and vetoes partial accounting. A denial or
+  full-completion claim explicitly naming another corpus task does not retract
+  the enclosing task's arithmetic, while qualified non-completion such as `not
+  fully scheduled` describes a partial placement rather than no allocation.
   The
   partial mention cannot be borrowed from a claim attributed to
   another corpus task or an explicit non-task subject. Unrelated meeting/workday
@@ -241,7 +244,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `no conflict` explicitly deny the trade, while `without conflict` and
   `conflict-free` are denials rather than disclosures. Modal dispositions such
   as `might be omitted` or `could be deferred` are speculative, not actual
-  trades. An affirmative claim plus denial of that same
+  trades. Avoidance and prevention complements are denials too: `task-c avoided
+  being omitted` does not assert an omission. An affirmative claim plus denial
+  of that same
   disposition receives no credit in either order or across two task-named
   fields. Denials do not cancel a different asserted disposition:
   `task-c was not dropped; it was deferred to tomorrow` still surfaces the

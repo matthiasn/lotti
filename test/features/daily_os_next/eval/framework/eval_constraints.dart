@@ -764,6 +764,13 @@ final _taskAllocationActionPattern = RegExp(
   caseSensitive: false,
 );
 
+final _fullAllocationPattern = RegExp(
+  r'\b(?:fully|entirely|completely)\s+'
+  '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+  r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing))\b',
+  caseSensitive: false,
+);
+
 final _omittedAllocationPattern = RegExp(
   r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|'
   r'defer(?:s|red|ring)?|unscheduled|left\s+out)\b',
@@ -916,12 +923,18 @@ bool _hasAuditablePartialDisclosure({
   var hasBoundPartialRemainder = false;
   for (final disclosure in disclosures) {
     final reason = disclosure.prose;
-    if (_hasTaskBoundAllocationDenial(
-      reason,
-      taskId: taskId,
-      taskTitle: taskTitle,
-      corpus: corpus,
-    )) {
+    if (_hasTaskBoundFullAllocationClaim(
+          reason,
+          taskId: taskId,
+          taskTitle: taskTitle,
+          corpus: corpus,
+        ) ||
+        _hasTaskBoundAllocationDenial(
+          reason,
+          taskId: taskId,
+          taskTitle: taskTitle,
+          corpus: corpus,
+        )) {
       return false;
     }
     var reasonMentionsPartial = false;
@@ -1057,6 +1070,47 @@ bool _hasAuditablePartialDisclosure({
     }
   }
   return hasMatchingSplit || hasBoundPartialRemainder;
+}
+
+bool _hasTaskBoundFullAllocationClaim(
+  String prose, {
+  required String taskId,
+  required String taskTitle,
+  required List<EvalCorpusTask> corpus,
+}) {
+  for (final match in _fullAllocationPattern.allMatches(prose)) {
+    if (_evidenceFallsInsideTaskReference(
+          prose,
+          match,
+          taskId: taskId,
+          taskTitle: taskTitle,
+        ) ||
+        _tradeEvidenceHasExplicitNonTaskSubject(
+          prose,
+          match,
+          taskId: taskId,
+          taskTitle: taskTitle,
+        ) ||
+        _evidenceNamesAnotherTask(
+          prose,
+          match,
+          taskId: taskId,
+          taskTitle: taskTitle,
+          corpus: corpus,
+        ) ||
+        _evidenceIsSpeculative(prose, match) ||
+        _matchClauseIsNegated(
+          prose,
+          match,
+          taskId: taskId,
+          taskTitle: taskTitle,
+          corpus: corpus,
+        )) {
+      continue;
+    }
+    return true;
+  }
+  return false;
 }
 
 bool _partialMentionIsNegated(String reason, Match match) {
@@ -1261,6 +1315,14 @@ bool _matchClauseIsNegated(
   ).hasMatch(prefix)) {
     return true;
   }
+  if (RegExp(
+    r'\b(?:avoid(?:s|ed|ing)?(?:\s+being)?|'
+    r'(?:(?:is|are|was|were|be|been|being)\s+)?'
+    r'prevent(?:s|ed|ing)?(?:\s+\w+){0,2}\s+from(?:\s+being)?)\s*$',
+    caseSensitive: false,
+  ).hasMatch(prefix)) {
+    return true;
+  }
   for (final negation in _negationWordPattern.allMatches(reason, range.start)) {
     if (negation.start >= range.end) break;
     final negationStart = negation.start;
@@ -1413,6 +1475,12 @@ bool _allocationActionIsAsserted(
         'attempt(?:s|ed|ing)?|tr(?:y|ies|ied|ying)|'
         'fail(?:s|ed|ing)?|refus(?:e|es|ed|ing)|'
         r'declin(?:e|es|ed|ing))\s+to\s*$',
+        caseSensitive: false,
+      ).hasMatch(prefix) &&
+      !RegExp(
+        r'\b(?:(?:(?:is|are|was|were|be|been|being)\s+)?'
+        r'(?:unable\s+to|not\s+able\s+to|incapable\s+of)|'
+        r'(?:isn|aren|wasn|weren)[\x27’]?t\s+able\s+to)\s*$',
         caseSensitive: false,
       ).hasMatch(prefix);
 }
