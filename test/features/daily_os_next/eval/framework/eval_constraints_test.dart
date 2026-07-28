@@ -1813,6 +1813,33 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    for (final obligation in [
+      'must schedule',
+      'needs to schedule',
+      'is required to schedule',
+    ]) {
+      test('rejects obligation-only allocation: $obligation', () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason: 'task-c $obligation 60 of 120 minutes.',
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('task-c allocated 60min of 120min'));
+      });
+    }
+
     test('rejects a failed allocation action', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2392,6 +2419,27 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('accepts an exact modifier before allocation arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c scheduled exactly 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
     test('rejects arithmetic not governing a later allocation action', () {
@@ -4029,6 +4077,50 @@ void main() {
 
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c'));
+    });
+
+    test('accepts an explicit not-scheduled trade', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c was not scheduled due to capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
+    test('rejects a denial of an explicit not-scheduled trade', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason:
+                  'It is not true that task-c was not scheduled due to '
+                  'capacity.',
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
     });
 
     test('accepts an omission before a contrast predicate', () {

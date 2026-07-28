@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T11:41:23+02:00 }
+generated: { by: codex/5, at: 2026-07-28T11:58:49+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -102,9 +102,13 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `60 of 120` recording minutes, cannot supply task-allocation context, nor can
   later meeting scheduling borrow an earlier `60 of 120` recording count. A
   grammatical auxiliary/adverb bridge such as `were successfully scheduled`
-  remains affirmative, while a failure qualifier such as `were unsuccessfully
-  scheduled` does not. A later action describing “the rest” cannot validate
-  earlier omitted arithmetic.
+  remains affirmative, and exact quantity modifiers such as `scheduled exactly
+  60 of 120 minutes` may bridge the action to its arithmetic, while a failure
+  qualifier such as `were unsuccessfully scheduled` does not. Obligation alone
+  is not evidence that placement happened: `must schedule`, `needs to
+  schedule`, and `is required to schedule` cannot validate allocation
+  arithmetic. A later action describing “the rest” cannot validate earlier
+  omitted arithmetic.
   Unrelated meeting/workday scope is likewise associated with its nearest
   allocation action, so later meeting arithmetic does not poison an
   earlier valid task split. Unbound splits are ignored before their values are
@@ -283,8 +287,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   actual deferral.
   `Cannot fit`, `will not fit`, `conflicts`, and `conflicting` are affirmative
   disclosures, including label-bound forms such as `task-c: Cannot fit today`,
-  unless an outer falsehood construction such as `not true that task-c cannot
-  fit` denies the whole claim.
+  as is an explicit omission such as `task-c was not scheduled due to
+  capacity`, unless an outer falsehood construction such as `not true that
+  task-c cannot fit` or `not true that task-c was not scheduled` denies the
+  whole claim.
   The detail records every credited
   partial and every shortening denied credit, so the judge bundle preserves the
   accounting evidence rather than only the final pass/fail.

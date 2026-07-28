@@ -796,6 +796,8 @@ final _unrelatedRemainderScopePattern = RegExp(
 final _conflictTradePattern = RegExp(
   r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|'
   r'left\s+(?:out|unfinished|incomplete|unscheduled)|'
+  r'(?:(?:is|are|was|were|be|been|being)\s+)?not\s+'
+  'schedul(?:e|ed|ing)|'
   r'trade|conflict(?:s|ed|ing)?(?![-\s]+free\b)|'
   'shorten(?:s|ed|ing)?|'
   r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
@@ -1436,7 +1438,7 @@ bool _followingNegationExplainsCapacityLimit(
   ).hasMatch(suffix);
 }
 
-bool _negativeFitDisclosureIsDenied(String prose, Match match) {
+bool _negativeTradeDisclosureIsDenied(String prose, Match match) {
   final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
   final prefix = prose.substring(range.start, match.start);
   if (RegExp(
@@ -1519,6 +1521,12 @@ bool _allocationActionIsAsserted(
         caseSensitive: false,
       ).hasMatch(prefix) &&
       !RegExp(
+        r'\b(?:must|need(?:s|ed)?\s+to|'
+        r'(?:has|have|had)\s+to|(?:is|are|was|were)\s+required\s+to|'
+        r'ought\s+to)\s*$',
+        caseSensitive: false,
+      ).hasMatch(prefix) &&
+      !RegExp(
         r'\b(?:(?:(?:is|are|was|were|be|been|being)\s+)?'
         r'(?:unable\s+to|not\s+able\s+to|incapable\s+of)|'
         r'(?:isn|aren|wasn|weren)[\x27’]?t\s+able\s+to)\s*$',
@@ -1598,7 +1606,8 @@ bool _splitHasUnrelatedScope(
     final end = range.start + match.end;
     if (end <= evidence.start) {
       if (!RegExp(
-        r'^\s*(?:(?:only|just|merely|about|approximately|roughly)\s+)?$',
+        r'^\s*(?:(?:only|just|merely|about|approximately|roughly|'
+        r'exactly|precisely)\s+)?$',
         caseSensitive: false,
       ).hasMatch(reason.substring(end, evidence.start))) {
         continue;
@@ -2455,9 +2464,16 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   for (final match in _conflictTradePattern.allMatches(prose)) {
     if (!belongsToTask(match) || _evidenceIsSpeculative(prose, match)) continue;
     final matchedTrade = match.group(0) ?? '';
+    final hasEmbeddedNegation = _negationWordPattern.hasMatch(matchedTrade);
     final negativeFitDisclosure =
-        _negationWordPattern.hasMatch(matchedTrade) &&
+        hasEmbeddedNegation &&
         RegExp(r'\bfit\b', caseSensitive: false).hasMatch(matchedTrade);
+    final negativeSchedulingDisclosure =
+        hasEmbeddedNegation &&
+        RegExp(
+          r'\bschedul(?:e|ed|ing)\b',
+          caseSensitive: false,
+        ).hasMatch(matchedTrade);
     if (negativeFitDisclosure) {
       if (!_negativeFitEvidenceDescribesTaskOrWork(
         prose,
@@ -2467,11 +2483,17 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
       )) {
         continue;
       }
-      if (_negativeFitDisclosureIsDenied(prose, match)) {
+      if (_negativeTradeDisclosureIsDenied(prose, match)) {
         record('negative-fit', denied: true);
       } else {
         record('negative-fit', denied: false);
       }
+    } else if (negativeSchedulingDisclosure) {
+      if (!_tradeEvidenceDescribesTaskOrWork(prose, match)) continue;
+      record(
+        _tradeDispositionKey(match),
+        denied: _negativeTradeDisclosureIsDenied(prose, match),
+      );
     } else if (!_tradeEvidenceDescribesTaskOrWork(prose, match)) {
       continue;
     } else if (clauseIsNegated(match)) {
