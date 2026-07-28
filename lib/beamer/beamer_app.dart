@@ -1429,6 +1429,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
         invoke: (_) => navService.tapIndex(navService.tasksIndex),
       ),
       AppCommandId.navigateDailyOs: AppCommandHandler(
+        isEnabled: () => navService.isDailyOsPageEnabled,
         invoke: (_) => navService.tapIndex(navService.calendarIndex),
       ),
       AppCommandId.navigateProjects: AppCommandHandler(

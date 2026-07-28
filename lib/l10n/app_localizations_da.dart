@@ -2991,6 +2991,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Vis den lokale tekst-til-tale-knap på opgave-AI-resuméer. Kræver en installeret MLX Audio TTS-model.';
 
   @override
+  String get configFlagEnableDailyOs => 'Aktivér DailyOS';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Vis DailyOS i hovednavigationen.';
+
+  @override
   String get configFlagEnableDashboardsPage => 'Aktivér dashboards-siden';
 
   @override

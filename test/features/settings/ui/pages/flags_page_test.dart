@@ -24,7 +24,7 @@ import '../../../../widget_test_utils.dart';
 /// derived from `FlagsBody.defaultDisplayedItems`: these tests supply their own
 /// `displayedItems`, and asserting against the production list would make this
 /// a tautology.
-const _displayedFlagCount = 11;
+const _displayedFlagCount = 12;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +87,11 @@ void main() {
           const ConfigFlag(
             name: enableWhatsNewFlag,
             description: "Enable What's New feature?",
+            status: false,
+          ),
+          const ConfigFlag(
+            name: enableDailyOsPageFlag,
+            description: 'Enable DailyOS Page?',
             status: false,
           ),
           const ConfigFlag(
@@ -337,6 +342,17 @@ void main() {
             expectedToggle: const ConfigFlag(
               name: showSyncActivityIndicatorFlag,
               description: 'Show sync status in the sidebar.',
+              status: true,
+            ),
+          ),
+          (
+            name: 'daily-os',
+            title: (m) => m.configFlagEnableDailyOs,
+            description: (m) => m.configFlagEnableDailyOsDescription,
+            icon: Icons.today_outlined,
+            expectedToggle: const ConfigFlag(
+              name: enableDailyOsPageFlag,
+              description: 'Enable DailyOS Page?',
               status: true,
             ),
           ),

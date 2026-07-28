@@ -2996,6 +2996,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Visa den lokala text-till-tal-knappen på sammanfattningar av uppgift-AI. Kräver en installerad MLX Audio TTS-modell.';
 
   @override
+  String get configFlagEnableDailyOs => 'Aktivera DailyOS';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Visa DailyOS i huvudnavigeringen.';
+
+  @override
   String get configFlagEnableDashboardsPage => 'Aktivera dashboards-sidan';
 
   @override

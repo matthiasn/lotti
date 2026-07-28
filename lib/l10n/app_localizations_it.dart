@@ -3033,6 +3033,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Mostra il pulsante di testo-to-speech locale sui riassunti dell\'intelligenza artificiale del compito. Richiede un modello MLX Audio TTS installato.';
 
   @override
+  String get configFlagEnableDailyOs => 'Abilita DailyOS';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Mostra DailyOS nella navigazione principale.';
+
+  @override
   String get configFlagEnableDashboardsPage => 'Attivare la pagina Dashboards';
 
   @override

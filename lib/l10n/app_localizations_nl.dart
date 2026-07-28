@@ -3001,6 +3001,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Toon de lokale tekst-naar-spraak-knop op taak AI samenvattingen. Vereist een geïnstalleerd MLX Audio TTS model.';
 
   @override
+  String get configFlagEnableDailyOs => 'DailyOS inschakelen';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Toon DailyOS in de hoofdnavigatie.';
+
+  @override
   String get configFlagEnableDashboardsPage => 'Dashboards-pagina inschakelen';
 
   @override

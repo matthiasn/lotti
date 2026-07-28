@@ -5190,6 +5190,18 @@ abstract class AppLocalizations {
   /// **'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.'**
   String get configFlagEnableAiSummaryTtsDescription;
 
+  /// No description provided for @configFlagEnableDailyOs.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable DailyOS'**
+  String get configFlagEnableDailyOs;
+
+  /// No description provided for @configFlagEnableDailyOsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the DailyOS page in the main navigation.'**
+  String get configFlagEnableDailyOsDescription;
+
   /// No description provided for @configFlagEnableDashboardsPage.
   ///
   /// In en, this message translates to:

@@ -1564,6 +1564,8 @@
   "configFlagEnableAiStreamingDescription": "Risposte dell'intelligenza artificiale per le azioni correlate al compito. Spegnere le risposte del buffer e mantenere l'interfaccia utente più fluida.",
   "configFlagEnableAiSummaryTts": "Riproduzione di sintesi AI",
   "configFlagEnableAiSummaryTtsDescription": "Mostra il pulsante di testo-to-speech locale sui riassunti dell'intelligenza artificiale del compito. Richiede un modello MLX Audio TTS installato.",
+  "configFlagEnableDailyOs": "Abilita DailyOS",
+  "configFlagEnableDailyOsDescription": "Mostra DailyOS nella navigazione principale.",
   "configFlagEnableDashboardsPage": "Attivare la pagina Dashboards",
   "configFlagEnableDashboardsPageDescription": "Mostra la pagina Dashboards nella navigazione principale. Visualizza i tuoi dati e approfondimenti in dashboard personalizzabili.",
   "configFlagEnableEmbeddings": "Generare Embeddings",

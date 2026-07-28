@@ -3291,6 +3291,7 @@ void main() {
     ) async {
       final mockNavService = MockNavService();
       final registeredNavService = MockNavService();
+      var dailyOsEnabled = false;
       var projectsEnabled = false;
       var habitsEnabled = false;
       var dashboardsEnabled = false;
@@ -3299,7 +3300,7 @@ void main() {
         mockNavService,
         indexStream: const Stream<int>.empty(),
         isProjectsEnabled: () => projectsEnabled,
-        isDailyOsEnabled: () => true,
+        isDailyOsEnabled: () => dailyOsEnabled,
         isHabitsEnabled: () => habitsEnabled,
         isDashboardsEnabled: () => dashboardsEnabled,
         isEventsEnabled: () => eventsEnabled,
@@ -3372,6 +3373,7 @@ void main() {
       final messages = AppLocalizations.of(commandContext)!;
 
       for (final id in const [
+        AppCommandId.navigateDailyOs,
         AppCommandId.navigateProjects,
         AppCommandId.navigateHabits,
         AppCommandId.navigateDashboards,
@@ -3379,6 +3381,7 @@ void main() {
       ]) {
         expect(commandController.isAvailable(commandContext, id), isFalse);
       }
+      dailyOsEnabled = true;
       projectsEnabled = true;
       habitsEnabled = true;
       dashboardsEnabled = true;

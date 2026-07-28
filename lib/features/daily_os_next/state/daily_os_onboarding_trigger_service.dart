@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
@@ -52,8 +53,7 @@ const dailyOsOnboardingWindow = Duration(days: 14);
 /// auto-show slot (so it never races What's New or the general FTUE).
 ///
 /// Eligible while:
-/// - the Daily OS onboarding flag is on (the Daily OS surface itself is always
-///   available, so only the walkthrough is gated),
+/// - the Daily OS rollout flag and its separate onboarding flag are both on,
 /// - What's New has nothing unseen and the general FTUE welcome is not still
 ///   owed — the walkthrough is sequenced *behind* both so the three
 ///   auto-shown surfaces never race for the screen,
@@ -69,6 +69,7 @@ const dailyOsOnboardingWindow = Duration(days: 14);
 /// - once shown at least once, [now] is still within [dailyOsOnboardingWindow]
 ///   of the first auto-show.
 bool isDailyOsOnboardingEligible({
+  required bool dailyOsFlagEnabled,
   required bool dailyOsOnboardingFlagEnabled,
   required bool hasUnseenWhatsNew,
   required bool welcomeStillOwed,
@@ -81,6 +82,7 @@ bool isDailyOsOnboardingEligible({
   required DateTime? firstShownAt,
   required DateTime now,
 }) {
+  if (!dailyOsFlagEnabled) return false;
   if (!dailyOsOnboardingFlagEnabled) return false;
   if (hasUnseenWhatsNew) return false;
   if (welcomeStillOwed) return false;
@@ -133,14 +135,22 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
   final providerReadyFuture = ref.watch(
     dailyOsOnboardingProviderReadyProvider.future,
   );
+  final dailyOsFlag = ref.watch(configFlagProvider(enableDailyOsPageFlag));
+  final onboardingFlag = ref.watch(
+    configFlagProvider(dailyOsOnboardingEnabledFlag),
+  );
   // Sequenced behind What's New and the general FTUE welcome: establish those
   // subscriptions synchronously too so this re-evaluates when either resolves.
   final whatsNewFuture = ref.watch(whatsNewControllerProvider.future);
   final welcomeOwedFuture = ref.watch(shouldAutoShowOnboardingProvider.future);
 
-  final onboardingEnabled = await db.getConfigFlag(
-    dailyOsOnboardingEnabledFlag,
-  );
+  final dailyOsEnabled =
+      dailyOsFlag.value ?? await db.getConfigFlag(enableDailyOsPageFlag);
+  if (!dailyOsEnabled) return false;
+
+  final onboardingEnabled =
+      onboardingFlag.value ??
+      await db.getConfigFlag(dailyOsOnboardingEnabledFlag);
   if (!onboardingEnabled) return false;
 
   // What's New still owns the first overlay slot while it has unseen content
@@ -178,6 +188,7 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
   final firstShownAtRaw = stored[dailyOsOnboardingFirstShownAtKey];
 
   return isDailyOsOnboardingEligible(
+    dailyOsFlagEnabled: dailyOsEnabled,
     dailyOsOnboardingFlagEnabled: onboardingEnabled,
     hasUnseenWhatsNew: hasUnseenWhatsNew,
     welcomeStillOwed: welcomeStillOwed,

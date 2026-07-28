@@ -3014,6 +3014,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeigt die lokale Text-to-Speech-Schaltfläche in AI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes MLX-Audio-TTS-Modell.';
 
   @override
+  String get configFlagEnableDailyOs => 'DailyOS aktivieren';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'DailyOS in der Hauptnavigation anzeigen.';
+
+  @override
   String get configFlagEnableDashboardsPage => 'Seite Dashboards aktivieren';
 
   @override

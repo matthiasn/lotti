@@ -1393,6 +1393,8 @@
   "configFlagEnableAiStreamingDescription": "Transmitir respuestas de IA para acciones relacionadas con tareas. Desactívelo para almacenar respuestas en búfer y mantener la interfaz más fluida.",
   "configFlagEnableAiSummaryTts": "Reproducción de resúmenes de IA",
   "configFlagEnableAiSummaryTtsDescription": "Muestra el botón local de texto a voz en los resúmenes de IA de tareas. Requiere un modelo TTS de MLX Audio instalado.",
+  "configFlagEnableDailyOs": "Habilitar DailyOS",
+  "configFlagEnableDailyOsDescription": "Mostrar DailyOS en la navegación principal.",
   "configFlagEnableDashboardsPage": "Habilitar página Paneles",
   "configFlagEnableDashboardsPageDescription": "Mostrar la página Paneles en la navegación principal. Ve tus datos e información en paneles personalizables.",
   "configFlagEnableEmbeddings": "Generar incrustaciones",

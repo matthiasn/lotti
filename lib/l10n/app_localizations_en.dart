@@ -2975,6 +2975,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.';
 
   @override
+  String get configFlagEnableDailyOs => 'Enable DailyOS';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Show the DailyOS page in the main navigation.';
+
+  @override
   String get configFlagEnableDashboardsPage => 'Enable Dashboards page';
 
   @override

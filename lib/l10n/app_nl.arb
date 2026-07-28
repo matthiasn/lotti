@@ -1563,6 +1563,8 @@
   "configFlagEnableAiStreamingDescription": "Stream AI-responsen voor taakgerelateerde acties. Schakel de bufferresponsen uit en houd de UI soepeler.",
   "configFlagEnableAiSummaryTts": "AI samenvatting afspelen",
   "configFlagEnableAiSummaryTtsDescription": "Toon de lokale tekst-naar-spraak-knop op taak AI samenvattingen. Vereist een geïnstalleerd MLX Audio TTS model.",
+  "configFlagEnableDailyOs": "DailyOS inschakelen",
+  "configFlagEnableDailyOsDescription": "Toon DailyOS in de hoofdnavigatie.",
   "configFlagEnableDashboardsPage": "Dashboards-pagina inschakelen",
   "configFlagEnableDashboardsPageDescription": "Toon de Dashboards pagina in de hoofdnavigatie. Bekijk uw gegevens en inzichten in aanpasbare dashboards.",
   "configFlagEnableEmbeddings": "Inbeddingen genereren",
