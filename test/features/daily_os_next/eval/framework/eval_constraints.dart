@@ -637,10 +637,11 @@ EvalConstraintResult scoreRespectsEstimates(EvalRunOutcome outcome) {
 /// per-task ratio while summing to exactly the 480-minute capacity. Summing
 /// estimates instead makes the arithmetic honest — 720 minutes of work does
 /// not fit in 480 however the blocks are labelled. A shortened task is charged
-/// at its represented minutes only when its reason or note gives concrete
-/// minute arithmetic that agrees with both the block duration and corpus
-/// estimate; vague or contradictory partial prose keeps the full-estimate
-/// charge.
+/// at its represented minutes only when its reason gives concrete minute
+/// arithmetic that agrees with both the block duration and corpus estimate.
+/// Notes remain audit evidence and can veto a reason with contradictory
+/// arithmetic, but cannot earn partial credit; vague or contradictory partial
+/// prose keeps the full-estimate charge.
 EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.withinCapacityByEstimate;
   final noPlan = _requirePlan(outcome, id);
@@ -716,7 +717,10 @@ final _partialLeadingRemainingPattern = RegExp(
   caseSensitive: false,
 );
 
-final _partialMentionPattern = RegExp(r'\bpartial\b', caseSensitive: false);
+final _partialMentionPattern = RegExp(
+  r'\b(?:partial(?:ly)?|partly)\b',
+  caseSensitive: false,
+);
 
 final _negationWordPattern = RegExp(
   r'\b(?:not|no|never|cannot|(?:isn|wasn|weren|aren|doesn|don|didn|can|couldn|'
@@ -778,12 +782,14 @@ final _conflictTradePattern = RegExp(
   caseSensitive: false,
 );
 
+typedef _PlacementDisclosure = ({bool canQualify, String prose});
+
 typedef _EstimatedTaskPlacement = ({
   List<EvalCorpusTask> corpus,
   int allocatedMinutes,
+  List<_PlacementDisclosure> disclosures,
   int estimateMinutes,
   bool hasOverlappingBlocks,
-  List<String> reasons,
   String taskId,
   String taskTitle,
 });
@@ -798,7 +804,7 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
 ) {
   final allocatedByTask = <String, int>{};
   final blocksByTask = <String, List<PlannedBlock>>{};
-  final reasonsByTask = <String, List<String>>{};
+  final disclosuresByTask = <String, List<_PlacementDisclosure>>{};
   for (final block in _scheduled(outcome)) {
     if (block.type != PlannedBlockType.ai &&
         block.type != PlannedBlockType.manual) {
@@ -813,11 +819,19 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
       ifAbsent: () => block.endTime.difference(block.startTime).inMinutes,
     );
     blocksByTask.putIfAbsent(taskId, () => []).add(block);
-    for (final disclosure in [block.reason, block.note]) {
-      final prose = disclosure?.trim();
-      if (prose != null && prose.isNotEmpty) {
-        reasonsByTask.putIfAbsent(taskId, () => []).add(prose);
-      }
+    final reason = block.reason?.trim();
+    if (reason != null && reason.isNotEmpty) {
+      disclosuresByTask.putIfAbsent(taskId, () => []).add((
+        canQualify: true,
+        prose: reason,
+      ));
+    }
+    final note = block.note?.trim();
+    if (note != null && note.isNotEmpty) {
+      disclosuresByTask.putIfAbsent(taskId, () => []).add((
+        canQualify: false,
+        prose: note,
+      ));
     }
   }
   return {
@@ -830,11 +844,11 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
         entry.key: (
           corpus: outcome.inputs.corpus,
           allocatedMinutes: entry.value,
+          disclosures: disclosuresByTask[entry.key] ?? const [],
           estimateMinutes: estimate,
           hasOverlappingBlocks: _hasOverlappingIntervals(
             blocksByTask[entry.key] ?? const [],
           ),
-          reasons: reasonsByTask[entry.key] ?? const [],
           taskId: taskId,
           taskTitle: taskTitle,
         ),
@@ -866,7 +880,7 @@ bool _isAuditedPartial(_EstimatedTaskPlacement placement) =>
     placement.allocatedMinutes * 10 >= placement.estimateMinutes &&
     !placement.hasOverlappingBlocks &&
     _hasAuditablePartialDisclosure(
-      reasons: placement.reasons,
+      disclosures: placement.disclosures,
       allocatedMinutes: placement.allocatedMinutes,
       estimateMinutes: placement.estimateMinutes,
       taskId: placement.taskId,
@@ -880,10 +894,12 @@ bool _isAuditedPartial(_EstimatedTaskPlacement placement) =>
 /// only when its concrete minute arithmetic agrees with both that duration and
 /// the corpus estimate. This accepts either an explicit `60m of 120m` split or
 /// the prompt's `partial` plus a task-bound `60m remain for later` form. Vague
-/// prose, unrelated day-capacity arithmetic, and contradictory numbers anywhere
-/// in the task's disclosure keep the conservative full-estimate charge.
+/// prose, unrelated day-capacity arithmetic, and contradictory numbers in
+/// either the reason or note keep the conservative full-estimate charge. Notes
+/// are audit evidence only: they can veto credit but cannot satisfy the prompt's
+/// reason-field disclosure contract.
 bool _hasAuditablePartialDisclosure({
-  required List<String> reasons,
+  required List<_PlacementDisclosure> disclosures,
   required int allocatedMinutes,
   required int estimateMinutes,
   required String taskId,
@@ -893,7 +909,8 @@ bool _hasAuditablePartialDisclosure({
   final remainingMinutes = estimateMinutes - allocatedMinutes;
   var hasMatchingSplit = false;
   var hasBoundPartialRemainder = false;
-  for (final reason in reasons) {
+  for (final disclosure in disclosures) {
+    final reason = disclosure.prose;
     var reasonMentionsPartial = false;
     var reasonHasBoundRemainder = false;
     for (final match in _partialMentionPattern.allMatches(reason)) {
@@ -921,7 +938,7 @@ bool _hasAuditablePartialDisclosure({
         continue;
       }
       if (_partialMentionIsNegated(reason, match)) return false;
-      reasonMentionsPartial = true;
+      if (disclosure.canQualify) reasonMentionsPartial = true;
     }
     for (final match in _partialOfEstimatePattern.allMatches(reason)) {
       if (_evidenceFallsInsideTaskReference(
@@ -952,7 +969,7 @@ bool _hasAuditablePartialDisclosure({
           declaredEstimate != estimateMinutes) {
         return false;
       }
-      hasMatchingSplit = true;
+      if (disclosure.canQualify) hasMatchingSplit = true;
     }
     for (final match in _partialRemainingPattern.allMatches(reason)) {
       if (_evidenceFallsInsideTaskReference(
@@ -983,7 +1000,7 @@ bool _hasAuditablePartialDisclosure({
       if (_matchClauseIsNegated(reason, match)) return false;
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
-      if (_remainderIsTaskBound(reason, match)) {
+      if (disclosure.canQualify && _remainderIsTaskBound(reason, match)) {
         reasonHasBoundRemainder = true;
       }
     }
@@ -1016,7 +1033,7 @@ bool _hasAuditablePartialDisclosure({
       if (_matchClauseIsNegated(reason, match)) return false;
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
-      if (_remainderIsTaskBound(reason, match)) {
+      if (disclosure.canQualify && _remainderIsTaskBound(reason, match)) {
         reasonHasBoundRemainder = true;
       }
     }
@@ -1083,6 +1100,30 @@ bool _matchClauseIsNegated(String reason, Match match) {
             _taskAllocationActionPattern.hasMatch(between)) {
       return true;
     }
+  }
+  return false;
+}
+
+bool _negativeFitDisclosureIsDenied(String prose, Match match) {
+  final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
+  final prefix = prose.substring(range.start, match.start);
+  if (RegExp(
+    r'\b(?:not\s+(?:actually\s+)?true|false)\s+that\b',
+    caseSensitive: false,
+  ).hasMatch(prefix)) {
+    return true;
+  }
+  final clause = prose.substring(range.start, range.end);
+  for (final negation in _negationWordPattern.allMatches(clause)) {
+    final start = range.start + negation.start;
+    final end = range.start + negation.end;
+    if (start >= match.start && end <= match.end) continue;
+    final between = end <= match.start
+        ? prose.substring(end, match.start)
+        : start >= match.end
+        ? prose.substring(match.end, start)
+        : '';
+    if (_wordPattern.allMatches(between).length <= 3) return true;
   }
   return false;
 }
@@ -1262,11 +1303,10 @@ List<RegExp> _taskReferencePatterns(String taskId, String taskTitle) {
       r'\btask\s+' + RegExp.escape(title) + r'\b',
       caseSensitive: false,
     ),
-    if (title.length >= 4)
-      RegExp(
-        r'(?:^|[^\w])' + RegExp.escape(title) + r'(?=$|[^\w])',
-        caseSensitive: false,
-      ),
+    RegExp(
+      r'(?:^|[^\w-])' + RegExp.escape(title) + r'(?=$|[^\w-])',
+      caseSensitive: false,
+    ),
   ];
 }
 
@@ -1969,7 +2009,11 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
         _negationWordPattern.hasMatch(matchedTrade) &&
         RegExp(r'\bfit\b', caseSensitive: false).hasMatch(matchedTrade);
     if (negativeFitDisclosure) {
-      hasAffirmativeEvidence = true;
+      if (_negativeFitDisclosureIsDenied(prose, match)) {
+        hasDeniedEvidence = true;
+      } else {
+        hasAffirmativeEvidence = true;
+      }
     } else if (_matchClauseIsNegated(prose, match)) {
       hasDeniedEvidence = true;
     } else {
@@ -1998,7 +2042,8 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   }
   final subjectMatch = RegExp(
     r'^(.*?)\s+(?:(?:is|are|was|were|has\s+been|have\s+been|had\s+been|'
-    r'will\s+be)(?:\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
+    r'will\s+be)(?:\s+(?:only|merely|just|still))?'
+    r'(?:\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
     'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))?|'
     '(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
     r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))\s*$',

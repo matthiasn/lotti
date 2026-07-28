@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T06:35:52+02:00 }
+generated: { by: codex/5, at: 2026-07-28T06:51:25+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -97,13 +97,17 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-d will be deferred`. Distinct task ids retain distinct identities even
   when their titles collide; an explicit id can therefore attribute arithmetic
   to the other task, while an ambiguous shared title is handled conservatively.
+  Explicit full-title references retain that precedence even for short titles
+  such as `PR`.
   This allows one clause to audit the current split and name a deferred casualty
   before or after it. The same attribution applies to remainder evidence. The
-  partial mention and task-bound remainder must occur in the same block reason
-  or note field, and the partial mention cannot be borrowed from a claim
-  attributed to another corpus task or an explicit non-task subject. Unrelated
-  meeting/workday remainder scope is rejected before a later disposition can
-  bind it, and unrelated workday-capacity prose cannot supply the remainder.
+  partial mention and task-bound remainder must occur in the same block reason,
+  as required by the model-facing prompt. Notes cannot earn partial credit, but
+  their concrete arithmetic and denials remain audit evidence that can veto a
+  reason. The partial mention cannot be borrowed from a claim attributed to
+  another corpus task or an explicit non-task subject. Unrelated meeting/workday
+  remainder scope is rejected before a later disposition can bind it, and
+  unrelated workday-capacity prose cannot supply the remainder.
   Task qualifiers may sit inside the arithmetic, as in
   `60 minutes of this task remain`; leading forms may also qualify the noun, as
   in `the remaining work is 60 minutes`. Remainder arithmetic explicitly scoped
@@ -122,8 +126,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   than negation, and leading `no more than` is an exact quantitative cap. A
   negative fit quantifier that explains the partial, such as
   `not all work fits so 60 of 120 are scheduled`, also leaves the concrete
-  allocation affirmative. A `partial` keyword is negated only by a preceding
-  negator, so `partial because not all work fits` remains affirmative. Split
+  allocation affirmative. `Partial`, `partially`, and `partly` are accepted
+  disclosure forms. A partial keyword is negated only by a preceding negator,
+  so `partial because not all work fits` remains affirmative. Split
   syntax cannot provide its own allocation context: an affirmative allocation
   action must appear outside the matched numbers. A task reference can
   attribute that action, but cannot replace it. Explicit other-subject scope
@@ -162,7 +167,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   and neither can `the meeting is scheduled for later`; `the remainder is
   deferred` remains task-trade evidence. A task reference inside a modifier
   does not replace the head subject, so `the meeting for task-c is partial`
-  remains a meeting claim.
+  remains a meeting claim; copula modifiers do not change that head, so `the
+  meeting was only partial` is rejected too.
   Bare continuity such as `remains scheduled` is not a trade: numeric remainder
   arithmetic matching the structural remainder, or an actual
   omit/defer/shorten/conflict disposition, is required. Likewise, `left
@@ -173,7 +179,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `no conflict` explicitly deny the trade, `conflict-free` is an antonym rather
   than a disclosure, and an affirmative claim plus its denial receives no
   credit in either order or across two task-named fields.
-  `Cannot fit`, `conflicts`, and `conflicting` are affirmative disclosures.
+  `Cannot fit`, `conflicts`, and `conflicting` are affirmative disclosures,
+  unless an outer falsehood construction such as `not true that task-c cannot
+  fit` denies the whole claim.
   The detail records every credited
   partial and every shortening denied credit, so the judge bundle preserves the
   accounting evidence rather than only the final pass/fail.

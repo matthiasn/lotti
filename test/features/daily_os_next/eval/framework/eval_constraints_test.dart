@@ -1443,6 +1443,31 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    for (final wording in ['partially', 'partly']) {
+      test('accepts $wording scheduled work with a matching remainder', () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason:
+                    'task-c is $wording scheduled; '
+                    '60 minutes remain for later.',
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
+
+        expect(result.passed, isTrue);
+        expect(result.detail, contains('task-c 60min partial of 120min'));
+      });
+    }
+
     test('an objectively fitting partial remains objective', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2311,6 +2336,29 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects an adverbial partial claim owned by a meeting', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'The meeting was only partial; '
+                  '60 minutes remain for task-c.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('does not borrow a postpositive task partial label', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2419,29 +2467,32 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
-    test('accepts matching partial arithmetic in the note', () {
-      final result = scoreWithinCapacityByEstimate(
-        outcome(
-          blocks: [
-            block(
-              id: 'partial',
-              startHour: 9,
-              endHour: 10,
-              taskId: 'task-c',
-              reason: 'Focused work on task-c.',
-              note:
-                  'Partial: 60 of 120 minutes are scheduled; '
-                  '60 minutes remain for later.',
-            ),
-          ],
-          corpus: tasks,
-          capacityMinutes: 60,
-        ),
-      );
+    test(
+      'note-only partial arithmetic does not satisfy the reason contract',
+      () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason: 'Focused work on task-c.',
+                note:
+                    'Partial: 60 of 120 minutes are scheduled; '
+                    '60 minutes remain for later.',
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
 
-      expect(result.passed, isTrue);
-      expect(result.detail, contains('task-c 60min partial of 120min'));
-    });
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('task-c allocated 60min of 120min'));
+      },
+    );
 
     test('preserves distinct task ids when titles collide', () {
       final result = scoreWithinCapacityByEstimate(
@@ -2665,6 +2716,38 @@ void main() {
         expect(result.detail, contains('over by 60'));
       });
     }
+
+    test('attributes arithmetic to another task with a short title', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'PR has 60 of 120 minutes scheduled.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'Core',
+              estimateMinutes: 120,
+            ),
+            EvalCorpusTask(
+              taskId: 'task-pr',
+              title: 'PR',
+              estimateMinutes: 120,
+            ),
+          ],
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
 
     for (final estimate in <int?>[null, 0]) {
       test('is not applicable for a placed task with estimate $estimate', () {
@@ -3805,6 +3888,62 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('outer negation denies a cannot-fit disclosure', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'It is not true that task-c cannot fit.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('an unqualified cannot-fit disclosure surfaces the shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c cannot fit.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
     });
 
     test('does not find a casualty title inside another word', () {
