@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T10:05:24+02:00 }
+generated: { by: codex/5, at: 2026-07-28T10:19:08+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -93,9 +93,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   wanted, expected, proposed, attempted, tried, failed, refused, or declined
   actions are likewise not affirmative. Neither are inability complements such
   as `was unable to schedule`, `was not able to schedule`, or `was incapable of
-  scheduling`. A later action describing “the rest” cannot validate earlier
-  omitted arithmetic. Unrelated meeting/workday scope is likewise associated with its
-  nearest allocation action, so later meeting arithmetic does not poison an
+  scheduling`, nor actions the prose says were avoided or prevented. A later
+  action describing “the rest” cannot validate earlier omitted arithmetic.
+  Unrelated meeting/workday scope is likewise associated with its nearest
+  allocation action, so later meeting arithmetic does not poison an
   earlier valid task split. Unbound splits are ignored before their values are
   checked, and allocation explicitly scoped to another subject or another
   corpus task, named by id or full title, cannot earn credit for the placed
@@ -217,7 +218,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   deferred` remains task-trade evidence. A task reference inside a modifier
   does not replace the head subject, so `the meeting for task-c is partial`
   remains a meeting claim; copula modifiers do not change that head, so `the
-  meeting was only partial` is rejected too.
+  meeting was only partial` is rejected too. The same head-subject rule applies
+  to denials: `the meeting for task-c was not scheduled` retracts the meeting,
+  not task-c's partial allocation.
   Ordinary possessive verbs retain their head subject as well, so
   `the meeting has 60 minutes remaining` cannot supply the task's remainder;
   remainder-producing verbs such as `the meeting leaves 60 minutes remaining`
@@ -251,9 +254,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   fields. Denials do not cancel a different asserted disposition:
   `task-c was not dropped; it was deferred to tomorrow` still surfaces the
   actual deferral.
-  `Cannot fit`, `conflicts`, and `conflicting` are affirmative disclosures,
-  unless an outer falsehood construction such as `not true that task-c cannot
-  fit` denies the whole claim.
+  `Cannot fit`, `will not fit`, `conflicts`, and `conflicting` are affirmative
+  disclosures, unless an outer falsehood construction such as `not true that
+  task-c cannot fit` denies the whole claim.
   The detail records every credited
   partial and every shortening denied credit, so the judge bundle preserves the
   accounting evidence rather than only the final pass/fail.

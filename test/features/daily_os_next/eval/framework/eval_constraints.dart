@@ -790,7 +790,8 @@ final _conflictTradePattern = RegExp(
   r'trade|conflict(?:s|ed|ing)?(?![-\s]+free\b)|'
   'shorten(?:s|ed|ing)?|'
   r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
-  r'(?:do|does|did)\s+not|(?:don|doesn|didn)[\x27’]?t)\s+fit)\b',
+  r'(?:do|does|did|will|shall)\s+not|'
+  r'(?:don|doesn|didn)[\x27’]?t)\s+fit)\b',
   caseSensitive: false,
 );
 
@@ -1215,6 +1216,14 @@ bool _hasTaskBoundAllocationDenial(
   );
   for (final action in placementActionPattern.allMatches(prose)) {
     if (!_allocationActionIsDirectlyDenied(prose, action)) continue;
+    if (_tradeEvidenceHasExplicitNonTaskSubject(
+      prose,
+      action,
+      taskId: taskId,
+      taskTitle: taskTitle,
+    )) {
+      continue;
+    }
     final range = _matchClauseRange(prose, action, boundaries: ',.;!?\n');
     if (_nearestTaskReferenceDistance(
           prose,
@@ -1248,7 +1257,7 @@ bool _hasTaskBoundAllocationDenial(
     final prefix = prose.substring(range.start, action.start);
     if (RegExp(
       r'\b(?:(?:the|this|that|its)\s+)?'
-      r'(?:task|work|placement|block|it)\b',
+      r'(?:task(?!-)|work|placement|block|it)\b',
       caseSensitive: false,
     ).hasMatch(prefix)) {
       return true;
@@ -1482,6 +1491,10 @@ bool _allocationActionIsAsserted(
         r'(?:unable\s+to|not\s+able\s+to|incapable\s+of)|'
         r'(?:isn|aren|wasn|weren)[\x27’]?t\s+able\s+to)\s*$',
         caseSensitive: false,
+      ).hasMatch(prefix) &&
+      !RegExp(
+        r'\b(?:avoid(?:s|ed|ing)?|prevent(?:s|ed|ing)?)\s*$',
+        caseSensitive: false,
       ).hasMatch(prefix);
 }
 
@@ -1666,7 +1679,7 @@ bool _referenceAttributesEvidence(
     return trimmed.isEmpty ||
         _taskAllocationActionPattern.hasMatch(between) ||
         RegExp(
-          r'^(?:is|are|was|were|has|have|had|will\s+be)$',
+          r'^(?:is|are|was|were|has|have|had|will\s+be)(?:\s+not)?$',
           caseSensitive: false,
         ).hasMatch(trimmed) ||
         RegExp(r'^[\x27’]s$', caseSensitive: false).hasMatch(trimmed) ||
@@ -2445,7 +2458,7 @@ bool _tradeEvidenceHasExplicitNonTaskSubject(
   final subjectMatch = RegExp(
     r'^(.*?)\s+(?:(?:(?:is|are|was|were)(?:\s+being)?|'
     r'(?:has|have|had)\s+been(?:\s+being)?|will\s+be(?:\s+being)?)'
-    r'(?:\s+(?:only|merely|just|still))?'
+    r'(?:\s+(?:not|only|merely|just|still))?'
     r'(?:\s+(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
     'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)))?|'
     '(?:has|have|had|leave(?:s|d|ing)?|left)|'
