@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookComponent buildDesignSystemInlineCalloutWidgetbookComponent() {
@@ -22,30 +23,26 @@ class _InlineCalloutOverviewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
+    // The first two previews are the component's canonical production uses,
+    // shown with their real (localized) copy.
     return Padding(
       padding: EdgeInsets.all(tokens.spacing.step6),
       child: ListView(
         children: [
-          const DesignSystemInlineCallout(
+          DesignSystemInlineCallout(
             icon: Icons.warning_rounded,
-            text:
-                'Sync is paused: one device is excluded from key sharing '
-                'until you verify or remove it.',
+            text: context.messages.syncDevicesPausedBanner(1),
           ),
           SizedBox(height: tokens.spacing.step4),
-          const DesignSystemInlineCallout(
+          DesignSystemInlineCallout(
             icon: Icons.lock_outline_rounded,
-            text:
-                'This code is a key to your account — show it only to your '
-                'own new device.',
+            text: context.messages.syncAddDeviceSecurityNote,
           ),
           SizedBox(height: tokens.spacing.step4),
           DesignSystemInlineCallout(
             icon: Icons.info_outline_rounded,
             tone: tokens.colors.alert.info.defaultColor,
-            text:
-                'An informational tone: the border and glyph carry the '
-                'hue, the message stays high-emphasis.',
+            text: context.messages.designSystemCalloutInfoSample,
           ),
         ],
       ),

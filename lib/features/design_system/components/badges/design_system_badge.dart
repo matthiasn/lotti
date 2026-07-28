@@ -331,10 +331,13 @@ class _BadgeStyleSpec {
 
     if (tone == DesignSystemBadgeTone.neutral) {
       // No alert ramp to bind: the border is the outlined button's quiet
-      // stroke, the label the metadata ink. A neutral badge whispers.
+      // stroke, the label the metadata ink. A neutral badge whispers — but
+      // the dot is the one shape where the fill IS the entire cue, so it
+      // takes the medium-emphasis ink: the decorative ramp composites below
+      // the 3:1 graphical-object floor on level-02 hosts in both themes.
       return switch (type) {
         _DesignSystemBadgeType.dot => _BadgeStyleSpec(
-          backgroundColor: tokens.colors.decorative.level02,
+          backgroundColor: tokens.colors.text.mediumEmphasis,
           foregroundColor: Colors.transparent,
           borderColor: null,
         ),

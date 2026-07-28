@@ -5,13 +5,13 @@ description: The repeating patterns that are contract rather than coincidence â€
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T14:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-07-28T21:20:00Z }
 stale_after: 2027-02-08
 sources:
   - id: components
     resource: ../../../lib/features/design_system/components
     title: Design-system components
-    last_modified: 2026-07-26
+    last_modified: 2026-07-28
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell

@@ -2388,6 +2388,7 @@
   "designSystemBreadcrumbTrailTitle": "Brödsmulleden",
   "designSystemCalendarPickerLabel": "Kalendervalare",
   "designSystemCalendarViewsTitle": "Kalendervyer",
+  "designSystemCalloutInfoSample": "En informativ ton: kant och ikon bär färgen, meddelandet förblir lättläst.",
   "designSystemCaptionDescriptionSample": "Tar bort alla användare som inte publicerats i detta projekt. Lägg till användare för att publicera det igen.",
   "designSystemCaptionIconLeftLabel": "Vänster ikon",
   "designSystemCaptionIconTopLabel": "Toppikon",

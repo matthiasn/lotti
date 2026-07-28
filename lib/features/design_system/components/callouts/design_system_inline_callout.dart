@@ -40,7 +40,11 @@ class DesignSystemInlineCallout extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
-        border: Border.all(color: color),
+        // The stroke is bound to the sizing token, not left on Border.all's
+        // implicit default: the two are equal today only by coincidence, and
+        // retuning BorderWidths.hairline must retune this frame with it.
+        // ignore: avoid_redundant_argument_values
+        border: Border.all(color: color, width: BorderWidths.hairline),
         borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
       ),
       child: Padding(

@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-07-28T21:20:00Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-src

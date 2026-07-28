@@ -5,7 +5,7 @@ description: The four-group token pipeline from Figma export to a ThemeExtension
 resource: ../../../lib/features/design_system/theme
 tags: [design-system, tokens, theming, accessibility, contrast]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T11:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-07-28T21:20:00Z }
 stale_after: 2027-02-08
 sources:
   - id: generator
@@ -19,7 +19,7 @@ sources:
   - id: theme
     resource: ../../../lib/features/design_system/theme
     title: Generated tokens, theme, access API
-    last_modified: 2026-07-26
+    last_modified: 2026-07-28
   - id: overrides
     resource: ../../../lib/themes/theme_overrides.dart
     title: App theme integration

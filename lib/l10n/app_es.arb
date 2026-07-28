@@ -2148,6 +2148,7 @@
   "designSystemBreadcrumbTrailTitle": "Ruta de breadcrumbs",
   "designSystemCalendarPickerLabel": "Selector de calendario",
   "designSystemCalendarViewsTitle": "Vistas del calendario",
+  "designSystemCalloutInfoSample": "Un tono informativo: el borde y el icono llevan el color, el mensaje mantiene el contraste alto.",
   "designSystemCaptionDescriptionSample": "Eliminar a todos los usuarios ha despublicado este proyecto. Añade usuarios para volver a publicar.",
   "designSystemCaptionIconLeftLabel": "Icono a la izquierda",
   "designSystemCaptionIconTopLabel": "Icono arriba",

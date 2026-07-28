@@ -4807,6 +4807,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Kalenderansichten';
 
   @override
+  String get designSystemCalloutInfoSample =>
+      'Ein informativer Ton: Rahmen und Symbol tragen die Farbe, die Nachricht bleibt kontrastreich.';
+
+  @override
   String get designSystemCaptionDescriptionSample =>
       'Das Entfernen aller Benutzer hat dieses Projekt zurückgezogen. Füge Benutzer hinzu, um es erneut zu veröffentlichen.';
 

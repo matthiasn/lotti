@@ -2388,6 +2388,7 @@
   "designSystemBreadcrumbTrailTitle": "Sentiero del pane",
   "designSystemCalendarPickerLabel": "Picker Calendario",
   "designSystemCalendarViewsTitle": "Vista del calendario",
+  "designSystemCalloutInfoSample": "Un tono informativo: bordo e icona portano il colore, il messaggio resta ad alto contrasto.",
   "designSystemCaptionDescriptionSample": "Rimuovere tutti gli utenti inediti di questo progetto. Aggiungete agli utenti di pubblicarlo di nuovo.",
   "designSystemCaptionIconLeftLabel": "icona sinistra",
   "designSystemCaptionIconTopLabel": "icona superiore",

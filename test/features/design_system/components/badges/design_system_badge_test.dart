@@ -286,9 +286,12 @@ void main() {
       );
     });
 
-    testWidgets('renders the neutral dot from the decorative ramp', (
+    testWidgets('renders the neutral dot at graphical-object contrast', (
       tester,
     ) async {
+      // The dot is the one neutral shape whose fill is the entire cue, so
+      // it takes the medium-emphasis ink — the decorative ramp composites
+      // below the 3:1 floor on level-02 hosts in both themes.
       await _pumpBadge(
         tester,
         const DesignSystemBadge.dot(
@@ -299,7 +302,7 @@ void main() {
 
       expect(
         _badgeDecoration(tester).color,
-        dsTokensLight.colors.decorative.level02,
+        dsTokensLight.colors.text.mediumEmphasis,
       );
     });
 

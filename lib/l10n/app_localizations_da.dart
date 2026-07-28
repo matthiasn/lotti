@@ -4774,6 +4774,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Kalendervisninger';
 
   @override
+  String get designSystemCalloutInfoSample =>
+      'En informativ tone: kant og ikon bærer farven, beskeden forbliver letlæselig.';
+
+  @override
   String get designSystemCaptionDescriptionSample =>
       'Fjerner alle brugere, der ikke har været publiceret i dette projekt. Tilføj brugere for at publicere det igen.';
 
