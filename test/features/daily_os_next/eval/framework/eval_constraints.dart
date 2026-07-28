@@ -1073,7 +1073,15 @@ bool _hasAuditablePartialDisclosure({
           )) {
         continue;
       }
-      if (_matchClauseIsNegated(reason, match)) return false;
+      if (_matchClauseIsNegated(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+        corpus: corpus,
+      )) {
+        return false;
+      }
       final declaredAllocated = int.tryParse(match.group(1) ?? '');
       final declaredEstimate = int.tryParse(match.group(2) ?? '');
       if (declaredAllocated != allocatedMinutes ||
@@ -1109,7 +1117,15 @@ bool _hasAuditablePartialDisclosure({
         continue;
       }
       if (!_remainderIsRelatedToTask(reason, match)) continue;
-      if (_matchClauseIsNegated(reason, match)) return false;
+      if (_matchClauseIsNegated(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+        corpus: corpus,
+      )) {
+        return false;
+      }
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
       if (disclosure.canQualify && _remainderIsTaskBound(reason, match)) {
@@ -1143,7 +1159,15 @@ bool _hasAuditablePartialDisclosure({
         continue;
       }
       if (!_remainderIsRelatedToTask(reason, match)) continue;
-      if (_matchClauseIsNegated(reason, match)) return false;
+      if (_matchClauseIsNegated(
+        reason,
+        match,
+        taskId: taskId,
+        taskTitle: taskTitle,
+        corpus: corpus,
+      )) {
+        return false;
+      }
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
       if (disclosure.canQualify && _remainderIsTaskBound(reason, match)) {
@@ -1358,7 +1382,14 @@ bool _hasTaskBoundAllocationDenial(
     caseSensitive: false,
   );
   for (final action in placementActionPattern.allMatches(prose)) {
-    if (!_allocationActionIsDirectlyDenied(prose, action)) continue;
+    if (!_allocationActionIsDirectlyDenied(
+      prose,
+      action,
+      taskId: taskId,
+      taskTitle: taskTitle,
+    )) {
+      continue;
+    }
     if (_evidenceIsSpeculative(prose, action)) continue;
     if (_tradeEvidenceHasExplicitNonTaskSubject(
       prose,
@@ -1465,10 +1496,23 @@ bool _allocationFailureHasExplicitNonTaskScope(
   ).hasMatch(suffix);
 }
 
-bool _allocationActionIsDirectlyDenied(String prose, Match action) {
+bool _allocationActionIsDirectlyDenied(
+  String prose,
+  Match action, {
+  required String taskId,
+  required String taskTitle,
+}) {
   final range = _matchClauseRange(prose, action, boundaries: ',.;!?\n');
   final clause = prose.substring(range.start, action.start);
   for (final negation in _negationWordPattern.allMatches(clause)) {
+    if (_evidenceFallsInsideTaskReference(
+      clause,
+      negation,
+      taskId: taskId,
+      taskTitle: taskTitle,
+    )) {
+      continue;
+    }
     final negationEnd = range.start + negation.end;
     final between = prose.substring(negationEnd, action.start);
     if (_negationQualifiesRatherThanNegates(negation, between)) continue;
@@ -1556,13 +1600,19 @@ bool _matchClauseIsNegated(
     final negationEnd = negation.end;
     if (taskId != null &&
         taskTitle != null &&
-        _evidenceNamesAnotherTask(
-          reason,
-          negation,
-          taskId: taskId,
-          taskTitle: taskTitle,
-          corpus: corpus,
-        )) {
+        (_evidenceFallsInsideTaskReference(
+              reason,
+              negation,
+              taskId: taskId,
+              taskTitle: taskTitle,
+            ) ||
+            _evidenceNamesAnotherTask(
+              reason,
+              negation,
+              taskId: taskId,
+              taskTitle: taskTitle,
+              corpus: corpus,
+            ))) {
       continue;
     }
     final between = negationEnd <= match.start
@@ -1739,6 +1789,7 @@ bool _evidenceActionIsAsserted(
   }
   final prefix = prose.substring(clauseStart, actionStart);
   return !_evidenceClauseIsInterrogative(prose, actionStart) &&
+      !_evidenceStartsInConditionalClause(prefix) &&
       !_evidenceStartIsSpeculative(prose, actionStart) &&
       !RegExp(
         r'\b(?:almost|nearly|not\s+quite|unsuccessfully|'
@@ -1772,6 +1823,16 @@ bool _evidenceActionIsAsserted(
       ).hasMatch(prefix) &&
       !_avoidanceComplementPattern.hasMatch(prefix);
 }
+
+bool _evidenceStartsInConditionalClause(String prefix) =>
+    RegExp(
+      r'^\s*(?:(?:even\s+)?if|unless)\b',
+      caseSensitive: false,
+    ).hasMatch(prefix) ||
+    RegExp(
+      r'^\s*(?:were|had)\b',
+      caseSensitive: false,
+    ).hasMatch(prefix);
 
 bool _evidenceClauseIsInterrogative(String prose, int evidenceStart) {
   for (var i = evidenceStart; i < prose.length; i++) {

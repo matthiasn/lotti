@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T17:30:47+02:00 }
+generated: { by: codex/5, at: 2026-07-28T17:48:06+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -96,6 +96,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-c might have 60 minutes remaining` is likewise hypothetical and cannot
   qualify or contradict a placement. Probabilistic complements such as
   `task-c is likely to schedule 60 of 120 minutes` are non-asserted too.
+  Conditional and subjunctive clauses are counterfactual rather than evidence:
+  `If task-c were scheduled for 60 of 120 minutes` cannot earn partial credit,
+  even when a comma separates its later denial.
   Intended, planned, aimed, hoped,
   wanted, expected, proposed, considered, attempted, tried, failed, refused,
   or declined actions are likewise not affirmative. Neither are expectation
@@ -106,8 +109,11 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   make an earlier declarative allocation clause interrogative. Inability
   complements such as
   `was unable to schedule`, `was not able to schedule`, or
-  `was incapable of scheduling`, nor actions the prose says were avoided or
-  prevented, including passive `was prevented from being scheduled` wording. A
+  `was incapable of scheduling` are not affirmative, nor are actions the prose
+  says were avoided or prevented, including passive
+  `was prevented from being scheduled` wording. Negation words inside the
+  current task id or title are names, not clause operators, so
+  `No-code prototype scheduled 60 of 120 minutes` remains affirmative. A
   selected allocation action must govern the numeric split on either side; an
   earlier action with intervening object prose, such as scheduling a meeting
   before reviewing `60 of 120` recording minutes, cannot supply task-allocation
