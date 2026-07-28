@@ -1641,6 +1641,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('keeps a valid split beside separate meeting allocation', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  '60 of 120 minutes are scheduled for this task while '
+                  '30 minutes are scheduled for the meeting.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('accepts a task qualifier before the remainder verb', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1934,6 +1957,29 @@ void main() {
         expect(result.detail, contains('task-c allocated 30min of 120min'));
       },
     );
+
+    test('does not bind a meeting remainder through a later disposition', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Partial; 60 minutes remain for the meeting while '
+                  'task-c is deferred.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
 
     test('does not borrow another task partial mention', () {
       final result = scoreWithinCapacityByEstimate(
@@ -2625,6 +2671,39 @@ void main() {
             ),
           ],
           decidedTaskIds: const ['task-deck'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('does not borrow another task trade in the same reason', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'Focused work on task-c; task-d is deferred.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+            EvalCorpusTask(
+              taskId: 'task-d',
+              title: 'D',
+              estimateMinutes: 60,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
           requiresConflictSurfaced: true,
         ),
       );

@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T04:40:54+02:00 }
+generated: { by: codex/5, at: 2026-07-28T04:53:14+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -84,20 +84,24 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   completed, planned, placed, or fitting action that is nearer to the numbers
   than any omitted/deferred predicate in the same comma-delimited clause. A
   later action describing “the rest” cannot validate earlier omitted
-  arithmetic. Unbound splits are ignored before their values are checked, and
-  allocation explicitly scoped to another subject or another corpus task, named
-  by id or full title, cannot earn credit for the placed task. The block's task
-  is the default arithmetic subject; a corpus reference overrides it only when
-  it is adjacent, linked by an allocation action (including postpositive
-  `allocated to Task D`), possessive, or attached by `for` or `of`. Distinct
-  task ids retain distinct identities even when their titles collide; an
-  explicit id can therefore attribute arithmetic to the other task, while an
-  ambiguous shared title is handled conservatively. This allows one clause to
-  audit the current split and name a deferred casualty before or after it. The
-  same attribution applies to remainder evidence. The partial mention and
-  task-bound remainder must occur in the same block reason, and the partial
-  mention cannot be borrowed from a claim attributed to another corpus task;
-  unrelated workday-capacity prose cannot supply the remainder.
+  arithmetic. Unrelated meeting/workday scope is likewise associated with its
+  nearest allocation action, so later meeting arithmetic does not poison an
+  earlier valid task split. Unbound splits are ignored before their values are
+  checked, and allocation explicitly scoped to another subject or another
+  corpus task, named by id or full title, cannot earn credit for the placed
+  task. The block's task is the default arithmetic subject; a corpus reference
+  overrides it only when it is adjacent, linked by an allocation action
+  (including postpositive `allocated to Task D`), possessive, or attached by
+  `for` or `of`. Distinct task ids retain distinct identities even when their
+  titles collide; an explicit id can therefore attribute arithmetic to the
+  other task, while an ambiguous shared title is handled conservatively. This
+  allows one clause to audit the current split and name a deferred casualty
+  before or after it. The same attribution applies to remainder evidence. The
+  partial mention and task-bound remainder must occur in the same block reason,
+  and the partial mention cannot be borrowed from a claim attributed to another
+  corpus task; unrelated meeting/workday remainder scope is rejected before a
+  later disposition can bind it, and unrelated workday-capacity prose cannot
+  supply the remainder.
   Task qualifiers may sit inside the arithmetic, as in
   `60 minutes of this task remain`; leading forms may also qualify the noun, as
   in `the remaining work is 60 minutes`. Remainder arithmetic explicitly scoped
@@ -131,12 +135,13 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   that names the task by token-bounded id or full title. A name occurring only
   inside another task id or word, task-binding grammar such as `for this task`,
   and trade wording in unrelated plan prose cannot satisfy that disclosure.
-  Trade language must also be affirmative: `not partial` and `no conflict`
-  explicitly deny the trade and receive no credit, while `cannot fit` is itself
-  an affirmative disclosure of the constraint. The constraint detail records
-  every credited partial and every shortening denied credit, so the judge
-  bundle preserves the accounting evidence rather than only the final
-  pass/fail.
+  Trade language in the same reason is attributed to its nearest corpus task,
+  so one task's deferred disposition cannot disclose another task's shortening.
+  It must also be affirmative: `not partial` and `no conflict` explicitly deny
+  the trade and receive no credit, while `cannot fit` is itself an affirmative
+  disclosure of the constraint. The constraint detail records every credited
+  partial and every shortening denied credit, so the judge bundle preserves the
+  accounting evidence rather than only the final pass/fail.
 - **Weak semantic outcomes are not ranking evidence.** `surfacedConflict`
   passes either when an accepted `attentionNeeded`
   escalation uses an allowed typed conflict reason or when block prose names

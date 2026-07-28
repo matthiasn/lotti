@@ -763,15 +763,6 @@ final _unrelatedRemainderScopePattern = RegExp(
   caseSensitive: false,
 );
 
-final _unrelatedSplitScopePattern = RegExp(
-  r'\b(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-  'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing))'
-  r'\b[^,.;!?]*\b(?:for|in|during)\s+'
-  r'(?:(?:the|a|an|my|our|their|your)\s+)?'
-  r'(?:meeting|workday|calendar|appointment|break)\b',
-  caseSensitive: false,
-);
-
 final _conflictTradePattern = RegExp(
   r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|left|remain(?:s|ed|ing)?|'
   'trade|conflict|shorten(?:s|ed|ing)?|'
@@ -1010,9 +1001,8 @@ bool _splitIsTaskBound(
   required String taskTitle,
   required List<EvalCorpusTask> corpus,
 }) {
-  final clause = _matchClause(reason, match);
   return _splitHasAffirmativeAllocation(reason, match) &&
-      !_unrelatedSplitScopePattern.hasMatch(clause) &&
+      !_splitHasUnrelatedScope(reason, match) &&
       !_evidenceNamesAnotherTask(
         reason,
         match,
@@ -1023,28 +1013,52 @@ bool _splitIsTaskBound(
 }
 
 bool _splitHasAffirmativeAllocation(String reason, Match match) {
-  final actionDistance = _nearestPatternDistance(
+  final action = _nearestPatternMatch(
     reason,
     match,
     _taskAllocationActionPattern,
   );
-  if (actionDistance == null) return false;
-  final omissionDistance = _nearestPatternDistance(
+  if (action == null) return false;
+  final omission = _nearestPatternMatch(
     reason,
     match,
     _omittedAllocationPattern,
   );
-  return omissionDistance == null || actionDistance < omissionDistance;
+  return omission == null || action.distance < omission.distance;
 }
 
-int? _nearestPatternDistance(
+bool _splitHasUnrelatedScope(String reason, Match evidence) {
+  final evidenceAction = _nearestPatternMatch(
+    reason,
+    evidence,
+    _taskAllocationActionPattern,
+  );
+  if (evidenceAction == null) return false;
+  final range = _matchClauseRange(reason, evidence, boundaries: ',.;!?\n');
+  for (final scope in _unrelatedRemainderScopePattern.allMatches(reason)) {
+    if (scope.start < range.start || scope.end > range.end) continue;
+    final scopeAction = _nearestPatternMatch(
+      reason,
+      scope,
+      _taskAllocationActionPattern,
+    );
+    if (scopeAction != null &&
+        scopeAction.start == evidenceAction.start &&
+        scopeAction.end == evidenceAction.end) {
+      return true;
+    }
+  }
+  return false;
+}
+
+({int start, int end, int distance})? _nearestPatternMatch(
   String reason,
   Match evidence,
   RegExp pattern,
 ) {
   final range = _matchClauseRange(reason, evidence, boundaries: ',.;!?\n');
   final clause = reason.substring(range.start, range.end);
-  int? nearest;
+  ({int start, int end, int distance})? nearest;
   for (final match in pattern.allMatches(clause)) {
     final start = range.start + match.start;
     final end = range.start + match.end;
@@ -1053,7 +1067,9 @@ int? _nearestPatternDistance(
         : start >= evidence.end
         ? start - evidence.end
         : 0;
-    if (nearest == null || distance < nearest) nearest = distance;
+    if (nearest == null || distance < nearest.distance) {
+      nearest = (start: start, end: end, distance: distance);
+    }
   }
   return nearest;
 }
@@ -1175,8 +1191,8 @@ bool _referenceAttributesEvidence(
 
 bool _remainderIsTaskBound(String reason, Match match) {
   final clause = _matchClause(reason, match);
-  if (_partialRemainderDispositionPattern.hasMatch(clause)) return true;
   if (_unrelatedRemainderScopePattern.hasMatch(clause)) return false;
+  if (_partialRemainderDispositionPattern.hasMatch(clause)) return true;
   return _partialMentionPattern.hasMatch(reason);
 }
 
@@ -1729,14 +1745,47 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
   caseSensitive: false,
 ).hasMatch(prose);
 
-bool _hasAffirmativeTradeDisclosure(String prose) {
+bool _hasAffirmativeTradeDisclosure(
+  EvalRunOutcome outcome,
+  String taskId,
+  String prose,
+) {
+  final task = outcome.inputs.taskById(taskId);
+  if (task == null) return false;
   for (final match in _partialMentionPattern.allMatches(prose)) {
+    if (_evidenceNamesAnotherTask(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+      corpus: outcome.inputs.corpus,
+    )) {
+      continue;
+    }
     if (!_partialMentionIsNegated(prose, match)) return true;
   }
   for (final match in _partialTradeDispositionPattern.allMatches(prose)) {
+    if (_evidenceNamesAnotherTask(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+      corpus: outcome.inputs.corpus,
+    )) {
+      continue;
+    }
     if (!_matchClauseIsNegated(prose, match)) return true;
   }
   for (final match in _conflictTradePattern.allMatches(prose)) {
+    if (_evidenceNamesAnotherTask(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+      corpus: outcome.inputs.corpus,
+    )) {
+      continue;
+    }
     final matchedTrade = match.group(0) ?? '';
     final negativeFitDisclosure =
         _negationWordPattern.hasMatch(matchedTrade) &&
@@ -1758,7 +1807,8 @@ bool _taskTradeIsNamed(
     final namesTask =
         _taskIdNamed(taskId, prose) || _titleNamed(outcome, taskId, prose);
     if (!namesTask) continue;
-    if (!requireTradeDisclosure || _hasAffirmativeTradeDisclosure(prose)) {
+    if (!requireTradeDisclosure ||
+        _hasAffirmativeTradeDisclosure(outcome, taskId, prose)) {
       return true;
     }
   }
