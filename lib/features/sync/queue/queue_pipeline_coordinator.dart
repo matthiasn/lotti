@@ -224,6 +224,14 @@ class QueuePipelineCoordinator {
   /// so we only pay the DB load cost once per room.
   final Set<String> _postLoadedRoomIds = <String>{};
 
+  /// Attachment-aware sinks whose bootstrap page workers have not finished.
+  ///
+  /// Pagination intentionally does not await these workers. Keeping the
+  /// active sinks observable lets integration tests establish that no
+  /// historical attachment can still land before testing peer repair.
+  final Set<AttachmentAwareBootstrapSink> _activeBootstrapAttachmentSinks =
+      <AttachmentAwareBootstrapSink>{};
+
   InboundQueue get queue => _queue;
 
   bool get isRunning => _started;
@@ -233,6 +241,31 @@ class QueuePipelineCoordinator {
   /// Settings UI can force a /messages walk back to the stored
   /// marker without waiting for the next organic `limited=true`.
   Future<void> triggerBridge() => _bridge.bridgeNow();
+
+  /// Waits until bootstrap attachment workers and their queued downloads are
+  /// idle. This is a test synchronisation seam; production bootstrap remains
+  /// fire-and-forget relative to attachment ingestion.
+  @visibleForTesting
+  Future<void> drainBootstrapAttachmentWorkForTesting() async {
+    while (_activeBootstrapAttachmentSinks.isNotEmpty) {
+      await Future.wait(
+        _activeBootstrapAttachmentSinks.map((sink) => sink.drain()).toList(),
+      );
+    }
+    await _attachmentIngestor?.whenIdle();
+  }
+
+  void _trackBootstrapAttachmentSink(
+    AttachmentAwareBootstrapSink? sink,
+  ) {
+    if (sink == null) return;
+    _activeBootstrapAttachmentSinks.add(sink);
+    unawaited(
+      sink.drain().whenComplete(
+        () => _activeBootstrapAttachmentSinks.remove(sink),
+      ),
+    );
+  }
 
   /// True while the bridge coordinator is mid-walk (forward-reading
   /// new timeline events from the last applied event id). Exposed so

@@ -5,6 +5,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:meta/meta.dart';
 
 /// Requester half of media self-healing: turns "this entry's blob is missing
 /// locally" into a broadcast [SyncMediaRequest] that peers answer with the
@@ -74,6 +75,17 @@ class MediaRepairService {
 
   /// Entry ids currently waiting for their next request — test seam.
   Set<String> get debugPending => Set.unmodifiable(_pending);
+
+  /// Cancels the debounce and sends the currently pending batch.
+  ///
+  /// Integration tests use this seam after observing the expected missing
+  /// entries so their network assertions do not depend on a real timer.
+  @visibleForTesting
+  Future<void> flushPendingForTesting() {
+    _timer?.cancel();
+    _timer = null;
+    return _flush();
+  }
 
   /// Records that [entryId]'s media file is missing locally and schedules a
   /// request for it. Safe to call repeatedly for the same entry: duplicates

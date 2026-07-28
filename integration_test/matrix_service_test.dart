@@ -65,6 +65,9 @@ import '../test/utils/utils.dart';
 import 'matrix_test_room.dart';
 
 const _uuid = Uuid();
+const _onePixelPngBase64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC'
+    'AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
 
 final _eventProcessors = Expando<SyncEventProcessor>(
   'matrixIntegrationEventProcessor',
@@ -225,6 +228,11 @@ class _DeviceMediaRepair {
 
   final SyncEventProcessor _eventProcessor;
   final MediaRepairService _repairService;
+
+  Set<String> get pendingEntryIds => _repairService.debugPending;
+
+  Future<void> flushPendingForTesting() =>
+      _repairService.flushPendingForTesting();
 
   void dispose() {
     _eventProcessor
@@ -947,10 +955,7 @@ void main() {
           ),
           entryText: const EntryText(plainText: 'Matrix image fixture'),
         );
-        final bytes = base64Decode(
-          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC'
-          'AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-        );
+        final bytes = base64Decode(_onePixelPngBase64);
 
         final received = await _sendMediaEntity(
           entity: image,
@@ -1740,10 +1745,7 @@ void main() {
             plainText: 'Peer-repair Matrix audio fixture',
           ),
         );
-        final imageBytes = base64Decode(
-          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC'
-          'AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-        );
+        final imageBytes = base64Decode(_onePixelPngBase64);
         final audioBytes = base64Decode(TestAudioData.shortSilenceWav);
 
         if (!bobOutboxInitialized) {
@@ -1780,6 +1782,11 @@ void main() {
         final bobAudioFile = _mediaFileFor(bobOutbox, audio);
         await bobOutbox.service.dispose();
         bobOutboxInitialized = false;
+        expect(
+          bobImageFile.existsSync() && bobAudioFile.existsSync(),
+          isTrue,
+          reason: 'both blobs must reach Bob before the repair scenario starts',
+        );
         await bob.dispose();
         bobInitialized = false;
         await bobImageFile.delete();
@@ -1807,6 +1814,7 @@ void main() {
         await bob.init();
         expect(bob.debugPipeline, isNotNull);
         await bob.queueCoordinator.triggerBridge();
+        await bob.queueCoordinator.drainBootstrapAttachmentWorkForTesting();
         expect(bobImageFile.existsSync(), isFalse);
         expect(bobAudioFile.existsSync(), isFalse);
 
@@ -1828,40 +1836,54 @@ void main() {
             wiring.dispose();
           }
         });
-        // Debounce timing has deterministic fake-time unit coverage. Keep the
-        // real-network regression focused on the encrypted request/response
-        // and exact-byte ingestion path rather than paying the production
-        // 20-second batching window on every Matrix CI lane.
-        const integrationDebounce = Duration(milliseconds: 200);
+        // Debounce timing has deterministic fake-time unit coverage. Arm a
+        // window that cannot race this test, then flush explicitly once both
+        // missing-entry signals have been observed.
+        const integrationDebounce = Duration(days: 1);
+        final aliceRepair = _DeviceMediaRepair.wire(
+          matrixService: alice,
+          outboxService: aliceOutbox.service,
+          journalDb: aliceDb,
+          vectorClockService: aliceVectorClockService,
+          documentsDirectory: aliceDocumentsDirectory,
+          loggingService: getIt<DomainLogger>(),
+          debounce: integrationDebounce,
+        );
+        final bobRepair = _DeviceMediaRepair.wire(
+          matrixService: bob,
+          outboxService: bobOutbox.service,
+          journalDb: bobDb,
+          vectorClockService: bobVectorClockService,
+          documentsDirectory: bobDocumentsDirectory,
+          loggingService: getIt<DomainLogger>(),
+          debounce: integrationDebounce,
+        );
         repairWiring
-          ..add(
-            _DeviceMediaRepair.wire(
-              matrixService: alice,
-              outboxService: aliceOutbox.service,
-              journalDb: aliceDb,
-              vectorClockService: aliceVectorClockService,
-              documentsDirectory: aliceDocumentsDirectory,
-              loggingService: getIt<DomainLogger>(),
-              debounce: integrationDebounce,
-            ),
-          )
-          ..add(
-            _DeviceMediaRepair.wire(
-              matrixService: bob,
-              outboxService: bobOutbox.service,
-              journalDb: bobDb,
-              vectorClockService: bobVectorClockService,
-              documentsDirectory: bobDocumentsDirectory,
-              loggingService: getIt<DomainLogger>(),
-              debounce: integrationDebounce,
-            ),
-          );
+          ..add(aliceRepair)
+          ..add(bobRepair);
 
         final updated = await _sendMediaMetadataUpdates(
           entities: [image, audio],
           sender: aliceOutbox,
           timeout: repairTimeout,
         );
+        final missingEntryIds = {imageId, audioId};
+        await waitUntilAsync(
+          () async {
+            final observed = bobRepair.pendingEntryIds.containsAll(
+              missingEntryIds,
+            );
+            if (!observed) {
+              await bob.forceRescan();
+              await bob.retryNow();
+            }
+            return observed;
+          },
+          timeout: repairTimeout,
+        );
+        expect(bobRepair.pendingEntryIds, missingEntryIds);
+        await bobRepair.flushPendingForTesting();
+        await bobOutbox.service.enqueueNextSendRequest(delay: Duration.zero);
         await waitUntilAsync(
           () async {
             final updatedImage = await bobDb.journalEntityById(imageId);
