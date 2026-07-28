@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T05:15:43+02:00 }
+generated: { by: codex/5, at: 2026-07-28T05:25:11+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -118,7 +118,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   letting a later explanation that the full task `cannot fit` invalidate
   affirmative arithmetic. Likewise, `60 of 120 are scheduled and no more`
   remains affirmative because the later `no` follows the allocation action
-  instead of negating it. A `partial` keyword is negated only by a preceding
+  instead of negating it; `not only` is likewise affirmative emphasis rather
+  than negation. A `partial` keyword is negated only by a preceding
   negator, so `partial because not all work fits` remains affirmative. Split
   syntax cannot provide its own task context: an allocation word or task
   reference must appear outside the matched numbers. Explicit other-subject
@@ -143,7 +144,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   Trade language in the same reason is attributed to its nearest corpus task,
   so one task's deferred disposition cannot disclose another task's shortening.
   Bare continuity such as `remains scheduled` is not a trade: numeric remainder
-  arithmetic or an actual omit/defer/shorten/conflict disposition is required.
+  arithmetic matching the structural remainder, or an actual
+  omit/defer/shorten/conflict disposition, is required.
   It must also be affirmative: `not partial` and `no conflict` explicitly deny
   the trade and receive no credit, while `cannot fit` is itself an affirmative
   disclosure of the constraint. The constraint detail records every credited

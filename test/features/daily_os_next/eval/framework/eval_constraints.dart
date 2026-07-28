@@ -700,7 +700,7 @@ final _partialOfEstimatePattern = RegExp(
 final _partialRemainingPattern = RegExp(
   r'\b(\d+)\s*(?:m|mins?|minutes?)\s+'
   r'(?:(?:of|for)\s+(?:this|the)\s+(?:task|work)\s+)?'
-  r'(?:(?:is|are|will)\s+)?(?:left|remain(?:s|ing)?)\b',
+  r'(?:(?:is|are|will(?:\s+be)?)\s+)?(?:left|remain(?:s|ing)?)\b',
   caseSensitive: false,
 );
 
@@ -975,6 +975,9 @@ bool _partialMentionIsNegated(String reason, Match match) {
     final negationEnd = range.start + negation.end;
     if (negationEnd > match.start) continue;
     final between = reason.substring(negationEnd, match.start);
+    if (RegExp(r'^\s*only\b', caseSensitive: false).hasMatch(between)) {
+      continue;
+    }
     if (_wordPattern.allMatches(between).length <= 3) return true;
   }
   return false;
@@ -991,6 +994,10 @@ bool _matchClauseIsNegated(String reason, Match match) {
         : negationStart >= match.end
         ? reason.substring(match.end, negationStart)
         : '';
+    if (negationEnd <= match.start &&
+        RegExp(r'^\s*only\b', caseSensitive: false).hasMatch(between)) {
+      continue;
+    }
     if (negationStart >= match.end &&
         _taskAllocationActionPattern.hasMatch(between)) {
       continue;
@@ -1196,7 +1203,7 @@ bool _referenceAttributesEvidence(
     return trimmed.isEmpty ||
         _taskAllocationActionPattern.hasMatch(between) ||
         RegExp(
-          r'^(?:is|are|was|were|will\s+be)$',
+          r'^(?:is|are|was|were|has|have|had|will\s+be)$',
           caseSensitive: false,
         ).hasMatch(trimmed) ||
         RegExp(r'^[\x27’]s$', caseSensitive: false).hasMatch(trimmed) ||
@@ -1780,6 +1787,10 @@ bool _hasAffirmativeTradeDisclosure(
 ) {
   final task = outcome.inputs.taskById(taskId);
   if (task == null) return false;
+  final placement = _estimatedTaskPlacements(outcome)[taskId];
+  final structuralRemainder = placement == null
+      ? null
+      : placement.estimateMinutes - placement.allocatedMinutes;
   for (final match in _partialMentionPattern.allMatches(prose)) {
     if (_evidenceNamesAnotherTask(
       prose,
@@ -1816,6 +1827,13 @@ bool _hasAffirmativeTradeDisclosure(
         taskTitle: task.title,
         corpus: outcome.inputs.corpus,
       )) {
+        continue;
+      }
+      final declaredRemainder = int.tryParse(match.group(1) ?? '');
+      if (declaredRemainder == null ||
+          declaredRemainder <= 0 ||
+          structuralRemainder != null &&
+              declaredRemainder != structuralRemainder) {
         continue;
       }
       if (!_matchClauseIsNegated(prose, match)) return true;

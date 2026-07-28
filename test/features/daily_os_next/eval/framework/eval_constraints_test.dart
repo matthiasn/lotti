@@ -1508,6 +1508,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('accepts affirmative not-only allocation wording', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Not only are 60 of 120 minutes scheduled; '
+                  'the remainder is deferred.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('allows a later explanation that the full task cannot fit', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1589,6 +1612,29 @@ void main() {
               reason:
                   'This placement is partial; '
                   '60 minutes will remain.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('accepts a future passive partial remainder', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'This placement is partial; '
+                  '60 minutes will be left for tomorrow.',
             ),
           ],
           corpus: tasks,
@@ -1964,6 +2010,27 @@ void main() {
               endHour: 10,
               taskId: 'task-c',
               reason: 'For task-d, 60 of 120 minutes are scheduled.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('charges a has-linked split to the named task', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-d has 60 of 120 minutes scheduled.',
             ),
           ],
           corpus: tasks,
@@ -2784,6 +2851,34 @@ void main() {
               endHour: 10,
               taskId: 'task-c',
               reason: 'task-c remains scheduled as planned.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('zero remainder does not disclose a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c: 0 minutes remain; everything is complete.',
             ),
           ],
           corpus: const [
