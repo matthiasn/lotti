@@ -715,11 +715,23 @@ final _negationWordPattern = RegExp(
 
 final _wordPattern = RegExp(r'\b\w+\b');
 
+const _partialTradeDispositionSource =
+    r'for\s+(?:later|tomorrow|another\s+day|a\s+(?:later|future)\s+day)|'
+    r'(?:roll(?:s|ed|ing)?|move(?:s|d|ing)?|carr(?:y|ies|ied|ying))\s+'
+    r'(?:over|to)\b|'
+    r'defer(?:s|red|ring)?\b|unscheduled\b';
+
+final _partialTradeDispositionPattern = RegExp(
+  r'\b(?:'
+  '$_partialTradeDispositionSource'
+  r')\b',
+  caseSensitive: false,
+);
+
 final _partialRemainderDispositionPattern = RegExp(
-  r'\b(?:for\s+(?:later|tomorrow|another\s+day|a\s+(?:later|future)\s+day)|'
-  r'(?:roll(?:s|ed|ing)?|move(?:s|d|ing)?|carr(?:y|ies|ied|ying))\s+'
-  r'(?:over|to)\b|'
-  r'defer(?:s|red|ring)?\b|unscheduled\b|'
+  r'\b(?:(?:'
+  '$_partialTradeDispositionSource'
+  r')\b|'
   r'(?:of|for|in)\s+(?:this|the)\s+(?:task|work)\b)',
   caseSensitive: false,
 );
@@ -994,7 +1006,7 @@ bool _splitIsTaskBound(
 }) {
   final clause = _matchClause(reason, match);
   final context = _matchClauseExcludingMatch(reason, match);
-  return _taskAllocationContextPattern.hasMatch(context) &&
+  return _taskAllocationActionPattern.hasMatch(context) &&
       !_unrelatedSplitScopePattern.hasMatch(clause) &&
       !_evidenceNamesAnotherTask(
         reason,
@@ -1107,10 +1119,17 @@ bool _referenceAttributesEvidence(
   }
   if (referenceStart < evidence.end) return true;
   final between = reason.substring(evidence.end, referenceStart);
-  return RegExp(
+  final prepositionAttaches = RegExp(
     r'\b(?:for|of)\s*(?:the\s+)?$',
     caseSensitive: false,
   ).hasMatch(between);
+  final allocationToAttaches =
+      _taskAllocationActionPattern.hasMatch(between) &&
+      RegExp(
+        r'\bto\s*(?:the\s+)?$',
+        caseSensitive: false,
+      ).hasMatch(between);
+  return prepositionAttaches || allocationToAttaches;
 }
 
 bool _remainderIsTaskBound(String reason, Match match) {
@@ -1670,6 +1689,11 @@ bool _titleNamed(EvalRunOutcome outcome, String taskId, String prose) {
       ).hasMatch(prose);
 }
 
+bool _taskIdNamed(String taskId, String prose) => RegExp(
+  r'(?:^|[^\w-])' + RegExp.escape(taskId) + r'(?=$|[^\w-])',
+  caseSensitive: false,
+).hasMatch(prose);
+
 bool _taskTradeIsNamed(
   EvalRunOutcome outcome,
   String taskId, {
@@ -1678,12 +1702,11 @@ bool _taskTradeIsNamed(
   for (final block in outcome.blocks) {
     final prose = '${block.reason ?? ''} ${block.note ?? ''}'.toLowerCase();
     final namesTask =
-        prose.contains(taskId.toLowerCase()) ||
-        _titleNamed(outcome, taskId, prose);
+        _taskIdNamed(taskId, prose) || _titleNamed(outcome, taskId, prose);
     if (!namesTask) continue;
     if (!requireTradeDisclosure ||
         _partialMentionPattern.hasMatch(prose) ||
-        _partialRemainderDispositionPattern.hasMatch(prose) ||
+        _partialTradeDispositionPattern.hasMatch(prose) ||
         _conflictTradePattern.hasMatch(prose)) {
       return true;
     }

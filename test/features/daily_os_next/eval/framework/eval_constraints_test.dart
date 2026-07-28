@@ -1834,6 +1834,29 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('charges a split allocated to another task', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  '60 of 120 minutes are allocated to Task D; '
+                  'Task C is deferred.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('charges a remainder explicitly naming another task', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1863,6 +1886,27 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('charges omitted split arithmetic at the full estimate', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '30 of 120 minutes are unscheduled for this task.',
+            ).copyWith(endTime: DateTime(2026, 7, 18, 9, 30)),
+          ],
+          corpus: tasks,
+          capacityMinutes: 30,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 30min of 120min'));
     });
 
     test('does not borrow another task partial mention', () {
@@ -2484,6 +2528,67 @@ void main() {
               endHour: 10,
               taskId: 'task-deck',
               reason: 'Focused work on Prepare the board deck.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-deck',
+              title: 'Prepare the board deck',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-deck'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('does not find a casualty id inside another task id', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c2 is deferred.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+            EvalCorpusTask(
+              taskId: 'task-c2',
+              title: 'C2',
+              estimateMinutes: 60,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('task binding prose alone does not disclose a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'deck',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-deck',
+              reason: 'Focused work on task-deck for this task.',
             ),
           ],
           corpus: const [
