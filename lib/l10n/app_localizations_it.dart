@@ -8353,8 +8353,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Protezione di questo dispositivo…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Associa un altro dispositivo a questo account di sincronizzazione';
+  String get provisionedSyncSubtitle => 'Associa e gestisci i tuoi dispositivi';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Server di sincronizzazione';
@@ -9427,7 +9426,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Eseguire Matrix compiti di manutenzione e strumenti di recupero';
+      'Manutenzione e ripristino Matrix';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Manutenzione';
@@ -9664,7 +9663,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsSyncConflictsSubtitle =>
-      'Risolvere i conflitti di sincronizzazione per garantire la coerenza dei dati';
+      'Risolvi i conflitti di sincronizzazione';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9709,7 +9708,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsSyncNodeProfileSubtitle =>
-      'Nominare questo dispositivo e rivedere le funzionalità visibili agli altri dispositivi.';
+      'Nome e capacità del dispositivo';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Questo dispositivo';
@@ -9967,10 +9966,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncAddDeviceAction => 'Aggiungi dispositivo';
 
   @override
-  String get syncAddDeviceCodeHint =>
-      'Il nuovo dispositivo non ha una fotocamera? Copia il codice di abbinamento e incollalo lì.';
-
-  @override
   String get syncAddDeviceConnected =>
       'Il nuovo dispositivo si è unito: completa la verifica con emoji prima di inviare.';
 
@@ -9989,9 +9984,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Installa Lotti sul nuovo dispositivo, apri lì Impostazioni → Impostazioni di sincronizzazione → Dispositivi e scansiona questo codice.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Poi · dopo la verifica con emoji';
-
-  @override
   String get syncAddDeviceRevealCode =>
       'Mostra il codice di abbinamento come testo';
 
@@ -10001,7 +9993,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'Questo codice di abbinamento sblocca il tuo account di sincronizzazione: fallo scansionare solo dal tuo nuovo dispositivo e non fotografarlo né inviarlo mai.';
+      'Tratta questo codice come la tua password — solo il tuo nuovo dispositivo può scansionarlo.';
 
   @override
   String get syncAddDeviceSendMessages => 'Invia cronologia messaggi';
@@ -10104,9 +10096,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesSectionTitle => 'Dispositivi';
-
-  @override
   String get syncDevicesStaleHint => 'Probabilmente non più in uso';
 
   @override
@@ -10195,10 +10184,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncPairConnectButton => 'Connetti questo dispositivo';
 
   @override
-  String get syncPairCopyCodeHint =>
-      'Questo dispositivo non ha una fotocamera? Sull’altro dispositivo usa Copia codice di abbinamento e portalo qui con un gestore di password, una nota cifrata o riscrivendolo: mai via chat o e-mail.';
-
-  @override
   String get syncPairDiscardCode => 'Inserisci un altro codice di abbinamento';
 
   @override
@@ -10210,14 +10195,8 @@ class AppLocalizationsIt extends AppLocalizations {
       'La sincronizzazione è configurata su questo dispositivo';
 
   @override
-  String get syncPairedNextTitle => 'Mancano due passaggi';
-
-  @override
-  String get syncPairedNextTitleOne => 'Manca una cosa';
-
-  @override
   String get syncPairedSettingsStep =>
-      'Dopo la verifica con emoji, sull’altro dispositivo, nella schermata Aggiungi dispositivo ancora aperta, scegli Invia impostazioni e poi Invia cronologia messaggi. Dati misurabili, categorie, abitudini, dashboard, impostazioni IA e cronologia dei messaggi arriveranno qui.';
+      'Le tue categorie, abitudini, dashboard e impostazioni IA arrivano da lì.';
 
   @override
   String get syncPairedSettingsStepFallback =>
@@ -10233,7 +10212,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Su entrambi i dispositivi appare una fila di emoji. Controlla che coincidano, poi conferma su ciascuno — finché non lo fai, questo dispositivo non può leggere le tue voci.';
+      'Finché non confermi su entrambi i dispositivi, questo non può leggere le tue voci.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10257,16 +10236,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncPairGoToDevices => 'Vai a Dispositivi';
 
   @override
-  String get syncPairMismatchRemedy =>
-      'Se non corrisponde, usa invece il codice mostrato dal tuo dispositivo.';
-
-  @override
   String get syncPairMismatchWarning =>
       'Se questo non corrisponde, non collegare: il codice appartiene a un altro account.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'Usa solo un codice creato da te, su un dispositivo tuo. Scansionare quello di un altro mette tutto ciò che scrivi qui nel suo account.';
+      'Usa solo un codice del tuo dispositivo — il codice di qualcun altro invia tutto ciò che scrivi al suo account.';
 
   @override
   String get syncPairPasteTitle => 'Incolla il codice di abbinamento';
@@ -10307,7 +10282,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncPairWhereToFind =>
-      'Su un dispositivo già sincronizzato, apri Impostazioni → Impostazioni di sincronizzazione → Dispositivi e scegli Aggiungi dispositivo.';
+      'Il codice si trova sotto «Aggiungi dispositivo» su un dispositivo già sincronizzato — copialo lì e incollalo qui.';
 
   @override
   String get syncPairWillJoin => 'Questo dispositivo si collegherà a:';
@@ -10377,6 +10352,16 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncPayloadThemingSelection => 'La selezione dei nomi';
+
+  @override
+  String get syncSetupCta => 'Configura la sincronizzazione';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Il tuo diario su tutti i tuoi dispositivi — crittografato end-to-end, solo tra i tuoi dispositivi.';
+
+  @override
+  String get syncSetupEmptyTitle => 'Sincronizza i tuoi dispositivi';
 
   @override
   String get syncStepAgentEntities => 'entità dell\'agente';
@@ -11336,4 +11321,20 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get syncPairedVerifyStepTitle =>
+      'Confronta le emoji su entrambi i dispositivi';
+
+  @override
+  String get syncPairedSettingsStepTitle =>
+      'Invia le impostazioni dall\'altro dispositivo';
+
+  @override
+  String get syncPairFirstDeviceTitle =>
+      'Stai configurando il tuo primo dispositivo?';
+
+  @override
+  String get syncPairFirstDeviceHint =>
+      'Il primo codice di associazione arriva dallo strumento di provisioning del tuo server di sincronizzazione — vedi il manuale. Ogni dispositivo successivo riceve il codice dall’app.';
 }

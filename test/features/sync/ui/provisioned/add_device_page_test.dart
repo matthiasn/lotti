@@ -13,12 +13,14 @@ import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 
 /// Call counters, held outside the notifiers on purpose: both providers are
@@ -747,15 +749,17 @@ void main() {
       expect(retries, 1);
     });
 
-    testWidgets('leads in without claiming a second position', (tester) async {
-      // The button needs a rung — its body heading is below the fold on every
-      // viewport — but a second "Step N of 2" on the same screen stops either
-      // fraction indicating anything.
+    testWidgets('carries one status tier and no second position line', (
+      tester,
+    ) async {
+      // The bar is a single status-plus-actions tier: the old lead-in was a
+      // third line about the same controls, and the stack's height was what
+      // sliced the QR above it in half on short windows.
       await pumpBar(tester, devices: existing);
 
       final context = tester.element(find.byType(AddDeviceActionBar));
       expect(
-        find.text(context.messages.syncAddDeviceNextLeadIn),
+        find.byKey(const Key('add_device_send_settings_pending')),
         findsOneWidget,
       );
       // No second fraction: the body already carries "Now · Show the code".
@@ -768,7 +772,7 @@ void main() {
     testWidgets('is quiet, and says so, while it cannot be pressed', (
       tester,
     ) async {
-      // Three lines about one control have to agree. Outlined rather than
+      // The status line and the buttons have to agree. Outlined rather than
       // secondary: the component paints an enabled secondary with the same
       // fill it paints a disabled filled button, so a live action would have
       // read as inert.
@@ -782,10 +786,6 @@ void main() {
             )
             .variant,
         DesignSystemButtonVariant.outlined,
-      );
-      expect(
-        find.text(context.messages.syncAddDeviceNextLeadIn),
-        findsOneWidget,
       );
       expect(
         find.text(context.messages.syncAddDeviceSendSettingsPending),
@@ -811,13 +811,14 @@ void main() {
             .variant,
         DesignSystemButtonVariant.primary,
       );
-      // Verification is complete, so the lead-in is gone and the ready status
-      // agrees with the live action.
-      expect(
-        find.text(context.messages.syncAddDeviceNextLeadIn),
-        findsNothing,
-      );
+      // Verification is complete, so the ready status agrees with the live
+      // action.
       expect(find.byKey(const Key('add_device_ready')), findsOneWidget);
+      // `context` keeps the localized lookup used by sibling assertions.
+      expect(
+        find.text(context.messages.syncAddDeviceSendSettingsReady),
+        findsOneWidget,
+      );
     });
 
     testWidgets('stays quiet after join until emoji verification', (
@@ -922,6 +923,75 @@ void main() {
       await tester.pump();
 
       expect(messageHandOffs, 1);
+    });
+  });
+
+  group('AddDeviceModal viewport fit', () {
+    // Real fonts, not Ahem: the guarantee is geometric, and the test font's
+    // fatter glyphs wrap prose onto extra lines that push the QR below where
+    // production actually renders it.
+    setUpAll(loadAppFonts);
+
+    testWidgets('QR and check code clear the pinned bar at 1280x700', (
+      tester,
+    ) async {
+      // The user-reported defect: at a short desktop window the sticky
+      // hand-off bar sliced the QR mid-symbol — unscannable, and with no cue
+      // that scrolling would reveal the rest. The QR is the one artifact
+      // this sheet exists to show; it must render whole at rest.
+      tester.view
+        ..physicalSize = const Size(2560, 1400)
+        ..devicePixelRatio = 2.0; // logical 1280×700
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final calls = _Calls();
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => Center(
+              child: DesignSystemButton(
+                label: 'open',
+                onPressed: () => AddDeviceModal.show(context),
+              ),
+            ),
+          ),
+          overrides: overrides(calls: calls),
+          // Production geometry, or the guarantee is about the wrong world:
+          // the default phone MediaQuery renders a bottom sheet instead of
+          // the desktop dialog, and the bare test theme's larger type wraps
+          // prose onto extra lines the shipped app never shows.
+          theme: screenshotTheme(),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 700)),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      // Bounded pumps, not pumpAndSettle: the bar's waiting spinner animates
+      // indefinitely, so the tree never settles.
+      for (var i = 0; i < 24; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final qr = tester.getRect(find.byKey(const Key('addDeviceQrImage')));
+      final bar = tester.getRect(find.byType(SyncStickyBar));
+      expect(
+        qr.bottom,
+        lessThanOrEqualTo(bar.top),
+        reason: 'the QR must render whole above the pinned bar at rest',
+      );
+      final check = tester.getRect(
+        find.byKey(const Key('add_device_check_code')),
+      );
+      expect(
+        check.bottom,
+        lessThanOrEqualTo(bar.top),
+        reason: 'the check code is part of the comparison the sheet asks for',
+      );
+
+      // Tear the sheet down so the roster poll timer cancels before the
+      // test ends.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
   });
 }

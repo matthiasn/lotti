@@ -42,15 +42,17 @@ void main() {
       expect(border.bottom.style, BorderStyle.none);
     });
 
-    testWidgets('sits on the surface colour, not a tinted panel', (
+    testWidgets('sits one level above the page surface', (
       tester,
     ) async {
+      // An opaque shelf, visibly distinct from the page it pins to — as page
+      // background it read as content sliced by an invisible edge.
       await pumpBar(tester);
 
-      final context = tester.element(find.byType(SyncStickyBar));
+      final tokens = tester.element(find.byType(SyncStickyBar)).designTokens;
       expect(
         decorationOf(tester).color,
-        Theme.of(context).colorScheme.surface,
+        tokens.colors.background.level02,
       );
     });
 
@@ -66,13 +68,15 @@ void main() {
       expect(padding.padding, WoltModalConfig.pagePadding);
     });
 
-    testWidgets('takes its edge colour from the design system', (tester) async {
+    testWidgets('takes its edge colour from the divider token', (tester) async {
+      // A decorative stroke, not text ink: borders share the divider token so
+      // they cannot drift from every other hairline.
       await pumpBar(tester);
 
       final tokens = tester.element(find.byType(SyncStickyBar)).designTokens;
       expect(
         (decorationOf(tester).border! as Border).top.color,
-        tokens.colors.text.lowEmphasis,
+        tokens.colors.decorative.level01,
       );
     });
   });

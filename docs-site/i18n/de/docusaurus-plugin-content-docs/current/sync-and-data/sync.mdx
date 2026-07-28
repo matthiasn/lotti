@@ -22,33 +22,32 @@ Sync-Dienst noch nicht erreicht haben.
   caption="Alltagsstatus steht neben Diagnose und Wiederherstellung. Project Waddle hat drei Elemente im Postausgang."
 />
 
-## Ein weiteres Gerät koppeln
+## Deine Geräte sehen
 
-Beginne auf einem bereits verbundenen Gerät:
-
-1. Öffne **Einstellungen → Synchronisierung → Bereitgestellte Synchronisierung**.
-2. Zeige auf dem Desktop den Übergabe-QR-Code. Halte ihn privat: Das Paket
-   gewährt Zugang zu Konto und Raum.
-3. Öffne auf dem neuen Gerät dieselbe Seite und scanne den QR-Code oder füge
-   das vollständige Bereitstellungspaket ein.
-4. Prüfe Server, Benutzer und Raum vor **Importieren**.
-5. Warte, bis die erste Synchronisierung abgeschlossen ist, bevor du eine App
-   schließt.
+**Einstellungen → Synchronisierungseinstellungen → Geräte** listet jede Sitzung deines
+Sync-Kontos — nicht nur die unverifizierten.
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Status der bereitgestellten Synchronisierung mobil und sicherer Geräteübergabe-QR-Code auf Desktop"
-  caption="Desktop kann den QR-Code zeigen; mobil siehst du Konto und Verifizierung. Behandle den Code wie ein Passwort."
+  alt="Lottis Geräteseite mit den Sitzungen des Sync-Kontos, Verifizierungsstatus und letzter Sichtung"
+  caption="Jede Zeile zeigt, ob das Gerät verifiziert ist und wann der Server es zuletzt gesehen hat. Ein unverifiziertes Gerät kann neue Einträge nicht lesen, und die Liste sagt das."
 />
 
-<ManualScreenshot
-  caseId="sync/provisioned"
-  alt="Lottis Importprüfung mit Project-Waddle-Sync-Server, Benutzer und Raum"
-  caption="Importiere nur, wenn jeder dekodierte Wert zum gewünschten Konto gehört."
-/>
+Mit diesem Konto angemeldete Sitzungen lassen sich entfernen — außer der, auf der
+du gerade bist. Auf die alte Art gekoppelte Geräte mit eigenem Konto lassen sich
+verifizieren, aber nicht entfernen.
 
-Bei Fehlern halte das Originalgerät verbunden, erzeuge ein frisches Paket und
-versuche den vollständigen Wert erneut. Bearbeite die Kodierung nicht manuell.
+## Ein weiteres Gerät koppeln
+
+Das Koppeln ist ein eigener Ablauf, mit einem Code zum Vergleichen und zwei
+Schritten nach dem Verbinden. Es hat eine eigene Seite:
+[Gerät hinzufügen](./add-device.mdx).
+
+Kurz gefasst: Öffne auf einem bereits verbundenen Gerät **Einstellungen →
+Synchronisierungseinstellungen → Geräte → Gerät hinzufügen** und zeige den Code. Öffne auf dem
+neuen Gerät dieselbe Seite und scanne ihn. Vergleiche den Prüfcode auf beiden
+Bildschirmen, bevor du verbindest — der QR-Code enthält die Zugangsdaten deines
+Sync-Kontos und geht nur an dein eigenes Gerät.
 
 ## Das neue Gerät verifizieren
 

@@ -1,0 +1,117 @@
+---
+title: Adăugați un dispozitiv
+description: Asociați un dispozitiv nou contului dumneavoastră de sincronizare printr-un cod QR, verificați codul de control și încheiați cei doi pași care urmează.
+---
+
+# Adăugați un dispozitiv
+
+Toate dispozitivele dumneavoastră folosesc un singur cont de sincronizare. A
+adăuga un dispozitiv înseamnă a-i încredința datele de acces ale acelui cont, așa
+că fluxul are două verificări: un **cod de control** scurt, pe care îl comparați
+înainte de conectare, și o **verificare prin emoji** după aceea.
+
+Ele fac lucruri diferite. Codul de control arată că ambele ecrane vorbesc despre
+același cont — prinde un cod venit din altă parte, adică eroarea care chiar se
+întâmplă. Este derivat doar din acei identificatori, nu din parolă — deci nu
+spune nimic despre cât de valabile mai sunt datele de acces din el și nimic
+despre cine se află la celălalt capăt. Verificarea prin
+emoji care urmează este pasul care autentifică dispozitivul, iar până se încheie
+noul dispozitiv nu poate citi nimic.
+
+Aveți nevoie de ambele dispozitive în față. Începeți de pe unul deja conectat —
+oricare, telefon sau calculator. Nu există un dispozitiv „principal”.
+
+## Afișați codul pe un dispozitiv pe care îl folosiți deja
+
+Deschideți **Setări → Setări sincronizare → Dispozitive** și alegeți **Adăugați
+dispozitiv**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Ecranul Adăugați dispozitiv din Lotti, cu cod QR, notă de securitate cu lacăt și codul de control 2BD-EF4"
+  caption="Codul este afișat doar cât timp acest ecran rămâne deschis. Observați codul de control de dedesubt — pe acela îl veți compara."
+/>
+
+Tratați acest ecran așa cum v-ați trata parola, pentru că exact asta conține.
+Oricine scanează sau fotografiază codul QR se poate autentifica în contul
+dumneavoastră: nu vă poate decripta însemnările fără a fi și verificat prin
+emoji de pe unul dintre dispozitivele dumneavoastră, dar poate prelua contul —
+inclusiv schimbând parola și blocându-vă accesul. Arătați-l doar unui dispozitiv care
+vă aparține și nu îl trimiteți niciodată prin chat, captură de ecran sau ecran
+partajat.
+
+**Închiderea ecranului ascunde codul, dar nu îl revocă.** Codul conține parola
+actuală a contului dumneavoastră: o fotografie rămâne utilizabilă atât timp cât
+acea parolă este valabilă. Dacă bănuiți că cineva l-a capturat, tratați-l ca pe
+o parolă compromisă, nu ca pe ceva care între timp ar fi expirat.
+
+**Copiați codul de asociere** există intenționat pentru cazul în care
+dispozitivul care se alătură nu are cameră — un calculator care se alătură unui
+calculator. Pune aceleași date în clipboard: lipiți-le direct în celălalt
+dispozitiv și nicăieri altundeva.
+
+## Scanați-l pe dispozitivul nou
+
+Instalați Lotti pe dispozitivul nou, apoi deschideți acolo **Setări →
+Setări sincronizare → Dispozitive** și alegeți **Configurați sincronizarea**. Pe telefon camera se deschide imediat; îndreptați-o
+spre primul dispozitiv. Pe calculator, sau dacă nu există cameră, alegeți
+**Introduceți codul manual** și lipiți codul copiat.
+
+## Verificați că se potrivește codul înainte de conectare
+
+Decodificarea codului nu conectează nimic. Mai întâi apare un rezumat al lucrului
+la care urmează să vă alăturați, condus de codul de control.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Rezumatul asocierii din Lotti, cu codul de control, contul la care se alătură și serverul de sincronizare"
+  caption="Ambele dispozitive derivă acest cod independent, din cont, cameră și server. Nu îl schimbă niciodată între ele — de aceea compararea contează."
+/>
+
+Priviți codul de control de aici și pe cel de pe primul dispozitiv. **Trebuie să
+fie identice.** Dacă diferă, opriți-vă și renunțați la el: cele două ecrane nu descriu același cont, aceeași cameră și
+același server, iar redeschiderea ecranului nu schimbă acest lucru.
+
+Contul și serverul de sub cod sunt context, nu elemente de comparat — ele nu apar
+pe celălalt dispozitiv. Când totul se potrivește, alegeți **Conectați acest
+dispozitiv**.
+
+## Încheiați cei doi pași care urmează
+
+Conectarea vă alătură contului. Încă nu permite dispozitivului nou să citească
+ceva.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Configurarea sincronizării în Lotti: acest dispozitiv este conectat, verificarea prin emoji și Trimiteți setările sunt încă în așteptare"
+  caption="Conectat este jumătatea ușoară. Cardul numește ce lipsește și spune clar că, până la verificare, acest dispozitiv nu poate citi nimic."
+/>
+
+1. **Comparați emoji-urile.** Pe ambele dispozitive apare un rând de emoji.
+   Verificați că se potrivesc și confirmați pe fiecare. Până atunci, dispozitivul
+   nou primește doar text cifrat pe care nu îl poate citi — cheile merg exclusiv
+   către dispozitive verificate. Vedeți
+   [Sincronizarea dispozitivelor](./sync.mdx).
+2. **Trimiteți setările.** Pe primul dispozitiv, în ecranul Adăugați dispozitiv
+   încă deschis, alegeți **Trimiteți setările**, pentru ca listele de categorii,
+   obiceiuri, tablourile de bord și configurația AI să ajungă. Dacă l-ați închis,
+   redeschideți **Setări → Setări sincronizare → Dispozitive → Adăugați dispozitiv**.
+
+Lăsați ambele aplicații deschise până se termină prima sincronizare.
+
+## Dacă ceva nu merge
+
+- **Codurile de control diferă.** Nu conectați. Redeschiderea ecranului nu ajută: același cont produce de fiecare
+  dată același cod, deci o nepotrivire înseamnă că cele două ecrane nu descriu
+  aceeași asociere.
+- **Codul nu se decodifică.** Copiați-l din nou pe primul dispozitiv în loc să
+  corectați ce ați lipit; valoarea codificată nu este menită să fie ajustată
+  manual. Dacă aplicația semnalează versiuni diferite, dispozitivele rulează
+  compilări diferite și ambele au nevoie de actualizare.
+- **Dispozitivul nou s-a conectat, dar rămâne gol.** Este starea așteptată
+  înainte de verificare. Încheiați compararea emoji-urilor, apoi consultați
+  [Sincronizarea dispozitivelor](./sync.mdx) pentru coada de trimitere și
+  recuperare.
+
+Continuați cu [Sincronizarea dispozitivelor](./sync.mdx) pentru starea zilnică,
+sănătatea livrării și instrumentele de recuperare.

@@ -1,0 +1,117 @@
+---
+title: Aggiungere un dispositivo
+description: Accoppia un nuovo dispositivo al tuo account di sincronizzazione con un codice QR, verifica il codice di controllo e completa i due passaggi successivi.
+---
+
+# Aggiungere un dispositivo
+
+Tutti i tuoi dispositivi condividono un unico account di sincronizzazione.
+Aggiungere un dispositivo significa consegnargli le credenziali di quell'account,
+perciò il percorso prevede due controlli: un breve **codice di controllo** da
+confrontare prima di connettere e una **verifica con emoji** subito dopo.
+
+Fanno cose diverse. Il codice di controllo dice che i due schermi parlano dello
+stesso account — intercetta un codice che viene da altrove, cioè l'errore che si
+commette davvero. Deriva solo da quegli identificatori, non dalla password:
+non dice nulla su quanto siano ancora valide le credenziali che contiene, né su
+chi sta dall'altra parte. La verifica con emoji
+che segue è il passaggio che autentica il dispositivo, e finché non è completata
+il nuovo dispositivo non può leggere nulla.
+
+Ti servono entrambi i dispositivi davanti. Parti da uno già connesso — uno
+qualsiasi, telefono o computer. Non esiste un dispositivo «principale».
+
+## Mostra il codice su un dispositivo che già usi
+
+Apri **Impostazioni → Impostazioni di sincronizzazione → Dispositivi** e scegli **Aggiungi
+dispositivo**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Schermata Aggiungi dispositivo di Lotti con codice QR, avviso di sicurezza con lucchetto e codice di controllo 2BD-EF4"
+  caption="Il codice è mostrato solo finché questa schermata resta aperta. Nota il codice di controllo sotto: lo confronterai tra poco."
+/>
+
+Tratta questa schermata come tratteresti la tua password, perché è ciò che
+contiene. Chi scansiona o fotografa il codice QR può accedere al tuo
+account: non può decifrare le tue voci senza essere anche verificato con le
+emoji da un tuo dispositivo, ma può impadronirsi dell'account — password
+compresa, escludendoti. Mostralo solo a un dispositivo tuo e non inviarlo mai via
+chat, screenshot o schermo condiviso.
+
+**Chiudere la schermata nasconde il codice, non lo revoca.** Il codice
+contiene la password attuale del tuo account: una foto resta utilizzabile
+finché quella password è valida. Se sospetti che qualcuno l'abbia catturata,
+trattala come una password trapelata, non come qualcosa di scaduto.
+
+**Copia codice di abbinamento** esiste di proposito per quando il dispositivo
+che si unisce non ha fotocamera — un computer che si unisce a un computer. Mette
+le stesse credenziali negli appunti: incollale direttamente nell'altro
+dispositivo e da nessuna altra parte.
+
+## Scansionalo sul nuovo dispositivo
+
+Installa Lotti sul nuovo dispositivo, poi apri lì **Impostazioni →
+Impostazioni di sincronizzazione → Dispositivi** e scegli **Configura la sincronizzazione**. Sul
+telefono la fotocamera si apre subito:
+inquadra il primo dispositivo. Su computer, o se la fotocamera non è
+disponibile, scegli **Inserisci il codice manualmente** e incolla il codice copiato.
+
+## Controlla che il codice corrisponda prima di connettere
+
+Decodificare il codice non connette nulla. Compare prima un riepilogo di ciò a
+cui stai per unirti, guidato dal codice di controllo.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Riepilogo di accoppiamento di Lotti con codice di controllo, account da unire e server di sincronizzazione"
+  caption="Entrambi i dispositivi ricavano questo codice in modo indipendente da account, stanza e server. Non se lo scambiano mai: per questo confrontarlo ha senso."
+/>
+
+Guarda il codice di controllo qui e quello sul primo dispositivo. **Devono
+essere identici.** Se differiscono, fermati e scartalo: i due schermi non descrivono lo stesso account, la stessa stanza e lo
+stesso server, e riaprire la schermata non cambia nulla.
+
+Account e server sotto il codice sono contesto, non elementi da confrontare: non
+compaiono sull'altro dispositivo. Quando tutto corrisponde, scegli **Connetti
+questo dispositivo**.
+
+## Completa i due passaggi successivi
+
+Connettere unisce all'account. Non consente ancora al nuovo dispositivo di
+leggere alcunché.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Configurazione sync di Lotti: questo dispositivo è connesso, verifica con emoji e Invia impostazioni ancora in sospeso"
+  caption="Connesso è la metà facile. La scheda indica cosa manca e dice chiaramente che senza verifica il dispositivo non può leggere nulla."
+/>
+
+1. **Confronta le emoji.** Su entrambi i dispositivi compare una fila di emoji.
+   Controlla che coincidano e conferma su ciascuno. Fino ad allora il nuovo
+   dispositivo riceve solo cifrato illeggibile: le chiavi vanno solo ai
+   dispositivi verificati. Vedi
+   [Sincronizzare i dispositivi](./sync.mdx).
+2. **Invia le impostazioni.** Sul primo dispositivo, nella schermata Aggiungi
+   dispositivo ancora aperta, scegli **Invia impostazioni** perché categorie,
+   abitudini, dashboard e configurazione IA arrivino. Se l'hai già chiusa,
+   riapri **Impostazioni → Impostazioni di sincronizzazione → Dispositivi → Aggiungi
+   dispositivo**.
+
+Lascia aperte entrambe le app finché la prima sincronizzazione non è finita.
+
+## Se qualcosa va storto
+
+- **I codici di controllo differiscono.** Non connettere. Riaprire la schermata non serve: lo stesso account
+  produce sempre lo stesso codice, quindi una differenza significa che i due schermi non
+  descrivono lo stesso abbinamento.
+- **Il codice non si decodifica.** Copialo di nuovo sul primo dispositivo invece
+  di correggere ciò che hai incollato; il valore codificato non è pensato per
+  essere sistemato a mano. Se l'app segnala versioni diverse, i due dispositivi
+  hanno build differenti e vanno entrambi aggiornati.
+- **Il nuovo dispositivo è connesso ma resta vuoto.** È lo stato previsto prima
+  della verifica. Completa il confronto delle emoji, poi controlla
+  [Sincronizzare i dispositivi](./sync.mdx) per posta in uscita e recupero.
+
+Prosegui con [Sincronizzare i dispositivi](./sync.mdx) per stato quotidiano,
+qualità della consegna e strumenti di recupero.

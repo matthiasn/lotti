@@ -8248,8 +8248,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get provisionedSyncRotatingPassword => 'Säkrar den här enheten…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Para ihop en enhet till med det här synkkontot';
+  String get provisionedSyncSubtitle => 'Parkoppla och hantera dina enheter';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Synkroniseringsserver';
@@ -9300,7 +9299,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Kör underhållsuppgifter och återställningsverktyg för matrisen';
+      'Matrix-underhåll och återställning';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Underhåll';
@@ -9534,8 +9533,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsSpeechTitle => 'Tal';
 
   @override
-  String get settingsSyncConflictsSubtitle =>
-      'Lös synkroniseringskonflikter för att säkerställa datakonsistens';
+  String get settingsSyncConflictsSubtitle => 'Lös synkkonflikter';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9578,8 +9576,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsSyncNodeProfileSaveButton => 'Spara';
 
   @override
-  String get settingsSyncNodeProfileSubtitle =>
-      'Namnge denna enhet och granska funktioner som är synliga för dina andra enheter.';
+  String get settingsSyncNodeProfileSubtitle => 'Enhetsnamn och funktioner';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Den här apparaten';
@@ -9835,10 +9832,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncAddDeviceAction => 'Lägg till enhet';
 
   @override
-  String get syncAddDeviceCodeHint =>
-      'Har den nya enheten ingen kamera? Kopiera parkopplingskoden och klistra in den där i stället.';
-
-  @override
   String get syncAddDeviceConnected =>
       'Den nya enheten har anslutit – slutför emoji-verifieringen innan du skickar.';
 
@@ -9857,9 +9850,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Installera Lotti på den nya enheten, öppna Inställningar → Synkroniseringsinställningar → Enheter där och skanna den här koden.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Sedan · efter emoji-verifieringen';
-
-  @override
   String get syncAddDeviceRevealCode => 'Visa parkopplingskoden som text';
 
   @override
@@ -9868,7 +9858,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'Den här parkopplingskoden låser upp ditt synkkonto – låt bara din egen nya enhet skanna den, och ta aldrig en skärmbild av den eller skicka den.';
+      'Behandla koden som ditt lösenord — bara din egen nya enhet får skanna den.';
 
   @override
   String get syncAddDeviceSendMessages => 'Skicka meddelandehistorik';
@@ -9966,9 +9956,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesSectionTitle => 'Enheter';
-
-  @override
   String get syncDevicesStaleHint => 'Används förmodligen inte längre';
 
   @override
@@ -10057,10 +10044,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncPairConnectButton => 'Anslut den här enheten';
 
   @override
-  String get syncPairCopyCodeHint =>
-      'Har den här enheten ingen kamera? Använd Kopiera parkopplingskod på den andra enheten och flytta den hit med en lösenordshanterare, en krypterad anteckning eller genom att skriva av den – aldrig via chatt eller e-post.';
-
-  @override
   String get syncPairDiscardCode => 'Ange en annan parkopplingskod';
 
   @override
@@ -10072,14 +10055,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Synkronisering är konfigurerad på den här enheten';
 
   @override
-  String get syncPairedNextTitle => 'Två steg kvar';
-
-  @override
-  String get syncPairedNextTitleOne => 'En sak kvar';
-
-  @override
   String get syncPairedSettingsStep =>
-      'Efter emoji-verifieringen väljer du på din andra enhet Skicka inställningar och sedan Skicka meddelandehistorik på skärmen Lägg till enhet som fortfarande är öppen. Dina mätbara saker, kategorier, vanor, instrumentpaneler, AI-inställningar och din meddelandehistorik hamnar här.';
+      'Dina kategorier, vanor, paneler och AI-inställningar kommer därifrån.';
 
   @override
   String get syncPairedSettingsStepFallback =>
@@ -10095,7 +10072,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'En rad emojier visas på båda enheterna. Kontrollera att de stämmer överens och bekräfta på varje enhet — tills dess kan den här enheten inte läsa dina anteckningar.';
+      'Tills du bekräftar på båda enheterna kan den här enheten inte läsa dina anteckningar.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10119,16 +10096,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncPairGoToDevices => 'Gå till Enheter';
 
   @override
-  String get syncPairMismatchRemedy =>
-      'Om den inte stämmer, använd i stället koden som din egen enhet visar.';
-
-  @override
   String get syncPairMismatchWarning =>
       'Om detta inte stämmer ska du inte ansluta – koden hör till ett annat konto.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'Använd bara en kod du själv har skapat, på en enhet du äger. Skannar du någon annans kod hamnar allt du skriver här i deras konto.';
+      'Använd bara en kod från din egen enhet — någon annans kod skickar allt du skriver till deras konto.';
 
   @override
   String get syncPairPasteTitle => 'Klistra in parkopplingskoden';
@@ -10166,7 +10139,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairWhereToFind =>
-      'Öppna Inställningar → Synkroniseringsinställningar → Enheter på en enhet som redan synkar och välj Lägg till enhet.';
+      'Koden finns under \"Lägg till enhet\" på en enhet som redan synkar — kopiera den där och klistra in den här.';
 
   @override
   String get syncPairWillJoin => 'Den här enheten ansluter till:';
@@ -10235,6 +10208,16 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPayloadThemingSelection => 'Tematval';
+
+  @override
+  String get syncSetupCta => 'Konfigurera synk';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Din dagbok på alla dina enheter — end-to-end-krypterad, bara mellan dina egna enheter.';
+
+  @override
+  String get syncSetupEmptyTitle => 'Synka dina enheter';
 
   @override
   String get syncStepAgentEntities => 'Agententiteter';
@@ -11191,4 +11174,18 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get syncPairedVerifyStepTitle => 'Jämför emojierna på båda enheterna';
+
+  @override
+  String get syncPairedSettingsStepTitle =>
+      'Skicka inställningar från din andra enhet';
+
+  @override
+  String get syncPairFirstDeviceTitle => 'Ställer du in din första enhet?';
+
+  @override
+  String get syncPairFirstDeviceHint =>
+      'Din första parkopplingskod kommer från synkserverns provisioneringsverktyg — se manualen. Alla senare enheter får sin kod från appen.';
 }

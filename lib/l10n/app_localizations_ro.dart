@@ -8397,8 +8397,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se securizează acest dispozitiv…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Asociați un alt dispozitiv la acest cont de sincronizare';
+  String get provisionedSyncSubtitle => 'Asociați și gestionați dispozitivele';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Server de sincronizare';
@@ -9471,7 +9470,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Rulează sarcini de întreținere Matrix și instrumente de recuperare';
+      'Întreținere și recuperare Matrix';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Întreținere';
@@ -9708,7 +9707,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsSyncConflictsSubtitle =>
-      'Rezolvați conflictele de sincronizare pentru a asigura consistența datelor';
+      'Rezolvați conflictele de sincronizare';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9754,7 +9753,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsSyncNodeProfileSubtitle =>
-      'Denumiți acest dispozitiv și examinați capabilitățile vizibile pentru celelalte dispozitive.';
+      'Numele și capacitățile dispozitivului';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Acest dispozitiv';
@@ -10016,10 +10015,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncAddDeviceAction => 'Adăugați dispozitiv';
 
   @override
-  String get syncAddDeviceCodeHint =>
-      'Noul dispozitiv nu are cameră? Copiați codul de asociere și lipiți-l acolo.';
-
-  @override
   String get syncAddDeviceConnected =>
       'Noul dispozitiv s-a alăturat — finalizați verificarea cu emoji înainte de a trimite.';
 
@@ -10038,9 +10033,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Instalați Lotti pe noul dispozitiv, deschideți acolo Setări → Setări sincronizare → Dispozitive și scanați acest cod.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Apoi · după verificarea cu emoji';
-
-  @override
   String get syncAddDeviceRevealCode => 'Afișați codul de asociere ca text';
 
   @override
@@ -10049,7 +10041,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'Acest cod de asociere deblochează contul dvs. de sincronizare – lăsați-l scanat doar de propriul dispozitiv nou și nu îl fotografiați și nu îl trimiteți niciodată.';
+      'Tratați acest cod ca pe parola dumneavoastră — doar propriul dispozitiv nou îl poate scana.';
 
   @override
   String get syncAddDeviceSendMessages => 'Trimiteți istoricul mesajelor';
@@ -10158,9 +10150,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesSectionTitle => 'Dispozitive';
-
-  @override
   String get syncDevicesStaleHint => 'Probabil nu mai este folosit';
 
   @override
@@ -10250,10 +10239,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPairConnectButton => 'Conectați acest dispozitiv';
 
   @override
-  String get syncPairCopyCodeHint =>
-      'Acest dispozitiv nu are cameră? Pe celălalt dispozitiv folosiți Copiați codul de asociere și aduceți-l aici cu un manager de parole, o notiță criptată sau tastându-l – niciodată prin chat sau e-mail.';
-
-  @override
   String get syncPairDiscardCode => 'Introduceți alt cod de asociere';
 
   @override
@@ -10265,14 +10250,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sincronizarea este configurată pe acest dispozitiv';
 
   @override
-  String get syncPairedNextTitle => 'Au mai rămas doi pași';
-
-  @override
-  String get syncPairedNextTitleOne => 'A mai rămas un lucru';
-
-  @override
   String get syncPairedSettingsStep =>
-      'După verificarea cu emoji, pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările, apoi Trimiteți istoricul mesajelor. Măsurabilele, categoriile, obiceiurile, panourile, setările AI și istoricul mesajelor ajung aici.';
+      'Categoriile, obiceiurile, panourile și configurația AI sosesc de acolo.';
 
   @override
   String get syncPairedSettingsStepFallback =>
@@ -10288,7 +10267,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Pe ambele dispozitive apare un șir de emoji. Verificați dacă sunt identice, apoi confirmați pe fiecare — până atunci, acest dispozitiv nu vă poate citi intrările.';
+      'Până nu confirmați pe ambele dispozitive, acesta nu vă poate citi însemnările.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10312,16 +10291,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPairGoToDevices => 'Mergeți la Dispozitive';
 
   @override
-  String get syncPairMismatchRemedy =>
-      'Dacă nu se potrivește, folosiți în schimb codul afișat de propriul dispozitiv.';
-
-  @override
   String get syncPairMismatchWarning =>
       'Dacă acest lucru nu se potrivește, nu vă conectați – codul aparține altui cont.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'Folosiți doar un cod creat de dvs., pe un dispozitiv care vă aparține. Scanarea codului altcuiva pune tot ce scrieți aici în contul acelei persoane.';
+      'Folosiți doar un cod de pe propriul dispozitiv — codul altcuiva trimite tot ce scrieți în contul acelei persoane.';
 
   @override
   String get syncPairPasteTitle => 'Lipiți codul de asociere';
@@ -10361,7 +10336,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairWhereToFind =>
-      'Pe un dispozitiv deja sincronizat, deschideți Setări → Setări sincronizare → Dispozitive și alegeți Adăugați dispozitiv.';
+      'Codul se află sub „Adăugați dispozitiv\" pe un dispozitiv care sincronizează deja — copiați-l acolo și lipiți-l aici.';
 
   @override
   String get syncPairWillJoin => 'Acest dispozitiv se va alătura la:';
@@ -10430,6 +10405,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPayloadThemingSelection => 'Selecție temă';
+
+  @override
+  String get syncSetupCta => 'Configurați sincronizarea';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Jurnalul dumneavoastră pe toate dispozitivele — criptat integral, doar între propriile dumneavoastră dispozitive.';
+
+  @override
+  String get syncSetupEmptyTitle => 'Sincronizați-vă dispozitivele';
 
   @override
   String get syncStepAgentEntities => 'Entități agent';
@@ -11397,4 +11382,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get syncPairedVerifyStepTitle =>
+      'Comparați emoji-urile pe ambele dispozitive';
+
+  @override
+  String get syncPairedSettingsStepTitle =>
+      'Trimiteți setările de pe celălalt dispozitiv';
+
+  @override
+  String get syncPairFirstDeviceTitle => 'Configurați primul dispozitiv?';
+
+  @override
+  String get syncPairFirstDeviceHint =>
+      'Primul cod de asociere provine din instrumentul de provizionare al serverului de sincronizare — consultați manualul. Fiecare dispozitiv ulterior primește codul din aplicație.';
 }

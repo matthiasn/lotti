@@ -8,6 +8,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
@@ -15,11 +16,34 @@ import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.da
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_callout.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
+
+/// Widest a commit action may grow. A phone sheet fills its own width and
+/// never notices; inside a desktop dialog the same `fullWidth` button used to
+/// span the entire modal — an accent slab louder than the content it commits.
+const double kSyncPairActionMaxWidth = 400;
+
+/// Caps a full-width action at [kSyncPairActionMaxWidth] and centers it.
+class _MeasuredAction extends StatelessWidget {
+  const _MeasuredAction({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: kSyncPairActionMaxWidth),
+        child: child,
+      ),
+    );
+  }
+}
 
 SliverWoltModalSheetPage bundleImportPage({
   required BuildContext context,
@@ -29,11 +53,9 @@ SliverWoltModalSheetPage bundleImportPage({
     context: context,
     showCloseButton: true,
     title: context.messages.provisionedSyncImportTitle,
-    padding:
-        WoltModalConfig.pagePadding +
-        const EdgeInsets.only(
-          bottom: WoltModalConfig.stickyActionBarClearance,
-        ),
+    // No sticky bar on this page — reserving clearance for one left a dead
+    // band under the last element on every desktop capture.
+    padding: WoltModalConfig.pagePadding,
     child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
   );
 }
@@ -77,8 +99,15 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
   /// widget caches its failed start otherwise.
   int _scannerGeneration = 0;
 
+  /// The camera is started by [_ScannerView] rather than by `MobileScanner`.
+  ///
+  /// With `autoStart` the package calls `start()` from an initializer it never
+  /// awaits, so a page torn down mid-initialisation resumes that call against
+  /// a disposed controller and the error surfaces as an unhandled async
+  /// failure nothing can catch. Starting it ourselves makes the same failure
+  /// catchable.
   MobileScannerController _ensureScannerController() {
-    return _scannerController ??= MobileScannerController();
+    return _scannerController ??= MobileScannerController(autoStart: false);
   }
 
   /// Recreates the camera after the user has granted permission elsewhere.
@@ -298,8 +327,11 @@ class SyncPairStepIndicator extends StatelessWidget {
       child: Text(
         label,
         textAlign: align,
-        style: tokens.typography.styles.body.bodySmall.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
+        // Caption-tier eyebrow: one rank below the page's single imperative
+        // heading. At body rank it was a third header competing with the
+        // sheet title above and the heading below.
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.lowEmphasis,
         ),
       ),
     );
@@ -319,14 +351,14 @@ class _OnlyOwnCodeWarning extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-
     return Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+      padding: EdgeInsets.only(bottom: context.designTokens.spacing.step4),
       child: SyncCallout(
         icon: Icons.lock_outline_rounded,
         text: context.messages.syncPairOnlyOwnCode,
-        tone: tokens.colors.text.lowEmphasis,
+        // The callout's default warning tone, deliberately: this line is the
+        // flow's account-takeover warning, and de-toned to grey it whispered
+        // while the conveniences around it shouted.
         calloutKey: const Key('sync_pair_only_own_code'),
       ),
     );
@@ -334,36 +366,56 @@ class _OnlyOwnCodeWarning extends StatelessWidget {
 }
 
 /// Names where the code comes from — wayfinding, not a caveat, so it stays
-/// plain prose and stops looking like the warning above it.
+/// plain prose and stops looking like the warning above it. One line: the
+/// old two-paragraph version was the wall this screen was accused of.
 class _WhereToFindHint extends StatelessWidget {
-  const _WhereToFindHint({this.extra});
-
-  /// A second prerequisite sentence, on the screen that needs one: how to
-  /// physically move the code to a machine with no camera.
-  final String? extra;
+  const _WhereToFindHint();
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final extra = this.extra;
-    final style = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
-    );
 
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+      child: Text(
+        context.messages.syncPairWhereToFind,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+      ),
+    );
+  }
+}
+
+/// The honest branch for the account's very first device: there is no other
+/// device to mint a code, and the screen used to leave that user staring at
+/// instructions that cannot be followed. A quiet title-plus-caption block,
+/// not a callout — it is a signpost, not a warning.
+class _FirstDeviceHint extends StatelessWidget {
+  const _FirstDeviceHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.spacing.step5),
       child: Column(
+        key: const Key('bundle_import_first_device_hint'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.messages.syncPairWhereToFind, style: style),
-          if (extra != null) ...[
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              extra,
-              key: const Key('bundle_import_copy_code_hint'),
-              style: style,
+          Text(
+            messages.syncPairFirstDeviceTitle,
+            style: tokens.typography.styles.subtitle.subtitle2,
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            messages.syncPairFirstDeviceHint,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -392,7 +444,19 @@ class _StepTitle extends StatelessWidget {
   }
 }
 
-class _ScannerView extends StatelessWidget {
+/// Replaces the live camera preview, for tests and manual screenshots.
+///
+/// A headless capture has no camera plugin: `MobileScanner` renders a black
+/// rectangle and the platform channel answers every call with
+/// `MissingPluginException`. Neither belongs in the manual, and a stand-in
+/// viewfinder documents the step better than an empty frame would.
+///
+/// Follows the same override pattern as `beamToNamedOverride`. Null in
+/// production, where the real scanner is always used.
+@visibleForTesting
+Widget Function(BuildContext context, double side)? scannerPreviewOverride;
+
+class _ScannerView extends StatefulWidget {
   const _ScannerView({
     required this.controller,
     required this.onDetect,
@@ -413,10 +477,63 @@ class _ScannerView extends StatelessWidget {
   final String? errorText;
 
   @override
+  State<_ScannerView> createState() => _ScannerViewState();
+}
+
+class _ScannerViewState extends State<_ScannerView> {
+  @override
+  void initState() {
+    super.initState();
+    // Nothing to start when the preview is a stand-in.
+    if (scannerPreviewOverride == null) {
+      // After the first frame, not during initState: `MobileScanner` is a
+      // child, so it has not mounted or called `attach()` yet. Starting here
+      // would leave the controller waiting on its attachment timeout instead
+      // of a completed attach.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_startCamera());
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    // Best effort: the controller belongs to the page, which disposes it.
+    if (scannerPreviewOverride == null) {
+      unawaited(widget.controller.stop().catchError((Object _) {}));
+    }
+    super.dispose();
+  }
+
+  /// Starts the camera and swallows a failure to do so.
+  ///
+  /// The failure that matters is the page being torn down while this is in
+  /// flight: the controller is disposed and `start()` then rejects. With
+  /// `autoStart` that call lives inside `MobileScanner`'s own un-awaited
+  /// initializer, where nothing can catch it and it surfaces as an unhandled
+  /// async error. Owning the call is what makes it catchable — a camera that
+  /// cannot start is already reported through `errorBuilder`.
+  Future<void> _startCamera() async {
+    try {
+      await widget.controller.start();
+    } on Exception catch (error, stackTrace) {
+      // Logged rather than dropped: a camera the platform refuses already
+      // reaches the user through `errorBuilder`, but a start that fails for
+      // any other reason would otherwise leave no trace at all.
+      DevLogger.error(
+        name: 'BundleImport',
+        message: 'Camera start failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final error = errorText;
+    final error = widget.errorText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -438,14 +555,16 @@ class _ScannerView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
                 child: SizedBox.square(
                   dimension: side,
-                  child: MobileScanner(
-                    controller: controller,
-                    onDetect: onDetect,
-                    errorBuilder: (context, error) => _CameraUnavailable(
-                      message: messages.syncPairCameraDenied,
-                      onRetry: onRetryCamera,
-                    ),
-                  ),
+                  child:
+                      scannerPreviewOverride?.call(context, side) ??
+                      MobileScanner(
+                        controller: widget.controller,
+                        onDetect: widget.onDetect,
+                        errorBuilder: (context, error) => _CameraUnavailable(
+                          message: messages.syncPairCameraDenied,
+                          onRetry: widget.onRetryCamera,
+                        ),
+                      ),
                 ),
               ),
             );
@@ -477,9 +596,10 @@ class _ScannerView extends StatelessWidget {
             key: const Key('bundle_import_enter_manually'),
             label: messages.syncPairEnterManually,
             variant: DesignSystemButtonVariant.outlined,
-            onPressed: onEnterManually,
+            onPressed: widget.onEnterManually,
           ),
         ),
+        const _FirstDeviceHint(),
       ],
     );
   }
@@ -559,12 +679,10 @@ class _ManualEntry extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _OnlyOwnCodeWarning(),
-        // One prerequisite block above the field: where to make a code appear,
-        // then how to move it here. Split around the input, the second half
-        // was orphaned after the button that consumes it — and on desktop
-        // nothing followed it at all.
-        _WhereToFindHint(extra: messages.syncPairCopyCodeHint),
+        // The field and its action lead: this screen exists to receive a
+        // paste, and burying the input under two paragraphs of contingency
+        // prose made the reader work through where-to-find advice before
+        // meeting the one control they came for.
         DesignSystemTextarea(
           controller: controller,
           // The heading above already says "Paste the pairing code"; a bold
@@ -581,11 +699,13 @@ class _ManualEntry extends StatelessWidget {
         // offered on every platform — the manual screen is exactly where a
         // user lands when the camera is unavailable.
         if (hasText) ...[
-          DesignSystemButton(
-            onPressed: onImport,
-            label: messages.provisionedSyncImportButton,
-            size: DesignSystemButtonSize.large,
-            fullWidth: true,
+          _MeasuredAction(
+            child: DesignSystemButton(
+              onPressed: onImport,
+              label: messages.provisionedSyncImportButton,
+              size: DesignSystemButtonSize.large,
+              fullWidth: true,
+            ),
           ),
           SizedBox(height: tokens.spacing.step3),
           // Still reachable with text in the field: the malformed-code error
@@ -603,15 +723,24 @@ class _ManualEntry extends StatelessWidget {
             ),
           ),
         ] else
-          DesignSystemButton(
-            onPressed: onPaste,
-            leadingIcon: Icons.content_paste,
-            label: messages.provisionedSyncPasteClipboard,
-            size: DesignSystemButtonSize.large,
-            fullWidth: true,
+          _MeasuredAction(
+            child: DesignSystemButton(
+              onPressed: onPaste,
+              leadingIcon: Icons.content_paste,
+              label: messages.provisionedSyncPasteClipboard,
+              size: DesignSystemButtonSize.large,
+              fullWidth: true,
+            ),
           ),
-        if (useCamera != null) ...[
-          SizedBox(height: tokens.spacing.step4),
+        SizedBox(height: tokens.spacing.step4),
+        // The security caveat supports the action rather than gatekeeping
+        // it, but keeps its warning tone — it is the line that stops a
+        // pasted stranger's code from joining their account.
+        const _OnlyOwnCodeWarning(),
+        // Contingency prose last: where to make a code appear and how to
+        // move it here matter only to someone whose clipboard is empty.
+        const _WhereToFindHint(),
+        if (useCamera != null)
           Center(
             child: DesignSystemButton(
               key: const Key('bundle_import_scan_instead'),
@@ -621,7 +750,7 @@ class _ManualEntry extends StatelessWidget {
               variant: DesignSystemButtonVariant.outlined,
             ),
           ),
-        ],
+        const _FirstDeviceHint(),
       ],
     );
   }
@@ -658,11 +787,13 @@ class _DecodedView extends StatelessWidget {
         SizedBox(height: tokens.spacing.step4),
         _BundleSummaryCard(bundle: bundle),
         SizedBox(height: tokens.spacing.step4),
-        DesignSystemButton(
-          onPressed: onConnect,
-          label: messages.syncPairConnectButton,
-          size: DesignSystemButtonSize.large,
-          fullWidth: true,
+        _MeasuredAction(
+          child: DesignSystemButton(
+            onPressed: onConnect,
+            label: messages.syncPairConnectButton,
+            size: DesignSystemButtonSize.large,
+            fullWidth: true,
+          ),
         ),
         SizedBox(height: tokens.spacing.step3),
         // Neutral, not accent: the accent means "commit" one button up, and
@@ -676,19 +807,6 @@ class _DecodedView extends StatelessWidget {
             onPressed: onDiscard,
             label: messages.syncPairDiscardCode,
             variant: DesignSystemButtonVariant.outlined,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step2),
-        // *After* the reject, because it explains the reject. Between the two
-        // buttons it read as the accent button's helper caption — an argument
-        // against connecting, directly under "Connect this device" — and it
-        // broke the accept/reject pair into two unrelated-looking controls.
-        Text(
-          messages.syncPairMismatchRemedy,
-          key: const Key('bundle_import_mismatch_remedy'),
-          textAlign: TextAlign.center,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
       ],
@@ -784,7 +902,13 @@ class _SummaryRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: styles.bodySmall.copyWith(
+            // Mono, so the account and server read as exact identifiers: a
+            // proportional face with hyphen line-breaks undermined the one
+            // screen whose typography must guarantee exact comparison.
+            style: monoMetaStyle(
+              tokens,
+              tokens.colors,
+              base: styles.bodySmall,
               color: tokens.colors.text.highEmphasis,
             ),
           ),

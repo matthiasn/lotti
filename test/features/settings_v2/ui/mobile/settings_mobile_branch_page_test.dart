@@ -97,7 +97,7 @@ void main() {
     (tester) async {
       await _pump(tester, branchId: 'definitions', overrides: _flags());
       // `definitions` has no `panel`, so no provisioned card leaks in.
-      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+      expect(find.byType(SyncSetupEmptyState), findsNothing);
     },
   );
 
@@ -110,7 +110,7 @@ void main() {
       // The `sync` branch no longer carries a landing panel, so the
       // provisioned card is not rendered as a header here — it is reached
       // via the `sync/provisioned` leaf row instead.
-      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+      expect(find.byType(SyncSetupEmptyState), findsNothing);
 
       // Children come straight from `buildSettingsTree`, so the mobile
       // order matches the desktop sidebar. Devices is the first

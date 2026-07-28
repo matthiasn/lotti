@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_config_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
@@ -10,21 +11,22 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-class ProvisionedSyncSettingsCard extends ConsumerStatefulWidget {
-  const ProvisionedSyncSettingsCard({
-    required this.showDivider,
-    super.key,
-  });
-
-  final bool showDivider;
+/// The not-yet-configured face of the Devices surface: what sync is, in one
+/// line, and the one action that starts it.
+///
+/// Deliberately an empty state rather than a settings row. The row duplicated
+/// the navigation entry that had just been tapped — "Devices" under a header
+/// reading "Devices" — and left the rest of the pane blank, so the flow's
+/// first screen read as a dead end with a second door in it.
+class SyncSetupEmptyState extends ConsumerStatefulWidget {
+  const SyncSetupEmptyState({super.key});
 
   @override
-  ConsumerState<ProvisionedSyncSettingsCard> createState() =>
-      _ProvisionedSyncSettingsCardState();
+  ConsumerState<SyncSetupEmptyState> createState() =>
+      _SyncSetupEmptyStateState();
 }
 
-class _ProvisionedSyncSettingsCardState
-    extends ConsumerState<ProvisionedSyncSettingsCard> {
+class _SyncSetupEmptyStateState extends ConsumerState<SyncSetupEmptyState> {
   late final ValueNotifier<int> pageIndexNotifier;
 
   @override
@@ -39,57 +41,62 @@ class _ProvisionedSyncSettingsCardState
     super.dispose();
   }
 
+  void _openWizard() {
+    final matrixService = ref.read(matrixServiceProvider);
+    final isConfigured =
+        matrixService.isLoggedIn() && matrixService.syncRoomId != null;
+    pageIndexNotifier.value = 0;
+
+    ModalUtils.showMultiPageModal<void>(
+      context: context,
+      pageIndexNotifier: pageIndexNotifier,
+      pageListBuilder: (modalContext) {
+        if (isConfigured) {
+          return [
+            provisionedStatusPage(
+              context: modalContext,
+              pageIndexNotifier: pageIndexNotifier,
+            ),
+          ];
+        }
+
+        return [
+          bundleImportPage(
+            context: modalContext,
+            pageIndexNotifier: pageIndexNotifier,
+          ),
+          provisionedConfigPage(
+            context: modalContext,
+            pageIndexNotifier: pageIndexNotifier,
+          ),
+          provisionedStatusPage(
+            context: modalContext,
+            pageIndexNotifier: pageIndexNotifier,
+          ),
+        ];
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final messages = context.messages;
     final tokens = context.designTokens;
 
-    return DesignSystemListItem(
-      title: context.messages.provisionedSyncTitle,
-      subtitle: context.messages.provisionedSyncSubtitle,
-      leading: const SettingsIcon(icon: Icons.qr_code_scanner),
-      trailing: Icon(
-        Icons.chevron_right_rounded,
-        size: tokens.spacing.step6,
-        color: tokens.colors.text.lowEmphasis,
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.sectionGap),
+      child: DesignSystemEmptyState(
+        icon: MdiIcons.cellphoneLink,
+        title: messages.syncSetupEmptyTitle,
+        hint: messages.syncSetupEmptyHint,
+        action: DesignSystemButton(
+          key: const Key('sync_setup_cta'),
+          label: messages.syncSetupCta,
+          size: DesignSystemButtonSize.large,
+          leadingIcon: Icons.qr_code_scanner,
+          onPressed: _openWizard,
+        ),
       ),
-      showDivider: widget.showDivider,
-      dividerIndent: SettingsIcon.dividerIndent(tokens),
-      onTap: () {
-        final matrixService = ref.read(matrixServiceProvider);
-        final isConfigured =
-            matrixService.isLoggedIn() && matrixService.syncRoomId != null;
-        pageIndexNotifier.value = 0;
-
-        ModalUtils.showMultiPageModal<void>(
-          context: context,
-          pageIndexNotifier: pageIndexNotifier,
-          pageListBuilder: (modalContext) {
-            if (isConfigured) {
-              return [
-                provisionedStatusPage(
-                  context: modalContext,
-                  pageIndexNotifier: pageIndexNotifier,
-                ),
-              ];
-            }
-
-            return [
-              bundleImportPage(
-                context: modalContext,
-                pageIndexNotifier: pageIndexNotifier,
-              ),
-              provisionedConfigPage(
-                context: modalContext,
-                pageIndexNotifier: pageIndexNotifier,
-              ),
-              provisionedStatusPage(
-                context: modalContext,
-                pageIndexNotifier: pageIndexNotifier,
-              ),
-            ];
-          },
-        );
-      },
     );
   }
 }

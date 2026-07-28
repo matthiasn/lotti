@@ -47,27 +47,23 @@ class _FakeProvisioningController extends ProvisioningController {
   /// Stands in for the bundle kind the real controller derives this from.
   final bool rotates;
 
+  /// How often the bar's Retry invoked the controller.
+  int retryCalls = 0;
+
   @override
   ProvisioningState build() => initialState;
 
   @override
   bool get rotatesPassword => rotates;
+
+  @override
+  Future<void> retry() async {
+    retryCalls++;
+  }
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  /// How far the connect phase has advanced, or null when no bar is rendered.
-  ///
-  /// The denominator is the assertion that matters: it comes from the bundle
-  /// kind, and keying it off the platform made a rotating mobile run count
-  /// "1/2, 2/2, 3/3". The bar carries no visible fraction — a second numbering
-  /// beside "Step 3 of 3" would contradict it — so the value is read directly.
-  double? progressValue(WidgetTester tester) {
-    final finder = find.byKey(const Key('provisioned_config_progress'));
-    if (finder.evaluate().isEmpty) return null;
-    return tester.widget<DesignSystemProgressBar>(finder).value;
-  }
 
   late MockMatrixService mockMatrixService;
   late ValueNotifier<int> pageIndexNotifier;
@@ -172,7 +168,6 @@ void main() {
       );
 
       expect(find.byType(DesignSystemSpinner), findsOneWidget);
-      expect(progressValue(tester), isNull);
     });
 
     testWidgets('shows spinner when in bundleDecoded state', (tester) async {
@@ -182,7 +177,6 @@ void main() {
       );
 
       expect(find.byType(DesignSystemSpinner), findsOneWidget);
-      expect(progressValue(tester), isNull);
     });
 
     testWidgets('shows progress when in loggingIn state', (tester) async {
@@ -197,7 +191,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.byType(DesignSystemSpinner), findsOneWidget);
-      expect(progressValue(tester), closeTo(1 / 2, 1e-9));
+      // One indicator: the determinate bar under the spinner mapped internal
+      // phases onto a fraction the step eyebrow already carried, so the
+      // screen showed two disagreeing measures of the same wait.
+      expect(find.byType(DesignSystemProgressBar), findsNothing);
     });
 
     testWidgets('shows progress when in joiningRoom state', (tester) async {
@@ -227,7 +224,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.byType(DesignSystemSpinner), findsOneWidget);
-      expect(progressValue(tester), 1);
+      expect(find.byType(DesignSystemProgressBar), findsNothing);
     });
 
     testWidgets(
@@ -333,7 +330,7 @@ void main() {
       },
     );
 
-    testWidgets('shows error and retry button in error state', (tester) async {
+    testWidgets('shows the error card without its own button', (tester) async {
       await pumpConfigWidget(
         tester,
         const ProvisioningState.error(ProvisioningError.loginFailed),
@@ -348,11 +345,14 @@ void main() {
         find.text(context.messages.provisionedSyncErrorLoginFailed),
         findsOneWidget,
       );
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      // The remedy lives in the sticky bar's accent slot — the position the
+      // rest of the wizard trained the user on — not as a grey pill inside
+      // the card.
       expect(
         find.text(context.messages.provisionedSyncRetry),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
     });
 
     testWidgets(
@@ -373,86 +373,30 @@ void main() {
       },
     );
 
-    testWidgets('retry button invokes controller retry in error state', (
+    testWidgets('the bar retry invokes the controller in error state', (
       tester,
     ) async {
-      await pumpConfigWidget(
-        tester,
+      final controller = _FakeProvisioningController(
         const ProvisioningState.error(ProvisioningError.loginFailed),
       );
-
-      final context = tester.element(find.byType(ProvisionedConfigWidget));
-      final retryFinder = find.text(context.messages.provisionedSyncRetry);
-      expect(retryFinder, findsOneWidget);
-
-      // Tap retry — should not throw
-      await tester.tap(retryFinder);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          _ConfigActionBarTestWrapper(pageIndexNotifier: pageIndexNotifier),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(() => controller),
+          ],
+        ),
+      );
       await tester.pump();
-    });
 
-    // The step count follows the bundle kind, not the platform. Deriving it
-    // from `isDesktop` made a rotating run on mobile count "1/2, 2/2, 3/3".
-    testWidgets('counts two steps while a non-rotating bundle logs in', (
-      tester,
-    ) async {
-      await pumpConfigWidget(tester, const ProvisioningState.loggingIn());
-      expect(progressValue(tester), closeTo(1 / 2, 1e-9));
-    });
-
-    testWidgets('counts two steps while a non-rotating bundle joins', (
-      tester,
-    ) async {
-      await pumpConfigWidget(tester, const ProvisioningState.joiningRoom());
-      expect(progressValue(tester), closeTo(2 / 2, 1e-9));
-    });
-
-    /// Runs [body] with the platform flags forced to mobile, which is where
-    /// the old `isDesktop ? 3 : 2` count went wrong.
-    Future<void> onMobile(Future<void> Function() body) async {
-      final wasDesktop = isDesktop;
-      final wasMobile = isMobile;
-      isDesktop = false;
-      isMobile = true;
-      try {
-        await body();
-      } finally {
-        isDesktop = wasDesktop;
-        isMobile = wasMobile;
-      }
-    }
-
-    testWidgets('a rotating bundle on mobile counts out of three, not two', (
-      tester,
-    ) async {
-      await onMobile(() async {
-        await pumpConfigWidget(
-          tester,
-          const ProvisioningState.joiningRoom(),
-          rotates: true,
-        );
-        // The platform-keyed count said "2 / 2" here and then jumped to
-        // "3 / 3" on the very next state.
-        expect(progressValue(tester), isNot(closeTo(2 / 2, 1e-9)));
-        expect(progressValue(tester), closeTo(2 / 3, 1e-9));
-      });
-    });
-
-    testWidgets('a rotating bundle on mobile reaches the third step', (
-      tester,
-    ) async {
-      await onMobile(() async {
-        await pumpConfigWidget(
-          tester,
-          const ProvisioningState.rotatingPassword(),
-          rotates: true,
-        );
-        expect(progressValue(tester), closeTo(3 / 3, 1e-9));
-      });
+      await tester.tap(find.byKey(const Key('provisioned_config_retry')));
+      await tester.pump();
+      expect(controller.retryCalls, 1);
     });
 
     void expectNextSteps(WidgetTester tester) {
       final context = tester.element(find.byType(ProvisionedConfigWidget));
-      expect(find.text(context.messages.syncPairedNextTitle), findsOneWidget);
       expect(find.text(context.messages.syncPairedVerifyStep), findsOneWidget);
       expect(
         find.text(context.messages.syncPairedSettingsStep),
@@ -482,7 +426,6 @@ void main() {
         find.text(context.messages.syncPairedFirstDeviceTitle),
         findsOneWidget,
       );
-      expect(find.text(context.messages.syncPairedNextTitle), findsNothing);
       expect(find.text(context.messages.syncPairedVerifyStep), findsNothing);
       expect(
         find.text(context.messages.syncPairedSettingsStep),
@@ -509,7 +452,7 @@ void main() {
       expect(find.text(context.messages.syncPairStepAlmost), findsOneWidget);
     });
 
-    testWidgets('the page has a title rank, shared with the work card', (
+    testWidgets('the page lead holds the only title rank', (
       tester,
     ) async {
       await pumpConfigWidget(tester, const ProvisioningState.done());
@@ -519,20 +462,25 @@ void main() {
       final done = tester.widget<Text>(
         find.text(context.messages.provisionedSyncDone),
       );
-      final outstanding = tester.widget<Text>(
-        find.text(context.messages.syncPairedNextTitle),
+      final step = tester.widget<Text>(
+        find.text(context.messages.syncPairedVerifyStep),
       );
 
-      // This was the one joining screen with nothing at title rank: the lead
-      // rendered as body copy, so the largest type on the page was a heading
-      // *inside* the card it introduced. They now match — the card earns its
-      // weight from the numbered work it holds, not from out-ranking the lead.
+      // The lead carries the page's one title; the card's meta-title
+      // ("Two things left") is gone, so its steps sit at body rank and the
+      // reader's first fixation lands on the actionable imperative.
       expect(
         done.style?.fontWeight,
         tokens.typography.styles.subtitle.subtitle1.fontWeight,
       );
-      expect(done.style?.fontSize, outstanding.style?.fontSize);
-      expect(done.style?.fontWeight, outstanding.style?.fontWeight);
+      expect(
+        done.style?.fontSize,
+        tokens.typography.styles.subtitle.subtitle1.fontSize,
+      );
+      expect(
+        step.style?.fontSize,
+        tokens.typography.styles.body.bodyMedium.fontSize,
+      );
     });
 
     testWidgets('names the remedy once a device is awaiting verification', (
@@ -596,12 +544,21 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(context.messages.syncPairedVerifyStep), findsNothing);
-      // And the card counts what is actually left.
+      // The outstanding item leads and the finished one closes: a card that
+      // opened with completed work spent the reader's first fixation on
+      // nothing they could act on.
       expect(
-        find.text(context.messages.syncPairedNextTitleOne),
-        findsOneWidget,
+        tester
+            .getTopLeft(find.text(context.messages.syncPairedSettingsStep))
+            .dy,
+        lessThan(
+          tester
+              .getTopLeft(
+                find.text(context.messages.syncPairedVerifyStepDone),
+              )
+              .dy,
+        ),
       );
-      expect(find.text(context.messages.syncPairedNextTitle), findsNothing);
 
       // And the stall copy can no longer surface behind it.
       await tester.pump(kVerifyStallTimeout);
@@ -909,7 +866,7 @@ void main() {
     );
 
     testWidgets(
-      'next button is disabled in error state',
+      'error state promotes Retry into the accent slot',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -934,13 +891,17 @@ void main() {
           find.byType(_ConfigActionBarTestWrapper),
         );
 
-        final nextButton = tester.widget<DesignSystemButton>(
-          find.widgetWithText(
-            DesignSystemButton,
-            context.messages.syncPairGoToDevices,
-          ),
+        // One accent slot, filled by whatever the user should press next:
+        // in the error state that is Retry, not a disabled destination going
+        // nowhere.
+        expect(
+          find.text(context.messages.syncPairGoToDevices),
+          findsNothing,
         );
-        expect(nextButton.onPressed, isNull);
+        final retry = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('provisioned_config_retry')),
+        );
+        expect(retry.onPressed, isNotNull);
       },
     );
 
@@ -993,6 +954,7 @@ void main() {
     Future<ValueNotifier<int>> pumpConfigPage(
       WidgetTester tester, {
       required ProvisioningState state,
+      List<SyncDeviceInfo> devices = const [],
     }) async {
       final localNotifier = ValueNotifier<int>(0);
       addTearDown(localNotifier.dispose);
@@ -1003,6 +965,9 @@ void main() {
             matrixServiceProvider.overrideWithValue(mockMatrixService),
             provisioningControllerProvider.overrideWith(
               () => _FakeProvisioningController(state),
+            ),
+            syncDevicesControllerProvider.overrideWith(
+              () => FakeSyncDevicesController(devices),
             ),
           ],
           child: MaterialApp(
@@ -1098,7 +1063,6 @@ void main() {
       ('loggingIn', const ProvisioningState.loggingIn()),
       ('joiningRoom', const ProvisioningState.joiningRoom()),
       ('rotatingPassword', const ProvisioningState.rotatingPassword()),
-      ('error', const ProvisioningState.error(ProvisioningError.loginFailed)),
       ('bundleDecoded', const ProvisioningState.bundleDecoded(testBundle)),
     ]) {
       testWidgets(
@@ -1121,6 +1085,29 @@ void main() {
         },
       );
     }
+
+    testWidgets(
+      'the error state fills the accent slot with a live Retry',
+      (tester) async {
+        // Not a disabled destination: the one accent slot carries whatever
+        // the user should press next, and after a failure that is Retry.
+        await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.error(ProvisioningError.loginFailed),
+        );
+
+        final context = tester.element(find.byType(ProvisionedConfigWidget));
+        expect(
+          find.text(context.messages.syncPairGoToDevices),
+          findsNothing,
+        );
+        final retry = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('provisioned_config_retry')),
+        );
+        expect(retry.onPressed, isNotNull);
+        expect(retry.variant, DesignSystemButtonVariant.primary);
+      },
+    );
 
     testWidgets(
       'next button is enabled and navigates to page 2 when state is ready',
@@ -1147,21 +1134,58 @@ void main() {
     );
 
     testWidgets(
-      'next button is enabled when state is done',
+      'done with an unverified peer keeps Go to Devices enabled but quiet',
+      (tester) async {
+        // The required action lives on the *other* device while the
+        // checklist is open; the accent must not shine away from it.
+        await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.done(),
+          devices: const [
+            SyncDeviceInfo(
+              deviceId: 'PEER',
+              isCurrentDevice: false,
+              verified: false,
+            ),
+          ],
+        );
+
+        final context = tester.element(find.byType(ProvisionedConfigWidget));
+        final nextBtn = tester.widget<DesignSystemButton>(
+          find.widgetWithText(
+            DesignSystemButton,
+            context.messages.syncPairGoToDevices,
+          ),
+        );
+        expect(nextBtn.onPressed, isNotNull);
+        expect(nextBtn.variant, DesignSystemButtonVariant.outlined);
+      },
+    );
+
+    testWidgets(
+      'done with a verified peer hands Go to Devices the accent',
       (tester) async {
         await pumpConfigPage(
           tester,
           state: const ProvisioningState.done(),
+          devices: const [
+            SyncDeviceInfo(
+              deviceId: 'PEER',
+              isCurrentDevice: false,
+              verified: true,
+            ),
+          ],
         );
 
+        final context = tester.element(find.byType(ProvisionedConfigWidget));
         final nextBtn = tester.widget<DesignSystemButton>(
-          find.byWidgetPredicate(
-            (w) =>
-                w is DesignSystemButton &&
-                w.variant == DesignSystemButtonVariant.primary,
+          find.widgetWithText(
+            DesignSystemButton,
+            context.messages.syncPairGoToDevices,
           ),
         );
         expect(nextBtn.onPressed, isNotNull);
+        expect(nextBtn.variant, DesignSystemButtonVariant.primary);
       },
     );
 
@@ -1176,16 +1200,20 @@ void main() {
         // The setup sheet carries its own title; "Devices" now names the
         // roster, which lives in the settings pane rather than this flow.
         expect(find.text('Sync Setup'), findsOneWidget);
-        // The progress bar must also be visible (proves the body rendered).
-        expect(progressValue(tester), isNotNull);
+        // The phase label must also be visible (proves the body rendered).
+        final context = tester.element(find.byType(ProvisionedConfigWidget));
+        expect(
+          find.text(context.messages.provisionedSyncLoggingIn),
+          findsOneWidget,
+        );
       },
     );
   });
 }
 
 /// Test wrapper that replicates the _ConfigActionBar logic since it's private.
-/// Uses the same provisioningControllerProvider to exercise the isComplete
-/// state.when() logic.
+/// Uses the same provisioningControllerProvider to exercise the isComplete /
+/// isError state.when() logic, including the error slot's accent Retry.
 class _ConfigActionBarTestWrapper extends ConsumerWidget {
   const _ConfigActionBarTestWrapper({required this.pageIndexNotifier});
 
@@ -1204,6 +1232,16 @@ class _ConfigActionBarTestWrapper extends ConsumerWidget {
       done: () => true,
       error: (_) => false,
     );
+    final isError = state.when(
+      initial: () => false,
+      bundleDecoded: (_) => false,
+      loggingIn: () => false,
+      joiningRoom: () => false,
+      rotatingPassword: () => false,
+      ready: (_) => false,
+      done: () => false,
+      error: (_) => true,
+    );
 
     return Column(
       children: [
@@ -1215,10 +1253,20 @@ class _ConfigActionBarTestWrapper extends ConsumerWidget {
               child: Text(context.messages.settingsMatrixPreviousPage),
             ),
             const SizedBox(width: 8),
-            DesignSystemButton(
-              onPressed: isComplete ? () => pageIndexNotifier.value = 2 : null,
-              label: context.messages.syncPairGoToDevices,
-            ),
+            if (isError)
+              DesignSystemButton(
+                key: const Key('provisioned_config_retry'),
+                onPressed: () =>
+                    ref.read(provisioningControllerProvider.notifier).retry(),
+                label: context.messages.provisionedSyncRetry,
+              )
+            else
+              DesignSystemButton(
+                onPressed: isComplete
+                    ? () => pageIndexNotifier.value = 2
+                    : null,
+                label: context.messages.syncPairGoToDevices,
+              ),
           ],
         ),
       ],

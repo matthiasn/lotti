@@ -1,0 +1,114 @@
+---
+title: Adicionar um dispositivo
+description: Pareia um novo dispositivo com a tua conta de sincronização através de um código QR, confere o código de verificação e conclui os dois passos seguintes.
+---
+
+# Adicionar um dispositivo
+
+Todos os teus dispositivos partilham uma única conta de sincronização.
+Adicionar um dispositivo significa entregar-lhe as credenciais dessa conta, por
+isso o processo tem duas verificações: um **código de verificação** curto que
+comparas antes de ligar e uma **verificação por emoji** a seguir.
+
+Fazem coisas diferentes. O código de verificação diz que os dois ecrãs falam da
+mesma conta — apanha um código vindo de outro sítio, que é o erro que de facto se
+comete. Deriva apenas desses identificadores, não da palavra-passe — não diz
+nada sobre se as credenciais que leva ainda são válidas, nem sobre quem está do
+outro lado. A verificação por emoji
+que se segue é o passo que autentica o dispositivo e, até terminar, o dispositivo
+novo não consegue ler nada.
+
+Precisas dos dois dispositivos à frente. Começa num que já esteja ligado —
+qualquer um, telemóvel ou computador. Não há dispositivo «principal».
+
+## Mostra o código num dispositivo que já usas
+
+Abre **Definições → Configurações de sincronização → Dispositivos** e escolhe **Adicionar
+dispositivo**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Ecrã Adicionar dispositivo do Lotti com código QR, aviso de segurança com cadeado e o código de verificação 2BD-EF4"
+  caption="O código só é mostrado enquanto este ecrã estiver aberto. Repara no código de verificação por baixo: vais compará-lo já a seguir."
+/>
+
+Trata este ecrã como tratarias a tua palavra-passe, porque é isso que ele
+contém. Quem ler ou fotografar o código QR pode iniciar sessão na tua conta: não
+consegue decifrar as tuas entradas sem estar também verificado por emoji a
+partir de um dos teus dispositivos, mas pode tomar conta da conta — incluindo
+mudar a palavra-passe e deixar-te de fora. Mostra-o apenas a um dispositivo teu e nunca o envies por conversa,
+captura de ecrã ou ecrã partilhado.
+
+**Fechar o ecrã esconde o código, mas não o revoga.** O código contém a
+palavra-passe atual da tua conta: uma fotografia continua utilizável enquanto
+essa palavra-passe for válida. Se achas que alguém a captou, trata-a como uma
+palavra-passe divulgada e não como algo que entretanto expirou.
+
+**Copiar código de emparelhamento** existe de propósito para quando o
+dispositivo que se junta não tem câmara — um computador a juntar-se a outro.
+Coloca as mesmas credenciais na área de transferência: cola-as diretamente no
+outro dispositivo e em mais lado nenhum.
+
+## Lê o código no dispositivo novo
+
+Instala o Lotti no dispositivo novo e abre lá **Definições → Configurações de sincronização →
+Dispositivos** e escolhe **Configurar sincronização**. No telemóvel a câmara abre de imediato; aponta ao primeiro
+dispositivo. No computador, ou se a câmara não estiver disponível, escolhe
+**Digitar o código manualmente** e cola o código copiado.
+
+## Confere que o código coincide antes de ligar
+
+Descodificar o código não liga nada. O que aparece primeiro é um resumo daquilo
+a que estás prestes a juntar-te, encabeçado pelo código de verificação.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Resumo de emparelhamento do Lotti com o código de verificação, a conta a que se vai juntar e o servidor de sincronização"
+  caption="Ambos os dispositivos derivam este código de forma independente a partir da conta, da sala e do servidor. Nunca o trocam entre si — é isso que torna a comparação útil."
+/>
+
+Olha para o código de verificação aqui e para o do primeiro dispositivo. **Têm de
+ser idênticos.** Se forem diferentes, para. Descarta-o: os dois ecrãs não descrevem a mesma conta, sala e servidor, e
+reabrir o ecrã não muda isso.
+
+A conta e o servidor por baixo do código são contexto, não coisas a comparar —
+não aparecem no outro dispositivo. Quando tudo coincidir, escolhe **Conectar este dispositivo**.
+
+## Conclui os dois passos seguintes
+
+Ligar junta-te à conta. Ainda não permite que o dispositivo novo leia o que quer
+que seja.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Configuração de sincronização do Lotti: este dispositivo está ligado, verificação por emoji e Enviar configurações ainda pendentes"
+  caption="Ligado é a metade fácil. O cartão diz o que falta e afirma claramente que, até à verificação, este dispositivo não consegue ler nada."
+/>
+
+1. **Compara os emojis.** Aparece uma fila de emojis nos dois dispositivos.
+   Confere que coincidem e confirma em cada um. Até lá, o dispositivo novo recebe
+   apenas cifra que não consegue ler — as chaves só vão para dispositivos
+   verificados. Vê [Sincronizar dispositivos](./sync.mdx).
+2. **Envia as definições.** No primeiro dispositivo, no ecrã Adicionar
+   dispositivo que ainda tens aberto, escolhe **Enviar configurações** para que
+   categorias, hábitos, painéis e configuração de IA cheguem. Se já o fechaste,
+   reabre **Definições → Configurações de sincronização → Dispositivos → Adicionar dispositivo**.
+
+Deixa as duas aplicações abertas até a primeira sincronização terminar.
+
+## Se algo correr mal
+
+- **Os códigos de verificação diferem.** Não ligues. Não estás a ver o código do teu
+  próprio dispositivo. Reabrir o ecrã não ajuda: a mesma conta produz sempre o
+  mesmo código, por isso uma diferença significa que os dois ecrãs não descrevem
+  o mesmo emparelhamento.
+- **O código não descodifica.** Copia-o outra vez no primeiro dispositivo em vez
+  de corrigires o que colaste; o valor codificado não é para ser acertado à mão.
+  Se a aplicação indicar versões diferentes, os dispositivos têm compilações
+  diferentes e ambos precisam de atualização.
+- **O dispositivo novo ligou mas continua vazio.** É o estado esperado antes da
+  verificação. Termina a comparação dos emojis e depois consulta
+  [Sincronizar dispositivos](./sync.mdx) para a fila de saída e a recuperação.
+
+Continua com [Sincronizar dispositivos](./sync.mdx) para estado diário, saúde da
+entrega e ferramentas de recuperação.

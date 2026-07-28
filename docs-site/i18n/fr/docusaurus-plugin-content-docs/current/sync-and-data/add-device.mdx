@@ -1,0 +1,121 @@
+---
+title: Ajouter un appareil
+description: Appaire un nouvel appareil à ton compte de synchronisation avec un QR code, vérifie le code de contrôle et termine les deux étapes qui suivent.
+---
+
+# Ajouter un appareil
+
+Tous tes appareils partagent un seul compte de synchronisation. Ajouter un
+appareil, c'est lui confier les identifiants de ce compte, d'où deux
+vérifications : un court **code de contrôle** que tu compares avant de
+connecter, et une **vérification par emoji** ensuite.
+
+Elles ne font pas la même chose. Le code de contrôle dit que les deux écrans
+parlent du même compte — il attrape un code venu d'ailleurs, l'erreur que l'on
+commet réellement. Il ne dérive que de ces identifiants, pas du mot de passe :
+il ne dit rien de la validité des identifiants qu'il contient, ni de qui se
+trouve en face. La vérification par
+emoji qui suit est l'étape qui authentifie l'appareil, et tant qu'elle n'est pas
+terminée le nouvel appareil ne peut rien lire.
+
+Il te faut les deux appareils devant toi. Commence sur un appareil déjà
+connecté — n'importe lequel, téléphone ou ordinateur. Il n'y a pas d'appareil
+« principal ».
+
+## Afficher le code sur un appareil déjà utilisé
+
+Ouvre **Paramètres → Paramètres de synchronisation → Appareils** et choisis **Ajouter un
+appareil**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Écran Ajouter un appareil de Lotti avec un QR code, une note de sécurité avec cadenas et le code de contrôle 2BD-EF4"
+  caption="Le code n'est affiché que tant que cet écran reste ouvert. Note le code de contrôle en dessous : tu vas le comparer."
+/>
+
+Traite cet écran comme ton mot de passe, car c'est ce qu'il contient. Quiconque scanne ou
+photographie le QR code peut se connecter à ton compte : il ne peut pas
+déchiffrer tes entrées sans être aussi vérifié par emoji depuis un de tes
+appareils, mais il peut prendre le contrôle du compte — y compris en changeant
+le mot de passe et en t'excluant.
+Ne le montre qu'à un appareil qui t'appartient, et ne l'envoie jamais par
+messagerie, capture d'écran ou partage d'écran.
+
+**Fermer l'écran masque le code, mais ne le révoque pas.** Le code contient
+le mot de passe actuel de ton compte : une photo reste utilisable aussi
+longtemps que ce mot de passe. Si tu penses que quelqu'un l'a capturé, traite-le
+comme un mot de passe divulgué, pas comme quelque chose qui aurait expiré.
+
+**Copier le code d’appairage** existe volontairement pour le cas où l'appareil
+qui rejoint n'a pas de caméra — un ordinateur rejoignant un ordinateur. Il place
+les mêmes identifiants dans ton presse-papiers : colle-les directement dans
+l'autre appareil et nulle part ailleurs.
+
+## Le scanner sur le nouvel appareil
+
+Installe Lotti sur le nouvel appareil, puis ouvre-y **Paramètres →
+Paramètres de synchronisation → Appareils** et choisis **Configurer la synchronisation**. Sur un
+téléphone la caméra s'ouvre aussitôt ;
+vise le premier appareil. Sur un ordinateur, ou si la caméra est indisponible,
+choisis **Saisir le code manuellement** et colle le code copié.
+
+## Vérifier que le code correspond avant de connecter
+
+Décoder le code ne connecte rien. Ce qui apparaît d'abord est un récapitulatif
+de ce que tu t'apprêtes à rejoindre, mené par le code de contrôle.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Récapitulatif d'appairage de Lotti avec le code de contrôle, le compte rejoint et le serveur de synchronisation"
+  caption="Les deux appareils dérivent ce code indépendamment du compte, du salon et du serveur. Ils ne l'échangent jamais — d'où l'intérêt de le comparer."
+/>
+
+Regarde le code de contrôle ici et celui du premier appareil. **Ils doivent être
+identiques.** S'ils diffèrent, arrête-toi et écarte-le : les deux écrans ne décrivent pas le même compte, le même salon et
+le même serveur, et rouvrir l'écran n'y changera rien.
+
+Le compte et le serveur sous le code sont du contexte, pas des éléments à
+comparer — ils n'apparaissent pas sur l'autre appareil. Quand tout correspond,
+choisis **Connecter cet appareil**.
+
+## Terminer les deux étapes suivantes
+
+La connexion rejoint le compte. Elle ne permet pas encore au nouvel appareil de
+lire quoi que ce soit.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Configuration de synchronisation Lotti : cet appareil est connecté, vérification par emoji et Envoyer les réglages encore en attente"
+  caption="Connecté, c'est la moitié facile. La carte nomme ce qui manque et dit clairement que sans vérification l'appareil ne peut rien lire."
+/>
+
+1. **Compare les emoji.** Une rangée d'emoji apparaît sur les deux appareils.
+   Vérifie qu'ils correspondent et confirme sur chacun. Jusque-là, le nouvel
+   appareil ne reçoit que du chiffré illisible — les clés ne vont qu'aux
+   appareils vérifiés. Voir
+   [Vérifier le nouvel appareil](./sync.mdx).
+2. **Envoie les réglages.** Sur le premier appareil, dans l'écran Ajouter un
+   appareil encore ouvert, choisis **Envoyer les réglages** pour que catégories,
+   habitudes, tableaux de bord et configuration IA arrivent. Si tu l'as fermé,
+   rouvre **Paramètres → Paramètres de synchronisation → Appareils → Ajouter un appareil**.
+
+Laisse les deux applications ouvertes jusqu'à la fin de la première
+synchronisation.
+
+## En cas de problème
+
+- **Les codes de contrôle diffèrent.** Ne connecte pas. Ce n'est pas le code de
+  ton appareil. Rouvrir l'écran n'y changera rien : le même compte produit le
+  même code à chaque fois, donc un écart signifie que les deux écrans ne
+  décrivent pas le même appairage.
+- **Le code ne se décode pas.** Copie-le à nouveau sur le premier appareil
+  plutôt que de corriger ce que tu as collé ; la valeur encodée n'est pas faite
+  pour être retouchée. Si l'app signale une différence de version, les deux
+  appareils sont sur des builds différents et doivent être mis à jour.
+- **Le nouvel appareil est connecté mais reste vide.** C'est l'état attendu
+  avant vérification. Termine la comparaison des emoji, puis consulte
+  [Synchroniser les appareils](./sync.mdx) pour la file d'envoi et le
+  rattrapage.
+
+Poursuis avec [Synchroniser les appareils](./sync.mdx) pour l'état quotidien, la
+qualité de livraison et les outils de récupération.

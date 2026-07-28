@@ -45,6 +45,16 @@ const double kAddDeviceWideCard = 420;
 /// not ellipsise.
 const double kAddDeviceDetailsMin = 250;
 
+/// Vertical space the QR must leave for everything that shares its viewport:
+/// the sheet header, the step eyebrow and heading, the intro line, the
+/// security callout, the card's own padding, and the pinned bar.
+///
+/// The sheet scrolls, but the QR is the one artifact that must render whole
+/// at rest — a code sliced by the pinned bar is unscannable and reads as a
+/// broken app, which is exactly what happened at 1280×700. The regression
+/// test pins the no-overlap guarantee at that size.
+const double kAddDeviceQrViewportOverhead = 540;
+
 /// What the inviting sheet is waiting on, shared between the scroll body and
 /// the pinned bar. The bar is built outside the view's `State`, and the live
 /// signal has to live there: on a phone the body's own status strip is below
@@ -123,75 +133,89 @@ class AddDeviceActionBar extends StatelessWidget {
       valueListenable: signal,
       builder: (context, state, _) {
         final enabled = state == AddDeviceJoinState.ready;
+        // One tier: the live status line beside (or, narrow, above) the two
+        // hand-off actions. The old stack — lead-in, status, button — gave
+        // one control three different answers to "can I press this?" and
+        // spent so much height that it sliced the QR above it in half on
+        // short windows. The status line alone carries the gating story:
+        // waiting, joined-but-unverified, or ready.
+        final sendSettings = DesignSystemButton(
+          key: const Key('add_device_send_settings'),
+          label: messages.syncAddDeviceSendSettings,
+          // Accent whenever it actually works. Not `secondary` for the
+          // quiet case: its enabled fill is the same token the component
+          // paints a *disabled* filled button with, so a live action
+          // read as inert. `outlined` drops its border when disabled, so
+          // the two can never be confused.
+          variant: enabled
+              ? DesignSystemButtonVariant.primary
+              : DesignSystemButtonVariant.outlined,
+          size: DesignSystemButtonSize.large,
+          leadingIcon: Icons.sync_alt_rounded,
+          onPressed: enabled
+              ? () => unawaited(
+                  (onSendSettings ?? SyncModal.show)(context),
+                )
+              : null,
+        );
+        final sendMessages = DesignSystemButton(
+          key: const Key('add_device_send_messages'),
+          label: messages.syncAddDeviceSendMessages,
+          variant: DesignSystemButtonVariant.outlined,
+          size: DesignSystemButtonSize.large,
+          leadingIcon: Icons.history_rounded,
+          onPressed: enabled
+              ? () => unawaited(
+                  (onSendMessages ?? ReSyncModal.show)(context),
+                )
+              : null,
+        );
+        // Whenever the pills are quiet, say why. The live status lives here
+        // rather than in the card because on a phone the card's own strip
+        // is below the fold, and a caption naming it pointed at nothing.
+        Widget status({required bool centered}) => _BarStatus(
+          state: state,
+          onRetry: signal.onRetry,
+          centered: centered,
+        );
+
         return SyncStickyBar(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // A lead-in, deliberately without a fraction: the body already
-              // carries "Now · Show the code", and a second "Step N of M" on
-              // the same viewport stops either of them indicating anything.
-              //
-              // It also has to agree with the two lines under it. "Next ·
-              // after it joins" over a status reading "Send now" over an
-              // outlined button gave one control three different answers to
-              // "can I press this?", and it is the only pinned control here.
-              // Only while the action is not yet live. Once it is, the
-              // status line and the accent already say so, and a lead-in
-              // reading "after it joins" over them gave one control three
-              // different answers to "can I press this?".
-              if (!enabled)
-                SyncPairStepIndicator(
-                  key: const Key('add_device_step_settings'),
-                  label: messages.syncAddDeviceNextLeadIn,
-                  align: TextAlign.center,
-                  bottomGap: tokens.spacing.step2,
-                ),
-              // Whenever the pill is quiet, say why. The live status lives here
-              // rather than in the card because on a phone the card's own strip
-              // is below the fold, and a caption naming it pointed at nothing.
-              _BarStatus(
-                state: state,
-                onRetry: signal.onRetry,
-              ),
-              SizedBox(height: tokens.spacing.step2),
-              DesignSystemButton(
-                key: const Key('add_device_send_settings'),
-                label: messages.syncAddDeviceSendSettings,
-                // Accent only once the new device is actually here; until then
-                // the QR is the thing to look at.
-                // Accent whenever it actually works. Not `secondary` for the
-                // quiet case: its enabled fill is the same token the component
-                // paints a *disabled* filled button with, so a live action
-                // read as inert. `outlined` drops its border when disabled, so
-                // the two can never be confused.
-                variant: enabled
-                    ? DesignSystemButtonVariant.primary
-                    : DesignSystemButtonVariant.outlined,
-                size: DesignSystemButtonSize.large,
-                leadingIcon: Icons.sync_alt_rounded,
-                fullWidth: true,
-                onPressed: enabled
-                    ? () => unawaited(
-                        (onSendSettings ?? SyncModal.show)(context),
-                      )
-                    : null,
-              ),
-              SizedBox(height: tokens.spacing.step3),
-              DesignSystemButton(
-                key: const Key('add_device_send_messages'),
-                label: messages.syncAddDeviceSendMessages,
-                variant: DesignSystemButtonVariant.outlined,
-                size: DesignSystemButtonSize.large,
-                leadingIcon: Icons.history_rounded,
-                fullWidth: true,
-                onPressed: enabled
-                    ? () => unawaited(
-                        (onSendMessages ?? ReSyncModal.show)(context),
-                      )
-                    : null,
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth >= kAddDeviceWideCard) {
+                // Status on its own line, actions right-aligned under it.
+                // Sharing one row starved the status of width beside two
+                // labeled buttons — it wrapped one word per line and the bar
+                // grew to a third of the dialog.
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    status(centered: false),
+                    SizedBox(height: tokens.spacing.step3),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        sendMessages,
+                        SizedBox(width: tokens.spacing.step3),
+                        sendSettings,
+                      ],
+                    ),
+                  ],
+                );
+              }
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  status(centered: true),
+                  SizedBox(height: tokens.spacing.step2),
+                  sendSettings,
+                  SizedBox(height: tokens.spacing.step3),
+                  sendMessages,
+                ],
+              );
+            },
           ),
         );
       },
@@ -199,20 +223,27 @@ class AddDeviceActionBar extends StatelessWidget {
   }
 }
 
-/// The pinned bar's one live line: waiting, joined, or unable to look.
+/// The pinned bar's one live line: waiting, joined, ready, or unable to look.
 class _BarStatus extends StatelessWidget {
   const _BarStatus({
     required this.state,
     required this.onRetry,
+    this.centered = true,
   });
 
   final AddDeviceJoinState state;
   final VoidCallback? onRetry;
 
+  /// Stacked above the buttons the line centers; beside them, it leads.
+  final bool centered;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final alignment = centered
+        ? MainAxisAlignment.center
+        : MainAxisAlignment.start;
     final caption = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
@@ -221,7 +252,7 @@ class _BarStatus extends StatelessWidget {
       case AddDeviceJoinState.ready:
         return Row(
           key: const Key('add_device_ready'),
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: alignment,
           children: [
             Icon(
               Icons.verified_user_rounded,
@@ -242,7 +273,7 @@ class _BarStatus extends StatelessWidget {
       case AddDeviceJoinState.joined:
         return Row(
           key: const Key('add_device_joined'),
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: alignment,
           children: [
             DesignSystemSpinner(
               size: tokens.spacing.step5,
@@ -260,18 +291,21 @@ class _BarStatus extends StatelessWidget {
           ],
         );
       case AddDeviceJoinState.rosterFailed:
-        return Row(
+        // A Wrap, not a Row: the error line plus the retry pill exceed a
+        // narrow bar by a hair, and an inflexible row clips where this can
+        // simply break onto a second run.
+        return Wrap(
           key: const Key('add_device_poll_failed'),
-          mainAxisAlignment: MainAxisAlignment.center,
+          alignment: centered ? WrapAlignment.center : WrapAlignment.start,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: tokens.spacing.step2,
+          runSpacing: tokens.spacing.step2,
           children: [
-            Flexible(
-              child: Text(
-                messages.syncAddDeviceRosterError,
-                textAlign: TextAlign.center,
-                style: caption,
-              ),
+            Text(
+              messages.syncAddDeviceRosterError,
+              textAlign: centered ? TextAlign.center : TextAlign.start,
+              style: caption,
             ),
-            SizedBox(width: tokens.spacing.step2),
             DesignSystemButton(
               key: const Key('add_device_poll_retry'),
               label: messages.provisionedSyncRetry,
@@ -283,7 +317,7 @@ class _BarStatus extends StatelessWidget {
       case AddDeviceJoinState.waiting:
         return Row(
           key: const Key('add_device_waiting'),
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: alignment,
           children: [
             DesignSystemSpinner(
               size: tokens.spacing.step4,
@@ -578,14 +612,14 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
           ),
         ),
         SizedBox(height: tokens.spacing.step4),
-        // Before the credential, not after it. As the last child it was below
-        // the fold on both viewports — a caveat about a secret that the reader
-        // never reaches is not a caveat. Neutral ink so it does not out-shout
-        // the live status inside the card.
+        // Before the credential, not after it: a caveat about a secret the
+        // reader never reaches is not a caveat. Warning tone, deliberately —
+        // this is a live credential on screen, and de-toned to grey it was
+        // quieter than the buttons offering to copy it. The one-line copy is
+        // what keeps it affordable above the fold.
         SyncCallout(
           icon: Icons.lock_outline_rounded,
           text: messages.syncAddDeviceSecurityNote,
-          tone: tokens.colors.text.lowEmphasis,
           calloutKey: const Key('add_device_security_note'),
         ),
         SizedBox(height: tokens.spacing.step4),
@@ -631,12 +665,22 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
                 // by step3 on each side, so the card occupies `side + 2·step3`
                 // and budgeting as though it were `side` overspent by exactly
                 // that much.
-                final side =
+                final widthBudget =
                     (constraints.maxWidth -
                             kAddDeviceDetailsMin -
                             tokens.spacing.step5 -
                             tokens.spacing.step3 * 2)
                         .clamp(180.0, 300.0);
+                // The height budget is what stops the pinned bar slicing the
+                // code on a short window: the width formula alone sized the
+                // QR for the dialog's width and let a 1280×700 screen cut it
+                // mid-symbol. The floor keeps it scannable; below that the
+                // page scrolls rather than shrinking the code further.
+                final heightBudget =
+                    (MediaQuery.sizeOf(context).height -
+                            kAddDeviceQrViewportOverhead)
+                        .clamp(160.0, 300.0);
+                final side = math.min(widthBudget, heightBudget);
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -780,14 +824,11 @@ class _CodeRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          messages.syncAddDeviceCodeHint,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
+        // No explanatory sentence above the controls: "Copy pairing code"
+        // and "Show pairing code as text" already say everything the old
+        // no-camera paragraph said, and the paragraph was one more grey
+        // block in a screen that had four.
         if (revealed) ...[
-          SizedBox(height: tokens.spacing.step2),
           // Bounded so a long payload cannot stretch the sheet.
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: tokens.spacing.step12),
@@ -795,8 +836,8 @@ class _CodeRow extends StatelessWidget {
               child: SelectableText(data, style: codeStyle),
             ),
           ),
+          SizedBox(height: tokens.spacing.step3),
         ],
-        SizedBox(height: tokens.spacing.step3),
         Wrap(
           spacing: tokens.spacing.step3,
           runSpacing: tokens.spacing.step2,

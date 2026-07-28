@@ -266,12 +266,18 @@ for (const feature of features.features) {
   }
 }
 
+/// Strips the trailing `index.html` so a page is identified by its route.
+const routeOf = (path) => path.replace(/\/?index\.html$/, '');
+
 const translatedDocCounts = Object.fromEntries(
   translatedLocales.map((locale) => [locale, 0]),
 );
+const translatedDocIds = Object.fromEntries(
+  translatedLocales.map((locale) => [locale, new Set()]),
+);
 for (const locale of translatedLocales) {
   for (const path of buildFiles) {
-    if (!path.startsWith(`${locale}/`) || !path.endsWith('/index.html')) continue;
+    if (!path.startsWith(`${locale}/`) || !path.endsWith('index.html')) continue;
     const html = await readFile(resolve(buildDirectory, path), 'utf8');
     if (!html.includes('theme-doc-markdown')) continue;
     assert.equal(
@@ -282,11 +288,39 @@ for (const locale of translatedLocales) {
       `Translated document ${path} must render exactly one translation notice.`,
     );
     translatedDocCounts[locale] += 1;
+    translatedDocIds[locale].add(routeOf(path.slice(locale.length + 1)));
   }
-  assert.equal(
-    translatedDocCounts[locale],
-    40,
-    `The translation notice audit must cover every ${locale} manual document.`,
+}
+
+// Measured against the English documents that were actually built, not against
+// a pinned number and not against another locale. Comparing locales to each
+// other only proves they agree — if every locale were missing the same page
+// they would agree on being wrong. A hard-coded count is no better: it fails
+// on every page added, and reports it as a translation problem rather than a
+// stale constant.
+const englishDocIds = new Set();
+for (const path of buildFiles) {
+  if (!path.endsWith('index.html')) continue;
+  const [head] = path.split('/');
+  if (translatedLocales.includes(head)) continue;
+  const html = await readFile(resolve(buildDirectory, path), 'utf8');
+  if (!html.includes('theme-doc-markdown')) continue;
+  englishDocIds.add(routeOf(path));
+}
+
+assert.ok(
+  englishDocIds.size > 0,
+  'The translation notice audit found no English documents to measure against.',
+);
+
+for (const locale of translatedLocales) {
+  const missing = [...englishDocIds].filter(
+    (id) => !translatedDocIds[locale].has(id),
+  );
+  assert.deepEqual(
+    missing,
+    [],
+    `The ${locale} manual is missing documents: ${missing.join(', ')}.`,
   );
 }
 

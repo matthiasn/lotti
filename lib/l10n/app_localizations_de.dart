@@ -8292,8 +8292,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieses Gerät wird abgesichert…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Ein weiteres Gerät mit diesem Sync-Konto koppeln';
+  String get provisionedSyncSubtitle => 'Geräte koppeln und verwalten';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Sync-Server';
@@ -9351,7 +9350,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Matrix-Wartungsaufgaben und Wiederherstellungstools ausführen';
+      'Matrix-Wartung und Wiederherstellung';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Wartung';
@@ -9586,8 +9585,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsSpeechTitle => 'Sprache';
 
   @override
-  String get settingsSyncConflictsSubtitle =>
-      'Synchronisierungskonflikte lösen, um Datenkonsistenz zu gewährleisten';
+  String get settingsSyncConflictsSubtitle => 'Sync-Konflikte auflösen';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9631,8 +9629,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsSyncNodeProfileSaveButton => 'Speichern';
 
   @override
-  String get settingsSyncNodeProfileSubtitle =>
-      'Benenne dieses Gerät und überprüfe die Fähigkeiten, die deine anderen Geräte sehen können.';
+  String get settingsSyncNodeProfileSubtitle => 'Gerätename und Fähigkeiten';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Dieses Gerät';
@@ -9890,10 +9887,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncAddDeviceAction => 'Gerät hinzufügen';
 
   @override
-  String get syncAddDeviceCodeHint =>
-      'Das neue Gerät hat keine Kamera? Kopiere den Kopplungscode und füge ihn dort stattdessen ein.';
-
-  @override
   String get syncAddDeviceConnected =>
       'Das neue Gerät ist beigetreten – schließe vor dem Senden die Emoji-Verifizierung ab.';
 
@@ -9912,10 +9905,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Installiere Lotti auf dem neuen Gerät, öffne dort Einstellungen → Synchronisierungseinstellungen → Geräte und scanne diesen Code.';
 
   @override
-  String get syncAddDeviceNextLeadIn =>
-      'Als Nächstes · nach der Emoji-Verifizierung';
-
-  @override
   String get syncAddDeviceRevealCode => 'Kopplungscode als Text anzeigen';
 
   @override
@@ -9924,7 +9913,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'Dieser Kopplungscode entsperrt dein Sync-Konto – lass ihn nur von deinem eigenen neuen Gerät scannen und mach nie einen Screenshot davon oder verschicke ihn.';
+      'Behandle diesen Code wie dein Passwort — nur dein eigenes neues Gerät darf ihn scannen.';
 
   @override
   String get syncAddDeviceSendMessages => 'Nachrichtenverlauf senden';
@@ -10025,9 +10014,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesSectionTitle => 'Geräte';
-
-  @override
   String get syncDevicesStaleHint => 'Wahrscheinlich nicht mehr in Gebrauch';
 
   @override
@@ -10118,10 +10104,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPairConnectButton => 'Dieses Gerät verbinden';
 
   @override
-  String get syncPairCopyCodeHint =>
-      'Dieses Gerät hat keine Kamera? Verwende auf dem anderen Gerät Kopplungscode kopieren und bring ihn per Passwort-Manager, verschlüsselter Notiz oder durch Abtippen hierher – nicht per Chat oder E-Mail.';
-
-  @override
   String get syncPairDiscardCode => 'Anderen Kopplungscode eingeben';
 
   @override
@@ -10133,14 +10115,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Synchronisierung ist auf diesem Gerät eingerichtet';
 
   @override
-  String get syncPairedNextTitle => 'Noch zwei Schritte';
-
-  @override
-  String get syncPairedNextTitleOne => 'Noch eine Sache';
-
-  @override
   String get syncPairedSettingsStep =>
-      'Wähle nach der Emoji-Verifizierung auf deinem anderen Gerät im noch geöffneten Bildschirm Gerät hinzufügen zuerst Einstellungen senden und dann Nachrichtenverlauf senden. Deine Messgrößen, Kategorien, Gewohnheiten, Dashboards, KI-Einstellungen und dein Nachrichtenverlauf kommen dann hierher.';
+      'Deine Kategorien, Gewohnheiten, Dashboards und KI-Einstellungen kommen von dort.';
 
   @override
   String get syncPairedSettingsStepFallback =>
@@ -10156,7 +10132,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Auf beiden Geräten erscheint eine Reihe von Emojis. Prüfe, ob sie übereinstimmen, und bestätige auf jedem Gerät — bis dahin kann dieses Gerät deine Einträge nicht lesen.';
+      'Bis du auf beiden Geräten bestätigst, kann dieses Gerät deine Einträge nicht lesen.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10181,16 +10157,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPairGoToDevices => 'Zu Geräte';
 
   @override
-  String get syncPairMismatchRemedy =>
-      'Wenn er nicht übereinstimmt, nimm stattdessen den Code, den dein eigenes Gerät anzeigt.';
-
-  @override
   String get syncPairMismatchWarning =>
       'Wenn das nicht übereinstimmt, verbinde nicht – der Code gehört zu einem anderen Konto.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'Verwende nur einen Code, den du selbst auf einem eigenen Gerät erzeugt hast. Scannst du den Code einer anderen Person, landet alles, was du hier schreibst, in deren Konto.';
+      'Verwende nur einen Code von deinem eigenen Gerät — ein fremder Code schickt alles, was du schreibst, in ein fremdes Konto.';
 
   @override
   String get syncPairPasteTitle => 'Kopplungscode einfügen';
@@ -10231,7 +10203,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPairWhereToFind =>
-      'Öffne auf einem Gerät, das bereits synchronisiert, Einstellungen → Synchronisierungseinstellungen → Geräte und wähle Gerät hinzufügen.';
+      'Den Code findest du unter „Gerät hinzufügen\" auf einem Gerät, das bereits synchronisiert — dort kopieren, hier einfügen.';
 
   @override
   String get syncPairWillJoin => 'Dieses Gerät tritt bei:';
@@ -10300,6 +10272,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPayloadThemingSelection => 'Designauswahl';
+
+  @override
+  String get syncSetupCta => 'Sync einrichten';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Dein Tagebuch auf all deinen Geräten — Ende-zu-Ende verschlüsselt, nur zwischen deinen eigenen Geräten.';
+
+  @override
+  String get syncSetupEmptyTitle => 'Geräte synchronisieren';
 
   @override
   String get syncStepAgentEntities => 'Agent-Entitäten';
@@ -11265,4 +11247,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get syncPairedVerifyStepTitle =>
+      'Emojis auf beiden Geräten abgleichen';
+
+  @override
+  String get syncPairedSettingsStepTitle =>
+      'Einstellungen vom anderen Gerät senden';
+
+  @override
+  String get syncPairFirstDeviceTitle => 'Richtest du dein erstes Gerät ein?';
+
+  @override
+  String get syncPairFirstDeviceHint =>
+      'Dein erster Kopplungscode kommt vom Provisionierungswerkzeug deines Sync-Servers — siehe Handbuch. Jedes weitere Gerät bekommt seinen Code aus der App.';
 }

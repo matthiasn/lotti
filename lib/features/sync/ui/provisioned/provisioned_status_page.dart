@@ -110,9 +110,11 @@ class ProvisionedStatusWidget extends ConsumerWidget {
                 // this page: borderless, so the constructive "Add device"
                 // above stays the loudest control. Sized to match the
                 // diagnostics button beside it — at large + fullWidth it had
-                // the exact geometry of that primary.
+                // the exact geometry of that primary. The icon keeps the
+                // destructive reading legible without relying on hue alone.
                 variant: DesignSystemButtonVariant.dangerTertiary,
                 size: DesignSystemButtonSize.medium,
+                leadingIcon: Icons.link_off_rounded,
                 onPressed: () async {
                   final confirmed = await showDialog<bool>(
                     context: context,

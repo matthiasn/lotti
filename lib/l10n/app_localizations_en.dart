@@ -8198,8 +8198,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncRotatingPassword => 'Securing this device…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Pair another device to this sync account';
+  String get provisionedSyncSubtitle => 'Pair and manage your devices';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Sync server';
@@ -9239,7 +9238,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Run Matrix maintenance tasks and recovery tools';
+      'Matrix maintenance and recovery';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Maintenance';
@@ -9470,8 +9469,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSpeechTitle => 'Speech';
 
   @override
-  String get settingsSyncConflictsSubtitle =>
-      'Resolve synchronization conflicts to ensure data consistency';
+  String get settingsSyncConflictsSubtitle => 'Resolve sync conflicts';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9514,8 +9512,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSyncNodeProfileSaveButton => 'Save';
 
   @override
-  String get settingsSyncNodeProfileSubtitle =>
-      'Name this device and review capabilities visible to your other devices.';
+  String get settingsSyncNodeProfileSubtitle => 'Device name and capabilities';
 
   @override
   String get settingsSyncNodeProfileTitle => 'This device';
@@ -9766,10 +9763,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncAddDeviceAction => 'Add device';
 
   @override
-  String get syncAddDeviceCodeHint =>
-      'No camera on the new device? Copy the pairing code and paste it there instead.';
-
-  @override
   String get syncAddDeviceConnected =>
       'New device joined — finish emoji verification to send.';
 
@@ -9788,9 +9781,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Install Lotti on the new device, then open Settings → Sync Settings → Devices there and scan this code.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Next · after emoji verification';
-
-  @override
   String get syncAddDeviceRevealCode => 'Show pairing code as text';
 
   @override
@@ -9799,7 +9789,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'This pairing code unlocks your sync account — let only your own new device scan it, and never screenshot or send it.';
+      'Treat this code like your password — only your own new device may scan it.';
 
   @override
   String get syncAddDeviceSendMessages => 'Send message history';
@@ -9896,9 +9886,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesSectionTitle => 'Devices';
-
-  @override
   String get syncDevicesStaleHint => 'Probably no longer in use';
 
   @override
@@ -9986,10 +9973,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPairConnectButton => 'Connect this device';
 
   @override
-  String get syncPairCopyCodeHint =>
-      'No camera on this device? On the other device use Copy pairing code, move it here with a password manager, an encrypted note, or by typing it out — not through chat or email.';
-
-  @override
   String get syncPairDiscardCode => 'Enter a different pairing code';
 
   @override
@@ -10000,14 +9983,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPairedFirstDeviceTitle => 'Sync is set up on this device';
 
   @override
-  String get syncPairedNextTitle => 'Two things left';
-
-  @override
-  String get syncPairedNextTitleOne => 'One thing left';
-
-  @override
   String get syncPairedSettingsStep =>
-      'After emoji verification, on your other device, in the Add device screen you still have open, choose Send settings, then Send message history. Your measurables, categories, habits, dashboards, AI settings and message history arrive here.';
+      'Your categories, habits, dashboards and AI setup arrive from there.';
 
   @override
   String get syncPairedSettingsStepFallback =>
@@ -10023,7 +10000,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'A row of emoji appears on both devices. Check they match, then confirm on each — until you do, this device cannot read your entries.';
+      'Until you confirm on both devices, this one can\'t read your entries.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10047,16 +10024,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPairGoToDevices => 'Go to Devices';
 
   @override
-  String get syncPairMismatchRemedy =>
-      'If it doesn\'t match, use the code your own device is showing instead.';
-
-  @override
   String get syncPairMismatchWarning =>
       'If this doesn\'t match, don\'t connect — the code belongs to a different account.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'Only use a code you made yourself, on a device you own. Scanning someone else’s code puts everything you write here into their account.';
+      'Only use a code from your own device — someone else\'s code sends everything you write to their account.';
 
   @override
   String get syncPairPasteTitle => 'Paste the pairing code';
@@ -10095,7 +10068,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairWhereToFind =>
-      'On a device that already syncs, open Settings → Sync Settings → Devices and choose Add device.';
+      'The code is under Add device on a device that already syncs — copy it there, then paste it here.';
 
   @override
   String get syncPairWillJoin => 'This device will join:';
@@ -10162,6 +10135,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPayloadThemingSelection => 'Theming selection';
+
+  @override
+  String get syncSetupCta => 'Set up sync';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Keep your journal on every device you own — end-to-end encrypted, between your own devices only.';
+
+  @override
+  String get syncSetupEmptyTitle => 'Sync your devices';
 
   @override
   String get syncStepAgentEntities => 'Agent entities';
@@ -11110,6 +11093,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get syncPairedVerifyStepTitle => 'Match the emoji on both devices';
+
+  @override
+  String get syncPairedSettingsStepTitle =>
+      'Send settings from your other device';
+
+  @override
+  String get syncPairFirstDeviceTitle => 'Setting up your first device?';
+
+  @override
+  String get syncPairFirstDeviceHint =>
+      'Your first pairing code comes from your sync server’s provisioning tool — see the manual. Every later device gets its code from the app.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

@@ -174,6 +174,9 @@ void main() {
     when(() => mockDeviceKeys.deviceId).thenReturn('DEVICE1');
     when(() => mockDeviceKeys.deviceDisplayName).thenReturn('My Pixel');
     when(
+      () => mockDeviceKeys.userId,
+    ).thenReturn('@alice:example.com');
+    when(
       () => mockMatrixService.getUnverifiedDevices(),
     ).thenReturn([mockDeviceKeys]);
     when(() => runner.lastStep).thenReturn('');
@@ -184,6 +187,8 @@ void main() {
     await pumpModalWithRunner(tester, runner);
 
     expect(find.text('My Pixel'), findsOneWidget);
+    // The header names the account too, matching the outgoing ceremony.
+    expect(find.text('@alice:example.com'), findsOneWidget);
   });
 
   testWidgets(

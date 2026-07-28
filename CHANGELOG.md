@@ -58,6 +58,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing when there is nothing on the clipboard to paste.
 
 ### Changed
+- **Setting up sync starts with a real first screen.** Before anything is
+  configured, the Devices page used to show a single row that repeated the
+  menu entry you had just tapped, floating in an otherwise empty pane. It now
+  says what sync is — your journal on every device you own, end-to-end
+  encrypted, between your own devices only — with one Set up sync button.
+- **The pairing QR code always renders whole.** On a short window the pinned
+  "Send settings" bar could slice the code in half — unscannable, and with
+  nothing suggesting the rest was below. The code now sizes itself to the
+  window and the pinned bar shrank to a single row, so the code and its check
+  code are visible together at rest.
+- **Every pairing screen has one clear next action.** After a failed
+  connection, Try again is the highlighted button in the bar — it used to be
+  a grey pill inside the error card, under a disabled button going nowhere.
+  While connecting there is one progress indicator instead of two disagreeing
+  ones, and the finished screen leads with what is left to do instead of
+  counting it.
+- **The emoji verification ceremony matches the rest of the app.** Same type,
+  spacing and buttons as every other sheet. Cancel is no longer painted red —
+  backing out of a ceremony is a safe, ordinary act — and the success shield
+  uses the app's own green.
+- **Security warnings look like warnings again.** The "only use a code you
+  made yourself" and "treat this like your password" callouts had been muted
+  to grey, quieter than the buttons next to them; they carry the warning
+  color now. Destructive actions — removing a device, stopping sync — carry
+  an icon as well as the red, so they never rely on color alone.
+- **Desktop stopped stretching phone buttons.** "Add device" and the paste
+  and connect actions size themselves to their labels instead of spanning the
+  entire pane, and the devices panel keeps a readable width on wide windows.
+  The sidebar's sync descriptions were rewritten to fit without trailing off
+  mid-word.
 - **Planning the rest of today is faster and listens to the whole check-in.**
   Capture parsing and drafting now stay focused on the one artifact each step
   must produce, stop as soon as that artifact is saved, and immediately pick

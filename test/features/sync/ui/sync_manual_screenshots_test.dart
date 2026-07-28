@@ -33,12 +33,14 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
@@ -46,6 +48,8 @@ import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/state/provisioning_controller.dart';
+import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -55,11 +59,13 @@ import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dar
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
+import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
-import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/outbox/outbox_message_card.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -348,6 +354,35 @@ final String _provisioningBundleText = base64UrlEncode(
   utf8.encode(jsonEncode(_provisioningBundle.toJson())),
 );
 
+/// What an already-paired device hands to a new one: same account and room,
+/// `handover` kind, so the joining device joins without rotating the password.
+final String _manualHandover = base64UrlEncode(
+  utf8.encode(
+    jsonEncode(
+      _provisioningBundle.copyWith(kind: SyncBundleKind.handover).toJson(),
+    ),
+  ),
+);
+
+/// The account as the Add device sheet finds it: this device, plus the peer
+/// that has already been verified.
+final List<SyncDeviceInfo> _manualDevices = [
+  SyncDeviceInfo(
+    deviceId: 'MISSIONCONTROL',
+    displayName: _t('Mission Control Mac', 'Mission-Control-Mac'),
+    isCurrentDevice: true,
+    verified: true,
+    lastSeen: _syncTime,
+  ),
+  SyncDeviceInfo(
+    deviceId: 'PEBBLEPHONE',
+    displayName: _t('Admiral Pebble\u2019s Phone', 'Admiral Pebbles Telefon'),
+    isCurrentDevice: false,
+    verified: true,
+    lastSeen: _syncTime.subtract(const Duration(minutes: 6)),
+  ),
+];
+
 class _ManualBackfillStatsController extends BackfillStatsController {
   @override
   BackfillStatsState build() => BackfillStatsState(stats: _backfillStats);
@@ -379,6 +414,84 @@ class _ManualUnverifiedController extends MatrixUnverifiedController {
   Future<List<DeviceKeys>> build() async => devices;
 }
 
+/// Holds the provisioning flow at a fixed point so the onboarding surfaces
+/// render deterministically: [terminal] is where importing lands, and the Add
+/// device sheet mints a fixed bundle instead of reading persisted config.
+class _ManualProvisioningController extends ProvisioningController {
+  _ManualProvisioningController({this.terminal});
+
+  /// Where the flow lands when the bundle is imported. Null keeps the real
+  /// progression, which no manual surface needs.
+  final ProvisioningState? terminal;
+
+  @override
+  ProvisioningState build() => const ProvisioningState.initial();
+
+  @override
+  Future<String?> regenerateHandover() async => _manualHandover;
+
+  /// The real call walks login, room join and password rotation against a
+  /// live homeserver. The manual wants the frame at the end of that, so this
+  /// jumps straight to it.
+  @override
+  Future<void> configureFromBundle(SyncProvisioningBundle bundle) async {
+    final target = terminal;
+    if (target != null) state = target;
+  }
+}
+
+/// The viewfinder as the manual should depict it: a framed target area, not
+/// the black rectangle a camera-less capture would otherwise produce.
+class _ViewfinderStandIn extends StatelessWidget {
+  const _ViewfinderStandIn({required this.side});
+
+  final double side;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+      ),
+      child: Center(
+        child: SizedBox.square(
+          dimension: side * 0.6,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: tokens.colors.text.mediumEmphasis,
+                width: tokens.spacing.step1,
+              ),
+              borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.qr_code_2_rounded,
+                size: side * 0.3,
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ManualSyncDevicesController extends SyncDevicesController {
+  _ManualSyncDevicesController(this.devices);
+
+  final List<SyncDeviceInfo> devices;
+
+  @override
+  Future<List<SyncDeviceInfo>> build() async => devices;
+
+  @override
+  Future<bool> refresh() async => true;
+}
+
 class _ManualSyncMaintenanceController extends SyncMaintenanceController {
   @override
   SyncState build() => const SyncState();
@@ -387,6 +500,8 @@ class _ManualSyncMaintenanceController extends SyncMaintenanceController {
 enum _SyncSurface {
   hub,
   provisioned,
+  addDevice,
+  paired,
   status,
   verification,
   nodeProfile,
@@ -403,6 +518,8 @@ extension on _SyncSurface {
   String get id => switch (this) {
     _SyncSurface.hub => 'hub',
     _SyncSurface.provisioned => 'provisioned',
+    _SyncSurface.addDevice => 'add_device',
+    _SyncSurface.paired => 'paired',
     _SyncSurface.status => 'status',
     _SyncSurface.verification => 'verification',
     _SyncSurface.nodeProfile => 'node_profile',
@@ -418,6 +535,8 @@ extension on _SyncSurface {
   String get route => switch (this) {
     _SyncSurface.hub => '/settings/sync',
     _SyncSurface.provisioned => '/settings/sync/provisioned',
+    _SyncSurface.addDevice => '/settings/sync/provisioned',
+    _SyncSurface.paired => '/settings/sync/provisioned',
     _SyncSurface.status => '/settings/sync/provisioned',
     _SyncSurface.verification => '/settings/sync/provisioned',
     _SyncSurface.nodeProfile => '/settings/sync/node-profile',
@@ -439,6 +558,8 @@ extension on _SyncSurface {
   Widget mobilePage() => switch (this) {
     _SyncSurface.hub => const SettingsMobileBranchPage(branchId: 'sync'),
     _SyncSurface.provisioned => const ProvisionedSyncPage(),
+    _SyncSurface.addDevice => const ProvisionedSyncPage(),
+    _SyncSurface.paired => const ProvisionedSyncPage(),
     _SyncSurface.status => const ProvisionedSyncPage(),
     _SyncSurface.verification => const ProvisionedSyncPage(),
     _SyncSurface.nodeProfile => const SyncNodeProfilePage(),
@@ -670,10 +791,15 @@ void main() {
       ..registerSingleton<NavService>(navService);
 
     beamToNamedOverride = (_) {};
+    // A capture has no camera plugin, so the real scanner is a black square
+    // and a stream of MissingPluginExceptions. This stands in for the
+    // viewfinder and makes the scanning step legible in the manual.
+    scannerPreviewOverride = (context, side) => _ViewfinderStandIn(side: side);
   });
 
   tearDown(() async {
     beamToNamedOverride = null;
+    scannerPreviewOverride = null;
     await verificationStream.close();
     await navService.dispose();
     await tearDownTestGetIt();
@@ -711,7 +837,74 @@ void main() {
     syncControllerProvider.overrideWith(
       _ManualSyncMaintenanceController.new,
     ),
+    // Scoped to the two onboarding surfaces. Applied globally, these replace
+    // the controllers the older surfaces drive for real, and their captures
+    // stop reaching the states they assert on.
+    if (surface == _SyncSurface.paired)
+      provisioningControllerProvider.overrideWith(
+        () => _ManualProvisioningController(
+          terminal: const ProvisioningState.done(),
+        ),
+      ),
+    if (surface == _SyncSurface.addDevice)
+      provisioningControllerProvider.overrideWith(
+        _ManualProvisioningController.new,
+      ),
+    if (surface == _SyncSurface.addDevice || surface == _SyncSurface.status)
+      syncDevicesControllerProvider.overrideWith(
+        () => _ManualSyncDevicesController(_manualDevices),
+      ),
   ];
+
+  /// Opens the setup modal and gets the decoded bundle on screen.
+  ///
+  /// Since the add-device redesign the import page opens the camera on mobile,
+  /// so the paste field sits behind *enter manually* rather than being the
+  /// first thing rendered. Stops on the decoded review unless [confirm], which
+  /// carries on into the flow the way a user committing to the pairing does.
+  Future<void> openBundleImport(
+    WidgetTester tester, {
+    bool confirm = false,
+    String? bundleText,
+  }) async {
+    await tester.tap(find.byKey(const Key('sync_setup_cta')));
+    await settleFrames(tester, 10);
+    expect(find.byType(BundleImportWidget), findsOneWidget);
+
+    final manual = find.byKey(const Key('bundle_import_enter_manually'));
+    if (manual.evaluate().isNotEmpty) {
+      await tester.ensureVisible(manual);
+      await tester.pump();
+      await tester.tap(manual, warnIfMissed: false);
+      await settleFrames(tester, 8);
+    }
+
+    await tester.enterText(
+      find.byType(TextField),
+      bundleText ?? _provisioningBundleText,
+    );
+    await tester.pump();
+
+    final context = tester.element(find.byType(BundleImportWidget));
+    final importButton = find.text(
+      context.messages.provisionedSyncImportButton,
+    );
+    await tester.ensureVisible(importButton);
+    await tester.pump();
+    await tester.tap(importButton, warnIfMissed: false);
+    await settleFrames(tester, 8);
+
+    // Importing only decodes. What lands is a review — server, account, room
+    // and the pairing check code — and connecting is a separate, deliberate
+    // confirmation on top of it.
+    expect(find.byKey(const ValueKey('bundle_import_decoded')), findsOneWidget);
+    if (!confirm) return;
+
+    final connect = find.text(context.messages.syncPairConnectButton);
+    await tester.ensureVisible(connect);
+    await tester.pump();
+    await tester.tap(connect, warnIfMissed: false);
+  }
 
   Future<void> configureSurface(
     WidgetTester tester,
@@ -719,22 +912,30 @@ void main() {
   ) async {
     switch (surface) {
       case _SyncSurface.provisioned:
-        await tester.tap(find.byType(ProvisionedSyncSettingsCard));
-        await settleFrames(tester, 10);
-        expect(find.byType(BundleImportWidget), findsOneWidget);
-        await tester.enterText(find.byType(TextField), _provisioningBundleText);
-        await tester.pump();
-        final context = tester.element(find.byType(BundleImportWidget));
-        await tester.tap(
-          find.text(context.messages.provisionedSyncImportButton),
-        );
+        await openBundleImport(tester);
         await settleFrames(tester, 8);
+      case _SyncSurface.addDevice:
+        await tester.tap(find.byKey(const Key('sync_devices_add_device')));
+        await settleFrames(tester, 18);
+      case _SyncSurface.paired:
+        // A handover bundle, not the provisioned one: production sends
+        // `provisioned` through password rotation to `ready` and the
+        // first-device view, and only a peer's `handover` reaches `done` and
+        // the paired steps this capture documents.
+        await openBundleImport(
+          tester,
+          confirm: true,
+          bundleText: _manualHandover,
+        );
+        await settleFrames(tester, 18);
       case _SyncSurface.status:
-        await tester.tap(find.byType(ProvisionedSyncSettingsCard));
-        await settleFrames(tester, 18);
+        // A configured account renders the roster inline on the page; there is
+        // no settings card left to tap since the add-device redesign.
+        await settleFrames(tester, 8);
       case _SyncSurface.verification:
-        await tester.tap(find.byType(ProvisionedSyncSettingsCard));
-        await settleFrames(tester, 18);
+        // Same inline roster, and the embedded AutoVerificationLauncher opens
+        // the ceremony on its own once a device is unverified.
+        await settleFrames(tester, 8);
         expect(find.byType(VerificationModal), findsOneWidget);
         verificationStream.add(verificationRunner);
         await settleFrames(tester, 10);
@@ -764,6 +965,39 @@ void main() {
     }
   }
 
+  /// Refuses to publish a QR code that encodes anything real.
+  ///
+  /// This capture ends up in a public docs repository and the payload is a
+  /// live credential by design — it carries the sync account's password.
+  ///
+  /// `QrImageView` keeps its payload private, so this guards the two things
+  /// that decide it instead: that the provisioning controller is still the
+  /// stubbed one (drop that override and the sheet mints a bundle from
+  /// whatever sync config the machine running the capture has), and that the
+  /// bundle it mints is demo data.
+  void expectQrCarriesOnlyDemoData(WidgetTester tester) {
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(AddDeviceView)),
+    );
+    expect(
+      container.read(provisioningControllerProvider.notifier),
+      isA<_ManualProvisioningController>(),
+      reason: "A real controller would mint this machine's sync credentials",
+    );
+
+    final bundle = SyncProvisioningBundle.fromJson(
+      jsonDecode(
+            utf8.decode(base64Url.decode(base64Url.normalize(_manualHandover))),
+          )
+          as Map<String, dynamic>,
+    );
+    expect(bundle.password, 'manual-demo-only');
+    expect(bundle.user, endsWith('.test'));
+    // `.test` is reserved by RFC 2606; it can never resolve.
+    expect(Uri.parse(bundle.homeServer).host, endsWith('.test'));
+    expect(bundle.roomId, endsWith('.test'));
+  }
+
   void expectSurface(WidgetTester tester, _SyncSurface surface) {
     final context = tester.element(find.byType(Scaffold).first);
     final messages = context.messages;
@@ -773,10 +1007,40 @@ void main() {
         expect(find.text(messages.provisionedSyncTitle), findsWidgets);
         expect(find.text(messages.settingsMaintenanceTitle), findsWidgets);
       case _SyncSurface.provisioned:
-        expect(find.text(_provisioningBundle.homeServer), findsOneWidget);
+        // The check code leads the review because it is the only value a
+        // person can compare against the inviting device; the server is shown
+        // as a host rather than a full URL.
+        expect(
+          find.byKey(const Key('bundle_import_check_code')),
+          findsOneWidget,
+        );
         expect(find.text(_provisioningBundle.user), findsOneWidget);
+        expect(
+          find.text(Uri.parse(_provisioningBundle.homeServer).host),
+          findsOneWidget,
+        );
+      case _SyncSurface.addDevice:
+        // The pairing check code is the point of the sheet: both devices
+        // derive it independently and it must be compared before connecting.
+        expect(find.byType(PairingCheckCodeView), findsOneWidget);
+        expect(find.text(messages.syncAddDeviceIntro), findsWidgets);
+        expectQrCarriesOnlyDemoData(tester);
+      case _SyncSurface.paired:
+        // The quiet "connected" line plus the card that says what is still
+        // outstanding — the point of the screen is the second half.
+        // The quiet "connected" line plus the card that says what is still
+        // outstanding — the point of the screen is the second half.
+        // The quiet "connected" line plus the card that says what is still
+        // outstanding — the point of the screen is the second half.
+        expect(find.text(messages.provisionedSyncDone), findsOneWidget);
+        expect(find.byType(SyncFlowSection), findsWidgets);
       case _SyncSurface.status:
         expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
+        // The roster rows are the subject of this capture; asserting only the
+        // surrounding widget passed happily against an empty list.
+        for (final device in _manualDevices) {
+          expect(find.text(device.displayName!), findsWidgets);
+        }
         expect(
           find.text(messages.settingsMatrixDiagnosticShowButton),
           findsOneWidget,
@@ -872,7 +1136,8 @@ void main() {
 
       final configured =
           surface == _SyncSurface.status ||
-          surface == _SyncSurface.verification;
+          surface == _SyncSurface.verification ||
+          surface == _SyncSurface.addDevice;
       when(matrixService.isLoggedIn).thenReturn(configured);
       when(
         () => matrixService.syncRoomId,

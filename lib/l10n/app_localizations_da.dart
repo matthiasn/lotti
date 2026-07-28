@@ -8247,8 +8247,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get provisionedSyncRotatingPassword => 'Sikrer denne enhed…';
 
   @override
-  String get provisionedSyncSubtitle =>
-      'Par en enhed mere med denne synkroniseringskonto';
+  String get provisionedSyncSubtitle => 'Par og administrér dine enheder';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Synkroniseringsserver';
@@ -9300,7 +9299,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
-      'Kør Matrix-vedligeholdelsesopgaver og gendannelsesværktøjer';
+      'Matrix-vedligeholdelse og gendannelse';
 
   @override
   String get settingsMatrixMaintenanceTitle => 'Vedligeholdelse';
@@ -9533,8 +9532,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsSpeechTitle => 'Tale';
 
   @override
-  String get settingsSyncConflictsSubtitle =>
-      'Løs synkroniseringskonflikter for at sikre datakonsistens';
+  String get settingsSyncConflictsSubtitle => 'Løs synkroniseringskonflikter';
 
   @override
   String get settingsSyncNodeProfileCapabilitiesEmpty =>
@@ -9578,8 +9576,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsSyncNodeProfileSaveButton => 'Gem';
 
   @override
-  String get settingsSyncNodeProfileSubtitle =>
-      'Navngiv denne enhed og gennemgå funktioner, der er synlige for dine andre enheder.';
+  String get settingsSyncNodeProfileSubtitle => 'Enhedsnavn og funktioner';
 
   @override
   String get settingsSyncNodeProfileTitle => 'Denne enhed';
@@ -9835,10 +9832,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncAddDeviceAction => 'Tilføj enhed';
 
   @override
-  String get syncAddDeviceCodeHint =>
-      'Har den nye enhed intet kamera? Kopiér parringskoden, og indsæt den der i stedet.';
-
-  @override
   String get syncAddDeviceConnected =>
       'Den nye enhed er kommet med – fuldfør emoji-bekræftelsen, før du sender.';
 
@@ -9857,9 +9850,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Installer Lotti på den nye enhed, åbn Indstillinger → Synkroniseringsindstillinger → Enheder der, og scan denne kode.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Næste · efter emoji-bekræftelse';
-
-  @override
   String get syncAddDeviceRevealCode => 'Vis parringskoden som tekst';
 
   @override
@@ -9868,7 +9858,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'Denne parringskode låser din synkroniseringskonto op – lad kun din egen nye enhed scanne den, og tag aldrig skærmbillede af den eller send den.';
+      'Behandl denne kode som din adgangskode — kun din egen nye enhed må scanne den.';
 
   @override
   String get syncAddDeviceSendMessages => 'Send beskedhistorik';
@@ -9966,9 +9956,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesSectionTitle => 'Enheder';
-
-  @override
   String get syncDevicesStaleHint => 'Sandsynligvis ikke længere i brug';
 
   @override
@@ -10056,10 +10043,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPairConnectButton => 'Forbind denne enhed';
 
   @override
-  String get syncPairCopyCodeHint =>
-      'Har denne enhed intet kamera? Brug Kopiér parringskode på den anden enhed og flyt den hertil med en adgangskodemanager, en krypteret note eller ved at skrive den af – ikke via chat eller e-mail.';
-
-  @override
   String get syncPairDiscardCode => 'Indtast en anden parringskode';
 
   @override
@@ -10071,14 +10054,8 @@ class AppLocalizationsDa extends AppLocalizations {
       'Synkronisering er sat op på denne enhed';
 
   @override
-  String get syncPairedNextTitle => 'To trin tilbage';
-
-  @override
-  String get syncPairedNextTitleOne => 'Én ting tilbage';
-
-  @override
   String get syncPairedSettingsStep =>
-      'Efter emoji-bekræftelsen vælger du på din anden enhed Send indstillinger og derefter Send beskedhistorik i skærmen Tilføj enhed, som du stadig har åben. Dine målbare ting, kategorier, vaner, dashboards, AI-indstillinger og din beskedhistorik lander her.';
+      'Dine kategorier, vaner, dashboards og AI-opsætning ankommer derfra.';
 
   @override
   String get syncPairedSettingsStepFallback =>
@@ -10094,7 +10071,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Der vises en række emojis på begge enheder. Tjek, at de er ens, og bekræft på hver enhed — indtil da kan denne enhed ikke læse dine noter.';
+      'Indtil du bekræfter på begge enheder, kan denne enhed ikke læse dine indlæg.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10118,16 +10095,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPairGoToDevices => 'Gå til Enheder';
 
   @override
-  String get syncPairMismatchRemedy =>
-      'Hvis den ikke stemmer, så brug i stedet den kode, din egen enhed viser.';
-
-  @override
   String get syncPairMismatchWarning =>
       'Hvis den ikke stemmer, så lad være med at forbinde – koden hører til en anden konto.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'Brug kun en kode, du selv har lavet, på en enhed du ejer. Scanner du en andens kode, havner alt du skriver her på deres konto.';
+      'Brug kun en kode fra din egen enhed — en andens kode sender alt, hvad du skriver, til deres konto.';
 
   @override
   String get syncPairPasteTitle => 'Indsæt parringskoden';
@@ -10165,7 +10138,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPairWhereToFind =>
-      'På en enhed, der allerede synkroniserer, åbn Indstillinger → Synkroniseringsindstillinger → Enheder, og vælg Tilføj enhed.';
+      'Koden findes under \"Tilføj enhed\" på en enhed, der allerede synkroniserer — kopiér den dér, og indsæt den her.';
 
   @override
   String get syncPairWillJoin => 'Denne enhed tilslutter sig:';
@@ -10234,6 +10207,16 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPayloadThemingSelection => 'Valg af tema';
+
+  @override
+  String get syncSetupCta => 'Konfigurer synkronisering';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Din dagbog på alle dine enheder — end-to-end-krypteret, kun mellem dine egne enheder.';
+
+  @override
+  String get syncSetupEmptyTitle => 'Synkronisér dine enheder';
 
   @override
   String get syncStepAgentEntities => 'Agentenheder';
@@ -11187,4 +11170,19 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get syncPairedVerifyStepTitle =>
+      'Sammenlign emojierne på begge enheder';
+
+  @override
+  String get syncPairedSettingsStepTitle =>
+      'Send indstillinger fra din anden enhed';
+
+  @override
+  String get syncPairFirstDeviceTitle => 'Sætter du din første enhed op?';
+
+  @override
+  String get syncPairFirstDeviceHint =>
+      'Din første parringskode kommer fra din synkroniseringsservers provisioneringsværktøj — se manualen. Alle senere enheder får deres kode fra appen.';
 }

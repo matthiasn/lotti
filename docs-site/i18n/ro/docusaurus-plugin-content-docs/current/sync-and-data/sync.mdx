@@ -11,21 +11,31 @@ Deschideți **Setări → Sincronizare** pentru a vedea paginile disponibile de 
 
 <ManualScreenshot caseId="sync/hub" alt="Setările Lotti Sync, cu Sincronizare aprovizionată, identitatea dispozitivului, recuperare, statistici, cutie de ieșire, conflicte și întreținere" caption="Centrul de sincronizare păstrează starea de zi cu zi aproape de instrumentele de diagnostic și recuperare. Project Waddle are în prezent trei elemente de inspectat în cutia de ieșire." />
 
+## Vedeți dispozitivele dumneavoastră
+
+**Setări → Setări sincronizare → Dispozitive** enumeră fiecare sesiune a contului
+dumneavoastră de sincronizare, nu doar pe cele neverificate.
+
+<ManualScreenshot
+  caseId="sync/status"
+  alt="Pagina Dispozitive din Lotti, cu sesiunile contului de sincronizare, starea verificării și ultima activitate"
+  caption="Fiecare rând arată dacă dispozitivul este verificat și când l-a văzut ultima dată serverul. Un dispozitiv neverificat nu poate citi însemnările noi, iar lista spune asta."
+/>
+
+Sesiunile autentificate cu acest cont pot fi eliminate — cu excepția celei pe
+care vă aflați. Dispozitivele asociate în modul vechi, fiecare cu propriul cont,
+pot fi verificate, dar nu eliminate.
+
 ## Asociați alt dispozitiv
 
-Începeți de pe un dispozitiv deja conectat:
+Asocierea este un flux separat, cu un cod de comparat și doi pași după
+conectare. Are o pagină proprie: [Adăugați un dispozitiv](./add-device.mdx).
 
-1. Deschideți **Setări → Sincronizare → Sincronizare aprovizionată**.
-2. Pe desktop, afișați codul QR de transfer. Păstrați acest ecran privat: pachetul acordă acces la contul și camera dvs. de sincronizare.
-3. Pe dispozitivul nou, deschideți aceeași pagină și scanați codul QR sau lipiți pachetul complet de aprovizionare.
-4. Examinați serverul, utilizatorul și camera decodate înainte de a selecta **Importați**.
-5. Lăsați prima sincronizare să se termine înainte de a închide oricare dintre aplicații.
-
-<ManualScreenshot caseId="sync/status" alt="Starea Sincronizare aprovizionată pe mobil și codul QR securizat de transfer al dispozitivului pe desktop" caption="Desktopul poate afișa codul QR de transfer; mobilul arată contul conectat și starea verificării. Tratați codul QR ca pe o parolă." />
-
-<ManualScreenshot caseId="sync/provisioned" alt="Revizuirea importului de aprovizionare Lotti, cu serverul de sincronizare, utilizatorul și camera Project Waddle" caption="Importați numai când fiecare valoare decodată aparține contului de sincronizare la care ați intenționat să vă alăturați." />
-
-Dacă importul raportează o eroare, păstrați conectat dispozitivul original, generați un pachet de transfer nou și încercați din nou cu valoarea completă. Nu editați manual pachetul codificat.
+Pe scurt: pe un dispozitiv deja conectat deschideți **Setări → Setări sincronizare →
+Dispozitive → Adăugați dispozitiv** și afișați codul. Pe noul dispozitiv
+deschideți aceeași pagină și scanați-l. Comparați codul de verificare pe ambele
+ecrane înainte de a conecta — codul QR conține datele de acces ale contului
+dumneavoastră de sincronizare și merge doar către propriul dispozitiv.
 
 ## Verificați noul dispozitiv
 

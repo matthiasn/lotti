@@ -214,7 +214,10 @@ void main() {
   });
 
   group('devices section', () {
-    testWidgets('displays the devices section title', (tester) async {
+    testWidgets('carries no section title of its own', (tester) async {
+      // Every host already says "Devices" one rung up (the settings header
+      // or the sheet title); the in-list title made it the journey's most
+      // visible double heading.
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ProvisionedStatusWidget(),
@@ -229,10 +232,10 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      final context = tester.element(find.byType(ProvisionedStatusWidget));
+      // Literal: the label was removed from the catalogs with the heading.
       expect(
-        find.text(context.messages.syncDevicesSectionTitle),
-        findsOneWidget,
+        find.text('Devices'),
+        findsNothing,
       );
     });
 

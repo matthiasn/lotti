@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 
 /// The pinned action strip at the foot of a sync modal page.
@@ -19,9 +18,14 @@ class SyncStickyBar extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: context.colorScheme.surface,
+        // One level above the page surface, so the bar reads as a distinct
+        // opaque shelf rather than page background that happens to cover
+        // whatever scrolls beneath it.
+        color: tokens.colors.background.level02,
         border: Border(
-          top: BorderSide(color: tokens.colors.text.lowEmphasis),
+          // A decorative stroke, not text ink: borders take the divider
+          // token so they cannot drift from every other hairline.
+          top: BorderSide(color: tokens.colors.decorative.level01),
         ),
       ),
       child: Padding(

@@ -1,0 +1,110 @@
+---
+title: Tilføj en enhed
+description: Par en ny enhed med din synkroniseringskonto via en QR-kode, kontrollér kontrolkoden, og fuldfør de to trin bagefter.
+---
+
+# Tilføj en enhed
+
+Alle dine enheder deler én synkroniseringskonto. At tilføje en enhed betyder at
+give den loginoplysningerne til den konto, så forløbet har to kontroller: en kort
+**kontrolkode**, du sammenligner før du forbinder, og en **emoji-verifikation**
+bagefter.
+
+De gør hver sit. Kontrolkoden fortæller, at de to skærme taler om den samme
+konto — den fanger en kode fra et andet sted, altså den fejl man faktisk
+begår. Den udledes kun af de identifikatorer, ikke af adgangskoden — den siger
+derfor intet om, hvorvidt de indeholdte loginoplysninger stadig gælder, og
+intet om, hvem der er i den anden ende. Emoji-verifikationen bagefter er
+det trin, der autentificerer enheden, og indtil den er færdig kan den nye enhed
+ikke læse noget.
+
+Du skal have begge enheder foran dig. Start på en, der allerede er forbundet —
+hvilken som helst, telefon eller computer. Der findes ingen «hovedenhed».
+
+## Vis koden på en enhed, du allerede bruger
+
+Åbn **Indstillinger → Synkroniseringsindstillinger → Enheder**, og vælg **Tilføj enhed**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Lottis skærm Tilføj enhed med QR-kode, sikkerhedsnote med hængelås og kontrolkoden 2BD-EF4"
+  caption="Koden vises kun, så længe denne skærm er åben. Læg mærke til kontrolkoden nedenunder — den sammenligner du om lidt."
+/>
+
+Behandl denne skærm som din adgangskode, for det er det, den indeholder. Enhver, der scanner eller fotograferer QR-koden, kan logge ind på din konto:
+vedkommende kan ikke dekryptere dine noter uden også at være emoji-verificeret
+fra en af dine enheder, men kan overtage kontoen — inklusive at skifte
+adgangskoden og lukke dig ude. Vis den kun til en enhed, du selv ejer, og send den aldrig via chat,
+skærmbillede eller delt skærm.
+
+**At lukke skærmen skjuler koden, men tilbagekalder den ikke.** Koden
+indeholder din kontos nuværende adgangskode: et foto kan bruges, så længe den
+adgangskode gælder. Tror du, at nogen har taget et billede af den, så behandl
+den som en lækket adgangskode og ikke som noget, der er udløbet.
+
+**Kopiér parringskode** findes med vilje til de tilfælde, hvor den nye enhed ikke
+har kamera — en computer, der forbinder til en computer. Den lægger de samme
+oplysninger i udklipsholderen: indsæt dem direkte i den anden enhed og intet
+andet sted.
+
+## Scan den på den nye enhed
+
+Installér Lotti på den nye enhed, og åbn der **Indstillinger → Synkroniseringsindstillinger →
+Enheder**, og vælg **Konfigurer synkronisering**. På en telefon åbner kameraet med det samme; ret det mod den første
+enhed. På computer, eller hvis kameraet ikke er tilgængeligt, vælg **Indtast koden manuelt**, og indsæt den kopierede kode.
+
+## Kontrollér, at koden stemmer, før du forbinder
+
+At afkode koden forbinder ikke noget. Det første, der vises, er en oversigt over
+det, du er ved at tilslutte dig, anført af kontrolkoden.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Lottis parringsoversigt med kontrolkode, kontoen der tilsluttes, og synkroniseringsserveren"
+  caption="Begge enheder udleder denne kode uafhængigt af hinanden ud fra konto, rum og server. De udveksler den aldrig — derfor er sammenligningen værd at lave."
+/>
+
+Se på kontrolkoden her og den på den første enhed. **De skal være identiske.**
+Er de forskellige, så stop. Kassér den: de to skærme beskriver ikke den samme konto, det samme rum og den
+samme server, og at åbne skærmen igen ændrer ikke det.
+
+Kontoen og serveren under koden er kontekst, ikke noget at sammenligne — de vises
+ikke på den anden enhed. Når alt stemmer, vælg **Forbind denne enhed**.
+
+## Fuldfør de to trin bagefter
+
+Forbindelsen tilslutter dig kontoen. Den giver endnu ikke den nye enhed adgang
+til at læse noget.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Lottis synkroniseringsopsætning: denne enhed er forbundet, emoji-verifikation og Send indstillinger mangler stadig"
+  caption="Forbundet er den nemme halvdel. Kortet siger, hvad der mangler, og gør klart, at enheden indtil verifikationen ikke kan læse noget."
+/>
+
+1. **Sammenlign emojierne.** En række emoji vises på begge enheder. Kontrollér,
+   at de stemmer, og bekræft på hver. Indtil da modtager den nye enhed kun
+   krypteret indhold, den ikke kan læse — nøgler går kun til verificerede
+   enheder. Se [Synkronisér enheder](./sync.mdx).
+2. **Send indstillingerne.** På den første enhed, i den stadig åbne Tilføj
+   enhed-skærm, vælg **Send indstillinger**, så kategorier, vaner, dashboards og
+   AI-opsætning når frem. Har du lukket den, åbn **Indstillinger →
+   Synkroniseringsindstillinger → Enheder → Tilføj enhed** igen.
+
+Lad begge apps være åbne, indtil den første synkronisering er færdig.
+
+## Hvis noget går galt
+
+- **Kontrolkoderne er forskellige.** Forbind ikke. Du ser ikke din egen enheds
+  kode. At åbne skærmen igen hjælper ikke: den samme konto giver den samme kode
+  hver gang, så en forskel betyder, at de to skærme ikke beskriver den samme parring.
+- **Koden kan ikke afkodes.** Kopiér den igen på den første enhed i stedet for at
+  rette i det, du indsatte; den kodede værdi er ikke beregnet til håndarbejde.
+  Melder appen om forskellige versioner, kører enhederne på forskellige builds og
+  skal begge opdateres.
+- **Den nye enhed er forbundet, men forbliver tom.** Det er den forventede
+  tilstand før verifikation. Afslut emoji-sammenligningen, og se derefter
+  [Synkronisér enheder](./sync.mdx) for udbakke og genopretning.
+
+Fortsæt med [Synkronisér enheder](./sync.mdx) for daglig status, leveringssundhed
+og genopretningsværktøjer.
