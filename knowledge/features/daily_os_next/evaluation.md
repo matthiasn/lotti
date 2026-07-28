@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T08:24:38+02:00 }
+generated: { by: codex/5, at: 2026-07-28T08:42:40+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -78,7 +78,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `60m of an estimated 120m scheduled`, `60m out of 120m scheduled`, or an
   affirmative `partial` plus a task-bound remainder such as
   `60m remain for later`, `Remaining 60m move to tomorrow`,
-  `60m still remain`, `60m will still remain`, or
+  `60m still remain`, `60 more minutes remain`,
+  `60 additional minutes remain`, `60m will still remain`, or
   `Remaining 60m are carried over`) that agrees with both the summed duration
   of that task's work blocks and the corpus estimate. A numeric
   completed/estimate split must describe task allocation,
@@ -88,7 +89,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   than any omitted/deferred predicate in the same comma-delimited clause. A
   merely possible action such as `task-c might schedule 60 of 120 minutes` is
   not an affirmative allocation, and neither is
-  `task-c might be partially scheduled`. A later action describing “the rest” cannot
+  `task-c might be partially scheduled`. Failed, refused, or declined attempts
+  to schedule are likewise not affirmative. A later action describing “the rest” cannot
   validate earlier omitted
   arithmetic. Unrelated meeting/workday scope is likewise associated with its
   nearest allocation action, so later meeting arithmetic does not poison an
@@ -114,7 +116,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   their concrete arithmetic and denials remain audit evidence that can veto a
   reason. A task-bound standalone allocation denial such as
   `task-c was not scheduled after all` therefore retracts reason-field partial
-  arithmetic even when the note contains no split or remainder of its own. The
+  arithmetic even when the note contains no split or remainder of its own; the
+  same applies to `not completed` because completion can supply allocation
+  context. The
   partial mention cannot be borrowed from a claim attributed to
   another corpus task or an explicit non-task subject. Unrelated meeting/workday
   remainder scope is rejected before a later disposition can bind it, and
@@ -211,10 +215,13 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   evidence is subject-bound too: `task-c doesn't fit` remains affirmative, but
   `task-c validates that the payload cannot fit in memory` describes the
   payload, not the task. Ordinary causal suffixes remain valid, so
-  `task-c was omitted due to capacity` discloses the omission.
+  `task-c was omitted due to capacity` discloses the omission, as does
+  `task-c was omitted from today's plan`.
   It must also be affirmative and internally consistent: `not partial` and
-  `no conflict` explicitly deny the trade, `conflict-free` is an antonym rather
-  than a disclosure, and an affirmative claim plus denial of that same
+  `no conflict` explicitly deny the trade, while `without conflict` and
+  `conflict-free` are denials rather than disclosures. Modal dispositions such
+  as `might be omitted` or `could be deferred` are speculative, not actual
+  trades. An affirmative claim plus denial of that same
   disposition receives no credit in either order or across two task-named
   fields. Denials do not cancel a different asserted disposition:
   `task-c was not dropped; it was deferred to tomorrow` still surfaces the

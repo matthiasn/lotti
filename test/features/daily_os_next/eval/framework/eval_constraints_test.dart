@@ -1486,6 +1486,31 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    for (final modifier in ['more', 'additional']) {
+      test('accepts a $modifier-minutes remainder modifier', () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason:
+                    'This placement is partial; '
+                    '60 $modifier minutes remain for later.',
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
+
+        expect(result.passed, isTrue);
+        expect(result.detail, contains('task-c 60min partial of 120min'));
+      });
+    }
+
     test('accepts a still-remaining modifier in partial arithmetic', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1724,6 +1749,27 @@ void main() {
               endHour: 10,
               taskId: 'task-c',
               reason: 'task-c might schedule 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('rejects a failed allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c failed to schedule 60 of 120 minutes.',
             ),
           ],
           corpus: tasks,
@@ -2755,6 +2801,31 @@ void main() {
     });
 
     test(
+      'a standalone completion denial vetoes reason-field partial credit',
+      () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'partial',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason: '60 of 120 minutes are completed.',
+                note: 'task-c was not completed after all.',
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('task-c allocated 60min of 120min'));
+      },
+    );
+
+    test(
       'note-only partial arithmetic does not satisfy the reason contract',
       () {
         final result = scoreWithinCapacityByEstimate(
@@ -3384,6 +3455,53 @@ void main() {
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c'));
     });
+
+    test('accepts an omission from the day plan', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: "task-c was omitted from today's plan.",
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
+    for (final reason in [
+      'task-c might be omitted.',
+      'task-c could be deferred.',
+    ]) {
+      test('rejects a speculative trade disposition: $reason', () {
+        final result = scoreSurfacedConflict(
+          outcome(
+            blocks: [
+              block(
+                id: 'context',
+                startHour: 9,
+                endHour: 10,
+                reason: reason,
+              ),
+            ],
+            corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'Core')],
+            decidedTaskIds: const ['task-c'],
+            requiresConflictSurfaced: true,
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('without naming a casualty'));
+      });
+    }
 
     test('is not applicable when nothing was actually left out', () {
       final result = scoreSurfacedConflict(
@@ -4495,6 +4613,34 @@ void main() {
             EvalCorpusTask(
               taskId: 'task-c',
               title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('without-conflict wording does not disclose a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c proceeds without conflict.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'Core',
               estimateMinutes: 120,
             ),
           ],

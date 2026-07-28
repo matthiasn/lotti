@@ -706,7 +706,7 @@ final _partialOfEstimatePattern = RegExp(
 );
 
 final _partialRemainingPattern = RegExp(
-  r'\b(\d+)\s*(?:m|mins?|minutes?)\s+'
+  r'\b(\d+)\s*(?:(?:more|additional)\s+)?(?:m|mins?|minutes?)\s+'
   r'(?:(?:of|for)\s+(?:this|the)\s+(?:task|work)\s+)?'
   r'(?:(?:still|yet)\s+)?'
   r'(?:(?:is|are|will(?:\s+be)?)\s+)?'
@@ -717,7 +717,7 @@ final _partialRemainingPattern = RegExp(
 final _partialLeadingRemainingPattern = RegExp(
   r'\b(?:remaining(?:\s+(?:task|work))?|remainder)\s*:?\s*'
   r'(?:(?:is|are)\s+)?'
-  r'(\d+)\s*(?:m|mins?|minutes?)\b',
+  r'(\d+)\s*(?:(?:more|additional)\s+)?(?:m|mins?|minutes?)\b',
   caseSensitive: false,
 );
 
@@ -949,7 +949,7 @@ bool _hasAuditablePartialDisclosure({
         continue;
       }
       if (!_partialMentionDescribesPlacement(reason, match)) continue;
-      if (_partialMentionIsSpeculative(reason, match)) continue;
+      if (_evidenceIsSpeculative(reason, match)) continue;
       if (_partialMentionIsNegated(reason, match)) return false;
       if (disclosure.canQualify) reasonMentionsPartial = true;
     }
@@ -1118,6 +1118,11 @@ bool _tradeEvidenceDescribesTaskOrWork(String prose, Match match) {
         r'^\s+(?:to|until|for|because|due\s+to|owing\s+to|after|before|so|and|'
         r'with|against|over)\b',
         caseSensitive: false,
+      ).hasMatch(suffix) ||
+      RegExp(
+        r'^\s+from\s+(?:(?:today[\x27’]s|the|this|our|my|your|their)\s+)?'
+        r'(?:plan|schedule|day)\b',
+        caseSensitive: false,
       ).hasMatch(suffix);
 }
 
@@ -1148,7 +1153,7 @@ bool _hasTaskBoundAllocationDenial(
 }) {
   final placementActionPattern = RegExp(
     r'\b(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-    r'plan(?:ned|ning)?|plac(?:e|ed|ing))\b',
+    r'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing))\b',
     caseSensitive: false,
   );
   for (final action in placementActionPattern.allMatches(prose)) {
@@ -1188,7 +1193,7 @@ bool _allocationActionIsDirectlyDenied(String prose, Match action) {
   return false;
 }
 
-bool _partialMentionIsSpeculative(String prose, Match match) {
+bool _evidenceIsSpeculative(String prose, Match match) {
   final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
   final prefix = prose.substring(range.start, match.start);
   return RegExp(
@@ -1217,6 +1222,13 @@ bool _negationQualifiesRatherThanNegates(Match negation, String between) {
 
 bool _matchClauseIsNegated(String reason, Match match) {
   final range = _matchClauseRange(reason, match, boundaries: ',.;!?\n');
+  final prefix = reason.substring(range.start, match.start);
+  if (RegExp(
+    r'\b(?:(?:without)(?:\s+any)?|free\s+of)\s*$',
+    caseSensitive: false,
+  ).hasMatch(prefix)) {
+    return true;
+  }
   final segment = reason.substring(range.start, range.end);
   for (final negation in _negationWordPattern.allMatches(segment)) {
     final negationStart = range.start + negation.start;
@@ -1347,10 +1359,15 @@ bool _allocationActionIsAsserted(
   }
   final prefix = prose.substring(clauseStart, action.start);
   return !RegExp(
-    r'\b(?:might|may|could|would|should|can)'
-    r'(?:\s+\w+){0,2}\s*$',
-    caseSensitive: false,
-  ).hasMatch(prefix);
+        r'\b(?:might|may|could|would|should|can)'
+        r'(?:\s+\w+){0,2}\s*$',
+        caseSensitive: false,
+      ).hasMatch(prefix) &&
+      !RegExp(
+        r'\b(?:fail(?:s|ed|ing)?|refus(?:e|es|ed|ing)|'
+        r'declin(?:e|es|ed|ing))\s+to\s*$',
+        caseSensitive: false,
+      ).hasMatch(prefix);
 }
 
 bool _splitHasUnrelatedScope(
@@ -2176,7 +2193,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   for (final match in _partialMentionPattern.allMatches(prose)) {
     if (!belongsToTask(match) ||
         !_partialMentionDescribesPlacement(prose, match) ||
-        _partialMentionIsSpeculative(prose, match)) {
+        _evidenceIsSpeculative(prose, match)) {
       continue;
     }
     if (_partialMentionIsNegated(prose, match)) {
@@ -2187,7 +2204,8 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
   }
   for (final match in _partialTradeDispositionPattern.allMatches(prose)) {
     if (!belongsToTask(match) ||
-        !_tradeEvidenceDescribesTaskOrWork(prose, match)) {
+        !_tradeEvidenceDescribesTaskOrWork(prose, match) ||
+        _evidenceIsSpeculative(prose, match)) {
       continue;
     }
     if (_matchClauseIsNegated(prose, match)) {
@@ -2226,7 +2244,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
     }
   }
   for (final match in _conflictTradePattern.allMatches(prose)) {
-    if (!belongsToTask(match)) continue;
+    if (!belongsToTask(match) || _evidenceIsSpeculative(prose, match)) continue;
     final matchedTrade = match.group(0) ?? '';
     final negativeFitDisclosure =
         _negationWordPattern.hasMatch(matchedTrade) &&
