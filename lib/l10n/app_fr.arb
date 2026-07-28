@@ -2323,7 +2323,6 @@
       }
     }
   },
-  "deviceDeleteFailedForbidden": "Le serveur de synchronisation a refusé cette modification. Retire cet appareil de la synchronisation depuis l’appareil lui-même, ou réappaire-le avec un nouveau code d’appairage.",
   "deviceDeleteFailedGeneric": "Impossible de retirer cet appareil. Vérifie ta connexion et réessaie.",
   "deviceDeleteQuestion": "Supprimer {deviceName} de ton compte de synchronisation ? L'appareil sera déconnecté et devra être appairé à nouveau avant de pouvoir synchroniser.",
   "@deviceDeleteQuestion": {
@@ -4124,6 +4123,10 @@
   "syncPayloadSavedTaskFilterDelete": "Suppression du filtre de tâches enregistré",
   "syncPayloadSyncNodeProfile": "Profil du nœud de synchronisation",
   "syncPayloadThemingSelection": "Sélection de thème",
+  "syncReauthExplanation": "Le serveur de synchronisation n’a pas accepté le mot de passe enregistré. Saisis le mot de passe actuel de ton compte de synchronisation pour retirer {deviceName}.",
+  "syncReauthInvalidPassword": "Ce mot de passe n’a pas fonctionné. Vérifie-le et réessaie.",
+  "syncReauthPasswordLabel": "Mot de passe du compte de synchronisation",
+  "syncReauthTitle": "Confirme que c’est toi",
   "syncSetupCta": "Configurer la synchronisation",
   "syncSetupEmptyFootnote": "Fonctionne sur ton propre serveur de synchronisation · rien ne quitte tes appareils sans chiffrement",
   "syncSetupEmptyHint": "Ton journal sur chacun de tes appareils. Chiffré de bout en bout, uniquement entre tes appareils — sans compte cloud.",
@@ -4145,6 +4148,9 @@
   "syncVerifyModalTitle": "Confirme ton appareil",
   "syncVerifyPromptLine1": "Les deux écrans affichent sept émojis.",
   "syncVerifyPromptQuestion": "Mêmes émojis, même ordre ?",
+  "syncVerifyStaleConfirm": "Vérifier quand même",
+  "syncVerifyStaleMessage": "{deviceName} ne s’est pas manifesté depuis un moment. La vérification ne marche que s’il est allumé, en ligne et sur Lotti — sinon la comparaison d’émojis attend une réponse qui ne viendra jamais.",
+  "syncVerifyStaleTitle": "Cet appareil est peut-être hors ligne",
   "syncVerifyTheyDiffer": "Ils diffèrent — annuler",
   "syncVerifyTheyMatch": "Ils correspondent",
   "syncWizardStepCheck": "Vérifier",

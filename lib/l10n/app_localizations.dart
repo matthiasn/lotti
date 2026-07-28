@@ -9101,12 +9101,6 @@ abstract class AppLocalizations {
   /// **'{deviceName} removed from sync'**
   String deviceDeletedSuccess(String deviceName);
 
-  /// No description provided for @deviceDeleteFailedForbidden.
-  ///
-  /// In en, this message translates to:
-  /// **'The sync server refused this change. Remove this device from sync on the device itself, or re-pair with a fresh pairing code.'**
-  String get deviceDeleteFailedForbidden;
-
   /// No description provided for @deviceDeleteFailedGeneric.
   ///
   /// In en, this message translates to:
@@ -17475,6 +17469,30 @@ abstract class AppLocalizations {
   /// **'Theming selection'**
   String get syncPayloadThemingSelection;
 
+  /// Body of the re-authentication sheet shown when removing a device failed because the stored sync password is out of date.
+  ///
+  /// In en, this message translates to:
+  /// **'The sync server didn\'t accept the saved password. Enter the current password for your sync account to remove {deviceName}.'**
+  String syncReauthExplanation(String deviceName);
+
+  /// No description provided for @syncReauthInvalidPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'That password didn\'t work. Check it and try again.'**
+  String get syncReauthInvalidPassword;
+
+  /// No description provided for @syncReauthPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync account password'**
+  String get syncReauthPasswordLabel;
+
+  /// No description provided for @syncReauthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm it\'s you'**
+  String get syncReauthTitle;
+
   /// No description provided for @syncSetupCta.
   ///
   /// In en, this message translates to:
@@ -17600,6 +17618,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Same emoji, same order?'**
   String get syncVerifyPromptQuestion;
+
+  /// No description provided for @syncVerifyStaleConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify anyway'**
+  String get syncVerifyStaleConfirm;
+
+  /// Pre-flight warning before starting an emoji verification against a device that has not been seen recently.
+  ///
+  /// In en, this message translates to:
+  /// **'{deviceName} hasn\'t checked in for a while. Verifying only works while it is awake, online and showing Lotti — otherwise the emoji check waits for an answer that never comes.'**
+  String syncVerifyStaleMessage(String deviceName);
+
+  /// No description provided for @syncVerifyStaleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This device may be offline'**
+  String get syncVerifyStaleTitle;
 
   /// No description provided for @syncVerifyTheyDiffer.
   ///

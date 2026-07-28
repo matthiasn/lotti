@@ -274,7 +274,18 @@ class MatrixServiceOps {
   /// in-flight emoji verification against the device is cancelled first: a
   /// dead session can never answer, and the hung ceremony would otherwise
   /// keep polling a device that is about to disappear.
-  Future<void> deleteDeviceById(String deviceId) async {
+  ///
+  /// [reauthPassword] replaces the stored credential for this call's
+  /// user-interactive authentication. The UI supplies it after the homeserver
+  /// answered `M_FORBIDDEN`, which means the persisted password no longer
+  /// matches the account — the password was rotated elsewhere while this
+  /// device kept syncing on its access token. A successful deletion proves
+  /// the supplied password *is* the account's, so it is written back to the
+  /// stored config and every later interactive operation works unprompted.
+  Future<void> deleteDeviceById(
+    String deviceId, {
+    String? reauthPassword,
+  }) async {
     if (deviceId == gateway.currentDeviceId) {
       throw ArgumentError(
         'Cannot delete device $deviceId: it is the session this app is '
@@ -290,7 +301,8 @@ class MatrixServiceOps {
       );
     }
 
-    if (config.password.isEmpty) {
+    final password = reauthPassword ?? config.password;
+    if (password.isEmpty) {
       throw UnsupportedError(
         'Cannot delete device $deviceId: Password authentication required '
         'but no password is available. SSO/token authentication not yet '
@@ -304,7 +316,7 @@ class MatrixServiceOps {
       await gateway.deleteDevice(
         deviceId,
         auth: AuthenticationPassword(
-          password: config.password,
+          password: password,
           identifier: AuthenticationUserIdentifier(user: config.user),
         ),
       );
@@ -328,6 +340,10 @@ class MatrixServiceOps {
       subDomain: 'deleteDevice',
     );
 
+    if (reauthPassword != null && reauthPassword != config.password) {
+      await _repairStoredPassword(config, reauthPassword);
+    }
+
     // Bounded: the deletion has already succeeded on the homeserver, so a
     // network drop during the cache refresh must not hang the caller — the
     // cache converges on a later sync regardless.
@@ -342,6 +358,33 @@ class MatrixServiceOps {
         '${SyncTuning.deleteDeviceRecoveryTimeout.inSeconds}s - deletion '
         'already succeeded, cache converges on a later sync',
         subDomain: 'deleteDevice.refreshTimeout',
+      );
+    }
+  }
+
+  /// Writes a password the homeserver just accepted back into the stored
+  /// config, so the next interactive operation no longer has to ask.
+  ///
+  /// Failures are logged and swallowed: the device is already gone from the
+  /// homeserver, and reporting a storage error would tell the user their
+  /// removal failed when it did not.
+  Future<void> _repairStoredPassword(
+    MatrixConfig config,
+    String password,
+  ) async {
+    try {
+      await service().setConfig(config.copyWith(password: password));
+      loggingService.log(
+        LogDomain.sync,
+        'stored sync password replaced after interactive re-authentication',
+        subDomain: 'deleteDevice.reauth',
+      );
+    } catch (error, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'deleteDevice.reauthPersist',
       );
     }
   }

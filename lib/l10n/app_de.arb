@@ -2323,7 +2323,6 @@
       }
     }
   },
-  "deviceDeleteFailedForbidden": "Der Sync-Server hat diese Änderung abgelehnt. Entferne das Gerät direkt auf dem Gerät aus der Synchronisierung oder koppel es mit einem neuen Kopplungscode erneut.",
   "deviceDeleteFailedGeneric": "Das Gerät konnte nicht entfernt werden. Prüfe deine Verbindung und versuche es erneut.",
   "deviceDeleteQuestion": "{deviceName} aus deinem Sync-Konto entfernen? Das Gerät wird abgemeldet und muss neu gekoppelt werden, bevor es wieder synchronisieren kann.",
   "@deviceDeleteQuestion": {
@@ -4124,6 +4123,10 @@
   "syncPayloadSavedTaskFilterDelete": "Gespeicherter Aufgabenfilter gelöscht",
   "syncPayloadSyncNodeProfile": "Sync-Knoten-Profil",
   "syncPayloadThemingSelection": "Designauswahl",
+  "syncReauthExplanation": "Der Sync-Server hat das gespeicherte Passwort nicht akzeptiert. Gib das aktuelle Passwort deines Sync-Kontos ein, um {deviceName} zu entfernen.",
+  "syncReauthInvalidPassword": "Dieses Passwort hat nicht funktioniert. Prüf es und versuch es noch einmal.",
+  "syncReauthPasswordLabel": "Passwort des Sync-Kontos",
+  "syncReauthTitle": "Bist du das?",
   "syncSetupCta": "Sync einrichten",
   "syncSetupEmptyFootnote": "Läuft auf deinem eigenen Sync-Server · nichts verlässt deine Geräte unverschlüsselt",
   "syncSetupEmptyHint": "Dein Tagebuch auf jedem deiner Geräte. Ende-zu-Ende-verschlüsselt, nur zwischen deinen Geräten — ohne Cloud-Konto.",
@@ -4145,6 +4148,9 @@
   "syncVerifyModalTitle": "Bestätige dein Gerät",
   "syncVerifyPromptLine1": "Beide Bildschirme zeigen sieben Emoji.",
   "syncVerifyPromptQuestion": "Gleiche Emoji, gleiche Reihenfolge?",
+  "syncVerifyStaleConfirm": "Trotzdem bestätigen",
+  "syncVerifyStaleMessage": "{deviceName} hat sich eine Weile nicht gemeldet. Das Bestätigen klappt nur, solange es wach und online ist und Lotti zeigt — sonst wartet der Emoji-Abgleich auf eine Antwort, die nie kommt.",
+  "syncVerifyStaleTitle": "Dieses Gerät ist vielleicht offline",
   "syncVerifyTheyDiffer": "Sie unterscheiden sich — abbrechen",
   "syncVerifyTheyMatch": "Sie stimmen überein",
   "syncWizardStepCheck": "Prüfen",

@@ -222,8 +222,8 @@ void main() {
       );
     });
 
-    testWidgets('explains a rejected password instead of dumping the raw '
-        'error', (tester) async {
+    testWidgets('a rejected password opens the recovery sheet rather than '
+        'ending the flow', (tester) async {
       when(() => mockMatrixService.deleteDeviceById('DEVICE1')).thenThrow(
         MatrixException.fromJson(
           const {'errcode': 'M_FORBIDDEN', 'error': 'Invalid password'},
@@ -233,11 +233,10 @@ void main() {
       await pumpCard(tester, buildDevice());
       await tapDeleteAndConfirm(tester);
 
+      expect(find.text("Confirm it's you"), findsOneWidget);
+      expect(find.byKey(const Key('sync_reauth_password')), findsOneWidget);
       expect(
-        find.text(
-          'The sync server refused this change. Remove this device from sync '
-          'on the device itself, or re-pair with a fresh pairing code.',
-        ),
+        find.textContaining('to remove Pixel 7.'),
         findsOneWidget,
       );
     });
@@ -272,6 +271,142 @@ void main() {
       expect(
         find.byKey(const Key('matrix_remove_device_primary')),
         findsNothing,
+      );
+    });
+  });
+
+  group('recovering from a stale stored password', () {
+    /// Drives the flow up to the open re-auth sheet: the first removal is
+    /// refused because the persisted password no longer matches the account.
+    Future<void> reachReauthSheet(
+      WidgetTester tester, {
+      VoidCallback? refreshListCallback,
+    }) async {
+      when(() => mockMatrixService.deleteDeviceById('DEVICE1')).thenThrow(
+        MatrixException.fromJson(
+          const {'errcode': 'M_FORBIDDEN', 'error': 'Invalid password'},
+        ),
+      );
+
+      await pumpCard(
+        tester,
+        buildDevice(),
+        refreshListCallback: refreshListCallback,
+      );
+      await tapDeleteAndConfirm(tester);
+    }
+
+    Future<void> submitPassword(WidgetTester tester, String password) async {
+      await tester.enterText(
+        find.byKey(const Key('sync_reauth_password')),
+        password,
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('sync_reauth_submit')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('retries with the typed password and reports the removal', (
+      tester,
+    ) async {
+      when(
+        () => mockMatrixService.deleteDeviceById(
+          'DEVICE1',
+          reauthPassword: any(named: 'reauthPassword'),
+        ),
+      ).thenAnswer((_) async {});
+
+      var refreshed = false;
+      await reachReauthSheet(
+        tester,
+        refreshListCallback: () => refreshed = true,
+      );
+      await submitPassword(tester, 'rotated-secret');
+
+      verify(
+        () => mockMatrixService.deleteDeviceById(
+          'DEVICE1',
+          reauthPassword: 'rotated-secret',
+        ),
+      ).called(1);
+      expect(refreshed, isTrue);
+      expect(find.text('Pixel 7 removed from sync'), findsOneWidget);
+      expect(find.byKey(const Key('sync_reauth_password')), findsNothing);
+    });
+
+    testWidgets('a second refusal names the cause and keeps the sheet open', (
+      tester,
+    ) async {
+      when(
+        () => mockMatrixService.deleteDeviceById(
+          'DEVICE1',
+          reauthPassword: any(named: 'reauthPassword'),
+        ),
+      ).thenThrow(
+        MatrixException.fromJson(
+          const {'errcode': 'M_FORBIDDEN', 'error': 'Invalid password'},
+        ),
+      );
+
+      var refreshed = false;
+      await reachReauthSheet(
+        tester,
+        refreshListCallback: () => refreshed = true,
+      );
+      await submitPassword(tester, 'still-wrong');
+
+      expect(
+        find.text("That password didn't work. Check it and try again."),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('sync_reauth_password')), findsOneWidget);
+      expect(refreshed, isFalse);
+      expect(find.text('Pixel 7 removed from sync'), findsNothing);
+    });
+
+    testWidgets('a failure that is not about the password reads as a '
+        'connection problem', (tester) async {
+      when(
+        () => mockMatrixService.deleteDeviceById(
+          'DEVICE1',
+          reauthPassword: any(named: 'reauthPassword'),
+        ),
+      ).thenThrow(Exception('offline'));
+
+      await reachReauthSheet(tester);
+      await submitPassword(tester, 'rotated-secret');
+
+      expect(
+        find.text(
+          "The device couldn't be removed. Check your connection and try "
+          'again.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('sync_reauth_password')), findsOneWidget);
+    });
+
+    testWidgets('backing out leaves the device in place and claims nothing', (
+      tester,
+    ) async {
+      var refreshed = false;
+      await reachReauthSheet(
+        tester,
+        refreshListCallback: () => refreshed = true,
+      );
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(refreshed, isFalse);
+      expect(find.text('Pixel 7 removed from sync'), findsNothing);
+      // `any(named:)` also matches the null of the unprompted first attempt,
+      // so the retry is identified by carrying an actual password.
+      verifyNever(
+        () => mockMatrixService.deleteDeviceById(
+          any(),
+          reauthPassword: any(named: 'reauthPassword', that: isNotNull),
+        ),
       );
     });
   });
@@ -646,6 +781,69 @@ void main() {
       expect(find.byType(VerificationModal), findsNothing);
       expect(container.read(matrixVerificationModalLockProvider), isFalse);
       expect(refreshed, isTrue);
+    });
+
+    group('on a device that has not been seen in weeks', () {
+      /// Stale enough that `isStaleAt(now)` holds, but still keyed and on the
+      /// server — so Verify is offered and the warning has something to guard.
+      SyncDeviceInfo staleDevice() => buildDevice(
+        lastSeen: DateTime(2026, 5, 14),
+      );
+
+      Future<void> tapVerify(WidgetTester tester) async {
+        when(
+          () => mockMatrixService.keyVerificationStream,
+        ).thenAnswer((_) => const Stream.empty());
+        when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+        // The ceremony retries a failing start with a growing backoff; letting
+        // it succeed keeps those timers out of the test.
+        when(
+          () => mockMatrixService.verifyDevice(mockDeviceKeys),
+        ).thenAnswer((_) async {});
+
+        await pumpCard(tester, staleDevice());
+        await tester.tap(find.text('Verify'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('says the peer has to be awake before opening the '
+          'ceremony', (tester) async {
+        await tapVerify(tester);
+
+        expect(find.text('This device may be offline'), findsOneWidget);
+        expect(
+          find.textContaining("Pixel 7 hasn't checked in for a while."),
+          findsOneWidget,
+        );
+        // The ceremony itself must not have started: a modal waiting on a
+        // dead peer is exactly what the warning exists to prevent.
+        expect(find.byType(VerificationModal), findsNothing);
+      });
+
+      testWidgets('backing out of the warning starts nothing', (tester) async {
+        await tapVerify(tester);
+
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VerificationModal), findsNothing);
+        verifyNever(() => mockMatrixService.verifyDevice(mockDeviceKeys));
+      });
+
+      testWidgets('pressing on regardless opens the ceremony', (tester) async {
+        await tapVerify(tester);
+
+        // The confirmation modal upper-cases its confirming label.
+        await tester.tap(find.text('VERIFY ANYWAY'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VerificationModal), findsOneWidget);
+
+        // Close the ceremony so its start timer is disposed with the tree.
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+      });
     });
 
     testWidgets('tapping Verify when lock is already acquired does nothing', (

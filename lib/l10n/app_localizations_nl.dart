@@ -5262,10 +5262,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get deviceDeleteFailedForbidden =>
-      'De synchronisatieserver weigerde deze wijziging. Verwijder dit apparaat op het apparaat zelf uit de synchronisatie, of koppel het opnieuw met een nieuwe koppelcode.';
-
-  @override
   String get deviceDeleteFailedGeneric =>
       'Het apparaat kon niet worden verwijderd. Controleer je verbinding en probeer het opnieuw.';
 
@@ -10197,6 +10193,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Themaselectie';
 
   @override
+  String syncReauthExplanation(String deviceName) {
+    return 'De synchronisatieserver accepteerde het opgeslagen wachtwoord niet. Voer het huidige wachtwoord van je synchronisatieaccount in om $deviceName te verwijderen.';
+  }
+
+  @override
+  String get syncReauthInvalidPassword =>
+      'Dat wachtwoord werkte niet. Controleer het en probeer het opnieuw.';
+
+  @override
+  String get syncReauthPasswordLabel => 'Wachtwoord synchronisatieaccount';
+
+  @override
+  String get syncReauthTitle => 'Bevestig dat jij het bent';
+
+  @override
   String get syncSetupCta => 'Synchronisatie instellen';
 
   @override
@@ -10264,6 +10275,17 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get syncVerifyPromptQuestion =>
       'Dezelfde emoji\'s, dezelfde volgorde?';
+
+  @override
+  String get syncVerifyStaleConfirm => 'Toch verifiëren';
+
+  @override
+  String syncVerifyStaleMessage(String deviceName) {
+    return '$deviceName heeft zich al een tijd niet gemeld. Verifiëren werkt alleen als het aan staat, online is en Lotti toont — anders wacht de emojicontrole op een antwoord dat nooit komt.';
+  }
+
+  @override
+  String get syncVerifyStaleTitle => 'Dit apparaat is mogelijk offline';
 
   @override
   String get syncVerifyTheyDiffer => 'Ze verschillen — annuleren';

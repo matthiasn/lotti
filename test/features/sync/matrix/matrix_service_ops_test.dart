@@ -41,6 +41,13 @@ void main() {
         identifier: AuthenticationUserIdentifier(user: '@fallback:server'),
       ),
     );
+    registerFallbackValue(
+      const MatrixConfig(
+        homeServer: 'https://fallback',
+        user: '@fallback:server',
+        password: 'fallback',
+      ),
+    );
   });
 
   late MockMatrixSyncGateway gateway;
@@ -577,6 +584,134 @@ void main() {
         throwsArgumentError,
       );
       verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
+    });
+
+    group('interactive re-authentication', () {
+      setUp(() {
+        when(() => svc.setConfig(any())).thenAnswer((_) async {});
+      });
+
+      test(
+        'authenticates with the password the user just typed rather than the '
+        'stored one',
+        () async {
+          await buildDeleteOps().deleteDeviceById(
+            'DEV1',
+            reauthPassword: 'rotated',
+          );
+
+          final auth =
+              verify(
+                    () => gateway.deleteDevice(
+                      'DEV1',
+                      auth: captureAny(named: 'auth'),
+                    ),
+                  ).captured.single
+                  as AuthenticationPassword;
+          expect(auth.password, 'rotated');
+          expect(
+            (auth.identifier as AuthenticationUserIdentifier?)?.user,
+            userId,
+          );
+        },
+      );
+
+      test(
+        'writes the accepted password back, so the next removal does not ask '
+        'again',
+        () async {
+          await buildDeleteOps().deleteDeviceById(
+            'DEV1',
+            reauthPassword: 'rotated',
+          );
+
+          final saved =
+              verify(() => svc.setConfig(captureAny())).captured.single
+                  as MatrixConfig;
+          expect(saved.password, 'rotated');
+          expect(saved.user, userId);
+          expect(saved.homeServer, 'https://server');
+        },
+      );
+
+      test('leaves the stored config alone when nothing changed', () async {
+        await buildDeleteOps().deleteDeviceById(
+          'DEV1',
+          reauthPassword: 'secret',
+        );
+
+        verifyNever(() => svc.setConfig(any()));
+      });
+
+      test('leaves the stored config alone on the unprompted path', () async {
+        await buildDeleteOps().deleteDeviceById('DEV1');
+
+        verifyNever(() => svc.setConfig(any()));
+      });
+
+      test(
+        'reports the removal as done even when the repaired password cannot '
+        'be persisted — the device is already gone',
+        () async {
+          when(() => svc.setConfig(any())).thenThrow(Exception('keychain'));
+
+          await buildDeleteOps().deleteDeviceById(
+            'DEV1',
+            reauthPassword: 'rotated',
+          );
+
+          verify(
+            () => logging.error(
+              any<LogDomain>(),
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'deleteDevice.reauthPersist',
+            ),
+          ).called(1);
+          verify(
+            () => client.updateUserDeviceKeys(additionalUsers: {userId}),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a typed password is enough to remove a device even when no password '
+        'was ever stored',
+        () async {
+          when(() => sessionManager.matrixConfig).thenReturn(
+            const MatrixConfig(
+              homeServer: 'https://server',
+              user: userId,
+              password: '',
+            ),
+          );
+
+          await buildDeleteOps().deleteDeviceById(
+            'DEV1',
+            reauthPassword: 'typed',
+          );
+
+          verify(
+            () => gateway.deleteDevice('DEV1', auth: any(named: 'auth')),
+          ).called(1);
+        },
+      );
+
+      test('still refuses when neither a stored nor a typed password '
+          'exists', () {
+        when(() => sessionManager.matrixConfig).thenReturn(
+          const MatrixConfig(
+            homeServer: 'https://server',
+            user: userId,
+            password: '',
+          ),
+        );
+
+        expect(
+          () => buildDeleteOps().deleteDeviceById('DEV1'),
+          throwsUnsupportedError,
+        );
+      });
     });
 
     test(

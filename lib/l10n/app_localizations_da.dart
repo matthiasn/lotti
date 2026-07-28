@@ -5245,10 +5245,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get deviceDeleteFailedForbidden =>
-      'Synkroniseringsserveren afviste ændringen. Fjern enheden fra synkronisering på selve enheden, eller par den igen med en ny parringskode.';
-
-  @override
   String get deviceDeleteFailedGeneric =>
       'Enheden kunne ikke fjernes. Tjek din forbindelse, og prøv igen.';
 
@@ -10163,6 +10159,21 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Valg af tema';
 
   @override
+  String syncReauthExplanation(String deviceName) {
+    return 'Synkroniseringsserveren accepterede ikke den gemte adgangskode. Indtast den aktuelle adgangskode til din synkroniseringskonto for at fjerne $deviceName.';
+  }
+
+  @override
+  String get syncReauthInvalidPassword =>
+      'Den adgangskode virkede ikke. Tjek den, og prøv igen.';
+
+  @override
+  String get syncReauthPasswordLabel => 'Adgangskode til synkroniseringskonto';
+
+  @override
+  String get syncReauthTitle => 'Bekræft, at det er dig';
+
+  @override
   String get syncSetupCta => 'Konfigurer synkronisering';
 
   @override
@@ -10228,6 +10239,17 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncVerifyPromptQuestion => 'Samme emojier, samme rækkefølge?';
+
+  @override
+  String get syncVerifyStaleConfirm => 'Bekræft alligevel';
+
+  @override
+  String syncVerifyStaleMessage(String deviceName) {
+    return '$deviceName har ikke meldt sig i et stykke tid. Bekræftelse virker kun, mens den er vågen, online og viser Lotti — ellers venter emoji-tjekket på et svar, der aldrig kommer.';
+  }
+
+  @override
+  String get syncVerifyStaleTitle => 'Denne enhed er måske offline';
 
   @override
   String get syncVerifyTheyDiffer => 'De er forskellige — annullér';

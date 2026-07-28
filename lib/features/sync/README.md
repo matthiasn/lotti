@@ -58,7 +58,11 @@ merge of two users' work.
   unverified, but they can only be verified, not removed.) The roster warns
   while any device is excluded from sync and names the remedy; removal is
   hygiene, not an unblock step, and a bounded, best-effort key refresh tidies
-  the cache right away — or on the next sync cycle if it cannot complete.
+  the cache right away — or on the next sync cycle if it cannot complete. A
+  removal the server refuses because the saved account password has gone stale
+  asks for the current one and finishes on the spot, and verification against
+  a device that has been silent for weeks says the peer must be awake before
+  opening a ceremony that would otherwise wait forever.
 
 ## What it owns
 

@@ -5218,10 +5218,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get deviceDeleteFailedForbidden =>
-      'The sync server refused this change. Remove this device from sync on the device itself, or re-pair with a fresh pairing code.';
-
-  @override
   String get deviceDeleteFailedGeneric =>
       'The device couldn\'t be removed. Check your connection and try again.';
 
@@ -10091,6 +10087,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Theming selection';
 
   @override
+  String syncReauthExplanation(String deviceName) {
+    return 'The sync server didn\'t accept the saved password. Enter the current password for your sync account to remove $deviceName.';
+  }
+
+  @override
+  String get syncReauthInvalidPassword =>
+      'That password didn\'t work. Check it and try again.';
+
+  @override
+  String get syncReauthPasswordLabel => 'Sync account password';
+
+  @override
+  String get syncReauthTitle => 'Confirm it\'s you';
+
+  @override
   String get syncSetupCta => 'Set up sync';
 
   @override
@@ -10156,6 +10167,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncVerifyPromptQuestion => 'Same emoji, same order?';
+
+  @override
+  String get syncVerifyStaleConfirm => 'Verify anyway';
+
+  @override
+  String syncVerifyStaleMessage(String deviceName) {
+    return '$deviceName hasn\'t checked in for a while. Verifying only works while it is awake, online and showing Lotti — otherwise the emoji check waits for an answer that never comes.';
+  }
+
+  @override
+  String get syncVerifyStaleTitle => 'This device may be offline';
 
   @override
   String get syncVerifyTheyDiffer => 'They differ — cancel';

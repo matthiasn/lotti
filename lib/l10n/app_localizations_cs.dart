@@ -5303,10 +5303,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get deviceDeleteFailedForbidden =>
-      'Server synchronizace tuto změnu odmítl. Odeber zařízení ze synchronizace přímo na něm, nebo ho znovu spáruj novým párovacím kódem.';
-
-  @override
   String get deviceDeleteFailedGeneric =>
       'Zařízení se nepodařilo odebrat. Zkontroluj připojení a zkus to znovu.';
 
@@ -10297,6 +10293,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Výběr tématu';
 
   @override
+  String syncReauthExplanation(String deviceName) {
+    return 'Server synchronizace uložené heslo nepřijal. Zadej aktuální heslo ke svému synchronizačnímu účtu a odeber $deviceName.';
+  }
+
+  @override
+  String get syncReauthInvalidPassword =>
+      'Toto heslo nefungovalo. Zkontroluj ho a zkus to znovu.';
+
+  @override
+  String get syncReauthPasswordLabel => 'Heslo k synchronizačnímu účtu';
+
+  @override
+  String get syncReauthTitle => 'Potvrď, že jsi to ty';
+
+  @override
   String get syncSetupCta => 'Nastavit synchronizaci';
 
   @override
@@ -10362,6 +10373,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncVerifyPromptQuestion => 'Stejná emoji, stejné pořadí?';
+
+  @override
+  String get syncVerifyStaleConfirm => 'Přesto ověřit';
+
+  @override
+  String syncVerifyStaleMessage(String deviceName) {
+    return '$deviceName se už nějakou dobu neozvalo. Ověření funguje, jen když je zapnuté, online a má otevřenou Lotti — jinak bude kontrola emoji čekat na odpověď, která nikdy nepřijde.';
+  }
+
+  @override
+  String get syncVerifyStaleTitle => 'Toto zařízení může být offline';
 
   @override
   String get syncVerifyTheyDiffer => 'Liší se — zrušit';

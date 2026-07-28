@@ -5328,10 +5328,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get deviceDeleteFailedForbidden =>
-      'Serverul de sincronizare a refuzat această modificare. Eliminați dispozitivul din sincronizare chiar de pe el sau reasociați-l cu un cod de asociere nou.';
-
-  @override
   String get deviceDeleteFailedGeneric =>
       'Dispozitivul nu a putut fi eliminat. Verificați conexiunea și încercați din nou.';
 
@@ -10358,6 +10354,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Selecție temă';
 
   @override
+  String syncReauthExplanation(String deviceName) {
+    return 'Serverul de sincronizare nu a acceptat parola salvată. Introduceți parola actuală a contului de sincronizare pentru a elimina $deviceName.';
+  }
+
+  @override
+  String get syncReauthInvalidPassword =>
+      'Această parolă nu a funcționat. Verificați-o și încercați din nou.';
+
+  @override
+  String get syncReauthPasswordLabel => 'Parola contului de sincronizare';
+
+  @override
+  String get syncReauthTitle => 'Confirmați-vă identitatea';
+
+  @override
   String get syncSetupCta => 'Configurați sincronizarea';
 
   @override
@@ -10426,6 +10437,18 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get syncVerifyPromptQuestion =>
       'Aceleași emoji-uri, în aceeași ordine?';
+
+  @override
+  String get syncVerifyStaleConfirm => 'Verificați oricum';
+
+  @override
+  String syncVerifyStaleMessage(String deviceName) {
+    return '$deviceName nu a mai dat semne de ceva vreme. Verificarea funcționează doar cât timp este pornit, online și are Lotti deschis — altfel verificarea emoji așteaptă un răspuns care nu mai vine.';
+  }
+
+  @override
+  String get syncVerifyStaleTitle =>
+      'Este posibil ca acest dispozitiv să fie offline';
 
   @override
   String get syncVerifyTheyDiffer => 'Diferă — anulați';

@@ -2563,7 +2563,6 @@
       }
     }
   },
-  "deviceDeleteFailedForbidden": "Synkroniseringsservern nekade ändringen. Ta bort enheten från synkronisering på själva enheten, eller parkoppla den igen med en ny parkopplingskod.",
   "deviceDeleteFailedGeneric": "Enheten kunde inte tas bort. Kontrollera din anslutning och försök igen.",
   "deviceDeleteQuestion": "Ta bort {deviceName} från ditt synkroniseringskonto? Enheten loggas ut och måste paras ihop igen innan den kan synkronisera.",
   "@deviceDeleteQuestion": {
@@ -4675,6 +4674,10 @@
   "syncPayloadSavedTaskFilterDelete": "Sparad uppgiftsfilter borttagning",
   "syncPayloadSyncNodeProfile": "Synknodprofil",
   "syncPayloadThemingSelection": "Tematval",
+  "syncReauthExplanation": "Synkroniseringsservern accepterade inte det sparade lösenordet. Ange det aktuella lösenordet för ditt synkroniseringskonto för att ta bort {deviceName}.",
+  "syncReauthInvalidPassword": "Det lösenordet fungerade inte. Kontrollera det och försök igen.",
+  "syncReauthPasswordLabel": "Lösenord för synkroniseringskonto",
+  "syncReauthTitle": "Bekräfta att det är du",
   "syncSetupCta": "Konfigurera synk",
   "syncSetupEmptyFootnote": "Körs på din egen synkroniseringsserver · inget lämnar dina enheter okrypterat",
   "syncSetupEmptyHint": "Din dagbok på alla dina enheter. Totalsträckskrypterad, bara mellan dina enheter — inget molnkonto.",
@@ -4696,6 +4699,9 @@
   "syncVerifyModalTitle": "Bekräfta din enhet",
   "syncVerifyPromptLine1": "Båda skärmarna visar sju emojier.",
   "syncVerifyPromptQuestion": "Samma emojier, samma ordning?",
+  "syncVerifyStaleConfirm": "Verifiera ändå",
+  "syncVerifyStaleMessage": "{deviceName} har inte hört av sig på ett tag. Verifieringen fungerar bara medan den är påslagen, online och visar Lotti — annars väntar emoji-kontrollen på ett svar som aldrig kommer.",
+  "syncVerifyStaleTitle": "Den här enheten kan vara offline",
   "syncVerifyTheyDiffer": "De skiljer sig — avbryt",
   "syncVerifyTheyMatch": "De stämmer",
   "syncWizardStepCheck": "Kontrollera",

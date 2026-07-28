@@ -2562,7 +2562,6 @@
       }
     }
   },
-  "deviceDeleteFailedForbidden": "O servidor de sincronização recusou esta alteração. Remova este dispositivo da sincronização no próprio dispositivo, ou emparelhe-o de novo com um código novo.",
   "deviceDeleteFailedGeneric": "Não foi possível remover o dispositivo. Verifique sua conexão e tente novamente.",
   "deviceDeleteQuestion": "Remover {deviceName} da sua conta de sincronização? O dispositivo será desconectado e precisará ser pareado novamente antes de poder sincronizar.",
   "@deviceDeleteQuestion": {
@@ -4674,6 +4673,10 @@
   "syncPayloadSavedTaskFilterDelete": "Exclusão de filtro de tarefa salva",
   "syncPayloadSyncNodeProfile": "Perfil do nó de sincronização",
   "syncPayloadThemingSelection": "Seleção de tema",
+  "syncReauthExplanation": "O servidor de sincronização não aceitou a palavra-passe guardada. Introduz a palavra-passe atual da tua conta de sincronização para remover {deviceName}.",
+  "syncReauthInvalidPassword": "Essa palavra-passe não funcionou. Verifica-a e tenta de novo.",
+  "syncReauthPasswordLabel": "Palavra-passe da conta de sincronização",
+  "syncReauthTitle": "Confirma que és tu",
   "syncSetupCta": "Configurar sincronização",
   "syncSetupEmptyFootnote": "Corre no teu próprio servidor de sincronização · nada sai dos teus dispositivos sem cifra",
   "syncSetupEmptyHint": "O teu diário em todos os teus dispositivos. Cifrado de ponta a ponta, só entre os teus dispositivos — sem conta na nuvem.",
@@ -4695,6 +4698,9 @@
   "syncVerifyModalTitle": "Confirma o dispositivo",
   "syncVerifyPromptLine1": "Os dois ecrãs mostram sete emojis.",
   "syncVerifyPromptQuestion": "Os mesmos emojis, pela mesma ordem?",
+  "syncVerifyStaleConfirm": "Verificar mesmo assim",
+  "syncVerifyStaleMessage": "{deviceName} não dá sinal há algum tempo. A verificação só funciona enquanto estiver ligado, online e com o Lotti aberto — caso contrário, a verificação de emojis espera por uma resposta que nunca chega.",
+  "syncVerifyStaleTitle": "Este dispositivo pode estar offline",
   "syncVerifyTheyDiffer": "São diferentes — cancelar",
   "syncVerifyTheyMatch": "Coincidem",
   "syncWizardStepCheck": "Verificar",

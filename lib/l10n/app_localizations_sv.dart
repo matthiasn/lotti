@@ -5246,10 +5246,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get deviceDeleteFailedForbidden =>
-      'Synkroniseringsservern nekade ändringen. Ta bort enheten från synkronisering på själva enheten, eller parkoppla den igen med en ny parkopplingskod.';
-
-  @override
   String get deviceDeleteFailedGeneric =>
       'Enheten kunde inte tas bort. Kontrollera din anslutning och försök igen.';
 
@@ -10162,6 +10158,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Tematval';
 
   @override
+  String syncReauthExplanation(String deviceName) {
+    return 'Synkroniseringsservern accepterade inte det sparade lösenordet. Ange det aktuella lösenordet för ditt synkroniseringskonto för att ta bort $deviceName.';
+  }
+
+  @override
+  String get syncReauthInvalidPassword =>
+      'Det lösenordet fungerade inte. Kontrollera det och försök igen.';
+
+  @override
+  String get syncReauthPasswordLabel => 'Lösenord för synkroniseringskonto';
+
+  @override
+  String get syncReauthTitle => 'Bekräfta att det är du';
+
+  @override
   String get syncSetupCta => 'Konfigurera synk';
 
   @override
@@ -10228,6 +10239,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncVerifyPromptQuestion => 'Samma emojier, samma ordning?';
+
+  @override
+  String get syncVerifyStaleConfirm => 'Verifiera ändå';
+
+  @override
+  String syncVerifyStaleMessage(String deviceName) {
+    return '$deviceName har inte hört av sig på ett tag. Verifieringen fungerar bara medan den är påslagen, online och visar Lotti — annars väntar emoji-kontrollen på ett svar som aldrig kommer.';
+  }
+
+  @override
+  String get syncVerifyStaleTitle => 'Den här enheten kan vara offline';
 
   @override
   String get syncVerifyTheyDiffer => 'De skiljer sig — avbryt';
