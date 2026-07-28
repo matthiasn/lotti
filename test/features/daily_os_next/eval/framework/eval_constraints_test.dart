@@ -1443,6 +1443,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('accepts a still-remaining modifier in partial arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'This placement is partial; '
+                  '60 minutes still remain for later.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     for (final wording in ['partially', 'partly']) {
       test('accepts $wording scheduled work with a matching remainder', () {
         final result = scoreWithinCapacityByEstimate(
@@ -2311,6 +2334,29 @@ void main() {
         result.detail,
         contains('task-migration allocated 60min of 120min'),
       );
+    });
+
+    test('does not treat a partial index as capacity evidence', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  "Focused work on task-c's partial index; "
+                  '60 minutes remain for later.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
     test('rejects a partial claim owned by a meeting with a task modifier', () {
@@ -3208,6 +3254,34 @@ void main() {
             ),
           ],
           decidedTaskIds: const ['task-migration'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('does not treat a partial index as trade evidence', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: "Focused work on task-c's partial index.",
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
           requiresConflictSurfaced: true,
         ),
       );

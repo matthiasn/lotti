@@ -706,7 +706,9 @@ final _partialOfEstimatePattern = RegExp(
 final _partialRemainingPattern = RegExp(
   r'\b(\d+)\s*(?:m|mins?|minutes?)\s+'
   r'(?:(?:of|for)\s+(?:this|the)\s+(?:task|work)\s+)?'
-  r'(?:(?:is|are|will(?:\s+be)?)\s+)?(?:left|remain(?:s|ing)?)\b',
+  r'(?:(?:still|yet)\s+)?'
+  r'(?:(?:is|are|will(?:\s+be)?)\s+)?'
+  r'(?:(?:still|yet)\s+)?(?:left|remain(?:s|ing)?)\b',
   caseSensitive: false,
 );
 
@@ -894,10 +896,10 @@ bool _isAuditedPartial(_EstimatedTaskPlacement placement) =>
 /// only when its concrete minute arithmetic agrees with both that duration and
 /// the corpus estimate. This accepts either an explicit `60m of 120m` split or
 /// the prompt's `partial` plus a task-bound `60m remain for later` form. Vague
-/// prose, unrelated day-capacity arithmetic, and contradictory numbers in
-/// either the reason or note keep the conservative full-estimate charge. Notes
-/// are audit evidence only: they can veto credit but cannot satisfy the prompt's
-/// reason-field disclosure contract.
+/// prose, `partial` used as an unrelated noun modifier, unrelated day-capacity
+/// arithmetic, and contradictory numbers in either the reason or note keep the
+/// conservative full-estimate charge. Notes are audit evidence only: they can
+/// veto credit but cannot satisfy the prompt's reason-field disclosure contract.
 bool _hasAuditablePartialDisclosure({
   required List<_PlacementDisclosure> disclosures,
   required int allocatedMinutes,
@@ -937,6 +939,7 @@ bool _hasAuditablePartialDisclosure({
       )) {
         continue;
       }
+      if (!_partialMentionDescribesPlacement(reason, match)) continue;
       if (_partialMentionIsNegated(reason, match)) return false;
       if (disclosure.canQualify) reasonMentionsPartial = true;
     }
@@ -1057,6 +1060,31 @@ bool _partialMentionIsNegated(String reason, Match match) {
     if (_wordPattern.allMatches(between).length <= 3) return true;
   }
   return false;
+}
+
+bool _partialMentionDescribesPlacement(String prose, Match match) {
+  final wording = (match.group(0) ?? '').toLowerCase();
+  if (wording == 'partially' || wording == 'partly') return true;
+
+  final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
+  final prefix = prose.substring(range.start, match.start);
+  final suffix = prose.substring(match.end, range.end);
+  final followsCopula = RegExp(
+    r'\b(?:is|are|was|were|has\s+been|have\s+been|had\s+been|will\s+be)'
+    r'(?:\s+(?:only|merely|just|still))?\s*$',
+    caseSensitive: false,
+  ).hasMatch(prefix);
+  final modifiesPlacementNoun = RegExp(
+    r'^\s+(?:task|work|placement|block|portion|part)\b',
+    caseSensitive: false,
+  ).hasMatch(suffix);
+  final isStandaloneLabelOrExplanation = RegExp(
+    r'^\s*(?:$|[:;,.\-–—!?]|(?:for|because|due\s+to|with|and)\b)',
+    caseSensitive: false,
+  ).hasMatch(suffix);
+  return followsCopula ||
+      modifiesPlacementNoun ||
+      isStandaloneLabelOrExplanation;
 }
 
 bool _negationQualifiesRatherThanNegates(Match negation, String between) {
@@ -1960,7 +1988,10 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
       );
 
   for (final match in _partialMentionPattern.allMatches(prose)) {
-    if (!belongsToTask(match)) continue;
+    if (!belongsToTask(match) ||
+        !_partialMentionDescribesPlacement(prose, match)) {
+      continue;
+    }
     if (_partialMentionIsNegated(prose, match)) {
       hasDeniedEvidence = true;
     } else {

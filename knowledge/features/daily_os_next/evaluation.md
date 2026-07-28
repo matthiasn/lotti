@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T06:51:25+02:00 }
+generated: { by: codex/5, at: 2026-07-28T07:04:19+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -76,9 +76,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   duration may replace the full estimate only when its reason gives concrete
   minute arithmetic (`60m of 120m scheduled`, or an affirmative `partial` plus
   a task-bound remainder such as `60m remain for later`, `Remaining 60m move to
-  tomorrow`, `60m will remain`, or `Remaining 60m are carried over`) that agrees
-  with both the summed duration of that task's work blocks and the corpus
-  estimate. A numeric completed/estimate split must describe task allocation,
+  tomorrow`, `60m still remain`, `60m will still remain`, or
+  `Remaining 60m are carried over`) that agrees with both the summed duration
+  of that task's work blocks and the corpus estimate. A numeric
+  completed/estimate split must describe task allocation,
   not omitted/deferred arithmetic or coincidentally equal workday capacity, so
   the surrounding clause must include an affirmative scheduled, allocated,
   completed, planned, placed, or fitting action that is nearer to the numbers
@@ -127,15 +128,18 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   negative fit quantifier that explains the partial, such as
   `not all work fits so 60 of 120 are scheduled`, also leaves the concrete
   allocation affirmative. `Partial`, `partially`, and `partly` are accepted
-  disclosure forms. A partial keyword is negated only by a preceding negator,
-  so `partial because not all work fits` remains affirmative. Split
-  syntax cannot provide its own allocation context: an affirmative allocation
-  action must appear outside the matched numbers. A task reference can
-  attribute that action, but cannot replace it. Explicit other-subject scope
-  also outranks a nearby `partial` keyword, so `remain for`, `before`, or `until`
-  a meeting cannot earn task remainder credit while `partial for today` remains
-  valid. Bare numeric remainders in another field of the same task block are
-  still audited, because a contradictory note must not be hidden from matching
+  disclosure forms. Bare `partial` must be a standalone label or explanation,
+  follow a copula, or modify a placement noun such as task, work, placement, or
+  block; a task-owned noun phrase such as `task-c's partial index` is not
+  placement evidence. A partial keyword is negated only by a preceding negator,
+  so `partial because not all work fits` remains affirmative. Split syntax
+  cannot provide its own allocation context: an affirmative allocation action
+  must appear outside the matched numbers. A task reference can attribute that
+  action, but cannot replace it. Explicit other-subject scope also outranks a
+  nearby `partial` keyword, so `remain for`, `before`, or `until` a meeting
+  cannot earn task remainder credit while `partial for today` remains valid.
+  Bare numeric remainders in another field of the same task block are still
+  audited, because a contradictory note must not be hidden from matching
   arithmetic in the reason. Numeric continuity such as `60 minutes remain
   scheduled` is not a remainder claim.
   Negated or vague “partial” prose, silence,
