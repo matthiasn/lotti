@@ -781,7 +781,7 @@ final _conflictTradePattern = RegExp(
   r'trade|conflict(?:s|ed|ing)?(?![-\s]+free\b)|'
   'shorten(?:s|ed|ing)?|'
   r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
-  r'(?:do|does|did)\s+not)\s+fit)\b',
+  r'(?:do|does|did)\s+not|(?:don|doesn|didn)[\x27’]?t)\s+fit)\b',
   caseSensitive: false,
 );
 
@@ -1098,7 +1098,11 @@ bool _partialMentionDescribesPlacement(String prose, Match match) {
 
 bool _tradeDispositionDescribesTaskOrWork(String prose, Match match) {
   final wording = (match.group(0) ?? '').toLowerCase();
-  if (!wording.startsWith('defer') && wording != 'unscheduled') return true;
+  if (!wording.startsWith('defer') &&
+      wording != 'unscheduled' &&
+      !wording.startsWith('for later')) {
+    return true;
+  }
 
   final range = _matchClauseRange(prose, match, boundaries: ',.;!?\n');
   final suffix = prose.substring(match.end, range.end);
@@ -1154,7 +1158,9 @@ bool _matchClauseIsNegated(String reason, Match match) {
         )) {
       continue;
     }
-    if (negationStart >= match.end && RegExp('[–—]').hasMatch(between)) {
+    if (negationStart >= match.end &&
+        RegExp('[–—]').hasMatch(between) &&
+        _wordPattern.hasMatch(between)) {
       continue;
     }
     if (negationStart >= match.end &&
@@ -2029,7 +2035,7 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
   if (task == null) return (affirmative: false, denied: false);
   final placement = _estimatedTaskPlacements(outcome)[taskId];
   final structuralRemainder = placement == null
-      ? null
+      ? task.estimateMinutes
       : placement.estimateMinutes - placement.allocatedMinutes;
   var hasAffirmativeEvidence = false;
   var hasDeniedEvidence = false;

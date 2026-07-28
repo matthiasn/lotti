@@ -1669,6 +1669,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('preserves a scheduling denial after dash punctuation', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '60 of 120 minutes — not scheduled.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('allows unrelated negation outside the partial arithmetic', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -3476,6 +3497,82 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('does not treat later reference as trade evidence', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c formats notes for later reference.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('validates a fully omitted task remainder against its estimate', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: 'task-c: 5 minutes remain for later.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('accepts a contracted negative-fit disclosure', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              reason: "task-c doesn't fit today.",
+            ),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-c', title: 'C')],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
     });
 
     test('accepts a trade outside a task title containing a trade word', () {

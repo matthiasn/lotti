@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T07:33:30+02:00 }
+generated: { by: codex/5, at: 2026-07-28T07:48:40+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -168,6 +168,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   reason or note field that names the task by token-bounded id or full title.
   The same disclosure requirement applies to fully omitted tasks; mentioning an
   omitted task only as context for retained work does not surface the omission.
+  Numeric remainder claims for a fully omitted estimated task must equal its
+  full estimate; omission does not make arbitrary positive arithmetic valid.
   The scorer does not combine a task name in one field with unbound trade prose
   in the other. A name occurring only inside another task id or word,
   task-binding grammar such as `for this task`, and trade wording in unrelated
@@ -193,8 +195,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   rescheduling, while `left unfinished` and moving work to tomorrow are actual
   remainder dispositions. A disposition word must govern the task or unfinished
   work: domain language such as `task-c documents deferred revenue` or
-  `task-c documents unscheduled maintenance` does not disclose that task-c
-  itself was deferred or left unscheduled.
+  `task-c documents unscheduled maintenance`, and purpose phrases such as
+  `formats notes for later reference`, do not disclose that task-c itself was
+  deferred or left unscheduled. Contracted negative-fit forms such as
+  `task-c doesn't fit` remain affirmative conflict disclosures.
   It must also be affirmative and internally consistent: `not partial` and
   `no conflict` explicitly deny the trade, `conflict-free` is an antonym rather
   than a disclosure, and an affirmative claim plus its denial receives no
