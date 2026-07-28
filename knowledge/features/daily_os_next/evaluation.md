@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T13:41:50+02:00 }
+generated: { by: codex/5, at: 2026-07-28T13:56:16+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -94,8 +94,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   qualify or contradict a placement. Intended, planned, aimed, hoped,
   wanted, expected, proposed, attempted, tried, failed, refused, or declined
   actions are likewise not affirmative. Neither are expectation forms such as
-  `was supposed to schedule` or `was meant to schedule`, inability complements
-  such as `was unable to schedule`, `was not able to schedule`, or
+  `was supposed to schedule`, `was meant to schedule`, or
+  `was going to schedule`, inability complements such as
+  `was unable to schedule`, `was not able to schedule`, or
   `was incapable of scheduling`, nor actions the prose says were avoided or
   prevented, including passive `was prevented from being scheduled` wording. A
   selected allocation action must govern the numeric split on either side; an
@@ -291,8 +292,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   was not scheduled` does not retract task-c's affirmative deferral.
   It must also be affirmative and internally consistent: `not partial` and
   `no conflict` explicitly deny the trade, while `without conflict` and
-  `conflict-free` are denials rather than disclosures. Modal dispositions such
-  as `might be omitted`, `could be deferred`, or
+  `conflict-free` are denials rather than disclosures. Outer falsehoods deny
+  positive dispositions too: `It is false that task-c conflicts` cannot surface
+  a trade. Modal dispositions such as `might be omitted`, `could be deferred`,
+  or
   `may ultimately need to be deferred` are speculative, not actual trades;
   modal complement length and a coordinated predicate such as `may need to be
   shortened and ultimately deferred` do not make the disposition affirmative.
@@ -300,11 +303,12 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   clause. Attempt and failure complements are likewise not actual
   dispositions: neither `attempted to be omitted`, `failed to be omitted`, the
   near miss `was almost omitted`, expectations such as `was supposed to be
-  omitted` or `was meant to be omitted`, nor the direct requirement
-  `requires deferring` surfaces a trade. The same rules reject allocation prose
-  such as `almost scheduled 60 of 120 minutes`,
-  `was supposed to schedule 60 of 120 minutes`, and
-  `was meant to schedule 60 of 120 minutes`. Avoidance and prevention
+  omitted`, `was meant to be omitted`, or `was going to be omitted`, nor the
+  direct requirement `requires deferring` surfaces a trade. The same rules
+  reject allocation prose such as `almost scheduled 60 of 120 minutes`,
+  `was supposed to schedule 60 of 120 minutes`,
+  `was meant to schedule 60 of 120 minutes`, and
+  `was going to schedule 60 of 120 minutes`. Avoidance and prevention
   complements are denials too:
   neither `task-c avoided being omitted` nor
   `task-c avoided getting omitted` asserts an omission. An affirmative claim

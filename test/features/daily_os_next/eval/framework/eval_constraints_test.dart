@@ -1924,6 +1924,27 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects a going-to allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c was going to schedule 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     for (final failedAction in [
       'unsuccessfully scheduled',
       'failed scheduling',
@@ -4434,6 +4455,7 @@ void main() {
       'task-c was almost omitted.',
       'task-c was supposed to be omitted.',
       'task-c was meant to be omitted.',
+      'task-c was going to be omitted.',
     ]) {
       test('rejects a non-asserted trade disposition: $reason', () {
         final result = scoreSurfacedConflict(
@@ -5976,6 +5998,34 @@ void main() {
               endHour: 10,
               taskId: 'task-c',
               reason: 'There is no conflict for task-c.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('outer falsehood denies a positive conflict disclosure', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'It is false that task-c conflicts.',
             ),
           ],
           corpus: const [
