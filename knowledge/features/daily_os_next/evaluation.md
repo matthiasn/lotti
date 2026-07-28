@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T08:05:22+02:00 }
+generated: { by: codex/5, at: 2026-07-28T08:24:38+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -104,13 +104,18 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   when their titles collide; an explicit id can therefore attribute arithmetic
   to the other task, while an ambiguous shared title is handled conservatively.
   Explicit full-title references retain that precedence even for short titles
-  such as `PR`.
+  such as `PR`. A grammatical one-letter title such as `A` is not treated as a
+  bare reference because that would attribute every article to the task;
+  explicit `task A` wording remains available.
   This allows one clause to audit the current split and name a deferred casualty
   before or after it. The same attribution applies to remainder evidence. The
   partial mention and task-bound remainder must occur in the same block reason,
   as required by the model-facing prompt. Notes cannot earn partial credit, but
   their concrete arithmetic and denials remain audit evidence that can veto a
-  reason. The partial mention cannot be borrowed from a claim attributed to
+  reason. A task-bound standalone allocation denial such as
+  `task-c was not scheduled after all` therefore retracts reason-field partial
+  arithmetic even when the note contains no split or remainder of its own. The
+  partial mention cannot be borrowed from a claim attributed to
   another corpus task or an explicit non-task subject. Unrelated meeting/workday
   remainder scope is rejected before a later disposition can bind it, and
   unrelated workday-capacity prose cannot supply the remainder.
@@ -202,12 +207,18 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `task-c documents unscheduled maintenance`, and purpose phrases such as
   `formats notes for later reference`, do not disclose that task-c itself was
   deferred or left unscheduled. The same object binding rejects domain phrases
-  such as `reviews trade policy` and `carries over balances`. Contracted negative-fit forms such as
-  `task-c doesn't fit` remain affirmative conflict disclosures.
+  such as `reviews trade policy` and `carries over balances`. Negative-fit
+  evidence is subject-bound too: `task-c doesn't fit` remains affirmative, but
+  `task-c validates that the payload cannot fit in memory` describes the
+  payload, not the task. Ordinary causal suffixes remain valid, so
+  `task-c was omitted due to capacity` discloses the omission.
   It must also be affirmative and internally consistent: `not partial` and
   `no conflict` explicitly deny the trade, `conflict-free` is an antonym rather
-  than a disclosure, and an affirmative claim plus its denial receives no
-  credit in either order or across two task-named fields.
+  than a disclosure, and an affirmative claim plus denial of that same
+  disposition receives no credit in either order or across two task-named
+  fields. Denials do not cancel a different asserted disposition:
+  `task-c was not dropped; it was deferred to tomorrow` still surfaces the
+  actual deferral.
   `Cannot fit`, `conflicts`, and `conflicting` are affirmative disclosures,
   unless an outer falsehood construction such as `not true that task-c cannot
   fit` denies the whole claim.
