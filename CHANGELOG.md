@@ -157,6 +157,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **The sync statistics panel no longer shows counters that never move.** Most
+  of what it displayed — processed messages, failures, catch-up batches, retries,
+  circuit breaker trips and the signal counters — had stopped being recorded
+  when sync was rebuilt, so they sat at zero forever and made a healthy sync
+  look idle. Those rows are gone. The headline figures are now what was written
+  to the database, how many conflicts were logged, and how much is still waiting
+  to be applied.
 - **A photo or recording that never arrived now repairs itself.** If a device
   ended up holding an entry whose image or audio file it never received, that
   file stayed missing forever — nothing noticed, and only re-sending your whole

@@ -519,6 +519,11 @@ class MatrixServiceOps {
     return diagnostics;
   }
 
+  /// Last successful queue-ledger read, reused when a later
+  /// `queue.stats()` call fails so the panel keeps showing the established
+  /// depth instead of dropping to zero. Null until the first success.
+  Map<String, int>? _lastQueueCounts;
+
   Future<SyncMetrics?> getSyncMetrics() async {
     final pipeline = _pipeline;
     if (pipeline == null) return null;
@@ -532,10 +537,12 @@ class MatrixServiceOps {
       if (queueCoordinator.isRunning) {
         try {
           final stats = await queueCoordinator.queue.stats();
-          map['queueActive'] = stats.total;
-          map['queueApplied'] = stats.applied;
-          map['queueAbandoned'] = stats.abandoned;
-          map['queueRetrying'] = stats.retrying;
+          _lastQueueCounts = <String, int>{
+            'queueActive': stats.total,
+            'queueApplied': stats.applied,
+            'queueAbandoned': stats.abandoned,
+            'queueRetrying': stats.retrying,
+          };
         } catch (error, stackTrace) {
           loggingService.error(
             LogDomain.sync,
@@ -544,6 +551,12 @@ class MatrixServiceOps {
             subDomain: 'metrics.queueStats',
           );
         }
+        // Carry the last successful read forward when this one failed.
+        // `SyncMetrics.fromMap` reads an absent key as 0, so dropping the
+        // overlay would replace an established queue depth with a confident
+        // zero — the same "nothing is happening" lie this panel was cleaned
+        // up to stop telling, and a full-value flash on a background refresh.
+        map.addAll(_lastQueueCounts ?? const <String, int>{});
       }
       return SyncMetrics.fromMap(map);
     } catch (e, st) {

@@ -7087,7 +7087,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Legenda:\n• processed.<type> = mensagens de sincronização processadas por tipo de carga\n• droppedByType.<type> = descartes por tipo após novas tentativas ou ao ignorar mensagens antigas\n• dbApplied = linhas gravadas no banco de dados\n• dbIgnoredByVectorClock = dados recebidos mais antigos ou idênticos ignorados pelo banco de dados\n• conflictsCreated = vetores de relógio simultâneos registrados\n• dbMissingBase = ignorado enquanto aguarda uma dependência ou linha de base ausente\n• staleAttachmentPurges = descritores obsoletos em cache removidos antes da atualização';
+      'Legenda:\n• dbApplied = linhas gravadas no banco de dados\n• dbIgnoredByVectorClock = dados recebidos mais antigos ou idênticos ignorados pelo banco de dados\n• conflictsCreated = relógios vetoriais simultâneos registrados\n• dbMissingBase = ignorado enquanto se espera uma dependência ausente\n• dbEntryLinkNoop = vínculo já existe, nada gravado\n• droppedByType.<type> = descartes por tipo após novas tentativas ou ao ignorar mensagens antigas\n• queueActive = eventos recebidos ainda por aplicar\n• signalConnectivity = impulsos de sincronização após a conexão voltar';
+
+  @override
+  String get matrixStatsQueueActive => 'Fila (ativa)';
 
   @override
   String get matrixStatsRefresh => 'Atualizar';

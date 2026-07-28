@@ -1338,31 +1338,25 @@ void main() {
         // so Bob should receive exactly n new entries.
         expect(newEntries, n);
 
+        // Diagnostics only — deliberately not asserted on.
+        //
+        // The assertions that used to live here read `failures == 0` and
+        // `circuitOpens == 0` on counters nothing ever incremented, so they
+        // passed unconditionally. Replacing them with `dbApplied >= n` looked
+        // right and was equally wrong: this harness leaves
+        // `SyncEventProcessor.applyObserver` unwired, so every counter in the
+        // snapshot reads 0 here even on a run that converges correctly.
+        // Production wires the observer in `MatrixService`; see `get_it`.
+        //
+        // The real convergence check is `expect(newEntries, n)` above, which
+        // counts rows in Bob's database rather than trusting a counter.
         if (metrics != null) {
           debugPrint('  dbApplied: ${metrics.dbApplied}');
           debugPrint(
-            '  dbIgnoredByVectorClock: '
-            '${metrics.dbIgnoredByVectorClock}',
+            '  dbIgnoredByVectorClock: ${metrics.dbIgnoredByVectorClock}',
           );
           debugPrint('  conflictsCreated: ${metrics.conflictsCreated}');
           debugPrint('  queueAbandoned: ${metrics.queueAbandoned}');
-
-          // The previous assertions here read `failures == 0` and
-          // `circuitOpens == 0`, which passed unconditionally: nothing ever
-          // incremented either counter, so they asserted a constant. These
-          // check counters the pipeline actually feeds.
-          expect(
-            metrics.dbApplied,
-            greaterThanOrEqualTo(n),
-            reason:
-                'Catch-up applied fewer rows to the DB than the $n entries '
-                'Bob converged on',
-          );
-          expect(
-            metrics.queueAbandoned,
-            0,
-            reason: 'No inbound event should be abandoned during catch-up',
-          );
         }
 
         // Bring Alice back online for clean teardown

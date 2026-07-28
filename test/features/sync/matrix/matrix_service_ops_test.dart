@@ -961,6 +961,48 @@ void main() {
       },
     );
 
+    test(
+      'a failed stats read keeps the last known queue depth, not zero',
+      () async {
+        // An absent queue key reads as 0 in SyncMetrics.fromMap, so dropping
+        // the overlay on a transient failure would replace an established
+        // depth with a confident zero — a background refresh flashing the
+        // panel to "nothing queued" when the queue is in fact busy.
+        when(pipeline.metricsSnapshot).thenReturn({'sent': 2});
+        when(() => coordinator.isRunning).thenReturn(true);
+        final ops = buildOps();
+
+        when(queue.stats).thenAnswer(
+          (_) async => _stats(total: 5, applied: 4, abandoned: 1, retrying: 2),
+        );
+        expect((await ops.getSyncMetrics())!.queueActive, 5);
+
+        when(queue.stats).thenThrow(Exception('db'));
+        final afterFailure = await ops.getSyncMetrics();
+
+        expect(afterFailure!.queueActive, 5);
+        expect(afterFailure.queueApplied, 4);
+        expect(afterFailure.queueAbandoned, 1);
+        expect(afterFailure.queueRetrying, 2);
+      },
+    );
+
+    test(
+      'a stats failure before any success leaves the queue counts at zero',
+      () async {
+        // Nothing to preserve yet: zero here means "no reading", which is the
+        // same thing the panel would show for an idle queue. Acceptable, and
+        // better than inventing a number.
+        when(pipeline.metricsSnapshot).thenReturn({'sent': 2});
+        when(() => coordinator.isRunning).thenReturn(true);
+        when(queue.stats).thenThrow(Exception('db'));
+
+        final metrics = await buildOps().getSyncMetrics();
+
+        expect(metrics!.queueActive, 0);
+      },
+    );
+
     test('returns null when metrics collection is disabled', () async {
       final ops = MatrixServiceOps(
         gateway: gateway,

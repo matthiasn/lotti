@@ -7108,7 +7108,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Legenda: • elaborata. <type> = messaggi di sincronizzazione elaborati per tipo di payload • dropByType. <type> = per-type drops after retries or old-message ignora • dbApplied = righe di database scritte • dbIgnoredByVectorClock = dati in entrata vecchi o identici ignorati dal database • conflittiCreated = orologi corrente registrati • dbMissing';
+      'Legenda:\n• dbApplied = righe di database scritte\n• dbIgnoredByVectorClock = dati in entrata più vecchi o identici ignorati dal database\n• conflictsCreated = orologi vettoriali concorrenti registrati\n• dbMissingBase = saltato in attesa di una dipendenza mancante\n• dbEntryLinkNoop = collegamento già presente, nulla di scritto\n• droppedByType.<type> = scarti per tipo dopo i tentativi o l’ignorare messaggi vecchi\n• queueActive = eventi in entrata ancora da applicare\n• signalConnectivity = solleciti di sincronizzazione dopo il ritorno della connessione';
+
+  @override
+  String get matrixStatsQueueActive => 'Coda (attiva)';
 
   @override
   String get matrixStatsRefresh => 'Rifiuti';

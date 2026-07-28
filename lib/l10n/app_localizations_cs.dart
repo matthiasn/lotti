@@ -7127,7 +7127,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Legenda:\n• processed.<type> = zpracované synchronizační zprávy podle typu dat\n• droppedByType.<type> = zahazování podle typu po opakováních nebo ignorování starších zpráv\n• dbApplied = zapsané řádky databáze\n• dbIgnoredByVectorClock = starší nebo stejné příchozí údaje ignorované databází\n• conflictsCreated = zaznamenané souběžné vektorové hodiny\n• dbMissingBase = přeskočeno při čekání na chybějící závislost nebo základní řádek\n• staleAttachmentPurges = zastaralé popisy v mezipaměti vyčištěné před obnovením';
+      'Legenda:\n• dbApplied = zapsané řádky databáze\n• dbIgnoredByVectorClock = starší nebo stejné příchozí údaje ignorované databází\n• conflictsCreated = zaznamenané souběžné vektorové hodiny\n• dbMissingBase = přeskočeno při čekání na chybějící závislost\n• dbEntryLinkNoop = propojení už existuje, nic se nezapsalo\n• droppedByType.<type> = zahozené zprávy podle typu po opakováních nebo ignorování starších zpráv\n• queueActive = příchozí události čekající na použití\n• signalConnectivity = podněty k synchronizaci po obnovení připojení';
+
+  @override
+  String get matrixStatsQueueActive => 'Fronta (aktivní)';
 
   @override
   String get matrixStatsRefresh => 'Obnovit';

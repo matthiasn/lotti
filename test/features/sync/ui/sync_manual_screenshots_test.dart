@@ -703,13 +703,23 @@ void main() {
     when(
       () => matrixService.getSyncMetrics(),
     ).thenAnswer(
+      // Seed the counters the panel actually renders, so the manual
+      // screenshots show representative diagnostics rather than a grid of
+      // zeros. Unnamespaced keys ('journalEntities') were never read by
+      // SyncMetrics.fromMap — the per-type rows come from the
+      // 'droppedByType.<type>' namespace.
       (_) async => SyncMetrics.fromMap({
-        'processed': 2847,
-        'failures': 2,
-        'retriesScheduled': 7,
-        'journalEntities': 1944,
-        'entryLinks': 622,
-        'agentEntities': 281,
+        'dbApplied': 2847,
+        'dbIgnoredByVectorClock': 96,
+        'conflictsCreated': 2,
+        'dbMissingBase': 1,
+        'dbEntryLinkNoop': 14,
+        'droppedByType.journalEntity': 3,
+        'signalConnectivity': 11,
+        'queueActive': 7,
+        'queueApplied': 2840,
+        'queueAbandoned': 0,
+        'queueRetrying': 1,
       }),
     );
     when(

@@ -7021,7 +7021,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Legend:\n• bearbetad. <type> = bearbetade synkmeddelanden efter nyttolasttyp\n• droppadeByType. <type> = per typ droppar efter omförsök eller äldre meddelande ignorerar\n• dbApplied = databasrader skrivna\n• dbIgnoredByVectorClock = äldre eller identisk inkommande data ignoreras av databasen\n• conflictsCreated = samtidiga vektorklockor loggade\n• dbMissingBase = hoppas över medan man väntar på en saknad beroende eller basrad\n• staleAttachmentPurges = cachade föråldrade deskriptorer rensade före uppdatering';
+      'Legend:\n• dbApplied = skrivna databasrader\n• dbIgnoredByVectorClock = äldre eller identiska inkommande data ignorerade av databasen\n• conflictsCreated = samtidiga vektorklockor loggade\n• dbMissingBase = överhoppad i väntan på ett saknat beroende\n• dbEntryLinkNoop = länken finns redan, inget skrevs\n• droppedByType.<type> = bortsorterade per typ efter försök eller ignorerade äldre meddelanden\n• queueActive = inkommande händelser som ännu inte tillämpats\n• signalConnectivity = synkroniseringsknuffar efter att anslutningen kom tillbaka';
+
+  @override
+  String get matrixStatsQueueActive => 'Kö (aktiv)';
 
   @override
   String get matrixStatsRefresh => 'Uppdatera';

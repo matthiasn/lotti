@@ -7160,7 +7160,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Legendă:\n• processed.<type> = mesaje de sincronizare procesate după tipul încărcăturii\n• droppedByType.<type> = elemente eliminate pe tip după reîncercări sau ignorarea mesajelor vechi\n• dbApplied = rânduri scrise în baza de date\n• dbIgnoredByVectorClock = date de intrare vechi sau identice ignorate de baza de date\n• conflictsCreated = ceasuri vectoriale concurente înregistrate\n• dbMissingBase = omis în așteptarea unei dependențe sau a unui rând de bază lipsă\n• staleAttachmentPurges = descriptori vechi din cache eliminați înainte de reîmprospătare';
+      'Legendă:\n• dbApplied = rânduri scrise în baza de date\n• dbIgnoredByVectorClock = date de intrare vechi sau identice ignorate de baza de date\n• conflictsCreated = ceasuri vectoriale concurente înregistrate\n• dbMissingBase = omis în așteptarea unei dependențe lipsă\n• dbEntryLinkNoop = legătura există deja, nu s-a scris nimic\n• droppedByType.<type> = elemente eliminate pe tip după reîncercări sau ignorarea mesajelor vechi\n• queueActive = evenimente primite care așteaptă să fie aplicate\n• signalConnectivity = impulsuri de sincronizare după revenirea conexiunii';
+
+  @override
+  String get matrixStatsQueueActive => 'Coadă (activă)';
 
   @override
   String get matrixStatsRefresh => 'Reîmprospătează';

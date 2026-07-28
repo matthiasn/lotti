@@ -7043,7 +7043,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Legende: • verwerkt.<type> = verwerkt sync berichten per payload type • droppedByType.<type> = per type druppels na retrie- of ouder bericht negeert • dbToegepast = database rijen geschreven • dbIgnoredByVectorClock = oudere of identieke inkomende gegevens genegeerd door de database • conflictenCreated = gelijktijdige vector klokken gelogd • dbMissingBase = overgeslagen terwijl wachtte op een ontbrekende afhankelijkheid of basisrij • trueAttachmentPurges = gecached stamdescriptoren geklaard voordat ze werden ververst';
+      'Legende:\n• dbApplied = geschreven databaserijen\n• dbIgnoredByVectorClock = oudere of identieke inkomende gegevens genegeerd door de database\n• conflictsCreated = gelijktijdige vectorklokken gelogd\n• dbMissingBase = overgeslagen terwijl op een ontbrekende afhankelijkheid wordt gewacht\n• dbEntryLinkNoop = koppeling bestaat al, niets geschreven\n• droppedByType.<type> = weggegooid per type na pogingen of het negeren van oudere berichten\n• queueActive = inkomende gebeurtenissen die nog toegepast moeten worden\n• signalConnectivity = synchronisatiezetjes nadat de verbinding terug was';
+
+  @override
+  String get matrixStatsQueueActive => 'Wachtrij (actief)';
 
   @override
   String get matrixStatsRefresh => 'Verversen';

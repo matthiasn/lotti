@@ -7129,7 +7129,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Leyenda:\n• processed.<type> = mensajes de sincronización procesados por tipo de carga\n• droppedByType.<type> = descartes por tipo después de reintentos o de ignorar mensajes antiguos\n• dbApplied = filas escritas en la base de datos\n• dbIgnoredByVectorClock = datos entrantes antiguos o idénticos ignorados por la base de datos\n• conflictsCreated = relojes vectoriales simultáneos registrados\n• dbMissingBase = omitido mientras se espera una dependencia o fila base ausente\n• staleAttachmentPurges = descriptores obsoletos en caché eliminados antes de actualizar';
+      'Leyenda:\n• dbApplied = filas escritas en la base de datos\n• dbIgnoredByVectorClock = datos entrantes antiguos o idénticos ignorados por la base de datos\n• conflictsCreated = relojes vectoriales simultáneos registrados\n• dbMissingBase = omitido mientras se espera una dependencia que falta\n• dbEntryLinkNoop = el enlace ya existe, no se escribió nada\n• droppedByType.<type> = descartes por tipo tras reintentos o al ignorar mensajes antiguos\n• queueActive = eventos entrantes pendientes de aplicar\n• signalConnectivity = impulsos de sincronización tras recuperar la conexión';
+
+  @override
+  String get matrixStatsQueueActive => 'Cola (activa)';
 
   @override
   String get matrixStatsRefresh => 'Actualizar';

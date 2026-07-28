@@ -6986,7 +6986,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get matrixStatsLegendTooltip =>
-      'Legend:\n• processed.<type> = processed sync messages by payload type\n• droppedByType.<type> = per-type drops after retries or older-message ignores\n• dbApplied = database rows written\n• dbIgnoredByVectorClock = older or identical incoming data ignored by the database\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting a missing dependency or base row\n• staleAttachmentPurges = cached stale descriptors cleared before refresh';
+      'Legend:\n• dbApplied = database rows written\n• dbIgnoredByVectorClock = older or identical incoming data ignored by the database\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting a missing dependency or base row\n• dbEntryLinkNoop = link already present, nothing written\n• droppedByType.<type> = per-type drops after retries or older-message ignores\n• queueActive = inbound events still waiting to be applied\n• signalConnectivity = sync nudges after connectivity returned';
+
+  @override
+  String get matrixStatsQueueActive => 'Queue (active)';
 
   @override
   String get matrixStatsRefresh => 'Refresh';

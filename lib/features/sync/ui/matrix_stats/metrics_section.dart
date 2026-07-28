@@ -51,6 +51,7 @@ class SyncMetricsSection extends StatelessWidget {
       );
     }
     return switch (key) {
+      'queueActive' => messages.matrixStatsQueueActive,
       'dbApplied' => messages.matrixStatsDbApplied,
       'dbIgnoredByVectorClock' => messages.matrixStatsDbIgnoredVectorClock,
       'conflictsCreated' => messages.matrixStatsConflicts,
