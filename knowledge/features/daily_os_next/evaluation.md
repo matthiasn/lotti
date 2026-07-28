@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T05:25:11+02:00 }
+generated: { by: codex/5, at: 2026-07-28T05:38:35+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -119,7 +119,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   affirmative arithmetic. Likewise, `60 of 120 are scheduled and no more`
   remains affirmative because the later `no` follows the allocation action
   instead of negating it; `not only` is likewise affirmative emphasis rather
-  than negation. A `partial` keyword is negated only by a preceding
+  than negation. A negative fit quantifier that explains the partial, such as
+  `not all work fits so 60 of 120 are scheduled`, also leaves the concrete
+  allocation affirmative. A `partial` keyword is negated only by a preceding
   negator, so `partial because not all work fits` remains affirmative. Split
   syntax cannot provide its own task context: an allocation word or task
   reference must appear outside the matched numbers. Explicit other-subject
@@ -143,6 +145,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   and trade wording in unrelated plan prose cannot satisfy that disclosure.
   Trade language in the same reason is attributed to its nearest corpus task,
   so one task's deferred disposition cannot disclose another task's shortening.
+  An explicit non-task subject is rejected too: `the meeting is deferred`
+  cannot disclose the shortening merely because the same reason names a task,
+  while `the remainder is deferred` remains task-trade evidence.
   Bare continuity such as `remains scheduled` is not a trade: numeric remainder
   arithmetic matching the structural remainder, or an actual
   omit/defer/shorten/conflict disposition, is required.

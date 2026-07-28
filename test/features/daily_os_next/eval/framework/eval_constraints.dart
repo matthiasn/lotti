@@ -975,12 +975,22 @@ bool _partialMentionIsNegated(String reason, Match match) {
     final negationEnd = range.start + negation.end;
     if (negationEnd > match.start) continue;
     final between = reason.substring(negationEnd, match.start);
-    if (RegExp(r'^\s*only\b', caseSensitive: false).hasMatch(between)) {
+    if (_negationQualifiesRatherThanNegates(negation, between)) {
       continue;
     }
     if (_wordPattern.allMatches(between).length <= 3) return true;
   }
   return false;
+}
+
+bool _negationQualifiesRatherThanNegates(Match negation, String between) {
+  if ((negation.group(0) ?? '').toLowerCase() != 'not') return false;
+  return RegExp(r'^\s*only\b', caseSensitive: false).hasMatch(between) ||
+      RegExp(
+        r'^\s*all\b.*\bfit(?:s|ting)?\b\s+'
+        r'(?:so|therefore|thus|but)\s*$',
+        caseSensitive: false,
+      ).hasMatch(between);
 }
 
 bool _matchClauseIsNegated(String reason, Match match) {
@@ -995,7 +1005,7 @@ bool _matchClauseIsNegated(String reason, Match match) {
         ? reason.substring(match.end, negationStart)
         : '';
     if (negationEnd <= match.start &&
-        RegExp(r'^\s*only\b', caseSensitive: false).hasMatch(between)) {
+        _negationQualifiesRatherThanNegates(negation, between)) {
       continue;
     }
     if (negationStart >= match.end &&
@@ -1792,6 +1802,14 @@ bool _hasAffirmativeTradeDisclosure(
       ? null
       : placement.estimateMinutes - placement.allocatedMinutes;
   for (final match in _partialMentionPattern.allMatches(prose)) {
+    if (_tradeEvidenceHasExplicitNonTaskSubject(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+    )) {
+      continue;
+    }
     if (_evidenceNamesAnotherTask(
       prose,
       match,
@@ -1804,6 +1822,14 @@ bool _hasAffirmativeTradeDisclosure(
     if (!_partialMentionIsNegated(prose, match)) return true;
   }
   for (final match in _partialTradeDispositionPattern.allMatches(prose)) {
+    if (_tradeEvidenceHasExplicitNonTaskSubject(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+    )) {
+      continue;
+    }
     if (_evidenceNamesAnotherTask(
       prose,
       match,
@@ -1820,6 +1846,17 @@ bool _hasAffirmativeTradeDisclosure(
     _partialLeadingRemainingPattern,
   ]) {
     for (final match in pattern.allMatches(prose)) {
+      if (_tradeEvidenceHasExplicitNonTaskSubject(
+            prose,
+            match,
+            taskId: taskId,
+            taskTitle: task.title,
+          ) ||
+          _unrelatedRemainderScopePattern.hasMatch(
+            _matchClause(prose, match),
+          )) {
+        continue;
+      }
       if (_evidenceNamesAnotherTask(
         prose,
         match,
@@ -1840,6 +1877,14 @@ bool _hasAffirmativeTradeDisclosure(
     }
   }
   for (final match in _conflictTradePattern.allMatches(prose)) {
+    if (_tradeEvidenceHasExplicitNonTaskSubject(
+      prose,
+      match,
+      taskId: taskId,
+      taskTitle: task.title,
+    )) {
+      continue;
+    }
     if (_evidenceNamesAnotherTask(
       prose,
       match,
@@ -1858,6 +1903,37 @@ bool _hasAffirmativeTradeDisclosure(
     }
   }
   return false;
+}
+
+bool _tradeEvidenceHasExplicitNonTaskSubject(
+  String prose,
+  Match evidence, {
+  required String taskId,
+  required String taskTitle,
+}) {
+  final range = _matchClauseRange(prose, evidence, boundaries: ',.;!?\n');
+  final currentTaskDistance = _nearestTaskReferenceDistance(
+    prose,
+    evidence,
+    range: range,
+    taskId: taskId,
+    taskTitle: taskTitle,
+  );
+  if (currentTaskDistance != null) return false;
+  final prefix = prose.substring(range.start, evidence.start).trim();
+  final subjectMatch = RegExp(
+    r'^(.*?)\s+(?:is|are|was|were|has\s+been|have\s+been|had\s+been|'
+    r'will\s+be)\s*$',
+    caseSensitive: false,
+  ).firstMatch(prefix);
+  if (subjectMatch == null) return false;
+  final subject = subjectMatch.group(1)?.trim() ?? '';
+  return !RegExp(
+    r'^(?:(?:the|this|that|its)\s+)?'
+    r'(?:task|work|placement|block|remainder|remaining\s+(?:task|work)|'
+    r'rest|portion|part|it)$',
+    caseSensitive: false,
+  ).hasMatch(subject);
 }
 
 bool _taskTradeIsNamed(
