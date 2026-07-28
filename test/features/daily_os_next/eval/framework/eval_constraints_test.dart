@@ -1897,6 +1897,29 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('rejects a passively prevented allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c was prevented from being scheduled '
+                  'for 60 of 120 minutes.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     test('preserves a scheduling denial after dash punctuation', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2316,6 +2339,29 @@ void main() {
               taskId: 'task-c',
               reason:
                   'task-c: 60 of 120 minutes are scheduled for the meeting.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('rejects arithmetic not governed by the allocation action', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'task-c scheduled the meeting after reviewing '
+                  '60 of 120 minutes of recordings.',
             ),
           ],
           corpus: tasks,
@@ -4727,6 +4773,34 @@ void main() {
               endHour: 10,
               type: PlannedBlockType.buffer,
               reason: 'task-c avoided being omitted.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('an avoided getting-complement does not disclose an omission', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'context',
+              startHour: 9,
+              endHour: 10,
+              type: PlannedBlockType.buffer,
+              reason: 'task-c avoided getting omitted.',
             ),
           ],
           corpus: const [

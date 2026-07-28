@@ -733,6 +733,15 @@ final _negationWordPattern = RegExp(
   caseSensitive: false,
 );
 
+final _avoidanceComplementPattern = RegExp(
+  r'\b(?:avoid(?:s|ed|ing)?(?:\s+(?:being|getting))?|'
+  'prevent(?:s|ed|ing)?|'
+  r'(?:(?:is|are|was|were|be|been|being)\s+)?'
+  r'prevent(?:s|ed|ing)?(?:\s+[\w-]+){0,2}\s+from'
+  r'(?:\s+(?:being|getting))?)\s*$',
+  caseSensitive: false,
+);
+
 final _wordPattern = RegExp(r'\b\w+\b');
 
 const _partialTradeDispositionSource =
@@ -1324,12 +1333,7 @@ bool _matchClauseIsNegated(
   ).hasMatch(prefix)) {
     return true;
   }
-  if (RegExp(
-    r'\b(?:avoid(?:s|ed|ing)?(?:\s+being)?|'
-    r'(?:(?:is|are|was|were|be|been|being)\s+)?'
-    r'prevent(?:s|ed|ing)?(?:\s+\w+){0,2}\s+from(?:\s+being)?)\s*$',
-    caseSensitive: false,
-  ).hasMatch(prefix)) {
+  if (_avoidanceComplementPattern.hasMatch(prefix)) {
     return true;
   }
   for (final negation in _negationWordPattern.allMatches(reason, range.start)) {
@@ -1444,11 +1448,7 @@ bool _splitIsTaskBound(
 }
 
 bool _splitHasAffirmativeAllocation(String reason, Match match) {
-  final action = _nearestPatternMatch(
-    reason,
-    match,
-    _taskAllocationActionPattern,
-  );
+  final action = _nearestAllocationActionMatch(reason, match);
   if (action == null || !_allocationActionIsAsserted(reason, action)) {
     return false;
   }
@@ -1492,10 +1492,7 @@ bool _allocationActionIsAsserted(
         r'(?:isn|aren|wasn|weren)[\x27’]?t\s+able\s+to)\s*$',
         caseSensitive: false,
       ).hasMatch(prefix) &&
-      !RegExp(
-        r'\b(?:avoid(?:s|ed|ing)?|prevent(?:s|ed|ing)?)\s*$',
-        caseSensitive: false,
-      ).hasMatch(prefix);
+      !_avoidanceComplementPattern.hasMatch(prefix);
 }
 
 bool _splitHasUnrelatedScope(
@@ -1504,11 +1501,7 @@ bool _splitHasUnrelatedScope(
   required String taskId,
   required String taskTitle,
 }) {
-  final evidenceAction = _nearestPatternMatch(
-    reason,
-    evidence,
-    _taskAllocationActionPattern,
-  );
+  final evidenceAction = _nearestAllocationActionMatch(reason, evidence);
   if (evidenceAction == null) return false;
   final range = _matchClauseRange(reason, evidence, boundaries: ',.;!?\n');
   final currentTaskDistance = _nearestTaskReferenceDistance(
@@ -1549,6 +1542,35 @@ bool _splitHasUnrelatedScope(
   for (final match in pattern.allMatches(clause)) {
     final start = range.start + match.start;
     final end = range.start + match.end;
+    final distance = end <= evidence.start
+        ? evidence.start - end
+        : start >= evidence.end
+        ? start - evidence.end
+        : 0;
+    if (nearest == null || distance < nearest.distance) {
+      nearest = (start: start, end: end, distance: distance);
+    }
+  }
+  return nearest;
+}
+
+({int start, int end, int distance})? _nearestAllocationActionMatch(
+  String reason,
+  Match evidence,
+) {
+  final range = _matchClauseRange(reason, evidence, boundaries: ',.;!?\n');
+  final clause = reason.substring(range.start, range.end);
+  ({int start, int end, int distance})? nearest;
+  for (final match in _taskAllocationActionPattern.allMatches(clause)) {
+    final start = range.start + match.start;
+    final end = range.start + match.end;
+    if (end <= evidence.start &&
+        !RegExp(
+          r'^\s*(?:(?:only|just|merely|about|approximately|roughly)\s+)?$',
+          caseSensitive: false,
+        ).hasMatch(reason.substring(end, evidence.start))) {
+      continue;
+    }
     final distance = end <= evidence.start
         ? evidence.start - end
         : start >= evidence.end

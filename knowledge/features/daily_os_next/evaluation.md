@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T10:19:08+02:00 }
+generated: { by: codex/5, at: 2026-07-28T10:37:50+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -93,8 +93,12 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   wanted, expected, proposed, attempted, tried, failed, refused, or declined
   actions are likewise not affirmative. Neither are inability complements such
   as `was unable to schedule`, `was not able to schedule`, or `was incapable of
-  scheduling`, nor actions the prose says were avoided or prevented. A later
-  action describing “the rest” cannot validate earlier omitted arithmetic.
+  scheduling`, nor actions the prose says were avoided or prevented, including
+  passive `was prevented from being scheduled` wording. A selected allocation
+  action must govern the numeric split; an earlier action with intervening
+  object prose, such as scheduling a meeting before reviewing `60 of 120`
+  recording minutes, cannot supply task-allocation context. A later action
+  describing “the rest” cannot validate earlier omitted arithmetic.
   Unrelated meeting/workday scope is likewise associated with its nearest
   allocation action, so later meeting arithmetic does not poison an
   earlier valid task split. Unbound splits are ignored before their values are
@@ -247,9 +251,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   `no conflict` explicitly deny the trade, while `without conflict` and
   `conflict-free` are denials rather than disclosures. Modal dispositions such
   as `might be omitted` or `could be deferred` are speculative, not actual
-  trades. Avoidance and prevention complements are denials too: `task-c avoided
-  being omitted` does not assert an omission. An affirmative claim plus denial
-  of that same
+  trades. Avoidance and prevention complements are denials too: neither
+  `task-c avoided being omitted` nor `task-c avoided getting omitted` asserts an
+  omission. An affirmative claim plus denial of that same
   disposition receives no credit in either order or across two task-named
   fields. Denials do not cancel a different asserted disposition:
   `task-c was not dropped; it was deferred to tomorrow` still surfaces the
