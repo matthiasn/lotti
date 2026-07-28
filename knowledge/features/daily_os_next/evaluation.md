@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T22:12:29+02:00 }
+generated: { by: codex/5, at: 2026-07-28T22:39:29+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -115,7 +115,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   says were avoided or prevented, including passive
   `was prevented from being scheduled` wording. Negation words inside the
   current task id or title are names, not clause operators, so
-  `No-code prototype scheduled 60 of 120 minutes` remains affirmative. A
+  `No-code prototype scheduled 60 of 120 minutes` remains affirmative, as does
+  the partial label in `No-code prototype is partial`. Allocation predicates
+  accept ordinary third-person present forms such as `schedules`, `allocates`,
+  `completes`, `plans`, and `places`. A
   selected allocation action must govern the numeric split on either side; an
   earlier action with intervening object prose, such as scheduling a meeting
   before reviewing `60 of 120` recording minutes, cannot supply task-allocation
@@ -166,7 +169,8 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   are references, not predicates: `task-fit 60 of 120 minutes` contains no
   assertion that the work was placed. A possessive task reference also retains
   its following head noun, so `task-c's meeting has 60 of 120 minutes
-  scheduled` remains meeting evidence rather than task-c allocation.
+  scheduled` remains meeting evidence rather than task-c allocation, and
+  `omitted task-c's meeting` omits the meeting rather than task-c.
   The block's task is the default arithmetic subject; a corpus reference
   overrides it when it is comma-led, adjacent, linked by an allocation action
   (including postpositive `allocated to Task D`), possessive, attached by `for`
