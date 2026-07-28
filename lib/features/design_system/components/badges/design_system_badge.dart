@@ -8,6 +8,12 @@ enum DesignSystemBadgeTone {
   danger,
   warning,
   success,
+
+  /// Hueless status: for states that are merely *not yet something* rather
+  /// than good, bad or noteworthy. Exists so a quiet status cannot borrow an
+  /// identity or alert grammar — "Unverified (no keys)" must not dress like
+  /// "This device".
+  neutral,
 }
 
 enum _DesignSystemBadgeType {
@@ -323,6 +329,30 @@ class _BadgeStyleSpec {
       };
     }
 
+    if (tone == DesignSystemBadgeTone.neutral) {
+      // No alert ramp to bind: the border is the outlined button's quiet
+      // stroke, the label the metadata ink. A neutral badge whispers.
+      return switch (type) {
+        _DesignSystemBadgeType.dot => _BadgeStyleSpec(
+          backgroundColor: tokens.colors.decorative.level02,
+          foregroundColor: Colors.transparent,
+          borderColor: null,
+        ),
+        _DesignSystemBadgeType.number ||
+        _DesignSystemBadgeType.filled ||
+        _DesignSystemBadgeType.icon => _BadgeStyleSpec(
+          backgroundColor: tokens.colors.surface.enabled,
+          foregroundColor: tokens.colors.text.mediumEmphasis,
+          borderColor: null,
+        ),
+        _DesignSystemBadgeType.outlined => _BadgeStyleSpec(
+          backgroundColor: null,
+          foregroundColor: tokens.colors.text.mediumEmphasis,
+          borderColor: tokens.colors.text.lowEmphasis,
+        ),
+      };
+    }
+
     final (accentColor, inkColor) = switch (tone) {
       DesignSystemBadgeTone.primary => (
         tokens.colors.alert.info.defaultColor,
@@ -342,6 +372,9 @@ class _BadgeStyleSpec {
       ),
       DesignSystemBadgeTone.secondary => throw StateError(
         'Secondary tone must be handled separately.',
+      ),
+      DesignSystemBadgeTone.neutral => throw StateError(
+        'Neutral tone must be handled separately.',
       ),
     };
 

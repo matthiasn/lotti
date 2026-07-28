@@ -3,6 +3,7 @@ import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dar
 
 export 'generated/design_tokens.g.dart';
 export 'motion_tokens.dart';
+export 'sizing_tokens.dart';
 
 /// Convenience access to the design-system tokens from any [BuildContext].
 extension DesignTokensBuildContextExtension on BuildContext {

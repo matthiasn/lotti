@@ -22,7 +22,11 @@ sources:
 
 Representative components — `DesignSystemButton`, `DesignSystemCheckbox`,
 `DesignSystemSplitButton` — derive padding, radii, icon size and text style from
-`context.designTokens`, **not local magic numbers**.
+`context.designTokens`, **not local magic numbers**. Glyph and stroke
+dimensions come from the hand-authored sizing set (`IconSizes`,
+`BorderWidths` — see [tokens and theming](tokens-and-theming.md)), never from
+`spacing.stepN`: a spacing step that happens to equal 24 retunes every icon
+the moment the gap scale moves.
 
 `DesignSystemButton` sizes run `dense` → `small` → `medium` → `large` → `jumbo`.
 **`dense` is the caption tier**: its label is
@@ -75,6 +79,30 @@ danger labels at AA on light and dark hosts. Their pressed state uses the
 high-emphasis content token, **because the dark pressed surface cannot retain
 4.5:1 with the available error palette**. The filled danger button keeps the
 default error token as its surface.
+
+**`constructiveOutlined`** is the outlined grammar carrying the interactive
+accent on both border and label — for a demoted-but-*positive* action beside
+a danger primary, where the neutral outlined treatment reads as Cancel
+("Verify" next to "Remove" must still look like a good idea).
+
+# Status without an alert: the neutral badge tone
+
+`DesignSystemBadgeTone.neutral` is hueless — grey stroke, metadata ink, no
+fill on the outlined shape. It exists so a quiet status ("Unverified, no keys
+yet") cannot borrow the *identity* grammar of the secondary outlined chip or
+an alert tone it has not earned; the sync device roster's "This device" and
+keyless "Unverified" chips are the canonical pair that must not match.
+
+# Inline callouts
+
+`DesignSystemInlineCallout` is the message grammar: a `background.level02`
+surface with an alert-toned hairline border and leading glyph — something to
+*read*, deliberately distinct from the hairline card sections use, so a band
+cannot carry two dialects of "this is a surface". The tone rides border and
+glyph (non-text, ≥ 3:1); the body text stays `text.highEmphasis`, because a
+callout's message must never depend on an alert hue for its legibility.
+Promoted from the sync feature, whose paused banner and add-device security
+warning are the canonical uses.
 
 # One field surface
 

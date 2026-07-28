@@ -323,7 +323,7 @@ class _RecommendedLabel extends StatelessWidget {
       children: [
         Icon(
           Icons.recommend_rounded,
-          size: tokens.spacing.step4,
+          size: IconSizes.xs,
           color: accent,
         ),
         SizedBox(width: tokens.spacing.step1),

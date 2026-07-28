@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/features/sync/ui/clipboard_helper.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_callout.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
 import 'package:lotti/get_it.dart';
@@ -231,7 +231,7 @@ class _BarCaption extends StatelessWidget {
           children: [
             Icon(
               Icons.verified_user_rounded,
-              size: tokens.spacing.step4,
+              size: IconSizes.xs,
               color: tokens.colors.alert.success.defaultColor,
             ),
             SizedBox(width: tokens.spacing.step2),
@@ -650,10 +650,10 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
         // Under the credential it concerns. Warning tone, deliberately —
         // this is a live credential on screen, and de-toned to grey it was
         // quieter than the buttons offering to copy it.
-        SyncCallout(
+        DesignSystemInlineCallout(
+          key: const Key('add_device_security_note'),
           icon: Icons.lock_outline_rounded,
           text: messages.syncAddDeviceSecurityNote,
-          calloutKey: const Key('add_device_security_note'),
         ),
         SizedBox(height: tokens.spacing.step5),
         // The wait, narrated as a timeline the account fills in: waiting,
@@ -739,7 +739,7 @@ class _TimelineStop extends StatelessWidget {
           shape: BoxShape.circle,
           border: Border.all(
             color: tokens.colors.decorative.level02,
-            width: tokens.spacing.step1,
+            width: BorderWidths.emphasis,
           ),
         ),
         child: SizedBox(width: dotSide, height: dotSide),
@@ -769,7 +769,7 @@ class _TimelineStop extends StatelessWidget {
                   color: tokens.colors.decorative.level01,
                 ),
                 child: SizedBox(
-                  width: tokens.spacing.step1,
+                  width: BorderWidths.emphasis,
                   height: tokens.spacing.step5,
                 ),
               ),

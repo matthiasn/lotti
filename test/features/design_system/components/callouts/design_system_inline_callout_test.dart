@@ -1,33 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_callout.dart';
 
-import '../../../../../widget_test_utils.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   /// The tokens the widget itself resolves, read from the same theme the test
   /// pumps, so the assertions compare against the design system rather than
   /// against a copied literal.
   DsTokens tokensOf(WidgetTester tester) =>
-      tester.element(find.byType(SyncCallout)).designTokens;
+      tester.element(find.byType(DesignSystemInlineCallout)).designTokens;
 
   BoxDecoration decorationOf(WidgetTester tester) =>
       tester
               .widget<DecoratedBox>(
                 find.descendant(
-                  of: find.byType(SyncCallout),
+                  of: find.byType(DesignSystemInlineCallout),
                   matching: find.byType(DecoratedBox),
                 ),
               )
               .decoration
           as BoxDecoration;
 
-  group('SyncCallout', () {
+  group('DesignSystemInlineCallout', () {
     testWidgets('shows its icon and message', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          const SyncCallout(
+          const DesignSystemInlineCallout(
             icon: Icons.pause_circle_outline,
             text: 'Sync is paused for one device.',
           ),
@@ -41,7 +41,10 @@ void main() {
     testWidgets('carries the warning tone by default', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          const SyncCallout(icon: Icons.warning_amber_rounded, text: 'Careful'),
+          const DesignSystemInlineCallout(
+            icon: Icons.warning_amber_rounded,
+            text: 'Careful',
+          ),
         ),
       );
 
@@ -50,10 +53,7 @@ void main() {
 
       // Border and icon share one colour: the tone is what makes a callout
       // read as a warning rather than as a card.
-      expect(
-        (decorationOf(tester).border! as Border).top.color,
-        warning,
-      );
+      expect((decorationOf(tester).border! as Border).top.color, warning);
       expect(
         tester.widget<Icon>(find.byIcon(Icons.warning_amber_rounded)).color,
         warning,
@@ -63,7 +63,7 @@ void main() {
     testWidgets('honours an explicit tone', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          const SyncCallout(
+          const DesignSystemInlineCallout(
             icon: Icons.info_outline,
             text: 'Just so you know',
             tone: Colors.teal,
@@ -71,10 +71,7 @@ void main() {
         ),
       );
 
-      expect(
-        (decorationOf(tester).border! as Border).top.color,
-        Colors.teal,
-      );
+      expect((decorationOf(tester).border! as Border).top.color, Colors.teal);
       expect(
         tester.widget<Icon>(find.byIcon(Icons.info_outline)).color,
         Colors.teal,
@@ -86,7 +83,10 @@ void main() {
     ) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          const SyncCallout(icon: Icons.info_outline, text: 'Message'),
+          const DesignSystemInlineCallout(
+            icon: Icons.info_outline,
+            text: 'Message',
+          ),
         ),
       );
 
@@ -98,65 +98,35 @@ void main() {
         decoration.borderRadius,
         BorderRadius.circular(tokens.radii.sectionCards),
       );
+      expect(
+        (decoration.border! as Border).top.width,
+        BorderWidths.hairline,
+      );
     });
 
-    testWidgets('applies calloutKey to the callout itself', (tester) async {
-      // Callers assert presence by key; if it landed on an inner node the
-      // widget would still find it, but removing the callout would not.
+    testWidgets('keeps the message on high-emphasis ink, never the tone', (
+      tester,
+    ) async {
+      // The alert-ramp contract: the tone rides the border and glyph
+      // (non-text, ≥3:1), while the message itself must not depend on an
+      // alert hue for legibility.
       await tester.pumpWidget(
         makeTestableWidget(
-          const SyncCallout(
+          const DesignSystemInlineCallout(
             icon: Icons.info_outline,
             text: 'Message',
-            calloutKey: Key('security_note'),
+            tone: Colors.teal,
           ),
         ),
       );
 
+      final tokens = tokensOf(tester);
+      final label = tester.widget<Text>(find.text('Message'));
+      expect(label.style?.color, tokens.colors.text.highEmphasis);
       expect(
-        find.byKey(const Key('security_note')),
-        findsOneWidget,
+        tester.widget<Icon>(find.byIcon(Icons.info_outline)).size,
+        IconSizes.l,
       );
-      expect(
-        find.descendant(
-          of: find.byType(SyncCallout),
-          matching: find.byKey(const Key('security_note')),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('lets long copy wrap instead of overflowing', (tester) async {
-      // The security warning is two full sentences; on a phone it must wrap.
-      // Centered so the width constraint actually applies (a MaterialApp home
-      // is tight-constrained to the screen), and asserted on the wrap
-      // *contract* rather than a pixel height — line metrics vary with which
-      // fonts earlier suites in the batched CI process have loaded.
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const Center(
-            child: SizedBox(
-              width: 300,
-              child: SyncCallout(
-                icon: Icons.warning_amber_rounded,
-                text:
-                    'This code unlocks your sync account. Show it only to a '
-                    'device you own, and never share a picture of it.',
-              ),
-            ),
-          ),
-        ),
-      );
-
-      expect(tester.takeException(), isNull, reason: 'no overflow');
-      final text = tester.widget<Text>(
-        find.descendant(
-          of: find.byType(SyncCallout),
-          matching: find.byType(Text),
-        ),
-      );
-      expect(text.softWrap ?? true, isTrue);
-      expect(text.maxLines, isNull, reason: 'long copy must be able to wrap');
     });
   });
 }

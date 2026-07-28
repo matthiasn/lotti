@@ -322,7 +322,7 @@ class _FirstDeviceView extends StatelessWidget {
           background: tokens.colors.surface.selected,
           child: Icon(
             Icons.check_rounded,
-            size: tokens.spacing.step7,
+            size: IconSizes.xl,
             color: tokens.colors.interactive.enabled,
           ),
         ),
@@ -373,11 +373,11 @@ class _PairedView extends ConsumerWidget {
         Row(
           children: [
             _StateFigure(
-              size: tokens.spacing.step9,
+              size: IconSizes.xxxl,
               background: tokens.colors.surface.selected,
               child: Icon(
                 Icons.check_rounded,
-                size: tokens.spacing.step6,
+                size: IconSizes.l,
                 color: tokens.colors.interactive.enabled,
               ),
             ),
@@ -502,7 +502,7 @@ class _GateStep extends StatelessWidget {
     if (done) {
       marker = Icon(
         Icons.check_circle_rounded,
-        size: tokens.spacing.step6,
+        size: IconSizes.l,
         color: tokens.colors.alert.success.defaultColor,
       );
     } else {
@@ -512,7 +512,7 @@ class _GateStep extends StatelessWidget {
       marker = DecoratedBox(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: ring, width: tokens.spacing.step1),
+          border: Border.all(color: ring, width: BorderWidths.emphasis),
         ),
         child: SizedBox(
           width: tokens.spacing.step6,
@@ -538,7 +538,7 @@ class _GateStep extends StatelessWidget {
             ? Border(
                 left: BorderSide(
                   color: tokens.colors.interactive.enabled,
-                  width: tokens.spacing.step1,
+                  width: BorderWidths.emphasis,
                 ),
               )
             : null,
@@ -571,7 +571,7 @@ class _GateStep extends StatelessWidget {
                         SizedBox(width: tokens.spacing.step2),
                         Icon(
                           Icons.lock_outline_rounded,
-                          size: tokens.spacing.step4,
+                          size: IconSizes.xs,
                           color: tokens.colors.text.lowEmphasis,
                         ),
                       ],
@@ -690,9 +690,9 @@ class _VerifyStepState extends ConsumerState<_VerifyStep> {
         Row(
           key: const Key('paired_verify_waiting'),
           children: [
-            DesignSystemSpinner(
-              size: tokens.spacing.step4,
-              strokeWidth: tokens.spacing.step1 / 2,
+            const DesignSystemSpinner(
+              size: IconSizes.xs,
+              strokeWidth: BorderWidths.hairline,
             ),
             SizedBox(width: tokens.spacing.step2),
             Expanded(
@@ -763,7 +763,7 @@ class _ErrorView extends StatelessWidget {
           ),
           child: Icon(
             Icons.error_outline,
-            size: tokens.spacing.step7,
+            size: IconSizes.xl,
             color: tokens.colors.alert.error.defaultColor,
           ),
         ),

@@ -50,10 +50,17 @@ control**.
 `spacing`, `borderRadius` — producing `dsTokensLight` and `dsTokensDark`, and a
 typed surface of colors, typography, spacing and radii.
 
-**There is no sizing or motion group yet.** If the export grows, the seam to
-update is the generator, not every component downstream. (Motion tokens exist,
-but hand-authored outside this pipeline, because `Duration` and `Curve` are not
-lerp-able — see [agent UI surfaces](../agents/ui-surfaces.md).)
+**There is no sizing or motion group in the export.** If the export grows, the
+seam to update is the generator, not every component downstream. Two token
+sets are hand-authored outside this pipeline for the same reason — their
+values are brightness-invariant, so nothing lerps, and neither exists as a
+Figma variable to import: **motion** (`motion_tokens.dart`, because `Duration`
+and `Curve` are not lerp-able — see
+[agent UI surfaces](../agents/ui-surfaces.md)) and **sizing**
+(`sizing_tokens.dart`: `IconSizes` for glyph dimensions, `BorderWidths` for
+strokes). Before the sizing set existed, call sites borrowed
+`tokens.spacing.stepN` as icon and stroke dimensions, which retuned glyphs
+whenever the gap scale moved.
 
 ## One token, three names
 

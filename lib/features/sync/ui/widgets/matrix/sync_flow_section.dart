@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/themes/theme.dart';
 
-/// The sync feature's card container: token-padded, rounded, softly elevated.
+/// The sync feature's card container, on the design-system section-card
+/// surface.
+///
+/// Delegates its material — `background.level02`, hairline
+/// `decorative.level01` border, section-card radius, no shadow — to
+/// [DesignSystemSectionCard], so every sync card restyles with the design
+/// system instead of holding its own `colorScheme` + literal-alpha copy.
 ///
 /// [accentColor] draws a rounded edge bar along the leading side — used to
 /// mark a card that needs attention (e.g. a device that blocks sync) without
@@ -28,23 +34,11 @@ class SyncFlowSection extends StatelessWidget {
 
     final content = Padding(padding: resolvedPadding, child: child);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
-        border: Border.all(
-          color: context.colorScheme.outline.withValues(alpha: 0.16),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: context.colorScheme.shadow.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      // The accent bar lives in the padding gutter so a flagged card keeps
-      // the exact content rail of its unflagged siblings.
+    // Padding stays on this side of the delegation so the accent bar can
+    // live in the padding gutter: a flagged card keeps the exact content
+    // rail of its unflagged siblings.
+    return DesignSystemSectionCard(
+      padding: EdgeInsets.zero,
       child: accent == null
           ? content
           : Stack(

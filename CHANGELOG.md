@@ -58,6 +58,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing when there is nothing on the clipboard to paste.
 
 ### Changed
+- **The device list tells status and identity apart.** A device that has no
+  encryption keys yet wears a quiet grey "Unverified" chip instead of
+  borrowing the exact dress of the "This device" marker, so a glance down the
+  list no longer reads a waiting state as an identity. And on the one card
+  where removal is the highlighted action, the Verify button beside it now
+  carries the accent color — it used to look like a Cancel button, when it is
+  in fact the good way out.
+- **Sync cards sit on the app-wide card surface.** Every card in the sync
+  screens now uses the same material as the rest of the app's detail pages —
+  same tone, same hairline border, no one-off shadow — so Devices no longer
+  looks subtly foreign next to the pages around it.
 - **Setting up sync starts with a real first screen.** Before anything is
   configured, the Devices page used to show a single row that repeated the
   menu entry you had just tapped, floating in an otherwise empty pane. It now

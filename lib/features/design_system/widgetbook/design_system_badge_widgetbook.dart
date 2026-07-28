@@ -183,6 +183,7 @@ String _labelForTone(DesignSystemBadgeTone tone) {
     DesignSystemBadgeTone.danger => 'Danger',
     DesignSystemBadgeTone.warning => 'Warning',
     DesignSystemBadgeTone.success => 'Success',
+    DesignSystemBadgeTone.neutral => 'Neutral',
   };
 }
 
@@ -193,5 +194,6 @@ IconData _iconForTone(DesignSystemBadgeTone tone) {
     DesignSystemBadgeTone.danger => Icons.error_rounded,
     DesignSystemBadgeTone.warning => Icons.warning_amber_rounded,
     DesignSystemBadgeTone.success => Icons.check_rounded,
+    DesignSystemBadgeTone.neutral => Icons.remove_rounded,
   };
 }
