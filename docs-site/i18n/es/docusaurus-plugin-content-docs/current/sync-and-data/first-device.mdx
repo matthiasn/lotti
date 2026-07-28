@@ -1,0 +1,61 @@
+---
+title: Tu primer dispositivo
+description: De dónde sale el primer código de emparejamiento cuando aún no hay ningún dispositivo conectado — la herramienta de aprovisionamiento del lado del servidor y qué hacer con el bundle que escribe.
+---
+
+# Tu primer dispositivo
+
+Cada dispositivo después del primero recibe su código de emparejamiento de
+un dispositivo que ya usas — ese recorrido es
+[Añadir un dispositivo](./add-device.mdx). El primero es distinto: no hay
+otro dispositivo que pueda generar un código. La sincronización de Lotti es
+autoalojada, así que el primer código viene del lado del servidor — lo crea
+quien administra tu homeserver de Synapse.
+
+## Qué hace la herramienta de aprovisionamiento
+
+Lotti incluye una CLI de administración, el **aprovisionador de Matrix**, en
+el repositorio en
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Ejecutada por un admin del homeserver:
+
+1. crea una cuenta de Matrix nueva dedicada a la sincronización,
+2. crea la sala de sincronización cifrada, y
+3. escribe en un archivo un **bundle de aprovisionamiento** — el texto que
+   Lotti acepta como código de emparejamiento.
+
+El README junto a la herramienta documenta cada argumento y las formas
+seguras de pasar la contraseña de admin. Una ejecución mínima se ve así:
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+Si no administras tu propio homeserver, este paso no te toca a ti — pide el
+bundle a la persona que opera el servidor, y trata el camino por el que te
+llega con el cuidado descrito abajo.
+
+## Usar el bundle como primer código de emparejamiento
+
+En el dispositivo que será tu primero, abre **Ajustes → Ajustes de
+sincronización → Dispositivos** y elige **Configurar sincronización**. Pega
+el texto del bundle en el campo de código — en el móvil, donde primero se
+abre la cámara, elige **Pegar el código en su lugar** para llegar ahí. A
+partir de ahí el flujo es el recorrido de emparejamiento normal: revisar lo
+que describe el código, conectar y [verificar](./sync.mdx).
+
+Merece la pena saber una diferencia: consumir un bundle de aprovisionamiento
+nuevo **rota la contraseña de la cuenta** al conectar. El archivo del bundle
+queda gastado tras su primer uso — la credencial viva existe entonces solo
+en ese dispositivo, y cada dispositivo siguiente se empareja desde uno
+existente con [Añadir un dispositivo](./add-device.mdx). Borra el archivo
+del bundle en cuanto el primer dispositivo esté conectado; una copia
+rezagada ya no puede iniciar sesión, pero no hay motivo para conservarla.
+
+Hasta ese primer uso, trata el bundle como una contraseña: inicia sesión en
+la cuenta de sincronización — mantenlo fuera de chats, capturas de pantalla
+y pantallas compartidas.

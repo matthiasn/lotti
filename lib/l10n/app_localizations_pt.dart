@@ -8283,7 +8283,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Os códigos de emparelhamento expiram quando a folha «Adicionar dispositivo» fecha. Abre-a de novo no teu outro dispositivo e usa o código novo que mostrar.';
+      'O servidor não aceitou as credenciais desse código. Um código deixa de funcionar quando a palavra-passe da conta muda — obtém um código novo no teu outro dispositivo, ou tenta novamente se foi só a ligação.';
 
   @override
   String get provisionedSyncImportButton => 'Continuar';
@@ -10213,7 +10213,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'O código é uma chave da tua conta. Usa apenas um do teu próprio dispositivo — o código de outra pessoa envia-lhe tudo o que escreves.';
 
   @override
-  String get syncPairOpenManual => 'Abrir o manual do servidor';
+  String get syncPairOpenManual => 'Abrir o guia do primeiro dispositivo';
 
   @override
   String get syncPairPasteTitle => 'Cole o código de emparelhamento';
@@ -10400,6 +10400,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get syncWizardStepGetCode => 'Obter código';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Passo $step de 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive =>

@@ -70,9 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   other device asks you to look at are always visible together — on phones
   too, where the pinned bar used to clip the check code.
 - **Every pairing screen has one clear next action.** After a failed
-  connection the highlighted button is now Enter a new code — pairing codes
-  expire when the other device closes its Add device sheet, so retrying the
-  identical code is the quiet option beside it, not the promoted one. While
+  connection the highlighted button is now Enter a new code — a rejected
+  code usually predates a password change on the account, which only a
+  fresh code fixes, so retrying the identical code is the quiet option
+  beside it, not the promoted one. While
   the emoji ceremony is still outstanding, the paired screen shows it as a
   numbered gate — confirm the emoji first, receive your settings after —
   with the locked step visibly locked, and the highlighted button reopens
@@ -137,8 +138,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of showing you the raw error.
 - **Setting up your very first device has a real path.** The "first device?"
   note used to end in "see the manual" with nothing to press; it now carries
-  an Open the server manual button that opens the manual in your browser, in
-  your language.
+  an Open the first-device guide button that lands directly on a new manual
+  page — available in every manual language — explaining where the very
+  first pairing code comes from and what to do with it.
 - **The hand-off no longer dies with the Add device sheet.** If a new device
   joins and finishes its emoji ceremony while you are looking at the device
   list — say you closed the sheet too early — the list offers Send settings

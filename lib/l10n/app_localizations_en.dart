@@ -8159,7 +8159,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Pairing codes expire when the Add device sheet closes. Open it again on your other device and use the fresh code it shows.';
+      'The server didn\'t accept that code\'s sign-in details. A code stops working once the account password changes — get a fresh one from your other device, or just retry if the connection dropped.';
 
   @override
   String get provisionedSyncImportButton => 'Continue';
@@ -10039,7 +10039,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The code is a key to your account. Only use one from your own device — someone else\'s code sends everything you write to them.';
 
   @override
-  String get syncPairOpenManual => 'Open the server manual';
+  String get syncPairOpenManual => 'Open the first-device guide';
 
   @override
   String get syncPairPasteTitle => 'Paste the pairing code';
@@ -10222,6 +10222,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncWizardStepGetCode => 'Get code';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Step $step of 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive => 'Audio recording in progress';

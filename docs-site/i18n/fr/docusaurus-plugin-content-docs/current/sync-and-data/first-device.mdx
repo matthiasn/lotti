@@ -1,0 +1,63 @@
+---
+title: Ton premier appareil
+description: D'où vient le tout premier code d'appairage quand aucun appareil n'est encore connecté — l'outil de provisionnement côté serveur, et quoi faire du bundle qu'il écrit.
+---
+
+# Ton premier appareil
+
+Chaque appareil après le premier reçoit son code d'appairage d'un appareil
+que tu utilises déjà — ce parcours est
+[Ajouter un appareil](./add-device.mdx). Le premier est différent : aucun
+autre appareil ne peut fabriquer de code. La synchronisation de Lotti est
+auto-hébergée, le premier code vient donc du côté serveur — créé par la
+personne qui exploite ton homeserver Synapse.
+
+## Ce que fait l'outil de provisionnement
+
+Lotti fournit une CLI d'administration, le **provisionneur Matrix**, dans le
+dépôt à
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Exécutée par un admin du homeserver, elle :
+
+1. crée un compte Matrix neuf dédié à la synchronisation,
+2. crée le salon de synchronisation chiffré, et
+3. écrit dans un fichier un **bundle de provisionnement** — le texte que
+   Lotti accepte comme code d'appairage.
+
+Le README à côté de l'outil documente chaque argument et les façons sûres de
+fournir le mot de passe admin. Une exécution minimale ressemble à :
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+Si tu n'exploites pas ton propre homeserver, cette étape n'est pas la
+tienne — demande le bundle à la personne qui gère le serveur, et traite le
+chemin par lequel il te parvient avec le soin décrit plus bas.
+
+## Utiliser le bundle comme premier code d'appairage
+
+Sur l'appareil qui doit devenir ton premier, ouvre **Paramètres →
+Paramètres de synchronisation → Appareils** et choisis **Configurer la
+synchronisation**. Colle le texte du bundle dans le champ de code — sur un
+téléphone, où la caméra s'ouvre d'abord, choisis **Coller le code à la
+place** pour y accéder. À partir de là, c'est le parcours d'appairage
+ordinaire : vérifier ce que le code décrit, se connecter, puis
+[vérifier l'appareil](./sync.mdx).
+
+Une différence mérite d'être connue : consommer un bundle de provisionnement
+neuf **fait tourner le mot de passe du compte** au moment de la connexion.
+Le fichier du bundle est donc épuisé après sa première utilisation — les
+identifiants actifs n'existent alors que sur cet appareil, et chaque
+appareil suivant s'appaire depuis un appareil existant avec
+[Ajouter un appareil](./add-device.mdx). Supprime le fichier du bundle une
+fois le premier appareil connecté ; une copie qui traîne ne peut plus se
+connecter, mais rien ne justifie de la garder.
+
+Jusqu'à cette première utilisation, traite le bundle comme un mot de
+passe : il permet de se connecter au compte de synchronisation — garde-le
+hors des discussions, des captures d'écran et des écrans partagés.

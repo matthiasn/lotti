@@ -368,10 +368,16 @@ class _OnlyOwnCodeWarning extends StatelessWidget {
   }
 }
 
+/// The manual's first-device guide: where the very first pairing code comes
+/// from when no device exists to mint one.
+const String _kFirstDeviceGuidePath = 'sync-and-data/first-device';
+
 /// The honest branch for the account's very first device: there is no other
 /// device to mint a code, and the screen used to leave that user staring at
 /// instructions that cannot be followed — with "see the manual" as prose and
-/// nothing to press. The manual link is a real button now.
+/// nothing to press. The button deep-links to the manual's first-device
+/// guide, not the manual root: a root landing still left the user hunting
+/// for a page that explains the provisioning tool.
 class _FirstDeviceCard extends ConsumerWidget {
   const _FirstDeviceCard();
 
@@ -406,6 +412,7 @@ class _FirstDeviceCard extends ConsumerWidget {
               openManualInBrowser(
                 systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
                 override: ref.read(manualLanguageControllerProvider).value,
+                path: _kFirstDeviceGuidePath,
               ),
             ),
           ),

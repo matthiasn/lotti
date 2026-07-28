@@ -1,0 +1,59 @@
+---
+title: Din første enhed
+description: Hvor den allerførste parringskode kommer fra, når ingen enhed er forbundet endnu — provisioneringsværktøjet på serversiden, og hvad du gør med det bundle, det skriver.
+---
+
+# Din første enhed
+
+Hver enhed efter den første får sin parringskode fra en enhed, du allerede
+bruger — det forløb er [Tilføj en enhed](./add-device.mdx). Den første er
+anderledes: der er ingen anden enhed, der kan lave en kode. Lottis
+synkronisering er selvhostet, så den første kode kommer fra serversiden —
+oprettet af den, der driver din Synapse-homeserver.
+
+## Hvad provisioneringsværktøjet gør
+
+Lotti leverer en admin-CLI, **Matrix-provisioneren**, i repositoriet på
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Kørt af en homeserver-admin:
+
+1. opretter den en frisk Matrix-konto dedikeret til synkronisering,
+2. opretter det krypterede synkroniseringsrum, og
+3. skriver et **provisioneringsbundle** — den tekst, Lotti accepterer som
+   parringskode — til en fil.
+
+README'en ved siden af værktøjet dokumenterer hvert argument og de sikre
+måder at levere admin-adgangskoden på. En minimal kørsel ser sådan ud:
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+Driver du ikke din egen homeserver, er dette trin ikke dit — bed den, der
+driver serveren, om bundlet, og behandl vejen, det når dig ad, med den omhu,
+der beskrives nedenfor.
+
+## Brug bundlet som din første parringskode
+
+På den enhed, der skal være din første, åbn **Indstillinger →
+Synkroniseringsindstillinger → Enheder**, og vælg **Konfigurer
+synkronisering**. Indsæt bundlets tekst i kodefeltet — på en telefon, hvor
+kameraet åbner først, vælger du **Indsæt koden i stedet** for at komme
+derhen. Derfra er forløbet den almindelige parringsrejse: gennemgå hvad
+koden beskriver, forbind, og [verificér](./sync.mdx).
+
+Én forskel er værd at kende: at bruge et frisk provisioneringsbundle
+**roterer kontoens adgangskode** som en del af forbindelsen. Bundlefilen er
+brugt op efter første anvendelse — den gyldige adgang findes derefter kun på
+den enhed, og hver følgende enhed parres fra en eksisterende med
+[Tilføj en enhed](./add-device.mdx). Slet bundlefilen, så snart den første
+enhed er forbundet; en glemt kopi kan ikke længere logge ind, men der er
+ingen grund til at beholde den.
+
+Indtil den første brug skal du behandle bundlet som en adgangskode: det
+logger ind på synkroniseringskontoen — hold det ude af chats, skærmbilleder
+og delte skærme.

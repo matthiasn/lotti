@@ -8354,7 +8354,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Codurile de asociere expiră când se închide fereastra „Adăugați un dispozitiv”. Deschideți-o din nou pe celălalt dispozitiv și folosiți codul nou afișat.';
+      'Serverul nu a acceptat datele de autentificare din cod. Un cod nu mai funcționează după ce parola contului se schimbă — generați un cod nou pe celălalt dispozitiv sau reîncercați dacă doar conexiunea a căzut.';
 
   @override
   String get provisionedSyncImportButton => 'Continuați';
@@ -10304,7 +10304,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Codul este o cheie către contul dumneavoastră. Folosiți doar un cod de pe propriul dispozitiv — codul altcuiva îi trimite tot ce scrieți.';
 
   @override
-  String get syncPairOpenManual => 'Deschideți manualul serverului';
+  String get syncPairOpenManual => 'Deschideți ghidul pentru primul dispozitiv';
 
   @override
   String get syncPairPasteTitle => 'Lipiți codul de asociere';
@@ -10492,6 +10492,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncWizardStepGetCode => 'Obțineți codul';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Pasul $step din 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive =>

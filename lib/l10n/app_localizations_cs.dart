@@ -8316,7 +8316,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Párovací kódy vyprší, jakmile se zavře okno Přidat zařízení. Otevři ho na druhém zařízení znovu a použij čerstvý kód, který ukáže.';
+      'Server nepřijal přihlašovací údaje z kódu. Kód přestane fungovat, jakmile se změní heslo účtu — vezmi si nový kód z druhého zařízení, nebo to prostě zkus znovu, pokud jen vypadlo připojení.';
 
   @override
   String get provisionedSyncImportButton => 'Pokračovat';
@@ -10244,7 +10244,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Kód je klíčem k tvému účtu. Použij jen kód z vlastního zařízení — cizí kód pošle všechno, co napíšeš, jeho majiteli.';
 
   @override
-  String get syncPairOpenManual => 'Otevřít příručku serveru';
+  String get syncPairOpenManual => 'Otevřít návod pro první zařízení';
 
   @override
   String get syncPairPasteTitle => 'Vlož párovací kód';
@@ -10428,6 +10428,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncWizardStepGetCode => 'Získat kód';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Krok $step ze 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive => 'Probíhá nahrávání zvuku';

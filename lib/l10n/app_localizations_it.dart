@@ -8309,7 +8309,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'I codici di associazione scadono quando si chiude la scheda «Aggiungi dispositivo». Riaprila sull\'altro dispositivo e usa il codice nuovo che mostra.';
+      'Il server non ha accettato le credenziali di quel codice. Un codice smette di funzionare quando cambia la password dell\'account — genera un codice nuovo sull\'altro dispositivo, oppure riprova se è stata solo la connessione.';
 
   @override
   String get provisionedSyncImportButton => 'Continua';
@@ -10250,7 +10250,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il codice è una chiave del tuo account. Usa solo un codice del tuo dispositivo: il codice di qualcun altro gli invia tutto ciò che scrivi.';
 
   @override
-  String get syncPairOpenManual => 'Apri il manuale del server';
+  String get syncPairOpenManual => 'Apri la guida per il primo dispositivo';
 
   @override
   String get syncPairPasteTitle => 'Incolla il codice di abbinamento';
@@ -10440,6 +10440,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncWizardStepGetCode => 'Ottieni codice';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Passaggio $step di 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive =>

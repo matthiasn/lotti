@@ -62,22 +62,31 @@ ManualLanguage manualLanguageForSystemLocale(Locale systemLocale) {
 /// Builds the external manual URL for an optional user [override].
 ///
 /// A `null` override follows [systemLocale]. English intentionally remains on
-/// the default route; translated manuals add their locale segment.
-Uri manualUriFor({required Locale systemLocale, ManualLanguage? override}) {
+/// the default route; translated manuals add their locale segment. [path] is
+/// a slash-free-prefix page path such as `sync-and-data/first-device`; it
+/// lands after the locale segment, so deep links stay locale-aware (untranslated
+/// pages fall back to English content on the localized route).
+Uri manualUriFor({
+  required Locale systemLocale,
+  ManualLanguage? override,
+  String path = '',
+}) {
   final language = override ?? manualLanguageForSystemLocale(systemLocale);
   final localeSegment = language == ManualLanguage.english
       ? ''
       : '${language.languageCode}/';
-  return Uri.parse('$lottiManualBaseUrl$localeSegment');
+  return Uri.parse('$lottiManualBaseUrl$localeSegment$path');
 }
 
-/// Opens the locale-aware Lotti Manual in the system browser.
+/// Opens the locale-aware Lotti Manual in the system browser, at [path] when
+/// given, at the manual root otherwise.
 Future<void> openManualInBrowser({
   required Locale systemLocale,
   ManualLanguage? override,
+  String path = '',
 }) async {
   await launchUrl(
-    manualUriFor(systemLocale: systemLocale, override: override),
+    manualUriFor(systemLocale: systemLocale, override: override, path: path),
     mode: LaunchMode.externalApplication,
   );
 }

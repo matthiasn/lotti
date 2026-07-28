@@ -12,6 +12,10 @@ enum SyncWizardStep { getCode, check, connect }
 ///
 /// Replaces the "Step n of 3 · …" prose eyebrow, which asked the reader to
 /// parse a fraction and a label to learn what a glance at a track shows.
+///
+/// The position lives in paint — fill and weight — which assistive
+/// technology cannot read, so the track announces itself as one localized
+/// "Step n of 3: label" node instead of three indistinguishable captions.
 class SyncWizardProgressTrack extends StatelessWidget {
   const SyncWizardProgressTrack({required this.active, super.key});
 
@@ -27,20 +31,29 @@ class SyncWizardProgressTrack extends StatelessWidget {
       messages.syncWizardStepConnect,
     ];
 
-    return Row(
-      key: const Key('sync_wizard_progress_track'),
-      children: [
-        for (var i = 0; i < labels.length; i++) ...[
-          if (i > 0) SizedBox(width: tokens.spacing.step2),
-          Expanded(
-            child: _TrackSegment(
-              label: labels[i],
-              isActive: i == active.index,
-              isDone: i < active.index,
-            ),
-          ),
-        ],
-      ],
+    return Semantics(
+      container: true,
+      label: messages.syncWizardStepStatus(
+        active.index + 1,
+        labels[active.index],
+      ),
+      child: ExcludeSemantics(
+        child: Row(
+          key: const Key('sync_wizard_progress_track'),
+          children: [
+            for (var i = 0; i < labels.length; i++) ...[
+              if (i > 0) SizedBox(width: tokens.spacing.step2),
+              Expanded(
+                child: _TrackSegment(
+                  label: labels[i],
+                  isActive: i == active.index,
+                  isDone: i < active.index,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

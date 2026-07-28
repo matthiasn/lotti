@@ -1,0 +1,61 @@
+---
+title: O teu primeiro dispositivo
+description: De onde vem o primeiríssimo código de emparelhamento quando ainda não há nenhum dispositivo ligado — a ferramenta de provisionamento do lado do servidor e o que fazer com o bundle que ela escreve.
+---
+
+# O teu primeiro dispositivo
+
+Cada dispositivo depois do primeiro recebe o seu código de emparelhamento de
+um dispositivo que já usas — esse percurso é
+[Adicionar um dispositivo](./add-device.mdx). O primeiro é diferente: não há
+outro dispositivo que possa gerar um código. A sincronização do Lotti é
+auto-hospedada, por isso o primeiro código vem do lado do servidor — criado
+por quem administra o teu homeserver Synapse.
+
+## O que faz a ferramenta de provisionamento
+
+O Lotti inclui uma CLI de administração, o **provisionador Matrix**, no
+repositório em
+[`tools/matrix_provisioner`](https://github.com/matthiasn/lotti/tree/main/tools/matrix_provisioner).
+Executada por um admin do homeserver:
+
+1. cria uma conta Matrix nova dedicada à sincronização,
+2. cria a sala de sincronização cifrada, e
+3. escreve num ficheiro um **bundle de provisionamento** — o texto que o
+   Lotti aceita como código de emparelhamento.
+
+O README ao lado da ferramenta documenta cada argumento e as formas seguras
+de fornecer a palavra-passe de admin. Uma execução mínima é assim:
+
+```bash
+python provision.py \
+  --homeserver https://matrix.example.com \
+  --admin-user admin \
+  --username lotti_sync_user42 \
+  --output-file bundle.txt
+```
+
+Se não administras o teu próprio homeserver, este passo não é teu — pede o
+bundle a quem opera o servidor, e trata o caminho por onde ele te chega com
+o cuidado descrito abaixo.
+
+## Usar o bundle como primeiro código de emparelhamento
+
+No dispositivo que vai ser o teu primeiro, abre **Definições →
+Configurações de sincronização → Dispositivos** e escolhe **Configurar
+sincronização**. Cola o texto do bundle no campo do código — num telemóvel,
+onde a câmara abre primeiro, escolhe **Colar o código em alternativa** para
+lá chegar. A partir daí o fluxo é o percurso normal de emparelhamento: rever
+o que o código descreve, ligar e [verificar](./sync.mdx).
+
+Vale a pena conhecer uma diferença: consumir um bundle de provisionamento
+fresco **roda a palavra-passe da conta** ao ligar. O ficheiro do bundle fica
+gasto após o primeiro uso — a credencial viva passa a existir apenas nesse
+dispositivo, e cada dispositivo seguinte emparelha a partir de um existente
+com [Adicionar um dispositivo](./add-device.mdx). Apaga o ficheiro do bundle
+assim que o primeiro dispositivo estiver ligado; uma cópia esquecida já não
+consegue iniciar sessão, mas não há razão para a manter.
+
+Até esse primeiro uso, trata o bundle como uma palavra-passe: ele inicia
+sessão na conta de sincronização — mantém-no fora de conversas, capturas de
+ecrã e ecrãs partilhados.

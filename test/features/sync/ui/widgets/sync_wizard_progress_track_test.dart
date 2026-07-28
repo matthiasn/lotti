@@ -84,6 +84,34 @@ void main() {
       expect(fills[2], tokens.colors.interactive.enabled);
     });
 
+    testWidgets('announces the current position to assistive technology', (
+      tester,
+    ) async {
+      // The position lives in paint — fill and weight — which a screen
+      // reader cannot perceive. Without this node it would announce three
+      // equal captions and no "which step am I on".
+      final handle = tester.ensureSemantics();
+      addTearDown(handle.dispose);
+      await pumpTrack(tester, SyncWizardStep.check);
+
+      final context = tester.element(find.byType(SyncWizardProgressTrack));
+      expect(
+        find.bySemanticsLabel(
+          context.messages.syncWizardStepStatus(
+            2,
+            context.messages.syncWizardStepCheck,
+          ),
+        ),
+        findsOneWidget,
+      );
+      // The three raw captions are excluded: they carry no position and
+      // would bury the one node that does.
+      expect(
+        find.bySemanticsLabel(context.messages.syncWizardStepGetCode),
+        findsNothing,
+      );
+    });
+
     testWidgets('gives only the active label full emphasis', (tester) async {
       await pumpTrack(tester, SyncWizardStep.check);
 

@@ -8208,7 +8208,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Parkopplingskoder går ut när Lägg till enhet stängs. Öppna den igen på din andra enhet och använd den nya koden som visas.';
+      'Servern godtog inte kodens inloggningsuppgifter. En kod slutar fungera när kontots lösenord ändras — hämta en färsk kod på din andra enhet, eller försök bara igen om det bara var anslutningen.';
 
   @override
   String get provisionedSyncImportButton => 'Fortsätt';
@@ -10109,7 +10109,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Koden är en nyckel till ditt konto. Använd bara en från din egen enhet — någon annans kod skickar allt du skriver till dem.';
 
   @override
-  String get syncPairOpenManual => 'Öppna serverhandboken';
+  String get syncPairOpenManual => 'Öppna guiden för första enheten';
 
   @override
   String get syncPairPasteTitle => 'Klistra in parkopplingskoden';
@@ -10295,6 +10295,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncWizardStepGetCode => 'Hämta kod';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Steg $step av 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive => 'Ljudinspelning pågår';

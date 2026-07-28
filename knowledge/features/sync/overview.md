@@ -247,11 +247,15 @@ state is a three-stop timeline in the body (waiting → joined → verified)
 plus a one-line caption in the pinned bar explaining the locked hand-off
 buttons.
 
-A failed connect distinguishes its remedies honestly: pairing codes go stale
-the moment the other device closes its Add-device sheet, so the bar's accent
-is *Enter a new code* (which resets `ProvisioningController` — the import
-page listens for the return to `initial` and clears its stale decoded
-bundle), while *Retry this code* is the demoted quiet action.
+A failed connect distinguishes its remedies honestly: closing the inviting
+sheet does not revoke a code (`regenerateHandover()` re-serializes the
+persisted credential unchanged), but a rejected login usually means the code
+predates a password rotation — the first pairing from a CLI bundle rotates
+it — or was mangled in transit, and both are fixed by a fresh code, never by
+re-attempting this one. So the bar's accent is *Enter a new code* (which
+resets `ProvisioningController` — the import page listens for the return to
+`initial` and clears its stale decoded bundle), while *Retry this code*
+stays as the demoted quiet action for transient network failures.
 
 The last screen is state-driven throughout, for one reason worth stating: a
 device that has completed the SAS ceremony leaves `getUnverifiedDevices()`
@@ -260,7 +264,13 @@ exactly as an unpaired one does, so absence from that set cannot mean "done".
 flips the gate checklist — step 1 closes to a checked row, step 2 unlocks —
 and swaps the bar's accent from *Show the emoji* to *Go to Devices*.
 Computed in two places, they contradicted each other on the terminal screen
-of the entire flow.
+of the entire flow. *Show the emoji* stays disabled while
+`matrixUnverifiedControllerProvider` is empty: right after the handover the
+peer's device keys are often still in flight, and a relaunch request fired
+then would vanish into a launcher with nothing to relaunch —
+`AutoVerificationLauncher` opens the ceremony on its own the moment the keys
+land, and the button enables at the same moment for reopening a dismissed
+sheet.
 
 The roster keeps the hand-off from dying with the sheet: if a device joins
 and completes its ceremony while the device list is open — the reopened-sheet

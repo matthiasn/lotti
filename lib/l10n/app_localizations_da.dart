@@ -8206,7 +8206,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Parringskoder udløber, når arket Tilføj enhed lukkes. Åbn det igen på din anden enhed, og brug den friske kode, det viser.';
+      'Serveren accepterede ikke kodens loginoplysninger. En kode holder op med at virke, når kontoens adgangskode ændres — hent en frisk kode på din anden enhed, eller prøv bare igen, hvis det kun var forbindelsen.';
 
   @override
   String get provisionedSyncImportButton => 'Fortsæt';
@@ -10109,7 +10109,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Koden er en nøgle til din konto. Brug kun en fra din egen enhed — en andens kode sender alt, hvad du skriver, til dem.';
 
   @override
-  String get syncPairOpenManual => 'Åbn servermanualen';
+  String get syncPairOpenManual => 'Åbn guiden til den første enhed';
 
   @override
   String get syncPairPasteTitle => 'Indsæt parringskoden';
@@ -10294,6 +10294,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncWizardStepGetCode => 'Hent kode';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Trin $step af 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive => 'Lydoptagelse i gang';

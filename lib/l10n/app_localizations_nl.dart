@@ -8226,7 +8226,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Koppelcodes verlopen zodra het venster Apparaat toevoegen sluit. Open het opnieuw op je andere apparaat en gebruik de verse code die het toont.';
+      'De server accepteerde de inloggegevens van die code niet. Een code werkt niet meer zodra het wachtwoord van het account verandert — haal een verse code op je andere apparaat, of probeer het gewoon opnieuw als alleen de verbinding wegviel.';
 
   @override
   String get provisionedSyncImportButton => 'Doorgaan';
@@ -10142,7 +10142,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'De code is een sleutel tot je account. Gebruik alleen een code van je eigen apparaat — met de code van iemand anders gaat alles wat je schrijft naar diegene.';
 
   @override
-  String get syncPairOpenManual => 'Open de serverhandleiding';
+  String get syncPairOpenManual => 'Open de gids voor het eerste apparaat';
 
   @override
   String get syncPairPasteTitle => 'Plak de koppelcode';
@@ -10330,6 +10330,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncWizardStepGetCode => 'Code ophalen';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Stap $step van 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive => 'Audio-opname in uitvoering';

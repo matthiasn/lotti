@@ -8250,7 +8250,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Pairing-Codes verfallen, wenn das „Gerät hinzufügen“-Fenster geschlossen wird. Öffne es auf deinem anderen Gerät erneut und verwende den frischen Code, den es zeigt.';
+      'Der Server hat die Zugangsdaten aus dem Code nicht akzeptiert. Ein Code funktioniert nicht mehr, sobald sich das Passwort des Kontos ändert — hol dir einen frischen Code von deinem anderen Gerät, oder versuch es einfach nochmal, falls nur die Verbindung abgebrochen ist.';
 
   @override
   String get provisionedSyncImportButton => 'Weiter';
@@ -10170,7 +10170,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der Code ist ein Schlüssel zu deinem Konto. Verwende nur einen von deinem eigenen Gerät — mit dem Code einer anderen Person geht alles, was du schreibst, an sie.';
 
   @override
-  String get syncPairOpenManual => 'Server-Handbuch öffnen';
+  String get syncPairOpenManual => 'Anleitung für das erste Gerät öffnen';
 
   @override
   String get syncPairPasteTitle => 'Kopplungscode einfügen';
@@ -10358,6 +10358,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncWizardStepGetCode => 'Code holen';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Schritt $step von 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive => 'Audioaufnahme läuft';

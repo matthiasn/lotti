@@ -4121,7 +4121,7 @@
   "provisionedSyncDone": "Connected",
   "provisionedSyncError": "That code didn't work",
   "provisionedSyncErrorConfigurationFailed": "Something went wrong while connecting. Try again; if it keeps failing, check the other device is still syncing.",
-  "provisionedSyncErrorLoginFailed": "Pairing codes expire when the Add device sheet closes. Open it again on your other device and use the fresh code it shows.",
+  "provisionedSyncErrorLoginFailed": "The server didn't accept that code's sign-in details. A code stops working once the account password changes — get a fresh one from your other device, or just retry if the connection dropped.",
   "provisionedSyncImportButton": "Continue",
   "provisionedSyncImportHint": "Paste the pairing code here",
   "provisionedSyncImportTitle": "Set up sync",
@@ -4913,7 +4913,7 @@
   "syncPairGoToDevices": "Go to Devices",
   "syncPairMismatchWarning": "Different codes mean this one isn't from your device. Don't connect — get a fresh code from your own device.",
   "syncPairOnlyOwnCode": "The code is a key to your account. Only use one from your own device — someone else's code sends everything you write to them.",
-  "syncPairOpenManual": "Open the server manual",
+  "syncPairOpenManual": "Open the first-device guide",
   "syncPairPasteTitle": "Paste the pairing code",
   "syncPairRetryThisCode": "Retry this code",
   "syncPairReviewIntro": "Your other device shows a check code under its QR. It must be exactly this:",
@@ -4972,6 +4972,18 @@
   "syncWizardStepCheck": "Check",
   "syncWizardStepConnect": "Connect",
   "syncWizardStepGetCode": "Get code",
+  "syncWizardStepStatus": "Step {step} of 3: {label}",
+  "@syncWizardStepStatus": {
+    "description": "Screen-reader label for the pairing wizard progress track: the current position plus the active station name.",
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "taskActionBarAudioRecordingActive": "Audio recording in progress",
   "taskActionBarMoreActions": "More actions",
   "taskActionBarOpenRunningTimer": "Open running timer",

@@ -8336,7 +8336,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Los códigos de emparejamiento caducan cuando se cierra la hoja «Añadir dispositivo». Ábrela de nuevo en tu otro dispositivo y usa el código nuevo que muestre.';
+      'El servidor no aceptó las credenciales de ese código. Un código deja de funcionar cuando cambia la contraseña de la cuenta — consigue uno nuevo en tu otro dispositivo, o simplemente reintenta si solo falló la conexión.';
 
   @override
   String get provisionedSyncImportButton => 'Continuar';
@@ -10265,7 +10265,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'El código es una llave de tu cuenta. Usa solo uno de tu propio dispositivo: el código de otra persona le envía todo lo que escribes.';
 
   @override
-  String get syncPairOpenManual => 'Abrir el manual del servidor';
+  String get syncPairOpenManual => 'Abrir la guía del primer dispositivo';
 
   @override
   String get syncPairPasteTitle => 'Pega el código de emparejamiento';
@@ -10453,6 +10453,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncWizardStepGetCode => 'Obtener código';
+
+  @override
+  String syncWizardStepStatus(int step, String label) {
+    return 'Paso $step de 3: $label';
+  }
 
   @override
   String get taskActionBarAudioRecordingActive => 'Grabación de audio en curso';

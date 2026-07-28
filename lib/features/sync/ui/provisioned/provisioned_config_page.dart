@@ -84,9 +84,11 @@ class _ConfigActionBar extends ConsumerWidget {
     );
 
     if (isError) {
-      // Honest recovery: pairing codes go stale the moment the other device
-      // closes its sheet, so the accent belongs on "Enter a new code".
-      // Retrying the identical code is possible but demoted — as the accent
+      // The accent belongs on "Enter a new code": a rejected login usually
+      // means the code predates a password rotation (the first pairing from
+      // a CLI bundle rotates it) or was mangled in transit, and both are
+      // fixed by fetching a fresh code — never by re-attempting this one.
+      // Retry stays for the transient-network case, demoted: as the accent
       // it re-attempted exactly the credential that just failed.
       final retry = DesignSystemButton(
         key: const Key('provisioned_config_retry'),
@@ -168,12 +170,24 @@ class _ConfigActionBar extends ConsumerWidget {
           Flexible(
             // One accent slot, filled by whatever the user should press next:
             // the ceremony while it gates everything, the roster afterwards.
+            //
+            // Disabled until a ceremony target exists: right after the
+            // handover the peer's device keys are often still in flight, the
+            // unverified list is empty, and a relaunch request would vanish
+            // into a launcher with nothing to relaunch. The launcher opens
+            // the ceremony on its own the moment the keys land; the button
+            // enables at the same moment, for reopening a dismissed sheet.
             child: ceremonyOutstanding
                 ? DesignSystemButton(
                     key: const Key('provisioned_config_show_emoji'),
-                    onPressed: () => ref
-                        .read(matrixVerificationRelaunchProvider.notifier)
-                        .request(),
+                    onPressed:
+                        (ref.watch(matrixUnverifiedControllerProvider).value ??
+                                [])
+                            .isEmpty
+                        ? null
+                        : () => ref
+                              .read(matrixVerificationRelaunchProvider.notifier)
+                              .request(),
                     label: context.messages.syncPairShowEmoji,
                     size: DesignSystemButtonSize.large,
                   )

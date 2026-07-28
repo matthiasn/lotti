@@ -697,6 +697,7 @@ void main() {
       required ProvisioningState state,
       List<SyncDeviceInfo> devices = const [],
       _FakeProvisioningController Function()? controller,
+      List<Override> extraOverrides = const [],
     }) async {
       final localNotifier = ValueNotifier<int>(0);
       addTearDown(localNotifier.dispose);
@@ -711,6 +712,7 @@ void main() {
             syncDevicesControllerProvider.overrideWith(
               () => FakeSyncDevicesController(devices),
             ),
+            ...extraOverrides,
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -826,7 +828,20 @@ void main() {
     testWidgets(
       'the accent re-opens the ceremony while it gates everything',
       (tester) async {
-        await pumpConfigPage(tester, state: const ProvisioningState.done());
+        await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.done(),
+          extraOverrides: [
+            // A peer must exist for the button to promise a ceremony.
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => FakeMatrixUnverifiedController([unverifiedPeer()]),
+            ),
+            // Otherwise the launcher opens the ceremony over the bar.
+            matrixVerificationModalLockProvider.overrideWith(
+              _PreAcquiredLock.new,
+            ),
+          ],
+        );
 
         final showEmoji = find.byKey(
           const Key('provisioned_config_show_emoji'),
@@ -843,6 +858,22 @@ void main() {
           container.read(matrixVerificationRelaunchProvider),
           greaterThan(before),
         );
+      },
+    );
+
+    testWidgets(
+      'the accent waits for a ceremony target before promising one',
+      (tester) async {
+        // Right after the handover the peer's device keys are often still in
+        // flight: the unverified list is empty and a relaunch request would
+        // vanish into a launcher with nothing to relaunch. An enabled button
+        // here advertises an action that silently does nothing.
+        await pumpConfigPage(tester, state: const ProvisioningState.done());
+
+        final showEmoji = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('provisioned_config_show_emoji')),
+        );
+        expect(showEmoji.onPressed, isNull);
       },
     );
 
@@ -879,9 +910,9 @@ void main() {
     testWidgets(
       'the error state promotes Enter a new code and demotes Retry',
       (tester) async {
-        // Honest recovery: pairing codes go stale the moment the other
-        // device closes its sheet, so re-attempting the identical credential
-        // must not carry the accent.
+        // A rejected login usually means the code predates a password
+        // rotation or was mangled in transit — fixed by a fresh code, so
+        // re-attempting the identical credential must not carry the accent.
         final controller = _FakeProvisioningController(
           const ProvisioningState.error(ProvisioningError.loginFailed),
         );
