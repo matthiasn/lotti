@@ -1503,6 +1503,29 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('allows a partial remainder qualified for today', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'This placement is partial for today: '
+                  '60 minutes remain.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('accepts an inflected carry disposition for the remainder', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -1700,6 +1723,10 @@ void main() {
         reason:
             '60 of the 120 minutes are scheduled for the meeting; '
             'this task is deferred.',
+      ),
+      (
+        name: 'unrelated estimated meeting arithmetic',
+        reason: 'The meeting used 60 of 120 estimated minutes.',
       ),
     ]) {
       test('charges ${badDisclosure.name} at the full estimate', () {

@@ -731,7 +731,9 @@ final _taskAllocationContextPattern = RegExp(
 );
 
 final _unrelatedRemainderScopePattern = RegExp(
-  r'\b(?:in|during|for)\s+(?!(?:this|the)\s+(?:task|work)\b)',
+  r'\b(?:in|during|for)\s+'
+  r'(?:(?:the|a|an|my|our|their|your)\s+)?'
+  r'(?:meeting|workday|calendar|appointment|break)\b',
   caseSensitive: false,
 );
 
@@ -903,7 +905,8 @@ bool _matchClauseIsNegated(String reason, Match match) {
 
 bool _splitIsTaskBound(String reason, Match match) {
   final clause = _matchClause(reason, match);
-  return _taskAllocationContextPattern.hasMatch(clause) &&
+  final context = _matchClauseExcludingMatch(reason, match);
+  return _taskAllocationContextPattern.hasMatch(context) &&
       !_unrelatedSplitScopePattern.hasMatch(clause);
 }
 
@@ -930,6 +933,12 @@ String _matchClause(
 }) {
   final range = _matchClauseRange(reason, match, boundaries: boundaries);
   return reason.substring(range.start, range.end);
+}
+
+String _matchClauseExcludingMatch(String reason, Match match) {
+  final range = _matchClauseRange(reason, match, boundaries: '.;!?\n');
+  return '${reason.substring(range.start, match.start)} '
+      '${reason.substring(match.end, range.end)}';
 }
 
 ({int start, int end}) _matchClauseRange(

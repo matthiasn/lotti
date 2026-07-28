@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T02:34:00+02:00 }
+generated: { by: codex/5, at: 2026-07-28T02:45:22+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -90,10 +90,12 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   one matching fragment cannot override a contradictory remainder elsewhere in
   the same disclosure. Negation is bound by word proximity to the evidence, so
   `cannot be scheduled` invalidates a split without letting a later explanation
-  that the full task `cannot fit` invalidate affirmative arithmetic. Explicit
-  unrelated scope also outranks a nearby `partial` keyword, so `remain for the
-  meeting` cannot earn task remainder credit. Negated or vague “partial” prose,
-  silence,
+  that the full task `cannot fit` invalidate affirmative arithmetic. Split
+  syntax cannot provide its own task context: an allocation word or task
+  reference must appear outside the matched numbers. Explicit other-subject
+  scope also outranks a nearby `partial` keyword, so `remain for the meeting`
+  cannot earn task remainder credit while `partial for today` remains valid.
+  Negated or vague “partial” prose, silence,
   contradictory numbers, buffer or calendar blocks carrying a task id,
   allocations below 10% of the estimate, and overlapping blocks for one task
   are charged at the full estimate or receive no placement score. Estimated
