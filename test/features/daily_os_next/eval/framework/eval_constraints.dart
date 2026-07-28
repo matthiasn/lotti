@@ -729,7 +729,8 @@ final _wordPattern = RegExp(r'\b\w+\b');
 const _partialTradeDispositionSource =
     r'for\s+(?:later|tomorrow|another\s+day|a\s+(?:later|future)\s+day)|'
     r'(?:roll(?:s|ed|ing)?|move(?:s|d|ing)?|carr(?:y|ies|ied|ying))\s+'
-    r'(?:over|to)\b|'
+    r'(?:over|to\s+(?:later|tomorrow|another\s+day|'
+    r'a\s+(?:later|future)\s+day))\b|'
     r'defer(?:s|red|ring)?\b|unscheduled\b';
 
 final _partialTradeDispositionPattern = RegExp(
@@ -744,13 +745,6 @@ final _partialRemainderDispositionPattern = RegExp(
   '$_partialTradeDispositionSource'
   r')\b|'
   r'(?:of|for|in)\s+(?:this|the)\s+(?:task|work)\b)',
-  caseSensitive: false,
-);
-
-final _taskAllocationContextPattern = RegExp(
-  r'\b(?:schedul(?:e|ed|ing)|allocat(?:e|ed|ing)|'
-  'complet(?:e|ed|ing)|plan(?:ned|ning)?|plac(?:e|ed|ing)|'
-  r'fit(?:s|ting)?|estimate(?:d)?|task)\b',
   caseSensitive: false,
 );
 
@@ -775,7 +769,8 @@ final _unrelatedRemainderScopePattern = RegExp(
 );
 
 final _conflictTradePattern = RegExp(
-  r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|left|'
+  r'\b(?:omit(?:s|ted|ting)?|drop(?:s|ped|ping)?|'
+  r'left\s+(?:out|unfinished|incomplete|unscheduled)|'
   'trade|conflict(?:s|ed|ing)?|shorten(?:s|ed|ing)?|'
   r'(?:(?:cannot|can[\x27’]?t|couldn[\x27’]?t|won[\x27’]?t)|'
   r'(?:do|does|did)\s+not)\s+fit)\b',
@@ -1205,24 +1200,8 @@ int? _nearestTaskReferenceDistance(
   required String taskTitle,
 }) {
   final clause = reason.substring(range.start, range.end);
-  final title = taskTitle.trim();
-  final patterns = [
-    RegExp(
-      r'(?:^|[^\w-])' + RegExp.escape(taskId) + r'(?=$|[^\w-])',
-      caseSensitive: false,
-    ),
-    RegExp(
-      r'\btask\s+' + RegExp.escape(title) + r'\b',
-      caseSensitive: false,
-    ),
-    if (title.length >= 4)
-      RegExp(
-        r'(?:^|[^\w])' + RegExp.escape(title) + r'(?=$|[^\w])',
-        caseSensitive: false,
-      ),
-  ];
   int? nearest;
-  for (final pattern in patterns) {
+  for (final pattern in _taskReferencePatterns(taskId, taskTitle)) {
     for (final reference in pattern.allMatches(clause)) {
       final referenceStart = range.start + reference.start;
       final referenceEnd = range.start + reference.end;
@@ -1243,6 +1222,41 @@ int? _nearestTaskReferenceDistance(
     }
   }
   return nearest;
+}
+
+List<RegExp> _taskReferencePatterns(String taskId, String taskTitle) {
+  final title = taskTitle.trim();
+  return [
+    RegExp(
+      r'(?:^|[^\w-])' + RegExp.escape(taskId) + r'(?=$|[^\w-])',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'\btask\s+' + RegExp.escape(title) + r'\b',
+      caseSensitive: false,
+    ),
+    if (title.length >= 4)
+      RegExp(
+        r'(?:^|[^\w])' + RegExp.escape(title) + r'(?=$|[^\w])',
+        caseSensitive: false,
+      ),
+  ];
+}
+
+bool _evidenceFallsInsideTaskReference(
+  String prose,
+  Match evidence, {
+  required String taskId,
+  required String taskTitle,
+}) {
+  for (final pattern in _taskReferencePatterns(taskId, taskTitle)) {
+    for (final reference in pattern.allMatches(prose)) {
+      if (reference.start <= evidence.start && reference.end >= evidence.end) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool _referenceAttributesEvidence(
@@ -1288,11 +1302,7 @@ bool _remainderIsTaskBound(String reason, Match match) {
 
 bool _remainderIsRelatedToTask(String reason, Match match) {
   if (_remainderIsTaskBound(reason, match)) return true;
-  if (_unrelatedRemainderScopePattern.hasMatch(_matchClause(reason, match))) {
-    return false;
-  }
-  return _partialMentionPattern.hasMatch(reason) ||
-      _taskAllocationContextPattern.hasMatch(reason);
+  return !_unrelatedRemainderScopePattern.hasMatch(_matchClause(reason, match));
 }
 
 String _matchClause(
@@ -1850,6 +1860,12 @@ bool _taskIdNamed(String taskId, String prose) => RegExp(
   var hasDeniedEvidence = false;
 
   bool belongsToTask(Match match) =>
+      !_evidenceFallsInsideTaskReference(
+        prose,
+        match,
+        taskId: taskId,
+        taskTitle: task.title,
+      ) &&
       !_tradeEvidenceHasExplicitNonTaskSubject(
         prose,
         match,

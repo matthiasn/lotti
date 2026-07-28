@@ -2320,6 +2320,50 @@ void main() {
       expect(result.detail, contains('task-c allocated 60min of 120min'));
     });
 
+    test('audits a bare contradictory remainder in the note', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '60 of 120 minutes are scheduled.',
+              note: '90 minutes remain.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
+    test('accepts a matching bare remainder in the note', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: '60 of 120 minutes are scheduled.',
+              note: '60 minutes remain.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('accepts matching partial arithmetic in the note', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(
@@ -2960,6 +3004,62 @@ void main() {
       expect(result.detail, contains('without naming a casualty'));
     });
 
+    test('does not treat a trade word inside the task title as evidence', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'migration',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-migration',
+              reason: 'Focused work on Partial index migration.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-migration',
+              title: 'Partial index migration',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-migration'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('accepts a trade outside a task title containing a trade word', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'migration',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-migration',
+              reason: 'Partial: Partial index migration.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-migration',
+              title: 'Partial index migration',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-migration'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-migration'));
+    });
+
     test('does not combine task naming and trade across fields', () {
       final result = scoreSurfacedConflict(
         outcome(
@@ -3134,6 +3234,118 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('left-unchanged continuity does not disclose a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c was left unchanged.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('left-unfinished disposition discloses a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c was left unfinished.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
+    });
+
+    test('moving a block to a clock slot does not disclose a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c moved to the 10:00 slot.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('moving a task to tomorrow discloses a shortening', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'task-c-block',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'task-c moved to tomorrow.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-c',
+              title: 'C',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-c'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c'));
     });
 
     test('zero remainder does not disclose a shortening', () {
