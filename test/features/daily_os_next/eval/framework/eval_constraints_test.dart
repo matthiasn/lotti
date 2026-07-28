@@ -1671,6 +1671,59 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('keeps the owning task implicit beside a deferred casualty', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  '60 of 120 minutes are scheduled while '
+                  'Prepare the board deck is deferred.',
+            ),
+          ],
+          corpus: const [
+            ...tasks,
+            EvalCorpusTask(
+              taskId: 'task-deck',
+              title: 'Prepare the board deck',
+              estimateMinutes: 120,
+            ),
+          ],
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('accepts a noun-qualified leading remainder', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'This placement is partial; '
+                  'the remaining work is 60 minutes and will be deferred.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
     test('audits a partial task across all of its scheduled blocks', () {
       final result = scoreWithinCapacityByEstimate(
         outcome(

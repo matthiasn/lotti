@@ -699,7 +699,8 @@ final _partialRemainingPattern = RegExp(
 );
 
 final _partialLeadingRemainingPattern = RegExp(
-  r'\b(?:remaining|remainder(?:\s+is)?)\s*:?\s*'
+  r'\b(?:remaining(?:\s+(?:task|work))?|remainder)\s*:?\s*'
+  r'(?:(?:is|are)\s+)?'
   r'(\d+)\s*(?:m|mins?|minutes?)\b',
   caseSensitive: false,
 );
@@ -1041,6 +1042,14 @@ int? _nearestTaskReferenceDistance(
     for (final reference in pattern.allMatches(clause)) {
       final referenceStart = range.start + reference.start;
       final referenceEnd = range.start + reference.end;
+      if (!_referenceAttributesEvidence(
+        reason,
+        evidence,
+        referenceStart: referenceStart,
+        referenceEnd: referenceEnd,
+      )) {
+        continue;
+      }
       final distance = referenceEnd <= evidence.start
           ? evidence.start - referenceEnd
           : referenceStart >= evidence.end
@@ -1050,6 +1059,20 @@ int? _nearestTaskReferenceDistance(
     }
   }
   return nearest;
+}
+
+bool _referenceAttributesEvidence(
+  String reason,
+  Match evidence, {
+  required int referenceStart,
+  required int referenceEnd,
+}) {
+  if (referenceStart < evidence.end) return true;
+  final between = reason.substring(evidence.end, referenceStart);
+  return RegExp(
+    r'\b(?:for|of)\s*(?:the\s+)?$',
+    caseSensitive: false,
+  ).hasMatch(between);
 }
 
 bool _remainderIsTaskBound(String reason, Match match) {
