@@ -1668,6 +1668,36 @@ void main() {
       expect(result.detail, contains('task-c 60min partial of 120min'));
     });
 
+    test('charges a split naming another task by its bare title', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Prepare the board deck completed 60 of 120 minutes; '
+                  'Current work is deferred.',
+            ),
+          ],
+          corpus: const [
+            ...tasks,
+            EvalCorpusTask(
+              taskId: 'task-deck',
+              title: 'Prepare the board deck',
+              estimateMinutes: 120,
+            ),
+          ],
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 60min of 120min'));
+    });
+
     for (final badDisclosure in <({String name, String? reason})>[
       (
         name: 'vague partial prose',

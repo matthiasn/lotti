@@ -971,11 +971,20 @@ bool _namesAnotherTask(
       r'(?:^|[^\w-])' + RegExp.escape(task.taskId) + r'(?=$|[^\w-])',
       caseSensitive: false,
     );
+    final title = task.title.trim();
     final titlePattern = RegExp(
-      r'\btask\s+' + RegExp.escape(task.title.trim()) + r'\b',
+      r'\btask\s+' + RegExp.escape(title) + r'\b',
       caseSensitive: false,
     );
-    if (idPattern.hasMatch(clause) || titlePattern.hasMatch(clause)) {
+    final bareTitlePattern = title.length >= 4
+        ? RegExp(
+            r'(?:^|[^\w])' + RegExp.escape(title) + r'(?=$|[^\w])',
+            caseSensitive: false,
+          )
+        : null;
+    if (idPattern.hasMatch(clause) ||
+        titlePattern.hasMatch(clause) ||
+        (bareTitlePattern?.hasMatch(clause) ?? false)) {
       return true;
     }
   }
