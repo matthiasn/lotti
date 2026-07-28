@@ -2191,10 +2191,6 @@
   "dailyOsNextTimelineActual": "Real",
   "dailyOsNextTimelineArrange": "Organizar blocos",
   "dailyOsNextTimelineBoth": "Planejado e real",
-  "dailyOsNextTimelineMeridiemAm": "SOU",
-  "dailyOsNextTimelineMeridiemAmShort": "sou",
-  "dailyOsNextTimelineMeridiemPm": "PM",
-  "dailyOsNextTimelineMeridiemPmShort": "tarde",
   "dailyOsNextTimelinePlanned": "Plano",
   "dailyOsNextTimelineSessionOf": "Sessão {index} de {total}",
   "@dailyOsNextTimelineSessionOf": {

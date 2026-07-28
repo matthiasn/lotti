@@ -5,6 +5,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart';
@@ -479,7 +480,7 @@ class DayBlock extends ConsumerWidget {
     // accessible name at all.
     final semanticsLabel = [
       effectiveBlock.title,
-      '${_clock(effectiveBlock.start)}–${_clock(effectiveBlock.end)}',
+      formatClockRange(context, effectiveBlock.start, effectiveBlock.end),
       if (!tracked && _reasonFor(effectiveBlock) != null)
         _reasonFor(effectiveBlock)!,
       if (tracked)
@@ -523,12 +524,6 @@ class DayBlock extends ConsumerWidget {
 
   Color _categoryColor(TimeBlock block) =>
       categoryColorFromHex(block.category.colorHex);
-}
-
-String _clock(DateTime t) {
-  final h = t.hour.toString().padLeft(2, '0');
-  final m = t.minute.toString().padLeft(2, '0');
-  return '$h:$m';
 }
 
 String? _reasonFor(TimeBlock block) {
@@ -723,7 +718,7 @@ class _BlockContent extends StatelessWidget {
   }
 
   String _subTitle(BuildContext context, TimeBlock block) {
-    final parts = <String>[_formatRange(block)];
+    final parts = <String>[formatClockRange(context, block.start, block.end)];
     if (block.sessionIndex != null && block.sessionTotal != null) {
       parts.add(
         context.messages.dailyOsNextTimelineSessionOf(
@@ -734,10 +729,6 @@ class _BlockContent extends StatelessWidget {
     }
     if (block.location != null) parts.add(block.location!);
     return parts.join(' · ');
-  }
-
-  String _formatRange(TimeBlock block) {
-    return '${_clock(block.start)}–${_clock(block.end)}';
   }
 }
 

@@ -2192,10 +2192,6 @@
   "dailyOsNextTimelineActual": "Nuværende",
   "dailyOsNextTimelineArrange": "Arranger blokke",
   "dailyOsNextTimelineBoth": "Plan og faktisk",
-  "dailyOsNextTimelineMeridiemAm": "AM",
-  "dailyOsNextTimelineMeridiemAmShort": "på",
-  "dailyOsNextTimelineMeridiemPm": "PM",
-  "dailyOsNextTimelineMeridiemPmShort": "pm",
   "dailyOsNextTimelinePlanned": "Plan",
   "dailyOsNextTimelineSessionOf": "Session {index} af {total}",
   "@dailyOsNextTimelineSessionOf": {

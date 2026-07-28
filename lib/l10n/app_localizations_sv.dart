@@ -4330,18 +4330,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextTimelineBoth => 'Plan och verklighet';
 
   @override
-  String get dailyOsNextTimelineMeridiemAm => 'AM';
-
-  @override
-  String get dailyOsNextTimelineMeridiemAmShort => 'på';
-
-  @override
-  String get dailyOsNextTimelineMeridiemPm => 'PM';
-
-  @override
-  String get dailyOsNextTimelineMeridiemPmShort => 'pm';
-
-  @override
   String get dailyOsNextTimelinePlanned => 'Plan';
 
   @override

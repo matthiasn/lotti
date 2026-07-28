@@ -24,9 +24,15 @@ String _formatDuration(Duration duration) {
 /// [imageProviderFor] callback resolves an image entry to a displayable
 /// [ImageProvider] (it needs the documents directory, which lives outside pure
 /// code), and [timeLabel] is the already-formatted timestamp.
+///
+/// [formatTime] renders a clock label for the *end* of a time recording, whose
+/// timestamp this function derives rather than receives. It is injected for
+/// the same reason [imageProviderFor] is: honouring the device's 24-hour
+/// setting needs a [BuildContext], which this pure mapping does not have.
 EventTimelineEntry? eventTimelineEntryFor(
   JournalEntity entity, {
   required String timeLabel,
+  required String Function(DateTime) formatTime,
   required ImageProvider Function(JournalImage image) imageProviderFor,
 }) {
   return switch (entity) {
@@ -46,7 +52,7 @@ EventTimelineEntry? eventTimelineEntryFor(
       ),
       text: _trimmedNote(audio),
     ),
-    final JournalEntry entry => _journalEntryBeat(entry, timeLabel),
+    final JournalEntry entry => _journalEntryBeat(entry, timeLabel, formatTime),
     _ => null,
   };
 }
@@ -55,14 +61,18 @@ EventTimelineEntry? eventTimelineEntryFor(
 /// its `dateFrom` (a time recording) becomes a [EventTimelineKind.timeRecording]
 /// carrying its end time and elapsed duration, so it reads as a span rather than
 /// a point-in-time observation.
-EventTimelineEntry _journalEntryBeat(JournalEntry entry, String timeLabel) {
+EventTimelineEntry _journalEntryBeat(
+  JournalEntry entry,
+  String timeLabel,
+  String Function(DateTime) formatTime,
+) {
   final span = entry.meta.dateTo.difference(entry.meta.dateFrom);
   if (isTimeRecordingSpan(span)) {
     return EventTimelineEntry(
       timeLabel: timeLabel,
       kind: EventTimelineKind.timeRecording,
       entryId: entry.meta.id,
-      endTimeLabel: DateFormat('HH:mm').format(entry.meta.dateTo.toLocal()),
+      endTimeLabel: formatTime(entry.meta.dateTo.toLocal()),
       durationLabel: formatRangeDuration(span),
       text: _trimmedNote(entry),
     );
@@ -105,6 +115,7 @@ EventDetailData eventDetailDataFromEntities({
   required String locale,
   required Color categoryColor,
   required String fallbackTitle,
+  required String Function(DateTime) formatTime,
   required ImageProvider Function(JournalImage image) imageProviderFor,
   String? categoryName,
 }) {
@@ -143,7 +154,8 @@ EventDetailData eventDetailDataFromEntities({
   for (final entity in sorted) {
     final timelineEntry = eventTimelineEntryFor(
       entity,
-      timeLabel: DateFormat('HH:mm').format(entity.meta.dateFrom.toLocal()),
+      timeLabel: formatTime(entity.meta.dateFrom.toLocal()),
+      formatTime: formatTime,
       imageProviderFor: imageProviderFor,
     );
     if (timelineEntry != null) timeline.add(timelineEntry);
@@ -173,12 +185,22 @@ EventDetailData eventDetailDataFromEntities({
       ? aiResponses.last.data.response.trim()
       : (note != null && note.isNotEmpty ? note : null);
 
+  // One local instant for both halves of the header. `dateFrom` round-trips
+  // through `toIso8601String()`/`DateTime.parse`, so an entity synced from a
+  // device that stored UTC comes back `isUtc`-flagged — and both `DateFormat`
+  // and `TimeOfDay.fromDateTime` read that DateTime's own fields. Formatting
+  // it unconverted would print the UTC wall clock in the header while the
+  // timeline rows directly beneath it print the local one.
+  final eventStart = event.meta.dateFrom.toLocal();
+
   return EventDetailData(
     card: card,
-    whenLabel: DateFormat(
-      'EEE, d MMM yyyy · HH:mm',
-      locale,
-    ).format(event.meta.dateFrom),
+    // Date and clock are formatted separately: the clock half has to go
+    // through [formatTime] so it follows the device's 24-hour setting, which
+    // a single combined `HH:mm` pattern could never do.
+    whenLabel:
+        '${DateFormat('EEE, d MMM yyyy', locale).format(eventStart)}'
+        ' · ${formatTime(eventStart)}',
     summary: summary,
     timeline: timeline,
     tasks: tasks,

@@ -123,7 +123,7 @@ class _DashboardHealthBpChartState
                           style: chartTooltipStyleBold,
                         ),
                         TextSpan(
-                          text: chartDateFormatterFull(spot.x),
+                          text: chartDateFormatterFull(context, spot.x),
                           style: chartTooltipStyle,
                         ),
                       ],

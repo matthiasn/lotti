@@ -40,6 +40,7 @@ class LinkedEventCard extends ConsumerWidget {
       categoryColor: colorFromCssHex(category?.color),
       categoryName: category?.name,
       fallbackTitle: context.messages.entryTypeLabelJournalEvent,
+      formatTime: (moment) => TimeOfDay.fromDateTime(moment).format(context),
       imageProviderFor: (image) => FileImage(
         File(getFullImagePath(image, documentsDirectory: documentsDirectory)),
       ),

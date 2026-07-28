@@ -13,6 +13,14 @@ import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import '../../../test_data/test_data.dart';
 import '../test_utils.dart';
 
+/// Stands in for the real `TimeOfDay.format(context)` the widgets inject.
+///
+/// Deliberately 24-hour and marked, so an assertion can tell a label that came
+/// through the injected formatter from one the mapping formatted behind its
+/// caller's back.
+String fakeClock(DateTime t) =>
+    '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
 JournalEvent _event({
   String id = 'e1',
   String title = 'Anna',
@@ -251,6 +259,7 @@ void main() {
       final entry = eventTimelineEntryFor(
         testImageEntry,
         timeLabel: '20:15',
+        formatTime: fakeClock,
         imageProviderFor: fakeImage,
       );
       expect(entry, isNotNull);
@@ -267,6 +276,7 @@ void main() {
       final entry = eventTimelineEntryFor(
         instant,
         timeLabel: '20:40',
+        formatTime: fakeClock,
         imageProviderFor: fakeImage,
       );
       expect(entry!.kind, EventTimelineKind.note);
@@ -278,6 +288,7 @@ void main() {
       final entry = eventTimelineEntryFor(
         testTextEntry,
         timeLabel: '13:00',
+        formatTime: fakeClock,
         imageProviderFor: fakeImage,
       );
       expect(entry!.kind, EventTimelineKind.timeRecording);
@@ -290,6 +301,7 @@ void main() {
       final entry = eventTimelineEntryFor(
         testAudioEntry,
         timeLabel: '21:30',
+        formatTime: fakeClock,
         imageProviderFor: fakeImage,
       );
       expect(entry!.kind, EventTimelineKind.audio);
@@ -307,6 +319,7 @@ void main() {
       final entry = eventTimelineEntryFor(
         reversed,
         timeLabel: '21:30',
+        formatTime: fakeClock,
         imageProviderFor: fakeImage,
       );
       expect(entry!.durationLabel, '0:00');
@@ -317,10 +330,27 @@ void main() {
         eventTimelineEntryFor(
           testTask,
           timeLabel: '21:30',
+          formatTime: fakeClock,
           imageProviderFor: fakeImage,
         ),
         isNull,
       );
+    });
+
+    test("a recording's end label comes from the injected formatter", () {
+      // The bug: the end of a span was formatted in-place with a hard-wired
+      // `DateFormat('HH:mm')`, so it stayed 24-hour on a 12-hour device even
+      // though the start label beside it honoured the caller's format.
+      final entry = eventTimelineEntryFor(
+        testTextEntry,
+        timeLabel: '1:00 PM',
+        formatTime: (t) =>
+            '${t.hour % 12}:'
+            '${t.minute.toString().padLeft(2, '0')} PM',
+        imageProviderFor: fakeImage,
+      );
+
+      expect(entry!.endTimeLabel, '2:00 PM');
     });
   });
 
@@ -350,6 +380,7 @@ void main() {
           categoryColor: const Color(0xFF112233),
           categoryName: 'Friends',
           fallbackTitle: 'Untitled event',
+          formatTime: fakeClock,
           imageProviderFor: fakeImage,
         );
 
@@ -372,6 +403,75 @@ void main() {
       );
       // No AI response → the event note is the summary.
       expect(data.summary, 'A lovely night.');
+    });
+
+    test('the when label and timeline clocks use the injected formatter', () {
+      // Both the header's "date · time" and every timeline row used to carry
+      // a hard-wired `HH:mm`, so an event at 20:15 read "20:15" for a user on
+      // a 12-hour device. Feeding a marked formatter proves neither builds a
+      // clock label of its own any more.
+      final data = eventDetailDataFromEntities(
+        event: _event(),
+        linked: [testTextEntry],
+        now: now,
+        locale: 'en',
+        categoryColor: const Color(0xFF112233),
+        fallbackTitle: 'Untitled event',
+        formatTime: (_) => '<clock>',
+        imageProviderFor: fakeImage,
+      );
+
+      expect(data.whenLabel, endsWith(' · <clock>'));
+      expect(data.timeline.single.timeLabel, '<clock>');
+      expect(data.timeline.single.endTimeLabel, '<clock>');
+    });
+
+    test('the when label reads one local instant for date and clock', () {
+      // `dateFrom` round-trips through toIso8601String/DateTime.parse, so an
+      // entity synced from a device that stored UTC comes back isUtc-flagged.
+      // Both DateFormat and TimeOfDay.fromDateTime read that DateTime's own
+      // fields, so an unconverted value printed the UTC wall clock in the
+      // header while the timeline rows below it printed the local one.
+      final utcEvent = _event().copyWith(
+        meta: _event().meta.copyWith(
+          dateFrom: DateTime.utc(2026, 5, 12, 22, 30),
+        ),
+      );
+      final local = DateTime.utc(2026, 5, 12, 22, 30).toLocal();
+
+      final data = eventDetailDataFromEntities(
+        event: utcEvent,
+        linked: const [],
+        now: now,
+        locale: 'en',
+        categoryColor: const Color(0xFF112233),
+        fallbackTitle: 'Untitled event',
+        formatTime: fakeClock,
+        imageProviderFor: fakeImage,
+      );
+
+      // Both halves must describe the same local moment as the timeline does.
+      expect(data.whenLabel, endsWith(' · ${fakeClock(local)}'));
+      expect(
+        data.whenLabel,
+        startsWith(DateFormat('EEE, d MMM yyyy', 'en').format(local)),
+      );
+    });
+
+    test('the when label keeps its locale-formatted date half', () {
+      final data = eventDetailDataFromEntities(
+        event: _event(),
+        linked: const [],
+        now: now,
+        locale: 'en',
+        categoryColor: const Color(0xFF112233),
+        fallbackTitle: 'Untitled event',
+        formatTime: (_) => '<clock>',
+        imageProviderFor: fakeImage,
+      );
+
+      // Splitting the combined pattern must not lose the date half.
+      expect(data.whenLabel, 'Tue, 12 May 2026 · <clock>');
     });
 
     test('formats a linked task due date in the tasks section', () {

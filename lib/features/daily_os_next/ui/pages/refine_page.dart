@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/daily_os_next/ui/refine_voice_sync.dart';
 import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
@@ -307,8 +307,6 @@ class _CurrentPlanList extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     if (plan.blocks.isEmpty) return const SizedBox.expand();
-    final locale = Localizations.localeOf(context).toString();
-    final timeFormat = DateFormat.Hm(locale);
 
     return Center(
       child: SingleChildScrollView(
@@ -326,7 +324,7 @@ class _CurrentPlanList extends StatelessWidget {
               ),
               SizedBox(height: tokens.spacing.step3),
               for (final block in plan.blocks) ...[
-                _PlanRow(block: block, timeFormat: timeFormat),
+                _PlanRow(block: block),
                 SizedBox(height: tokens.spacing.step2),
               ],
             ],
@@ -338,10 +336,9 @@ class _CurrentPlanList extends StatelessWidget {
 }
 
 class _PlanRow extends StatelessWidget {
-  const _PlanRow({required this.block, required this.timeFormat});
+  const _PlanRow({required this.block});
 
   final TimeBlock block;
-  final DateFormat timeFormat;
 
   @override
   Widget build(BuildContext context) {
@@ -356,7 +353,11 @@ class _PlanRow extends StatelessWidget {
         ),
         SizedBox(width: tokens.spacing.step3),
         Text(
-          '${timeFormat.format(block.start)}–${timeFormat.format(block.end)}',
+          // The shared Daily OS range formatter, so this list reads the same
+          // clock as the agenda card and the block editor. It used to build
+          // its own hard-wired `DateFormat.Hm`, which meant the *same* block
+          // showed "2:30 PM" on the agenda and "14:30" here.
+          formatClockRange(context, block.start, block.end),
           // Mono digits so the time column stays aligned across rows.
           style: monoMetaStyle(
             tokens,

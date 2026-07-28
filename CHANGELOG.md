@@ -225,6 +225,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which made the timestamp the loudest thing on a card whose actual content
   sits underneath. It now sits one step down, on every screen — including the
   narrow phone layout that splits the date over two lines.
+- **Times in your day plan follow your device's clock.** If your device is set
+  to a 24-hour clock, a block running 14:30–16:05 still read
+  "2:30 PM–4:05 PM" on the agenda card and in the block editor. The app only
+  ever asked its own language what a time looks like, never the device, so an
+  English-language app was locked to AM/PM whatever the device was set to. It
+  now asks both.
+- **A block shows the same time wherever you look at it.** The plan list in
+  Refine used a different clock from the rest of Daily OS, so one and the same
+  block could read "2:30 PM" on the agenda and "14:30" while you were talking
+  about changing it — on every device, in every language. Both now agree.
+- **An event's times follow your device's clock too.** The date under an event
+  title, every time down its timeline, and the end of a recorded session were
+  all fixed to a 24-hour clock, so an event at half past two read "14:30" even
+  on a device set to AM/PM. They now read the way the rest of your device does.
+- **Chart tooltips are readable in your language and on your clock.** The date
+  in a chart's tooltip was always in English — "Mar 15" whatever language the
+  app was in — and its time was always 24-hour. Both now follow the app's
+  language and the device's clock setting.
+- **The blocks on your day's timeline read on your clock.** Every block showed
+  its span as "14:30–16:05" regardless of the device — and the proposed change
+  describing that same block used a 12-hour clock instead, so the two
+  disagreed. Blocks and proposals now both follow your device. The hour scale
+  down the side of the timeline stays 24-hour: it is a ruler, and its
+  end-of-day mark has no unambiguous 12-hour spelling.
 
 ## [0.9.1070]
 ### Fixed

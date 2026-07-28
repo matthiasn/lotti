@@ -7415,30 +7415,6 @@ abstract class AppLocalizations {
   /// **'Plan and actual'**
   String get dailyOsNextTimelineBoth;
 
-  /// No description provided for @dailyOsNextTimelineMeridiemAm.
-  ///
-  /// In en, this message translates to:
-  /// **'AM'**
-  String get dailyOsNextTimelineMeridiemAm;
-
-  /// No description provided for @dailyOsNextTimelineMeridiemAmShort.
-  ///
-  /// In en, this message translates to:
-  /// **'am'**
-  String get dailyOsNextTimelineMeridiemAmShort;
-
-  /// No description provided for @dailyOsNextTimelineMeridiemPm.
-  ///
-  /// In en, this message translates to:
-  /// **'PM'**
-  String get dailyOsNextTimelineMeridiemPm;
-
-  /// No description provided for @dailyOsNextTimelineMeridiemPmShort.
-  ///
-  /// In en, this message translates to:
-  /// **'pm'**
-  String get dailyOsNextTimelineMeridiemPmShort;
-
   /// No description provided for @dailyOsNextTimelinePlanned.
   ///
   /// In en, this message translates to:

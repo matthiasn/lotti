@@ -88,7 +88,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                         style: chartTooltipStyleBold,
                       ),
                       TextSpan(
-                        text: chartDateFormatterFull(spot.x),
+                        text: chartDateFormatterFull(context, spot.x),
                         style: chartTooltipStyle,
                       ),
                     ],

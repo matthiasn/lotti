@@ -2351,10 +2351,6 @@
   "dailyOsNextTimelineActual": "Actual",
   "dailyOsNextTimelineArrange": "Arrange blocks",
   "dailyOsNextTimelineBoth": "Plan and actual",
-  "dailyOsNextTimelineMeridiemAm": "AM",
-  "dailyOsNextTimelineMeridiemAmShort": "am",
-  "dailyOsNextTimelineMeridiemPm": "PM",
-  "dailyOsNextTimelineMeridiemPmShort": "pm",
   "dailyOsNextTimelinePlanned": "Plan",
   "dailyOsNextTimelineSessionOf": "Session {index} of {total}",
   "@dailyOsNextTimelineSessionOf": {

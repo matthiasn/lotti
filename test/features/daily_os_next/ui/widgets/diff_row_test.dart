@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -23,9 +24,12 @@ final _change = PlanDiffChange(
   toEnd: DateTime(2026, 5, 25, 21, 45),
 );
 
-Widget _wrap(Widget child) => makeTestableWidget2(
+Widget _wrap(Widget child, {bool use24Hour = false}) => makeTestableWidget2(
   Material(child: child),
-  mediaQueryData: const MediaQueryData(size: Size(420, 500)),
+  mediaQueryData: MediaQueryData(
+    size: const Size(420, 500),
+    alwaysUse24HourFormat: use24Hour,
+  ),
 );
 
 /// Build a [DiffRow] for each [PlanDiffChangeKind] and return the element.
@@ -36,6 +40,7 @@ Future<BuildContext> _pumpKind(
   DateTime? fromEnd,
   DateTime? toStart,
   DateTime? toEnd,
+  bool use24Hour = false,
 }) async {
   final change = PlanDiffChange(
     id: 'diff_kind',
@@ -57,6 +62,7 @@ Future<BuildContext> _pumpKind(
         onAccept: () {},
         onReject: () {},
       ),
+      use24Hour: use24Hour,
     ),
   );
   await tester.pump();
@@ -209,12 +215,28 @@ void main() {
             toStart: DateTime(2026, 5, 25, 14),
             toEnd: DateTime(2026, 5, 25, 15),
           );
-          final messages = context.messages;
-          // from-chip label: 9am–10am (exact-hour format: no minutes)
-          final amShort = messages.dailyOsNextTimelineMeridiemAmShort;
-          final pmShort = messages.dailyOsNextTimelineMeridiemPmShort;
-          expect(find.text('9$amShort–10$amShort'), findsOneWidget);
-          expect(find.text('2$pmShort–3$pmShort'), findsOneWidget);
+          // Both chips carry the shared Daily OS range format, so a diff row
+          // and the timeline block it describes can never disagree.
+          expect(
+            find.text(
+              formatClockRange(
+                context,
+                DateTime(2026, 5, 25, 9),
+                DateTime(2026, 5, 25, 10),
+              ),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.text(
+              formatClockRange(
+                context,
+                DateTime(2026, 5, 25, 14),
+                DateTime(2026, 5, 25, 15),
+              ),
+            ),
+            findsOneWidget,
+          );
           // Arrow icon
           expect(
             find.byWidgetPredicate(
@@ -239,9 +261,16 @@ void main() {
             toEnd: DateTime(2026, 5, 25, 15),
           );
           final context = tester.element(find.byType(DiffRow));
-          final messages = context.messages;
-          final pmShort = messages.dailyOsNextTimelineMeridiemPmShort;
-          expect(find.text('2$pmShort–3$pmShort'), findsOneWidget);
+          expect(
+            find.text(
+              formatClockRange(
+                context,
+                DateTime(2026, 5, 25, 14),
+                DateTime(2026, 5, 25, 15),
+              ),
+            ),
+            findsOneWidget,
+          );
           expect(
             find.byWidgetPredicate(
               (w) => w is Icon && w.icon == Icons.arrow_forward_rounded,
@@ -261,11 +290,49 @@ void main() {
             toStart: DateTime(2026, 5, 25, 9, 30),
             toEnd: DateTime(2026, 5, 25, 10, 45),
           );
-          final messages = context.messages;
-          final amShort = messages.dailyOsNextTimelineMeridiemAmShort;
-          expect(find.text('9:30$amShort–10:45$amShort'), findsOneWidget);
+          expect(
+            find.text(
+              formatClockRange(
+                context,
+                DateTime(2026, 5, 25, 9, 30),
+                DateTime(2026, 5, 25, 10, 45),
+              ),
+            ),
+            findsOneWidget,
+          );
         },
       );
+
+      testWidgets('a 12-hour device gets AM/PM chips', (tester) async {
+        await _pumpKind(
+          tester,
+          PlanDiffChangeKind.added,
+          toStart: DateTime(2026, 5, 25, 14, 30),
+          toEnd: DateTime(2026, 5, 25, 16, 5),
+          // Stated even though it is the default: the device clock is the
+          // variable under test, so its value belongs in the test body.
+          // ignore: avoid_redundant_argument_values
+          use24Hour: false,
+        );
+
+        expect(find.text('2:30 PM–4:05 PM'), findsOneWidget);
+      });
+
+      testWidgets('a 24-hour device gets 24-hour chips', (tester) async {
+        await _pumpKind(
+          tester,
+          PlanDiffChangeKind.added,
+          toStart: DateTime(2026, 5, 25, 14, 30),
+          toEnd: DateTime(2026, 5, 25, 16, 5),
+          use24Hour: true,
+        );
+
+        // The bug: these chips built their own 12-hour label with a localized
+        // meridiem, so they stayed "2:30p" on a 24-hour device — and disagreed
+        // with the timeline block behind them, which was pinned to 24-hour.
+        expect(find.text('14:30–16:05'), findsOneWidget);
+        expect(find.textContaining('PM'), findsNothing);
+      });
 
       testWidgets(
         'formats PM times correctly (noon boundary and after)',
@@ -277,9 +344,16 @@ void main() {
             toStart: DateTime(2026, 5, 25, 12),
             toEnd: DateTime(2026, 5, 25, 13, 15),
           );
-          final messages = context.messages;
-          final pmShort = messages.dailyOsNextTimelineMeridiemPmShort;
-          expect(find.text('12$pmShort–1:15$pmShort'), findsOneWidget);
+          expect(
+            find.text(
+              formatClockRange(
+                context,
+                DateTime(2026, 5, 25, 12),
+                DateTime(2026, 5, 25, 13, 15),
+              ),
+            ),
+            findsOneWidget,
+          );
         },
       );
 
@@ -293,9 +367,16 @@ void main() {
             fromStart: DateTime(2026, 5, 25, 10),
             fromEnd: DateTime(2026, 5, 25, 11),
           );
-          final messages = context.messages;
-          final amShort = messages.dailyOsNextTimelineMeridiemAmShort;
-          expect(find.text('10$amShort–11$amShort'), findsOneWidget);
+          expect(
+            find.text(
+              formatClockRange(
+                context,
+                DateTime(2026, 5, 25, 10),
+                DateTime(2026, 5, 25, 11),
+              ),
+            ),
+            findsOneWidget,
+          );
           // No arrow icon since toStart is null
           expect(
             find.byWidgetPredicate(
