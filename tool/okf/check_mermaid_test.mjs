@@ -169,6 +169,49 @@ test('a semicolon inside a note body is safe', () => {
   assert.ok(r.ok, r.output);
 });
 
+test('every root given is scanned, not just the first', () => {
+  // The gate watched only `knowledge/` while two ADR diagrams rendered as
+  // error boxes. Taking several roots is what closes that gap, so a second
+  // root being silently ignored would reopen it.
+  const first = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
+  const second = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
+  try {
+    writeFileSync(join(first, 'ok.md'), good);
+    writeFileSync(
+      join(second, 'broken.md'),
+      '```mermaid\nflowchart TD\n  A -->\n```\n',
+    );
+    assert.throws(
+      () =>
+        execFileSync('node', [script, first, second], {
+          encoding: 'utf8',
+          stdio: 'pipe',
+        }),
+      'a broken diagram under the second root must fail the run',
+    );
+  } finally {
+    rmSync(first, { recursive: true, force: true });
+    rmSync(second, { recursive: true, force: true });
+  }
+});
+
+test('the block count spans every root', () => {
+  const first = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
+  const second = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
+  try {
+    writeFileSync(join(first, 'a.md'), good);
+    writeFileSync(join(second, 'b.md'), good);
+    const output = execFileSync('node', [script, first, second], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    assert.match(output, /parsed 2 block\(s\)/);
+  } finally {
+    rmSync(first, { recursive: true, force: true });
+    rmSync(second, { recursive: true, force: true });
+  }
+});
+
 test('markdown files in subdirectories are scanned', () => {
   const dir = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
   try {

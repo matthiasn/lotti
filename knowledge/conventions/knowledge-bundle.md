@@ -5,7 +5,7 @@ description: The README/knowledge/ADR split, the frontmatter every concept carri
 resource: ../../knowledge
 tags: [convention, documentation, okf, process]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T23:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-07-29T01:20:00Z }
 stale_after: 2027-01-18
 sources:
   - id: okf-spec
@@ -16,6 +16,10 @@ sources:
     resource: ../../tool/okf/okf_validator.dart
     title: Conformance validator
     last_modified: 2026-07-26
+  - id: mermaid-gate
+    resource: ../../tool/okf/check_mermaid.mjs
+    title: Mermaid parse gate
+    last_modified: 2026-07-29
   - id: agents-md
     resource: ../../AGENTS.md
     title: Repository guidelines
@@ -309,11 +313,16 @@ diagram rather than reporting one:
   spaces inside a list item reads as an indented code block, so keep diagrams at the
   top level of a document.
 
-**The gate covers `knowledge/` only.** `check_mermaid.mjs` takes a directory, and
-pointing it at `docs/` currently reports 14 broken diagrams across the ADRs, the
-implementation plans and one architecture note — 8 parse failures and 5 phantom-node
-splits. Those are outside this bundle's contract and are not fixed here; widening
-the gate means fixing them first.
+**The gate covers `knowledge/`, `docs/adr/` and `docs/architecture/`.**
+`check_mermaid.mjs` takes any number of roots, and `npm run check` passes all
+three — 185 blocks. The ADRs were added once two of their diagrams turned out
+not to render: concepts cite ADRs rather than restating their decisions, so a
+decision record nobody can read is the same defect as a broken concept.
+
+**Implementation plans stay outside it**, and 10 of their diagrams do not
+render today. They are working notes rather than the durable map, and some are
+historical by design. Widening the gate to `docs/` means fixing those first —
+tracked separately, not assumed.
 
 **`make knowledge_check` is the one target to run after touching `knowledge/`.**
 It runs the Dart validator and the Mermaid parse together, because two targets

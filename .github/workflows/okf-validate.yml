@@ -50,7 +50,9 @@ jobs:
           cache-dependency-path: tool/okf/package-lock.json
       # The Dart validator cannot parse mermaid — there is no Dart parser — so a
       # diagram that renders as an error box is invisible to `make okf_check`.
-      # Three shipped that way. This runs mermaid itself under jsdom.
+      # Three shipped that way. This runs mermaid itself under jsdom, over the
+      # knowledge bundle, the ADRs and the architecture docs: the ADRs were
+      # ungated until two of their diagrams turned out not to render.
       - name: Install check dependencies
         run: npm ci
         working-directory: tool/okf

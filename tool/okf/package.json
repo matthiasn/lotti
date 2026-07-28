@@ -2,10 +2,10 @@
   "name": "lotti-okf-mermaid-check",
   "private": true,
   "version": "1.0.0",
-  "description": "Parses the knowledge bundle's mermaid diagrams with mermaid itself, which the Dart validator cannot do.",
+  "description": "Parses the mermaid diagrams in the knowledge bundle, the ADRs and the architecture docs with mermaid itself, which the Dart validator cannot do.",
   "type": "module",
   "scripts": {
-    "check": "node check_mermaid.mjs ../../knowledge",
+    "check": "node check_mermaid.mjs ../../knowledge ../../docs/adr ../../docs/architecture",
     "test": "node --test"
   },
   "dependencies": {

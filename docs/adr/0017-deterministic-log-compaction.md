@@ -92,7 +92,7 @@ stateDiagram-v2
   Appending --> CompactionCheck: tail beyond budget?
   CompactionCheck --> Compacting: yes
   CompactionCheck --> Idle: no
-  Compacting --> Idle: append checkpoint event; projection selects active checkpoint
+  Compacting --> Idle: append checkpoint event, projection selects active checkpoint
 ```
 
 ## Consequences

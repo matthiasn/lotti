@@ -13,7 +13,10 @@
 // `dedupe payload by contentDigest; append messagePayload link; retract
 // vanished sources` — parsed clean and produced six nodes instead of one.
 //
-// Usage: node tool/okf/check_mermaid.mjs [bundle-dir]
+// Usage: node tool/okf/check_mermaid.mjs [dir...]
+// Defaults to `knowledge`. Several roots can be given, because the same trap is
+// invisible in any markdown the build does not parse: two broken ADR diagrams
+// shipped while this gate watched only the knowledge bundle.
 // Exits 0 when every block parses and renders the nodes it declares, 1 otherwise.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -37,7 +40,8 @@ Object.defineProperty(globalThis, 'navigator', {
 const { default: mermaid } = await import('mermaid');
 mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
 
-const root = process.argv[2] ?? 'knowledge';
+const roots = process.argv.slice(2);
+if (roots.length === 0) roots.push('knowledge');
 
 function markdownFiles(dir) {
   return readdirSync(dir).flatMap((entry) => {
@@ -116,7 +120,7 @@ function stripDepth(line, depth) {
 
 const blocks = [];
 let unclosed = 0;
-for (const file of markdownFiles(root)) {
+for (const file of roots.flatMap((dir) => markdownFiles(dir))) {
   const lines = readFileSync(file, 'utf8').split('\n');
   let opener = null;
   let openedAt = 0;
@@ -217,7 +221,8 @@ for (const block of blocks) {
 }
 
 console.log(
-  `\nmermaid: parsed ${blocks.length} block(s) in ${root}/ — ` +
+  `\nmermaid: parsed ${blocks.length} block(s) in ` +
+    `${roots.map((dir) => `${dir}/`).join(', ')} — ` +
     `${failed} failed, ${unclosed} unclosed`,
 );
 process.exit(failed + unclosed === 0 ? 0 : 1);
