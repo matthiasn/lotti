@@ -30,7 +30,12 @@ its encryption, the provisioning and pairing flow, and the handling of API keys
 and other secrets.
 
 Out of scope: vulnerabilities in third-party AI providers or Matrix homeservers
-themselves — report those to their operators. Note also that Lotti does **not**
-encrypt its local databases at rest, and that a homeserver operator can observe
-sync metadata. Both are documented limitations rather than vulnerabilities; see
-[PRIVACY.md](PRIVACY.md).
+*themselves* — report those to their operators. **Lotti's integration with them
+stays in scope**, including endpoint and certificate validation, credential
+handling and leakage, and how sync payloads are encoded, encrypted and verified.
+
+Also out of scope, as documented limitations rather than vulnerabilities: Lotti
+does **not** encrypt its local databases at rest, and a homeserver operator can
+observe sync metadata. Both are described in [PRIVACY.md](PRIVACY.md). A way to
+learn more than metadata from the relay, or to read the databases without
+OS-level access to the device, is a vulnerability — please report it.

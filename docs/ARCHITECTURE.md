@@ -22,7 +22,7 @@ Lotti is a privacy-first personal assistant built with Flutter, featuring local-
 ## Core Principles
 
 1. **Local-First**: All data is stored locally using SQLite, with no cloud dependency
-2. **Privacy by Design**: User data leaves a device in exactly two cases — an AI inference request you configured, and end-to-end encrypted sync to your own devices via a homeserver that only ever relays ciphertext
+2. **Privacy by Design**: User content leaves a device only for AI inference you configured or user-enabled end-to-end encrypted Matrix sync, both of which can then run automatically. Sync homeservers receive, store and relay ciphertext plus the associated account and traffic metadata; see [PRIVACY.md](../PRIVACY.md) for the precise boundaries
 3. **Modular Architecture**: Features are organized as independent modules with clear boundaries
 4. **Provider Agnostic**: AI capabilities work with multiple providers (OpenAI, Anthropic, Gemini, Ollama)
 5. **Cross-Platform**: Single codebase for iOS, macOS, Android, Windows, and Linux
@@ -181,8 +181,8 @@ Secrets stored in secure storage include AI provider API keys and tokens, and sy
 - No telemetry or analytics
 - No vendor/cloud accounts required for core functionality (local-only use)
 - Multi-device sync requires a Matrix account (self-hosted or public homeserver) - no vendor lock-in as Matrix is decentralized
-- Explicit consent for AI processing
-- Data never leaves device without user action
+- AI processing is opt-in per category; enabling it is the consent, after which agents and transcription can call the configured provider without a further prompt
+- Data never leaves the device except to destinations the user configured — the sync homeserver and the AI providers they chose
 
 ## Testing Strategy
 

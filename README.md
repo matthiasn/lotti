@@ -8,8 +8,8 @@
 
 Lotti records what you meant to do and what actually happened, and keeps them
 as separate facts. Tasks, planned blocks, tracked time, voice notes, journal
-entries, habits, and health data live on your own devices in an append-only
-log. There is no Lotti account and no Lotti server. AI is optional, and when
+entries, habits, and health data live in a local database on your own devices.
+There is no Lotti account and no Lotti server. AI is optional, and when
 you do set it up, the route Lotti recommends is European infrastructure running
 open-weight models. Nothing reaches your history without your approval.
 
@@ -58,14 +58,15 @@ storage layout rather than by careful prompting — see
 
 **There is no Lotti server.** Your logbook lives on your devices. Sync is
 self-hosted and end-to-end encrypted, so the relay only ever handles
-ciphertext. No account, no telemetry, no upload.
+ciphertext. No account, no telemetry, and nothing uploaded to Lotti.
 
 **You choose the brain, and you can see what it cost.** Route each category of
 your life to the compute you are willing to stand behind: a local model for the
 private things, a frontier model for work, or the European option Lotti
-recommends. The usage view reports spend, energy, and CO₂e per category and per
-model, because inference runs in a physical place and somebody pays for the
-electricity.
+recommends. The usage view reports tokens and requests for every cloud call, and
+spend, energy and CO₂e for the providers that report them — today that means
+Melious. Local inference is not measured at all, because the cost moves onto
+your own hardware and grid.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/ai/usage/desktop-dark.webp">
@@ -146,8 +147,10 @@ electricity.
 - **Contextual skills** for work that does not need a durable agent, including
   prompt generators that turn a task plus your notes into a coding, design,
   image, or research brief you can paste into the tool of your choice.
-- **Usage and impact**: cost, energy, CO₂e, tokens, and requests by period,
-  category, and model.
+- **Usage and impact**: tokens and requests by period, category and model for
+  every cloud call, plus cost, energy and CO₂e wherever the provider reports
+  them — currently Melious. Other providers return token counts only, so those
+  columns stay empty rather than being estimated.
 - Turn all of it off. Lotti is useful without any inference configured.
 
 ### Sync and data
@@ -202,7 +205,8 @@ flowchart LR
 
 The rule matters because of how it is enforced. Agent-authored content sits in
 a different file on disk and reaches the user database only through a code path
-that requires your approval. A misbehaving agent has nowhere to write.
+that requires your approval. A misbehaving agent has no path to any other field
+in the user database.
 
 The two narrow exceptions both concern fields that are still empty: an agent
 may set the initial title of an untitled task, and the initial language of a
@@ -217,18 +221,21 @@ three. They are worth separating, because they fail in different ways.
 
 ### Your logbook is not collected
 
-There is no Lotti server. No account, no telemetry, no upload, no analytics.
-Entries live in an append-only log in local SQLite on each of your devices.
-That is structural rather than a policy commitment: there is nowhere for the
-data to go, and you can confirm it by reading the source or watching the
-traffic.
+There is no Lotti server. No account, no telemetry, no analytics, and nothing
+uploaded to Lotti. Entries live in local SQLite on each of your devices, with
+attachments beside it on the filesystem. That is structural rather than a policy
+commitment: there is nowhere for the data to go, and you can confirm it by
+reading the source or watching the traffic. Two things do leave, both because
+you configured them: ciphertext to the homeserver you chose, and inference
+requests to the provider you chose.
 
 *The other side of that:* there is no server-side backup and no account
-recovery, because there is no account. Sync is the redundancy story. Every
-device you pair holds a complete replica rather than a cache, so losing all but
-one of them costs you nothing. Losing all of them costs you everything, which
-is an argument for pairing a second device early rather than treating it as
-advanced setup.
+recovery, because there is no account. Sync is the redundancy story — but it is
+not automatic history. Pairing a device gives it everything written *from then
+on*; your existing settings and back catalogue arrive only when you run *Send
+settings* and *Send message history* from the device that already has them.
+Until you do, the new device is a live peer, not a backup. Do that early, and a
+second device means losing one costs you nothing.
 
 Keep an ordinary backup as well, since replication covers hardware loss and a
 backup covers everything else. There is no export feature, because there is
@@ -240,7 +247,14 @@ live on the filesystem rather than in the database.
 <!-- TODO: link a manual page giving the database and attachment paths per
      platform. Without it, "you have access" is true and unactionable. -->
 On a phone the database sits inside the app sandbox, so the practical route
-there is to pair a desktop and take the copy from that replica.
+there is to pair a desktop and take the copy from that peer.
+
+Deleting works the other way round, and the order matters: delete entries *in
+the app* rather than deleting the database files. Purging removes an attachment
+by walking the deleted rows that still point at it, so a database removed first
+leaves its audio and images orphaned on disk. Paired devices and ordinary
+backups keep their own copies either way, and anything already sent to a
+provider is subject to that provider's retention, not yours.
 
 *What this does not protect against:* a compromised device. The on-device
 SQLite files live inside your OS user account and are not separately encrypted
@@ -284,13 +298,17 @@ diligence is yours.
 
 What Lotti does instead is refuse to let the decision be invisible:
 
-- Before an AI feature runs, the privacy notice names the provider it is
-  configured against and whether processing is local or remote.
+- Routing is configured per category, ahead of time, rather than negotiated in
+  the moment — so which provider a given piece of work goes to is a setting you
+  chose, not a prompt you clicked past. The flip side is that there is no
+  just-in-time notice at the point an agent or a transcription fires; the
+  onboarding and settings screens are where that decision is made and shown.
 - A friendly display name is not the security boundary. The provider detail
   view shows the actual base URL, the models attached to it, and every profile
   that depends on them.
-- Usage & Impact logs every request that left the machine, which model served
-  it, and what it cost.
+- Usage & Impact logs every request that left the machine and which model served
+  it, with token counts throughout and cost, energy and CO₂e wherever the
+  provider reports them.
 
 A LAN endpoint is worth the same scrutiny. "Local" means it did not go to a
 hosted provider, not that no network hop occurred.
@@ -320,9 +338,15 @@ cover art goes through Gemini or Alibaba.
 ### Energy is a routing decision too
 
 Inference runs in a physical building on a specific grid. The **Usage & Impact**
-view reports cost, energy, CO₂e, tokens, and requests for every cloud call,
-broken down by category and by model, so "what did my thinking cost" has an
-answer rather than a vibe.
+view reports tokens and requests for every cloud call, broken down by category
+and by model, so "what did my thinking cost" has an answer rather than a vibe.
+
+How complete that answer is depends on the provider. Cost, energy, CO₂e and
+water are recorded when the provider returns them with the response, which today
+means Melious; every other provider reports token counts only, and those columns
+stay empty rather than being filled with an estimate. That is a real limit on the
+dashboard: route your work through a provider that discloses nothing, and the
+impact of that work is not something Lotti can show you.
 
 The route highlighted in onboarding publishes power usage effectiveness per
 datacenter and carries Green Web Foundation verification, which is more than
@@ -390,8 +414,8 @@ commitment monitors. The exact split is not set yet.
 - [Getting started with AI](GETTING_STARTED.md) — local Ollama or cloud Gemini
 - [Task management and voice capture](https://matthiasn.github.io/lotti/manual/development/getting-started/first-task/)
   — the everyday voice-to-checklist workflow
-- [Architecture](docs/ARCHITECTURE.md) — immutable append-only log, vector
-  clock sync, on-device inference
+- [Architecture](docs/ARCHITECTURE.md) — the two databases, vector clock sync,
+  on-device inference
 - [Knowledge bundle](knowledge/index.md) — how the app actually works at
   runtime, subsystem by subsystem, written for contributors and coding agents
   alike
