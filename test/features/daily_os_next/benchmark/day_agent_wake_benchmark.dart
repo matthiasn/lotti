@@ -30,6 +30,7 @@ class DayAgentWakeMetric {
     required this.durationMicros,
     required this.repositoryReads,
     required this.outputTokenCeiling,
+    required this.providerTurns,
   });
 
   final int promptBytes;
@@ -39,6 +40,7 @@ class DayAgentWakeMetric {
   final int durationMicros;
   final int repositoryReads;
   final int outputTokenCeiling;
+  final int providerTurns;
 
   Map<String, int> toJson() => {
     'promptBytes': promptBytes,
@@ -48,6 +50,7 @@ class DayAgentWakeMetric {
     'durationMicros': durationMicros,
     'repositoryReads': repositoryReads,
     'outputTokenCeiling': outputTokenCeiling,
+    'providerTurns': providerTurns,
   };
 }
 
@@ -72,6 +75,7 @@ class DayAgentWakeBenchmark {
   Future<Map<String, DayAgentWakeMetric>> run() async {
     _conversationRepository = ScriptedConversationRepository(
       onSend: _observeSend,
+      honorContinuationActions: true,
     );
     _harness = DayAgentPipelineHarness.create(
       now: wakeTime,
@@ -126,25 +130,30 @@ class DayAgentWakeBenchmark {
 
   InferenceUsage _observeSend(
     String systemMessage,
-    String userMessage,
-    List<ChatCompletionMessageToolCall> toolCalls,
+    List<ChatCompletionMessage> requestMessages,
+    ScriptedModelTurn turn,
     List<ChatCompletionTool> tools,
   ) {
     final wake = _activeWake;
     if (wake == null) {
       throw StateError('A scripted send occurred outside a measured wake.');
     }
-    final prompt = '$systemMessage\n$userMessage';
+    final prompt = jsonEncode([
+      for (final message in requestMessages) message.toJson(),
+    ]);
     final toolSchema = jsonEncode([
       for (final tool in tools) tool.toJson(),
     ]);
-    final output = jsonEncode([
-      for (final call in toolCalls)
-        {
-          'name': call.function.name,
-          'arguments': call.function.arguments,
-        },
-    ]);
+    final output = jsonEncode({
+      'content': turn.content,
+      'toolCalls': [
+        for (final call in turn.toolCalls)
+          {
+            'name': call.function.name,
+            'arguments': call.function.arguments,
+          },
+      ],
+    });
     final inputTokens = _estimateTokens('$prompt\n$toolSchema');
     final outputTokens = _estimateTokens(output);
     const policy = DayAgentOutputTokenBudgetPolicy();
@@ -155,16 +164,19 @@ class DayAgentWakeBenchmark {
       'digest' => DayAgentWakeKind.digest,
       _ => throw StateError('Unknown wake kind $wake.'),
     };
+    final previous = _metrics[wake];
     _metrics[wake] = DayAgentWakeMetric(
-      promptBytes: utf8.encode(prompt).length,
+      promptBytes: (previous?.promptBytes ?? 0) + utf8.encode(prompt).length,
       // The system message is the conservative byte-identical prefix. The
       // user payload follows it and contains per-wake volatile context.
-      stablePrefixBytes: utf8.encode(systemMessage).length,
-      inputTokens: inputTokens,
-      outputTokens: outputTokens,
+      stablePrefixBytes:
+          previous?.stablePrefixBytes ?? utf8.encode(systemMessage).length,
+      inputTokens: (previous?.inputTokens ?? 0) + inputTokens,
+      outputTokens: (previous?.outputTokens ?? 0) + outputTokens,
       durationMicros: 0,
       repositoryReads: 0,
       outputTokenCeiling: policy.forKind(kind),
+      providerTurns: (previous?.providerTurns ?? 0) + 1,
     );
     return InferenceUsage(
       inputTokens: inputTokens,
@@ -211,6 +223,7 @@ class DayAgentWakeBenchmark {
       durationMicros: stopwatch.elapsedMicroseconds,
       repositoryReads: _harness.agentRepository.readCount,
       outputTokenCeiling: observed.outputTokenCeiling,
+      providerTurns: observed.providerTurns,
     );
   }
 
@@ -218,17 +231,19 @@ class DayAgentWakeBenchmark {
     AgentIdentityEntity coordinator,
     String dayId,
   ) async {
-    _conversationRepository.script([
-      scriptedToolCall(
-        id: 'digest-status',
-        name: DayAgentToolNames.raiseDayStatus,
-        args: {
-          'dayId': dayId,
-          'status': 'onTrack',
-          'note': 'Offline benchmark digest.',
-        },
-      ),
-    ]);
+    _conversationRepository
+      ..script([
+        scriptedToolCall(
+          id: 'digest-status',
+          name: DayAgentToolNames.raiseDayStatus,
+          args: {
+            'dayId': dayId,
+            'status': 'onTrack',
+            'note': 'Offline benchmark digest.',
+          },
+        ),
+      ])
+      ..scriptText('Digest complete.');
     await _runMeasured(
       wake: 'digest',
       identity: coordinator,
@@ -295,33 +310,35 @@ class DayAgentWakeBenchmark {
         vectorClock: null,
       ),
     ]);
-    _conversationRepository.script([
-      scriptedToolCall(
-        id: 'refine-plan',
-        name: DayAgentToolNames.proposePlanDiff,
-        args: {
-          'dayId': dayId,
-          'changes': [
-            {
-              'action': 'added',
-              'reason': 'User requested a break.',
-              'to': {
-                'title': 'Short break',
-                'categoryId': 'health',
-                'start': DateTime(2030, 1, 15, 10).toIso8601String(),
-                'end': DateTime(
-                  2030,
-                  1,
-                  15,
-                  10,
-                  15,
-                ).toIso8601String(),
+    _conversationRepository
+      ..script([
+        scriptedToolCall(
+          id: 'refine-plan',
+          name: DayAgentToolNames.proposePlanDiff,
+          args: {
+            'dayId': dayId,
+            'changes': [
+              {
+                'action': 'added',
+                'reason': 'User requested a break.',
+                'to': {
+                  'title': 'Short break',
+                  'categoryId': 'health',
+                  'start': DateTime(2030, 1, 15, 10).toIso8601String(),
+                  'end': DateTime(
+                    2030,
+                    1,
+                    15,
+                    10,
+                    15,
+                  ).toIso8601String(),
+                },
               },
-            },
-          ],
-        },
-      ),
-    ]);
+            ],
+          },
+        ),
+      ])
+      ..scriptText('Plan refinement proposed.');
     await _runMeasured(
       wake: 'refine',
       identity: dayAgent,

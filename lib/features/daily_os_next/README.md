@@ -61,11 +61,12 @@ here rather than duplicated.
 ## Performance envelope
 
 The deterministic full-workflow benchmark stays flat from 1 to 12 simulated
-months: parse / draft / refine / digest prompts remain 2,983 / 8,462 / 12,363 /
-10,535 UTF-8 bytes, with 17 / 15 / 18 / 19 repository reads. Provider turns are
-bounded to 4,096 output tokens, except full day drafts at 8,192; a truncated tool
-call is discarded and retried rather than becoming a partial plan. The complete
-baseline and live Melious evidence are in
+months: aggregate parse / draft / refine / digest provider requests remain
+3,155 / 9,630 / 29,125 / 24,042 UTF-8 bytes, with 27 / 25 / 29 / 34 repository
+reads. Refine and digest include their production continuation turn. Provider
+turns are bounded to 4,096 output tokens, except full day drafts at 8,192; a
+truncated tool call is discarded and retried rather than becoming a partial
+plan. The complete baseline and live Melious evidence are in
 [day-planning evaluation and benchmarks](../../../knowledge/features/daily_os_next/evaluation.md).
 
 ## How it works

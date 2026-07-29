@@ -373,7 +373,10 @@ Future<Map<String, Object?>> _runJourney({
             ? wake.wakeRunKeys[i]
             : null;
         if (wakeRunKey != null) {
-          rolesByWakeRunKey[wakeRunKey] = _messageRole(wake.userMessages[i]);
+          rolesByWakeRunKey[wakeRunKey] = preserveDayPlanningWakeRole(
+            rolesByWakeRunKey[wakeRunKey],
+            wake.userMessages[i],
+          );
         }
       }
     }
@@ -449,7 +452,8 @@ Future<Map<String, Object?>> _runJourney({
             'messages': wake.userMessages.length,
             'forcedRetry': wake.forcedRetry,
             'roles': [
-              for (final message in wake.userMessages) _messageRole(message),
+              for (final message in wake.userMessages)
+                dayPlanningMessageRole(message),
             ],
           },
       ],
@@ -486,11 +490,4 @@ Future<Map<String, Object?>> _runJourney({
     }
   }
   return result;
-}
-
-String _messageRole(String message) {
-  if (message.contains('<digest>')) return 'plannerDigest';
-  if (message.contains('<drafting>')) return 'dayDraft';
-  if (message.contains('<capture>')) return 'captureParse';
-  return 'other';
 }

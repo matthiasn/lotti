@@ -136,8 +136,12 @@ class DayAgentOutputBudgetInferenceRepository
           )) {
         reachedLimit = true;
       }
-      final outputTokens = response.usage?.completionTokens;
-      if (outputTokens != null && outputTokens >= effectiveLimit) {
+      final usage = response.usage;
+      final visibleOutputTokens = usage?.completionTokens;
+      final reasoningTokens =
+          usage?.completionTokensDetails?.reasoningTokens ?? 0;
+      if (visibleOutputTokens != null &&
+          visibleOutputTokens + reasoningTokens >= effectiveLimit) {
         reachedLimit = true;
       }
       yield response;

@@ -31,6 +31,10 @@ void main() {
     expect(report['draft']!.outputTokenCeiling, 8192);
     expect(report['refine']!.outputTokenCeiling, 4096);
     expect(report['digest']!.outputTokenCeiling, 4096);
+    expect(report['parse']!.providerTurns, 1);
+    expect(report['draft']!.providerTurns, 1);
+    expect(report['refine']!.providerTurns, 2);
+    expect(report['digest']!.providerTurns, 2);
   });
 
   test(
@@ -63,6 +67,7 @@ void main() {
           'durationMicros',
           'repositoryReads',
           'outputTokenCeiling',
+          'providerTurns',
         ]) {
           buffer.writeln(
             [

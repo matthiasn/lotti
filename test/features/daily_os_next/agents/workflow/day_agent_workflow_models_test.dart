@@ -711,6 +711,35 @@ void main() {
       },
     );
 
+    test(
+      'reasoning usage contributes to the provider output ceiling',
+      () async {
+        final repository = DayAgentOutputBudgetInferenceRepository(
+          delegate: _StreamInferenceRepository(
+            Stream.fromIterable([
+              _textChunk(finishReason: ChatCompletionFinishReason.stop),
+              _usageChunk(outputTokens: 3000, reasoningTokens: 1096),
+            ]),
+          ),
+          wakeKind: DayAgentWakeKind.refine,
+          maxCompletionTokens: 4096,
+        );
+
+        await expectLater(
+          repository
+              .generateText(
+                prompt: 'refine',
+                model: 'gemini-2.5-pro',
+                temperature: 0.3,
+                systemMessage: null,
+                provider: testInferenceProvider(),
+              )
+              .drain<void>(),
+          throwsA(isA<DayAgentOutputLimitExceededException>()),
+        );
+      },
+    );
+
     test('a natural response below the ceiling completes normally', () async {
       final chunks = [
         _textChunk(finishReason: ChatCompletionFinishReason.stop),
@@ -760,18 +789,23 @@ CreateChatCompletionStreamResponse _textChunk({
   ],
 );
 
-CreateChatCompletionStreamResponse _usageChunk({required int outputTokens}) =>
-    CreateChatCompletionStreamResponse(
-      id: 'usage',
-      created: 0,
-      model: 'model',
-      choices: const [],
-      usage: CompletionUsage(
-        promptTokens: 100,
-        completionTokens: outputTokens,
-        totalTokens: 100 + outputTokens,
-      ),
-    );
+CreateChatCompletionStreamResponse _usageChunk({
+  required int outputTokens,
+  int? reasoningTokens,
+}) => CreateChatCompletionStreamResponse(
+  id: 'usage',
+  created: 0,
+  model: 'model',
+  choices: const [],
+  usage: CompletionUsage(
+    promptTokens: 100,
+    completionTokens: outputTokens,
+    totalTokens: 100 + outputTokens,
+    completionTokensDetails: CompletionTokensDetails(
+      reasoningTokens: reasoningTokens,
+    ),
+  ),
+);
 
 class _StreamInferenceRepository implements InferenceRepositoryInterface {
   const _StreamInferenceRepository(this.stream);

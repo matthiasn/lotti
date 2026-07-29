@@ -760,19 +760,25 @@ and cache warming, not a real speedup.)
 
 `day_agent_wake_benchmark.dart` uses the same 1 / 6 / 12-month corpus ages and
 the production `DayAgentWorkflow`. Identities, prompt construction, tool
-dispatch, plan persistence, coordinator digest, and repository reads are real;
-only provider turns are scripted. It reports parse, draft, refine, and digest
+dispatch, plan persistence, coordinator digest, knowledge, week context, soul,
+day-audio context, log compaction wiring, and repository reads are real; only
+provider responses are scripted. Non-terminal tools drive the same continuation
+loop as production, so refine and digest each include their follow-up provider
+request and terminal summary. It reports parse, draft, refine, and digest
 separately:
 
-- `promptBytes`: UTF-8 bytes in the system plus user prompt;
+- `promptBytes`: aggregate UTF-8 bytes in the serialized provider messages
+  across every turn in the wake;
 - `stablePrefixBytes`: UTF-8 bytes in the system message, the conservative
   byte-identical prefix before volatile user context;
 - `inputTokens`: the larger of `TextChunker`'s estimate and UTF-8 bytes / 4,
-  including tool schemas;
-- `outputTokens`: the same estimate over the scripted tool-call payload;
+  summed across turns and including tool schemas;
+- `outputTokens`: the same estimate over scripted assistant content and tool
+  calls, summed across turns;
 - `durationMicros`: monotonic end-to-end workflow time;
 - `repositoryReads`: counted repository calls during the wake; and
-- `outputTokenCeiling`: the production cap selected for that wake.
+- `outputTokenCeiling`: the production cap selected for that wake; and
+- `providerTurns`: provider requests made by the wake.
 
 The benchmark has an always-on two-day schema smoke and shares the storage
 benchmark's opt-in command:
@@ -784,12 +790,12 @@ fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \
 
 Baseline on the same dev machine (1 / 6 / 12 months):
 
-| wake | prompt bytes | stable prefix bytes | input tokens | output tokens | repository reads | duration range |
-|---|---:|---:|---:|---:|---:|---:|
-| Parse | 2,983 / 2,983 / 2,983 | 2,273 / 2,273 / 2,273 | 975 / 975 / 975 | 25 / 25 / 25 | 17 / 17 / 17 | 2.3–2.8 ms |
-| Draft | 8,462 / 8,462 / 8,462 | 7,829 / 7,829 / 7,829 | 3,028 / 3,028 / 3,028 | 69 / 69 / 69 | 15 / 15 / 15 | 3.0–3.9 ms |
-| Refine | 12,363 / 12,363 / 12,363 | 10,759 / 10,759 / 10,759 | 4,958 / 4,958 / 4,958 | 73 / 73 / 73 | 18 / 18 / 18 | 3.4–4.7 ms |
-| Digest | 10,535 / 10,535 / 10,535 | 6,711 / 6,711 / 6,711 | 4,628 / 4,628 / 4,628 | 35 / 35 / 35 | 19 / 19 / 19 | 5.2–6.2 ms |
+| wake | prompt bytes | stable prefix bytes | input tokens | output tokens | repository reads | provider turns | duration range |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Parse | 3,155 / 3,155 / 3,155 | 2,273 / 2,273 / 2,273 | 1,018 / 1,018 / 1,018 | 33 / 33 / 33 | 27 / 27 / 27 | 1 / 1 / 1 | 4.1–11.2 ms |
+| Draft | 9,630 / 9,630 / 9,630 | 8,715 / 8,715 / 8,715 | 3,320 / 3,320 / 3,320 | 76 / 76 / 76 | 25 / 25 / 25 | 1 / 1 / 1 | 4.7–9.8 ms |
+| Refine | 29,125 / 29,125 / 29,125 | 11,645 / 11,645 / 11,645 | 11,016 / 11,016 / 11,016 | 94 / 94 / 94 | 29 / 29 / 29 | 2 / 2 / 2 | 8.2–16.9 ms |
+| Digest | 24,042 / 24,042 / 24,042 | 6,940 / 6,940 / 6,940 | 9,999 / 9,999 / 9,999 | 55 / 55 / 55 | 34 / 34 / 34 | 2 / 2 / 2 | 8.1–104.1 ms |
 
 Every size-dependent value is byte-for-byte flat across a twelvefold age
 increase. Stopwatch variation is scheduler noise; prompt growth and read-count

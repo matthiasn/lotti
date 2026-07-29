@@ -693,6 +693,21 @@ List<EvalToolCall> evalToolCallsFrom(List<AgentDomainEntity> entities) {
   return calls;
 }
 
+/// Classifies a day-planning provider message for live usage reporting.
+String dayPlanningMessageRole(String message) {
+  if (message.contains('<digest>')) return 'plannerDigest';
+  if (message.contains('<drafting>')) return 'dayDraft';
+  if (message.contains('<capture>')) return 'captureParse';
+  return 'other';
+}
+
+/// Preserves a wake's known role when an untagged continuation is sent.
+String preserveDayPlanningWakeRole(String? currentRole, String message) {
+  final nextRole = dayPlanningMessageRole(message);
+  if (nextRole == 'other' && currentRole != null) return currentRole;
+  return nextRole;
+}
+
 /// One conversation the model was driven through, as it was sent.
 @immutable
 class EvalWakeTranscript {

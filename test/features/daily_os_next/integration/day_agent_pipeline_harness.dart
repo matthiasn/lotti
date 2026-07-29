@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_database.dart'
     hide AgentLink;
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
@@ -10,8 +12,10 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
+import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -21,8 +25,11 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
@@ -45,8 +52,9 @@ import '../services/day_processing_test_db.dart';
 /// `DayAgentJobExecutor` (via the real [buildDayAgentJobExecutor] wiring),
 /// [WakeOrchestrator]/[WakeQueue]/[WakeRunner], [DayAgentWorkflow],
 /// [DayAgentPlanService], [DayAgentCaptureService], [DayAgentService], and
-/// [RealDayAgent] — with only the conversation/inference layer injected by
-/// the caller.
+/// [RealDayAgent]. The workflow receives the same knowledge, week-context,
+/// soul, day-audio, and log-summarizer dependencies as production; only the
+/// conversation/inference layer is injected by the caller.
 ///
 /// Shared by two callers with different LLM layers:
 ///
@@ -82,13 +90,10 @@ class DayAgentPipelineHarness {
   /// (the template's profile points at [profile], whose thinking model must
   /// equal [model]'s `providerModelId`, which must resolve to [provider]).
   ///
-  /// [dependencyResolver] is the ADR 0043 blocker resolver. Production wires
-  /// it unconditionally (`agent_workflow_providers.dart`), and the workflow
-  /// gates *both* the corpus's `blockedBy` annotation and the prompt's
-  /// blocked-work rule on it being non-null — so leaving it null does not
-  /// merely hide blocked tasks, it sends a materially different prompt than
-  /// production does. Callers that care what the model was told should pass
-  /// one (an empty fixture resolver is enough when no task is blocked).
+  /// [dependencyResolver] can replace the production ADR 0043 blocker
+  /// resolver for fixtures with an explicit dependency graph. When omitted,
+  /// the harness wires a real [TaskDependencyResolver] over its journal
+  /// repository, matching production's non-null prompt/tool contract.
   ///
   /// [config] renders into the system prompt's planning defaults, so it is
   /// the lever for varying the capacity/working-hours contract the model is
@@ -252,6 +257,18 @@ class DayAgentPipelineHarness {
     when(
       () => journalDb.journalEntityMapForIds(any()),
     ).thenAnswer((_) async => const {});
+    when(
+      () => journalDb.getDayAudioEntries(any()),
+    ).thenAnswer((_) async => const <JournalAudio>[]);
+    when(
+      () => journalDb.sortedCalendarEntries(
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => const <JournalEntity>[]);
+    when(
+      () => journalDb.basicLinksForEntryIds(any()),
+    ).thenAnswer((_) async => const <EntryLink>[]);
     // True, not false: `apply_triage` updates a task through this, and a
     // false answer becomes "failed to update task <id>" handed back to the
     // model as a correction it did not earn. In the app the update succeeds.
@@ -287,6 +304,18 @@ class DayAgentPipelineHarness {
       syncService: syncService,
       domainLogger: domainLogger,
     );
+    final knowledgeService = DayAgentKnowledgeService(
+      agentRepository: agentRepository,
+      syncService: syncService,
+      domainLogger: domainLogger,
+    );
+    final weekContextService = DayAgentWeekContextService(
+      agentRepository: agentRepository,
+      journalDb: journalDb,
+      syncService: syncService,
+      domainLogger: domainLogger,
+      categoryNameResolver: (_) => null,
+    );
     final dayWorkflow = DayAgentWorkflow(
       agentRepository: agentRepository,
       conversationRepository: conversationRepository,
@@ -296,10 +325,25 @@ class DayAgentPipelineHarness {
       templateService: templateService,
       captureService: captureService,
       planService: planService,
+      knowledgeService: knowledgeService,
+      weekContextService: weekContextService,
       directiveService: directiveService,
-      dependencyResolver: dependencyResolver,
+      dependencyResolver:
+          dependencyResolver ??
+          TaskDependencyResolver(journalRepository: journalRepository),
+      soulDocumentService: SoulDocumentService(
+        repository: agentRepository,
+        syncService: syncService,
+      ),
+      dayAudioEntryContextService: DayAudioEntryContextService(
+        journalDb: journalDb,
+        assetRoot: root,
+      ),
       config: config,
       domainLogger: domainLogger,
+      logSummarizer: AgentLogLlmSummarizer(
+        inferenceRepository: cloudInferenceRepository,
+      ),
     );
 
     final orchestrator =
@@ -490,6 +534,14 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
   }
 
   @override
+  Future<Map<String, AgentDomainEntity>> getEntitiesByIdsIncludingDeleted(
+    Iterable<String> ids,
+  ) {
+    _countRead();
+    return super.getEntitiesByIdsIncludingDeleted(ids);
+  }
+
+  @override
   Future<AgentStateEntity?> getAgentState(String agentId) {
     _countRead();
     return super.getAgentState(agentId);
@@ -580,6 +632,22 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
   }) async {
     _countRead();
     return const AttentionPlanningInputs.empty();
+  }
+
+  @override
+  Future<List<AttentionRequestEntity>> getAttentionClaimsForWindow({
+    required DateTime start,
+    required DateTime end,
+    Set<AttentionClaimStatus> statuses = const {
+      AttentionClaimStatus.open,
+      AttentionClaimStatus.proposed,
+      AttentionClaimStatus.partiallySatisfied,
+      AttentionClaimStatus.deferred,
+    },
+    int limit = 200,
+  }) async {
+    _countRead();
+    return const [];
   }
 
   @override

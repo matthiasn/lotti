@@ -882,6 +882,34 @@ void main() {
     });
   });
 
+  group('day-planning message roles', () {
+    test('an untagged continuation keeps the wake primary role', () {
+      final role =
+          [
+            '<capture>Plan one focused block.</capture>',
+            'You must call record_day_directive now.',
+          ].fold<String?>(
+            null,
+            preserveDayPlanningWakeRole,
+          );
+
+      expect(role, 'captureParse');
+    });
+
+    test('a tagged message replaces an initial unclassified role', () {
+      final role =
+          [
+            'Continue.',
+            '<drafting>Build the plan.</drafting>',
+          ].fold<String?>(
+            null,
+            preserveDayPlanningWakeRole,
+          );
+
+      expect(role, 'dayDraft');
+    });
+  });
+
   group('evalPlanDateFor', () {
     test('plans today for a same-day scenario and tomorrow otherwise', () {
       const sameDay = EvalScenario(
