@@ -84,7 +84,7 @@ class _MoreSheetRow extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: tokens.spacing.step3,
-                vertical: tokens.spacing.step3,
+                vertical: tokens.spacing.step5,
               ),
               child: Row(
                 children: [
