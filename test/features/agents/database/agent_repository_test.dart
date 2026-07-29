@@ -854,7 +854,7 @@ void main() {
           expect(byId['cap-1']!.dayId, 'dayplan-2026-06-05');
           expect(byId['cap-2']!.createdAt, DateTime.utc(2026, 6, 5, 9, 1));
           expect(byId['cap-2']!.capturedAt, DateTime.utc(2026, 6, 5, 9));
-          expect(byId['cap-2']!.dayId, isEmpty);
+          expect(byId['cap-2']!.dayId, 'dayplan-2026-06-05');
         },
       );
 
