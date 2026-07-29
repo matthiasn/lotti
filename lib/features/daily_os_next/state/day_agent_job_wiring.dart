@@ -44,7 +44,10 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
           dayAgentCaptureSubmittedReason,
           {
             dayAgentCaptureSubmittedToken(captureId),
-            dayAgentProcessingJobToken(job.id),
+            dayAgentProcessingJobToken(
+              job.id,
+              requestedAt: job.requestedAt,
+            ),
           },
         ),
         DraftPlanPayload(
@@ -64,7 +67,10 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
               for (final id in decidedCaptureItemIds)
                 if (id.trim().isNotEmpty)
                   dayAgentDecidedCaptureItemToken(id.trim()),
-              dayAgentProcessingJobToken(job.id),
+              dayAgentProcessingJobToken(
+                job.id,
+                requestedAt: job.requestedAt,
+              ),
             },
           ),
         RefinePlanPayload(:final transcriptCaptureId) => (
@@ -75,7 +81,10 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
             if (transcriptCaptureId != null &&
                 transcriptCaptureId.trim().isNotEmpty)
               dayAgentCaptureSubmittedToken(transcriptCaptureId.trim()),
-            dayAgentProcessingJobToken(job.id),
+            dayAgentProcessingJobToken(
+              job.id,
+              requestedAt: job.requestedAt,
+            ),
           },
         ),
         TranscribeAudioPayload() => throw StateError(

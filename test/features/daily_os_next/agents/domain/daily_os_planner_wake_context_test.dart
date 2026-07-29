@@ -23,13 +23,22 @@ void main() {
       dayAgentCaptureSubmittedToken('capture-a'),
       dayAgentDecidedTaskToken('task-1'),
       dayAgentDecidedCaptureItemToken('parsed-1'),
-      dayAgentProcessingJobToken('job-1'),
+      dayAgentProcessingJobToken(
+        'job-1',
+        requestedAt: DateTime.utc(2026, 7, 22),
+      ),
     });
 
     expect(ctx.captureIds, ['capture-a', 'capture-b']);
     expect(ctx.decidedTaskIds, contains('task-1'));
     expect(ctx.decidedCaptureItemIds, contains('parsed-1'));
-    expect(ctx.processingJobId, 'job-1');
+    expect(
+      ctx.processingJobId,
+      dayAgentProcessingIntentId(
+        'job-1',
+        requestedAt: DateTime.utc(2026, 7, 22),
+      ),
+    );
     expect(ctx.isDraftingWake, isTrue);
     expect(ctx.isRefineWake, isFalse);
   });

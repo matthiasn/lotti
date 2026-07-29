@@ -462,6 +462,9 @@ void main() {
           {'day_status:$dayId:job:$processingJobId'},
           reason: 'the synced upsert key, not the wake run key, owns identity',
         );
+        expect(first.output, contains('"recorded": true'));
+        expect(first.output, isNot(contains(processingJobId)));
+        expect(retry.output, isNot(contains(processingJobId)));
       },
     );
 

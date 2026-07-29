@@ -1970,7 +1970,10 @@ void main() {
             workflow(directiveService: directiveService),
             triggerTokens: {
               dayAgentPlanningDayToken(dayId),
-              dayAgentProcessingJobToken('job-1'),
+              dayAgentProcessingJobToken(
+                'job-1',
+                requestedAt: DateTime.utc(2026, 7, 22),
+              ),
             },
           );
 
@@ -1985,7 +1988,10 @@ void main() {
               args: {'dayId': dayId, 'status': 'dayClosed'},
               wakeDayId: dayId,
               runKey: runKey,
-              processingJobId: 'job-1',
+              processingJobId: dayAgentProcessingIntentId(
+                'job-1',
+                requestedAt: DateTime.utc(2026, 7, 22),
+              ),
             ),
           ).called(1);
         },
@@ -4143,6 +4149,11 @@ void main() {
         expect(systemPrompt, isNot(contains('Capture matching rules:')));
         expect(systemPrompt, isNot(contains('`parse_capture_to_items`')));
         expect(systemPrompt, isNot(contains('`draft_day_plan`')));
+        expect(systemPrompt, isNot(contains('`set_next_wake`')));
+        expect(
+          systemPrompt,
+          isNot(contains('schedule one useful future wake')),
+        );
         expect(
           systemPrompt,
           isNot(contains('On `drafting:<dayId>` wakes')),

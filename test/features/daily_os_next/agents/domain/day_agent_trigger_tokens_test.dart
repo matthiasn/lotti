@@ -47,10 +47,47 @@ void main() {
 
     test('processing-job token round-trips the durable job id', () {
       const jobId = 'draft_dayplan-2026-05-25';
-      final token = dayAgentProcessingJobToken(jobId);
+      final token = dayAgentProcessingJobToken(
+        jobId,
+        requestedAt: DateTime.utc(2026, 7, 22),
+      );
 
-      expect(token, '$dayAgentProcessingJobPrefix$jobId');
-      expect(processingJobIdFromTriggerTokens({token}), jobId);
+      expect(
+        token,
+        '$dayAgentProcessingJobPrefix'
+        '${dayAgentProcessingIntentId(
+          jobId,
+          requestedAt: DateTime.utc(2026, 7, 22),
+        )}',
+      );
+      expect(
+        processingJobIdFromTriggerTokens({token}),
+        dayAgentProcessingIntentId(
+          jobId,
+          requestedAt: DateTime.utc(2026, 7, 22),
+        ),
+      );
+    });
+
+    test('processing intent is stable for retries and changes on re-arm', () {
+      final firstRequest = DateTime.utc(2026, 7, 22, 8);
+      final rearmedRequest = DateTime.utc(2026, 7, 22, 9);
+
+      final firstAttempt = dayAgentProcessingJobToken(
+        'draft_dayplan-2026-07-22',
+        requestedAt: firstRequest,
+      );
+      final retry = dayAgentProcessingJobToken(
+        'draft_dayplan-2026-07-22',
+        requestedAt: firstRequest,
+      );
+      final rearmed = dayAgentProcessingJobToken(
+        'draft_dayplan-2026-07-22',
+        requestedAt: rearmedRequest,
+      );
+
+      expect(retry, firstAttempt);
+      expect(rearmed, isNot(firstAttempt));
     });
   });
 
@@ -67,8 +104,14 @@ void main() {
     test('rejects ambiguous merged durable job tokens', () {
       expect(
         () => processingJobIdFromTriggerTokens({
-          dayAgentProcessingJobToken('job-a'),
-          dayAgentProcessingJobToken('job-b'),
+          dayAgentProcessingJobToken(
+            'job-a',
+            requestedAt: DateTime.utc(2026, 7, 22),
+          ),
+          dayAgentProcessingJobToken(
+            'job-b',
+            requestedAt: DateTime.utc(2026, 7, 22),
+          ),
         }),
         throwsStateError,
       );

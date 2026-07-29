@@ -163,12 +163,16 @@ sequenceDiagram
   `deterministic` — because unlike transcription's free backoff, **every agent
   retry spends model tokens**.
 
-Every agent-job wake also carries `processing_job:<jobId>`. The per-attempt
-`runKey` remains the provenance key for plans and diffs, while the durable job
-id scopes side effects that may happen before the terminal artifact. In
+Every agent-job wake also carries
+`processing_job:<jobId>@<requestedAtMicros>`. The per-attempt `runKey` remains
+the provenance key for plans and diffs, while this durable **intent** scope
+governs side effects that may happen before the terminal artifact. In
 particular, `raise_day_status` upserts
-`day_status:<dayId>:job:<jobId>`: a retry can revise the status from its failed
-attempt, but cannot append a duplicate escalation.
+`day_status:<dayId>:job:<intentScope>`: a retry can revise the status from its
+failed attempt, but cannot append a duplicate escalation. Re-arming a
+deterministic job changes `requestedAt`, so a later independent user request
+gets a new append-only status event instead of overwriting the earlier
+request's history.
 
 The outbox retains `last_failure_class` and `last_error` when a retry later
 succeeds. `attempts` still counts failed provider requests, and a new user

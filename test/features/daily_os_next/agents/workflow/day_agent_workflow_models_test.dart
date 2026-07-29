@@ -191,7 +191,7 @@ void main() {
       );
     });
 
-    test('generateText cancels the deadline when the provider completes', () {
+    test('a completed provider turn stays closed after the wake deadline', () {
       fakeAsync((async) {
         final source = StreamController<CreateChatCompletionStreamResponse>(
           sync: true,
@@ -226,6 +226,81 @@ void main() {
 
         expect(chunks, hasLength(1));
         expect(errors, isEmpty);
+      });
+    });
+
+    test(
+      'a provider turn started after the wake deadline fails immediately',
+      () {
+        fakeAsync((async) {
+          var upstreamListened = false;
+          final source = StreamController<CreateChatCompletionStreamResponse>(
+            sync: true,
+            onListen: () {
+              upstreamListened = true;
+            },
+          );
+          final errors = <Object>[];
+          final repository = DayAgentTimeoutInferenceRepository(
+            delegate: _StreamInferenceRepository(source.stream),
+            wakeKind: DayAgentWakeKind.draft,
+            timeout: const Duration(seconds: 30),
+          );
+
+          async
+            ..elapse(const Duration(seconds: 30))
+            ..flushMicrotasks();
+          repository
+              .generateTextWithMessages(
+                messages: const [],
+                model: 'qwen3.5-397b-a17b',
+                temperature: 0.3,
+                provider: testInferenceProvider(),
+              )
+              .listen((_) {}, onError: errors.add);
+          async.flushMicrotasks();
+
+          expect(errors.single, isA<DayAgentInferenceTimedOutException>());
+          expect(
+            upstreamListened,
+            isFalse,
+            reason: 'An expired wake must not start another provider request.',
+          );
+          unawaited(source.close());
+        });
+      },
+    );
+
+    test('downstream cancellation cancels the active provider stream', () {
+      fakeAsync((async) {
+        var upstreamCancelled = false;
+        final source = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+          onCancel: () {
+            upstreamCancelled = true;
+          },
+        );
+        final errors = <Object>[];
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _StreamInferenceRepository(source.stream),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: const Duration(seconds: 30),
+        );
+
+        final subscription = repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'qwen3.5-397b-a17b',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+        unawaited(subscription.cancel());
+        async.flushMicrotasks();
+
+        expect(upstreamCancelled, isTrue);
+        expect(errors, isEmpty);
+        unawaited(source.close());
       });
     });
 
@@ -320,6 +395,62 @@ void main() {
         unawaited(source.close());
       });
     });
+
+    test('later provider turns receive only the remaining wake deadline', () {
+      fakeAsync((async) {
+        final first = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+        );
+        var secondCancelled = false;
+        final second = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+          onCancel: () {
+            secondCancelled = true;
+          },
+        );
+        final errors = <Object>[];
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _SequenceInferenceRepository([
+            first.stream,
+            second.stream,
+          ]),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: const Duration(seconds: 30),
+        );
+
+        repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'qwen3.5-397b-a17b',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+        async.elapse(const Duration(seconds: 20));
+        unawaited(first.close());
+        async.flushMicrotasks();
+
+        repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'qwen3.5-397b-a17b',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+        async
+          ..elapse(const Duration(seconds: 9))
+          ..flushMicrotasks();
+        expect(errors, isEmpty);
+
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+        expect(errors.single, isA<DayAgentInferenceTimedOutException>());
+        expect(secondCancelled, isTrue);
+        unawaited(second.close());
+      });
+    });
   });
 }
 
@@ -362,4 +493,40 @@ class _StreamInferenceRepository implements InferenceRepositoryInterface {
     int? turnIndex,
     InferenceImpactCollector? impactCollector,
   }) => stream;
+}
+
+class _SequenceInferenceRepository implements InferenceRepositoryInterface {
+  _SequenceInferenceRepository(this.streams);
+
+  final List<Stream<CreateChatCompletionStreamResponse>> streams;
+  var _next = 0;
+
+  Stream<CreateChatCompletionStreamResponse> _take() => streams[_next++];
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateText({
+    required String prompt,
+    required String model,
+    required double temperature,
+    required String? systemMessage,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+  }) => _take();
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
+    InferenceImpactCollector? impactCollector,
+  }) => _take();
 }

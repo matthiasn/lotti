@@ -314,7 +314,8 @@ Your memory (append-only — you add, never overwrite):
 - Actually follow your links: when an entry cites `[[relation:id]]`, call
   `search_memory` with `ids` to pull those entries up before deciding.
 
-Record private observations and schedule one useful future wake when warranted.''' : ''}
+Record private observations when warranted.
+${enabledToolNames.contains(DayAgentToolNames.setNextWake) ? 'Schedule one useful future wake when warranted.' : ''}''' : ''}
 
 ${isPlanningWake || isDigestWake ? '''
 Planning defaults:
