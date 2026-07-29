@@ -941,6 +941,95 @@ void main() {
     );
 
     test(
+      'transcribeAudio captures Melious billing and impact data',
+      () async {
+        final impactCollector = InferenceImpactCollector();
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient.streaming(
+            (_, _) async => http.StreamedResponse(
+              Stream.value(
+                utf8.encode(
+                  jsonEncode({
+                    'text': 'bonjour',
+                    'environment_impact': {
+                      'energy_kwh': 0.0031,
+                      'carbon_g_co2': 0.93,
+                      'water_liters': 0.12,
+                      'renewable_percent': 87.5,
+                      'pue': 1.2,
+                      'location': 'FI',
+                      'provider_id': 'upstream-whisper',
+                    },
+                    'billing_cost': {'credits': '0.0007'},
+                  }),
+                ),
+              ),
+              200,
+            ),
+          ),
+        );
+        addTearDown(repository.close);
+
+        await repository
+            .transcribeAudio(
+              model: 'openai/whisper-large-v3',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              impactCollector: impactCollector,
+            )
+            .drain<void>();
+
+        expect(
+          impactCollector.impact,
+          const MeliousCallImpact(
+            energyKwh: 0.0031,
+            carbonGCo2: 0.93,
+            waterLiters: 0.12,
+            renewablePercent: 87.5,
+            pue: 1.2,
+            dataCenter: 'FI',
+            providerId: 'upstream-whisper',
+            costCredits: 0.0007,
+            costCreditsDecimal: '0.0007',
+          ),
+        );
+      },
+    );
+
+    test(
+      'transcribeAudio leaves the collector empty when Melious reports no '
+      'impact',
+      () async {
+        final impactCollector = InferenceImpactCollector();
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient.streaming(
+            (_, _) async => http.StreamedResponse(
+              Stream.value(utf8.encode(jsonEncode({'text': 'bonjour'}))),
+              200,
+            ),
+          ),
+        );
+        addTearDown(repository.close);
+
+        final chunks = await repository
+            .transcribeAudio(
+              model: 'openai/whisper-large-v3',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              impactCollector: impactCollector,
+            )
+            .toList();
+
+        // The transcript still arrives — a response without impact fields is
+        // normal, not an error.
+        expect(chunks.single.choices?.single.delta?.content, 'bonjour');
+        expect(impactCollector.impact, isNull);
+      },
+    );
+
+    test(
       'transcribeChatAudio sends temporary MP3 and deletes it after success',
       () async {
         http.Request? captured;

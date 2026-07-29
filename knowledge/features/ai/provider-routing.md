@@ -103,6 +103,31 @@ model default.
 **Reference-image generation is rejected explicitly** rather than silently
 ignored, because Melious currently documents only text-to-image generation.
 
+## Melious reports cost and impact only off the streaming path
+
+Alone among the providers, Melious returns per-call billing and environmental
+figures — `billing_cost` and `environment_impact` at the top level of the
+response body. They are **absent from streamed responses**, which carry only
+token `usage`, so they cannot ride the typed stream. They travel out of band
+instead: the caller passes an `InferenceImpactCollector` down the call, and
+whichever repository buffers the response parses `MeliousCallImpact` into it.
+
+That makes the collector's reach a per-endpoint property, and each buffered
+endpoint has to opt in:
+
+| Endpoint | How it buffers | Impact captured |
+|----------|----------------|-----------------|
+| `POST /chat/completions` | `_nonStreamingChat` when a collector is supplied — deliberately forfeiting incremental deltas, since Melious reports impact only when not streaming | Yes |
+| `POST /audio/transcriptions` (whisper-class ids) | Always one buffered POST | Yes, via `executeTranscription`'s `onSuccessResponse` hook |
+| `POST /chat/completions` with temporary-MP3 audio (Voxtral ids) | Always buffered | Yes |
+| `POST /images/generations` | Always buffered | Yes |
+
+A collector reaching `generateWithAudio` is routed by model id, so an endpoint
+that ignores the parameter silently records nothing — the call still succeeds
+and the transcript still arrives, which is why the gap is invisible until the
+consumption charts come up short. Fields Melious omits leave the collector
+untouched rather than writing zeros.
+
 A small curated static catalog exists for immediate setup before live-catalog
 rows are installed: `deepseek-v4-pro`, `glm-5.2`, `gemma-4-26b-a4b`,
 `minimax-m2.7`, `mistral-small-4-119b-instruct`, `qwen3.5-122b-a10b`,

@@ -40,6 +40,14 @@ class TranscriptionRepository {
   /// the raw response. It receives the computed timeout and a
   /// pre-formatted timeout error message so it can throw
   /// [TranscriptionException] from its own `onTimeout` callback.
+  ///
+  /// [onSuccessResponse] is invoked once, after a 200 response has been decoded
+  /// and validated, with both the decoded body and the raw [http.Response].
+  /// It exists for provider-specific fields this shared template does not
+  /// model — Melious' `environment_impact`/`billing_cost`, which a caller reads
+  /// into an impact collector. The raw response is passed alongside the decoded
+  /// map because recovering a provider's unmodified decimal digits requires the
+  /// body text, which `jsonDecode` has already lost.
   Stream<CreateChatCompletionStreamResponse> executeTranscription({
     required String providerName,
     required String responseIdPrefix,
@@ -50,6 +58,8 @@ class TranscriptionRepository {
     sendRequest,
     required int audioLengthForLog,
     Duration? timeout,
+    void Function(Map<String, dynamic> decoded, http.Response response)?
+    onSuccessResponse,
   }) {
     final requestTimeout =
         timeout ?? const Duration(seconds: whisperTranscriptionTimeoutSeconds);
@@ -108,6 +118,7 @@ class TranscriptionRepository {
 
           final text = result['text'] as String;
           final usage = parseCompletionUsage(result['usage']);
+          onSuccessResponse?.call(result, response);
 
           developer.log(
             'Successfully transcribed audio - '

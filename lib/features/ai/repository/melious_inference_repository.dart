@@ -583,6 +583,12 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// OpenAI-standard `prompt` form field to bias recognition toward names and
   /// domain vocabulary — honored by context-aware models such as Voxtral and
   /// safely ignored by models without prompt biasing.
+  ///
+  /// When [impactCollector] is provided, the cost and environmental impact
+  /// Melious reports alongside the transcript are written to it. Transcription
+  /// is a single buffered POST, so it always carries the impact fields a
+  /// streamed chat response would omit. Fields absent from the response leave
+  /// the collector untouched.
   Stream<CreateChatCompletionStreamResponse> transcribeAudio({
     required String model,
     required String audioBase64,
@@ -591,6 +597,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     String responseFormat = 'json',
     List<String>? contextBiasTerms,
     Duration? timeout,
+    InferenceImpactCollector? impactCollector,
   }) {
     final normalizedBaseUrl = baseUrl.trim();
     final normalizedApiKey = apiKey.trim();
@@ -612,6 +619,18 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       responseIdPrefix: 'melious-transcription-',
       audioLengthForLog: audioBase64.length,
       timeout: timeout,
+      onSuccessResponse: impactCollector == null
+          ? null
+          : (decoded, response) {
+              final impact = MeliousCallImpact.fromResponseJson(
+                decoded,
+                costCreditsDecimal:
+                    MeliousCallImpact.costDecimalFromResponseBody(
+                      response.body,
+                    ),
+              );
+              if (impact.hasData) impactCollector.impact = impact;
+            },
       sendRequest: (requestTimeout, timeoutErrorMessage) async {
         final uri = _buildEndpointUri(
           normalizedBaseUrl,

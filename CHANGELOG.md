@@ -223,6 +223,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **Transcription now counts towards your AI usage figures.** When a recording
+  was transcribed by a Melious speech model, the cost and the energy, carbon and
+  water it used were reported by the provider and then thrown away — so the AI
+  usage charts showed transcription as free, and every total that included it
+  was short. Those figures are now recorded like any other AI call.
 - **The app no longer asks for the microphone the moment it starts.** On a fresh
   install, Lotti asked to record audio while you were still looking at your task
   list, before you had asked it to record anything — which reasonably raises the
