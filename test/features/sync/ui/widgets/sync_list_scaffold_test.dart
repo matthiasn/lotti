@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -64,6 +65,12 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
   Map<_TestFilter, SyncFilterOption<_TestItem>>? filters,
   Widget? headerSliver,
   _TestFilter? initialFilter,
+  EdgeInsets? listPadding,
+  Key? listKey,
+  List<_TestItem>? items,
+  bool isLoading = false,
+  bool withStream = true,
+  Future<void> Function()? onRefresh,
   double viewportWidth = 390,
   double viewportHeight = 844,
   bool useViewSize = false,
@@ -85,9 +92,14 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
       home: useViewSize
           ? SyncListScaffold<_TestItem, _TestFilter>(
               title: 'Sync UI',
-              stream: controller.stream,
+              stream: withStream ? controller.stream : null,
+              items: items,
+              isLoading: isLoading,
+              onRefresh: onRefresh,
               filters: filters ?? _buildFilters(),
               headerSliver: headerSliver,
+              listPadding: listPadding,
+              listKey: listKey,
               itemBuilder: (context, item) => ListTile(
                 title: Text(item.label),
               ),
@@ -107,9 +119,14 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
               child: SyncListScaffold<_TestItem, _TestFilter>(
                 title: 'Sync UI',
                 subtitle: 'Subtitle copy',
-                stream: controller.stream,
+                stream: withStream ? controller.stream : null,
+                items: items,
+                isLoading: isLoading,
+                onRefresh: onRefresh,
                 filters: filters ?? _buildFilters(),
                 headerSliver: headerSliver,
+                listPadding: listPadding,
+                listKey: listKey,
                 itemBuilder: (context, item) => ListTile(
                   title: Text(item.label),
                 ),
@@ -465,6 +482,177 @@ void main() {
         expect(find.text('Item X'), findsOneWidget);
       },
     );
+
+    group('items mode', () {
+      testWidgets(
+        'renders the provided items without a stream',
+        (tester) async {
+          final controller = await _pumpScaffold(
+            tester,
+            withStream: false,
+            items: const [_TestItem(label: 'Direct item', hasError: false)],
+          );
+          // Nothing listens to the unused stream in items mode, so awaiting
+          // close() would hang the teardown.
+          addTearDown(() => unawaited(controller.close()));
+          await tester.pump(const Duration(milliseconds: 400));
+
+          expect(find.text('Direct item'), findsOneWidget);
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows the spinner while loading before the first fetch resolves',
+        (tester) async {
+          final controller = await _pumpScaffold(
+            tester,
+            withStream: false,
+            isLoading: true,
+          );
+          // Nothing listens to the unused stream in items mode, so awaiting
+          // close() would hang the teardown.
+          addTearDown(() => unawaited(controller.close()));
+          await tester.pump();
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        },
+      );
+    });
+
+    group('pull-to-refresh', () {
+      testWidgets(
+        'a pull past the trigger point invokes onRefresh',
+        (tester) async {
+          var refreshes = 0;
+          final controller = await _pumpScaffold(
+            tester,
+            onRefresh: () async => refreshes++,
+          );
+          controller.add(const [_TestItem(label: 'Item', hasError: false)]);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          await tester.fling(
+            find.byType(CustomScrollView),
+            const Offset(0, 300),
+            1000,
+          );
+          await tester.pump();
+          // The indicator's snap and settle animations.
+          await tester.pump(const Duration(seconds: 1));
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(refreshes, 1);
+
+          // Close inside the test body so the listening widget drains the
+          // stream before teardown (see test/README.md, streams section).
+          await controller.close();
+        },
+      );
+    });
+
+    group('list padding', () {
+      const listKey = Key('sync-list');
+
+      /// The [SliverPadding] wrapping the item list, located via [listKey].
+      EdgeInsets listSliverPadding(WidgetTester tester) =>
+          tester
+                  .widget<SliverPadding>(
+                    find
+                        .ancestor(
+                          of: find.byKey(listKey),
+                          matching: find.byType(SliverPadding),
+                        )
+                        .first,
+                  )
+                  .padding
+              as EdgeInsets;
+
+      /// The end-of-list spacer: the trailing [SliverToBoxAdapter]'s child.
+      SizedBox trailingSpacer(WidgetTester tester) =>
+          tester
+                  .widget<SliverToBoxAdapter>(
+                    find.byType(SliverToBoxAdapter).last,
+                  )
+                  .child!
+              as SizedBox;
+
+      /// Pumps below the 400px responsive breakpoint, where the resolved base
+      /// padding is applied as-is — so assertions observe the default (or the
+      /// override) directly rather than a responsive gutter.
+      Future<void> pumpNarrowWithOneItem(
+        WidgetTester tester, {
+        EdgeInsets? listPadding,
+      }) async {
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final controller = await _pumpScaffold(
+          tester,
+          listPadding: listPadding,
+          listKey: listKey,
+          viewportWidth: 350,
+          useViewSize: true,
+        );
+        addTearDown(controller.close);
+
+        controller.add(const [_TestItem(label: 'Item', hasError: false)]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+      }
+
+      testWidgets(
+        'defaults the horizontal padding to spacing.step4',
+        (tester) async {
+          await pumpNarrowWithOneItem(tester);
+
+          final spacing = tester
+              .element(find.byKey(listKey))
+              .designTokens
+              .spacing;
+          final padding = listSliverPadding(tester);
+          expect(padding.left, spacing.step4);
+          expect(padding.right, spacing.step4);
+        },
+      );
+
+      testWidgets(
+        'defaults the vertical padding to spacing.step3 above, step5 below',
+        (tester) async {
+          await pumpNarrowWithOneItem(tester);
+
+          final spacing = tester
+              .element(find.byKey(listKey))
+              .designTokens
+              .spacing;
+          final padding = listSliverPadding(tester);
+          expect(padding.top, spacing.step3);
+          expect(padding.bottom, spacing.step5);
+          expect(trailingSpacer(tester).height, spacing.step5);
+        },
+      );
+
+      testWidgets(
+        'an explicit listPadding overrides the token default',
+        (tester) async {
+          const custom = EdgeInsets.only(
+            left: 30,
+            right: 30,
+            top: 4,
+            bottom: 6,
+          );
+          await pumpNarrowWithOneItem(tester, listPadding: custom);
+
+          final padding = listSliverPadding(tester);
+          expect(padding.left, custom.left);
+          expect(padding.right, custom.right);
+          expect(padding.top, custom.top);
+          expect(padding.bottom, custom.bottom);
+          expect(trailingSpacer(tester).height, custom.bottom);
+        },
+      );
+    });
 
     group('responsive padding', () {
       testWidgets(

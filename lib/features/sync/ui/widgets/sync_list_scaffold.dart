@@ -58,7 +58,7 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
     this.subtitle,
     this.emptyDescriptionBuilder,
     this.initialFilter,
-    this.listPadding = const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
+    this.listPadding,
     this.headerSliver,
     this.listKey,
     this.backButton = true,
@@ -122,8 +122,9 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
   /// Initial segment selection. Defaults to the first entry in [filters].
   final F? initialFilter;
 
-  /// Padding applied around the list.
-  final EdgeInsets listPadding;
+  /// Padding applied around the list. Defaults to `spacing.step4`
+  /// horizontally, `spacing.step3` above and `spacing.step5` below.
+  final EdgeInsets? listPadding;
 
   /// Optional key applied to the list view.
   final Key? listKey;
@@ -169,8 +170,20 @@ class _SyncListScaffoldState<T, F extends Enum>
     super.dispose();
   }
 
+  /// Resolves [SyncListScaffold.listPadding] against the token default.
+  EdgeInsets get _basePadding {
+    final spacing = context.designTokens.spacing;
+    return widget.listPadding ??
+        EdgeInsets.only(
+          left: spacing.step4,
+          right: spacing.step4,
+          top: spacing.step3,
+          bottom: spacing.step5,
+        );
+  }
+
   EdgeInsetsDirectional _effectivePaddingForWidth(double width) {
-    final base = widget.listPadding;
+    final base = _basePadding;
 
     double targetHorizontal;
     if (width >= 1800) {
@@ -257,7 +270,7 @@ class _SyncListScaffoldState<T, F extends Enum>
         final listPadding = EdgeInsets.only(
           left: effectivePadding.start,
           right: effectivePadding.end,
-          top: AppTheme.spacingSmall,
+          top: effectivePadding.top,
           bottom: effectivePadding.bottom,
         );
 
@@ -414,7 +427,7 @@ class _SyncListScaffoldState<T, F extends Enum>
                 bottom: effectivePadding.bottom,
               ),
               sliver: SliverToBoxAdapter(
-                child: SizedBox(height: widget.listPadding.bottom),
+                child: SizedBox(height: _basePadding.bottom),
               ),
             ),
           ],
