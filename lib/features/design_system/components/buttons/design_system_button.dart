@@ -228,7 +228,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
           child: ExcludeSemantics(
             child: ConstrainedBox(
               constraints: targetConstraints,
-              child: Align(
+              child: Center(
                 widthFactor: widget.fullWidth ? null : 1,
                 heightFactor: 1,
                 child: visualButton,
