@@ -771,6 +771,29 @@ void main() {
   });
 
   group('RefineModalContent', () {
+    testWidgets('scrolls instead of overflowing a short phone modal', (
+      tester,
+    ) async {
+      final draft = _emptyPlan();
+      await tester.pumpWidget(
+        _wrap(
+          Scaffold(
+            body: SizedBox(
+              width: 320,
+              height: 326,
+              child: RefineModalContent(draft: draft),
+            ),
+          ),
+          size: const Size(320, 568),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(RefineModalContent), findsOneWidget);
+      expect(find.byType(SingleChildScrollView), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('submits an initial transcript when opened with one', (
       tester,
     ) async {

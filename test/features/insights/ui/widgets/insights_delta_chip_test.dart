@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_delta_chip.dart';
@@ -52,6 +53,28 @@ void main() {
     testWidgets('shows a signed-down percent for a decline', (tester) async {
       await pump(tester, current: 88, previous: 100);
       expect(find.text('-12%'), findsOneWidget);
+    });
+
+    testWidgets('ellipsizes an extreme delta inside a narrow constraint', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 60,
+            child: InsightsDeltaChip(current: 1230000, previous: 1),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final label = tester.widget<Text>(find.text('+122999900%'));
+      expect(label.overflow, TextOverflow.ellipsis);
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.text('+122999900%'),
+      );
+      expect(paragraph.didExceedMaxLines, isTrue);
+      expect(paragraph.size.width, lessThan(60));
     });
 
     testWidgets('shows "new" when there is no previous time', (tester) async {

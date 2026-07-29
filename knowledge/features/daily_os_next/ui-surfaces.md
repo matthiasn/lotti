@@ -5,13 +5,13 @@ description: The Day page, the anchored voice template, timeline editing, the ca
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T23:33:17+02:00 }
+generated: { by: codex/5, at: 2026-07-29T19:06:26+02:00 }
 stale_after: 2026-10-26
 sources:
   - id: ui
     resource: ../../../lib/features/daily_os_next/ui
     title: Daily OS widgets and pages
-    last_modified: 2026-07-25
+    last_modified: 2026-07-29
   - id: typography
     resource: ../../../lib/features/design_system/theme/typography_helpers.dart
     title: Calm typography helpers
@@ -50,7 +50,8 @@ sticky glass action bar          ← never empty; all actions live here
 just above it inside the bounded middle zone (bottom-pinned, reverse-scrolled,
 top fade); the editable transcript takes the same zone after capture; Refine's
 idle zone shows read-only current-plan rows. On viewports shorter than the
-template's minimum the body scrolls rather than overflowing.
+template's minimum the body scrolls from a bottom anchor rather than overflowing,
+so the orb, caption and sticky actions remain reachable.
 
 `CaptureState` keeps two live audio signals while the mic is open: normalized
 `amplitudes` for the compact waveform bars and raw `dbfs` for the shader voice
@@ -156,6 +157,12 @@ The timeline toolbar's **Arrange** action expands folded regions and enables
 direct manipulation on planned non-calendar blocks: drag the body to move, or the
 top/bottom handles to resize. Preview motion is optimistic and snaps to
 fifteen-minute increments within the plan day.
+
+On phone layouts the drafted-plan footer folds its three refinement shortcuts
+into one **Adjust** menu. At large accessibility text sizes it also omits the
+explanatory reason rows, preserving the plan projection and primary actions.
+When the timeline itself receives less height than its toolbar requires, the
+toolbar yields and the scrollable timeline takes the available space.
 
 ```mermaid
 sequenceDiagram

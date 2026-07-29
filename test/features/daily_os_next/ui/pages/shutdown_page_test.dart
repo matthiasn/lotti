@@ -71,6 +71,54 @@ class _TomorrowNoteAgent extends MockDayAgent {
   }) async => note;
 }
 
+class _LongCarryoverCategoryAgent extends MockDayAgent {
+  _LongCarryoverCategoryAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  static const categoryName =
+      'A category name that is much wider than a compact phone card';
+
+  @override
+  Future<
+    ({
+      List<CompletedItem> completed,
+      List<CarryoverItem> carryover,
+      ShutdownMetrics metrics,
+    })
+  >
+  surfaceShutdownData({required DateTime forDate}) async => (
+    completed: const <CompletedItem>[],
+    carryover: const [
+      CarryoverItem(
+        taskId: 'long-category-task',
+        title: 'Carry this task forward',
+        category: DayAgentCategory(
+          id: 'cat-long',
+          name: categoryName,
+          colorHex: '3366CC',
+        ),
+        reason: 'The task needs another day.',
+        suggestedTarget: '→ tomorrow morning',
+      ),
+    ],
+    metrics: const ShutdownMetrics(
+      focusMinutes: 0,
+      flowSessions: 0,
+      contextSwitches: 0,
+      contextSwitchesWeekAvg: 0,
+      energyScore: 0,
+      energyDeltaVsWeek: 0,
+    ),
+  );
+}
+
 void main() {
   group('ShutdownPage', () {
     testWidgets('renders completed + carryover + tomorrow content', (
@@ -129,6 +177,30 @@ void main() {
         expect(bounds.left, greaterThanOrEqualTo(0));
         expect(bounds.right, lessThanOrEqualTo(size.width));
       }
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('long carryover category stays bounded on a compact phone', (
+      tester,
+    ) async {
+      const size = Size(360, 640);
+      _setView(tester, size: size);
+
+      await tester.pumpWidget(
+        _wrap(
+          ShutdownPage(forDate: DateTime(2026, 5, 25)),
+          overrides: [
+            dayAgentProvider.overrideWithValue(_LongCarryoverCategoryAgent()),
+          ],
+          size: size,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(
+        find.text(_LongCarryoverCategoryAgent.categoryName),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 

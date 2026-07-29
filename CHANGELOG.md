@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   never lowered again. Lotti now asks for iOS 15.8, the last iOS 15 release, so
   those devices are supported once more as long as they are fully up to date.
 
+### Changed
+- **Core screens now fit the smallest supported phones.** Agent wake rows, AI
+  usage figures, Daily OS planning and refinement, speech transcripts, session
+  ratings, and What's New no longer overflow or cut off their controls at the
+  original iPhone SE's 320 × 568 layout size. Short forms and planning panels
+  scroll when necessary, while compact rows wrap or shorten safely.
+
 ## [0.9.1071]
 ### Added
 - **Encryption keys are never shared with unverified devices — and sync never

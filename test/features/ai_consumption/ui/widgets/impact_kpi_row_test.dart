@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
@@ -6,6 +7,13 @@ import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_kpi_row.dart';
 
 import '../../../../widget_test_utils.dart';
+
+Rect _selectedTileRect(WidgetTester tester) {
+  final selectedTile = tester
+      .widgetList<Semantics>(find.byType(Semantics))
+      .singleWhere((semantics) => semantics.properties.selected ?? false);
+  return tester.getRect(find.byWidget(selectedTile));
+}
 
 void main() {
   const totals = ConsumptionMetrics(
@@ -169,6 +177,62 @@ void main() {
     expect(find.byIcon(Icons.arrow_upward_rounded), findsNWidgets(5));
     // The baseline label appears exactly once — on the selected cost tile.
     expect(find.text('vs May'), findsOneWidget);
+  });
+
+  testWidgets('selected delta and baseline fit an iPhone SE width', (
+    tester,
+  ) async {
+    await pumpRow(
+      tester,
+      surface: const Size(320, 568),
+      previousTotals: const ConsumptionMetrics(
+        callCount: 4,
+        totalTokens: 9000,
+        credits: 1,
+        energyKwh: 0.25,
+        carbonGCo2: 200,
+      ),
+      previousLabel: 'May',
+    );
+
+    expect(find.text('+23%'), findsOneWidget);
+    expect(find.text('vs May'), findsOneWidget);
+    final tileRect = _selectedTileRect(tester);
+    final deltaRect = tester.getRect(find.text('+23%'));
+    final baselineRect = tester.getRect(find.text('vs May'));
+    expect(deltaRect.left, greaterThanOrEqualTo(tileRect.left));
+    expect(
+      deltaRect.right,
+      lessThanOrEqualTo(baselineRect.left),
+    );
+    expect(baselineRect.right, lessThanOrEqualTo(tileRect.right));
+  });
+
+  testWidgets('extreme selected delta stays bounded at iPhone SE width', (
+    tester,
+  ) async {
+    await pumpRow(
+      tester,
+      surface: const Size(320, 568),
+      previousTotals: const ConsumptionMetrics(credits: 0.000001),
+      previousLabel: 'May',
+    );
+
+    expect(find.text('+122999900%'), findsOneWidget);
+    expect(find.text('vs May'), findsOneWidget);
+    final delta = tester.renderObject<RenderParagraph>(
+      find.text('+122999900%'),
+    );
+    expect(delta.didExceedMaxLines, isTrue);
+    final tileRect = _selectedTileRect(tester);
+    final deltaRect = tester.getRect(find.text('+122999900%'));
+    final baselineRect = tester.getRect(find.text('vs May'));
+    expect(deltaRect.left, greaterThanOrEqualTo(tileRect.left));
+    expect(
+      deltaRect.right,
+      lessThanOrEqualTo(baselineRect.left),
+    );
+    expect(baselineRect.right, lessThanOrEqualTo(tileRect.right));
   });
 
   testWidgets('omits the delta when there is no previous period', (

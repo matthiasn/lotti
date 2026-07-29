@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart';
@@ -170,6 +171,56 @@ void main() {
       final subtitleDy = tester.getTopLeft(find.text('stacked subtitle')).dy;
       expect(subtitleDy, greaterThan(titleDy));
       expect(find.text('pill'), findsOneWidget);
+    });
+
+    testWidgets('compact metadata wraps without overflowing at phone width', (
+      tester,
+    ) async {
+      await _pumpRow(
+        tester,
+        _row(
+          pills: const [
+            AgentListPill(label: 'pending'),
+            AgentListPill(label: 'scheduled'),
+          ],
+          metaRight: '12:45',
+          onTap: () {},
+        ),
+        // Agent list cards have 280 logical pixels at a 320px viewport,
+        // leaving 248px after the row's horizontal padding.
+        width: 280,
+      );
+
+      expect(find.text('pending'), findsOneWidget);
+      expect(find.text('scheduled'), findsOneWidget);
+      expect(find.text('12:45'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('compact metadata yields to a trailing action at phone width', (
+      tester,
+    ) async {
+      const metadata = 'Wednesday, 29 July 2026 at 19:45';
+      await _pumpRow(
+        tester,
+        _row(
+          pills: const [AgentListPill(label: 'scheduled')],
+          metaRight: metadata,
+          trailing: (_) => const Icon(Icons.star),
+        ),
+        width: 280,
+      );
+
+      final text = tester.widget<Text>(find.text(metadata));
+      expect(text.overflow, TextOverflow.ellipsis);
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.text(metadata),
+      );
+      expect(paragraph.didExceedMaxLines, isTrue);
+      expect(
+        tester.getRect(find.text(metadata)).right,
+        lessThanOrEqualTo(tester.getRect(find.byIcon(Icons.star)).left),
+      );
     });
 
     // Pill-rendering invariant: every label in `pills` must appear in the

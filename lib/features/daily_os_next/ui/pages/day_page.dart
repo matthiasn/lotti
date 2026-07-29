@@ -610,9 +610,12 @@ class _PlanReviewStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final reasons = _planReasons(draft);
+    final textScale = dailyOsTextScaleOf(context);
+    final reasons = textScale < kDailyOsHideCoachingScale
+        ? _planReasons(draft)
+        : const <String>[];
     final compactActions =
-        dailyOsTextScaleOf(context) >= kDailyOsHideCoachingScale;
+        !isDesktopLayout(context) || textScale >= kDailyOsHideCoachingScale;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),

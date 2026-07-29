@@ -10,6 +10,16 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
+Finder _dragHandle() => find.byWidgetPredicate(
+  (widget) =>
+      widget is Container &&
+      widget.constraints ==
+          const BoxConstraints.tightFor(width: 40, height: 4) &&
+      widget.decoration is BoxDecoration &&
+      (widget.decoration! as BoxDecoration).borderRadius ==
+          BorderRadius.circular(2),
+);
+
 void main() {
   late MockRatingRepository mockRepository;
 
@@ -37,6 +47,7 @@ void main() {
   Widget buildSubject({
     String catalogId = 'session',
     List<Override> overrides = const [],
+    MediaQueryData? mediaQueryData,
   }) {
     return makeTestableWidgetWithScaffold(
       RatingModal(targetId: testTimeEntryId, catalogId: catalogId),
@@ -44,6 +55,7 @@ void main() {
         ratingRepositoryProvider.overrideWithValue(mockRepository),
         ...overrides,
       ],
+      mediaQueryData: mediaQueryData,
     );
   }
 
@@ -137,6 +149,33 @@ void main() {
       expect(find.text('Save'), findsOneWidget);
     });
 
+    testWidgets('rating form scrolls instead of overflowing iPhone SE', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(320, 568)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(
+            body: RatingModal(targetId: testTimeEntryId),
+          ),
+          overrides: [
+            ratingRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          mediaQueryData: const MediaQueryData(size: Size(320, 568)),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(SingleChildScrollView), findsWidgets);
+      expect(find.text('Rate this session'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('Save button is disabled when not all dimensions are set', (
       tester,
     ) async {
@@ -197,17 +236,58 @@ void main() {
       await tester.pump();
 
       // The drag handle is a 40x4 rounded Container at the top of the sheet.
-      final handle = find.byWidgetPredicate(
-        (widget) =>
-            widget is Container &&
-            widget.constraints ==
-                const BoxConstraints.tightFor(width: 40, height: 4) &&
-            widget.decoration is BoxDecoration &&
-            (widget.decoration! as BoxDecoration).borderRadius ==
-                BorderRadius.circular(2),
-      );
+      final handle = _dragHandle();
       expect(handle, findsOneWidget);
       expect(tester.getSize(handle), const Size(40, 4));
+      final sheetScroll = find.descendant(
+        of: find.byType(RatingModal),
+        matching: find.byType(SingleChildScrollView),
+      );
+      expect(sheetScroll, findsOneWidget);
+      expect(
+        find.descendant(
+          of: sheetScroll,
+          matching: handle,
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('swiping the handle dismisses the scrollable bottom sheet', (
+      tester,
+    ) async {
+      const size = Size(320, 568);
+      tester.view
+        ..physicalSize = size
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                await RatingModal.show(context, testTimeEntryId);
+              },
+              child: const Text('open rating'),
+            ),
+          ),
+          overrides: [
+            ratingRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          mediaQueryData: const MediaQueryData(size: size),
+        ),
+      );
+
+      await tester.tap(find.text('open rating'));
+      await tester.pumpAndSettle();
+      expect(find.byType(RatingModal), findsOneWidget);
+
+      await tester.fling(_dragHandle(), const Offset(0, 300), 1000);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RatingModal), findsNothing);
+      expect(find.text('open rating'), findsOneWidget);
     });
 
     testWidgets('submit calls repository when all dimensions set', (
@@ -397,9 +477,7 @@ void main() {
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => const Scaffold(
-                      body: SingleChildScrollView(
-                        child: RatingModal(targetId: testTimeEntryId),
-                      ),
+                      body: RatingModal(targetId: testTimeEntryId),
                     ),
                   ),
                 ),

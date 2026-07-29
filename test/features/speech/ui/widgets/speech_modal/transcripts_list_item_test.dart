@@ -131,6 +131,22 @@ void main() {
       );
     });
 
+    testWidgets('date and processing time wrap at iPhone SE width', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(320, 568)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(makeTestableWidget(testTranscript));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.textContaining('⏳'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('has correct horizontal padding', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
       await tester.pump();
@@ -177,8 +193,10 @@ void main() {
       // Check that the Column has CrossAxisAlignment.start
       expect(column.crossAxisAlignment, CrossAxisAlignment.start);
 
-      // Check that the Column has 2 Row children (timestamp + processing time, lang + model)
-      expect(column.children.whereType<Row>().length, 2);
+      // Timestamp + processing time use a Wrap so they can flow on narrow
+      // phones; language + model remain on one Row.
+      expect(column.children.whereType<Wrap>(), hasLength(1));
+      expect(column.children.whereType<Row>(), hasLength(1));
     });
 
     testWidgets('displays processing time when available', (tester) async {
@@ -415,8 +433,8 @@ void main() {
       final column = expansionTile.title as Column;
       final rows = column.children.whereType<Row>().toList();
 
-      // Second row should contain both language and model info
-      expect(rows[1].children.length, greaterThan(1));
+      // The remaining Row contains both language and model info.
+      expect(rows.single.children.length, greaterThan(1));
 
       // Find Text widgets in the second row
       final textWidgets = <Text>[];
@@ -430,7 +448,7 @@ void main() {
         }
       }
 
-      findTextWidgets(rows[1]);
+      findTextWidgets(rows.single);
 
       // Should have at least 2 text widgets (lang and model)
       expect(textWidgets.length, greaterThanOrEqualTo(2));

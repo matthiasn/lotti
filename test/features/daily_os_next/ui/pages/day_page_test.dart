@@ -1278,6 +1278,48 @@ void main() {
       },
     );
 
+    testWidgets('drafted review footer fits an iPhone SE viewport', (
+      tester,
+    ) async {
+      const size = Size(320, 568);
+      _setSurfaceSize(tester, size);
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(draft: _draftedWithReasons()),
+          size: size,
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      expect(find.text(messages.dailyOsNextReviewLooksGood), findsOneWidget);
+      expect(find.text(messages.dailyOsNextReviewAdjust), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('large text hides review reasons on an iPhone SE viewport', (
+      tester,
+    ) async {
+      const size = Size(320, 568);
+      final mediaQueryData = phoneMediaQueryData.copyWith(
+        size: size,
+        textScaler: const TextScaler.linear(2),
+      );
+      _setSurfaceSize(tester, size);
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(draft: _draftedWithReasons()),
+          mediaQueryData: mediaQueryData,
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      expect(find.text(messages.dailyOsNextReviewAdjust), findsOneWidget);
+      expect(find.text(messages.dailyOsNextReviewWhyTitle), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('committed footer swaps Lock In for Wrap up', (tester) async {
       _setSurface(tester);
       await tester.pumpWidget(

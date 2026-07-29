@@ -49,7 +49,7 @@ class DiffRow extends StatelessWidget {
               children: [
                 _ChangeBadge(change: change),
                 SizedBox(width: tokens.spacing.step3),
-                CategoryChip(category: change.category),
+                Flexible(child: CategoryChip(category: change.category)),
               ],
             ),
             SizedBox(height: tokens.spacing.step3),

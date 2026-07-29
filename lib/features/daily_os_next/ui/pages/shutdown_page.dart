@@ -328,7 +328,7 @@ class _CarryoverRow extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: tokens.spacing.step3),
-                CategoryChip(category: item.category),
+                Flexible(child: CategoryChip(category: item.category)),
               ],
             ),
             SizedBox(height: tokens.spacing.step2),
