@@ -62,7 +62,7 @@ here rather than duplicated.
 
 The deterministic full-workflow benchmark stays flat from 1 to 12 simulated
 months: aggregate parse / draft / refine / digest provider requests remain
-3,155 / 9,630 / 29,125 / 24,042 UTF-8 bytes, with 27 / 25 / 29 / 34
+3,587 / 10,315 / 29,167 / 24,906 UTF-8 bytes, with 27 / 25 / 29 / 34
 agent-repository reads. Refine and digest include their production continuation
 turn. Provider turns are bounded to 4,096 output tokens, except full day drafts
 at 8,192; a truncated tool call is discarded and retried rather than becoming a

@@ -67,10 +67,10 @@ user message is rendered. Status tools return only a model-safe acknowledgement,
 not the internal event id derived from this scope. It is workflow provenance,
 not model context.
 
-One mode-specific inference deadline starts when the wake's inference wrapper
-is created and is shared by every provider turn in that wake. Tool
-continuations and a forced terminal-tool retry receive only the time remaining
-in the original budget; streamed reasoning never resets it.
+One mode-specific inference deadline starts when the first provider stream is
+subscribed, after local prompt/tool setup, and is shared by every provider turn
+in that wake. Tool continuations and a forced terminal-tool retry receive only
+the time remaining in the original budget; streamed reasoning never resets it.
 
 Every provider turn also receives a mode-specific output ceiling:
 
