@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_delta_chip.dart';
@@ -69,7 +70,11 @@ void main() {
 
       final label = tester.widget<Text>(find.text('+122999900%'));
       expect(label.overflow, TextOverflow.ellipsis);
-      expect(tester.takeException(), isNull);
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.text('+122999900%'),
+      );
+      expect(paragraph.didExceedMaxLines, isTrue);
+      expect(paragraph.size.width, lessThan(60));
     });
 
     testWidgets('shows "new" when there is no previous time', (tester) async {

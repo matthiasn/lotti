@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart';
@@ -212,8 +213,14 @@ void main() {
 
       final text = tester.widget<Text>(find.text(metadata));
       expect(text.overflow, TextOverflow.ellipsis);
-      expect(find.byIcon(Icons.star), findsOneWidget);
-      expect(tester.takeException(), isNull);
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.text(metadata),
+      );
+      expect(paragraph.didExceedMaxLines, isTrue);
+      expect(
+        tester.getRect(find.text(metadata)).right,
+        lessThanOrEqualTo(tester.getRect(find.byIcon(Icons.star)).left),
+      );
     });
 
     // Pill-rendering invariant: every label in `pills` must appear in the
