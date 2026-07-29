@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/day_plan.dart' show dayAgentIdForDate;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/database/agent_repository_exception.dart';
@@ -795,19 +796,21 @@ void main() {
         'returns id + ordering timestamps for this agent, excluding deleted, '
         'other agents, and non-capture entities',
         () async {
+          final cap2CapturedAt = DateTime.utc(2026, 6, 5, 9);
+          final queriedDayId = dayAgentIdForDate(cap2CapturedAt);
           await repo.upsertEntity(
             capture(
               'cap-1',
               createdAt: DateTime.utc(2026, 6, 4, 8, 1),
               capturedAt: DateTime.utc(2026, 6, 4, 8),
-              dayId: 'dayplan-2026-06-05',
+              dayId: queriedDayId,
             ),
           );
           await repo.upsertEntity(
             capture(
               'cap-2',
               createdAt: DateTime.utc(2026, 6, 5, 9, 1),
-              capturedAt: DateTime.utc(2026, 6, 5, 9),
+              capturedAt: cap2CapturedAt,
             ),
           );
           await repo.upsertEntity(
@@ -844,17 +847,17 @@ void main() {
 
           final metas = await repo.getCaptureEventMetaForDay(
             agentId: testAgentId,
-            dayId: 'dayplan-2026-06-05',
+            dayId: queriedDayId,
           );
 
           expect(metas.map((m) => m.id), unorderedEquals(['cap-1', 'cap-2']));
           final byId = {for (final m in metas) m.id: m};
           expect(byId['cap-1']!.createdAt, DateTime.utc(2026, 6, 4, 8, 1));
           expect(byId['cap-1']!.capturedAt, DateTime.utc(2026, 6, 4, 8));
-          expect(byId['cap-1']!.dayId, 'dayplan-2026-06-05');
+          expect(byId['cap-1']!.dayId, queriedDayId);
           expect(byId['cap-2']!.createdAt, DateTime.utc(2026, 6, 5, 9, 1));
-          expect(byId['cap-2']!.capturedAt, DateTime.utc(2026, 6, 5, 9));
-          expect(byId['cap-2']!.dayId, 'dayplan-2026-06-05');
+          expect(byId['cap-2']!.capturedAt, cap2CapturedAt);
+          expect(byId['cap-2']!.dayId, queriedDayId);
         },
       );
 

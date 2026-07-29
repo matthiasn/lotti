@@ -92,6 +92,8 @@ class AgentDatabase extends _$AgentDatabase {
   /// timezone changed could disagree with the indexed value and hide a
   /// near-midnight capture. The existing day-shaped subtype is therefore the
   /// migration authority; rows without one derive the day once as a fallback.
+  /// Malformed legacy timestamps are left unchanged so one synced row cannot
+  /// prevent the database from opening.
   @visibleForTesting
   Future<void> persistLegacyCaptureDayIds() async {
     final rows = await customSelect(
@@ -115,9 +117,10 @@ class AgentDatabase extends _$AgentDatabase {
       if (indexedDayId != null && dayIdPattern.hasMatch(indexedDayId)) {
         stableDayId = indexedDayId;
       } else {
-        final capturedAt = DateTime.tryParse(
-          json['capturedAt'] as String? ?? '',
-        );
+        final capturedAtValue = json['capturedAt'];
+        final capturedAt = capturedAtValue is String
+            ? DateTime.tryParse(capturedAtValue)
+            : null;
         if (capturedAt != null) {
           stableDayId = dayAgentIdForDate(capturedAt);
         }

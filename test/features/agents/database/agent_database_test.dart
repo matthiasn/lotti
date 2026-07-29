@@ -1781,6 +1781,16 @@ void main() {
           'dayId': '',
           'runtimeType': 'capture',
         });
+        final malformedTimestampSerialized = jsonEncode({
+          'id': 'capture-legacy-malformed-timestamp',
+          'agentId': 'daily_os_planner',
+          'transcript': 'Legacy note with malformed timestamp metadata',
+          'capturedAt': {'unexpected': 'shape'},
+          'createdAt': '2026-03-31T12:00:00.000',
+          'vectorClock': null,
+          'dayId': '',
+          'runtimeType': 'capture',
+        });
 
         rawDb
           ..execute('''
@@ -1829,6 +1839,22 @@ void main() {
               fallbackSerialized,
             ],
           )
+          ..execute(
+            '''
+              INSERT INTO agent_entities (
+                id, agent_id, type, subtype, created_at, updated_at, serialized
+              ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''',
+            [
+              'capture-legacy-malformed-timestamp',
+              'daily_os_planner',
+              AgentEntityTypes.capture,
+              'capture-legacy-malformed-timestamp',
+              '2026-03-31T12:00:00.000',
+              '2026-03-31T12:00:00.000',
+              malformedTimestampSerialized,
+            ],
+          )
           ..execute('PRAGMA user_version = 17')
           ..dispose();
 
@@ -1864,6 +1890,28 @@ void main() {
                 as Map<String, dynamic>;
         expect(fallbackRow.read<String>('subtype'), 'dayplan-2026-03-30');
         expect(fallbackJson['dayId'], 'dayplan-2026-03-30');
+
+        final malformedTimestampRow = await db
+            .customSelect(
+              'SELECT subtype, serialized FROM agent_entities '
+              'WHERE id = ?1',
+              variables: [
+                Variable.withString('capture-legacy-malformed-timestamp'),
+              ],
+            )
+            .getSingle();
+        final malformedTimestampJson =
+            jsonDecode(malformedTimestampRow.read<String>('serialized'))
+                as Map<String, dynamic>;
+        expect(
+          malformedTimestampRow.read<String>('subtype'),
+          'capture-legacy-malformed-timestamp',
+        );
+        expect(malformedTimestampJson['dayId'], isEmpty);
+        expect(
+          malformedTimestampJson['capturedAt'],
+          {'unexpected': 'shape'},
+        );
       },
     );
   });
