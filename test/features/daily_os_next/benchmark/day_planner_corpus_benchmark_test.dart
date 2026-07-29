@@ -125,6 +125,13 @@ void main() {
     );
     expect(
       DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
+        'SCAN agent_entities USING INDEX '
+        'idx_agent_entities_active_agent_type_sub_created_id',
+      ),
+      isTrue,
+    );
+    expect(
+      DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
         'SCAN day_processing_jobs USING INDEX '
         'idx_day_processing_jobs_retention',
       ),

@@ -348,10 +348,13 @@ class DayPlannerCorpus {
   static bool debugIsUnboundedHistoryPlanDetail(String detail) {
     final normalized = detail.toUpperCase();
     if (normalized.contains('AGENT_ENTITIES')) {
-      return !normalized.contains('IDX_AGENT_ENTITIES_AGENT_TYPE_SUB') &&
-          !normalized.contains(
-            'IDX_AGENT_ENTITIES_ACTIVE_AGENT_TYPE_SUB_CREATED_ID',
-          );
+      final boundedSubtypeLookup =
+          normalized.startsWith('SEARCH ') &&
+          (normalized.contains('IDX_AGENT_ENTITIES_AGENT_TYPE_SUB') ||
+              normalized.contains(
+                'IDX_AGENT_ENTITIES_ACTIVE_AGENT_TYPE_SUB_CREATED_ID',
+              ));
+      return !boundedSubtypeLookup;
     }
     if (normalized.contains('DAY_PROCESSING_JOBS')) {
       final primaryKeyLookup =

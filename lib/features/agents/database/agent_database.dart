@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -33,7 +34,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   /// Re-derives `subtype` for the entity types that became day-scoped.
   ///
@@ -81,6 +82,57 @@ class AgentDatabase extends _$AgentDatabase {
           ],
         );
       }
+    }
+  }
+
+  /// Persists the already-indexed day on captures written by legacy peers.
+  ///
+  /// Schema v17 derived a missing capture day into `subtype`, but left the
+  /// serialized `dayId` empty. Re-deriving that fallback after the device's
+  /// timezone changed could disagree with the indexed value and hide a
+  /// near-midnight capture. The existing day-shaped subtype is therefore the
+  /// migration authority; rows without one derive the day once as a fallback.
+  @visibleForTesting
+  Future<void> persistLegacyCaptureDayIds() async {
+    final rows = await customSelect(
+      'SELECT id, subtype, serialized FROM agent_entities WHERE type = ?1',
+      variables: [Variable.withString(AgentEntityTypes.capture)],
+    ).get();
+    final dayIdPattern = RegExp(r'^dayplan-\d{4}-\d{2}-\d{2}$');
+    for (final row in rows) {
+      final Map<String, dynamic> json;
+      try {
+        json =
+            jsonDecode(row.read<String>('serialized')) as Map<String, dynamic>;
+      } catch (_) {
+        continue;
+      }
+      final currentDayId = json['dayId'];
+      if (currentDayId is String && currentDayId.isNotEmpty) continue;
+
+      final indexedDayId = row.readNullable<String>('subtype');
+      String? stableDayId;
+      if (indexedDayId != null && dayIdPattern.hasMatch(indexedDayId)) {
+        stableDayId = indexedDayId;
+      } else {
+        final capturedAt = DateTime.tryParse(
+          json['capturedAt'] as String? ?? '',
+        );
+        if (capturedAt != null) {
+          stableDayId = dayAgentIdForDate(capturedAt);
+        }
+      }
+      if (stableDayId == null) continue;
+      json['dayId'] = stableDayId;
+      await customUpdate(
+        'UPDATE agent_entities '
+        'SET subtype = ?1, serialized = ?2 WHERE id = ?3',
+        variables: [
+          Variable.withString(stableDayId),
+          Variable.withString(jsonEncode(json)),
+          Variable.withString(row.read<String>('id')),
+        ],
+      );
     }
   }
 
@@ -435,6 +487,9 @@ class AgentDatabase extends _$AgentDatabase {
         if (from < 17) {
           await backfillDayScopedSubtypes();
           await customStatement('ANALYZE');
+        }
+        if (from < 18) {
+          await persistLegacyCaptureDayIds();
         }
       },
     );

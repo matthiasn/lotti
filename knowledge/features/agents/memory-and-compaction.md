@@ -147,12 +147,13 @@ transcript resolves on demand for only the post-cutoff tail the wake renders.
 
 This exists because the single long-lived planner accumulates captures across
 every day it plans; loading every transcript each wake would be O(all captures
-ever. The workflow loads only the active workspace through
+ever captured). The workflow loads only the active workspace through
 `getCaptureEventMetaForDay`: the capture day is stored in the indexed `subtype`
-column, and the query projects id plus the two ordering timestamps without the
-transcript. The compactor then pulls full text only for the handful of
-uncovered-tail captures. Folded captures live in the summary prose and are
-never reloaded.
+column and persisted into legacy captures as a stable `dayId`, so timezone
+changes cannot make runtime day resolution disagree with the index. The query
+projects id plus the two ordering timestamps without the transcript. The
+compactor then pulls full text only for the handful of uncovered-tail captures.
+Folded captures live in the summary prose and are never reloaded.
 
 # Compaction folds a prefix, not a snapshot
 

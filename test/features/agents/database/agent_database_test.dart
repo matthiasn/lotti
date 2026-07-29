@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart' show SqliteException, sqlite3;
 
@@ -1752,6 +1753,78 @@ void main() {
         );
 
         await db.close();
+      },
+    );
+
+    test(
+      'v17 to latest persists the existing capture subtype as its stable day',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
+        final serialized = jsonEncode({
+          'id': 'capture-legacy',
+          'agentId': 'daily_os_planner',
+          'transcript': 'Near-midnight note from an older peer',
+          'capturedAt': '2026-03-29T00:30:00.000Z',
+          'createdAt': '2026-03-29T00:30:00.000Z',
+          'vectorClock': null,
+          'dayId': '',
+          'runtimeType': 'capture',
+        });
+
+        rawDb
+          ..execute('''
+            CREATE TABLE agent_entities (
+              id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subtype TEXT,
+              thread_id TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute(
+            '''
+              INSERT INTO agent_entities (
+                id, agent_id, type, subtype, created_at, updated_at, serialized
+              ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''',
+            [
+              'capture-legacy',
+              'daily_os_planner',
+              AgentEntityTypes.capture,
+              'dayplan-2026-03-28',
+              '2026-03-29T00:30:00.000Z',
+              '2026-03-29T00:30:00.000Z',
+              serialized,
+            ],
+          )
+          ..execute('PRAGMA user_version = 17')
+          ..dispose();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final row = await db
+            .customSelect(
+              'SELECT subtype, serialized FROM agent_entities '
+              'WHERE id = ?1',
+              variables: [Variable.withString('capture-legacy')],
+            )
+            .getSingle();
+        final migratedJson =
+            jsonDecode(row.read<String>('serialized')) as Map<String, dynamic>;
+
+        expect(row.read<String>('subtype'), 'dayplan-2026-03-28');
+        expect(migratedJson['dayId'], 'dayplan-2026-03-28');
       },
     );
   });

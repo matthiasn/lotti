@@ -187,8 +187,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// [dayId] is the planning day workspace this capture belongs to
   /// (`dayplan-YYYY-MM-DD`, ADR 0022). It is **defaulted, never required**: a
   /// capture synced from an older peer carries no `dayId`, and a required,
-  /// non-defaulted field would throw on `fromJson`. Read it through
-  /// `captureDayId`, which falls back to the capture date for legacy rows.
+  /// non-defaulted field would throw on `fromJson`. The repository materializes
+  /// a stable day when storing such a row and preserves it across later legacy
+  /// rewrites; `captureDayId` retains the captured-date fallback for raw,
+  /// not-yet-persisted legacy entities.
   ///
   /// [parseCompletedAt] records a successful `parse_capture_to_items` call,
   /// including the explicit-empty result. Once non-null it is preserved

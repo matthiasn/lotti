@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_attention_projection.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
@@ -42,19 +43,28 @@ class AgentRepoCore {
   /// Insert or update an [AgentDomainEntity] using the `id` as the conflict
   /// target (ON CONFLICT DO UPDATE — updates supplied columns in place).
   ///
-  /// Capture parse completion is monotonic across whole-row writes. Older
-  /// peers do not serialize `parseCompletedAt`, so an otherwise newer legacy
-  /// rewrite must not erase a locally observed successful parse.
+  /// Capture parse completion and its materialized day scope are monotonic
+  /// across whole-row writes. Older peers serialize neither field, so an
+  /// otherwise newer legacy rewrite must not erase a locally observed
+  /// successful parse or move a near-midnight capture after a timezone change.
   Future<void> upsertEntity(AgentDomainEntity entity) async {
     if (entity is CaptureEntity) {
       await _db.transaction(() async {
         final existing = await getEntity(entity.id);
-        final entityToWrite =
-            existing is CaptureEntity &&
-                existing.parseCompletedAt != null &&
-                entity.parseCompletedAt == null
-            ? entity.copyWith(parseCompletedAt: existing.parseCompletedAt)
-            : entity;
+        final stableDayId = entity.dayId.isNotEmpty
+            ? entity.dayId
+            : existing is CaptureEntity && existing.dayId.isNotEmpty
+            ? existing.dayId
+            : dayAgentIdForDate(entity.capturedAt);
+        final entityToWrite = entity.copyWith(
+          dayId: stableDayId,
+          parseCompletedAt:
+              existing is CaptureEntity &&
+                  existing.parseCompletedAt != null &&
+                  entity.parseCompletedAt == null
+              ? existing.parseCompletedAt
+              : entity.parseCompletedAt,
+        );
         await _upsertEntity(entityToWrite);
       });
       return;

@@ -281,7 +281,9 @@ class AgentDbConversions {
       // The day workspace, not the capture's own id (which the primary key
       // already carries): this is what makes a day-scoped read of a busy
       // agent's captures an indexed lookup instead of a full scan. Derived
-      // for captures synced from peers old enough to carry no dayId.
+      // for captures synced from peers old enough to carry no dayId. The
+      // repository materializes that fallback before storage; this remains a
+      // defensive rule for raw conversion and schema migration paths.
       capture: (capture) => capture.dayId.isNotEmpty
           ? capture.dayId
           : dayAgentIdForDate(capture.capturedAt),

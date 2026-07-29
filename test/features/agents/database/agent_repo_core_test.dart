@@ -101,6 +101,42 @@ void main() {
       },
     );
 
+    test('capture day survives a legacy whole-row rewrite', () async {
+      final capture =
+          AgentDomainEntity.capture(
+                id: 'capture-stable-day',
+                agentId: 'agent-1',
+                transcript: 'Original transcript',
+                capturedAt: DateTime(2026, 3, 15, 0, 30),
+                createdAt: testDate,
+                vectorClock: const VectorClock({'modern': 1}),
+                dayId: 'dayplan-2026-03-14',
+              )
+              as CaptureEntity;
+      await core.upsertEntity(capture);
+
+      await core.upsertEntity(
+        capture.copyWith(
+          transcript: 'Rewritten by a legacy peer after a timezone change',
+          vectorClock: const VectorClock({'legacy': 2}),
+          dayId: '',
+        ),
+      );
+
+      final persisted = await core.getEntity(capture.id) as CaptureEntity?;
+      expect(persisted!.dayId, 'dayplan-2026-03-14');
+      final subtype = await db
+          .customSelect(
+            'SELECT subtype FROM agent_entities WHERE id = ?1',
+            variables: [Variable.withString(capture.id)],
+          )
+          .getSingle();
+      expect(
+        subtype.readNullable<String>('subtype'),
+        'dayplan-2026-03-14',
+      );
+    });
+
     test(
       'upsertEntity of an attention request populates the claim projection',
       () async {
@@ -292,7 +328,7 @@ void main() {
       );
       expect(metas, hasLength(1));
       expect(metas.single.id, 'cap-1');
-      expect(metas.single.dayId, isEmpty);
+      expect(metas.single.dayId, 'dayplan-2026-03-15');
       expect(metas.single.capturedAt, DateTime(2026, 3, 15, 10));
     });
   });
