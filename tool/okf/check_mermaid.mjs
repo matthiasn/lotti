@@ -190,10 +190,18 @@ for (const file of targets) {
     isMermaid = false;
     depth = 0;
   });
-  if (opener !== null && isMermaid) {
-    // The Dart validator reports any unclosed fence; repeated here so this
-    // script is honest about a block it could not extract rather than skipping.
-    console.error(`unclosed mermaid fence: ${file}:${openedAt + 1}`);
+  if (opener !== null) {
+    // **Every** unclosed fence is reported, not only a mermaid one. An
+    // unclosed ordinary fence swallows the rest of the file as literal code,
+    // so any diagram below it is never extracted — and reporting only mermaid
+    // openers meant that silently exited 0. That was survivable while the Dart
+    // validator (which flags any unclosed fence) covered the same tree, but it
+    // only runs over knowledge/, so docs/ had no such backstop.
+    const kind = isMermaid ? 'mermaid' : 'code';
+    console.error(
+      `unclosed ${kind} fence: ${file}:${openedAt + 1}` +
+        (isMermaid ? '' : ' — hides any diagram below it'),
+    );
     unclosed++;
   }
 }

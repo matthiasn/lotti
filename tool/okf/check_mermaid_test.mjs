@@ -139,9 +139,13 @@ test('an unclosed mermaid fence is reported', () => {
   assert.match(r.output, /unclosed mermaid fence/);
 });
 
-test('an unclosed non-mermaid fence is left to the Dart validator', () => {
+test('an unclosed ordinary fence is reported too', () => {
+  // This used to be delegated to the Dart validator, which flags any unclosed
+  // fence — but that validator only runs over knowledge/, so once docs/ was
+  // gated here the delegation had no backstop.
   const r = run('```dart\nvar x = 1;\n');
-  assert.ok(r.ok, r.output);
+  assert.ok(!r.ok, r.output);
+  assert.match(r.output, /unclosed code fence/);
 });
 
 test('a semicolon that splits a statement fails even though it parses', () => {
@@ -198,6 +202,18 @@ test('a root may be a single file', () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('an unclosed ordinary fence is reported, not silently swallowed', () => {
+  // It hides every diagram below it: the extractor reads the rest of the file
+  // as literal code. Reporting only unclosed *mermaid* openers meant a broken
+  // diagram underneath one exited 0 — and outside knowledge/ nothing else
+  // flags unclosed fences.
+  const r = run('```dart\nvar x = 1;\n\n```mermaid\nflowchart TD\n  A --> B\n');
+  assert.ok(!r.ok, r.output);
+  assert.match(r.output, /unclosed code fence/);
+  // The diagram below it was never extracted — that is the harm.
+  assert.match(r.output, /parsed 0 block\(s\)/);
 });
 
 test('a root that is neither a directory nor markdown is rejected', () => {
