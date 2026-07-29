@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart' show SqliteException, sqlite3;
 
@@ -1752,6 +1753,165 @@ void main() {
         );
 
         await db.close();
+      },
+    );
+
+    test(
+      'v17 to latest persists the existing capture subtype as its stable day',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
+        final serialized = jsonEncode({
+          'id': 'capture-legacy',
+          'agentId': 'daily_os_planner',
+          'transcript': 'Near-midnight note from an older peer',
+          'capturedAt': '2026-03-29T00:30:00.000Z',
+          'createdAt': '2026-03-29T00:30:00.000Z',
+          'vectorClock': null,
+          'dayId': '',
+          'runtimeType': 'capture',
+        });
+        final fallbackSerialized = jsonEncode({
+          'id': 'capture-legacy-fallback',
+          'agentId': 'daily_os_planner',
+          'transcript': 'Legacy note with a stale pre-v17 subtype',
+          'capturedAt': '2026-03-30T12:00:00.000',
+          'createdAt': '2026-03-30T12:00:00.000',
+          'vectorClock': null,
+          'dayId': '',
+          'runtimeType': 'capture',
+        });
+        final malformedTimestampSerialized = jsonEncode({
+          'id': 'capture-legacy-malformed-timestamp',
+          'agentId': 'daily_os_planner',
+          'transcript': 'Legacy note with malformed timestamp metadata',
+          'capturedAt': {'unexpected': 'shape'},
+          'createdAt': '2026-03-31T12:00:00.000',
+          'vectorClock': null,
+          'dayId': '',
+          'runtimeType': 'capture',
+        });
+
+        rawDb
+          ..execute('''
+            CREATE TABLE agent_entities (
+              id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subtype TEXT,
+              thread_id TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute(
+            '''
+              INSERT INTO agent_entities (
+                id, agent_id, type, subtype, created_at, updated_at, serialized
+              ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''',
+            [
+              'capture-legacy',
+              'daily_os_planner',
+              AgentEntityTypes.capture,
+              'dayplan-2026-03-28',
+              '2026-03-29T00:30:00.000Z',
+              '2026-03-29T00:30:00.000Z',
+              serialized,
+            ],
+          )
+          ..execute(
+            '''
+              INSERT INTO agent_entities (
+                id, agent_id, type, subtype, created_at, updated_at, serialized
+              ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''',
+            [
+              'capture-legacy-fallback',
+              'daily_os_planner',
+              AgentEntityTypes.capture,
+              'capture-legacy-fallback',
+              '2026-03-30T12:00:00.000',
+              '2026-03-30T12:00:00.000',
+              fallbackSerialized,
+            ],
+          )
+          ..execute(
+            '''
+              INSERT INTO agent_entities (
+                id, agent_id, type, subtype, created_at, updated_at, serialized
+              ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''',
+            [
+              'capture-legacy-malformed-timestamp',
+              'daily_os_planner',
+              AgentEntityTypes.capture,
+              'capture-legacy-malformed-timestamp',
+              '2026-03-31T12:00:00.000',
+              '2026-03-31T12:00:00.000',
+              malformedTimestampSerialized,
+            ],
+          )
+          ..execute('PRAGMA user_version = 17')
+          ..dispose();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final row = await db
+            .customSelect(
+              'SELECT subtype, serialized FROM agent_entities '
+              'WHERE id = ?1',
+              variables: [Variable.withString('capture-legacy')],
+            )
+            .getSingle();
+        final migratedJson =
+            jsonDecode(row.read<String>('serialized')) as Map<String, dynamic>;
+
+        expect(row.read<String>('subtype'), 'dayplan-2026-03-28');
+        expect(migratedJson['dayId'], 'dayplan-2026-03-28');
+
+        final fallbackRow = await db
+            .customSelect(
+              'SELECT subtype, serialized FROM agent_entities '
+              'WHERE id = ?1',
+              variables: [Variable.withString('capture-legacy-fallback')],
+            )
+            .getSingle();
+        final fallbackJson =
+            jsonDecode(fallbackRow.read<String>('serialized'))
+                as Map<String, dynamic>;
+        expect(fallbackRow.read<String>('subtype'), 'dayplan-2026-03-30');
+        expect(fallbackJson['dayId'], 'dayplan-2026-03-30');
+
+        final malformedTimestampRow = await db
+            .customSelect(
+              'SELECT subtype, serialized FROM agent_entities '
+              'WHERE id = ?1',
+              variables: [
+                Variable.withString('capture-legacy-malformed-timestamp'),
+              ],
+            )
+            .getSingle();
+        final malformedTimestampJson =
+            jsonDecode(malformedTimestampRow.read<String>('serialized'))
+                as Map<String, dynamic>;
+        expect(
+          malformedTimestampRow.read<String>('subtype'),
+          'capture-legacy-malformed-timestamp',
+        );
+        expect(malformedTimestampJson['dayId'], isEmpty);
+        expect(
+          malformedTimestampJson['capturedAt'],
+          {'unexpected': 'shape'},
+        );
       },
     );
   });

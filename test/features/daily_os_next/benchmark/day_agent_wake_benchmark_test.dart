@@ -1,12 +1,41 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../integration/day_agent_pipeline_harness.dart';
 import 'day_agent_wake_benchmark.dart';
 import 'day_planner_corpus.dart';
 
 final bool wakeBenchmarkEnabled =
     const String.fromEnvironment('LOTTI_BENCHMARK').isNotEmpty ||
     const bool.fromEnvironment('LOTTI_BENCHMARK');
+
+void _expectNoHistoryGrowth({
+  required String metric,
+  required int oneMonth,
+  required int twelveMonths,
+}) {
+  expect(
+    twelveMonths,
+    lessThanOrEqualTo(oneMonth),
+    reason:
+        '$metric grew with retained history: 1 month=$oneMonth, '
+        '12 months=$twelveMonths',
+  );
+}
+
+void _expectSameContext({
+  required String metric,
+  required int oneMonth,
+  required int twelveMonths,
+}) {
+  expect(
+    twelveMonths,
+    oneMonth,
+    reason:
+        '$metric changed even though both corpora expose identical bounded '
+        'context: 1 month=$oneMonth, 12 months=$twelveMonths',
+  );
+}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -26,6 +55,7 @@ void main() {
       expect(metric.outputTokens, greaterThan(0));
       expect(metric.durationMicros, greaterThan(0));
       expect(metric.agentRepositoryReads, greaterThan(0));
+      expect(metric.captureMetadataRowsReturned, greaterThan(0));
     }
     expect(report['parse']!.outputTokenCeiling, 4096);
     expect(report['draft']!.outputTokenCeiling, 8192);
@@ -51,6 +81,57 @@ void main() {
       contains(r'\"daysWithPlans\": 7'),
     );
   });
+
+  test('wake read counter covers every shared repository read path', () async {
+    final repository = PipelineAgentRepository();
+
+    await repository.getLinkById('missing-link');
+    await repository.getAgentMessages('agent');
+    await repository.getLinksFromMultiple(
+      ['agent'],
+      type: 'message_payload',
+    );
+
+    expect(repository.readCount, 3);
+  });
+
+  test(
+    'wake context and repository work stay bounded from 1 to 12 months',
+    () async {
+      final oneMonth = await DayAgentWakeBenchmark(
+        days: dayPlannerBenchmarkCorpora['1 month']!,
+      ).run();
+      final twelveMonths = await DayAgentWakeBenchmark(
+        days: dayPlannerBenchmarkCorpora['12 months']!,
+      ).run();
+
+      for (final wake in ['parse', 'draft', 'refine', 'digest']) {
+        final baseline = oneMonth[wake]!;
+        final aged = twelveMonths[wake]!;
+
+        // Zero growth is intentional: both fixtures expose the same current
+        // day and bounded seven-day context. Older seeded plans are outside
+        // every prompt window, so accepting even a small delta would normalize
+        // the unbounded-history regression this gate exists to catch.
+        _expectSameContext(
+          metric: '$wake.promptBytes',
+          oneMonth: baseline.promptBytes,
+          twelveMonths: aged.promptBytes,
+        );
+        _expectNoHistoryGrowth(
+          metric: '$wake.agentRepositoryReads',
+          oneMonth: baseline.agentRepositoryReads,
+          twelveMonths: aged.agentRepositoryReads,
+        );
+        _expectSameContext(
+          metric: '$wake.captureMetadataRowsReturned',
+          oneMonth: baseline.captureMetadataRowsReturned,
+          twelveMonths: aged.captureMetadataRowsReturned,
+        );
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
 
   test(
     'wake prompt and token cost across 1, 6 and 12 simulated months',
@@ -81,6 +162,7 @@ void main() {
           'outputTokens',
           'durationMicros',
           'agentRepositoryReads',
+          'captureMetadataRowsReturned',
           'outputTokenCeiling',
           'providerTurns',
         ]) {

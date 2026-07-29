@@ -16,8 +16,8 @@ extension DayAgentSlots on AgentSlots {
 /// Day workspace a capture belongs to (ADR 0022), derived-on-read.
 ///
 /// Returns the explicit [CaptureEntity.dayId] when present, otherwise derives
-/// it from [CaptureEntity.capturedAt] so captures synced from older peers
-/// (which carry no `dayId`) still resolve to a concrete day workspace.
+/// it from [CaptureEntity.capturedAt] so a raw capture from an older peer still
+/// resolves before the repository materializes and preserves that day.
 String captureDayId(CaptureEntity capture) => capture.dayId.isNotEmpty
     ? capture.dayId
     : dayAgentIdForDate(capture.capturedAt);

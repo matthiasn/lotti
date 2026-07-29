@@ -707,6 +707,49 @@ void main() {
       );
 
       test(
+        'propagates the stable capture day in the sync envelope',
+        () async {
+          final existing =
+              AgentDomainEntity.capture(
+                    id: 'capture-stable-day',
+                    agentId: 'agent-1',
+                    transcript: 'Original',
+                    capturedAt: testDate,
+                    createdAt: testDate,
+                    dayId: 'dayplan-2024-03-14',
+                    vectorClock: const VectorClock({'local': 1}),
+                  )
+                  as CaptureEntity;
+          final legacyRewrite = existing.copyWith(
+            transcript: 'Legacy rewrite',
+            dayId: '',
+            vectorClock: const VectorClock({'legacy': 2}),
+          );
+          when(
+            () => mockRepository.getEntity(existing.id),
+          ).thenAnswer((_) async => existing);
+
+          await syncService.upsertEntity(legacyRewrite);
+
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as CaptureEntity;
+          final message =
+              verify(
+                    () => mockOutboxService.enqueueMessage(captureAny()),
+                  ).captured.single
+                  as SyncAgentEntity;
+          final syncedCapture = message.agentEntity! as CaptureEntity;
+
+          expect(persisted.dayId, existing.dayId);
+          expect(syncedCapture.dayId, existing.dayId);
+          expect(syncedCapture.vectorClock, persisted.vectorClock);
+        },
+      );
+
+      test(
         'serializes an interleaved capture completion after a legacy rewrite',
         () async {
           final completedAt = DateTime(2026, 3, 15, 10);

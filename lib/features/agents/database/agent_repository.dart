@@ -1,3 +1,4 @@
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_attention_projection.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_proposal_ledger.dart';
@@ -74,6 +75,27 @@ class AgentRepository {
   late final AgentRepoQueries _queries;
   late final AgentRepoEvolution _evolution;
 
+  /// Returns the monotonic capture representation shared by persistence and
+  /// sync-envelope creation.
+  ///
+  /// Older peers may omit both `dayId` and `parseCompletedAt`. Preserve the
+  /// locally materialized values when present; otherwise derive the capture
+  /// day exactly once from its timestamp.
+  static CaptureEntity normalizeCaptureForWrite(
+    CaptureEntity entity, {
+    CaptureEntity? existing,
+  }) {
+    final stableDayId = entity.dayId.isNotEmpty
+        ? entity.dayId
+        : existing != null && existing.dayId.isNotEmpty
+        ? existing.dayId
+        : dayAgentIdForDate(entity.capturedAt);
+    return entity.copyWith(
+      dayId: stableDayId,
+      parseCompletedAt: entity.parseCompletedAt ?? existing?.parseCompletedAt,
+    );
+  }
+
   /// Test-only seam for `sqliteInClauseChunks` — the pure dedup-and-chunk
   /// iterator that guards every batched `IN (...)` query against SQLite's
   /// `SQLITE_MAX_VARIABLE_NUMBER` cap. The chunk size is exposed alongside so
@@ -146,8 +168,10 @@ class AgentRepository {
       })
     >
   >
-  getCaptureEventMetaByAgentId(String agentId) =>
-      _core.getCaptureEventMetaByAgentId(agentId);
+  getCaptureEventMetaForDay({
+    required String agentId,
+    required String dayId,
+  }) => _core.getCaptureEventMetaForDay(agentId: agentId, dayId: dayId);
 
   Future<AgentStateEntity?> getAgentState(String agentId) =>
       _core.getAgentState(agentId);

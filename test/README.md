@@ -7,6 +7,28 @@
 - **Never pass `--coverage` to an ad-hoc `flutter test <file>` run.** It rewrites the shared `coverage/lcov.info` with only that file's data, clobbering a full-suite report someone else may be relying on. Generate coverage only through the `make` targets (`make test` / `make coverage` / `make coverage_standard`), which manage `coverage/` as a unit.
 - Prefer `tester.pump(duration)` over `tester.pumpAndSettle()` (10s default timeout → hangs if an animation never settles). Never pass `pumpAndSettle` a duration > 1s.
 
+## Aged-history cost gates
+
+Daily OS cost regressions live under
+`test/features/daily_os_next/benchmark/`. Run the always-on gates directly:
+
+```sh
+fvm flutter test \
+  test/features/daily_os_next/benchmark/day_planner_corpus_benchmark_test.dart \
+  test/features/daily_os_next/benchmark/day_agent_wake_benchmark_test.dart
+```
+
+Run the opt-in diagnostic reports with:
+
+```sh
+fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \
+  test/features/daily_os_next/benchmark/
+```
+
+The authoritative metric contract, thresholds, corpus design, and diagnostic
+interpretation are documented in
+[Daily OS evaluation](../knowledge/features/daily_os_next/evaluation.md).
+
 ## Platform-channel calls in widgets (e.g. HapticFeedback)
 
 A widget action that `await`s a `SystemChannels.platform` call — `HapticFeedback.lightImpact()`, clipboard, etc. — never resolves under the test binding unless a mock handler is installed, so any follow-up work after the await (a DB write, a `setState`, a navigation) silently never runs and the test fails in a confusing way. Install a handler in `setUp` **and reset it in `tearDown`**, or it leaks into every later test in the same isolate under the batched (`very_good`) runner:

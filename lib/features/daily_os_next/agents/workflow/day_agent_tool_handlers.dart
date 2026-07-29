@@ -291,12 +291,10 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
 
     var captureMetas = const <CaptureEventMeta>[];
     try {
-      captureMetas =
-          (await agentRepository.getCaptureEventMetaByAgentId(
-                agentId,
-              ))
-              .where((meta) => captureEventDayId(meta) == dayId)
-              .toList(growable: false);
+      captureMetas = await agentRepository.getCaptureEventMetaForDay(
+        agentId: agentId,
+        dayId: dayId,
+      );
     } catch (e) {
       _logError('search_memory: failed to load capture metadata', error: e);
     }

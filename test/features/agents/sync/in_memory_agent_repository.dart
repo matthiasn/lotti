@@ -2,6 +2,7 @@ import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:meta/meta.dart';
 
 import '../../../mocks/mocks.dart';
 
@@ -34,6 +35,13 @@ class InMemoryAgentRepository extends MockAgentRepository {
   List<AgentMessagePayloadEntity> get payloads =>
       _entities.values.whereType<AgentMessagePayloadEntity>().toList();
 
+  /// Common observation boundary for every read implemented by this fake.
+  ///
+  /// Derived integration harnesses override this instead of shadowing an
+  /// ever-growing list of read methods and silently missing newly used paths.
+  @protected
+  void recordRead() {}
+
   void seed(Iterable<AgentDomainEntity> entities) {
     for (final entity in entities) {
       _entities[entity.id] = entity;
@@ -55,15 +63,22 @@ class InMemoryAgentRepository extends MockAgentRepository {
   }
 
   @override
-  Future<AgentLink?> getLinkById(String id) async => _links[id];
+  Future<AgentLink?> getLinkById(String id) async {
+    recordRead();
+    return _links[id];
+  }
 
   @override
-  Future<AgentDomainEntity?> getEntity(String id) async => _entities[id];
+  Future<AgentDomainEntity?> getEntity(String id) async {
+    recordRead();
+    return _entities[id];
+  }
 
   @override
   Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
     Iterable<String> ids,
   ) async {
+    recordRead();
     // Mirror the real query: soft-deleted rows are excluded.
     final result = <String, AgentDomainEntity>{};
     for (final id in ids) {
@@ -79,6 +94,7 @@ class InMemoryAgentRepository extends MockAgentRepository {
   Future<Map<String, AgentDomainEntity>> getEntitiesByIdsIncludingDeleted(
     Iterable<String> ids,
   ) async {
+    recordRead();
     final result = <String, AgentDomainEntity>{};
     for (final id in ids) {
       final entity = _entities[id];
@@ -91,6 +107,7 @@ class InMemoryAgentRepository extends MockAgentRepository {
 
   @override
   Future<AgentStateEntity?> getAgentState(String agentId) async {
+    recordRead();
     final states = _entities.values
         .whereType<AgentStateEntity>()
         .where((s) => s.agentId == agentId)
@@ -99,17 +116,20 @@ class InMemoryAgentRepository extends MockAgentRepository {
   }
 
   @override
-  Future<List<AgentMessageEntity>> getAgentMessages(String agentId) async =>
-      // Mirror the real query: soft-deleted messages are excluded.
-      messages
-          .where((m) => m.agentId == agentId && m.deletedAt == null)
-          .toList();
+  Future<List<AgentMessageEntity>> getAgentMessages(String agentId) async {
+    recordRead();
+    // Mirror the real query: soft-deleted messages are excluded.
+    return messages
+        .where((m) => m.agentId == agentId && m.deletedAt == null)
+        .toList();
+  }
 
   @override
   Future<List<DayStatusEventEntity>> getDayStatusEventsSince(
     DateTime since, {
     int? limit,
   }) async {
+    recordRead();
     // Mirror the real query: cross-agent, oldest first, strictly after the
     // watermark, soft-deleted excluded.
     final matching =
@@ -129,6 +149,7 @@ class InMemoryAgentRepository extends MockAgentRepository {
     DateTime since, {
     required int limit,
   }) async {
+    recordRead();
     final matching =
         entities
             .whereType<DayStatusEventEntity>()
@@ -152,6 +173,7 @@ class InMemoryAgentRepository extends MockAgentRepository {
     AgentMessageKind kind, {
     int? limit,
   }) async {
+    recordRead();
     // Mirror the real query: most-recent first, then apply the limit.
     final matching =
         messages
@@ -168,21 +190,24 @@ class InMemoryAgentRepository extends MockAgentRepository {
   }
 
   @override
-  Future<List<AgentLink>> getLinksFrom(String fromId, {String? type}) async =>
-      _links.values
-          .where(
-            (l) =>
-                l.fromId == fromId &&
-                l.deletedAt == null &&
-                (type == null || AgentDbConversions.linkType(l) == type),
-          )
-          .toList();
+  Future<List<AgentLink>> getLinksFrom(String fromId, {String? type}) async {
+    recordRead();
+    return _links.values
+        .where(
+          (l) =>
+              l.fromId == fromId &&
+              l.deletedAt == null &&
+              (type == null || AgentDbConversions.linkType(l) == type),
+        )
+        .toList();
+  }
 
   @override
   Future<Map<String, List<AgentLink>>> getLinksFromMultiple(
     List<String> fromIds, {
     required String type,
   }) async {
+    recordRead();
     final ids = fromIds.toSet();
     final result = <String, List<AgentLink>>{};
     for (final link in _links.values) {

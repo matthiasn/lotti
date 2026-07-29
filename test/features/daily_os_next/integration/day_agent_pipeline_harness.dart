@@ -506,79 +506,29 @@ class DelegatingAgentSyncService extends MockAgentSyncService {
 /// metadata) that the shared fixture's narrower call graph doesn't cover.
 class PipelineAgentRepository extends InMemoryAgentRepository {
   var _readCount = 0;
+  var _captureMetadataRowsReturned = 0;
 
   /// Counted agent-repository reads since the last reset.
   int get readCount => _readCount;
 
+  /// Capture metadata rows returned to the workflow since the last reset.
+  ///
+  /// This is a context-shape metric, not a storage-work metric. The aged
+  /// corpus benchmark instruments the production
+  /// `AgentRepository.getCaptureEventMetaForDay` SQL query separately, so this
+  /// in-memory fake cannot hide a broad database read followed by Dart
+  /// filtering.
+  int get captureMetadataRowsReturned => _captureMetadataRowsReturned;
+
   /// Starts a fresh read-count window for one benchmarked wake.
   void resetReadCount() {
     _readCount = 0;
+    _captureMetadataRowsReturned = 0;
   }
 
-  void _countRead() {
+  @override
+  void recordRead() {
     _readCount += 1;
-  }
-
-  @override
-  Future<AgentDomainEntity?> getEntity(String id) {
-    _countRead();
-    return super.getEntity(id);
-  }
-
-  @override
-  Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
-    Iterable<String> ids,
-  ) {
-    _countRead();
-    return super.getEntitiesByIds(ids);
-  }
-
-  @override
-  Future<Map<String, AgentDomainEntity>> getEntitiesByIdsIncludingDeleted(
-    Iterable<String> ids,
-  ) {
-    _countRead();
-    return super.getEntitiesByIdsIncludingDeleted(ids);
-  }
-
-  @override
-  Future<AgentStateEntity?> getAgentState(String agentId) {
-    _countRead();
-    return super.getAgentState(agentId);
-  }
-
-  @override
-  Future<List<AgentMessageEntity>> getMessagesByKind(
-    String agentId,
-    AgentMessageKind kind, {
-    int? limit,
-  }) {
-    _countRead();
-    return super.getMessagesByKind(agentId, kind, limit: limit);
-  }
-
-  @override
-  Future<List<DayStatusEventEntity>> getDayStatusEventsSince(
-    DateTime since, {
-    int? limit,
-  }) {
-    _countRead();
-    return super.getDayStatusEventsSince(since, limit: limit);
-  }
-
-  @override
-  Future<List<DayStatusEventEntity>> getDayStatusEventsSinceNewestFirst(
-    DateTime since, {
-    required int limit,
-  }) {
-    _countRead();
-    return super.getDayStatusEventsSinceNewestFirst(since, limit: limit);
-  }
-
-  @override
-  Future<List<AgentLink>> getLinksFrom(String fromId, {String? type}) {
-    _countRead();
-    return super.getLinksFrom(fromId, type: type);
   }
 
   @override
@@ -607,7 +557,7 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
   Future<List<AgentIdentityEntity>> getAgentIdentitiesByLifecycle(
     AgentLifecycle lifecycle,
   ) async {
-    _countRead();
+    recordRead();
     return entities
         .whereType<AgentIdentityEntity>()
         .where((e) => e.lifecycle == lifecycle)
@@ -616,7 +566,7 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
 
   @override
   Future<List<AgentIdentityEntity>> getAllAgentIdentities() async {
-    _countRead();
+    recordRead();
     return entities.whereType<AgentIdentityEntity>().toList();
   }
 
@@ -630,7 +580,7 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
     int claimLimit = 200,
     int agreementLimit = 200,
   }) async {
-    _countRead();
+    recordRead();
     return const AttentionPlanningInputs.empty();
   }
 
@@ -646,18 +596,24 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
     },
     int limit = 200,
   }) async {
-    _countRead();
+    recordRead();
     return const [];
   }
 
   @override
-  Future<List<CaptureEventMeta>> getCaptureEventMetaByAgentId(
-    String agentId,
-  ) async {
-    _countRead();
-    return entities
+  Future<List<CaptureEventMeta>> getCaptureEventMetaForDay({
+    required String agentId,
+    required String dayId,
+  }) async {
+    recordRead();
+    final result = entities
         .whereType<CaptureEntity>()
-        .where((c) => c.agentId == agentId && c.deletedAt == null)
+        .where(
+          (c) =>
+              c.agentId == agentId &&
+              c.deletedAt == null &&
+              captureEventDayId(captureEventMeta(c)) == dayId,
+        )
         .map(
           (c) => (
             id: c.id,
@@ -667,6 +623,8 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
           ),
         )
         .toList();
+    _captureMetadataRowsReturned += result.length;
+    return result;
   }
 
   @override
@@ -675,7 +633,7 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
     String? type,
     int limit = -1,
   }) async {
-    _countRead();
+    recordRead();
     return entities
         .where(
           (e) =>
@@ -694,7 +652,7 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
     required String subtype,
     int limit = -1,
   }) async {
-    _countRead();
+    recordRead();
     return _bySubtypes(agentId, type, {subtype}, limit);
   }
 
@@ -704,7 +662,7 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
     required String type,
     required Iterable<String> subtypes,
   }) async {
-    _countRead();
+    recordRead();
     return _bySubtypes(agentId, type, subtypes.toSet(), -1);
   }
 

@@ -42,19 +42,18 @@ class AgentRepoCore {
   /// Insert or update an [AgentDomainEntity] using the `id` as the conflict
   /// target (ON CONFLICT DO UPDATE — updates supplied columns in place).
   ///
-  /// Capture parse completion is monotonic across whole-row writes. Older
-  /// peers do not serialize `parseCompletedAt`, so an otherwise newer legacy
-  /// rewrite must not erase a locally observed successful parse.
+  /// Capture parse completion and its materialized day scope are monotonic
+  /// across whole-row writes. Older peers serialize neither field, so an
+  /// otherwise newer legacy rewrite must not erase a locally observed
+  /// successful parse or move a near-midnight capture after a timezone change.
   Future<void> upsertEntity(AgentDomainEntity entity) async {
     if (entity is CaptureEntity) {
       await _db.transaction(() async {
         final existing = await getEntity(entity.id);
-        final entityToWrite =
-            existing is CaptureEntity &&
-                existing.parseCompletedAt != null &&
-                entity.parseCompletedAt == null
-            ? entity.copyWith(parseCompletedAt: existing.parseCompletedAt)
-            : entity;
+        final entityToWrite = AgentRepository.normalizeCaptureForWrite(
+          entity,
+          existing: existing is CaptureEntity ? existing : null,
+        );
         await _upsertEntity(entityToWrite);
       });
       return;
@@ -287,15 +286,14 @@ class AgentRepoCore {
   }
 
   /// Lightweight ordering metadata for [agentId]'s non-deleted `capture`
-  /// entities — id, workspace day, and the two timestamps that fix an event's
-  /// log position — **without** materializing the large transcript.
+  /// entities in [dayId] — id, workspace day, and the two timestamps that fix
+  /// an event's log position — **without** materializing the large transcript.
   ///
   /// The day planner is a single long-lived agent, so its capture history grows
-  /// without bound. The compaction substrate only needs each capture's id and
-  /// position to order the log and run the checkpoint completeness check (which
-  /// keys on id, not content); transcripts are pulled in lazily for just the
-  /// post-cutoff tail (see `AgentLogCompactor.resolveInlineContent`). Reading
-  /// only these columns keeps per-wake cost flat instead of O(all captures).
+  /// without bound. The day-scoped subtype predicate keeps both the index walk
+  /// and returned metadata bounded to the active workspace; transcripts are
+  /// pulled in lazily for just the post-cutoff tail (see
+  /// `AgentLogCompactor.resolveInlineContent`).
   Future<
     List<
       ({
@@ -306,17 +304,22 @@ class AgentRepoCore {
       })
     >
   >
-  getCaptureEventMetaByAgentId(String agentId) async {
+  getCaptureEventMetaForDay({
+    required String agentId,
+    required String dayId,
+  }) async {
     final rows = await _db
         .customSelect(
           r"SELECT id, json_extract(serialized, '$.dayId') AS day_id, "
           r"json_extract(serialized, '$.createdAt') AS created_at, "
           r"json_extract(serialized, '$.capturedAt') AS captured_at "
           'FROM agent_entities '
-          'WHERE agent_id = ? AND type = ? AND deleted_at IS NULL',
+          'WHERE agent_id = ? AND type = ? AND subtype = ? '
+          'AND deleted_at IS NULL',
           variables: [
             Variable.withString(agentId),
             Variable.withString(AgentEntityTypes.capture),
+            Variable.withString(dayId),
           ],
           readsFrom: {_db.agentEntities},
         )

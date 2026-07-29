@@ -103,6 +103,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Daily OS planning now gives up on stalled or overlong AI responses
   sooner.** Cut-off answers no longer save partial plans; planning retries
   cleanly instead.
+- **Daily OS planning stays fast as retained history grows.** Current-day
+  scheduling and agent wakes now use bounded database lookups instead of
+  walking older processing jobs or captures.
 - **Repairing agent sync data has its own place, and runs when it matters.**
   The "Choose what to sync" list mixed two unrelated things: settings to send,
   and a repair for agent items saved without the marker other devices use to

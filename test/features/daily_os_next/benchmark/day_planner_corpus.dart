@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.da
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
+import 'package:meta/meta.dart';
 
 /// Shared corpus ages for storage and full-workflow benchmarks.
 const Map<String, int> dayPlannerBenchmarkCorpora = {
@@ -177,12 +179,11 @@ class DayPlannerCorpus {
     return {
       // The drain path: what every enqueue and every retry tick costs.
       'outbox.claimNext': await _time(outbox.claimNext, repetitions),
-      // The day view: captures and the persona indicator.
+      // The day view: capture ordering metadata and the persona indicator.
       'dayView.captures': await _time(
-        () => repository.getEntitiesByAgentIdAndSubtype(
-          dailyOsPlannerAgentId,
-          type: AgentEntityTypes.capture,
-          subtype: currentDayId,
+        () => repository.getCaptureEventMetaForDay(
+          agentId: dailyOsPlannerAgentId,
+          dayId: currentDayId,
         ),
         repetitions,
       ),
@@ -227,6 +228,70 @@ class DayPlannerCorpus {
     };
   }
 
+  /// Deterministic SQL work performed by every measured user action.
+  ///
+  /// Unlike elapsed time, statement and returned-row counts are independent of
+  /// CPU scheduling and cache warmth. Counting at Drift's executor boundary
+  /// also catches a repository that loads broad history and filters it in
+  /// Dart: those discarded rows still appear here.
+  Future<Map<String, int>> operationCosts() async {
+    final costs = <String, _SqlOperationCost>{
+      'outbox.claimNext': await _countSqlOperation(
+        processingDb,
+        outbox.claimNext,
+      ),
+      'dayView.captures': await _countSqlOperation(
+        agentDb,
+        () => repository.getCaptureEventMetaForDay(
+          agentId: dailyOsPlannerAgentId,
+          dayId: currentDayId,
+        ),
+      ),
+      'dayView.statusEvents': await _countSqlOperation(
+        agentDb,
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          dailyOsPlannerAgentId,
+          type: AgentEntityTypes.dayStatusEvent,
+          subtype: currentDayId,
+        ),
+      ),
+      'dayView.plannerOwnsDay': await _countSqlOperation(
+        agentDb,
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          dailyOsPlannerAgentId,
+          type: AgentEntityTypes.capture,
+          subtype: currentDayId,
+          limit: 1,
+        ),
+      ),
+      'planEditor.pendingDiffs': await _countSqlOperation(
+        agentDb,
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          dailyOsPlannerAgentId,
+          type: 'changeSet',
+          subtype: ChangeSetStatus.pending.name,
+        ),
+      ),
+      'planWriter.lookback': await _countSqlOperation(
+        agentDb,
+        () => repository.getEntitiesByAgentIdAndSubtypes(
+          dailyOsPlannerAgentId,
+          type: AgentEntityTypes.dayPlan,
+          subtypes: [
+            for (var offset = 0; offset < 7; offset++) dayPlanId(dayAt(offset)),
+          ],
+        ),
+      ),
+    };
+    return {
+      for (final entry in costs.entries) ...{
+        '${entry.key}.statements': entry.value.statements,
+        '${entry.key}.rowsReturned': entry.value.rowsReturned,
+        '${entry.key}.unboundedPlanSteps': entry.value.unboundedPlanSteps,
+      },
+    };
+  }
+
   /// Row counts, so a report states how much history produced its numbers.
   Future<Map<String, int>> counts() async {
     final agentRows = await agentDb
@@ -254,5 +319,148 @@ class DayPlannerCorpus {
     }
     samples.sort();
     return samples[samples.length ~/ 2];
+  }
+
+  static Future<_SqlOperationCost> _countSqlOperation(
+    GeneratedDatabase db,
+    Future<Object?> Function() operation,
+  ) async {
+    final interceptor = SqlOperationCounter();
+    await db.runWithInterceptor(operation, interceptor: interceptor);
+    return _SqlOperationCost(
+      statements: interceptor.statements,
+      rowsReturned: interceptor.rowsReturned,
+      unboundedPlanSteps: interceptor.unboundedPlanSteps,
+    );
+  }
+
+  /// Whether an SQLite query-plan step touches retained history without the
+  /// bounded index family for that operation.
+  ///
+  /// A broad index can still walk every row owned by an agent, so merely
+  /// checking for `USING INDEX` is insufficient. Outbox claims may use the
+  /// pending partial index plus a primary-key `SEARCH` for the outer update;
+  /// a primary-key `SCAN` is still unbounded. Day reads must use a subtype
+  /// index with equality constraints for agent, type, and subtype; SQLite may
+  /// name that index even when a non-sargable subtype predicate cannot use its
+  /// final column.
+  @visibleForTesting
+  static bool debugIsUnboundedHistoryPlanDetail(String detail) {
+    final normalized = detail.toUpperCase();
+    if (normalized.contains('AGENT_ENTITIES')) {
+      final hasBoundedSubtypeConstraints =
+          RegExp(r'\bAGENT_ID=\?').hasMatch(normalized) &&
+          RegExp(r'\bTYPE=\?').hasMatch(normalized) &&
+          RegExp(r'\bSUBTYPE=\?').hasMatch(normalized);
+      final boundedSubtypeLookup =
+          normalized.startsWith('SEARCH ') &&
+          hasBoundedSubtypeConstraints &&
+          (normalized.contains('IDX_AGENT_ENTITIES_AGENT_TYPE_SUB') ||
+              normalized.contains(
+                'IDX_AGENT_ENTITIES_ACTIVE_AGENT_TYPE_SUB_CREATED_ID',
+              ));
+      return !boundedSubtypeLookup;
+    }
+    if (normalized.contains('DAY_PROCESSING_JOBS')) {
+      final primaryKeyLookup =
+          normalized.startsWith('SEARCH ') &&
+          normalized.contains('SQLITE_AUTOINDEX_DAY_PROCESSING_JOBS_1');
+      return !normalized.contains('IDX_DAY_PROCESSING_JOBS_PENDING') &&
+          !primaryKeyLookup;
+    }
+    return false;
+  }
+}
+
+class _SqlOperationCost {
+  const _SqlOperationCost({
+    required this.statements,
+    required this.rowsReturned,
+    required this.unboundedPlanSteps,
+  });
+
+  final int statements;
+  final int rowsReturned;
+  final int unboundedPlanSteps;
+}
+
+/// Executor-boundary counter used by the deterministic storage cost gate.
+///
+/// Public only so its hook coverage can be regression-tested from the mirror
+/// benchmark test; it is not application code.
+@visibleForTesting
+class SqlOperationCounter extends QueryInterceptor {
+  int statements = 0;
+  int rowsReturned = 0;
+  int unboundedPlanSteps = 0;
+
+  @override
+  Future<void> runBatched(
+    QueryExecutor executor,
+    BatchedStatements statements,
+  ) {
+    this.statements += statements.arguments.length;
+    return executor.runBatched(statements);
+  }
+
+  @override
+  Future<void> runCustom(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    statements++;
+    return executor.runCustom(statement, args);
+  }
+
+  @override
+  Future<int> runInsert(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    statements++;
+    return executor.runInsert(statement, args);
+  }
+
+  @override
+  Future<int> runDelete(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    statements++;
+    return executor.runDelete(statement, args);
+  }
+
+  @override
+  Future<int> runUpdate(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    statements++;
+    return executor.runUpdate(statement, args);
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) async {
+    statements++;
+    final queryPlan = await executor.runSelect(
+      'EXPLAIN QUERY PLAN $statement',
+      args,
+    );
+    unboundedPlanSteps += queryPlan.where((row) {
+      final detail = row['detail'];
+      return detail is String &&
+          DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(detail);
+    }).length;
+    final rows = await executor.runSelect(statement, args);
+    rowsReturned += rows.length;
+    return rows;
   }
 }
