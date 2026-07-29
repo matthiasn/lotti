@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../integration/day_agent_pipeline_harness.dart';
 import 'day_agent_wake_benchmark.dart';
 import 'day_planner_corpus.dart';
 
@@ -19,6 +20,20 @@ void _expectNoHistoryGrowth({
     reason:
         '$metric grew with retained history: 1 month=$oneMonth, '
         '12 months=$twelveMonths',
+  );
+}
+
+void _expectSameContext({
+  required String metric,
+  required int oneMonth,
+  required int twelveMonths,
+}) {
+  expect(
+    twelveMonths,
+    oneMonth,
+    reason:
+        '$metric changed even though both corpora expose identical bounded '
+        'context: 1 month=$oneMonth, 12 months=$twelveMonths',
   );
 }
 
@@ -66,6 +81,19 @@ void main() {
     );
   });
 
+  test('wake read counter covers every shared repository read path', () async {
+    final repository = PipelineAgentRepository();
+
+    await repository.getLinkById('missing-link');
+    await repository.getAgentMessages('agent');
+    await repository.getLinksFromMultiple(
+      ['agent'],
+      type: 'message_payload',
+    );
+
+    expect(repository.readCount, 3);
+  });
+
   test(
     'wake prompts and repository reads do not grow from 1 to 12 months',
     () async {
@@ -84,7 +112,7 @@ void main() {
         // day and bounded seven-day context. Older seeded plans are outside
         // every prompt window, so accepting even a small delta would normalize
         // the unbounded-history regression this gate exists to catch.
-        _expectNoHistoryGrowth(
+        _expectSameContext(
           metric: '$wake.promptBytes',
           oneMonth: baseline.promptBytes,
           twelveMonths: aged.promptBytes,

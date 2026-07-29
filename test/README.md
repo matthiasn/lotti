@@ -14,12 +14,15 @@ Daily OS has two ordinary-CI regression tests under
 workloads over 1- and 12-month corpora and require zero growth in:
 
 - SQL statements and rows returned for outbox claiming, day-view reads, pending
-  plan diffs and the seven-day plan lookback; and
+  plan diffs and the seven-day plan lookback, plus the absence of retained-table
+  access through an unbounded SQLite index or table scan; and
 - model-facing prompt bytes and agent-repository reads for parse, draft, refine
   and digest wakes.
 
-These are deterministic operation counts, not stopwatch thresholds. A failure
-names the growing metric and prints both corpus values. The opt-in
+These are deterministic context and operation assertions, not stopwatch
+thresholds. Prompt bytes must be identical because the bounded inputs are
+identical; pure work counters may stay flat or decrease. A failure names the
+metric and prints both corpus values. The opt-in
 `LOTTI_BENCHMARK=1` sweep remains the place for elapsed-time reports; wall time
 must not become an ordinary-CI assertion because scheduler and cache noise make
 it non-deterministic.

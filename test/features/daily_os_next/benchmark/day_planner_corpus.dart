@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.da
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
+import 'package:meta/meta.dart';
 
 /// Shared corpus ages for storage and full-workflow benchmarks.
 const Map<String, int> dayPlannerBenchmarkCorpora = {
@@ -288,6 +289,7 @@ class DayPlannerCorpus {
       for (final entry in costs.entries) ...{
         '${entry.key}.statements': entry.value.statements,
         '${entry.key}.rowsReturned': entry.value.rowsReturned,
+        '${entry.key}.unboundedPlanSteps': entry.value.unboundedPlanSteps,
       },
     };
   }
@@ -330,7 +332,31 @@ class DayPlannerCorpus {
     return _SqlOperationCost(
       statements: interceptor.statements,
       rowsReturned: interceptor.rowsReturned,
+      unboundedPlanSteps: interceptor.unboundedPlanSteps,
     );
+  }
+
+  /// Whether an SQLite query-plan step touches retained history without the
+  /// bounded index family for that operation.
+  ///
+  /// A broad index can still walk every row owned by an agent, so merely
+  /// checking for `USING INDEX` is insufficient. Outbox claims may use the
+  /// pending partial index plus the table's primary-key auto-index for the
+  /// outer update; day reads must use a subtype index.
+  @visibleForTesting
+  static bool debugIsUnboundedHistoryPlanDetail(String detail) {
+    final normalized = detail.toUpperCase();
+    if (normalized.contains('AGENT_ENTITIES')) {
+      return !normalized.contains('IDX_AGENT_ENTITIES_AGENT_TYPE_SUB') &&
+          !normalized.contains(
+            'IDX_AGENT_ENTITIES_ACTIVE_AGENT_TYPE_SUB_CREATED_ID',
+          );
+    }
+    if (normalized.contains('DAY_PROCESSING_JOBS')) {
+      return !normalized.contains('IDX_DAY_PROCESSING_JOBS_PENDING') &&
+          !normalized.contains('SQLITE_AUTOINDEX_DAY_PROCESSING_JOBS_1');
+    }
+    return false;
   }
 }
 
@@ -338,15 +364,18 @@ class _SqlOperationCost {
   const _SqlOperationCost({
     required this.statements,
     required this.rowsReturned,
+    required this.unboundedPlanSteps,
   });
 
   final int statements;
   final int rowsReturned;
+  final int unboundedPlanSteps;
 }
 
 class _SqlOperationCounter extends QueryInterceptor {
   int statements = 0;
   int rowsReturned = 0;
+  int unboundedPlanSteps = 0;
 
   @override
   Future<List<Map<String, Object?>>> runSelect(
@@ -355,6 +384,15 @@ class _SqlOperationCounter extends QueryInterceptor {
     List<Object?> args,
   ) async {
     statements++;
+    final queryPlan = await executor.runSelect(
+      'EXPLAIN QUERY PLAN $statement',
+      args,
+    );
+    unboundedPlanSteps += queryPlan.where((row) {
+      final detail = row['detail'];
+      return detail is String &&
+          DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(detail);
+    }).length;
     final rows = await executor.runSelect(statement, args);
     rowsReturned += rows.length;
     return rows;

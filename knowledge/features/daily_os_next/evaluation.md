@@ -5,7 +5,7 @@ description: Measuring model behavior, full-workflow prompt and token cost, and 
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T23:19:59+02:00 }
+generated: { by: codex/5, at: 2026-07-29T12:55:00Z }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -15,7 +15,7 @@ sources:
   - id: integration
     resource: ../../../test/features/daily_os_next/integration
     title: Full durable multi-agent integration fixtures
-    last_modified: 2026-07-27
+    last_modified: 2026-07-29
   - id: benchmark
     resource: ../../../test/features/daily_os_next/benchmark
     title: Storage and full-workflow aged-corpus benchmarks
@@ -729,7 +729,7 @@ simulated months and measures the operations a user action actually triggers.
 Two lanes use the same corpus:
 
 - the ordinary-CI regression gate compares 1 and 12 months using deterministic
-  SQL statement and returned-row counts; and
+  SQL statement counts, returned-row counts and query-plan scan steps; and
 - the opt-in diagnostic sweep reports wall-clock medians at all three ages.
 
 Run the diagnostic sweep with:
@@ -743,14 +743,19 @@ The corpus deliberately has the shape a real install has — **a small pending h
 over a large terminal ledger** — because leaving every job pending would measure a
 backlog nobody has and hide the property under test. The executor-level counter
 sees rows before repository mapping or Dart filtering, so a regression that
-loads broad history and discards it in memory still fails.
+loads broad history and discards it in memory still fails. It also runs
+`EXPLAIN QUERY PLAN` for each measured statement and requires the bounded index
+family for every `agent_entities` or `day_processing_jobs` step; this catches a
+removed index, broad fallback index or non-sargable predicate even when the
+final row count stays bounded.
 
 The always-on gate's threshold is exactly zero growth. Both corpus sizes expose
 the same current day, pending head, empty pending-diff set and seven-day
-lookback; only terminal history differs. Each operation is one SQL statement,
-returning respectively 1 claim row, 3 capture rows, 6 status rows, 1 ownership
-row, 0 pending diffs and 7 plans. The test failure names the offending metric
-and reports its 1- and 12-month values.
+lookback; only terminal history differs. Each operation is one SQL statement
+whose retained-table plan steps use the bounded index family, returning
+respectively 1 claim row, 3 capture rows, 6 status rows, 1 ownership row,
+0 pending diffs and 7 plans. The test failure names the offending metric and
+reports its 1- and 12-month values.
 
 Baseline on a dev machine (median of 9, microseconds; absolute values are
 machine-specific, **the slope is the point**):
@@ -796,10 +801,12 @@ refine, and digest separately:
 - `providerTurns`: provider requests made by the wake.
 
 The benchmark has an always-on two-day schema smoke and shares the storage
-benchmark's opt-in command. Its ordinary-CI age gate compares 1 and 12 months
-and requires zero growth in prompt bytes and agent-repository reads for every
-wake: both fixtures expose the same current day and bounded seven-day context,
-so older plans must not enter the prompt or add repository work. A separate
+benchmark's opt-in command. Its ordinary-CI age gate compares 1 and 12 months.
+Prompt bytes must be identical for every wake because both fixtures expose the
+same current day and bounded seven-day context; agent-repository reads must not
+grow. The in-memory repository counts through one shared read boundary, so a
+newly used inherited read cannot bypass the metric. Older plans therefore must
+not disappear from or enter the prompt, nor add repository work. A separate
 always-on integration assertion verifies that aged plans and weekly rollups
 seeded under their production deterministic IDs actually reach the model-facing
 `<recent_days>` and `<recent_weeks>` sections:

@@ -5,7 +5,7 @@ description: A device-local job table with viewer-relative claim priority, atomi
 resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
 tags: [daily-os, outbox, jobs, durability, adr-0044]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
+generated: { by: codex/5, at: 2026-07-29T12:55:00Z }
 stale_after: 2026-10-26
 sources:
   - id: schema
@@ -88,6 +88,12 @@ bounds. `DayProcessingOutboxProcessor.priority` is a resolver called per claim
 (not per drain), reading the selected-date provider through `ref.read` — so
 navigating between days takes effect on the next job without rebuilding the
 long-lived runtime.
+
+The claim and schedulable selectors repeat the pending index predicate
+`status NOT IN ('succeeded', 'cancelled')` verbatim alongside their narrower
+drainable-status predicate. SQLite does not infer that the narrower status set
+implies the partial-index predicate; without the explicit clause it scans the
+retained ledger and builds a temporary ordering table.
 
 **Claiming is one atomic statement** —
 `UPDATE … WHERE id = (SELECT … ORDER BY created_at, id LIMIT 1) RETURNING …` —

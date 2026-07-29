@@ -108,13 +108,20 @@ class DayProcessingOutboxRepository {
   static const String _drainableStatuses =
       "('queued', 'running', 'waitingForNetwork')";
 
+  /// Repeats the pending partial index predicate verbatim so SQLite can prove
+  /// that due/schedulable reads are covered by that index. The narrower
+  /// drainable-status predicate is logically sufficient but SQLite does not
+  /// infer that implication when selecting a partial index.
+  static const String _nonTerminalClause =
+      "status NOT IN ('succeeded', 'cancelled')";
+
   /// [DayProcessingJob.isDue] as SQL, with `?1` bound to now.
   ///
   /// A `running` row is due only once its lease has expired (crash recovery);
   /// everything else is due at `next_attempt_at`. A hard provider boundary
   /// vetoes both.
   static const String _dueClause =
-      'status IN $_drainableStatuses '
+      '$_nonTerminalClause AND status IN $_drainableStatuses '
       'AND (retry_not_before IS NULL OR retry_not_before <= ?1) '
       "AND ((status = 'running' AND lease_until IS NOT NULL "
       'AND lease_until <= ?1) '
@@ -522,7 +529,7 @@ class DayProcessingOutboxRepository {
   /// network-probe interval) so that rule has exactly one implementation.
   Future<List<DayProcessingJob>> getSchedulable() => _readAll(
     'SELECT $_columns FROM day_processing_jobs '
-    'WHERE status IN $_drainableStatuses '
+    'WHERE $_nonTerminalClause AND status IN $_drainableStatuses '
     'ORDER BY created_at, id',
     const [],
   );

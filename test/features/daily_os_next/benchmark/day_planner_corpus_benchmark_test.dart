@@ -102,6 +102,42 @@ void main() {
     expect(result['processingJobs'], 2 * 3);
   });
 
+  test('query-plan classifier requires bounded retained-history indexes', () {
+    expect(
+      DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
+        'SCAN agent_entities',
+      ),
+      isTrue,
+    );
+    expect(
+      DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
+        'SEARCH agent_entities USING INDEX idx_agent_entities_agent_id',
+      ),
+      isTrue,
+    );
+    expect(
+      DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
+        'SEARCH agent_entities USING INDEX '
+        'idx_agent_entities_active_agent_type_sub_created_id',
+      ),
+      isFalse,
+    );
+    expect(
+      DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
+        'SCAN day_processing_jobs USING INDEX '
+        'idx_day_processing_jobs_retention',
+      ),
+      isTrue,
+    );
+    expect(
+      DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
+        'SCAN day_processing_jobs USING INDEX '
+        'idx_day_processing_jobs_pending',
+      ),
+      isFalse,
+    );
+  });
+
   test(
     'current-day storage operations do not grow from 1 to 12 months',
     () async {
@@ -115,20 +151,27 @@ void main() {
       expect(oneMonth, {
         'outbox.claimNext.statements': 1,
         'outbox.claimNext.rowsReturned': 1,
+        'outbox.claimNext.unboundedPlanSteps': 0,
         'dayView.captures.statements': 1,
         'dayView.captures.rowsReturned': DayPlannerCorpus.capturesPerDay,
+        'dayView.captures.unboundedPlanSteps': 0,
         'dayView.statusEvents.statements': 1,
         'dayView.statusEvents.rowsReturned':
             DayPlannerCorpus.statusEventsPerDay,
+        'dayView.statusEvents.unboundedPlanSteps': 0,
         'dayView.plannerOwnsDay.statements': 1,
         'dayView.plannerOwnsDay.rowsReturned': 1,
+        'dayView.plannerOwnsDay.unboundedPlanSteps': 0,
         'planEditor.pendingDiffs.statements': 1,
         'planEditor.pendingDiffs.rowsReturned': 0,
+        'planEditor.pendingDiffs.unboundedPlanSteps': 0,
         'planWriter.lookback.statements': 1,
         'planWriter.lookback.rowsReturned': 7,
+        'planWriter.lookback.unboundedPlanSteps': 0,
       });
 
-      // Zero additional statements and rows is the deliberate threshold:
+      // Zero additional statements, rows and unbounded query-plan steps is
+      // the deliberate threshold:
       // both corpora have the same three captures, six status events, one
       // ownership row, empty pending-diff set, seven-day lookback and pending
       // outbox head. Only terminal history grows, so any positive delta means
