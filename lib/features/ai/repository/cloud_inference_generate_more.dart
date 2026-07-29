@@ -213,6 +213,7 @@ class CloudInferenceGenerateMore {
         baseUrl: baseUrl,
         apiKey: apiKey,
         contextBiasTerms: speechDictionaryTerms,
+        impactCollector: impactCollector,
       );
     }
 

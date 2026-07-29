@@ -314,7 +314,40 @@ void main() {
             baseUrl: baseUrl,
             apiKey: 'key',
             contextBiasTerms: const ['Lotti', 'Voxtral'],
+            impactCollector: null,
           ),
+        );
+      },
+    );
+
+    test(
+      'hands the impact collector to Melious transcription models',
+      () async {
+        final meliousRepository = _FakeMeliousInferenceRepository();
+        final meliousGenerateMore = createGenerateMore(
+          meliousRepository: meliousRepository,
+        );
+        final meliousProvider = providerOfType(InferenceProviderType.melious);
+        final impactCollector = InferenceImpactCollector();
+
+        await meliousGenerateMore
+            .generateWithAudio(
+              prompt,
+              model: 'openai/whisper-large-v3',
+              audioBase64: 'melious-audio',
+              baseUrl: meliousProvider.baseUrl,
+              apiKey: meliousProvider.apiKey,
+              provider: meliousProvider,
+              impactCollector: impactCollector,
+            )
+            .drain<void>();
+
+        // Without this the collector reaches the router and is dropped on the
+        // transcription branch, so a transcription's cost and environmental
+        // impact are never recorded.
+        expect(
+          meliousRepository.audioCalls.single.impactCollector,
+          same(impactCollector),
         );
       },
     );
@@ -749,6 +782,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
           String baseUrl,
           String apiKey,
           List<String>? contextBiasTerms,
+          InferenceImpactCollector? impactCollector,
         })
       >[];
   final chatAudioCalls =
@@ -792,6 +826,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     String responseFormat = 'json',
     List<String>? contextBiasTerms,
     Duration? timeout,
+    InferenceImpactCollector? impactCollector,
   }) {
     audioCalls.add(
       (
@@ -800,6 +835,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
         baseUrl: baseUrl,
         apiKey: apiKey,
         contextBiasTerms: contextBiasTerms,
+        impactCollector: impactCollector,
       ),
     );
     return Stream.value(
