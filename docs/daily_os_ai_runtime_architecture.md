@@ -122,7 +122,7 @@ sequenceDiagram
   Log-->>Planner: projection updates with open requests
   Planner->>Verify: candidate DayPlan vs hard constraints
   Verify-->>Planner: violations (if any)
-  Planner->>Planner: rank by utility; compute VOI
+  Planner->>Planner: rank by utility, compute VOI
   alt VOI > interruption cost
     Planner->>User: ChangeSet (proposed schedule / conflict)
     User-->>Log: ChangeDecision (accept / reject)
@@ -159,7 +159,7 @@ stateDiagram-v2
   Appending --> CompactionCheck: tail beyond budget?
   CompactionCheck --> Compacting: yes
   CompactionCheck --> Idle: no
-  Compacting --> Idle: append checkpoint event; projection selects active checkpoint
+  Compacting --> Idle: append checkpoint event, projection selects active checkpoint
 ```
 
 This compaction is also what makes the **on-device prefix cache** pay off (§7): the rolling summary is a long-lived stable prefix, the recent tail is the volatile suffix.

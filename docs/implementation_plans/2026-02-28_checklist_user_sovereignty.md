@@ -85,16 +85,10 @@ graph TB
 ```mermaid
 timeline
     title When can the agent override a user-checked item?
-    section 10:00 PM : User checks item "Done"
-        : checkedBy = user
-        : checkedAt = 22:00
-    section 10:05 PM : Agent wakes, sees no evidence
-        : ❌ CANNOT uncheck
-        : Absence of evidence ≠ evidence of absence
-    section 10:30 PM : User records "X isn't done yet"
-        : New evidence timestamped AFTER 22:00
-    section 10:35 PM : Agent wakes, sees post-dated evidence
-        : ✅ CAN uncheck (with reason citing the recording)
+    10.00 PM : User checks item "Done" : checkedBy = user : checkedAt = 22.00
+    10.05 PM : Agent wakes, sees no evidence : ❌ CANNOT uncheck : Absence of evidence ≠ evidence of absence
+    10.30 PM : User records "X isn't done yet" : New evidence timestamped AFTER 22.00
+    10.35 PM : Agent wakes, sees post-dated evidence : ✅ CAN uncheck (with reason citing the recording)
 ```
 
 ### Checklist Item State Machine — `isChecked` with Provenance

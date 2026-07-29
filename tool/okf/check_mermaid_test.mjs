@@ -139,9 +139,13 @@ test('an unclosed mermaid fence is reported', () => {
   assert.match(r.output, /unclosed mermaid fence/);
 });
 
-test('an unclosed non-mermaid fence is left to the Dart validator', () => {
+test('an unclosed ordinary fence is reported too', () => {
+  // This used to be delegated to the Dart validator, which flags any unclosed
+  // fence — but that validator only runs over knowledge/, so once docs/ was
+  // gated here the delegation had no backstop.
   const r = run('```dart\nvar x = 1;\n');
-  assert.ok(r.ok, r.output);
+  assert.ok(!r.ok, r.output);
+  assert.match(r.output, /unclosed code fence/);
 });
 
 test('a semicolon that splits a statement fails even though it parses', () => {
@@ -167,6 +171,73 @@ test('a semicolon inside a note body is safe', () => {
     '```mermaid\nstateDiagram-v2\n  A --> B\n  note right of A\n    wins; otherwise newest\n  end note\n```\n',
   );
   assert.ok(r.ok, r.output);
+});
+
+test('a root may be a single file', () => {
+  // Passing a file used to throw a raw ENOTDIR stack trace. Asserting only
+  // that a *broken* file fails would not distinguish the fix from that crash,
+  // so this checks a valid file is read and counted, then that a broken one
+  // fails for a mermaid reason.
+  const dir = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
+  try {
+    const valid = join(dir, 'one.md');
+    writeFileSync(valid, good);
+    const output = execFileSync('node', [script, valid], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    assert.match(output, /parsed 1 block\(s\)/);
+
+    const broken = join(dir, 'two.md');
+    writeFileSync(broken, '```mermaid\nflowchart TD\n  A -->\n```\n');
+    try {
+      execFileSync('node', [script, broken], {
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+      assert.fail('a broken diagram in a file root must fail the run');
+    } catch (error) {
+      assert.match(`${error.stdout ?? ''}${error.stderr ?? ''}`, /FAIL/);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('an unclosed ordinary fence is reported, not silently swallowed', () => {
+  // It hides every diagram below it: the extractor reads the rest of the file
+  // as literal code. Reporting only unclosed *mermaid* openers meant a broken
+  // diagram underneath one exited 0 — and outside knowledge/ nothing else
+  // flags unclosed fences.
+  const r = run('```dart\nvar x = 1;\n\n```mermaid\nflowchart TD\n  A --> B\n');
+  assert.ok(!r.ok, r.output);
+  assert.match(r.output, /unclosed code fence/);
+  // The diagram below it was never extracted — that is the harm.
+  assert.match(r.output, /parsed 0 block\(s\)/);
+});
+
+test('a root that is neither a directory nor markdown is rejected', () => {
+  // Silently scanning nothing and exiting 0 is the failure mode this whole
+  // tool exists to prevent.
+  const dir = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
+  try {
+    const notMarkdown = join(dir, 'README.txt');
+    writeFileSync(notMarkdown, 'flowchart TD\n  A --> B\n');
+    try {
+      execFileSync('node', [script, notMarkdown], {
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+      assert.fail('an unsupported root must not pass silently');
+    } catch (error) {
+      assert.match(
+        `${error.stdout ?? ''}${error.stderr ?? ''}`,
+        /not a directory or a markdown file/,
+      );
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('every root given is scanned, not just the first', () => {

@@ -751,16 +751,16 @@ No external service is required for v1. If one is added later, it must:
 stateDiagram-v2
   [*] --> Pending: mint attribution, interaction, and intended output ids
   Pending --> Calling: durably persist pending session before inference
-  Calling --> EvidenceDurable: provider completes; commit interaction, cost, and sanitized recovery capsule
+  Calling --> EvidenceDurable: provider completes, commit interaction, cost, and sanitized recovery capsule
   EvidenceDurable --> EvidencePublished: enqueue existing-compatible consumption envelope
   EvidencePublished --> PersistingOutput: publication barrier opens
   PersistingOutput --> Finalizing: output carrier stores terminal attribution envelope
-  Finalizing --> Succeeded: project attribution + links; clear pending session
+  Finalizing --> Succeeded: project attribution + links, clear pending session
   Calling --> Failed: persist failed terminal evidence + attribution
   Calling --> Cancelled: persist cancelled terminal evidence + attribution
   Pending --> Abandoned: recovery finds no provider completion
   EvidencePublished --> Partial: executor is permanently lost before output
-  PersistingOutput --> Repaired: output exists; idempotent projection repair runs
+  PersistingOutput --> Repaired: output exists, idempotent projection repair runs
   Repaired --> Succeeded
 ```
 

@@ -5,7 +5,7 @@ description: The README/knowledge/ADR split, the frontmatter every concept carri
 resource: ../../knowledge
 tags: [convention, documentation, okf, process]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-07-29T01:20:00Z }
+generated: { by: claude-code/fable-5, at: 2026-07-29T02:05:00Z }
 stale_after: 2027-01-18
 sources:
   - id: okf-spec
@@ -313,16 +313,19 @@ diagram rather than reporting one:
   spaces inside a list item reads as an indented code block, so keep diagrams at the
   top level of a document.
 
-**The gate covers `knowledge/`, `docs/adr/` and `docs/architecture/`.**
-`check_mermaid.mjs` takes any number of roots, and `npm run check` passes all
-three — 185 blocks. The ADRs were added once two of their diagrams turned out
-not to render: concepts cite ADRs rather than restating their decisions, so a
-decision record nobody can read is the same defect as a broken concept.
+**The gate covers `knowledge/` and `docs/`** — 447 blocks. `check_mermaid.mjs`
+takes any number of roots, and a path may be a file or a directory, so a single
+document can be checked while fixing it.
 
-**Implementation plans stay outside it**, and 10 of their diagrams do not
-render today. They are working notes rather than the durable map, and some are
-historical by design. Widening the gate to `docs/` means fixing those first —
-tracked separately, not assumed.
+It was not always this wide, and each narrowing cost something. While it
+watched `knowledge/` alone, two ADR diagrams rendered as error boxes — and
+concepts *cite* ADRs rather than restating their decisions, so an unreadable
+decision record is the same defect as a broken concept. Widening to the ADRs
+then exposed twelve more across `docs/`, ten of them in implementation plans,
+which is where most diagrams live. The lesson is the one this gate exists to
+teach: **an ungated tree accumulates broken diagrams silently**, so the
+boundary is now "anything a reader might open" rather than a judgement about
+which documents deserve to render.
 
 **`make knowledge_check` is the one target to run after touching `knowledge/`.**
 It runs the Dart validator and the Mermaid parse together, because two targets

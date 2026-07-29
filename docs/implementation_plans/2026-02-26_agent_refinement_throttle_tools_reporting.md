@@ -294,7 +294,7 @@ flowchart LR
         L
     end
 
-    subgraph Handled by AgentToolExecutor → TaskAgentWorkflow
+    subgraph executor["Handled by AgentToolExecutor → TaskAgentWorkflow"]
         C
         D
         E

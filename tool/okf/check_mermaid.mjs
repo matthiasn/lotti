@@ -13,10 +13,13 @@
 // `dedupe payload by contentDigest; append messagePayload link; retract
 // vanished sources` — parsed clean and produced six nodes instead of one.
 //
-// Usage: node tool/okf/check_mermaid.mjs [dir...]
-// Defaults to `knowledge`. Several roots can be given, because the same trap is
-// invisible in any markdown the build does not parse: two broken ADR diagrams
-// shipped while this gate watched only the knowledge bundle.
+// Usage: node tool/okf/check_mermaid.mjs [path...]
+// Defaults to `knowledge`. Each path is a directory to scan or a single `.md`
+// file to check; anything else is rejected rather than silently scanning
+// nothing. Several roots can be given, because the same trap is invisible in
+// any markdown the build does not parse: two broken ADR diagrams shipped while
+// this gate watched only the knowledge bundle, and twelve more sat under
+// `docs/`.
 // Exits 0 when every block parses and renders the nodes it declares, 1 otherwise.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -43,9 +46,25 @@ mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
 const roots = process.argv.slice(2);
 if (roots.length === 0) roots.push('knowledge');
 
-function markdownFiles(dir) {
-  return readdirSync(dir).flatMap((entry) => {
-    const path = join(dir, entry);
+/// Every markdown file under `target`, which may be a directory or a single
+/// file. The file form is not a convenience: handing this a path used to throw
+/// a raw ENOTDIR stack trace, and checking one document at a time is exactly
+/// what you want while fixing the diagrams it reports.
+function markdownFiles(target) {
+  if (!statSync(target).isDirectory()) {
+    // Returning [] here would let `check_mermaid.mjs README.txt` report
+    // "0 blocks, 0 failed" and exit 0 — a false green in the one tool that
+    // exists to prevent them.
+    if (!target.endsWith('.md')) {
+      throw new Error(
+        `not a directory or a markdown file: ${target}\n` +
+          'Pass a directory to scan, or a .md file to check on its own.',
+      );
+    }
+    return [target];
+  }
+  return readdirSync(target).flatMap((entry) => {
+    const path = join(target, entry);
     return statSync(path).isDirectory()
       ? markdownFiles(path)
       : path.endsWith('.md')
@@ -118,9 +137,19 @@ function stripDepth(line, depth) {
   return rest;
 }
 
+// A bad root is a usage error, not a crash: report it the way every other
+// failure here is reported rather than as a raw Node stack trace.
+let targets;
+try {
+  targets = roots.flatMap((dir) => markdownFiles(dir));
+} catch (error) {
+  console.error(`\nmermaid: ${error.message}`);
+  process.exit(1);
+}
+
 const blocks = [];
 let unclosed = 0;
-for (const file of roots.flatMap((dir) => markdownFiles(dir))) {
+for (const file of targets) {
   const lines = readFileSync(file, 'utf8').split('\n');
   let opener = null;
   let openedAt = 0;
@@ -161,10 +190,18 @@ for (const file of roots.flatMap((dir) => markdownFiles(dir))) {
     isMermaid = false;
     depth = 0;
   });
-  if (opener !== null && isMermaid) {
-    // The Dart validator reports any unclosed fence; repeated here so this
-    // script is honest about a block it could not extract rather than skipping.
-    console.error(`unclosed mermaid fence: ${file}:${openedAt + 1}`);
+  if (opener !== null) {
+    // **Every** unclosed fence is reported, not only a mermaid one. An
+    // unclosed ordinary fence swallows the rest of the file as literal code,
+    // so any diagram below it is never extracted — and reporting only mermaid
+    // openers meant that silently exited 0. That was survivable while the Dart
+    // validator (which flags any unclosed fence) covered the same tree, but it
+    // only runs over knowledge/, so docs/ had no such backstop.
+    const kind = isMermaid ? 'mermaid' : 'code';
+    console.error(
+      `unclosed ${kind} fence: ${file}:${openedAt + 1}` +
+        (isMermaid ? '' : ' — hides any diagram below it'),
+    );
     unclosed++;
   }
 }
@@ -221,8 +258,7 @@ for (const block of blocks) {
 }
 
 console.log(
-  `\nmermaid: parsed ${blocks.length} block(s) in ` +
-    `${roots.map((dir) => `${dir}/`).join(', ')} — ` +
+  `\nmermaid: parsed ${blocks.length} block(s) in ${roots.join(', ')} — ` +
     `${failed} failed, ${unclosed} unclosed`,
 );
 process.exit(failed + unclosed === 0 ? 0 : 1);

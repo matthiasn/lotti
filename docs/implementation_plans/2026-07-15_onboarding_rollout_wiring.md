@@ -214,7 +214,7 @@ stateDiagram-v2
   DailyOS --> [*]: day plan created → both completed
 
   [*] --> ExistingConfigured
-  ExistingConfigured --> DailyOS2: B1 marks welcome completed; providerReady=true
+  ExistingConfigured --> DailyOS2: B1 marks welcome completed, providerReady=true
   DailyOS2 --> [*]: first day plan → completed
 
   [*] --> ExistingNoProvider

@@ -56,14 +56,14 @@ So PR 5 delivers two wins from one mechanism:
 stateDiagram-v2
   [*] --> Idle
   Idle --> Capturing: wake fires
-  Capturing --> Capturing: per source — hash rendered text; dedupe payload by contentDigest; append messagePayload link (provenance + ordering); append retraction for deleted/unlinked sources
+  Capturing --> Capturing: per source — hash rendered text, dedupe payload by contentDigest, append messagePayload link (provenance + ordering), append retraction for deleted/unlinked sources
   Capturing --> Assembling: input frontier recorded on the wake message
   Assembling --> Running: stable prefix (soul → tools → active summary → uncovered tail, canonical order) + currentLocalTime last
   Running --> Appending: emit reasoning/report events to log
   Appending --> BudgetCheck: uncovered tail beyond model budget?
   BudgetCheck --> Compacting: yes
   BudgetCheck --> Idle: no
-  Compacting --> Idle: append summary checkpoint over the frontier; projection selects the active checkpoint
+  Compacting --> Idle: append summary checkpoint over the frontier, projection selects the active checkpoint
 ```
 
 ## Increments

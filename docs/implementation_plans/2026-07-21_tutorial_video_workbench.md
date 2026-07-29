@@ -180,7 +180,7 @@ sequenceDiagram
     O->>T: render narration + user_voice clips (locale)
     T-->>O: clips + durations manifest
     O->>X: start display, start capture
-    O->>A: fvm flutter drive -d linux --target=integration_test/tutorial/&lt;scenario&gt;_tutorial_test.dart (env: locale, manifest, timeline path)
+    O->>A: fvm flutter drive -d linux --target=integration_test/tutorial/{scenario}_tutorial_test.dart (env: locale, manifest, timeline path)
     A->>A: seed penguin world, open task
     A->>A: step "record": open modal, start recording
     A->>A: paplay user_voice clip into virtual mic, stop recording
