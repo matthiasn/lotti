@@ -107,26 +107,32 @@ class AgentListRow extends StatelessWidget {
                 data.trailing != null ||
                 data.onTap != null) ...[
               SizedBox(width: tokens.spacing.step3),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (data.metaRight != null)
-                    Text(
-                      data.metaRight!,
-                      style: monoMetaStyle(tokens, colors),
-                    ),
-                  if (data.trailing != null) ...[
-                    SizedBox(width: tokens.spacing.step3),
-                    data.trailing!(context),
-                  ] else if (data.onTap != null) ...[
-                    SizedBox(width: tokens.spacing.step3),
-                    Icon(
-                      Icons.chevron_right,
-                      size: 16,
-                      color: colors.text.lowEmphasis,
-                    ),
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (data.metaRight != null)
+                      Flexible(
+                        child: Text(
+                          data.metaRight!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: monoMetaStyle(tokens, colors),
+                        ),
+                      ),
+                    if (data.trailing != null) ...[
+                      SizedBox(width: tokens.spacing.step3),
+                      data.trailing!(context),
+                    ] else if (data.onTap != null) ...[
+                      SizedBox(width: tokens.spacing.step3),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 16,
+                        color: colors.text.lowEmphasis,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ],
           ],

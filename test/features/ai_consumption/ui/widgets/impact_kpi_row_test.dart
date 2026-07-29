@@ -179,7 +179,7 @@ void main() {
       surface: const Size(320, 568),
       previousTotals: const ConsumptionMetrics(
         callCount: 4,
-        totalTokens: 10000,
+        totalTokens: 9000,
         credits: 1,
         energyKwh: 0.25,
         carbonGCo2: 200,
@@ -187,7 +187,22 @@ void main() {
       previousLabel: 'May',
     );
 
-    expect(find.text('+23%'), findsWidgets);
+    expect(find.text('+23%'), findsOneWidget);
+    expect(find.text('vs May'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('extreme selected delta stays bounded at iPhone SE width', (
+    tester,
+  ) async {
+    await pumpRow(
+      tester,
+      surface: const Size(320, 568),
+      previousTotals: const ConsumptionMetrics(credits: 0.000001),
+      previousLabel: 'May',
+    );
+
+    expect(find.text('+122999900%'), findsOneWidget);
     expect(find.text('vs May'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

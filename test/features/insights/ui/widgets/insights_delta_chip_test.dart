@@ -54,6 +54,24 @@ void main() {
       expect(find.text('-12%'), findsOneWidget);
     });
 
+    testWidgets('ellipsizes an extreme delta inside a narrow constraint', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 60,
+            child: InsightsDeltaChip(current: 1230000, previous: 1),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final label = tester.widget<Text>(find.text('+122999900%'));
+      expect(label.overflow, TextOverflow.ellipsis);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('shows "new" when there is no previous time', (tester) async {
       await pump(tester, current: 60, previous: 0);
       expect(find.text('new'), findsOneWidget);

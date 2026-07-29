@@ -126,7 +126,7 @@ class InsightsDeltaChip extends StatelessWidget {
       children: [
         Icon(glyph, size: glyphSize, color: color),
         SizedBox(width: tokens.spacing.step1),
-        label,
+        Flexible(child: label),
       ],
     );
   }

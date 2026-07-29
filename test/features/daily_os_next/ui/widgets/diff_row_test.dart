@@ -120,6 +120,43 @@ void main() {
       expect(find.text(messages.changeSetSwipeReject), findsNothing);
     });
 
+    testWidgets('long category stays bounded by the production header row', (
+      tester,
+    ) async {
+      const categoryName =
+          'A category name that is much wider than a compact phone card';
+      const change = PlanDiffChange(
+        id: 'diff_long_category',
+        kind: PlanDiffChangeKind.added,
+        title: 'Task title',
+        category: DayAgentCategory(
+          id: 'cat-long',
+          name: categoryName,
+          colorHex: '3366CC',
+        ),
+        reason: 'Some reason.',
+        affectedBlockId: 'block-1',
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            width: 280,
+            child: DiffRow(
+              change: change,
+              decision: PlanDiffChangeDecision.pending,
+              onAccept: () {},
+              onReject: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(categoryName), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     group('badge label per diff kind', () {
       // Covers _overlineFor branches for all three kinds
       for (final kind in PlanDiffChangeKind.values) {

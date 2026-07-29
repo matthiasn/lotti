@@ -183,91 +183,80 @@ class _RatingModalState extends ConsumerState<RatingModal> {
     BuildContext context,
     List<RatingQuestion> catalog,
   ) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spacingLarge),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _dragHandle(context),
-            const SizedBox(height: AppTheme.spacingLarge),
-            Text(
-              context.messages.sessionRatingTitle,
-              style: context.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 24),
+    return _buildScrollableSheet(
+      context,
+      children: [
+        Text(
+          context.messages.sessionRatingTitle,
+          style: context.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 24),
 
-            // Dynamic questions from catalog
-            for (final question in catalog) ...[
-              if (question.inputType == 'segmented' && question.options != null)
-                RatingSegmentedInput(
-                  label: question.question,
-                  segments: [
-                    for (final opt in question.options!)
-                      (label: opt.label, value: opt.value),
-                  ],
-                  value: _answers[question.key],
-                  onChanged: (v) => setState(() => _answers[question.key] = v),
-                )
-              else
-                _buildTapBarRow(question),
-              const SizedBox(height: AppTheme.spacingLarge),
-            ],
-
-            // Note field
-            TextField(
-              controller: _noteController,
-              decoration: InputDecoration(
-                hintText: context.messages.sessionRatingNoteHint,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingMedium,
-                  vertical: AppTheme.spacingSmall,
-                ),
-              ),
-              maxLines: 2,
-              textInputAction: TextInputAction.done,
-            ),
-            const SizedBox(height: 24),
-
-            // Actions
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _close,
-                    child: Text(context.messages.sessionRatingSkipButton),
-                  ),
-                ),
-                const SizedBox(width: AppTheme.spacingMedium),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _canSubmit(catalog) && !_isSubmitting
-                        ? _submit
-                        : null,
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(context.messages.sessionRatingSaveButton),
-                  ),
-                ),
+        // Dynamic questions from catalog
+        for (final question in catalog) ...[
+          if (question.inputType == 'segmented' && question.options != null)
+            RatingSegmentedInput(
+              label: question.question,
+              segments: [
+                for (final opt in question.options!)
+                  (label: opt.label, value: opt.value),
               ],
+              value: _answers[question.key],
+              onChanged: (v) => setState(() => _answers[question.key] = v),
+            )
+          else
+            _buildTapBarRow(question),
+          const SizedBox(height: AppTheme.spacingLarge),
+        ],
+
+        // Note field
+        TextField(
+          controller: _noteController,
+          decoration: InputDecoration(
+            hintText: context.messages.sessionRatingNoteHint,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: AppTheme.spacingSmall),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spacingMedium,
+              vertical: AppTheme.spacingSmall,
+            ),
+          ),
+          maxLines: 2,
+          textInputAction: TextInputAction.done,
+        ),
+        const SizedBox(height: 24),
+
+        // Actions
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _close,
+                child: Text(context.messages.sessionRatingSkipButton),
+              ),
+            ),
+            const SizedBox(width: AppTheme.spacingMedium),
+            Expanded(
+              child: FilledButton(
+                onPressed: _canSubmit(catalog) && !_isSubmitting
+                    ? _submit
+                    : null,
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(context.messages.sessionRatingSaveButton),
+              ),
+            ),
           ],
         ),
-      ),
+        const SizedBox(height: AppTheme.spacingSmall),
+      ],
     );
   }
 
@@ -306,55 +295,77 @@ class _RatingModalState extends ConsumerState<RatingModal> {
         ? existing.data.dimensions
         : <RatingDimension>[];
 
+    return _buildScrollableSheet(
+      context,
+      children: [
+        Text(
+          widget.catalogId,
+          style: context.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Show each stored dimension read-only
+        for (final dim in dimensions) ...[
+          _ReadOnlyDimensionRow(dimension: dim),
+          const SizedBox(height: AppTheme.spacingSmall),
+        ],
+
+        // Note
+        if (existing is RatingEntry &&
+            existing.data.note != null &&
+            existing.data.note!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
+            child: Text(
+              existing.data.note!,
+              style: context.textTheme.bodyMedium,
+            ),
+          ),
+
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: _close,
+            child: Text(context.messages.sessionRatingSkipButton),
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingSmall),
+      ],
+    );
+  }
+
+  Widget _buildScrollableSheet(
+    BuildContext context, {
+    required List<Widget> children,
+  }) {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spacingLarge),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _dragHandle(context),
-            const SizedBox(height: AppTheme.spacingLarge),
-            Text(
-              widget.catalogId,
-              style: context.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: Padding(
+              padding: const EdgeInsets.only(top: AppTheme.spacingLarge),
+              child: _dragHandle(context),
+            ),
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppTheme.spacingLarge),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: children,
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Show each stored dimension read-only
-            for (final dim in dimensions) ...[
-              _ReadOnlyDimensionRow(dimension: dim),
-              const SizedBox(height: AppTheme.spacingSmall),
-            ],
-
-            // Note
-            if (existing is RatingEntry &&
-                existing.data.note != null &&
-                existing.data.note!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
-                child: Text(
-                  existing.data.note!,
-                  style: context.textTheme.bodyMedium,
-                ),
-              ),
-
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: _close,
-                child: Text(context.messages.sessionRatingSkipButton),
-              ),
-            ),
-            const SizedBox(height: AppTheme.spacingSmall),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

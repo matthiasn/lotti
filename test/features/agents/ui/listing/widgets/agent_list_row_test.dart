@@ -196,6 +196,26 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('compact metadata yields to a trailing action at phone width', (
+      tester,
+    ) async {
+      const metadata = 'Wednesday, 29 July 2026 at 19:45';
+      await _pumpRow(
+        tester,
+        _row(
+          pills: const [AgentListPill(label: 'scheduled')],
+          metaRight: metadata,
+          trailing: (_) => const Icon(Icons.star),
+        ),
+        width: 280,
+      );
+
+      final text = tester.widget<Text>(find.text(metadata));
+      expect(text.overflow, TextOverflow.ellipsis);
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     // Pill-rendering invariant: every label in `pills` must appear in the
     // rendered output, regardless of list length, tone mix, or layout. The
     // repo keeps Glados `.test()` bodies for pure (synchronous) logic only —
