@@ -115,9 +115,26 @@ String dayAgentDecidedCaptureItemToken(String parsedItemId) {
   return '$dayAgentDecidedCaptureItemPrefix$parsedItemId';
 }
 
-/// Creates the durable processing-job trigger token for [jobId].
-String dayAgentProcessingJobToken(String jobId) {
-  return '$dayAgentProcessingJobPrefix$jobId';
+/// Derives the durable processing-intent id for [jobId].
+///
+/// The raw `<jobId>@<requestedAtMicros>` value scopes idempotent side effects
+/// such as `raise_day_status`; [dayAgentProcessingJobToken] adds the internal
+/// trigger-token prefix.
+///
+/// [requestedAt] changes when a deterministic outbox row is re-armed for a
+/// fresh user request, but remains stable across retries of that request.
+String dayAgentProcessingIntentId(
+  String jobId, {
+  required DateTime requestedAt,
+}) => '$jobId@${requestedAt.microsecondsSinceEpoch}';
+
+/// Creates the durable processing-intent trigger token for [jobId].
+String dayAgentProcessingJobToken(
+  String jobId, {
+  required DateTime requestedAt,
+}) {
+  return '$dayAgentProcessingJobPrefix'
+      '${dayAgentProcessingIntentId(jobId, requestedAt: requestedAt)}';
 }
 
 /// Whether [triggerTokens] requests a drafting wake for the [dayId]

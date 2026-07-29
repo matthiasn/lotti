@@ -57,10 +57,10 @@ class DayAgentInferenceTimedOutException extends TimeoutException {
 
 /// Applies a mode-specific total deadline to day-agent inference streams.
 ///
-/// The timer starts when the conversation listens and does not reset for
-/// streamed thought or content chunks. Crossing it cancels the upstream
-/// provider subscription before reporting the classified timeout, so a late
-/// tool batch cannot mutate after the outbox starts a retry.
+/// The timer starts when the wake wrapper is created and does not reset for a
+/// later provider turn or streamed thought/content chunk. Crossing it cancels
+/// every active upstream subscription before reporting the classified timeout,
+/// so a late tool batch cannot mutate after the outbox starts a retry.
 class DayAgentTimeoutInferenceRepository
     implements InferenceRepositoryInterface {
   DayAgentTimeoutInferenceRepository({
@@ -75,45 +75,67 @@ class DayAgentTimeoutInferenceRepository
         'must be positive',
       );
     }
+    _wakeDeadline = Timer(timeout, _expire);
   }
 
   final InferenceRepositoryInterface delegate;
   final DayAgentWakeKind wakeKind;
   final Duration timeout;
+  late final Timer _wakeDeadline;
+  final _active =
+      <
+        StreamController<CreateChatCompletionStreamResponse>,
+        Future<void> Function()
+      >{};
+  var _expired = false;
+
+  DayAgentInferenceTimedOutException _timeoutError() =>
+      DayAgentInferenceTimedOutException(
+        wakeKind: wakeKind,
+        timeout: timeout,
+      );
+
+  void _expire() {
+    _wakeDeadline.cancel();
+    _expired = true;
+    for (final entry in _active.entries.toList()) {
+      _active.remove(entry.key);
+      unawaited(entry.value());
+      entry.key.addError(_timeoutError());
+      unawaited(entry.key.close());
+    }
+  }
 
   Stream<CreateChatCompletionStreamResponse> _bound(
     Stream<CreateChatCompletionStreamResponse> source,
   ) {
     late final StreamController<CreateChatCompletionStreamResponse> controller;
     StreamSubscription<CreateChatCompletionStreamResponse>? subscription;
-    Timer? deadline;
 
     controller = StreamController<CreateChatCompletionStreamResponse>(
       sync: true,
       onListen: () {
-        deadline = Timer(timeout, () {
-          final cancellation = subscription?.cancel();
-          if (cancellation != null) unawaited(cancellation);
-          controller.addError(
-            DayAgentInferenceTimedOutException(
-              wakeKind: wakeKind,
-              timeout: timeout,
-            ),
-          );
+        if (_expired) {
+          controller.addError(_timeoutError());
           unawaited(controller.close());
-        });
+          return;
+        }
+        _active[controller] = () async {
+          await subscription?.cancel();
+        };
         subscription = source.listen(
           controller.add,
           onError: controller.addError,
           onDone: () {
-            deadline?.cancel();
-            unawaited(controller.close());
+            if (_active.remove(controller) != null) {
+              unawaited(controller.close());
+            }
           },
         );
       },
       onCancel: () async {
-        deadline?.cancel();
-        await subscription?.cancel();
+        final cancel = _active.remove(controller);
+        await cancel?.call();
       },
     );
     return controller.stream;

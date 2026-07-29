@@ -287,7 +287,7 @@ class DayAgentDirectiveService {
           : dayStatusEventIdForProcessingJob(dayId, processingJobId),
     );
     return {
-      'id': event.id,
+      'recorded': true,
       'status': event.status.name,
     };
   }

@@ -56,9 +56,17 @@ both a correctness boundary and a latency boundary: an instruction-dense draft
 wake no longer spends turns on capture parsing, reconcile, pattern summaries,
 or memory work that its schema does not expose.
 
-The durable outbox's internal `processing_job:<jobId>` trigger participates in
-wake context and idempotency but is filtered out of `<trigger_tokens>` before
-the user message is rendered. It is workflow provenance, not model context.
+The durable outbox's internal
+`processing_job:<jobId>@<requestedAtMicros>` trigger participates in wake
+context and idempotency but is filtered out of `<trigger_tokens>` before the
+user message is rendered. Status tools return only a model-safe acknowledgement,
+not the internal event id derived from this scope. It is workflow provenance,
+not model context.
+
+One mode-specific inference deadline starts when the wake's inference wrapper
+is created and is shared by every provider turn in that wake. Tool
+continuations and a forced terminal-tool retry receive only the time remaining
+in the original budget; streamed reasoning never resets it.
 
 # The payload is tagged plaintext, not JSON
 
