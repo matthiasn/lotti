@@ -4,7 +4,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -42,6 +45,12 @@ const manualHabitatLocalProfileId = 'profile-habitat-local-first';
 const manualFishDiplomacyProfileId = 'profile-fish-diplomacy';
 
 const manualOrbitalHabitatTaskId = 'task-orbital-habitat';
+const manualHabitatChecklistId = 'manual-habitat-checklist';
+const manualHabitatSealsItemId = 'manual-habitat-item-seals';
+const manualHabitatRollCallItemId = 'manual-habitat-item-roll-call';
+const manualHabitatCargoItemId = 'manual-habitat-item-cargo';
+const manualHabitatClearanceItemId = 'manual-habitat-item-clearance';
+const manualHabitatTimeRecordId = 'manual-habitat-time-record';
 const manualRollCallTaskId = 'task-emperor-penguin-roll-call';
 const manualLaunchReviewTaskId = 'task-project-waddle-launch-review';
 const manualLunchTaskId = 'task-coffee-is-not-a-vegetable';
@@ -417,6 +426,9 @@ class ManualDemoWorld {
     required this.labels,
     required this.coverImages,
     required this.tasks,
+    required this.checklists,
+    required this.checklistItems,
+    required this.timeRecords,
   });
 
   factory ManualDemoWorld.penguinLogistics() {
@@ -480,6 +492,7 @@ class ManualDemoWorld {
       required String coverArtId,
       required List<String> labelIds,
       required Duration estimate,
+      List<String>? checklistIds,
     }) {
       final base = TestTaskFactory.create(
         id: id,
@@ -492,6 +505,7 @@ class ManualDemoWorld {
         statusHistory: [status],
         categoryId: manualDemoCategoryId,
         estimate: estimate,
+        checklistIds: checklistIds,
       );
       return base.copyWith(
         meta: base.meta.copyWith(labelIds: labelIds),
@@ -530,10 +544,115 @@ class ManualDemoWorld {
       utcOffset: 120,
     );
 
+    ChecklistItem checklistItem({
+      required String id,
+      required String title,
+      required bool isChecked,
+      required Duration checkedAgo,
+    }) {
+      return ChecklistItem(
+        meta: TestMetadataFactory.create(
+          id: id,
+          createdAt: manualDemoNow.subtract(const Duration(days: 1)),
+          categoryId: manualDemoCategoryId,
+        ),
+        data: ChecklistItemData(
+          id: id,
+          title: title,
+          isChecked: isChecked,
+          linkedChecklists: const [manualHabitatChecklistId],
+          checkedAt: isChecked ? manualDemoNow.subtract(checkedAgo) : null,
+        ),
+      );
+    }
+
+    // The habitat inspection is the task the manual follows end to end, so it
+    // is the one fixture that carries a checklist and a time record: the
+    // screenshots have to show a task as a *record of work*, not an empty
+    // shell.
+    final checklistItems = <ChecklistItem>[
+      checklistItem(
+        id: manualHabitatSealsItemId,
+        title: _t(
+          'Walk pressure seals A–F',
+          'Druckdichtungen A–F abgehen',
+        ),
+        isChecked: true,
+        checkedAgo: const Duration(hours: 1, minutes: 18),
+      ),
+      checklistItem(
+        id: manualHabitatRollCallItemId,
+        title: _t(
+          'Count all 37 emperor penguins',
+          'Alle 37 Kaiserpinguine zählen',
+        ),
+        isChecked: true,
+        checkedAgo: const Duration(minutes: 52),
+      ),
+      checklistItem(
+        id: manualHabitatCargoItemId,
+        title: _t(
+          'Route the sardine cargo pods',
+          'Sardinen-Frachtkapseln routen',
+        ),
+        isChecked: false,
+        checkedAgo: Duration.zero,
+      ),
+      checklistItem(
+        id: manualHabitatClearanceItemId,
+        title: _t(
+          'Request Mission Control clearance',
+          'Freigabe der Missionskontrolle anfordern',
+        ),
+        isChecked: false,
+        checkedAgo: Duration.zero,
+      ),
+    ];
+
+    final habitatChecklist = Checklist(
+      meta: TestMetadataFactory.create(
+        id: manualHabitatChecklistId,
+        createdAt: manualDemoNow.subtract(const Duration(days: 1)),
+        categoryId: manualDemoCategoryId,
+      ),
+      data: ChecklistData(
+        title: _t('Pre-launch checks', 'Checks vor dem Start'),
+        linkedChecklistItems: [
+          for (final item in checklistItems) item.meta.id,
+        ],
+        linkedTasks: const [manualOrbitalHabitatTaskId],
+      ),
+    );
+
+    final habitatTimeRecord = JournalEntry(
+      meta: TestMetadataFactory.create(
+        id: manualHabitatTimeRecordId,
+        createdAt: manualDemoNow.subtract(
+          const Duration(hours: 1, minutes: 18),
+        ),
+        dateFrom: manualDemoNow.subtract(const Duration(hours: 1, minutes: 18)),
+        dateTo: manualDemoNow.subtract(const Duration(minutes: 8)),
+        categoryId: manualDemoCategoryId,
+      ),
+      entryText: EntryText(
+        plainText: _t(
+          'Seal walk complete: A–F held at 101.3 kPa overnight. Roll call '
+              'confirmed all 37 penguins, including the one asleep in the '
+              'cargo netting.',
+          'Dichtungsrundgang abgeschlossen: A–F hielten über Nacht 101,3 kPa. '
+              'Der Zählappell bestätigte alle 37 Pinguine, auch den, der im '
+              'Frachtnetz schlief.',
+        ),
+      ),
+    );
+
     return ManualDemoWorld._(
       category: category,
       labels: labels,
       coverImages: coverImages,
+      checklists: [habitatChecklist],
+      checklistItems: checklistItems,
+      timeRecords: [habitatTimeRecord],
       tasks: [
         task(
           id: manualRollCallTaskId,
@@ -574,6 +693,7 @@ class ManualDemoWorld {
             manualDemoCriticalLabelId,
           ],
           estimate: const Duration(hours: 2),
+          checklistIds: const [manualHabitatChecklistId],
         ),
         task(
           id: manualLaunchReviewTaskId,
@@ -715,7 +835,28 @@ class ManualDemoWorld {
   final List<JournalImage> coverImages;
   final List<Task> tasks;
 
+  /// Checklists owned by tasks in this world, keyed into tasks through
+  /// `TaskData.checklistIds`.
+  final List<Checklist> checklists;
+
+  /// Every checklist item referenced by [checklists].
+  final List<ChecklistItem> checklistItems;
+
+  /// Text entries with a `dateFrom`/`dateTo` span, linked from a task so the
+  /// task shows logged time rather than `0m of 2h`.
+  final List<JournalEntry> timeRecords;
+
   Task get orbitalHabitatTask => taskById(manualOrbitalHabitatTaskId);
+
+  /// The single checklist attached to [orbitalHabitatTask].
+  Checklist get habitatChecklist => checklists.singleWhere(
+    (list) => list.meta.id == manualHabitatChecklistId,
+  );
+
+  /// The single time record linked from [orbitalHabitatTask].
+  JournalEntry get habitatTimeRecord => timeRecords.singleWhere(
+    (entry) => entry.meta.id == manualHabitatTimeRecordId,
+  );
   Task get fishFeederTask => taskById(manualFishFeederTaskId);
   Task get sardineCargoTask => taskById(manualSardineCargoTaskId);
   Task get penguinPassengerTask => taskById(manualPenguinPassengerTaskId);
@@ -742,6 +883,15 @@ class ManualDemoWorld {
     }
     for (final task in tasks) {
       if (task.meta.id == id) return task;
+    }
+    for (final checklist in checklists) {
+      if (checklist.meta.id == id) return checklist;
+    }
+    for (final item in checklistItems) {
+      if (item.meta.id == id) return item;
+    }
+    for (final entry in timeRecords) {
+      if (entry.meta.id == id) return entry;
     }
     return null;
   }

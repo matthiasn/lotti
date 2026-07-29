@@ -38,6 +38,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
@@ -48,6 +49,7 @@ import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
+import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -74,6 +76,17 @@ import '../pages/task_details_page_test_helpers.dart';
 class _ManualRunningInferenceController extends InferenceStatusController {
   @override
   InferenceStatus build() => InferenceStatus.running;
+}
+
+/// Serves a fixed link list so the task's below-card entries render without a
+/// Drift-level link graph behind them.
+class _ManualLinkedEntriesController extends LinkedEntriesController {
+  _ManualLinkedEntriesController(this._links);
+
+  final List<EntryLink> _links;
+
+  @override
+  Future<List<EntryLink>> build() async => _links;
 }
 
 const _manualTaskAgentId = 'agent-habitat-watcher';
@@ -393,6 +406,12 @@ void main() {
       () => mocks.journalDb.journalEntityById(any()),
     ).thenAnswer((invocation) async {
       final id = invocation.positionalArguments.first as String;
+      // Yield a full event-loop turn rather than resolving on the next
+      // microtask. A real Drift lookup always crosses a timer boundary, and
+      // controllers that aggregate several of these (checklist completion
+      // counts) only settle correctly when their own build future has
+      // resolved first.
+      await Future<void>.delayed(Duration.zero);
       return world.entityById(id);
     });
     when(
@@ -415,12 +434,34 @@ void main() {
               : null,
       };
     });
+    // The habitat task is the one fixture that has logged time, so the manual
+    // screenshots show real progress ("1h 10m of 2h") instead of "0m of 2h".
     when(
       () => mocks.journalDb.getBulkLinkedTimeSpans(any()),
-    ).thenAnswer((_) async => <String, List<LinkedEntityTimeSpan>>{});
+    ).thenAnswer((invocation) async {
+      final fromIds = invocation.positionalArguments.first as Set<String>;
+      final record = world.habitatTimeRecord;
+      return {
+        for (final id in fromIds)
+          id: id == manualOrbitalHabitatTaskId
+              ? <LinkedEntityTimeSpan>[
+                  (
+                    id: record.meta.id,
+                    dateFrom: record.meta.dateFrom,
+                    dateTo: record.meta.dateTo,
+                  ),
+                ]
+              : <LinkedEntityTimeSpan>[],
+      };
+    });
     when(
       () => mocks.journalDb.getLinkedEntities(any()),
-    ).thenAnswer((_) async => <JournalEntity>[]);
+    ).thenAnswer((invocation) async {
+      final linkedFrom = invocation.positionalArguments.first as String;
+      return linkedFrom == manualOrbitalHabitatTaskId
+          ? <JournalEntity>[world.habitatTimeRecord]
+          : <JournalEntity>[];
+    });
     when(mocks.journalDb.watchConfigFlags).thenAnswer(
       (_) => const Stream.empty(),
     );
@@ -523,6 +564,12 @@ void main() {
       });
 
       testWidgets('$viewport task detail — $theme', (tester) async {
+        // Desktop never shows the task detail full-bleed: it lives in the
+        // right pane of [TasksRootPage]. Capturing the page standalone at
+        // 1440pt made the 16:9 cover art 810pt tall and pushed the entire
+        // record off screen, so the manual's lead screenshot was nothing but
+        // cover art. Capture the real layout instead, scrolled so the record
+        // — not the artwork — is what the reader sees.
         await _pumpTaskSurface(
           tester,
           device: device,
@@ -530,20 +577,30 @@ void main() {
           world: world,
           pageController: pageController,
           journalRepository: journalRepository,
-          surface: TaskDetailsPage(taskId: world.orbitalHabitatTask.meta.id),
+          surface: device.isPhone
+              ? TaskDetailsPage(taskId: world.orbitalHabitatTask.meta.id)
+              : const TasksRootPage(),
         );
+        if (!device.isPhone) {
+          await _focusTaskDetailBody(tester);
+        }
 
         expect(find.byType(TaskDetailsPage), findsOneWidget);
-        expect(
-          find.text(
-            _t(
-              'Inspect orbital penguin habitat',
-              'Pinguin-Habitat im Orbit inspizieren',
-            ),
-          ),
-          findsWidgets,
+        final title = _t(
+          'Inspect orbital penguin habitat',
+          'Pinguin-Habitat im Orbit inspizieren',
         );
+        expect(find.text(title), findsWidgets);
         expect(find.text(_manualTaskAgentName), findsOneWidget);
+        // The record itself has to be on screen, not merely in the tree.
+        _expectVisible(tester, device, find.text(title).last);
+        _expectVisible(
+          tester,
+          device,
+          find.text(
+            _t('Pre-launch checks', 'Checks vor dem Start'),
+          ),
+        );
         await captureScreenshot(
           tester,
           'task_detail_${viewport}_$theme',
@@ -1120,6 +1177,23 @@ Future<void> _pumpTaskSurface(
               id: world.orbitalHabitatTask.id,
               aiResponseType: AiResponseType.imageGeneration,
             )).overrideWith(_ManualRunningInferenceController.new),
+            // The habitat task's below-card list: one time record, resolved
+            // from memory rather than through the Drift link graph.
+            linkedEntriesControllerProvider(
+              manualOrbitalHabitatTaskId,
+            ).overrideWith(
+              () => _ManualLinkedEntriesController(<EntryLink>[
+                EntryLink.basic(
+                  id: 'link-habitat-time-record',
+                  fromId: manualOrbitalHabitatTaskId,
+                  toId: world.habitatTimeRecord.meta.id,
+                  createdAt: world.habitatTimeRecord.meta.createdAt,
+                  updatedAt: world.habitatTimeRecord.meta.updatedAt,
+                  vectorClock: null,
+                ),
+              ]),
+            ),
+            createEntryControllerOverride(world.habitatTimeRecord),
             for (final coverImage in world.coverImages)
               createEntryControllerOverride(coverImage),
             for (final task in world.taskBrowseTasks)
@@ -1146,6 +1220,50 @@ Future<void> _pumpTaskSurface(
     );
     await settleFrames(tester, 8);
   });
+}
+
+/// Scrolls the task detail pane so the task form sits just below a slim band
+/// of cover art, leaving the record — title, chips, notes, checklist, logged
+/// time — as the subject of the frame.
+Future<void> _focusTaskDetailBody(WidgetTester tester) async {
+  const coverBand = 70.0;
+  final scrollable = find
+      .descendant(
+        of: find.byType(TaskDetailsPage),
+        matching: find.byType(Scrollable),
+      )
+      .first;
+  final position = tester.state<ScrollableState>(scrollable).position;
+  final targetTop = tester.getTopLeft(find.byType(TaskForm)).dy;
+  position.jumpTo(
+    (position.pixels + targetTop - coverBand).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    ),
+  );
+  await settleFrames(tester, 4);
+}
+
+/// Fails when [finder]'s widget is laid out outside the captured viewport.
+///
+/// `find.text` matches widgets that are in the tree but scrolled far off
+/// screen, which is exactly how the desktop task-detail capture silently
+/// became a full-bleed cover art shot while its assertions stayed green.
+void _expectVisible(
+  WidgetTester tester,
+  ScreenshotDevice device,
+  Finder finder,
+) {
+  final viewport = Offset.zero & device.size;
+  final rect = tester.getRect(finder);
+  expect(
+    rect.overlaps(viewport),
+    isTrue,
+    reason:
+        'Expected ${finder.describeMatch(Plurality.one)} to be visible '
+        'within $viewport, '
+        'but it is laid out at $rect.',
+  );
 }
 
 Future<void> _focusTaskAgentCard(
