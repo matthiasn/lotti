@@ -72,16 +72,18 @@ void main() {
           .designTokens;
       final fills = segmentFills(tester);
       // The passed stations keep the accent hue, faded — so the track reads
-      // as one line filling up, with exactly one full-strength station.
-      expect(
-        fills[0],
-        tokens.colors.interactive.enabled.withValues(alpha: 0.4),
+      // as one line filling up, with exactly one full-strength station. The
+      // fade is read from the token rather than repeated as a literal here,
+      // so retuning it cannot leave the widget and this test disagreeing.
+      final passed = tokens.colors.interactive.enabled.withValues(
+        alpha: SurfaceAlphas.muted,
       );
-      expect(
-        fills[1],
-        tokens.colors.interactive.enabled.withValues(alpha: 0.4),
-      );
+      expect(fills[0], passed);
+      expect(fills[1], passed);
       expect(fills[2], tokens.colors.interactive.enabled);
+      // A fade that reached full strength would put three "press this next"
+      // signals on screen, which is the failure the alpha exists to prevent.
+      expect(passed, isNot(tokens.colors.interactive.enabled));
     });
 
     testWidgets('announces the current position to assistive technology', (

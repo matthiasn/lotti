@@ -62,6 +62,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Unresolved, and Resolved controls on Sync Outbox and Sync Conflicts now use
   the shared design-system chip and count treatments, with consistent selected,
   hover, pressed, light, and dark states.
+- **The sync screens sit on the app's own spacing and type scales.** A handful
+  of sizes on these pages had been picked by hand rather than taken from the
+  app's scales, so they drifted from everything around them: the device glyph
+  on each card in the device list was slightly undersized, the figures on
+  Backfill sync were a shade lighter than comparable numbers elsewhere, the
+  dotted leader lines between a label and its figure were faint enough to be
+  hard to follow across the row, and the counter tiles in sync statistics were
+  a little taller than wide for the same padding. All four now match the rest
+  of the app.
 - **Daily OS planning now gives up on stalled or overlong AI responses
   sooner.** Cut-off answers no longer save partial plans; planning retries
   cleanly instead.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 class DiagnosticsPanel extends StatefulWidget {
   const DiagnosticsPanel({
@@ -54,11 +55,12 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
               final dbMissingBase = diag['dbMissingBase'] ?? '0';
               final ignoredCount =
                   int.tryParse(diag['lastIgnoredCount'] ?? '0') ?? 0;
+              final tokens = context.designTokens;
               // Prefetch details removed.
               return Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step3,
+                  vertical: tokens.spacing.step2,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,12 +85,12 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: tokens.spacing.step3),
                     if (ignoredCount > 0) ...[
                       const Text('Last Ignored:'),
                       for (var i = 1; i <= ignoredCount; i++)
                         Text(diag['lastIgnored.$i'] ?? ''),
-                      const SizedBox(height: 6),
+                      SizedBox(height: tokens.spacing.step3),
                     ],
                     // Prefetch details removed.
                   ],

@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/design_system/theme
     title: Generated tokens, theme, access API
     last_modified: 2026-07-29
+  - id: alpha-tokens
+    resource: ../../../lib/features/design_system/theme/alpha_tokens.dart
+    title: Hand-authored opacity tokens
+    last_modified: 2026-07-29
   - id: overrides
     resource: ../../../lib/themes/theme_overrides.dart
     title: App theme integration
@@ -50,18 +54,40 @@ control**.
 `spacing`, `borderRadius` — producing `dsTokensLight` and `dsTokensDark`, and a
 typed surface of colors, typography, spacing and radii.
 
-**There is no sizing or motion group in the export.** If the export grows, the
-seam to update is the generator, not every component downstream. Two token
-sets are hand-authored outside this pipeline for the same reason — their
-values are brightness-invariant, so nothing lerps, and neither exists as a
-Figma variable to import: **motion** (`motion_tokens.dart`, because `Duration`
-and `Curve` are not lerp-able — see
-[agent UI surfaces](../agents/ui-surfaces.md)) and **sizing**
-(`sizing_tokens.dart`: `ControlSizes` for visible controls, `TapTargets` for
-interaction shells, `IconSizes` for glyph dimensions, and `BorderWidths` for
-strokes). Before the sizing set existed, call sites borrowed
-`tokens.spacing.stepN` as control, icon, and stroke dimensions, which retuned
-them whenever the gap scale moved.
+**There is no sizing, motion or opacity group in the export.** If the export
+grows, the seam to update is the generator, not every component downstream.
+Three token sets are hand-authored outside this pipeline for the same reason —
+their values are brightness-invariant, so nothing lerps, and none exists as a
+Figma variable to import:
+
+| Set | File | Contents |
+|-----|------|----------|
+| **motion** | `motion_tokens.dart` | `Duration` and `Curve` are not lerp-able — see [agent UI surfaces](../agents/ui-surfaces.md) |
+| **sizing** | `sizing_tokens.dart` | `ControlSizes` for visible controls and container tiles, `TapTargets` for interaction shells, `IconSizes` for glyph dimensions, `BorderWidths` for strokes |
+| **opacity** | `alpha_tokens.dart` | `SurfaceAlphas` — fades applied to a surface or accent colour that must stay the same hue while receding |
+
+Before the sizing set existed, call sites borrowed `tokens.spacing.stepN` as
+control, icon, and stroke dimensions, which retuned them whenever the gap scale
+moved. `ControlSizes.iconChip`/`iconChipCompact` exist for the same reason: a
+filled tile behind a glyph is a container, not a gap, even where the two happen
+to share a number today.
+
+**`SurfaceAlphas` is deliberately small, and an alpha is rarely the answer.**
+Two categories look like they need one and do not:
+
+- **Text.** `colors.text.{high,medium,low}Emphasis` *is* the fade ramp for
+  type, and each step already carries its own alpha. Fading one further just
+  re-derives a step that exists.
+- **An error-toned fill.** `colorScheme.errorContainer` is the design system's
+  own error wash, derived from `alert.error.defaultColor`. Tinting that colour
+  by hand forks the decision.
+
+The exception that earns `SurfaceAlphas.tint` is a **tone-tinted card fill**,
+where the tint carries a categorisation. `colorScheme.*Container` cannot
+express it: only `errorContainer` keeps its accent, while `primaryContainer`
+and `tertiaryContainer` resolve to neutral `background.level02`/`level03`.
+Binding those would collapse a three-tone scale into one red and two greys —
+which is exactly what `matrix_stats/metrics_grid.dart` uses the tint to avoid.
 
 ## One token, three names
 

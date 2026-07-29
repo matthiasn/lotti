@@ -132,7 +132,7 @@ class _StatusCell extends StatelessWidget {
             style: tokens.typography.styles.subtitle.subtitle1.copyWith(
               color: valueColor,
               fontFeatures: const [FontFeature.tabularFigures()],
-              fontWeight: FontWeight.w500,
+              fontWeight: tokens.typography.weight.semiBold,
             ),
           ),
         ],
@@ -326,7 +326,7 @@ class _LedgerRow extends StatelessWidget {
               child: CustomPaint(
                 size: const Size.fromHeight(1),
                 painter: _DottedLeaderPainter(
-                  color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.45),
+                  color: tokens.colors.text.lowEmphasis,
                 ),
               ),
             ),
@@ -336,7 +336,7 @@ class _LedgerRow extends StatelessWidget {
             style: tokens.typography.styles.body.bodyMedium.copyWith(
               color: color,
               fontFeatures: const [FontFeature.tabularFigures()],
-              fontWeight: FontWeight.w500,
+              fontWeight: tokens.typography.weight.semiBold,
             ),
           ),
         ],

@@ -961,4 +961,69 @@ void main() {
       verifyNever(() => mockMatrixService.verifyDevice(mockDeviceKeys));
     });
   });
+
+  // The leading tile used to take its dimensions from `spacing.step8` and its
+  // glyph from `typography.lineHeight.subtitle2` — a gap and a text metric
+  // standing in for a container and an icon. Both are the same numbers as a
+  // gap or line box today and would silently resize the tile if either scale
+  // were retuned, so the sizes are asserted against the sizing set directly.
+  group('the leading device tile', () {
+    /// The square tile behind the device glyph.
+    Size tileSize(WidgetTester tester) => tester.getSize(
+      find
+          .ancestor(
+            of: find.byIcon(Icons.devices_other_rounded),
+            matching: find.byType(SizedBox),
+          )
+          .first,
+    );
+
+    testWidgets('is a square icon chip from the sizing set', (tester) async {
+      await pumpCard(tester, buildDevice());
+
+      expect(
+        tileSize(tester),
+        const Size(ControlSizes.iconChip, ControlSizes.iconChip),
+      );
+    });
+
+    testWidgets('carries a callout-tier glyph, not a line-height one', (
+      tester,
+    ) async {
+      await pumpCard(tester, buildDevice());
+
+      final icon = tester.widget<Icon>(
+        find.byIcon(Icons.devices_other_rounded),
+      );
+
+      expect(icon.size, IconSizes.l);
+      // A glyph as large as its tile has no inset left and reads as a solid
+      // block; the chip must stay a frame around the icon.
+      expect(icon.size, lessThan(ControlSizes.iconChip));
+    });
+
+    testWidgets('keeps its geometry when the device is this one', (
+      tester,
+    ) async {
+      // The current device swaps in a platform-specific glyph — laptop on
+      // desktop, handset on mobile. The tile must not resize with whichever
+      // one lands, or the roster's left edge would jitter between rows.
+      await pumpCard(tester, buildDevice(isCurrentDevice: true));
+
+      final glyph = find.byWidgetPredicate(
+        (w) =>
+            w is Icon &&
+            (w.icon == Icons.laptop_mac_rounded ||
+                w.icon == Icons.smartphone_rounded),
+      );
+      expect(glyph, findsOneWidget);
+
+      final tile = tester.getSize(
+        find.ancestor(of: glyph, matching: find.byType(SizedBox)).first,
+      );
+
+      expect(tile, const Size(ControlSizes.iconChip, ControlSizes.iconChip));
+      expect(tester.widget<Icon>(glyph).size, IconSizes.l);
+    });
+  });
 }

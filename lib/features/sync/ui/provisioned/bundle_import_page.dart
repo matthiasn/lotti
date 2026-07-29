@@ -677,7 +677,7 @@ class ViewfinderBracketsPainter extends CustomPainter {
 
     // The scan line: a faint accent rule across the middle.
     final linePaint = Paint()
-      ..color = color.withValues(alpha: 0.7)
+      ..color = color.withValues(alpha: SurfaceAlphas.linework)
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(

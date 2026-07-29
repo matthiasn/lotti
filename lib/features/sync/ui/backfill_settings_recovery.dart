@@ -461,8 +461,11 @@ class _RecoveryAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final isDanger = tone == _RecoveryTone.dangerGhost;
+    // The danger chip reuses the theme's own error wash — the design system
+    // already derives it from `alert.error.defaultColor`, so tinting by hand
+    // here would fork that decision into a second, unowned alpha.
     final iconChipBg = isDanger
-        ? tokens.colors.alert.error.defaultColor.withValues(alpha: 0.14)
+        ? Theme.of(context).colorScheme.errorContainer
         : tokens.colors.surface.enabled;
     final iconColor = isDanger
         ? tokens.colors.alert.error.defaultColor
@@ -481,13 +484,13 @@ class _RecoveryAction extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 28,
-                height: 28,
+                width: ControlSizes.iconChipCompact,
+                height: ControlSizes.iconChipCompact,
                 decoration: BoxDecoration(
                   color: iconChipBg,
                   borderRadius: BorderRadius.circular(tokens.radii.smallChips),
                 ),
-                child: Icon(icon, size: 15, color: iconColor),
+                child: Icon(icon, size: IconSizes.s, color: iconColor),
               ),
               SizedBox(width: tokens.spacing.step3),
               Expanded(

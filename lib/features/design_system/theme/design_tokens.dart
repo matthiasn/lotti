@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 
+export 'alpha_tokens.dart';
 export 'generated/design_tokens.g.dart';
 export 'motion_tokens.dart';
 export 'sizing_tokens.dart';

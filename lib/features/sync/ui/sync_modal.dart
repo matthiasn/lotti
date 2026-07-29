@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
@@ -87,6 +88,7 @@ class SyncModal extends ConsumerWidget {
             final stepsToShow = orderedSteps
                 .where(selectedSteps.contains)
                 .toList();
+            final tokens = context.designTokens;
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -94,19 +96,19 @@ class SyncModal extends ConsumerWidget {
                 if (progress == 100 && !isSyncing) ...[
                   Icon(
                     Icons.check_circle_outline,
-                    size: 48,
+                    size: IconSizes.xxxl,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: tokens.spacing.step5),
                   Text(
                     context.messages.syncEntitiesSuccessTitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: tokens.typography.weight.bold,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: tokens.spacing.step3),
                   Text(
                     context.messages.syncEntitiesSuccessDescription,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -114,7 +116,7 @@ class SyncModal extends ConsumerWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: tokens.spacing.step6),
                   DesignSystemButton(
                     label: context.messages.doneButton,
                     size: DesignSystemButtonSize.large,
@@ -132,10 +134,12 @@ class SyncModal extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: SizedBox(
+                          // 5 is the bar's own stroke weight, not a gap, and
+                          // has no token: the sizing set has no track tier.
                           height: 5,
                           child: LinearProgressIndicator(
                             value: progress / 100,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(tokens.radii.s),
                             backgroundColor: Theme.of(
                               context,
                             ).colorScheme.surfaceContainerHighest,
@@ -145,12 +149,12 @@ class SyncModal extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: tokens.spacing.step3),
                       Text(
                         '$progress%',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: tokens.typography.weight.bold,
                           fontFeatures: const [
                             FontFeature.tabularFigures(),
                           ],
@@ -158,7 +162,7 @@ class SyncModal extends ConsumerWidget {
                       ),
                     ],
                   ),
-                const SizedBox(height: 16),
+                SizedBox(height: tokens.spacing.step5),
                 for (final step in stepsToShow)
                   _buildStepIndicator(
                     context,
@@ -185,6 +189,7 @@ class SyncModal extends ConsumerWidget {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = context.designTokens;
     final isCompleted = currentStep.index > step.index;
     final isCurrent = currentStep == step && isSyncing;
 
@@ -213,27 +218,33 @@ class SyncModal extends ConsumerWidget {
         : colorScheme.onSurfaceVariant;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
       child: Row(
         children: [
+          // 20 sits between the icon ramp's control (18) and callout (24)
+          // tiers; moving it either way is a visual decision, not a rename.
           Icon(icon, size: 20, color: iconColor),
-          const SizedBox(width: 8),
+          SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Text(
               _getStepName(context, step),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: labelColor,
-                fontWeight: isCompleted ? FontWeight.w600 : null,
+                fontWeight: isCompleted
+                    ? tokens.typography.weight.semiBold
+                    : null,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: tokens.spacing.step4),
           Text(
             countText,
             style: theme.textTheme.bodySmall?.copyWith(
               color: countColor,
               fontFeatures: const [FontFeature.tabularFigures()],
-              fontWeight: isCompleted ? FontWeight.w600 : null,
+              fontWeight: isCompleted
+                  ? tokens.typography.weight.semiBold
+                  : null,
             ),
           ),
         ],

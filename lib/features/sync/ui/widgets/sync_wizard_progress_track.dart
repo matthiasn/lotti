@@ -78,7 +78,9 @@ class _TrackSegment extends StatelessWidget {
     final fill = isActive
         ? tokens.colors.interactive.enabled
         : isDone
-        ? tokens.colors.interactive.enabled.withValues(alpha: 0.4)
+        ? tokens.colors.interactive.enabled.withValues(
+            alpha: SurfaceAlphas.muted,
+          )
         : tokens.colors.surface.hover;
     final labelStyle = tokens.typography.styles.others.caption.copyWith(
       color: isActive

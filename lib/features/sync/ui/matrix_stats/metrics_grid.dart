@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 class MetricsGrid extends StatelessWidget {
   const MetricsGrid({
@@ -66,12 +67,12 @@ class MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final tone = _tone(context);
-    final cardColor = tone.withValues(alpha: 0.08);
-    final textColor = Theme.of(context).colorScheme.onSurface;
+    final cardColor = tone.withValues(alpha: SurfaceAlphas.tint);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.all(tokens.spacing.step4),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(12),
@@ -88,16 +89,16 @@ class MetricTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
-              color: textColor.withValues(alpha: 0.8),
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: tokens.spacing.step3),
           Text(
             value.toString(),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: textColor,
+              color: tokens.colors.text.highEmphasis,
             ),
           ),
         ],
