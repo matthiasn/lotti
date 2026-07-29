@@ -1,13 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
@@ -88,10 +91,14 @@ void main() {
   // because production hosts (V2 panel registry + legacy
   // SliverBoxAdapterPage) both supply scrolling — without it the
   // expanded recovery group overflows a fixed-height test viewport.
-  Future<void> pumpBody(WidgetTester tester) async {
+  Future<void> pumpBody(
+    WidgetTester tester, {
+    List<Override> overrides = const [],
+  }) async {
     await tester.pumpWidget(
-      const RiverpodWidgetTestBench(
-        child: SingleChildScrollView(child: BackfillSettingsBody()),
+      RiverpodWidgetTestBench(
+        overrides: overrides,
+        child: const SingleChildScrollView(child: BackfillSettingsBody()),
       ),
     );
     await tester.pump();
@@ -1011,6 +1018,104 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
 
       verify(() => mockSequenceService.resetUnresolvableEntries()).called(1);
+    });
+
+    testWidgets('Agent vector clocks repair runs both backfills', (
+      tester,
+    ) async {
+      final repo = MockSyncMaintenanceRepository();
+      when(
+        () => repo.fetchTotalsForSteps(any()),
+      ).thenAnswer((_) async => <SyncStep, int>{});
+      when(
+        () => repo.backfillAgentEntityClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => repo.backfillAgentLinkClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await pumpBody(
+        tester,
+        overrides: [
+          syncMaintenanceRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      final messages = messagesOf(tester);
+
+      await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      final btn = find.widgetWithText(
+        DesignSystemButton,
+        messages.backfillAgentClocksTrigger,
+      );
+      await tester.ensureVisible(btn);
+      await tester.pump();
+      await tester.tap(btn);
+      // syncAll awaits fetchTotalsForSteps before reaching the operations, so
+      // one frame is not enough to see both halves run.
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 250));
+      }
+      // Both halves are requested as one repair: they are the same fix over
+      // two tables, and each no-ops when nothing is missing a clock.
+      verify(
+        () => repo.fetchTotalsForSteps({
+          SyncStep.backfillAgentEntityClocks,
+          SyncStep.backfillAgentLinkClocks,
+        }),
+      ).called(1);
+      expect(find.text(messages.backfillAgentClocksTitle), findsWidgets);
+    });
+
+    testWidgets('Agent vector clocks repair surfaces a localized failure', (
+      tester,
+    ) async {
+      final repo = MockSyncMaintenanceRepository();
+      when(
+        () => repo.fetchTotalsForSteps(any()),
+      ).thenAnswer((_) async => <SyncStep, int>{});
+      when(
+        () => repo.backfillAgentEntityClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).thenThrow(Exception('boom'));
+
+      await pumpBody(
+        tester,
+        overrides: [
+          syncMaintenanceRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      final messages = messagesOf(tester);
+
+      await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      final btn = find.widgetWithText(
+        DesignSystemButton,
+        messages.backfillAgentClocksTrigger,
+      );
+      await tester.ensureVisible(btn);
+      await tester.pump();
+      await tester.tap(btn);
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 250));
+      }
+
+      // The localized label, not SyncError.toString() — that is a hard-coded
+      // English sentence and would reach every locale untranslated.
+      expect(find.text(messages.backfillAgentClocksFailed), findsOneWidget);
+      expect(find.text('Exception: boom'), findsNothing);
     });
 
     testWidgets('Re-request pending tap calls the backfill service', (

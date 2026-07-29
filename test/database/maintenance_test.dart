@@ -693,6 +693,58 @@ void main() {
         expect(linkMessages.first.agentLink?.id, equals('agent-link-1'));
       });
 
+      test('stamps a clockless agent link before enqueueing it', () async {
+        final baseDate = DateTime(2024, 11);
+        final insideDate = baseDate.add(const Duration(hours: 6));
+        const stamped = VectorClock({'node': 9});
+
+        when(
+          () => vectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+          ),
+        ).thenAnswer((_) async => stamped);
+
+        // The link's endpoints must exist, and the entity carries a clock
+        // already so only the link exercises the stamping path here.
+        final entity = AgentDomainEntity.agent(
+          id: 'clockless-link-entity',
+          agentId: 'clockless-link-agent',
+          kind: 'task_agent',
+          displayName: 'Link Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: insideDate,
+          updatedAt: insideDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+        final link = agent_model.AgentLink.basic(
+          id: 'clockless-link',
+          fromId: 'clockless-link-agent',
+          toId: 'clockless-link-entity',
+          createdAt: insideDate,
+          updatedAt: insideDate,
+          vectorClock: null,
+        );
+
+        await populateAgentDb(entities: [entity], links: [link]);
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(days: 1)),
+          end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
+        );
+
+        final sent = sentMessages.whereType<SyncAgentLink>().toList();
+        expect(sent, hasLength(1));
+        expect(sent.first.agentLink?.vectorClock, stamped);
+
+        final reloaded = await agentRepo.getLinkById('clockless-link');
+        expect(reloaded?.vectorClock, stamped);
+      });
+
       test('does not enqueue agent entities outside interval', () async {
         final baseDate = DateTime(2024, 12);
         final outsideDate = baseDate.subtract(const Duration(days: 10));
