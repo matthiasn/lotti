@@ -827,6 +827,7 @@ void main() {
         model: 'm',
         provider: testInferenceProvider(id: 'p', apiKey: 'k'),
         inferenceRepo: inferenceRepo,
+        consumptionWakeRunKey: 'run-a',
       );
       final second = recorder.createConversation(systemMessage: 'system B');
       await recorder.sendMessage(
@@ -835,6 +836,7 @@ void main() {
         model: 'm',
         provider: testInferenceProvider(id: 'p', apiKey: 'k'),
         inferenceRepo: inferenceRepo,
+        consumptionWakeRunKey: 'run-b',
       );
 
       expect(recorder.wakes.map((w) => w.systemPrompt), [
@@ -844,6 +846,10 @@ void main() {
       expect(recorder.wakes.map((w) => w.userMessages), [
         ['user A1'],
         ['user B1'],
+      ]);
+      expect(recorder.wakes.map((w) => w.wakeRunKeys), [
+        ['run-a'],
+        ['run-b'],
       ]);
       expect(
         recorder.wakes.every((w) => !w.forcedRetry),

@@ -11,6 +11,14 @@ import 'package:openai_dart/openai_dart.dart';
 typedef ScriptedToolCallBuilder =
     List<ChatCompletionMessageToolCall> Function(String message);
 
+typedef ScriptedSendObserver =
+    InferenceUsage? Function(
+      String systemMessage,
+      String userMessage,
+      List<ChatCompletionMessageToolCall> toolCalls,
+      List<ChatCompletionTool> tools,
+    );
+
 /// Fake, in-process [ConversationRepository]: replays scripted tool calls
 /// through the *real* strategy/tool dispatch, so production tool handlers,
 /// parsers and guards all run without a network call.
@@ -26,7 +34,11 @@ typedef ScriptedToolCallBuilder =
 /// production behaves when a model answers in prose: the workflow's forced
 /// retry fires and, still empty-handed, the wake fails.
 class ScriptedConversationRepository extends ConversationRepository {
+  ScriptedConversationRepository({this.onSend});
+
+  final ScriptedSendObserver? onSend;
   final Map<String, ConversationManager> _managers = {};
+  final Map<String, String> _systemMessages = {};
   final Queue<ScriptedToolCallBuilder> _turns = Queue();
   var _createdCount = 0;
 
@@ -66,6 +78,7 @@ class ScriptedConversationRepository extends ConversationRepository {
     _createdCount++;
     final id = 'conversation-$_createdCount';
     lastSystemMessage = systemMessage;
+    _systemMessages[id] = systemMessage ?? '';
     _managers[id] = ConversationManager(conversationId: id, maxTurns: maxTurns)
       ..initialize(systemMessage: systemMessage);
     return id;
@@ -106,12 +119,18 @@ class ScriptedConversationRepository extends ConversationRepository {
       manager.addAssistantMessage(toolCalls: toolCalls);
       await strategy!.processToolCalls(toolCalls: toolCalls, manager: manager);
     }
-    return null;
+    return onSend?.call(
+      _systemMessages[conversationId] ?? '',
+      message,
+      toolCalls,
+      tools ?? const [],
+    );
   }
 
   @override
   void deleteConversation(String conversationId) {
     _managers.remove(conversationId)?.dispose();
+    _systemMessages.remove(conversationId);
   }
 }
 

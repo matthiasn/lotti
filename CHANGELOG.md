@@ -67,8 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   minutes before the app tried again, and a retry could repeat the same
   overcommit warning. Each draft or refinement now shares one 30-second AI
   budget across all of its turns, cancels it before late tool calls can land,
-  and keeps each planning step focused on only the instructions and tools it
-  can actually use.
+  caps how long any single answer can grow, and keeps each planning step focused
+  on only the instructions and tools it can actually use. If an answer is cut
+  off at that limit, no partial plan is saved; the durable job retries cleanly.
 - **Repairing agent sync data has its own place, and runs when it matters.**
   The "Choose what to sync" list mixed two unrelated things: settings to send,
   and a repair for agent items saved without the marker other devices use to

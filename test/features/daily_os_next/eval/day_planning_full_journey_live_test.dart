@@ -366,6 +366,37 @@ Future<Map<String, Object?>> _runJourney({
     final plannedTaskIds = {
       for (final block in plan.blocks) ?block.taskId,
     };
+    final rolesByWakeRunKey = <String, String>{};
+    for (final wake in recorder.wakes) {
+      for (var i = 0; i < wake.userMessages.length; i++) {
+        final wakeRunKey = i < wake.wakeRunKeys.length
+            ? wake.wakeRunKeys[i]
+            : null;
+        if (wakeRunKey != null) {
+          rolesByWakeRunKey[wakeRunKey] = _messageRole(wake.userMessages[i]);
+        }
+      }
+    }
+    final usageByRole = <String, Map<String, int>>{};
+    for (final interaction in attribution.recordedInteractions) {
+      final role = rolesByWakeRunKey[interaction.wakeRunKey] ?? 'other';
+      final usage = usageByRole.putIfAbsent(
+        role,
+        () => {
+          'interactions': 0,
+          'inputTokens': 0,
+          'outputTokens': 0,
+          'durationMs': 0,
+        },
+      );
+      usage
+        ..['interactions'] = usage['interactions']! + 1
+        ..['inputTokens'] =
+            usage['inputTokens']! + (interaction.inputTokens ?? 0)
+        ..['outputTokens'] =
+            usage['outputTokens']! + (interaction.outputTokens ?? 0)
+        ..['durationMs'] = usage['durationMs']! + (interaction.durationMs ?? 0);
+    }
     result.addAll({
       'scenarioId': scenario.id,
       'intent': scenario.intent,
@@ -423,6 +454,19 @@ Future<Map<String, Object?>> _runJourney({
           },
       ],
       'providerInteractions': attribution.recordedInteractions.length,
+      'providerUsageByRole': usageByRole,
+      'providerInteractionsDetail': [
+        for (final interaction in attribution.recordedInteractions)
+          {
+            'role': rolesByWakeRunKey[interaction.wakeRunKey] ?? 'other',
+            'wakeRunKey': interaction.wakeRunKey,
+            'turnIndex': interaction.turnIndex,
+            'inputTokens': interaction.inputTokens,
+            'outputTokens': interaction.outputTokens,
+            'durationMs': interaction.durationMs,
+            'status': interaction.interactionStatus.name,
+          },
+      ],
       'toolCalls': [
         for (final call in toolCalls)
           {

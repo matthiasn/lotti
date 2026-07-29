@@ -700,6 +700,7 @@ class EvalWakeTranscript {
     required this.conversationId,
     required this.systemPrompt,
     required this.userMessages,
+    this.wakeRunKeys = const [],
   });
 
   final String conversationId;
@@ -710,6 +711,9 @@ class EvalWakeTranscript {
   /// User messages sent into this conversation, in order.
   final List<String> userMessages;
 
+  /// Consumption owner for each user message, aligned with [userMessages].
+  final List<String?> wakeRunKeys;
+
   /// More than one message in a single conversation means the workflow sent a
   /// follow-up to force the required tool call.
   bool get forcedRetry => userMessages.length > 1;
@@ -718,6 +722,7 @@ class EvalWakeTranscript {
 class _MutableWake {
   String? systemPrompt;
   final List<String> userMessages = [];
+  final List<String?> wakeRunKeys = [];
 }
 
 /// Wraps a [ConversationRepository] to capture the prompts the model was sent.
@@ -740,6 +745,7 @@ class EvalPromptRecorder extends ConversationRepository {
         conversationId: id,
         systemPrompt: _byConversation[id]!.systemPrompt,
         userMessages: List.unmodifiable(_byConversation[id]!.userMessages),
+        wakeRunKeys: List.unmodifiable(_byConversation[id]!.wakeRunKeys),
       ),
   ]);
 
@@ -781,7 +787,9 @@ class EvalPromptRecorder extends ConversationRepository {
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
   }) {
-    _byConversation[conversationId]?.userMessages.add(message);
+    _byConversation[conversationId]
+      ?..userMessages.add(message)
+      ..wakeRunKeys.add(consumptionWakeRunKey);
     return _inner.sendMessage(
       conversationId: conversationId,
       message: message,

@@ -174,6 +174,8 @@ void main() {
     MockDayAgentDirectiveService? directiveService,
     TaskDependencyResolver? dependencyResolver,
     DayAudioEntryContextService? dayAudioEntryContextService,
+    DayAgentOutputTokenBudgetPolicy outputTokenBudgets =
+        const DayAgentOutputTokenBudgetPolicy(),
   }) {
     return DayAgentWorkflow(
       agentRepository: repository,
@@ -190,6 +192,7 @@ void main() {
       directiveService: directiveService,
       dependencyResolver: dependencyResolver,
       dayAudioEntryContextService: dayAudioEntryContextService,
+      outputTokenBudgets: outputTokenBudgets,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
@@ -2042,6 +2045,33 @@ void main() {
         );
       }
 
+      test('uses the configured digest output ceiling', () async {
+        final result = await executeDigest(
+          workflow(
+            directiveService: directiveService,
+            outputTokenBudgets: const DayAgentOutputTokenBudgetPolicy(
+              digest: 2304,
+            ),
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        final inferenceRepo =
+            conversationRepository.sendMessageCalls.single.inferenceRepo;
+        expect(inferenceRepo, isA<DayAgentTimeoutInferenceRepository>());
+        final timeoutRepo = inferenceRepo as DayAgentTimeoutInferenceRepository;
+        expect(timeoutRepo.wakeKind, DayAgentWakeKind.digest);
+        expect(timeoutRepo.timeout, const Duration(seconds: 60));
+        expect(
+          timeoutRepo.delegate,
+          isA<DayAgentOutputBudgetInferenceRepository>(),
+        );
+        final outputBudget =
+            timeoutRepo.delegate as DayAgentOutputBudgetInferenceRepository;
+        expect(outputBudget.wakeKind, DayAgentWakeKind.digest);
+        expect(outputBudget.maxCompletionTokens, 2304);
+      });
+
       test(
         'renders <digest> with status events, directives, and the digest '
         'rules, then re-arms the next digest',
@@ -2848,8 +2878,16 @@ void main() {
         final bounded = inferenceRepo as DayAgentTimeoutInferenceRepository;
         expect(bounded.wakeKind, DayAgentWakeKind.general);
         expect(bounded.timeout, const Duration(seconds: 60));
-        expect(bounded.delegate, isA<CloudInferenceWrapper>());
-        final wrapper = bounded.delegate as CloudInferenceWrapper;
+        expect(
+          bounded.delegate,
+          isA<DayAgentOutputBudgetInferenceRepository>(),
+        );
+        final outputBudget =
+            bounded.delegate as DayAgentOutputBudgetInferenceRepository;
+        expect(outputBudget.wakeKind, DayAgentWakeKind.general);
+        expect(outputBudget.maxCompletionTokens, 4096);
+        expect(outputBudget.delegate, isA<CloudInferenceWrapper>());
+        final wrapper = outputBudget.delegate as CloudInferenceWrapper;
         // testAiModel defaults to AiConfigModel.geminiThinkingMode == low.
         expect(wrapper.geminiThinkingMode, GeminiThinkingMode.low);
 

@@ -72,6 +72,7 @@ class DayAgentPipelineHarness {
     required this.runtime,
     required this.realDayAgent,
     required this.dayAgentService,
+    required this.dayWorkflow,
     required this.planService,
     required this.journalRepository,
   });
@@ -383,6 +384,7 @@ class DayAgentPipelineHarness {
       runtime: runtime,
       realDayAgent: realDayAgent,
       dayAgentService: dayAgentService,
+      dayWorkflow: dayWorkflow,
       planService: planService,
       journalRepository: journalRepository,
     );
@@ -400,6 +402,10 @@ class DayAgentPipelineHarness {
   final DayProcessingRuntime runtime;
   final RealDayAgent realDayAgent;
   final DayAgentService dayAgentService;
+
+  /// The production workflow instance, exposed for tests that need to inspect
+  /// one provider-bounded wake without waiting through durable retry backoff.
+  final DayAgentWorkflow dayWorkflow;
 
   /// The plan read/write service, exposed so callers can read the persisted
   /// [DayPlanEntity] (and its `PlannedBlock`s) through the production read
@@ -455,6 +461,74 @@ class DelegatingAgentSyncService extends MockAgentSyncService {
 /// bookkeeping, agent listing, attention-planning inputs, capture
 /// metadata) that the shared fixture's narrower call graph doesn't cover.
 class PipelineAgentRepository extends InMemoryAgentRepository {
+  var _readCount = 0;
+
+  /// Counted repository reads since the last reset.
+  int get readCount => _readCount;
+
+  /// Starts a fresh read-count window for one benchmarked wake.
+  void resetReadCount() {
+    _readCount = 0;
+  }
+
+  void _countRead() {
+    _readCount += 1;
+  }
+
+  @override
+  Future<AgentDomainEntity?> getEntity(String id) {
+    _countRead();
+    return super.getEntity(id);
+  }
+
+  @override
+  Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
+    Iterable<String> ids,
+  ) {
+    _countRead();
+    return super.getEntitiesByIds(ids);
+  }
+
+  @override
+  Future<AgentStateEntity?> getAgentState(String agentId) {
+    _countRead();
+    return super.getAgentState(agentId);
+  }
+
+  @override
+  Future<List<AgentMessageEntity>> getMessagesByKind(
+    String agentId,
+    AgentMessageKind kind, {
+    int? limit,
+  }) {
+    _countRead();
+    return super.getMessagesByKind(agentId, kind, limit: limit);
+  }
+
+  @override
+  Future<List<DayStatusEventEntity>> getDayStatusEventsSince(
+    DateTime since, {
+    int? limit,
+  }) {
+    _countRead();
+    return super.getDayStatusEventsSince(since, limit: limit);
+  }
+
+  @override
+  Future<List<DayStatusEventEntity>> getDayStatusEventsSinceNewestFirst(
+    DateTime since, {
+    required int limit,
+  }) {
+    _countRead();
+    return super.getDayStatusEventsSinceNewestFirst(since, limit: limit);
+  }
+
+  @override
+  Future<List<AgentLink>> getLinksFrom(String fromId, {String? type}) {
+    _countRead();
+    return super.getLinksFrom(fromId, type: type);
+  }
+
   @override
   Future<void> insertWakeRun({required WakeRunLogData entry}) async {}
 
@@ -480,14 +554,19 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
   @override
   Future<List<AgentIdentityEntity>> getAgentIdentitiesByLifecycle(
     AgentLifecycle lifecycle,
-  ) async => entities
-      .whereType<AgentIdentityEntity>()
-      .where((e) => e.lifecycle == lifecycle)
-      .toList();
+  ) async {
+    _countRead();
+    return entities
+        .whereType<AgentIdentityEntity>()
+        .where((e) => e.lifecycle == lifecycle)
+        .toList();
+  }
 
   @override
-  Future<List<AgentIdentityEntity>> getAllAgentIdentities() async =>
-      entities.whereType<AgentIdentityEntity>().toList();
+  Future<List<AgentIdentityEntity>> getAllAgentIdentities() async {
+    _countRead();
+    return entities.whereType<AgentIdentityEntity>().toList();
+  }
 
   @override
   Future<AttentionPlanningInputs> getAttentionPlanningInputsForWindow({
@@ -498,36 +577,45 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
     Set<StandingAgreementScope>? agreementScopes,
     int claimLimit = 200,
     int agreementLimit = 200,
-  }) async => const AttentionPlanningInputs.empty();
+  }) async {
+    _countRead();
+    return const AttentionPlanningInputs.empty();
+  }
 
   @override
   Future<List<CaptureEventMeta>> getCaptureEventMetaByAgentId(
     String agentId,
-  ) async => entities
-      .whereType<CaptureEntity>()
-      .where((c) => c.agentId == agentId && c.deletedAt == null)
-      .map(
-        (c) => (
-          id: c.id,
-          dayId: c.dayId,
-          createdAt: c.createdAt,
-          capturedAt: c.capturedAt,
-        ),
-      )
-      .toList();
+  ) async {
+    _countRead();
+    return entities
+        .whereType<CaptureEntity>()
+        .where((c) => c.agentId == agentId && c.deletedAt == null)
+        .map(
+          (c) => (
+            id: c.id,
+            dayId: c.dayId,
+            createdAt: c.createdAt,
+            capturedAt: c.capturedAt,
+          ),
+        )
+        .toList();
+  }
 
   @override
   Future<List<AgentDomainEntity>> getEntitiesByAgentId(
     String agentId, {
     String? type,
     int limit = -1,
-  }) async => entities
-      .where(
-        (e) =>
-            e.agentId == agentId &&
-            (type == null || AgentDbConversions.entityType(e) == type),
-      )
-      .toList();
+  }) async {
+    _countRead();
+    return entities
+        .where(
+          (e) =>
+              e.agentId == agentId &&
+              (type == null || AgentDbConversions.entityType(e) == type),
+        )
+        .toList();
+  }
 
   // Subtype filtering goes through the production projection, so this fake
   // cannot answer a day-scoped read differently from the real table.
@@ -537,14 +625,20 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
     required String type,
     required String subtype,
     int limit = -1,
-  }) async => _bySubtypes(agentId, type, {subtype}, limit);
+  }) async {
+    _countRead();
+    return _bySubtypes(agentId, type, {subtype}, limit);
+  }
 
   @override
   Future<List<AgentDomainEntity>> getEntitiesByAgentIdAndSubtypes(
     String agentId, {
     required String type,
     required Iterable<String> subtypes,
-  }) async => _bySubtypes(agentId, type, subtypes.toSet(), -1);
+  }) async {
+    _countRead();
+    return _bySubtypes(agentId, type, subtypes.toSet(), -1);
+  }
 
   List<AgentDomainEntity> _bySubtypes(
     String agentId,

@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Day-planning evaluation and benchmarks
-description: Measuring what the model plans (not what the guards enforce), and proving storage cost does not grow with history.
+description: Measuring model behavior, full-workflow prompt and token cost, and storage cost as history grows.
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
@@ -18,8 +18,8 @@ sources:
     last_modified: 2026-07-27
   - id: benchmark
     resource: ../../../test/features/daily_os_next/benchmark
-    title: Storage benchmark
-    last_modified: 2026-07-25
+    title: Storage and full-workflow aged-corpus benchmarks
+    last_modified: 2026-07-29
 ---
 
 # Two lanes, and the distinction matters
@@ -756,6 +756,68 @@ increase in stored history — the property the partial indexes and day-scoped
 subtypes were built for. (Values drifting *down* with size is measurement noise
 and cache warming, not a real speedup.)
 
-**What this does not measure:** wake prompt bytes, token counts, and digest wake
-duration. Those need the full agent workflow rather than the storage layer, and
-are tracked separately.
+# The full-workflow wake benchmark
+
+`day_agent_wake_benchmark.dart` uses the same 1 / 6 / 12-month corpus ages and
+the production `DayAgentWorkflow`. Identities, prompt construction, tool
+dispatch, plan persistence, coordinator digest, and repository reads are real;
+only provider turns are scripted. It reports parse, draft, refine, and digest
+separately:
+
+- `promptBytes`: UTF-8 bytes in the system plus user prompt;
+- `stablePrefixBytes`: UTF-8 bytes in the system message, the conservative
+  byte-identical prefix before volatile user context;
+- `inputTokens`: the larger of `TextChunker`'s estimate and UTF-8 bytes / 4,
+  including tool schemas;
+- `outputTokens`: the same estimate over the scripted tool-call payload;
+- `durationMicros`: monotonic end-to-end workflow time;
+- `repositoryReads`: counted repository calls during the wake; and
+- `outputTokenCeiling`: the production cap selected for that wake.
+
+The benchmark has an always-on two-day schema smoke and shares the storage
+benchmark's opt-in command:
+
+```sh
+fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \
+  test/features/daily_os_next/benchmark/
+```
+
+Baseline on the same dev machine (1 / 6 / 12 months):
+
+| wake | prompt bytes | stable prefix bytes | input tokens | output tokens | repository reads | duration range |
+|---|---:|---:|---:|---:|---:|---:|
+| Parse | 2,983 / 2,983 / 2,983 | 2,273 / 2,273 / 2,273 | 975 / 975 / 975 | 25 / 25 / 25 | 17 / 17 / 17 | 2.3–2.8 ms |
+| Draft | 8,462 / 8,462 / 8,462 | 7,829 / 7,829 / 7,829 | 3,028 / 3,028 / 3,028 | 69 / 69 / 69 | 15 / 15 / 15 | 3.0–3.9 ms |
+| Refine | 12,363 / 12,363 / 12,363 | 10,759 / 10,759 / 10,759 | 4,958 / 4,958 / 4,958 | 73 / 73 / 73 | 18 / 18 / 18 | 3.4–4.7 ms |
+| Digest | 10,535 / 10,535 / 10,535 | 6,711 / 6,711 / 6,711 | 4,628 / 4,628 / 4,628 | 35 / 35 / 35 | 19 / 19 / 19 | 5.2–6.2 ms |
+
+Every size-dependent value is byte-for-byte flat across a twelvefold age
+increase. Stopwatch variation is scheduler noise; prompt growth and read-count
+growth are both zero.
+
+# Output distribution and live latency
+
+Historical pre-ceiling Melious full journeys established the positive-path
+output distribution before choosing caps. The capped GLM/Qwen run on 2026-07-29
+then observed successful provider turns at:
+
+| Wake | Observed successful output tokens | Ceiling |
+|---|---:|---:|
+| Parse | 511–1,640 | 4,096 |
+| Draft | 571–2,173 | 8,192 |
+| Digest | 122–1,553 | 4,096 |
+| Refine | 73 in the deterministic full-workflow fixture | 4,096 |
+
+The draft ceiling deliberately leaves the most headroom because a complete plan
+is the largest artifact. Ceiling enforcement is per provider turn; a multi-turn
+digest may legitimately use more than 4,096 tokens in total while no individual
+response can run away.
+
+Using nearest-rank percentiles over the available realistic full-journey
+reports, pre-limit versus current capped-stack total wake p50/p95 was
+28.5s/50.3s → 14.3s/17.0s for GLM and 73.7s/176.1s → 45.9s/81.3s for Qwen.
+The distributions are small and model-mixed, so these are directional rather
+than a performance claim. The deterministic benchmark shows the isolated
+ceiling adds no measurable positive-path prompt or read cost. One Qwen draft hit
+the existing 30-second deadline, retried, and persisted a complete plan; a
+follow-up run completed in 40.7s total with no retry.

@@ -13,7 +13,7 @@ import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Model-facing mode of one day-agent wake.
-enum DayAgentWakeKind { capture, draft, refine, general }
+enum DayAgentWakeKind { capture, draft, refine, digest, general }
 
 /// Maximum provider-stream lifetime for each wake kind.
 ///
@@ -25,20 +25,190 @@ class DayAgentInferenceTimeoutPolicy {
     this.capture = const Duration(seconds: 20),
     this.draft = const Duration(seconds: 30),
     this.refine = const Duration(seconds: 30),
+    this.digest = const Duration(seconds: 60),
     this.general = const Duration(seconds: 60),
   });
 
   final Duration capture;
   final Duration draft;
   final Duration refine;
+  final Duration digest;
   final Duration general;
 
   Duration forKind(DayAgentWakeKind kind) => switch (kind) {
     DayAgentWakeKind.capture => capture,
     DayAgentWakeKind.draft => draft,
     DayAgentWakeKind.refine => refine,
+    DayAgentWakeKind.digest => digest,
     DayAgentWakeKind.general => general,
   };
+}
+
+/// Per-provider-turn output ceilings selected from measured Daily OS wakes.
+///
+/// Drafts receive more headroom because they serialize a complete block list.
+/// Capture, refine, and digest turns produce smaller bounded artifacts. The
+/// policy is injected into the day-agent workflow, so tests and future provider
+/// profiles can tune it without bypassing the truncation safety boundary.
+class DayAgentOutputTokenBudgetPolicy {
+  const DayAgentOutputTokenBudgetPolicy({
+    this.capture = 4096,
+    this.draft = 8192,
+    this.refine = 4096,
+    this.digest = 4096,
+    this.general = 4096,
+  });
+
+  final int capture;
+  final int draft;
+  final int refine;
+  final int digest;
+  final int general;
+
+  int forKind(DayAgentWakeKind kind) => switch (kind) {
+    DayAgentWakeKind.capture => capture,
+    DayAgentWakeKind.draft => draft,
+    DayAgentWakeKind.refine => refine,
+    DayAgentWakeKind.digest => digest,
+    DayAgentWakeKind.general => general,
+  };
+}
+
+/// A provider exhausted the output ceiling before completing its response.
+class DayAgentOutputLimitExceededException implements Exception {
+  const DayAgentOutputLimitExceededException({
+    required this.wakeKind,
+    required this.maxCompletionTokens,
+  });
+
+  final DayAgentWakeKind wakeKind;
+  final int maxCompletionTokens;
+
+  @override
+  String toString() =>
+      'DayAgentOutputLimitExceededException: ${wakeKind.name} inference '
+      'reached its $maxCompletionTokens-token output ceiling';
+}
+
+/// Applies a hard output ceiling and classifies truncated provider responses.
+///
+/// The ceiling is forwarded to the provider for every turn. A provider may
+/// signal exhaustion explicitly with `finish_reason: length`; Gemini-style
+/// adapters can omit that signal, so reported completion usage at the ceiling
+/// is treated equivalently. The error is emitted only after the provider stream
+/// ends, before the conversation repository can execute a collected tool call.
+class DayAgentOutputBudgetInferenceRepository
+    implements InferenceRepositoryInterface {
+  DayAgentOutputBudgetInferenceRepository({
+    required this.delegate,
+    required this.wakeKind,
+    required this.maxCompletionTokens,
+  }) {
+    if (maxCompletionTokens <= 0) {
+      throw ArgumentError.value(
+        maxCompletionTokens,
+        'maxCompletionTokens',
+        'must be positive',
+      );
+    }
+  }
+
+  final InferenceRepositoryInterface delegate;
+  final DayAgentWakeKind wakeKind;
+  final int maxCompletionTokens;
+
+  int _effectiveLimit(int? requested) =>
+      requested == null || requested > maxCompletionTokens
+      ? maxCompletionTokens
+      : requested;
+
+  Stream<CreateChatCompletionStreamResponse> _bound(
+    Stream<CreateChatCompletionStreamResponse> source,
+    int effectiveLimit,
+  ) async* {
+    var reachedLimit = false;
+    await for (final response in source) {
+      final choices = response.choices;
+      if (choices != null &&
+          choices.any(
+            (choice) =>
+                choice.finishReason == ChatCompletionFinishReason.length,
+          )) {
+        reachedLimit = true;
+      }
+      final outputTokens = response.usage?.completionTokens;
+      if (outputTokens != null && outputTokens >= effectiveLimit) {
+        reachedLimit = true;
+      }
+      yield response;
+    }
+    if (reachedLimit) {
+      throw DayAgentOutputLimitExceededException(
+        wakeKind: wakeKind,
+        maxCompletionTokens: effectiveLimit,
+      );
+    }
+  }
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
+    InferenceImpactCollector? impactCollector,
+  }) {
+    final effectiveLimit = _effectiveLimit(maxCompletionTokens);
+    return _bound(
+      delegate.generateTextWithMessages(
+        messages: messages,
+        model: model,
+        temperature: temperature,
+        provider: provider,
+        maxCompletionTokens: effectiveLimit,
+        tools: tools,
+        toolChoice: toolChoice,
+        thoughtSignatures: thoughtSignatures,
+        signatureCollector: signatureCollector,
+        turnIndex: turnIndex,
+        impactCollector: impactCollector,
+      ),
+      effectiveLimit,
+    );
+  }
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateText({
+    required String prompt,
+    required String model,
+    required double temperature,
+    required String? systemMessage,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+  }) {
+    final effectiveLimit = _effectiveLimit(maxCompletionTokens);
+    return _bound(
+      delegate.generateText(
+        prompt: prompt,
+        model: model,
+        temperature: temperature,
+        systemMessage: systemMessage,
+        provider: provider,
+        maxCompletionTokens: effectiveLimit,
+        tools: tools,
+        toolChoice: toolChoice,
+      ),
+      effectiveLimit,
+    );
+  }
 }
 
 /// Classified provider deadline failure for one day-agent wake.
@@ -88,6 +258,7 @@ class DayAgentTimeoutInferenceRepository
         Future<void> Function()
       >{};
   var _expired = false;
+  var _disposed = false;
 
   DayAgentInferenceTimedOutException _timeoutError() =>
       DayAgentInferenceTimedOutException(
@@ -95,12 +266,24 @@ class DayAgentTimeoutInferenceRepository
         timeout: timeout,
       );
 
+  Future<void> _cancelSafely(Future<void> Function() cancel) async {
+    try {
+      await cancel();
+    } catch (_) {
+      // The timeout is already the classified failure for this wake. Some
+      // async provider streams surface their in-flight HTTP error from
+      // StreamSubscription.cancel(); letting that detached cleanup future
+      // escape would fail the process after the durable retry succeeds.
+    }
+  }
+
   void _expire() {
+    if (_disposed) return;
     _wakeDeadline.cancel();
     _expired = true;
     for (final entry in _active.entries.toList()) {
       _active.remove(entry.key);
-      unawaited(entry.value());
+      unawaited(_cancelSafely(entry.value));
       entry.key.addError(_timeoutError());
       unawaited(entry.key.close());
     }
@@ -115,6 +298,10 @@ class DayAgentTimeoutInferenceRepository
     controller = StreamController<CreateChatCompletionStreamResponse>(
       sync: true,
       onListen: () {
+        if (_disposed) {
+          unawaited(controller.close());
+          return;
+        }
         if (_expired) {
           controller.addError(_timeoutError());
           unawaited(controller.close());
@@ -135,10 +322,25 @@ class DayAgentTimeoutInferenceRepository
       },
       onCancel: () async {
         final cancel = _active.remove(controller);
-        await cancel?.call();
+        if (cancel != null) {
+          await _cancelSafely(cancel);
+        }
       },
     );
     return controller.stream;
+  }
+
+  /// Cancels the wake deadline and any provider stream still in flight.
+  Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
+    _wakeDeadline.cancel();
+    final active = _active.entries.toList(growable: false);
+    _active.clear();
+    for (final entry in active) {
+      await _cancelSafely(entry.value);
+      await entry.key.close();
+    }
   }
 
   @override

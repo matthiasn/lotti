@@ -12,6 +12,10 @@ sources:
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Mode-specific system prompt and tool gating
     last_modified: 2026-07-29
+  - id: inference-boundaries
+    resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart
+    title: Per-mode inference deadlines and output ceilings
+    last_modified: 2026-07-29
   - id: sections
     resource: ../../../lib/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart
     title: Prompt section tags
@@ -67,6 +71,31 @@ One mode-specific inference deadline starts when the wake's inference wrapper
 is created and is shared by every provider turn in that wake. Tool
 continuations and a forced terminal-tool retry receive only the time remaining
 in the original budget; streamed reasoning never resets it.
+
+Every provider turn also receives a mode-specific output ceiling:
+
+| Wake | Maximum completion tokens |
+|---|---:|
+| Capture parse | 4,096 |
+| Day draft | 8,192 |
+| Refine | 4,096 |
+| Coordinator digest | 4,096 |
+| Other day-agent wake | 4,096 |
+
+The draft ceiling is larger because its terminal tool serializes the complete
+block list. The others produce smaller artifacts. These are injected through
+`DayAgentOutputTokenBudgetPolicy`, then clamped around the resolved provider
+repository, so a caller may request less but cannot bypass the Daily OS maximum.
+
+A response ending with `finish_reason: length` is truncated. Providers that omit
+that reason are treated the same when reported completion usage reaches the
+ceiling. The wrapper forwards all chunks but throws after the stream ends,
+**before `ConversationRepository` dispatches buffered tool calls**. A parseable
+but incomplete plan therefore cannot be persisted. The durable job classifies
+this as provider work and retries; after the normal attempt limit it becomes a
+deterministic failure rather than retrying forever. Cancel errors from a detached
+HTTP request are absorbed during timeout teardown because the classified timeout
+has already crossed the durable-job boundary.
 
 # The payload is tagged plaintext, not JSON
 
