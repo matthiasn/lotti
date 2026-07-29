@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/diagnostics_panel.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -117,5 +118,44 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('dbMissingBase: 0'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  // Both gaps in this panel were a raw 6 — a value with no step on the ramp.
+  // They now round up to step3, and are asserted against the token so the
+  // panel cannot drift back off the scale unnoticed.
+  testWidgets('the panel spaces its blocks on the spacing ramp', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        DiagnosticsPanel(
+          fetchDiagnostics: () async =>
+              ['dbMissingBase=2', 'lastIgnoredCount=1', 'lastIgnored.1=a'].join(
+                '\n',
+              ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Diagnostics'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final tokens = tester.element(find.byType(DiagnosticsPanel)).designTokens;
+    final gaps = tester
+        .widgetList<SizedBox>(
+          find.descendant(
+            of: find.byType(DiagnosticsPanel),
+            matching: find.byType(SizedBox),
+          ),
+        )
+        .where((box) => box.height != null && box.width == null)
+        .toList();
+
+    // With an ignored entry present both gaps render.
+    expect(gaps, hasLength(2));
+    for (final gap in gaps) {
+      expect(gap.height, tokens.spacing.step3);
+    }
   });
 }

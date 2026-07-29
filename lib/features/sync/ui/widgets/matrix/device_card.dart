@@ -474,8 +474,8 @@ class _DeviceIconTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radii.m),
       ),
       child: SizedBox(
-        width: tokens.spacing.step8,
-        height: tokens.spacing.step8,
+        width: ControlSizes.iconChip,
+        height: ControlSizes.iconChip,
         child: Center(
           child: Icon(
             device.isCurrentDevice
@@ -483,7 +483,7 @@ class _DeviceIconTile extends StatelessWidget {
                       ? Icons.laptop_mac_rounded
                       : Icons.smartphone_rounded)
                 : Icons.devices_other_rounded,
-            size: tokens.typography.lineHeight.subtitle2,
+            size: IconSizes.l,
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),

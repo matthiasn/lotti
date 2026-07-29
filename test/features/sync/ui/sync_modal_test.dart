@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
-import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
@@ -599,6 +599,77 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(controller.resetCalled, isTrue);
+    });
+
+    // The step rows carried a raw vertical 6, which is not a step on the
+    // spacing ramp at all. They now bind step3, so the progress list keeps the
+    // same rhythm as every other stacked list in the app.
+    testWidgets('the step rows sit on the spacing ramp', (tester) async {
+      final controller = _PendingSyncController(
+        const SyncState(
+          isSyncing: true,
+          progress: 50,
+          currentStep: SyncStep.categories,
+          selectedSteps: {SyncStep.measurables, SyncStep.categories},
+          stepProgress: {
+            SyncStep.measurables: StepProgress(processed: 5, total: 5),
+            SyncStep.categories: StepProgress(processed: 1, total: 10),
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            syncControllerProvider.overrideWith(() => controller),
+            syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
+          ],
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => SyncModal.show(context),
+                    child: const Text('Open sync modal'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open sync modal'));
+      await tester.pumpAndSettle();
+
+      // The step rows only exist on the progress page, past the confirm.
+      tester
+          .widget<DesignSystemButton>(
+            find.widgetWithText(
+              DesignSystemButton,
+              messages.syncEntitiesConfirm,
+            ),
+          )
+          .onPressed
+          ?.call();
+      await tester.pump();
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+      final tokens = tester
+          .element(find.byType(LinearProgressIndicator))
+          .designTokens;
+
+      // One row per selected step, each inset by the same vertical step.
+      final rows = find.byWidgetPredicate(
+        (w) =>
+            w is Padding &&
+            w.padding == EdgeInsets.symmetric(vertical: tokens.spacing.step3),
+      );
+
+      expect(rows, findsNWidgets(controller.state.selectedSteps.length));
     });
   });
 }

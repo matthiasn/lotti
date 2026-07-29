@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
@@ -956,6 +957,41 @@ void main() {
       expect(make(cornerRadius: 8).shouldRepaint(make()), isTrue);
       expect(make(strokeWidth: 3).shouldRepaint(make()), isTrue);
       expect(make(inset: 20).shouldRepaint(make()), isTrue);
+    });
+
+    testWidgets('the scan line recedes behind the brackets that frame it', (
+      tester,
+    ) async {
+      // The brackets carry the accent at full strength; the rule across the
+      // middle is decoration and must not read as a fifth edge. The alpha
+      // used to be a bare 0.7 with no owner.
+      const accent = Color(0xFF00FF00);
+
+      await tester.pumpWidget(
+        Center(
+          child: CustomPaint(
+            size: const Size(200, 200),
+            painter: ViewfinderBracketsPainter(
+              color: accent,
+              cornerLength: 24,
+              cornerRadius: 12,
+              strokeWidth: 2,
+              inset: 16,
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.byType(CustomPaint),
+        paints
+          // Four corner brackets at full accent, then the faded rule.
+          ..path(color: accent)
+          ..path(color: accent)
+          ..path(color: accent)
+          ..path(color: accent)
+          ..line(color: accent.withValues(alpha: SurfaceAlphas.linework)),
+      );
     });
 
     testWidgets('a provisioning reset clears the stale decoded bundle', (

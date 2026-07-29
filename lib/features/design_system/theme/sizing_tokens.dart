@@ -22,6 +22,18 @@ abstract final class ControlSizes {
   /// 24 — the compact checkbox box. This fills the component's existing
   /// 24-high row instead of spending four of those pixels on outer padding.
   static const double checkbox = 24;
+
+  /// 40 — the filled tile behind a leading glyph on a list row, where the
+  /// chip anchors the row's left edge and carries its own visual weight (the
+  /// device roster's per-device tile).
+  ///
+  /// Sized as a container rather than borrowed from `spacing.step8`, which is
+  /// the same 40 today but is a *gap* and retunes independently of it.
+  static const double iconChip = 40;
+
+  /// 28 — the compact chip riding inside a card row, where the full
+  /// [iconChip] would out-weigh the title it leads.
+  static const double iconChipCompact = 28;
 }
 
 /// Pointer interaction targets.
