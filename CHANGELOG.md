@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1072]
 ### Fixed
+- **A confirm button no longer disappears when its label is long.** The buttons
+  at the bottom of a dialog were placed side by side or stacked according to how
+  wide the screen was, without ever measuring the buttons themselves. A longer
+  translation — German and Romanian most often — therefore still counted as
+  fitting on a phone: the confirm button was squeezed down to nothing and a
+  striped overflow warning ran across the footer, leaving the dialog with no
+  visible way to confirm it. Dialog footers now measure the actual buttons and
+  give each its own line as soon as they stop fitting side by side.
 - **Lotti installs on older iPhones and iPads again.** The app had come to
   require iOS 17, which left devices that cannot be updated past iOS 15 — the
   iPhone 6s and the first-generation iPhone SE among them — unable to install it

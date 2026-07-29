@@ -120,13 +120,22 @@ void main() {
       expect(gradient.colors.length, 2);
       expect(gradient.colors.last.a, greaterThan(gradient.colors.first.a));
 
-      expect(
-        find.descendant(
-          of: find.byType(BackdropFilter),
-          matching: find.byType(LayoutBuilder),
-        ),
-        findsOneWidget,
-      );
+      // The actions are painted over the blur, which is what makes this a
+      // glass footer rather than a blurred strip with a bar sitting beside it.
+      // How the actions respond to width is the action bar's own contract and
+      // is covered in design_system_modal_action_bar_test.dart.
+      for (final key in const [
+        ValueKey('design-system-task-filter-clear'),
+        ValueKey('design-system-task-filter-apply'),
+      ]) {
+        expect(
+          find.descendant(
+            of: find.byType(BackdropFilter),
+            matching: find.byKey(key),
+          ),
+          findsOneWidget,
+        );
+      }
       final clear = tester.widget<DesignSystemButton>(
         find.byKey(const ValueKey('design-system-task-filter-clear')),
       );
