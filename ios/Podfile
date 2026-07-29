@@ -1,5 +1,12 @@
 # Uncomment this line to define a global platform for your project
-platform :ios, '17.0'
+# The hard dependency floor is 15.1 — onnxruntime-c/-objc 1.24.2 ship a prebuilt
+# ios-arm64 slice built with minos 15.1. Everything else is lower (ObjectBox
+# 15.0, Flutter engine 13.0). We deliberately set 15.8, the last 15.x point
+# release: we support only fully-patched devices, so there is no reason to admit
+# users sitting on superseded, unpatched 15.0–15.7 builds. A9 hardware (iPhone
+# 6s / SE 1st gen) reaches 15.8.x, so this still covers the oldest devices that
+# can run the app. Do not raise it without a dependency that demands it.
+platform :ios, '15.8'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -40,10 +47,10 @@ end
 # any *dynamic* pod that transitively depends on a *static* one, so the whole
 # onnxruntime chain — the flutter_onnxruntime plugin AND its onnxruntime-* deps
 # — must link statically together while every other plugin stays dynamic.
-# (TTS is macOS-only at runtime, but the plugin is still integrated on iOS, so
-# iOS needs the same treatment as macos/Podfile. Forcing only the onnxruntime-*
-# leaves flutter_onnxruntime dynamic and still depending on them, which is
-# exactly the edge the validator rejects.)
+# (iOS needs the same treatment as macos/Podfile — see
+# SupertonicOnnxEngine.isPlatformSupported, which includes iOS. Forcing only the
+# onnxruntime-* leaves flutter_onnxruntime dynamic and still depending on them,
+# which is exactly the edge the validator rejects.)
 pre_install do |installer|
   installer.pod_targets.each do |pod|
     if pod.name == 'flutter_onnxruntime' || pod.name.start_with?('onnxruntime')

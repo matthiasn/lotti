@@ -20,7 +20,10 @@ Flutter plugin for running ONNX models with the native ONNX Runtime, supporting 
   # so it is never compiled as Objective-C.
   s.public_header_files = 'flutter_onnxruntime/Sources/flutter_onnxruntime_objc/include/**/*.h'
   s.dependency 'Flutter'
-  s.platform = :ios, '16.0'
+  # LOTTI FORK PATCH: upstream declares 16.0, but the pod's only real constraint
+  # is its onnxruntime-objc 1.24.2 dependency (prebuilt ios-arm64, minos 15.1).
+  # Kept in lockstep with `platform :ios` in ios/Podfile so CocoaPods resolves.
+  s.platform = :ios, '15.8'
   # Keep this version in lockstep with the `onnxruntime-swift-package-manager`
   # pin in flutter_onnxruntime/Package.swift so CocoaPods and SPM resolve the
   # same ORT (and the vendored internal headers stay matched).

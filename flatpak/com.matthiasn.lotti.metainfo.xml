@@ -35,6 +35,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1072" date="2026-07-29">
+      <description>
+        <p>Fixed: Lotti installs on older iPhones and iPads again. The app had come to require iOS 17, which left devices that cannot be updated past iOS 15 — the iPhone 6s and the first-generation iPhone SE among them — unable to install it at all. Nothing in the app actually needed iOS 17: the requirement arrived with a speech feature that was removed from iOS shortly afterwards, and was never lowered again. Lotti now asks for iOS 15.8, the last iOS 15 release, so those devices are supported once more as long as they are fully up to date.</p>
+      </description>
+    </release>
     <release version="0.9.1071" date="2026-07-26">
       <description>
         <p>Fixed: transcription now counts towards your AI usage figures. When a recording was transcribed by a Melious speech model, the cost and the energy, carbon and water it used were reported by the provider and then thrown away — so the AI usage charts showed transcription as free, and every total that included it was short. Those figures are now recorded like any other AI call.</p>
