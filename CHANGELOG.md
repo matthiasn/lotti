@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1072]
+### Fixed
+- **Lotti installs on older iPhones and iPads again.** The app had come to
+  require iOS 17, which left devices that cannot be updated past iOS 15 — the
+  iPhone 6s and the first-generation iPhone SE among them — unable to install it
+  at all. Nothing in the app actually needed iOS 17: the requirement arrived
+  with a speech feature that was removed from iOS shortly afterwards, and was
+  never lowered again. Lotti now asks for iOS 15.8, the last iOS 15 release, so
+  those devices are supported once more as long as they are fully up to date.
+
 ## [0.9.1071]
 ### Added
 - **Encryption keys are never shared with unverified devices — and sync never

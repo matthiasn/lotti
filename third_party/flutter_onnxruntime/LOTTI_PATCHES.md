@@ -32,9 +32,11 @@ against `cleanupResources` on app termination. The reply is delivered via the
 normal `result(...)` callback, which `FlutterMethodChannel` marshals back to
 the engine from any thread.
 
-Search the file for `LOTTI FORK PATCH` to find the exact changes. Only the
-**macOS** implementation is patched; iOS/Android/Linux/Windows are byte-for-byte
-upstream (iOS already offloads correctly via its working task queue).
+Search the file for `LOTTI FORK PATCH` to find the exact changes. This is the
+only patch to *plugin logic* — iOS/Android/Linux/Windows implementations are
+byte-for-byte upstream (iOS already offloads correctly via its working task
+queue). The iOS podspec and the Linux CMake carry build-configuration patches,
+documented below.
 
 TTS now also targets **Linux**, but the Linux plugin is still upstream for
 threading and runs `runInference` synchronously on the GTK main thread (no
@@ -44,6 +46,18 @@ functional, but not yet smooth. Porting the `workQueue` offload to the Linux
 plugin (dispatch `runInference` to a `GTask`/worker thread, reply from the
 worker) is the analogous fix; see `lib/features/tts/README.md` → "Platform
 threading caveat".
+
+### iOS: deployment target
+
+**File:** `ios/flutter_onnxruntime.podspec` (search for `LOTTI FORK PATCH`).
+
+Upstream declares `s.platform = :ios, '16.0'`, which is stricter than anything
+the pod actually needs — its only binary constraint is `onnxruntime-objc`
+1.24.2, whose prebuilt `ios-arm64` slice is built with `minos 15.1`. Left at
+16.0 it silently becomes the highest floor in the whole iOS dependency graph and
+forces the app's deployment target up with it. The patch lowers it to `15.8`, in
+lockstep with `platform :ios` in `ios/Podfile`; CocoaPods errors out if the two
+disagree.
 
 ### Linux: offline-build runtime resolution
 
@@ -67,6 +81,11 @@ When bumping `flutter_onnxruntime`, re-vendor the new version and re-apply the
 - **macOS** (`FlutterOnnxruntimePlugin.swift`): the `workQueue` property + the
   `handle` → `handleLocked` split. Ideally this lands upstream once macOS gains
   task-queue support (or as an opt-in `DispatchQueue` fallback); drop it then.
+- **iOS** (`ios/flutter_onnxruntime.podspec`): the `s.platform` downgrade. Check
+  the re-vendored value and the new ORT's actual `minos` (`otool -l …
+  onnxruntime.xcframework/ios-arm64/onnxruntime.framework/onnxruntime | grep -A3
+  LC_BUILD_VERSION`) before assuming 15.8 is still reachable — a bumped ORT can
+  raise the real floor above it, which would force `ios/Podfile` up too.
 - **Linux** (`linux/CMakeLists.txt`): the `ONNXRUNTIME_ROOT_DIR` env seeding.
 
 If the bundled ONNX Runtime **version** changes, also update the pinned binary
