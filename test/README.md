@@ -9,26 +9,25 @@
 
 ## Aged-history cost gates
 
-Daily OS has two ordinary-CI regression tests under
-`test/features/daily_os_next/benchmark/`. They compare identical current-day
-workloads over 1- and 12-month corpora and require zero growth in:
+Daily OS cost regressions live under
+`test/features/daily_os_next/benchmark/`. Run the always-on gates directly:
 
-- SQL statements and rows returned for outbox claiming, day-view reads, pending
-  plan diffs and the seven-day plan lookback, plus the absence of retained-table
-  access through an unbounded SQLite index or table scan; and
-- model-facing prompt bytes, agent-repository reads, and day-scoped capture
-  metadata rows returned to parse, draft, refine and digest wakes. The paired
-  storage gate instruments the production capture-metadata SQL query, including
-  its returned rows and bounded query plan.
+```sh
+fvm flutter test \
+  test/features/daily_os_next/benchmark/day_planner_corpus_benchmark_test.dart \
+  test/features/daily_os_next/benchmark/day_agent_wake_benchmark_test.dart
+```
 
-These are deterministic context and operation assertions, not stopwatch
-thresholds. Prompt bytes must be identical because the bounded inputs are
-identical; returned capture metadata rows must also be identical, while pure
-work counters may stay flat or decrease. A failure names the metric and prints
-both corpus values. The opt-in
-`LOTTI_BENCHMARK=1` sweep remains the place for elapsed-time reports; wall time
-must not become an ordinary-CI assertion because scheduler and cache noise make
-it non-deterministic.
+Run the opt-in diagnostic reports with:
+
+```sh
+fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \
+  test/features/daily_os_next/benchmark/
+```
+
+The authoritative metric contract, thresholds, corpus design, and diagnostic
+interpretation are documented in
+[Daily OS evaluation](../knowledge/features/daily_os_next/evaluation.md).
 
 ## Platform-channel calls in widgets (e.g. HapticFeedback)
 
