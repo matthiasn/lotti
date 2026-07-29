@@ -4940,8 +4940,6 @@
   "syncSetupEmptyFootnote": "Runs on your own sync server · nothing leaves your devices unencrypted",
   "syncSetupEmptyHint": "Your journal on every device you own. End-to-end encrypted, between your devices only — no cloud account.",
   "syncSetupEmptyTitle": "Sync your devices",
-  "syncStepAgentEntities": "Agent entities",
-  "syncStepAgentLinks": "Agent links",
   "syncStepAiSettings": "AI settings",
   "syncStepBackfillAgentEntityClocks": "Backfill agent entity clocks",
   "syncStepBackfillAgentLinkClocks": "Backfill agent link clocks",

@@ -10265,12 +10265,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncSetupEmptyTitle => 'Geräte synchronisieren';
 
   @override
-  String get syncStepAgentEntities => 'Agent-Entitäten';
-
-  @override
-  String get syncStepAgentLinks => 'Agent-Links';
-
-  @override
   String get syncStepAiSettings => 'KI-Einstellungen';
 
   @override

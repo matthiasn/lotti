@@ -4135,8 +4135,6 @@
   "syncSetupEmptyFootnote": "Funciona en tu propio servidor de sincronización · nada sale de tus dispositivos sin cifrar",
   "syncSetupEmptyHint": "Tu diario en todos tus dispositivos. Cifrado de extremo a extremo, solo entre tus dispositivos: sin cuenta en la nube.",
   "syncSetupEmptyTitle": "Sincroniza tus dispositivos",
-  "syncStepAgentEntities": "Entidades de agente",
-  "syncStepAgentLinks": "Enlaces de agente",
   "syncStepAiSettings": "Configuración de IA",
   "syncStepBackfillAgentEntityClocks": "Rellenar relojes de entidades de agente",
   "syncStepBackfillAgentLinkClocks": "Rellenar relojes de enlaces de agente",

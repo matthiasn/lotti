@@ -10201,12 +10201,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncSetupEmptyTitle => 'Synka dina enheter';
 
   @override
-  String get syncStepAgentEntities => 'Agententiteter';
-
-  @override
-  String get syncStepAgentLinks => 'Agentlänkar';
-
-  @override
   String get syncStepAiSettings => 'AI-inställningar';
 
   @override

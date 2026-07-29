@@ -4686,8 +4686,6 @@
   "syncSetupEmptyFootnote": "Gira sul tuo server di sincronizzazione · niente lascia i tuoi dispositivi in chiaro",
   "syncSetupEmptyHint": "Il tuo diario su ogni tuo dispositivo. Cifrato end-to-end, solo tra i tuoi dispositivi: senza account cloud.",
   "syncSetupEmptyTitle": "Sincronizza i tuoi dispositivi",
-  "syncStepAgentEntities": "entità dell'agente",
-  "syncStepAgentLinks": "Link dell'agente",
   "syncStepAiSettings": "Impostazioni dell'intelligenza",
   "syncStepBackfillAgentEntityClocks": "Backfill agente entità orologi",
   "syncStepBackfillAgentLinkClocks": "Orologi di collegamento agente di riempimento",

@@ -602,6 +602,55 @@ void main() {
         );
       });
 
+      test('stamps a clockless agent entity before enqueueing it', () async {
+        // A row persisted with vectorClock: null is applied by the peer but
+        // skipped by _recordReceivedAgentEntity, so it lands invisible to the
+        // sequence log and to backfill. The sweep is the last place it can
+        // still be fixed, and stamping here rather than in a preflight keeps
+        // the repair inside the interval the user actually chose.
+        final baseDate = DateTime(2024, 10);
+        final insideDate = baseDate.add(const Duration(hours: 12));
+        const stamped = VectorClock({'node': 7});
+
+        when(
+          () => vectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+          ),
+        ).thenAnswer((_) async => stamped);
+        await populateAgentDb(
+          entities: [
+            AgentDomainEntity.agent(
+              id: 'clockless-entity',
+              agentId: 'agent-1',
+              kind: 'task_agent',
+              displayName: 'Clockless Agent',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'state-1',
+              config: const AgentConfig(),
+              createdAt: insideDate,
+              updatedAt: insideDate,
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(days: 1)),
+          end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
+        );
+
+        final sent = sentMessages.whereType<SyncAgentEntity>().toList();
+        expect(sent, hasLength(1));
+        // The message carries the clock, not the null it was stored with.
+        expect(sent.first.agentEntity?.vectorClock, stamped);
+        // And the repair is durable, not just applied to the outgoing copy.
+        final reloaded = await agentRepo.getEntity('clockless-entity');
+        expect(reloaded?.vectorClock, stamped);
+      });
+
       test('enqueues agent links updated within interval', () async {
         final baseDate = DateTime(2024, 11);
         final insideDate = baseDate.add(const Duration(hours: 6));

@@ -266,10 +266,6 @@ class SyncModal extends ConsumerWidget {
         return context.messages.syncStepBackfillAgentEntityClocks;
       case SyncStep.backfillAgentLinkClocks:
         return context.messages.syncStepBackfillAgentLinkClocks;
-      case SyncStep.agentEntities:
-        return context.messages.syncStepAgentEntities;
-      case SyncStep.agentLinks:
-        return context.messages.syncStepAgentLinks;
       case SyncStep.complete:
         return context.messages.syncStepComplete;
     }

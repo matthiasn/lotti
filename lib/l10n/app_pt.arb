@@ -4685,8 +4685,6 @@
   "syncSetupEmptyFootnote": "Corre no teu próprio servidor de sincronização · nada sai dos teus dispositivos sem cifra",
   "syncSetupEmptyHint": "O teu diário em todos os teus dispositivos. Cifrado de ponta a ponta, só entre os teus dispositivos — sem conta na nuvem.",
   "syncSetupEmptyTitle": "Sincroniza os teus dispositivos",
-  "syncStepAgentEntities": "Entidades agentes",
-  "syncStepAgentLinks": "Links de agente",
   "syncStepAiSettings": "Configurações de IA",
   "syncStepBackfillAgentEntityClocks": "Preencher relógios da entidade do agente",
   "syncStepBackfillAgentLinkClocks": "Relógios de link do agente de preenchimento",

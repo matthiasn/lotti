@@ -4686,8 +4686,6 @@
   "syncSetupEmptyFootnote": "Körs på din egen synkroniseringsserver · inget lämnar dina enheter okrypterat",
   "syncSetupEmptyHint": "Din dagbok på alla dina enheter. Totalsträckskrypterad, bara mellan dina enheter — inget molnkonto.",
   "syncSetupEmptyTitle": "Synka dina enheter",
-  "syncStepAgentEntities": "Agententiteter",
-  "syncStepAgentLinks": "Agentlänkar",
   "syncStepAiSettings": "AI-inställningar",
   "syncStepBackfillAgentEntityClocks": "Urtagningsagentens enhetsklockor",
   "syncStepBackfillAgentLinkClocks": "Klockor för backfill agent link",

@@ -4135,8 +4135,6 @@
   "syncSetupEmptyFootnote": "Rulează pe propriul server de sincronizare · nimic nu părăsește dispozitivele dumneavoastră necriptat",
   "syncSetupEmptyHint": "Jurnalul dumneavoastră pe fiecare dispozitiv pe care îl dețineți. Criptat integral, doar între dispozitivele dumneavoastră — fără cont în cloud.",
   "syncSetupEmptyTitle": "Sincronizați-vă dispozitivele",
-  "syncStepAgentEntities": "Entități agent",
-  "syncStepAgentLinks": "Legături agent",
   "syncStepAiSettings": "Setări AI",
   "syncStepBackfillAgentEntityClocks": "Completare ceasuri entități agent",
   "syncStepBackfillAgentLinkClocks": "Completare ceasuri legături agent",

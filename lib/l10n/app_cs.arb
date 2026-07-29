@@ -4142,8 +4142,6 @@
   "syncSetupEmptyFootnote": "Běží na tvém vlastním synchronizačním serveru · nic neopouští tvá zařízení nešifrované",
   "syncSetupEmptyHint": "Tvůj deník na každém tvém zařízení. End-to-end šifrovaný, jen mezi tvými zařízeními — bez cloudového účtu.",
   "syncSetupEmptyTitle": "Synchronizuj svá zařízení",
-  "syncStepAgentEntities": "Entity agentů",
-  "syncStepAgentLinks": "Propojení agentů",
   "syncStepAiSettings": "AI nastavení",
   "syncStepBackfillAgentEntityClocks": "Doplnění hodin entit agentů",
   "syncStepBackfillAgentLinkClocks": "Doplnění hodin propojení agentů",

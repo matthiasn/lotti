@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
 import 'package:lotti/features/agents/state/agent_providers.dart'
     show agentRepositoryProvider;
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -164,32 +162,6 @@ class SyncMaintenanceRepository {
         shouldSync: (_) => true,
       );
 
-  late final SyncOperation<AgentDomainEntity> _agentEntitySyncOperation =
-      _createOperation<AgentDomainEntity>(
-        step: SyncStep.agentEntities,
-        fetchEntities: _agentRepository.getAllEntities,
-        enqueueEntity: (entity) => _outboxService.enqueueMessage(
-          SyncMessage.agentEntity(
-            agentEntity: entity,
-            status: SyncEntryStatus.update,
-          ),
-        ),
-        shouldSync: (_) => true,
-      );
-
-  late final SyncOperation<agent_model.AgentLink> _agentLinkSyncOperation =
-      _createOperation<agent_model.AgentLink>(
-        step: SyncStep.agentLinks,
-        fetchEntities: _agentRepository.getAllLinks,
-        enqueueEntity: (link) => _outboxService.enqueueMessage(
-          SyncMessage.agentLink(
-            agentLink: link,
-            status: SyncEntryStatus.update,
-          ),
-        ),
-        shouldSync: (_) => true,
-      );
-
   late final Map<SyncStep, SyncOperation<dynamic>> _operations = {
     SyncStep.measurables: _measurableSyncOperation,
     SyncStep.labels: _labelSyncOperation,
@@ -198,8 +170,6 @@ class SyncMaintenanceRepository {
     SyncStep.habits: _habitSyncOperation,
     SyncStep.aiSettings: _aiConfigSyncOperation,
     SyncStep.savedTaskFilters: _savedTaskFiltersSyncOperation,
-    SyncStep.agentEntities: _agentEntitySyncOperation,
-    SyncStep.agentLinks: _agentLinkSyncOperation,
   };
 
   /// Backfill vector clocks on agent entities that have `vectorClock: null`.
@@ -386,28 +356,6 @@ class SyncMaintenanceRepository {
     );
   }
 
-  Future<void> syncAgentEntities({
-    SyncProgressCallback? onProgress,
-    SyncDetailedProgressCallback? onDetailedProgress,
-  }) {
-    return _runOperation<AgentDomainEntity>(
-      _agentEntitySyncOperation,
-      onProgress: onProgress,
-      onDetailedProgress: onDetailedProgress,
-    );
-  }
-
-  Future<void> syncAgentLinks({
-    SyncProgressCallback? onProgress,
-    SyncDetailedProgressCallback? onDetailedProgress,
-  }) {
-    return _runOperation<agent_model.AgentLink>(
-      _agentLinkSyncOperation,
-      onProgress: onProgress,
-      onDetailedProgress: onDetailedProgress,
-    );
-  }
-
   /// Computes the per-step entity totals for the given [steps] concurrently, so
   /// the re-sync UI can render "processed / total" before the run starts.
   /// Returns an empty map for an empty input.
@@ -583,8 +531,6 @@ class SyncMaintenanceRepository {
     SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
     SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
     SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
-    SyncStep.agentEntities: 'syncAgentEntities',
-    SyncStep.agentLinks: 'syncAgentLinks',
   };
 
   String _syncDomainFor(SyncStep step) {

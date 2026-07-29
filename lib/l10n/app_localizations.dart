@@ -17541,18 +17541,6 @@ abstract class AppLocalizations {
   /// **'Sync your devices'**
   String get syncSetupEmptyTitle;
 
-  /// No description provided for @syncStepAgentEntities.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent entities'**
-  String get syncStepAgentEntities;
-
-  /// No description provided for @syncStepAgentLinks.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent links'**
-  String get syncStepAgentLinks;
-
   /// No description provided for @syncStepAiSettings.
   ///
   /// In en, this message translates to:

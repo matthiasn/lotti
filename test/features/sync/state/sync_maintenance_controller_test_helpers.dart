@@ -10,8 +10,6 @@ const generatedSyncStepOrder = <SyncStep>[
   SyncStep.aiSettings,
   SyncStep.backfillAgentEntityClocks,
   SyncStep.backfillAgentLinkClocks,
-  SyncStep.agentEntities,
-  SyncStep.agentLinks,
 ];
 
 class GeneratedSyncMaintenanceScenario {

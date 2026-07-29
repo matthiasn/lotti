@@ -4135,8 +4135,6 @@
   "syncSetupEmptyFootnote": "Fonctionne sur ton propre serveur de synchronisation · rien ne quitte tes appareils sans chiffrement",
   "syncSetupEmptyHint": "Ton journal sur chacun de tes appareils. Chiffré de bout en bout, uniquement entre tes appareils — sans compte cloud.",
   "syncSetupEmptyTitle": "Synchronise tes appareils",
-  "syncStepAgentEntities": "Entités d'agent",
-  "syncStepAgentLinks": "Liens d'agent",
   "syncStepAiSettings": "Paramètres IA",
   "syncStepBackfillAgentEntityClocks": "Remplir les horloges des entités d'agent",
   "syncStepBackfillAgentLinkClocks": "Remplir les horloges des liens d'agent",

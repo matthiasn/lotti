@@ -4686,8 +4686,6 @@
   "syncSetupEmptyFootnote": "Kører på din egen synkroniseringsserver · intet forlader dine enheder ukrypteret",
   "syncSetupEmptyHint": "Din dagbog på alle dine enheder. End-to-end-krypteret, kun mellem dine enheder — ingen cloudkonto.",
   "syncSetupEmptyTitle": "Synkronisér dine enheder",
-  "syncStepAgentEntities": "Agentenheder",
-  "syncStepAgentLinks": "Agentlinks",
   "syncStepAiSettings": "AI-indstillinger",
   "syncStepBackfillAgentEntityClocks": "Tilbagefyldningsagent-entitetsure",
   "syncStepBackfillAgentLinkClocks": "Tilbagefyldningsagent-linkure",

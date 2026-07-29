@@ -11,6 +11,8 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -169,6 +171,23 @@ class Maintenance {
       }
     }
 
+    // A re-sync is the only path that sends agent data, so it is also the last
+    // point at which a row saved without a vector clock can still be fixed.
+    // Such a row is applied by the peer but skipped by the sequence log
+    // (sync_event_processor_agent_handlers.dart:599), so it lands invisible to
+    // gap detection and backfill.
+    //
+    // Stamping here rather than in a preflight sweep keeps the repair inside
+    // the interval the user actually chose: a "Last 30 days" run must not
+    // enqueue years of legacy agent history just because those rows happen to
+    // lack a clock. Enqueue before persist, so a throw leaves the row still
+    // null-clocked and therefore retryable on the next run.
+    Future<T> stampIfClockless<T>(
+      T item,
+      Object? clock,
+      Future<T> Function(T item) stamp,
+    ) async => clock == null ? await stamp(item) : item;
+
     if (includeAgentEntities) {
       // 2. Re-sync agent entities and links updated in the same interval.
       await _reSyncPaginated(
@@ -182,12 +201,27 @@ class Maintenance {
           limit: limit,
           offset: offset,
         ),
-        enqueueAction: (entity) => outboxService.enqueueMessageOrThrow(
-          SyncMessage.agentEntity(
-            agentEntity: entity,
-            status: SyncEntryStatus.update,
-          ),
-        ),
+        enqueueAction: (entity) async {
+          final toSend = await stampIfClockless(
+            entity,
+            entity.vectorClock,
+            (e) => vectorClockService.withVcScope<AgentDomainEntity>(() async {
+              final stamped = e.copyWith(
+                vectorClock: await vectorClockService.getNextVectorClock(
+                  previous: e.vectorClock,
+                ),
+              );
+              await agentRepository.upsertEntity(stamped);
+              return stamped;
+            }),
+          );
+          await outboxService.enqueueMessageOrThrow(
+            SyncMessage.agentEntity(
+              agentEntity: toSend,
+              status: SyncEntryStatus.update,
+            ),
+          );
+        },
         pageSize: pageSize,
         onProgress:
             ({
@@ -217,12 +251,29 @@ class Maintenance {
           limit: limit,
           offset: offset,
         ),
-        enqueueAction: (link) => outboxService.enqueueMessageOrThrow(
-          SyncMessage.agentLink(
-            agentLink: link,
-            status: SyncEntryStatus.update,
-          ),
-        ),
+        enqueueAction: (link) async {
+          final toSend = await stampIfClockless(
+            link,
+            link.vectorClock,
+            (l) => vectorClockService.withVcScope<agent_model.AgentLink>(
+              () async {
+                final stamped = l.copyWith(
+                  vectorClock: await vectorClockService.getNextVectorClock(
+                    previous: l.vectorClock,
+                  ),
+                );
+                await agentRepository.upsertLink(stamped);
+                return stamped;
+              },
+            ),
+          );
+          await outboxService.enqueueMessageOrThrow(
+            SyncMessage.agentLink(
+              agentLink: toSend,
+              status: SyncEntryStatus.update,
+            ),
+          );
+        },
         pageSize: pageSize,
         onProgress:
             ({

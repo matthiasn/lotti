@@ -425,47 +425,6 @@ void main() {
           onProgress: any(named: 'onProgress'),
         ),
       ).called(1);
-
-      // No agent data is being sent, so there is nothing to stamp.
-      verifyNever(
-        () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
-          onProgress: any(named: 'onProgress'),
-          onDetailedProgress: any(named: 'onDetailedProgress'),
-        ),
-      );
-    },
-  );
-
-  testWidgets(
-    'agent clocks are stamped before the sweep enqueues agent rows',
-    (tester) async {
-      // A null-clock agent row is applied by the peer but skipped by the
-      // sequence log, so it lands invisible to gap detection. The repair used
-      // to ride along in the "Send settings" sheet, which meant it only ran if
-      // the user happened to send settings first. Order matters: stamping
-      // after the sweep would enqueue the unstamped copies.
-      await pumpModal(tester);
-      await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
-      await tester.pump();
-
-      verifyInOrder([
-        () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
-          onProgress: any(named: 'onProgress'),
-          onDetailedProgress: any(named: 'onDetailedProgress'),
-        ),
-        () => mockSyncMaintenanceRepository.backfillAgentLinkClocks(
-          onProgress: any(named: 'onProgress'),
-          onDetailedProgress: any(named: 'onDetailedProgress'),
-        ),
-        () => mockMaintenance.reSyncInterval(
-          start: any(named: 'start'),
-          end: any(named: 'end'),
-          agentRepository: mockAgentRepository,
-          includeJournalEntities: any(named: 'includeJournalEntities'),
-          includeAgentEntities: true,
-          onProgress: any(named: 'onProgress'),
-        ),
-      ]);
     },
   );
 

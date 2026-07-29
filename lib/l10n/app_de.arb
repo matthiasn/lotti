@@ -4135,8 +4135,6 @@
   "syncSetupEmptyFootnote": "Läuft auf deinem eigenen Sync-Server · nichts verlässt deine Geräte unverschlüsselt",
   "syncSetupEmptyHint": "Dein Tagebuch auf jedem deiner Geräte. Ende-zu-Ende-verschlüsselt, nur zwischen deinen Geräten — ohne Cloud-Konto.",
   "syncSetupEmptyTitle": "Geräte synchronisieren",
-  "syncStepAgentEntities": "Agent-Entitäten",
-  "syncStepAgentLinks": "Agent-Links",
   "syncStepAiSettings": "KI-Einstellungen",
   "syncStepBackfillAgentEntityClocks": "Vektoruhren für Agent-Entitäten nachtragen",
   "syncStepBackfillAgentLinkClocks": "Vektoruhren für Agent-Links nachtragen",

@@ -10336,12 +10336,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncSetupEmptyTitle => 'Synchronizuj svá zařízení';
 
   @override
-  String get syncStepAgentEntities => 'Entity agentů';
-
-  @override
-  String get syncStepAgentLinks => 'Propojení agentů';
-
-  @override
   String get syncStepAiSettings => 'AI nastavení';
 
   @override

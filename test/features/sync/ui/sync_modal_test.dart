@@ -107,8 +107,6 @@ void main() {
       SyncStep.savedTaskFilters: 13,
       SyncStep.backfillAgentEntityClocks: 11,
       SyncStep.backfillAgentLinkClocks: 12,
-      SyncStep.agentEntities: 3,
-      SyncStep.agentLinks: 2,
     };
 
     Future<void> simulateStep(
@@ -185,22 +183,6 @@ void main() {
       ),
     ).thenAnswer(
       (invocation) => simulateStep(SyncStep.savedTaskFilters, invocation),
-    );
-    when(
-      () => mockSyncMaintenanceRepository.syncAgentEntities(
-        onProgress: any(named: 'onProgress'),
-        onDetailedProgress: any(named: 'onDetailedProgress'),
-      ),
-    ).thenAnswer(
-      (invocation) => simulateStep(SyncStep.agentEntities, invocation),
-    );
-    when(
-      () => mockSyncMaintenanceRepository.syncAgentLinks(
-        onProgress: any(named: 'onProgress'),
-        onDetailedProgress: any(named: 'onDetailedProgress'),
-      ),
-    ).thenAnswer(
-      (invocation) => simulateStep(SyncStep.agentLinks, invocation),
     );
     when(
       () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
@@ -380,8 +362,6 @@ void main() {
       // (one "Agent entities" checkbox in Send message history covering both
       // entities and links), and the two clock backfills are a repair on the
       // Backfill sync page. None of the four may reappear here.
-      expect(find.text(messages.syncStepAgentEntities), findsNothing);
-      expect(find.text(messages.syncStepAgentLinks), findsNothing);
       expect(
         find.text(messages.syncStepBackfillAgentEntityClocks),
         findsNothing,

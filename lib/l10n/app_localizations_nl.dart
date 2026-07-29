@@ -10237,12 +10237,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncSetupEmptyTitle => 'Synchroniseer je apparaten';
 
   @override
-  String get syncStepAgentEntities => 'Agententiteiten';
-
-  @override
-  String get syncStepAgentLinks => 'Agent links';
-
-  @override
   String get syncStepAiSettings => 'AI-instellingen';
 
   @override

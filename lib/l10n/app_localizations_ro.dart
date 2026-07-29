@@ -10397,12 +10397,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncSetupEmptyTitle => 'Sincronizați-vă dispozitivele';
 
   @override
-  String get syncStepAgentEntities => 'Entități agent';
-
-  @override
-  String get syncStepAgentLinks => 'Legături agent';
-
-  @override
   String get syncStepAiSettings => 'Setări AI';
 
   @override

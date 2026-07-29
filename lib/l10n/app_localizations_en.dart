@@ -10130,12 +10130,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncSetupEmptyTitle => 'Sync your devices';
 
   @override
-  String get syncStepAgentEntities => 'Agent entities';
-
-  @override
-  String get syncStepAgentLinks => 'Agent links';
-
-  @override
   String get syncStepAiSettings => 'AI settings';
 
   @override

@@ -10306,12 +10306,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get syncSetupEmptyTitle => 'Sincroniza os teus dispositivos';
 
   @override
-  String get syncStepAgentEntities => 'Entidades agentes';
-
-  @override
-  String get syncStepAgentLinks => 'Links de agente';
-
-  @override
   String get syncStepAiSettings => 'Configurações de IA';
 
   @override

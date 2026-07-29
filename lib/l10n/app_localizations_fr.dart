@@ -10401,12 +10401,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncSetupEmptyTitle => 'Synchronise tes appareils';
 
   @override
-  String get syncStepAgentEntities => 'Entités d\'agent';
-
-  @override
-  String get syncStepAgentLinks => 'Liens d\'agent';
-
-  @override
   String get syncStepAiSettings => 'Paramètres IA';
 
   @override

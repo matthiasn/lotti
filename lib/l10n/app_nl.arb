@@ -4685,8 +4685,6 @@
   "syncSetupEmptyFootnote": "Draait op je eigen synchronisatieserver · niets verlaat je apparaten onversleuteld",
   "syncSetupEmptyHint": "Je dagboek op elk apparaat dat je bezit. End-to-end versleuteld, alleen tussen jouw apparaten — zonder cloudaccount.",
   "syncSetupEmptyTitle": "Synchroniseer je apparaten",
-  "syncStepAgentEntities": "Agententiteiten",
-  "syncStepAgentLinks": "Agent links",
   "syncStepAiSettings": "AI-instellingen",
   "syncStepBackfillAgentEntityClocks": "Klokken met een eenheid van vulmiddel",
   "syncStepBackfillAgentLinkClocks": "Klokken met een koppeling tussen backfillmiddel en klokken",
