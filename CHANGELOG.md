@@ -4,6 +4,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1073]
+### Fixed
+- **The privacy policy described device pairing incorrectly.** It stated that
+  encryption keys are exchanged via the QR code and never transmitted over the
+  network. Neither half was true: the QR code carries your sync account
+  credentials, while the encryption keys travel between devices over the
+  homeserver — encrypted, and only to devices you have emoji-verified. The
+  practical consequence had gone unsaid too: anyone who photographs the pairing
+  code can sign in to your sync account and lock you out, even though they still
+  cannot read your entries. The policy now says all of this, in the same words
+  the manual already used.
+- **The privacy policy promised a data export that does not exist.** It offered
+  to export your data "at any time". There is no such feature, and none is
+  needed: your logbook is an ordinary SQLite file on your own disk that any
+  SQLite client can read. The policy now explains how to take a consistent copy
+  and where the attachments live, rather than pointing at a button that was never
+  there.
+- **Reporting a security vulnerability no longer starts by publishing it.** The
+  security policy asked for vulnerability reports in the public issue tracker,
+  which the contributing guide separately tells you not to do, and which exposes
+  everyone running Lotti before a fix exists. Reports now go through GitHub's
+  private vulnerability reporting.
+
+### Changed
+- **The app description says what Lotti actually tracks.** It now mentions that
+  AI usage is recorded per category and model — tokens and requests for every
+  cloud call, and cost, energy and CO₂e wherever the provider reports them — and
+  that planning and time recording stay separate so intent and outcome remain
+  distinct facts. It no longer describes third-party providers as
+  "GDPR-compliant", because that is their claim to make rather than Lotti's, and
+  no longer lists time recording twice.
+- **The documentation no longer promises impact figures every provider can
+  supply.** The README and privacy policy described cost, energy and CO₂e as
+  recorded for every AI call. Only providers that return those numbers with the
+  response are measured — today Melious — while everyone else contributes token
+  counts and leaves the rest empty rather than estimated. Local inference is not
+  measured at all. The same pages also described a just-in-time notice naming the
+  provider before each AI feature runs, which does not exist: routing is chosen in
+  settings, and once a category is configured its work can reach that provider
+  without a further prompt.
+- **The documentation stops calling a freshly paired device a backup.** Pairing
+  gives a new device everything written from then on, but existing settings and
+  earlier entries arrive only when *Send settings* and *Send message history* are
+  run from a device that has them. Describing every paired device as a complete
+  replica could have led someone to retire their only full copy. The docs now say
+  what pairing does and does not carry, and no longer describe the journal as an
+  append-only log — editing an entry overwrites it rather than adding a version.
+
 ## [0.9.1072]
 ### Fixed
 - **A confirm button no longer disappears when its label is long.** The buttons

@@ -47,6 +47,19 @@ The Flatpak 25.08 runtime already includes this decoder. A missing decoder does
 not prevent compilation, but Voxtral transcription fails immediately with an
 installation hint instead of waiting for the request timeout.
 
+### Linux emoji fonts
+
+Emoji render as empty boxes without a color emoji font. Install one and run the
+helper script, which registers it with fontconfig for the app:
+
+- Ubuntu/Debian: `sudo apt install fonts-noto-color-emoji`
+- Fedora: `sudo dnf install google-noto-emoji-color-fonts`
+- Arch: `sudo pacman -S noto-fonts-emoji`
+
+```bash
+./linux/install_emoji_fonts.sh
+```
+
 ## Localization
 - ARB files live under `lib/l10n/`
 - Generate localizations: `make l10n`

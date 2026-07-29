@@ -10,7 +10,7 @@
       Lotti is an open-source personal logbook — tasks, time recordings, voice notes, transcriptions, journal entries, habits, and health data — paired with an agentic layer of long-living AI agents that observe, suggest, summarise, and nudge. The agents run on your machine. With a powerful enough device, the model they call can run locally too — meaning your data never has to leave the device at all. On lighter hardware, or when you need to save battery, you keep the same agentic experience and route inference to a cloud provider you choose, on a per-category basis.
     </p>
     <p>
-      No accounts, no telemetry, no cloud storage. End-to-end encrypted multi-device sync runs over Matrix using Vodozemac (Rust) for Megolm crypto; the homeserver you bring relays only ciphertext between your own devices.
+      No accounts, no telemetry, no cloud storage. End-to-end encrypted multi-device sync runs over Matrix using Vodozemac (Rust) for Megolm crypto; the homeserver you bring relays only ciphertext between your own devices, and encryption keys reach only devices you have verified. Your logbook is an ordinary SQLite file on your own disk, readable without Lotti, so there is nothing to export and nothing to unlock.
     </p>
     <p>Get support and join the Lotti community on Discord via the Contact link.</p>
     <p>What it does:</p>
@@ -21,8 +21,10 @@
       <li>Local voice transcription with Whisper or Voxtral; cloud transcription via Gemini, OpenAI, Mistral, or Melious.ai</li>
       <li>AI-generated cover art for tasks via Nano Banana Pro on Gemini, OpenAI, or Qwen, and Flux on Melious.ai</li>
       <li>Both the logbook and the agentic state sync end-to-end encrypted</li>
-      <li>Habit tracking with success/fail/skip completion types, custom measurables, dashboards, and time recording</li>
-      <li>Bring-your-own API keys for cloud providers, with jurisdiction choice per category (US, EU/GDPR-compliant, or Chinese)</li>
+      <li>Habit tracking with success/fail/skip completion types, custom measurables, and dashboards</li>
+      <li>Bring-your-own API keys for cloud providers, choosing per category where inference happens — EU-hosted, US, Chinese, or entirely on your own machine</li>
+      <li>Usage &amp; Impact: tokens and requests for every cloud AI call, broken down by category and model, plus cost, energy and CO2e wherever the provider reports them (currently Melious); local inference is not measured</li>
+      <li>Time recording kept separate from planning, so what you meant to do and what actually happened stay distinct facts</li>
     </ul>
   </description>
   <developer id="com.matthiasn">
@@ -35,6 +37,16 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1073" date="2026-07-29">
+      <description>
+        <p>Fixed: the privacy policy described device pairing incorrectly. It stated that encryption keys are exchanged via the QR code and never transmitted over the network. Neither half was true: the QR code carries your sync account credentials, while the encryption keys travel between devices over the homeserver — encrypted, and only to devices you have emoji-verified. The practical consequence had gone unsaid too: anyone who photographs the pairing code can sign in to your sync account and lock you out, even though they still cannot read your entries. The policy now says all of this, in the same words the manual already used.</p>
+        <p>Fixed: the privacy policy promised a data export that does not exist. It offered to export your data at any time. There is no such feature, and none is needed: your logbook is an ordinary SQLite file on your own disk that any SQLite client can read. The policy now explains how to take a consistent copy and where the attachments live, rather than pointing at a button that was never there.</p>
+        <p>Fixed: reporting a security vulnerability no longer starts by publishing it. The security policy asked for vulnerability reports in the public issue tracker, which the contributing guide separately tells you not to do, and which exposes everyone running Lotti before a fix exists. Reports now go through GitHub's private vulnerability reporting.</p>
+        <p>Changed: the app description says what Lotti actually tracks. It now mentions that AI usage is recorded per category and model — tokens and requests for every cloud call, and cost, energy and CO2e wherever the provider reports them — and that planning and time recording stay separate so intent and outcome remain distinct facts. It no longer describes third-party providers as GDPR-compliant, because that is their claim to make rather than Lotti's, and no longer lists time recording twice.</p>
+        <p>Fixed: the documentation no longer promises impact figures every provider can supply. The README and privacy policy described cost, energy and CO2e as recorded for every AI call. Only providers that return those numbers with the response are measured — today Melious — while everyone else contributes token counts and leaves the rest empty rather than estimated. Local inference is not measured at all. The same pages also described a just-in-time notice naming the provider before each AI feature runs, which does not exist: routing is chosen in settings, and once a category is configured its work can reach that provider without a further prompt.</p>
+        <p>Fixed: the documentation stops calling a freshly paired device a backup. Pairing gives a new device everything written from then on, but existing settings and earlier entries arrive only when "Send settings" and "Send message history" are run from a device that has them. Describing every paired device as a complete replica could have led someone to retire their only full copy. The docs now say what pairing does and does not carry, and no longer describe the journal as an append-only log — editing an entry overwrites it rather than adding a version.</p>
+      </description>
+    </release>
     <release version="0.9.1072" date="2026-07-29">
       <description>
         <p>Fixed: a confirm button no longer disappears when its label is long. The buttons at the bottom of a dialog were placed side by side or stacked according to how wide the screen was, without ever measuring the buttons themselves. A longer translation — German and Romanian most often — therefore still counted as fitting on a phone: the confirm button was squeezed down to nothing and a striped overflow warning ran across the footer, leaving the dialog with no visible way to confirm it. Dialog footers now measure the actual buttons and give each its own line as soon as they stop fitting side by side.</p>
@@ -2071,7 +2083,7 @@
   </categories>
   <screenshots>
     <screenshot type="default">
-      <caption>Lotti application interface</caption>
+      <caption>A task with its cover art, status, labels, and the assistant's summary</caption>
       <image type="source" width="536" height="999">https://raw.githubusercontent.com/matthiasn/lotti-docs/89d8e81b93711e3c41685e903349cc93d6ab5239/images/0.9.998/task_details_screenshot_linux.png</image>
     </screenshot>
   </screenshots>

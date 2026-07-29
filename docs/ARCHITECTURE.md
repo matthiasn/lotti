@@ -22,7 +22,7 @@ Lotti is a privacy-first personal assistant built with Flutter, featuring local-
 ## Core Principles
 
 1. **Local-First**: All data is stored locally using SQLite, with no cloud dependency
-2. **Privacy by Design**: User data never leaves devices unless explicitly shared for AI inference
+2. **Privacy by Design**: User content leaves a device only for AI inference you configured or user-enabled end-to-end encrypted Matrix sync, both of which can then run automatically. Sync homeservers receive, store and relay ciphertext plus the associated account and traffic metadata; see [PRIVACY.md](../PRIVACY.md) for the precise boundaries
 3. **Modular Architecture**: Features are organized as independent modules with clear boundaries
 4. **Provider Agnostic**: AI capabilities work with multiple providers (OpenAI, Anthropic, Gemini, Ollama)
 5. **Cross-Platform**: Single codebase for iOS, macOS, Android, Windows, and Linux
@@ -168,7 +168,9 @@ Secrets stored in secure storage include AI provider API keys and tokens, and sy
 - Roadmap: optional database‑level encryption for SQLite (SQLCipher)
 
 ### Backups
-- Secret backup/restore is handled by the OS keystore. Where available (e.g., iCloud Keychain), secrets may sync via the OS.
+- Secret backup/restore is delegated to the OS keystore.
+- On iOS and macOS, Lotti stores secrets **non‑synchronizable**: `SecureStorage` (`lib/features/sync/secure_storage.dart`) passes only `accountName` to `IOSOptions`/`MacOsOptions`, and `flutter_secure_storage` defaults `synchronizable` to `false`. API keys and Matrix credentials therefore stay on the device and are **not** copied to iCloud Keychain. Enabling iCloud sync for them would require setting `synchronizable: true` explicitly.
+- Consequence: reinstalling or moving to a new device does not carry secrets across — they are re-entered, or arrive through device pairing.
 
 ### References (platform APIs/libraries)
 - Flutter secure storage: https://pub.dev/packages/flutter_secure_storage
@@ -181,8 +183,8 @@ Secrets stored in secure storage include AI provider API keys and tokens, and sy
 - No telemetry or analytics
 - No vendor/cloud accounts required for core functionality (local-only use)
 - Multi-device sync requires a Matrix account (self-hosted or public homeserver) - no vendor lock-in as Matrix is decentralized
-- Explicit consent for AI processing
-- Data never leaves device without user action
+- AI processing is opt-in per category; enabling it is the consent, after which agents and transcription can call the configured provider without a further prompt
+- Neither content nor secrets leave the device except to destinations the user configured — the sync homeserver and the AI providers they chose. Secrets are stored non‑synchronizable, so they are not carried out by OS keychain sync either (see Backups)
 
 ## Testing Strategy
 

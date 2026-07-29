@@ -1,151 +1,190 @@
 # Lotti
 
-[![codecov](https://codecov.io/gh/matthiasn/lotti/graph/badge.svg?token=VB6FWvA1yW)](https://codecov.io/gh/matthiasn/lotti) [![Flathub Downloads](https://img.shields.io/flathub/downloads/com.matthiasn.lotti?style=flat&label=Flathub%20installs)](https://flathub.org/en/apps/com.matthiasn.lotti) [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/matthiasn/lotti/total?label=GitHub%20Releases%20downloads)](https://github.com/matthiasn/lotti/releases)
+[![codecov](https://codecov.io/gh/matthiasn/lotti/graph/badge.svg?token=VB6FWvA1yW)](https://codecov.io/gh/matthiasn/lotti) [![Flathub Downloads](https://img.shields.io/flathub/downloads/com.matthiasn.lotti?style=flat&label=Flathub%20installs)](https://flathub.org/en/apps/com.matthiasn.lotti) [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/matthiasn/lotti/total?label=GitHub%20Releases%20downloads)](https://github.com/matthiasn/lotti/releases) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
 [Discord for support](https://discord.gg/uuSaa8NpY)
 
-**A private, open‑source logbook with a local agentic layer that helps you get things done.**
+**A private logbook for the work you actually did.**
 
-Lotti is the system of record for the things you actually do — tasks, time recordings, voice notes, transcriptions, journal entries, habits, and health data — paired with an **agentic layer** of long‑living AI agents that observe, suggest, summarise, and nudge.
+Lotti records what you meant to do and what actually happened, and keeps them
+as separate facts. Tasks, planned blocks, tracked time, voice notes, journal
+entries, habits, and health data live in a local database on your own devices.
+There is no Lotti account and no Lotti server. AI is optional, and when
+you do set it up, the route Lotti recommends is European infrastructure running
+open-weight models. Nothing reaches your history without your approval.
 
-The logbook is local. The agents run on your machine. With reasoning‑capable models like **Qwen 3.6 35B A3B** (Mixture of Experts, ~3B active parameters), the model the agents call can run locally too — so, hardware permitting, your data never has to leave the device at all. You configure the provider and the model per category; anything OpenAI‑compatible plugs in directly, and other providers can be extended.
+macOS · Linux · Windows · iOS · Android. Flutter and Dart, GPL-3.0, in
+development since 2016.
 
-![Task details page on macOS](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.998/task_details_screenshot_macos.png)
+I have tracked around 11,000 hours of my own work in it since 2022.
 
-## Download
+<!-- All screenshots come from the manual's deterministic fixture pipeline
+     (docs-site/metadata/screenshot-cases.json), so they track the build. They
+     point at the `development` channel and update when the manual regenerates;
+     if a case id is ever renamed, these links need renaming with it. -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/tasks/workspace/desktop-dark.webp">
+  <img alt="The task workspace: a filtered task list beside an open task with its cover art, status, labels, and AI summary" src="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/tasks/workspace/desktop-light.webp">
+</picture>
+
+[Read the manual](https://matthiasn.github.io/lotti/manual/development/) ·
+[Install](#install) ·
+[Blog series](https://matthiasnehlsen.substack.com/p/meet-lotti)
+
+---
+
+## What is actually different about it
+
+**Intent and reality are separate records.** A task describes an outcome you
+want. A time record describes what actually happened, with the notes, photos,
+recordings, and measurements that explain it attached to it. Most tools flatten
+the two into a single list and then ask you to pretend the day went to plan.
+Lotti keeps them apart, so the record stays honest when the week gets noisy.
+
+**Agents propose, you decide.** An agent can read a task, form an opinion,
+summarise a mess, and suggest a next change. Its report is an opinion with
+provenance, not a new fact in your history. Task, checklist, status, and date
+changes wait for you to confirm or dismiss them. The only exception is an
+initial title or language for an otherwise empty task. This is enforced by the
+storage layout rather than by careful prompting — see
+[Two databases](#two-databases-human-in-the-loop-by-construction).
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/tasks/agent-suggestions/mobile-dark.webp">
+    <img alt="A task agent's report with two proposed changes, each with a dismiss and a confirm control, plus Confirm all and the automatic-updates toggle" src="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/tasks/agent-suggestions/mobile-light.webp" width="380">
+  </picture>
+</p>
+
+**There is no Lotti server.** Your logbook lives on your devices. Sync is
+self-hosted and end-to-end encrypted, so the relay only ever handles
+ciphertext. No account, no telemetry, and nothing uploaded to Lotti.
+
+**You choose the brain, and you can see what it cost.** Route each category of
+your life to the compute you are willing to stand behind: a local model for the
+private things, a frontier model for work, or the European option Lotti
+recommends. The usage view reports tokens and requests for every cloud call, and
+spend, energy and CO₂e for the providers that report them — today that means
+Melious. Local inference is not measured at all, because the cost moves onto
+your own hardware and grid.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/ai/usage/desktop-dark.webp">
+  <img alt="Usage &amp; Impact: cost, energy, CO2e, tokens and requests for the month, with cost broken down per day and per category" src="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/ai/usage/desktop-light.webp">
+</picture>
+
+---
+
+## Install
 
 | Platform                 | Where to get it                                                                                                                                 |
 |--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Linux**                | [Flathub](https://flathub.org/en/apps/com.matthiasn.lotti) (recommended) or `tar.gz` on [Releases](https://github.com/matthiasn/lotti/releases) |
-| **macOS**                | Signed + notarized DMG on [Releases](https://github.com/matthiasn/lotti/releases)                                                               |
-| **iOS / iPadOS / macOS** | TestFlight (limited; invitation only)                                                                                                           |
-| **Android**              | APK on [Releases](https://github.com/matthiasn/lotti/releases)                                                                                  |
-| **Android**              | Play Store internal testing (limited; invitation only)                                                                                          |
+| **Linux**                | [Flathub](https://flathub.org/en/apps/com.matthiasn.lotti) (recommended) or `tar.gz` on [Releases](https://github.com/matthiasn/lotti/releases)  |
+| **macOS**                | Signed and notarized DMG on [Releases](https://github.com/matthiasn/lotti/releases)                                                             |
+| **iOS / iPadOS / macOS** | TestFlight (limited; invitation only), with broader availability planned                                                                        |
+| **Android**              | APK on [Releases](https://github.com/matthiasn/lotti/releases), or Play Store internal testing (limited; invitation only)                        |
 | **Windows**              | Build from [source](docs/DEVELOPMENT.md) for now                                                                                                |
 
 [![Get it on Flathub](https://flathub.org/api/badge?locale=en)](https://flathub.org/en/apps/com.matthiasn.lotti)
 
 ---
 
-## Table of Contents
+## What you can do with it
 
-- [What is Lotti?](#what-is-lotti)
-- [The Agentic Layer](#the-agentic-layer)
-- [Local Execution & Data Sovereignty](#local-execution--data-sovereignty)
-- [Architecture: Two Databases, Human‑in‑the‑Loop](#architecture-two-databases-human-in-the-loop)
-- [Core Features](#core-features)
-- [Use Cases](#use-cases)
-- [Sync, Encryption, and Caveats](#sync-encryption-and-caveats)
-- [Where Lotti Is Right Now](#where-lotti-is-right-now)
-- [Getting Started](#getting-started)
-- [Pricing & Sustainability](#pricing--sustainability)
-- [Contributing](#contributing)
-- [Documentation](#documentation)
-- [Technical Stack](#technical-stack)
-- [Philosophy](#philosophy)
-- [License](#license)
+### Capture
 
----
+- **Audio recording** anywhere in the app, transcribed locally with Whisper
+  (99 languages) or Voxtral, or through a cloud provider with audio support. A
+  rambling voice note comes back as a task with a checklist.
+- **Entries**: notes, images, measurements, and surveys, attached to the work
+  they belong to.
 
-## What is Lotti?
+### Organize and reflect
 
-Lotti is two things in one application:
+- **Tasks** with full lifecycle (open, groomed, in progress, blocked, on hold,
+  done, rejected), checklists, estimates, priorities, due dates, labels, linked
+  context, and optional generated cover art.
+- **Task agents**: give one task a persistent assistant with its own inference
+  setup, report, wake state, and proposal history. Automatic updates decide
+  when it wakes, not what it may change.
+- **Time tracking** recorded against the plan rather than instead of it, with
+  focus ratings.
+- **Time analysis** over categories, habits, and measurements.
 
-1. **A personal logbook** — the system of record for facts about your work and life. Time recordings, audio notes (transcribed locally with Whisper or Voxtral, or via a cloud model of your choice), journal entries, tasks, habits, and health data.
-2. **An agentic layer on top of that logbook** — long‑living AI agents that read what you've recorded, think about it, and help you act on it. Entirely private if you so choose, and provide capable hardware.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/time-analysis/overview/desktop-dark.webp">
+  <img alt="Time Analysis: total, focused and other hours for the month, time per day stacked by category, and a per-category table with share and daily average" src="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/time-analysis/overview/desktop-light.webp">
+</picture>
 
-The logbook side is what you'd expect from a good personal information manager: structured, durable, exportable, yours. The agentic side is where things get interesting.
+- **Categories and labels** to make the boundaries that your decisions
+  actually use.
+- **Habits, measurables, and health data** imported from Apple Health and
+  other sources.
+- **Projects, events, dashboards, and embedding-backed search** exist and are
+  in daily use, but ship switched off. Turn them on under Settings → Advanced →
+  Flags, and expect rough edges.
 
----
+### AI and automation
 
-## The Agentic Layer
+- **Providers, models, and inference profiles** as three separate layers, so
+  routing is explicit and the blast radius of a change is visible before you
+  make it.
+- **A European route, offered rather than imposed.** Onboarding highlights
+  [Melious.ai](https://melious.ai), an OpenAI-compatible EU endpoint serving
+  open-weight models. You bring your own key and hold your own contract with
+  whoever you pick.
+- Works with everything else too: OpenAI, Anthropic, Mistral, Google, Alibaba,
+  Nebius, OpenRouter, Ollama, or any OpenAI-compatible endpoint, including a
+  custom base URL pointed at your own gateway.
+- **Agent templates and souls**: a template defines a responsibility, a soul
+  defines voice, tone bounds, coaching style, and an anti-sycophancy policy.
+  Both are versioned, both are improved through reviewable 1-on-1 sessions, and
+  both can be rolled back.
+- **Grievances and 1-on-1s.** When an agent annoys you, say so — no form and no
+  magic phrase required. It records the grievance and brings it up in the next
+  1-on-1, where the two of you reconcile what changes. The result is an
+  assistant that evolves rather than one you configure once.
+- **Contextual skills** for work that does not need a durable agent, including
+  prompt generators that turn a task plus your notes into a coding, design,
+  image, or research brief you can paste into the tool of your choice.
+- **Usage and impact**: tokens and requests by period, category and model for
+  every cloud call, plus cost, energy and CO₂e wherever the provider reports
+  them — currently Melious. Other providers return token counts only, so those
+  columns stay empty rather than being estimated.
+- Turn all of it off. Lotti is useful without any inference configured.
 
-Lotti's agents are **long‑living entities with memories**. They wake up when there is relevant new information, or on a cadence, look at what's happened since they last ran, and produce a report. They remember their previous reports. They have opinions. They are, by design, a little unpredictable — interesting to interact with rather than mechanical.
+### Sync and data
 
-Crucially, **you shape them**. Their behavior and personality are not fixed. If an agent is too pushy, too verbose, or focused on the wrong things, you can tune it — and you can keep tuning it. This tuning process is formalized as 1-on-1 with the respective agent template.
-
-### A thousand agents in your pocket
-
-A single device (even a phone) can host **thousands of long‑living agents** without breaking a sweat. The author currently runs north of a thousand task agents on a phone, all idle most of the time and reacting only to changes in the entities they actually care about. The trick isn't a big timer loop — it's that agents subscribe to **fine‑grained entity‑change notifications**, so an agent sleeps cheaply and only wakes when something it watches actually moves.
-
-That matters because the agentic experience scales with your life: a task agent per task that needs ongoing thought, a project agent per project, a planner per area of focus. Lotti is designed to make that fan‑out feel ordinary.
-
-### Anatomy of an Agent: Mission, Soul, Report Directive
-
-Every agent in Lotti is defined by three components:
-
-- **Mission** — *what the agent is supposed to do.* The job description: "watch this category of tasks and surface what's blocked," "review my time recordings against my goals," etc.
-- **Soul** — *the personality and characteristics.* How the agent talks to you, what it cares about, how forgiving or pedantic it is. A soul is reusable across templates and agent types: define a voice once, and any agent — task watcher, reviewer, journal companion — can wear it.
-- **Report Directive** — *the shape of the output of a wake cycle.* When an agent wakes up and runs, the report directive defines what it shows you — the surface where the assistant says "here's what I think needs your attention."
-
-Mission, soul, and report directive together turn a generic LLM call into something resembling a coherent collaborator (most of the time — they are still LLMs).
-
-### Grievances and Weekly 1‑on‑1s
-
-You can **file a grievance with an agent.** It isn't a form, and you don't have to use any particular phrase — saying "hey, I want to file a grievance about X" works, but so does just venting at the agent when it's annoying you. It picks up the grievance either way and records it. In the next **weekly 1‑on‑1 session** (or whatever cadence you set), the agent brings it up, you talk it through, and the two of you reconcile what changes. Watching that play out, and seeing the agent actually adjust, is one of the most interesting parts of the whole system.
-
-The result is an assistant that *evolves*. You're not configuring a tool — you're managing a relationship.
-
-### Where the agentic layer is today, and where it's going
-
-The current focus is on **task agents** and their evolution: agents that watch tasks in your realm, reason about them, and have tools to interact with you and propose changes — new checklist items, status updates, suggested edits — every one of which still requires your approval before it lands in the user database. A **long‑lived day‑planning agent** also ships today (see ADR 0022): it wakes on a cadence and on relevant changes to propose how a day should be shaped given what's on your plate and what you've said matters.
-
-Next agent types on the roadmap:
-
-- **Week planners** — agents that propose how a week should be shaped, extending the day‑planning loop to a longer horizon.
-- **Long‑term commitment monitors** — agents that watch the things you said you'd care about over months, not days, and surface drift before it becomes a problem.
-- **Effort‑against‑goals balancers** — agents that look at where your time and energy actually went and weigh that against what you said you wanted.
-
-Same building blocks (mission, soul, report directive, grievances, human‑in‑the‑loop), different jobs.
-
----
-
-## Local Execution & Data Sovereignty
-
-Most AI‑powered productivity tools require you to upload and store your personal data on their servers. Lotti doesn't. Your tasks, audio, journal entries, and time recordings live on your devices and nowhere else.
-
-There's finally at least one local **model** good enough to drive the agents — **Qwen 3.6 35B A3B** is the one validated in daily use, and others probably work too. For a long time, the choice was "use a frontier cloud model and accept that data leaves the machine" or "use a local model and accept that the agents won't really work." Qwen 3.6 closes that gap — a 35B parameter Mixture‑of‑Experts model with only ~3B active parameters per token, which is what makes it practical to run on a personal machine while still being smart enough to drive the agentic loop.
-
-### Hardware reality check
-
-Running this locally is **power‑hungry**. Tested extensively on an M4 Max with 128 GB of RAM, the laptop hums audibly under sustained agent load and battery drains noticeably faster than during normal work. Think "last‑generation Intel i9 MacBook Pro on a heavy build" — that kind of fan noise. It's feasible though, and the quality is finally there.
-
-### Hybrid is the realistic answer
-
-The author runs Lotti **hybrid**:
-
-- **Local model** for highly private categories — personal journaling, health, anything you'd rather not hand to a cloud provider.
-- **Gemini Flash** (or your cloud provider of choice) for everything else — open‑source work, day‑to‑day task management, anything where the data isn't that sensitive. It's faster still, but much cheaper on your battery, and frees up the local machine for the categories that actually need it.
-
-Locally available today:
-
-- 🎙️ **Voice / transcription** — Whisper and Voxtral (Mistral) run fully offline.
-- 🧠 **Thinking** — Qwen 3.6 and similar reasoning‑capable local models drive the agentic loop, not just shallow autocomplete.
-- 🤝 **Per‑category provider choice** — you decide on a per‑category basis where inference happens. Same UX, different trust boundary.
-
-When you do opt into a cloud provider, Lotti uses **your own API keys**, and your data is shared only for that specific inference call — there is no Lotti backend in the middle holding your data. For users who want options beyond US frontier cloud, **European‑hosted, no‑retention, GDPR‑compliant providers** are supported, and **Chinese providers** (Qwen via Alibaba, for instance) also work well — pick the jurisdiction and the price/performance point that fits  your specific needs.
-
-**Image generation isn't local yet.** Cover‑art generation currently goes through a cloud provider (Nano Banana Pro on Gemini, or Qwen/Wan via Alibaba — see [Visual journaling](#visual-journaling-cover-art-for-your-life)). A reliable, local Python‑based image‑generation service following the same pattern as our local Voxtral integration is one of the **few areas where outside contributions are actively wanted** — see [Contributing](#contributing).
+- End-to-end encrypted sync across your devices, backed by a Synapse
+  homeserver you or someone you trust operates.
+- The first device is provisioned server-side with the included
+  [`tools/matrix_provisioner`](tools/matrix_provisioner) CLI, which creates the
+  sync account and encrypted room and writes a single-use pairing bundle.
+- Every device after that pairs from one you already use: scan a QR code,
+  compare a check code derived independently on both screens, then complete
+  emoji verification. Until verification finishes, the new device receives
+  ciphertext it cannot read.
+- Conflict resolution is built on vector clocks, so a device that was offline
+  for a week rejoins without losing writes.
+- **Your data is a file you already have.** Local SQLite with a documented
+  schema, plus attachments on the filesystem. No export wizard, because there
+  is nothing to unlock.
 
 ---
 
-## Architecture: Two Databases, Human‑in‑the‑Loop
+## Two databases, human-in-the-loop by construction
 
-Lotti enforces a strict separation between *what you said/wrote* and *what an agent thinks*. They live in **different databases on disk** for a reason.
+Lotti keeps *what you said and did* and *what an agent thinks* in different
+databases on disk.
 
-### The User Database — the system of record
+The **user database** is the system of record: tasks, notes, audio, time
+recordings, journal entries. It is treated with care, and agents do not write
+into it freely.
 
-This is the database we treat with care. It contains the facts: your tasks, your notes, your audio, your time recordings, your journal entries. We do not let agents write into it freely.
-
-### The Agentic Database — agents' working memory
-
-This is where agent state lives: agent definitions, memories, wake cycle history, internal reasoning traces, intermediate results. It's allowed to grow, and it's allowed to be **pruned**. There is no guarantee of permanence here — the agentic database can be thrown away and recreated without losing anything that matters about *you*. If it grows too large, pruning strategies will be able to trim it back in the future. The agents may lose or compress some memory; the logbook does not.
-
-### Human‑in‑the‑Loop, by Design
-
-The split between the two databases has one practical consequence: **anything an agent suggests must be approved by you before it lands in the user database.** Agents propose. You dispose.
-
-There are two narrow exceptions, both for fields that are still empty on a task: **if a task has no title yet, an agent may set the initial title automatically, and if it has no language yet, an agent may set the initial language automatically.** Any subsequent edit to either — or to anything else — requires your explicit approval.
+The **agentic database** is agent working memory: definitions, memories, wake
+history, reasoning traces, intermediate results. It may grow and it may be
+pruned. It can be thrown away and rebuilt without losing anything that matters
+about *you*.
 
 ```mermaid
 flowchart LR
@@ -164,136 +203,253 @@ flowchart LR
     S -.->|exception: initial title & language only| T
 ```
 
-The reason this matters: the rule isn't enforced by being careful in prompts, it's enforced by the storage layout. Agent‑authored content sits in a different file on disk and reaches the user database only through a code path that requires your approval. Even a misbehaving agent can't bypass that — it has nowhere to write.
+The rule matters because of how it is enforced. Agent-authored content sits in
+a different file on disk and reaches the user database only through a code path
+that requires your approval. A misbehaving agent has no path to any other field
+in the user database.
+
+The two narrow exceptions both concern fields that are still empty: an agent
+may set the initial title of an untitled task, and the initial language of a
+task that has none. Every subsequent edit needs your approval.
 
 ---
 
-## Core Features
+## Privacy, sovereignty, and where your compute happens
 
-Beyond the agentic layer, the logbook side covers:
+Three different claims get flattened into the word "private." Lotti makes all
+three. They are worth separating, because they fail in different ways.
 
-### Tracking
-- **Tasks** — full lifecycle (open, groomed, in progress, blocked, on hold, done, rejected), with priorities, due dates, labels, projects, and cover art
-- **Audio recordings** — captured locally, transcribed by Whisper, Voxtral, or your chosen cloud model
-- **Time tracking** — recorded against tasks and projects
-- **Journal entries** — written reflections and documentation
-- **Habits** — daily habits and routines, with three completion types (success / fail / skip)
-- **Health data** — import from Apple Health and similar sources
-- **Custom metrics** — track anything that matters to you
+### Your logbook is not collected
 
-### AI‑augmented workflows
-- **Smart summaries** of tasks
-- **Audio → checklist** conversion of rambling voice notes
-- **Image cover art** for tasks and journal entries
-- **Context recap** when you return to a task after a break
-- **Generate Coding Prompt** skill — turns a task plus your notes into a structured Markdown 
-  coding brief ready to paste into Claude Code, OpenCode, Codex, Cursor, or your AI 
-  coding assistant of choice
-- **Generate Design Prompt** skill — turns task context plus notes into a UI/UX exploration 
-  prompt (defaults to several functional prototypes, enforces design‑system alignment when one 
-  is mentioned), ready to paste into Claude Design, OpenDesign, Figma Make, or similar
-- **Generate Image Prompt** and **Generate Research Prompt** skills round out the same pattern for cover‑art generation and Deep‑Research‑style briefs
-- **Per‑category provider configuration** — local for personal stuff, cloud for work, your call
+There is no Lotti server. No account, no telemetry, no analytics, and nothing
+uploaded to Lotti. Entries live in local SQLite on each of your devices, with
+attachments beside it on the filesystem. That is structural rather than a policy
+commitment: there is nowhere for the data to go, and you can confirm it by
+reading the source or watching the traffic. Two things do leave, both because
+you configured them: ciphertext to the homeserver you chose, and inference
+requests to the provider you chose.
 
-### Privacy & sync
-- **Local‑only storage** — there is no cloud storage. Data lives on your devices, full stop.
-- **End‑to‑end encrypted sync** between *your* devices via [Matrix](https://matrix.org), with **Vodozemac** providing the Megolm crypto in Rust. See [Sync, Encryption, and Caveats](#sync-encryption-and-caveats) for what is and isn't encrypted.
-- **Bring your own keys** for cloud providers, if you choose to use them
-- **Jurisdiction choice** — European‑hosted, no‑retention, GDPR‑compliant providers are supported, and Chinese providers (Qwen via Alibaba, etc.) also work well, alongside US frontier cloud models, and fully local
-- **Portable, exportable, no vendor lock‑in** — your data stays accessible to you, independent of any subscription or service
-- **No accounts (other than the Matrix one you bring), no telemetry, no lock‑in**
+*The other side of that:* there is no server-side backup and no account
+recovery, because there is no account. Sync is the redundancy story — but it is
+not automatic history. Pairing a device gives it everything written *from then
+on*; your existing settings and back catalogue arrive only when you run *Send
+settings* and *Send message history* from the device that already has them.
+Until you do, the new device is a live peer, not a backup. Do that early, and a
+second device means losing one costs you nothing.
+
+Keep an ordinary backup as well, since replication covers hardware loss and a
+backup covers everything else. There is no export feature, because there is
+nothing to export from. Your logbook is a SQLite database sitting on your own
+disk with a documented schema, so reading it takes a query rather than
+permission. Take a consistent copy with `VACUUM INTO` while the app is running,
+and bring the attachments directory along with it, because audio and images
+live on the filesystem rather than in the database.
+<!-- TODO: link a manual page giving the database and attachment paths per
+     platform. Without it, "you have access" is true and unactionable. -->
+On a phone the database sits inside the app sandbox, so the practical route
+there is to pair a desktop and take the copy from that peer.
+
+Deleting works the other way round, and the order matters: delete entries *in
+the app* rather than deleting the database files. Purging removes an attachment
+by walking the deleted rows that still point at it, so a database removed first
+leaves its audio and images orphaned on disk. Paired devices and ordinary
+backups keep their own copies either way, and anything already sent to a
+provider is subject to that provider's retention, not yours.
+
+*What this does not protect against:* a compromised device. The on-device
+SQLite files live inside your OS user account and are not separately encrypted
+by Lotti today. App-level at-rest encryption is a candidate for the roadmap;
+until it lands, give Lotti's on-device data the same care you would give any
+personal app on the same machine, and weigh that before putting your most
+sensitive categories in it.
+
+### Your sync infrastructure is yours
+
+Sync runs over Matrix with Vodozemac for end-to-end encryption, against a
+Synapse homeserver you or someone you trust operates. The relay only ever
+handles ciphertext. Encryption keys are shared only with devices you have
+verified through an emoji comparison, so a device that joins the account
+without completing verification receives data it cannot read. Both databases
+sync this way.
+
+*What this does not protect against:* metadata. Whoever runs the homeserver can
+observe that a device synced, when, and roughly how much. Not what.
+
+### Your inference is a routing decision
+
+Lotti has no inference backend. Every AI call goes to a provider you
+configured, under your own account and API key, and you choose per category
+which provider that is. Work can go to a frontier model while a journal stays
+on a local one. That granularity is the entire point.
+
+**Onboarding highlights a European route.** [Melious.ai](https://melious.ai) is
+a German company routing open-weight models across a network of EU
+infrastructure providers, independently verified at
+[staysin.eu](https://staysin.eu/api.melious.ai). They state that requests are
+not used for training and that data stays under European jurisdiction. Those
+are their claims, on their terms, and worth reading in full before you rely on
+them.
+
+Mistral, Google, Alibaba, OpenAI, Anthropic, OpenRouter, and any other
+OpenAI-compatible endpoint work equally well. Lotti does not rank them, does
+not summarise their terms, and cannot verify anyone's claims about jurisdiction,
+retention, or training. Picking a provider is your decision and the due
+diligence is yours.
+
+What Lotti does instead is refuse to let the decision be invisible:
+
+- Routing is configured per category, ahead of time, rather than negotiated in
+  the moment — so which provider a given piece of work goes to is a setting you
+  chose, not a prompt you clicked past. The flip side is that there is no
+  just-in-time notice at the point an agent or a transcription fires; the
+  onboarding and settings screens are where that decision is made and shown.
+- A friendly display name is not the security boundary. The provider detail
+  view shows the actual base URL, the models attached to it, and every profile
+  that depends on them.
+- Usage & Impact logs every request that left the machine and which model served
+  it, with token counts throughout and cost, energy and CO₂e wherever the
+  provider reports them.
+
+A LAN endpoint is worth the same scrutiny. "Local" means it did not go to a
+hosted provider, not that no network hop occurred.
+
+*What this does not protect against:* a provider that does not do what its
+terms say. Nothing in Lotti can verify that, and neither can anyone else from
+the outside. What Lotti can do is show you every request it made, where it
+went, and what it cost.
+
+### Running it all locally
+
+Local inference is finally good enough to drive the agents. **Qwen 3.6 35B A3B**
+is the model validated in daily use here — 35B parameters with roughly 3B active
+per token, which is what makes it practical on a personal machine while still
+being smart enough for the agentic loop. Others probably work too.
+
+It is power-hungry. Tested extensively on an M4 Max with 128 GB of RAM, the
+laptop is audible under sustained agent load and the battery drains noticeably
+faster than during normal work. Feasible, not free.
+
+Hybrid is the realistic answer, and it is how I run it: a local model for the
+private categories, a cheap cloud model such as Gemini Flash for open-source
+work and everyday task management. Speech is fully offline via Whisper or
+Voxtral either way. Image generation is the one thing with no local path yet —
+cover art goes through Gemini or Alibaba.
+
+### Energy is a routing decision too
+
+Inference runs in a physical building on a specific grid. The **Usage & Impact**
+view reports tokens and requests for every cloud call, broken down by category
+and by model, so "what did my thinking cost" has an answer rather than a vibe.
+
+How complete that answer is depends on the provider. Cost, energy, CO₂e and
+water are recorded when the provider returns them with the response, which today
+means Melious; every other provider reports token counts only, and those columns
+stay empty rather than being filled with an estimate. That is a real limit on the
+dashboard: route your work through a provider that discloses nothing, and the
+impact of that work is not something Lotti can show you.
+
+The route highlighted in onboarding publishes power usage effectiveness per
+datacenter and carries Green Web Foundation verification, which is more than
+most disclose. Running a model locally moves the cost onto your own hardware
+and your own grid, which is a different trade rather than a free one, and the
+dashboard does not measure it.
+
+Choosing a renewable-powered route avoids outsourcing the health and climate
+cost of fossil-powered compute, gas turbine generation in particular, to
+communities with less power to refuse it. That is a reason to care where your
+tokens get processed even if you do not care who reads them.
+
+### If none of that satisfies you
+
+Turn AI off. Configure no provider at all, or point every category at Ollama
+with local Whisper for speech. Lotti is a complete task manager, time tracker,
+and journal without a single inference call leaving the machine.
 
 ---
 
-## Use Cases
+## In development
 
-Two workflows in particular are why the author keeps building this app.
+Built and documented, but not enabled in a default build. Turn it on under
+Settings → Advanced → Flags, and expect it to change.
 
-### On‑the‑go dictation
+- **Daily OS** ("Enable DailyOS Page") turns a spoken or typed check-in into a
+  plan for one day. It reconciles what you said against your real tasks, drafts
+  an agenda against your actual capacity, and presents every proposed change
+  with its old time, its new time, and the planner's reason. Nothing is
+  committed until you hold the confirm control. Wrap-up at the end of the day
+  separates what you finished from what carries forward.
+  [Documentation](https://matthiasn.github.io/lotti/manual/development/plan-and-capture/daily-os)
 
-You're walking in a forest, or you're driving, and the ideas show up. You don't want to stop and type, and you don't want to lose them.
-
-You hold the record button, talk for as long as you want, and stop. Lotti transcribes the audio (locally with Voxtral or Whisper later on the desktop, or right away via your cloud provider). An agent then organizes what you said into actionable checklist items, attaches them to the right task, and surfaces the result for your approval the next time you sit down (or look at your phone, in case your chose cloud inference).
-
-### Visual journaling: cover art for your life
-
-Cover art for tasks isn't decoration — it's a *visual index of what your day/week/month was actually about*.
-
-Each task can have an AI‑generated image, created with **Nano Banana Pro (Gemini)** or **Qwen/Wan (Alibaba)** (whichever you've configured). You're the one who guides the art, and you keep the result. Years from now, when you look back at "what was I doing in May 2026?", you don't have to read a wall of text — you will be able to scroll an Instagram‑style grid of cover art and the texture of that period of your life comes back at a glance.
-
-This is one of the strongest arguments for keeping a logbook like this open‑source and yours: a subscription‑based product gives you a "download my data" button at best, but no tool to make that data meaningful afterward. Lotti's cover art belongs to you, in a database you can read, in a file format that will outlive any of us (JSON stored in SQLite).
-
----
-
-## Sync, Encryption, and Caveats
-
-Lotti syncs between *your own* devices over Matrix. There is no Lotti backend; homeservers (self‑hosted or public) only relay end‑to‑end encrypted payloads.
-
-### What is encrypted
-
-- **Sync traffic** — every sync payload (logbook entries, agent state, suggestions, attachments) is end‑to‑end encrypted using **Matrix + Vodozemac** (the Rust implementation of Olm/Megolm). Homeservers see ciphertext, never unencrypted data. Both the user database and the agentic database sync this way.
-- **Cloud inference calls** — sent over TLS to whichever provider you configured, using your own API key.
-
-### What is not (yet) encrypted
-
-- **Local databases at rest.** The on‑device SQLite files live inside your OS user account and are not separately encrypted by Lotti today. This is a real caveat: if your device is compromised at the OS level, an attacker with that level of access can read the databases. But then again, when an attacker has OS level access, you're screwed anyway. App‑level at‑rest encryption is considered for inclusion on the roadmap; until it lands, treat Lotti's on‑device data with the same care you'd give any personal app on the same device. If this trade‑off matters for your threat model, please weigh it before adopting Lotti for the most sensitive categories.
+Next agent types on the roadmap: week planners, long-term commitment monitors,
+and effort-against-goals balancers — same building blocks, different jobs.
+Designed but not yet built: learning quizzes and relationship check-ins. See
+the [roadmap](https://matthiasn.github.io/lotti/manual/development/roadmap).
 
 ---
 
-## Where Lotti Is Right Now
+## Pricing and sustainability
 
-The application is in active daily use. The agentic layer is real, working, and shipping. A few things are worth knowing if you're picking it up now:
+**Linux is and will always be free, with maximum functionality.** No paywalls,
+no upsells. The same promise extends to any future fully open-source mobile
+operating system. The one thing it does not include is hosted sync
+infrastructure — running a homeserver is a real cost, so you either self-host
+Matrix or bring your own.
 
-- **Design system rollout is in progress.** Some screens follow the new design system, some don't yet, so you'll see visual inconsistencies. The path to full App Store polish is an ongoing effort.
-- **The agentic layer is new.** Mission/soul/report‑directive ergonomics, grievance handling, and pruning strategies are areas of active development — feedback here is especially valuable.
-- **Local image generation isn't there yet.** Cloud image models work; a local, on-device image-generation service does not exist yet.
-- **At‑rest encryption isn't there yet.** See [Sync, Encryption, and Caveats](#sync-encryption-and-caveats).
+**On other platforms, the basics stay free too.** Task and journal capture, the
+task agent, voice transcription, the everyday loop.
 
----
-
-## Getting Started
-
-Pick the guide that matches what you want to do:
-
-- 🤖 [Set up AI — local (Ollama) or cloud (Gemini Flash)](GETTING_STARTED.md) — the fastest way to a working agent
-- ✅ [Task management and voice capture](https://matthiasn.github.io/lotti/manual/development/getting-started/first-task/) — the everyday voice-to-checklist workflow
-- 📖 [Manual](https://matthiasn.github.io/lotti/manual/development/) — how to use Lotti
-
-For developers:
-
-- Install Flutter via [FVM](https://fvm.app/) (the repo includes `.fvmrc`)
-- `make deps` — install dependencies
-- `make analyze` — static analysis
-- `make test` — unit tests
-- `make build_runner` — code generation
-- `make l10n` — regenerate localizations
-- `fvm flutter run -d macos` — run on macOS (or `-d <device>` for others)
-
-**Linux only** — install the AAC decoder used to prepare temporary Voxtral MP3
-uploads, plus emoji font support for proper rendering:
-```bash
-# Debian/Ubuntu: sudo apt install gstreamer1.0-libav fonts-noto-color-emoji
-# Fedora: sudo dnf install gstreamer1-plugin-libav google-noto-emoji-color-fonts
-# Arch:   sudo pacman -S gst-libav noto-fonts-emoji
-./linux/install_emoji_fonts.sh
-```
-
-The Flatpak runtime already supplies the AAC decoder; no host package is needed
-for the Flatpak build.
-
-See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for the full developer setup.
+**More advanced agent features may eventually be in-app purchases on platforms
+where IAP is the norm** (iOS/macOS, Android, Windows). The candidates: day- and
+week-planner agents, overarching project-management agents, longer-horizon
+commitment monitors. The exact split is not set yet.
 
 ---
 
-## Pricing & Sustainability
+## Documentation
 
-A short, honest version of where this is headed.
+- **[Manual](https://matthiasn.github.io/lotti/manual/development/)** — the
+  full guide, available in 11 languages. Start with
+  [the mental model](https://matthiasn.github.io/lotti/manual/development/getting-started/mental-model)
+  if you want to understand the shape of the thing before installing it.
+- [Getting started with AI](GETTING_STARTED.md) — local Ollama or cloud Gemini
+- [Task management and voice capture](https://matthiasn.github.io/lotti/manual/development/getting-started/first-task/)
+  — the everyday voice-to-checklist workflow
+- [Architecture](docs/ARCHITECTURE.md) — the two databases, vector clock sync,
+  on-device inference
+- [Knowledge bundle](knowledge/index.md) — how the app actually works at
+  runtime, subsystem by subsystem, written for contributors and coding agents
+  alike
+- [Background](docs/BACKGROUND.md) — why this exists
+- [Privacy policy](PRIVACY.md) · [Security policy](SECURITY.md)
+- [Roadmap](https://matthiasn.github.io/lotti/manual/development/roadmap)
 
-**Linux is and will always be free, with maximum functionality.** No paywalls, no upsells. The same promise extends to any future fully open‑source mobile operating system. The one thing this *doesn't* include is hosted sync infrastructure — running someone else's homeserver is a real cost, and that won't be free; you can either self‑host Matrix or bring your own homeserver.
+Building it yourself: install Flutter via [FVM](https://fvm.app/) (the repo
+includes `.fvmrc`), then `make deps`, `make analyze`, `make test`,
+`fvm flutter run -d <device>`. Full setup, including the Linux audio-codec and
+emoji-font packages, is in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
-**On other platforms, the basics will stay free too.** Task and journal capture, the task agent, voice transcription, the everyday loop — all free.
+---
 
-**More advanced agent features may eventually be in‑app purchases on platforms where IAP is the norm** (iOS/macOS, Android, Windows). The candidates: day‑ and week‑planner agents, overarching project‑management agents, longer‑horizon commitment monitors. The exact split isn't set yet.
+## Status
+
+Currently 0.9.x, working toward 1.0. The application is in active daily use and
+the agentic layer is real, working, and shipping. Development happens in the
+open, and the [changelog](CHANGELOG.md) is the honest version of what changed.
+
+Worth knowing if you are picking it up now: the design-system rollout is
+partway through, so some screens are polished and others are not. The agentic
+layer is young — soul and template ergonomics, grievance handling, and pruning
+strategies are all under active development, and feedback there is especially
+useful. Local image generation and at-rest database encryption do not exist yet.
+
+The manual, including every screenshot in all 11 languages, is generated from a
+deterministic fixture workspace, so the documentation cannot quietly drift from
+the build it documents.
+
+**Stack**: Flutter and Dart across five platforms, local SQLite via Drift with
+ObjectBox for embeddings, Whisper and Voxtral for on-device speech recognition,
+Matrix and Vodozemac for the encrypted sync transport, Glados for property-based
+tests.
 
 ---
 
@@ -303,59 +459,40 @@ Two things genuinely help, and one thing to know up front.
 
 **Welcome:**
 
-- 🐛 **Issues and bug reports** — the best place to start. Tell us what broke and how to reproduce it.
-- 🌍 **Translations** — new languages and corrections to existing ones. AI‑assisted translation is fine **provided you contribute from a real‑name, established GitHub profile**. Translation PRs are the one kind we merge.
+- **Issues and bug reports** — the best place to start. Tell me what broke and
+  how to reproduce it.
+- **Translations** — new languages and corrections to existing ones.
+  AI-assisted translation is fine **provided you contribute from a real-name,
+  established GitHub profile**. Translation PRs are the one kind that gets
+  merged.
 
-**Not accepted: code pull requests.** Review capacity is the binding constraint, Lotti holds people's personal data on their own devices, and AI‑generated code now arrives far faster than it can be reviewed carefully. An unsolicited code PR will be closed unmerged, with thanks and without review — so please open an issue instead of writing the patch. It is more useful to us and cheaper for you.
+**Not accepted: code pull requests.** Review capacity is the binding
+constraint, Lotti holds people's personal data on their own devices, and
+AI-generated code now arrives far faster than it can be reviewed carefully. An
+unsolicited code PR will be closed unmerged, with thanks and without review —
+so please open an issue instead of writing the patch. It is more useful to me
+and cheaper for you.
 
-Lotti is GPL‑3.0: fork it and build whatever you like on top for yourself.
+Lotti is GPL-3.0: fork it and build whatever you like on top for yourself.
 
-[CONTRIBUTING.md](CONTRIBUTING.md) has the details, including what makes a translation PR mergeable.
-
----
-
-## Documentation
-
-- [Getting Started with AI](GETTING_STARTED.md) — set up local Ollama or cloud Gemini
-- [Manual](https://matthiasn.github.io/lotti/manual/development/) — how to use Lotti
-- [Task management and voice capture](https://matthiasn.github.io/lotti/manual/development/getting-started/first-task/) — the everyday voice-to-checklist workflow
-- [Architecture](docs/ARCHITECTURE.md) — technical design
-- [Knowledge bundle](knowledge/index.md) — how the app actually works at runtime, subsystem by subsystem, written to be read by contributors and coding agents alike
-- [Background](docs/BACKGROUND.md) — the story behind the project
-- [Privacy Policy](PRIVACY.md)
-- [Contributing](CONTRIBUTING.md)
-
----
-
-## Technical Stack
-
-- **Frontend** — [Flutter](https://flutter.dev) (iOS, macOS, Android, Windows, Linux)
-- **Local AI** — [Ollama](https://ollama.com) for general LLM hosting ([Qwen](https://github.com/QwenLM) 3.6 35B A3B and similar reasoning‑capable models for the agentic loop), [Whisper](https://github.com/openai/whisper) and [Voxtral](https://mistral.ai/news/voxtral) ([Mistral](https://mistral.ai)) for offline speech‑to‑text
-- **Cloud AI (optional, per category)** — [OpenAI](https://openai.com), [Anthropic](https://www.anthropic.com), [Google Gemini](https://ai.google.dev) (Flash and Pro tiers, including Nano Banana Pro for image generation), [Mistral](https://mistral.ai), [Alibaba](https://www.alibabacloud.com) ([Qwen](https://github.com/QwenLM) + Wan image models), [Nebius](https://nebius.com), [OpenRouter](https://openrouter.ai), or any OpenAI‑compatible provider
-- **Storage** — local [SQLite](https://sqlite.org) via [Drift](https://drift.simonbinder.eu), with strict separation between user DB (system of record) and agentic DB (working memory)
-- **Sync** — end‑to‑end encrypted via [Matrix](https://matrix.org), using [**Vodozemac**](https://github.com/matrix-org/vodozemac) (Rust) for Megolm crypto. Both databases sync; homeservers only relay encrypted payloads
-- **Testing** — comprehensive unit and integration tests; also a growing number of property‑based / generative tests using [Glados](https://pub.dev/packages/glados)
-
----
-
-## Philosophy
-
-1. **Your data is yours.** The user database is the system of record. No company should own your thoughts and experiences — and definitely not behind a subscription that expires.
-2. **AI as a tool, not a service.** Use AI capabilities without subscriptions or vendor lock‑in. As local models improve, more of the experience moves on‑device — but cloud stays a first‑class, à‑la‑carte option for the categories where you've decided it's fine and useful.
-3. **Privacy by design.** Choose exactly what to share, when, and with whom. The architecture, not the marketing copy, enforces the privacy story.
-4. **Human‑in‑the‑loop.** Agents propose, you dispose. Every change to the system of record passes through you (with two narrow, documented exceptions — the initial title and initial language of an otherwise empty task).
-5. **Agents you can shape.** Mission, soul, report directive, grievances, 1‑on‑1s — agents are collaborators you tune over time, not appliances you configure once.
-
----
+[CONTRIBUTING.md](CONTRIBUTING.md) has the details, including what makes a
+translation PR mergeable.
 
 ## License
 
-Lotti is open source under [LICENSE](LICENSE).
+GPL-3.0. See [LICENSE](LICENSE).
 
 ## Acknowledgments
 
-Thanks to the [Flutter](https://flutter.dev) team, the [Qwen](https://github.com/QwenLM) and [Mistral](https://mistral.ai) teams for their open weights models, [OpenAI](https://openai.com) for the [Whisper](https://github.com/openai/whisper) open weights, the [Ollama](https://ollama.com) project, the [Matrix.org](https://matrix.org) community, the [Vodozemac](https://github.com/matrix-org/vodozemac) authors, and everyone contributing translations, issues, and ideas.
+Thanks to the [Flutter](https://flutter.dev) team, the
+[Qwen](https://github.com/QwenLM) and [Mistral](https://mistral.ai) teams for
+their open-weights models, [OpenAI](https://openai.com) for the
+[Whisper](https://github.com/openai/whisper) weights, the
+[Ollama](https://ollama.com) project, the [Matrix.org](https://matrix.org)
+community, the [Vodozemac](https://github.com/matrix-org/vodozemac) authors, and
+everyone contributing translations, issues, and ideas.
 
 ---
 
-**Building in public** — [Substack](https://matthiasnehlsen.substack.com)
+Built in public. [GitHub](https://github.com/matthiasn/lotti) ·
+[Substack](https://matthiasnehlsen.substack.com)
