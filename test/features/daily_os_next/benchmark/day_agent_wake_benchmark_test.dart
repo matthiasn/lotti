@@ -55,6 +55,7 @@ void main() {
       expect(metric.outputTokens, greaterThan(0));
       expect(metric.durationMicros, greaterThan(0));
       expect(metric.agentRepositoryReads, greaterThan(0));
+      expect(metric.captureMetadataRowsRead, greaterThan(0));
     }
     expect(report['parse']!.outputTokenCeiling, 4096);
     expect(report['draft']!.outputTokenCeiling, 8192);
@@ -95,7 +96,7 @@ void main() {
   });
 
   test(
-    'wake prompts and repository reads do not grow from 1 to 12 months',
+    'wake context and repository work stay bounded from 1 to 12 months',
     () async {
       final oneMonth = await DayAgentWakeBenchmark(
         days: dayPlannerBenchmarkCorpora['1 month']!,
@@ -121,6 +122,11 @@ void main() {
           metric: '$wake.agentRepositoryReads',
           oneMonth: baseline.agentRepositoryReads,
           twelveMonths: aged.agentRepositoryReads,
+        );
+        _expectSameContext(
+          metric: '$wake.captureMetadataRowsRead',
+          oneMonth: baseline.captureMetadataRowsRead,
+          twelveMonths: aged.captureMetadataRowsRead,
         );
       }
     },
@@ -156,6 +162,7 @@ void main() {
           'outputTokens',
           'durationMicros',
           'agentRepositoryReads',
+          'captureMetadataRowsRead',
           'outputTokenCeiling',
           'providerTurns',
         ]) {

@@ -506,13 +506,18 @@ class DelegatingAgentSyncService extends MockAgentSyncService {
 /// metadata) that the shared fixture's narrower call graph doesn't cover.
 class PipelineAgentRepository extends InMemoryAgentRepository {
   var _readCount = 0;
+  var _captureMetadataRowsRead = 0;
 
   /// Counted agent-repository reads since the last reset.
   int get readCount => _readCount;
 
+  /// Capture metadata rows materialized since the last reset.
+  int get captureMetadataRowsRead => _captureMetadataRowsRead;
+
   /// Starts a fresh read-count window for one benchmarked wake.
   void resetReadCount() {
     _readCount = 0;
+    _captureMetadataRowsRead = 0;
   }
 
   @override
@@ -590,13 +595,19 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
   }
 
   @override
-  Future<List<CaptureEventMeta>> getCaptureEventMetaByAgentId(
-    String agentId,
-  ) async {
+  Future<List<CaptureEventMeta>> getCaptureEventMetaForDay({
+    required String agentId,
+    required String dayId,
+  }) async {
     recordRead();
-    return entities
+    final result = entities
         .whereType<CaptureEntity>()
-        .where((c) => c.agentId == agentId && c.deletedAt == null)
+        .where(
+          (c) =>
+              c.agentId == agentId &&
+              c.deletedAt == null &&
+              captureEventDayId(captureEventMeta(c)) == dayId,
+        )
         .map(
           (c) => (
             id: c.id,
@@ -606,6 +617,8 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
           ),
         )
         .toList();
+    _captureMetadataRowsRead += result.length;
+    return result;
   }
 
   @override

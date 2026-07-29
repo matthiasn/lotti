@@ -267,8 +267,8 @@ void main() {
     });
   });
 
-  group('getCaptureEventMetaByAgentId', () {
-    test('returns id + timestamps without materializing content', () async {
+  group('getCaptureEventMetaForDay', () {
+    test('returns only day-scoped metadata without content', () async {
       await core.upsertEntity(
         makeTestCapture(
           id: 'cap-1',
@@ -277,8 +277,19 @@ void main() {
           capturedAt: DateTime(2026, 3, 15, 10),
         ),
       );
+      await core.upsertEntity(
+        makeTestCapture(
+          id: 'cap-other-day',
+          agentId: 'agent-1',
+          createdAt: DateTime(2026, 3, 16),
+          capturedAt: DateTime(2026, 3, 16, 10),
+        ),
+      );
 
-      final metas = await core.getCaptureEventMetaByAgentId('agent-1');
+      final metas = await core.getCaptureEventMetaForDay(
+        agentId: 'agent-1',
+        dayId: 'dayplan-2026-03-15',
+      );
       expect(metas, hasLength(1));
       expect(metas.single.id, 'cap-1');
       expect(metas.single.dayId, isEmpty);

@@ -327,7 +327,7 @@ class DayPlannerCorpus {
     GeneratedDatabase db,
     Future<Object?> Function() operation,
   ) async {
-    final interceptor = _SqlOperationCounter();
+    final interceptor = SqlOperationCounter();
     await db.runWithInterceptor(operation, interceptor: interceptor);
     return _SqlOperationCost(
       statements: interceptor.statements,
@@ -341,8 +341,9 @@ class DayPlannerCorpus {
   ///
   /// A broad index can still walk every row owned by an agent, so merely
   /// checking for `USING INDEX` is insufficient. Outbox claims may use the
-  /// pending partial index plus the table's primary-key auto-index for the
-  /// outer update; day reads must use a subtype index.
+  /// pending partial index plus a primary-key `SEARCH` for the outer update;
+  /// a primary-key `SCAN` is still unbounded. Day reads must use a subtype
+  /// index.
   @visibleForTesting
   static bool debugIsUnboundedHistoryPlanDetail(String detail) {
     final normalized = detail.toUpperCase();
@@ -353,8 +354,11 @@ class DayPlannerCorpus {
           );
     }
     if (normalized.contains('DAY_PROCESSING_JOBS')) {
+      final primaryKeyLookup =
+          normalized.startsWith('SEARCH ') &&
+          normalized.contains('SQLITE_AUTOINDEX_DAY_PROCESSING_JOBS_1');
       return !normalized.contains('IDX_DAY_PROCESSING_JOBS_PENDING') &&
-          !normalized.contains('SQLITE_AUTOINDEX_DAY_PROCESSING_JOBS_1');
+          !primaryKeyLookup;
     }
     return false;
   }
@@ -372,10 +376,64 @@ class _SqlOperationCost {
   final int unboundedPlanSteps;
 }
 
-class _SqlOperationCounter extends QueryInterceptor {
+/// Executor-boundary counter used by the deterministic storage cost gate.
+///
+/// Public only so its hook coverage can be regression-tested from the mirror
+/// benchmark test; it is not application code.
+@visibleForTesting
+class SqlOperationCounter extends QueryInterceptor {
   int statements = 0;
   int rowsReturned = 0;
   int unboundedPlanSteps = 0;
+
+  @override
+  Future<void> runBatched(
+    QueryExecutor executor,
+    BatchedStatements statements,
+  ) {
+    this.statements += statements.arguments.length;
+    return executor.runBatched(statements);
+  }
+
+  @override
+  Future<void> runCustom(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    statements++;
+    return executor.runCustom(statement, args);
+  }
+
+  @override
+  Future<int> runInsert(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    statements++;
+    return executor.runInsert(statement, args);
+  }
+
+  @override
+  Future<int> runDelete(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    statements++;
+    return executor.runDelete(statement, args);
+  }
+
+  @override
+  Future<int> runUpdate(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    statements++;
+    return executor.runUpdate(statement, args);
+  }
 
   @override
   Future<List<Map<String, Object?>>> runSelect(

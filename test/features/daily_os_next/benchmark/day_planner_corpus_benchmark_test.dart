@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
@@ -136,6 +137,65 @@ void main() {
       ),
       isFalse,
     );
+    expect(
+      DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
+        'SCAN day_processing_jobs USING INDEX '
+        'sqlite_autoindex_day_processing_jobs_1',
+      ),
+      isTrue,
+    );
+    expect(
+      DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
+        'SEARCH day_processing_jobs USING INDEX '
+        'sqlite_autoindex_day_processing_jobs_1 (id=?)',
+      ),
+      isFalse,
+    );
+  });
+
+  test('SQL counter observes every executor statement hook', () async {
+    final db = AgentDatabase(inMemoryDatabase: true, background: false);
+    addTearDown(db.close);
+    final counter = SqlOperationCounter();
+
+    await db.runWithInterceptor(() async {
+      await db.customStatement(
+        'CREATE TEMP TABLE operation_probe '
+        '(id INTEGER PRIMARY KEY, value TEXT NOT NULL)',
+      );
+      await db.customInsert(
+        'INSERT INTO operation_probe (id, value) VALUES (?1, ?2)',
+        variables: [
+          const Variable<int>(1),
+          const Variable<String>('one'),
+        ],
+      );
+      await db.customUpdate(
+        'UPDATE operation_probe SET value = ?1 WHERE id = ?2',
+        variables: [
+          const Variable<String>('updated'),
+          const Variable<int>(1),
+        ],
+      );
+      await db.customSelect('SELECT value FROM operation_probe').get();
+      await db.batch((batch) {
+        batch
+          ..customStatement(
+            'INSERT INTO operation_probe (id, value) VALUES (?, ?)',
+            [2, 'two'],
+          )
+          ..customStatement(
+            'INSERT INTO operation_probe (id, value) VALUES (?, ?)',
+            [3, 'three'],
+          );
+      });
+      await (db.delete(
+        db.agentEntities,
+      )..where((row) => row.id.equals('missing'))).go();
+    }, interceptor: counter);
+
+    expect(counter.statements, 7);
+    expect(counter.rowsReturned, 1);
   });
 
   test(

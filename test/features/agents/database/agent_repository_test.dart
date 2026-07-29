@@ -771,7 +771,7 @@ void main() {
       });
     });
 
-    group('getCaptureEventMetaByAgentId', () {
+    group('getCaptureEventMetaForDay', () {
       CaptureEntity capture(
         String id, {
         required DateTime createdAt,
@@ -810,6 +810,14 @@ void main() {
               capturedAt: DateTime.utc(2026, 6, 5, 9),
             ),
           );
+          await repo.upsertEntity(
+            capture(
+              'cap-other-day',
+              createdAt: DateTime.utc(2026, 6, 6, 9, 1),
+              capturedAt: DateTime.utc(2026, 6, 6, 9),
+              dayId: 'dayplan-2026-06-06',
+            ),
+          );
           // Soft-deleted capture — excluded.
           await repo.upsertEntity(
             capture(
@@ -834,7 +842,10 @@ void main() {
           // A non-capture entity for this agent — excluded.
           await repo.upsertEntity(makeAgentState());
 
-          final metas = await repo.getCaptureEventMetaByAgentId(testAgentId);
+          final metas = await repo.getCaptureEventMetaForDay(
+            agentId: testAgentId,
+            dayId: 'dayplan-2026-06-05',
+          );
 
           expect(metas.map((m) => m.id), unorderedEquals(['cap-1', 'cap-2']));
           final byId = {for (final m in metas) m.id: m};
@@ -849,7 +860,13 @@ void main() {
 
       test('returns an empty list when the agent has no captures', () async {
         await repo.upsertEntity(makeAgentState());
-        expect(await repo.getCaptureEventMetaByAgentId(testAgentId), isEmpty);
+        expect(
+          await repo.getCaptureEventMetaForDay(
+            agentId: testAgentId,
+            dayId: 'dayplan-2026-06-05',
+          ),
+          isEmpty,
+        );
       });
     });
 

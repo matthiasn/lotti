@@ -5,7 +5,7 @@ description: Measuring model behavior, full-workflow prompt and token cost, and 
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-29T12:55:00Z }
+generated: { by: codex/5, at: 2026-07-29T14:43:00Z }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -797,6 +797,8 @@ refine, and digest separately:
 - `durationMicros`: monotonic end-to-end workflow time;
 - `agentRepositoryReads`: counted `AgentRepository` calls during the wake;
   Journal DB and task-repository reads are not included;
+- `captureMetadataRowsRead`: capture ordering rows materialized for the active
+  workspace; the day-subtype query keeps this independent of planner age;
 - `outputTokenCeiling`: the production cap selected for that wake; and
 - `providerTurns`: provider requests made by the wake.
 
@@ -804,12 +806,14 @@ The benchmark has an always-on two-day schema smoke and shares the storage
 benchmark's opt-in command. Its ordinary-CI age gate compares 1 and 12 months.
 Prompt bytes must be identical for every wake because both fixtures expose the
 same current day and bounded seven-day context; agent-repository reads must not
-grow. The in-memory repository counts through one shared read boundary, so a
-newly used inherited read cannot bypass the metric. Older plans therefore must
-not disappear from or enter the prompt, nor add repository work. A separate
-always-on integration assertion verifies that aged plans and weekly rollups
-seeded under their production deterministic IDs actually reach the model-facing
-`<recent_days>` and `<recent_weeks>` sections:
+grow, and capture metadata row counts must be identical. The in-memory
+repository counts through one shared read boundary, so a newly used inherited
+read cannot bypass the metric; the production repository query is itself
+day-subtype-bounded. Older plans therefore must not disappear from or enter the
+prompt, nor add repository work. A separate always-on integration assertion
+verifies that aged plans and weekly rollups seeded under their production
+deterministic IDs actually reach the model-facing `<recent_days>` and
+`<recent_weeks>` sections:
 
 ```sh
 fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \

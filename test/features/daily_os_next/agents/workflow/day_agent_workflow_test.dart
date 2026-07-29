@@ -244,7 +244,10 @@ void main() {
       ),
     ).thenAnswer((_) async => const <AgentDomainEntity>[]);
     when(
-      () => repository.getCaptureEventMetaByAgentId(dailyOsPlannerAgentId),
+      () => repository.getCaptureEventMetaForDay(
+        agentId: dailyOsPlannerAgentId,
+        dayId: dayId,
+      ),
     ).thenAnswer((_) async => const []);
     when(
       () => templateService.getTemplateForAgent(dailyOsPlannerAgentId),
@@ -399,7 +402,10 @@ void main() {
     // Capture events are now built from lightweight metadata; transcripts are
     // resolved lazily per id via getEntity. Default: no captures.
     when(
-      () => repository.getCaptureEventMetaByAgentId(agentId),
+      () => repository.getCaptureEventMetaForDay(
+        agentId: agentId,
+        dayId: dayId,
+      ),
     ).thenAnswer((_) async => const []);
     when(
       () => repository.getAttentionPlanningInputsForWindow(
@@ -742,7 +748,12 @@ void main() {
                   dayId: dayId,
                 )
                 as CaptureEntity;
-        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+        when(
+          () => repository.getCaptureEventMetaForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer(
           (_) async => [
             (
               id: capture.id,
@@ -813,7 +824,12 @@ void main() {
                   vectorClock: null,
                 )
                 as CaptureEntity;
-        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+        when(
+          () => repository.getCaptureEventMetaForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer(
           (_) async => [
             (
               id: capture.id,
@@ -846,7 +862,10 @@ void main() {
         () async {
           stubLogReads();
           when(
-            () => repository.getCaptureEventMetaByAgentId(agentId),
+            () => repository.getCaptureEventMetaForDay(
+              agentId: agentId,
+              dayId: dayId,
+            ),
           ).thenThrow(StateError('meta down'));
           conversationRepository.toolCalls = [
             _toolCall(
@@ -867,7 +886,10 @@ void main() {
       test('returns a tool error when the log search throws', () async {
         when(() => syncService.repository).thenReturn(repository);
         when(
-          () => repository.getCaptureEventMetaByAgentId(agentId),
+          () => repository.getCaptureEventMetaForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
         ).thenAnswer((_) async => const []);
         when(
           () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
@@ -899,7 +921,12 @@ void main() {
                   vectorClock: null,
                 )
                 as CaptureEntity;
-        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+        when(
+          () => repository.getCaptureEventMetaForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer(
           (_) async => [
             (
               id: capture.id,
@@ -933,7 +960,10 @@ void main() {
       test('reports no match when none of the requested ids resolve', () async {
         stubLogReads();
         when(
-          () => repository.getCaptureEventMetaByAgentId(agentId),
+          () => repository.getCaptureEventMetaForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
         ).thenAnswer((_) async => const []);
         conversationRepository.toolCalls = [
           _toolCall(
@@ -964,7 +994,10 @@ void main() {
           () => repository.getLinksFrom(agentId),
         ).thenAnswer((_) async => []);
         when(
-          () => repository.getCaptureEventMetaByAgentId(agentId),
+          () => repository.getCaptureEventMetaForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
         ).thenAnswer((_) async => const []);
 
         AgentMessageEntity obs(String id, DateTime at) =>
@@ -1069,7 +1102,10 @@ void main() {
           () => repository.getLinksFrom(agentId),
         ).thenAnswer((_) async => []);
         when(
-          () => repository.getCaptureEventMetaByAgentId(agentId),
+          () => repository.getCaptureEventMetaForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
         ).thenAnswer((_) async => const []);
         when(
           () => repository.getMessagesByKind(
@@ -1445,7 +1481,12 @@ void main() {
               as CaptureEntity;
       // The substrate loads only lightweight metadata; the transcript is
       // resolved lazily (tail only) via getEntity.
-      when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+      when(
+        () => repository.getCaptureEventMetaForDay(
+          agentId: agentId,
+          dayId: dayId,
+        ),
+      ).thenAnswer(
         (_) async => [
           (
             id: capture.id,
@@ -1561,7 +1602,10 @@ void main() {
       ).thenAnswer((_) async => []);
       when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
       when(
-        () => repository.getCaptureEventMetaByAgentId(agentId),
+        () => repository.getCaptureEventMetaForDay(
+          agentId: agentId,
+          dayId: dayId,
+        ),
       ).thenThrow(StateError('capture table unavailable'));
 
       final sut = DayAgentWorkflow(
@@ -4681,7 +4725,12 @@ void main() {
                   vectorClock: null,
                 )
                 as CaptureEntity;
-        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+        when(
+          () => repository.getCaptureEventMetaForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer(
           (_) async => [
             (
               id: capture.id,

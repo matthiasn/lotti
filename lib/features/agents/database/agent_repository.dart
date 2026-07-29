@@ -146,8 +146,10 @@ class AgentRepository {
       })
     >
   >
-  getCaptureEventMetaByAgentId(String agentId) =>
-      _core.getCaptureEventMetaByAgentId(agentId);
+  getCaptureEventMetaForDay({
+    required String agentId,
+    required String dayId,
+  }) => _core.getCaptureEventMetaForDay(agentId: agentId, dayId: dayId);
 
   Future<AgentStateEntity?> getAgentState(String agentId) =>
       _core.getAgentState(agentId);

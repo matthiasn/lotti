@@ -348,12 +348,10 @@ class DayAgentWorkflow {
       // full transcripts — so per-wake cost stays flat as the single
       // long-lived planner's capture history grows. Transcripts are resolved
       // lazily for just the post-cutoff tail via [_resolveCaptureContent].
-      captureMetas =
-          (await agentRepository.getCaptureEventMetaByAgentId(
-                agentId,
-              ))
-              .where((meta) => captureEventDayId(meta) == resolvedDayId)
-              .toList(growable: false);
+      captureMetas = await agentRepository.getCaptureEventMetaForDay(
+        agentId: agentId,
+        dayId: resolvedDayId,
+      );
       capturesLoaded = true;
     } catch (e) {
       _logError('failed to load capture metadata', error: e);

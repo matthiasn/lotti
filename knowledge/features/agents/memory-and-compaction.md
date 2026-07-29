@@ -5,7 +5,7 @@ description: The append-only input event log, LLM-distilled summary checkpoints,
 resource: ../../../lib/features/agents/projection
 tags: [agents, memory, compaction, event-log, prefix-cache]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
+generated: { by: codex/5, at: 2026-07-29T14:43:00Z }
 stale_after: 2026-10-12
 sources:
   - id: projection
@@ -19,7 +19,7 @@ sources:
   - id: agents-src
     resource: ../../../lib/features/agents
     title: Agents feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-07-29
   - id: adr-0017
     resource: ../../../docs/adr/0017-deterministic-log-compaction.md
     title: ADR 0017 — Deterministic log compaction
@@ -147,11 +147,12 @@ transcript resolves on demand for only the post-cutoff tail the wake renders.
 
 This exists because the single long-lived planner accumulates captures across
 every day it plans; loading every transcript each wake would be O(all captures
-ever). The workflow loads just the lightweight metadata
-(`getCaptureEventMetaByAgentId` — id plus the two ordering timestamps, no
-transcript) and the compactor pulls full text only for the handful of
-uncovered-tail captures. Folded captures live in the summary prose and are never
-reloaded.
+ever. The workflow loads only the active workspace through
+`getCaptureEventMetaForDay`: the capture day is stored in the indexed `subtype`
+column, and the query projects id plus the two ordering timestamps without the
+transcript. The compactor then pulls full text only for the handful of
+uncovered-tail captures. Folded captures live in the summary prose and are
+never reloaded.
 
 # Compaction folds a prefix, not a snapshot
 
