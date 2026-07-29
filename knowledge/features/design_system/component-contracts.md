@@ -55,6 +55,13 @@ Adoption is deliberately opt-in: use it only where the parent already owns that
 height, so accessibility does not silently make a compact list or action bar
 airier. The default remains `shrinkWrap`.
 
+`DesignSystemModalActionBar.compactPrimary` is an actual-fit footer: secondary
+actions stay grouped at the leading edge and the intrinsic primary stays at the
+trailing edge while both groups fit. When they do not, the secondary group wraps
+above on the leading edge and the primary remains trailing. Each action is still
+bounded by the footer width, so an unusually long translation ellipsizes instead
+of producing horizontal render overflow.
+
 The compact `DesignSystemCheckbox` is a 24dp control with no outer inset. A
 feature that needs a mobile-sized option target should not pad seven independent
 checkboxes into a loose stack; it should use
@@ -202,6 +209,11 @@ Several components refuse to be built without accessible naming:
   a localized button rather than an unlabeled glyph.
 - `DesignSystemTimeWheel` exposes hour, minute and AM/PM columns as **separate
   adjustable semantic controls**, including next/previous values.
+
+Interactive cards that contain a checkbox plus repeated visible metadata expose
+one explicit parent semantic node with the checked, enabled and tap states. Their
+visual descendants are excluded from semantics, preventing the checkbox label,
+visible title and capability badges from being announced as duplicate controls.
 
 Navigation components publish disabled state explicitly: a destination with no
 callback **remains discoverable**, but assistive technology announces it as

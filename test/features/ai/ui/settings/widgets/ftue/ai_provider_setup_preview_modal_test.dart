@@ -1,3 +1,5 @@
+import 'dart:ui' show CheckedState, SemanticsAction;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -408,6 +410,40 @@ void main() {
         );
       },
     );
+
+    testWidgets('model cards expose one checked, tappable semantic node', (
+      tester,
+    ) async {
+      final semanticsHandle = tester.ensureSemantics();
+      final model = geminiPreset.models.first;
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          AiProviderSetupPreviewModal(
+            providerType: InferenceProviderType.gemini,
+            preset: geminiPreset,
+            existingModels: const <AiConfigModel>[],
+          ),
+        ),
+      );
+
+      final semanticCard = find.bySemanticsLabel(
+        RegExp(RegExp.escape(model.name)),
+      );
+      expect(semanticCard, findsOneWidget);
+      final semantics = tester.getSemantics(semanticCard);
+      expect(
+        RegExp(RegExp.escape(model.name)).allMatches(semantics.label),
+        hasLength(1),
+      );
+      expect(semantics.label, contains(model.providerModelId));
+      expect(semantics.flagsCollection.isChecked, CheckedState.isTrue);
+      expect(
+        semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+        isTrue,
+      );
+      semanticsHandle.dispose();
+    });
 
     /// Modular coverage for the connected-banner localised provider
     /// name resolution. The preset's `providerName` is the English

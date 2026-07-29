@@ -23,7 +23,7 @@ void main() {
 
   Future<void> pumpBar(
     WidgetTester tester,
-    DesignSystemModalActionBar bar, {
+    Widget bar, {
     double width = 600,
     double textScale = 1,
   }) {
@@ -289,10 +289,102 @@ void main() {
       final applyWidth = tester
           .getSize(find.widgetWithText(DesignSystemButton, 'Apply'))
           .width;
+      final barRect = tester.getRect(find.byType(DesignSystemModalActionBar));
+      final clearRect = tester.getRect(
+        find.widgetWithText(DesignSystemButton, 'Long clear action'),
+      );
+      final saveRect = tester.getRect(
+        find.widgetWithText(DesignSystemButton, 'Long save action'),
+      );
+      final applyRect = tester.getRect(
+        find.widgetWithText(DesignSystemButton, 'Apply'),
+      );
 
       expect(applyCenter.dy, greaterThan(clearCenter.dy));
       expect(applyCenter.dy, greaterThan(saveCenter.dy));
+      expect(clearRect.left, closeTo(barRect.left, 0.1));
+      expect(saveRect.left, closeTo(barRect.left, 0.1));
+      expect(applyRect.right, closeTo(barRect.right, 0.1));
       expect(applyWidth, lessThan(320));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact layout bounds an overlong action to the available width',
+    (tester) async {
+      await pumpBar(
+        tester,
+        DesignSystemModalActionBar(
+          layout: DesignSystemModalActionBarLayout.compactPrimary,
+          secondary: [
+            secondaryBtn(
+              'A translated secondary action that cannot fit intrinsically',
+            ),
+          ],
+          primary: DesignSystemButton(
+            label: 'A translated primary action that cannot fit intrinsically',
+            fullWidth: true,
+            onPressed: () {},
+          ),
+        ),
+        width: 160,
+      );
+      await tester.pump();
+
+      final primary = find.widgetWithText(
+        DesignSystemButton,
+        'A translated primary action that cannot fit intrinsically',
+      );
+      final secondary = find.widgetWithText(
+        DesignSystemButton,
+        'A translated secondary action that cannot fit intrinsically',
+      );
+      expect(tester.getSize(primary).width, 160);
+      expect(tester.getSize(secondary).width, 160);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact layout updates its groups and respects RTL edges',
+    (tester) async {
+      await pumpBar(
+        tester,
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: DesignSystemModalActionBar(
+            layout: DesignSystemModalActionBarLayout.compactPrimary,
+            primary: primaryBtn('Apply'),
+          ),
+        ),
+        width: 320,
+      );
+      await tester.pump();
+
+      await pumpBar(
+        tester,
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: DesignSystemModalActionBar(
+            layout: DesignSystemModalActionBarLayout.compactPrimary,
+            secondary: [secondaryBtn('Clear')],
+            primary: primaryBtn('Apply'),
+          ),
+        ),
+        width: 320,
+      );
+      await tester.pump();
+
+      final barRect = tester.getRect(find.byType(DesignSystemModalActionBar));
+      final clearRect = tester.getRect(
+        find.widgetWithText(DesignSystemButton, 'Clear'),
+      );
+      final applyRect = tester.getRect(
+        find.widgetWithText(DesignSystemButton, 'Apply'),
+      );
+      expect(clearRect.right, closeTo(barRect.right, 0.1));
+      expect(applyRect.left, closeTo(barRect.left, 0.1));
       expect(tester.takeException(), isNull);
     },
   );

@@ -733,31 +733,29 @@ void main() {
       var taps = 0;
 
       await tester.pumpWidget(
-        MaterialApp(
-          theme: DesignSystemTheme.light(),
-          home: Builder(
+        makeTestableWidgetWithScaffold(
+          Builder(
             builder: (context) {
-              return Scaffold(
-                body: TextButton(
-                  onPressed: () => showDialog<void>(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: const Text('Confirm'),
-                        actions: [
-                          DesignSystemButton(
-                            label: 'Delete',
-                            onPressed: () => taps++,
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  child: const Text('Open'),
+              return TextButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text('Confirm'),
+                      actions: [
+                        DesignSystemButton(
+                          label: 'Delete',
+                          onPressed: () => taps++,
+                        ),
+                      ],
+                    );
+                  },
                 ),
+                child: const Text('Open'),
               );
             },
           ),
+          theme: DesignSystemTheme.light(),
         ),
       );
 
