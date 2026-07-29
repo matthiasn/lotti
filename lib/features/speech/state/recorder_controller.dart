@@ -39,7 +39,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   String? _linkedId;
   String? _categoryId;
   AudioNote? _audioNote;
-  bool _disposed = false;
   bool _terminalActionInProgress = false;
 
   /// Sliding-window VU meter driving the live level display.
@@ -54,6 +53,8 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// - Sets up amplitude stream subscription for VU meter updates
   /// - Configures cleanup on disposal
   /// - Returns initial recording state
+  ///
+  /// It must not touch the microphone in any way — see the note in the body.
   @override
   AudioRecorderState build() {
     _recorderRepository = ref.watch(audioRecorderRepositoryProvider);
@@ -82,15 +83,14 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     });
 
     ref.onDispose(() async {
-      _disposed = true;
       await _amplitudeSub?.cancel();
     });
 
-    // Initialize asynchronously to check permissions and transition to ready state
-    // Schedule initialization for the next microtask to avoid state access during build
-    Future.microtask(_initialize);
-
-    // Start in stopped state - initialization is just for logging permissions
+    // Deliberately no permission probe here. `hasPermission()` *requests* the
+    // microphone permission on Android/iOS, and this controller is built by the
+    // app shell (the recording-indicator strip) on startup — probing here would
+    // pop the OS mic dialog before the user has asked to record anything.
+    // Permission is requested lazily, in `record()`.
     return AudioRecorderState(
       status: AudioRecorderStatus.stopped,
       vu: -20,
@@ -100,37 +100,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       showIndicator: false,
       modalVisible: false,
     );
-  }
-
-  /// Initialize the recorder and check permissions (for logging only)
-  Future<void> _initialize() async {
-    // Check if disposed before doing anything
-    if (_disposed) return;
-
-    try {
-      // Check if we have permissions and log the result
-      final hasPermissions = await _recorderRepository.hasPermission();
-
-      // Check if disposed before logging
-      if (_disposed) return;
-
-      _loggingService.log(
-        LogDomain.speech,
-        'Audio recorder initialization: hasPermissions=$hasPermissions',
-        subDomain: 'initialize',
-      );
-    } catch (e, stackTrace) {
-      // Check if disposed before logging
-      if (_disposed) return;
-
-      _loggingService.error(
-        LogDomain.speech,
-        e,
-        stackTrace: stackTrace,
-        subDomain: 'initialize',
-      );
-    }
-    // No state updates needed - we start in stopped state
   }
 
   /// Starts a new recording or toggles the current recording state.

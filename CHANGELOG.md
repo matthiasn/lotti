@@ -215,6 +215,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **The app no longer asks for the microphone the moment it starts.** On a fresh
+  install, Lotti asked to record audio while you were still looking at your task
+  list, before you had asked it to record anything — which reasonably raises the
+  question of what it is listening to. The app was checking whether it already
+  had the permission, purely to write the answer to its log, and on Android and
+  iOS that check *is* the request. The check is gone: the microphone is only
+  ever asked for when you start a recording.
 - **The sync statistics panel no longer shows counters that never move.** Most
   of what it displayed — processed messages, failures, catch-up batches, retries,
   circuit breaker trips and the signal counters — had stopped being recorded
