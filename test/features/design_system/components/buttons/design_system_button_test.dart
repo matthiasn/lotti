@@ -700,6 +700,48 @@ void main() {
       expect((labelCenter - buttonCenter).abs(), lessThan(1));
     });
 
+    testWidgets('supports intrinsic-width dialog actions', (tester) async {
+      var taps = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: DesignSystemTheme.light(),
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: TextButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: const Text('Confirm'),
+                        actions: [
+                          DesignSystemButton(
+                            label: 'Delete',
+                            onPressed: () => taps++,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  child: const Text('Open'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final action = find.widgetWithText(DesignSystemButton, 'Delete');
+      expect(tester.getSize(action).width.isFinite, isTrue);
+      await tester.tap(action);
+      expect(taps, 1);
+    });
+
     testWidgets('isLoading shows a spinner, stays branded, and ignores taps', (
       tester,
     ) async {
