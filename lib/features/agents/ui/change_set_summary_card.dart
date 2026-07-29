@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart'
         projectChangeSetConfirmationServiceProvider,
         projectPendingChangeSetsProvider;
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -374,7 +375,14 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
       title: Text(
-        _item.humanSummary,
+        // Rebuilt in the reader's language; the persisted summary is English
+        // whatever the locale, because it is written during a headless wake.
+        localizedChangeSummary(
+              context.messages,
+              _item.toolName,
+              _item.args,
+            ) ??
+            _item.humanSummary,
         style: context.textTheme.bodyMedium,
       ),
       subtitle: Text(

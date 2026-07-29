@@ -263,6 +263,10 @@ LedgerEntry makeLedgerEntry({
   required String id,
   required ChangeItemStatus status,
   String toolName = 'set_task_status',
+  // Kept consistent with [toolName] and [humanSummary]: the row rebuilds its
+  // body from these args, so a fixture whose args contradict its summary
+  // renders something neither the test nor production would produce.
+  Map<String, dynamic> args = const {'status': 'GROOMED'},
   String humanSummary = 'Set status to GROOMED',
   DateTime? createdAt,
   DateTime? resolvedAt,
@@ -271,7 +275,7 @@ LedgerEntry makeLedgerEntry({
     changeSetId: id,
     itemIndex: 0,
     toolName: toolName,
-    args: const {},
+    args: args,
     humanSummary: humanSummary,
     fingerprint: 'fp-$id',
     status: status,

@@ -28,6 +28,47 @@ void main() {
     });
   });
 
+  group('canonicalProjectStatus', () {
+    test('collapses every accepted alias onto its canonical value', () {
+      // This table is shared by the apply path and the render-time proposal
+      // summary; an alias mapping differently in either place would let a
+      // proposal display a status other than the one accepting it sets.
+      const aliases = {
+        'open': 'open',
+        'active': 'active',
+        'on_track': 'active',
+        'in_progress': 'active',
+        'monitoring': 'monitoring',
+        'monitor': 'monitoring',
+        'on_hold': 'on_hold',
+        'hold': 'on_hold',
+        'blocked': 'on_hold',
+        'at_risk': 'on_hold',
+        'completed': 'completed',
+        'complete': 'completed',
+        'done': 'completed',
+        'archived': 'archived',
+        'archive': 'archived',
+        'cancelled': 'archived',
+        'canceled': 'archived',
+      };
+      for (final MapEntry(key: raw, value: canonical) in aliases.entries) {
+        expect(canonicalProjectStatus(raw), canonical, reason: raw);
+      }
+    });
+
+    test('normalizes case, whitespace and separators before matching', () {
+      expect(canonicalProjectStatus('  On Hold  '), 'on_hold');
+      expect(canonicalProjectStatus('AT-RISK'), 'on_hold');
+      expect(canonicalProjectStatus('In Progress'), 'active');
+    });
+
+    test('returns null outside the vocabulary', () {
+      expect(canonicalProjectStatus('limbo'), isNull);
+      expect(canonicalProjectStatus(''), isNull);
+    });
+  });
+
   group('projectAgentTools', () {
     test('contains exactly 5 tool definitions', () {
       expect(projectAgentTools, hasLength(5));

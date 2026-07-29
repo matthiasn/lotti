@@ -70,6 +70,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   by leaving a gap and then scheduling the final task after your working day
   ended. Plans outside the configured window are now rejected and retried, so
   work must be shortened or omitted explicitly instead of quietly overrunning.
+- **Assistant proposals are in your language.** Every suggested change — set a
+  title, change a status, add a checklist item, log a time entry, link two
+  tasks — was written in English at the moment the assistant thought of it, and
+  then shown to you in English no matter what language the rest of the app was
+  in. Those rows are now composed as you read them, so they appear in your own
+  language, with the relationship between two tasks phrased properly rather
+  than pasted together word by word. Suggestions your device does not recognise
+  — from a newer version, say — still show their original wording rather than
+  nothing at all.
+- **The German and Spanish relationship pickers say the direction they mean.**
+  Offering to link two tasks, the German dropdown read "Duplikat von" —
+  "duplicate of" — for the direction that actually records the opposite: the
+  current task being duplicated *by* the chosen one. Spanish had the same
+  problem with follow-ups, where "Tiene seguimiento de" reads as tracking the
+  other task rather than gaining it as a follow-up. They now read "Wird
+  dupliziert von" and "Tiene como seguimiento", matching what picking them
+  does.
 - **The sync diagnostics panel is translated.** Its heading, its refresh button
   and its "Last ignored" list stayed English on every device, whatever language
   the rest of the app was set to.

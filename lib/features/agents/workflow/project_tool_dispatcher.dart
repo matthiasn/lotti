@@ -340,29 +340,25 @@ class ProjectToolDispatcher {
     required String? reason,
     required DateTime now,
   }) {
-    final normalized = rawStatus
-        .trim()
-        .toLowerCase()
-        .replaceAll('-', '_')
-        .replaceAll(' ', '_');
-
-    return switch (normalized) {
+    // Alias normalization is shared with the render-time proposal summary,
+    // which shows the same canonical status this will set.
+    return switch (canonicalProjectStatus(rawStatus)) {
       'open' => ProjectStatus.open(
         id: _uuid.v1(),
         createdAt: now,
         utcOffset: now.timeZoneOffset.inMinutes,
       ),
-      'active' || 'on_track' || 'in_progress' => ProjectStatus.active(
+      'active' => ProjectStatus.active(
         id: _uuid.v1(),
         createdAt: now,
         utcOffset: now.timeZoneOffset.inMinutes,
       ),
-      'monitoring' || 'monitor' => ProjectStatus.monitoring(
+      'monitoring' => ProjectStatus.monitoring(
         id: _uuid.v1(),
         createdAt: now,
         utcOffset: now.timeZoneOffset.inMinutes,
       ),
-      'on_hold' || 'hold' || 'blocked' || 'at_risk' => ProjectStatus.onHold(
+      'on_hold' => ProjectStatus.onHold(
         id: _uuid.v1(),
         createdAt: now,
         utcOffset: now.timeZoneOffset.inMinutes,
@@ -370,15 +366,12 @@ class ProjectToolDispatcher {
             ? 'No reason provided'
             : reason.trim(),
       ),
-      'completed' || 'complete' || 'done' => ProjectStatus.completed(
+      'completed' => ProjectStatus.completed(
         id: _uuid.v1(),
         createdAt: now,
         utcOffset: now.timeZoneOffset.inMinutes,
       ),
-      'archived' ||
-      'archive' ||
-      'cancelled' ||
-      'canceled' => ProjectStatus.archived(
+      'archived' => ProjectStatus.archived(
         id: _uuid.v1(),
         createdAt: now,
         utcOffset: now.timeZoneOffset.inMinutes,

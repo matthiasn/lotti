@@ -828,6 +828,165 @@ class AppLocalizationsRo extends AppLocalizations {
       'Înregistrarea originală nu este disponibilă';
 
   @override
+  String agentSummaryAddItem(Object title) {
+    return 'Adăugați: „$title”';
+  }
+
+  @override
+  String agentSummaryArchiveItem(Object title) {
+    return 'Arhivați: „$title”';
+  }
+
+  @override
+  String agentSummaryCheckItem(Object title) {
+    return 'Bifați: „$title”';
+  }
+
+  @override
+  String agentSummaryCreateFollowUp(Object title) {
+    return 'Creați sarcină ulterioară: „$title”';
+  }
+
+  @override
+  String agentSummaryCreateFollowUpRelated(Object title, Object relation) {
+    return 'Creați sarcină ulterioară: „$title” — $relation';
+  }
+
+  @override
+  String agentSummaryCreateTask(Object title) {
+    return 'Creați sarcină: $title';
+  }
+
+  @override
+  String agentSummaryFollowUpTask(Object title) {
+    return 'Sarcină ulterioară: $title';
+  }
+
+  @override
+  String agentSummaryMigrateItem(Object title) {
+    return 'Mutați în sarcina ulterioară: „$title”';
+  }
+
+  @override
+  String get agentSummaryRecommendNextSteps => 'Recomandați pașii următori';
+
+  @override
+  String agentSummaryRecommendNextStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Recomandați $count de pași următori',
+      few: 'Recomandați $count pași următori',
+      one: 'Recomandați 1 pas următor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentSummaryRestoreItem(Object title) {
+    return 'Restaurați: „$title”';
+  }
+
+  @override
+  String agentSummaryReviseTimeEntryText(Object summary) {
+    return 'Revizuiți textul înregistrării de timp: „$summary”';
+  }
+
+  @override
+  String agentSummarySetDueDate(Object date) {
+    return 'Setați termenul la $date';
+  }
+
+  @override
+  String agentSummarySetEstimate(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Setați estimarea la $minutes de minute',
+      few: 'Setați estimarea la $minutes minute',
+      one: 'Setați estimarea la 1 minut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentSummarySetLanguage(Object language) {
+    return 'Setați limba la „$language”';
+  }
+
+  @override
+  String agentSummarySetPriority(Object priority) {
+    return 'Setați prioritatea la $priority';
+  }
+
+  @override
+  String agentSummarySetStatus(Object status) {
+    return 'Setați starea la $status';
+  }
+
+  @override
+  String agentSummarySetTitle(Object title) {
+    return 'Setați titlul la „$title”';
+  }
+
+  @override
+  String get agentSummarySuggestFollowUpTask =>
+      'Propuneți o sarcină ulterioară';
+
+  @override
+  String agentSummaryTimeEntry(Object range, Object summary) {
+    return 'Înregistrare de timp $range: „$summary”';
+  }
+
+  @override
+  String agentSummaryTimeRangeBetween(Object start, Object end) {
+    return '$start–$end';
+  }
+
+  @override
+  String agentSummaryTimeRangeFrom(Object start) {
+    return 'de la $start';
+  }
+
+  @override
+  String agentSummaryTimeRangeUntil(Object end) {
+    return 'până la $end';
+  }
+
+  @override
+  String agentSummaryUncheckItem(Object title) {
+    return 'Debifați: „$title”';
+  }
+
+  @override
+  String agentSummaryUpdateItem(Object title) {
+    return 'Modificați: „$title”';
+  }
+
+  @override
+  String agentSummaryUpdateProjectStatus(Object status) {
+    return 'Setați starea proiectului la $status';
+  }
+
+  @override
+  String agentSummaryUpdateRunningTimer(Object summary) {
+    return 'Modificați textul cronometrului în curs: „$summary”';
+  }
+
+  @override
+  String get agentSummaryUpdateTimeEntry => 'Actualizați înregistrarea de timp';
+
+  @override
+  String agentSummaryUpdateTimeEntryRange(Object range) {
+    return 'Actualizați înregistrarea de timp $range';
+  }
+
+  @override
+  String agentSummaryUpdateTimeEntryRangeText(Object range, Object summary) {
+    return 'Actualizați înregistrarea de timp $range: „$summary”';
+  }
+
+  @override
   String get agentTabActivity => 'Activitate';
 
   @override
@@ -6834,6 +6993,105 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String linkPickerCreateTaskSemanticLabel(String title) {
     return 'Creați sarcina: $title';
+  }
+
+  @override
+  String linkSummaryBasic(Object target) {
+    return 'Această sarcină are legătură cu $target';
+  }
+
+  @override
+  String linkSummaryBlocksInverse(Object target) {
+    return 'Această sarcină este blocată de $target';
+  }
+
+  @override
+  String linkSummaryBlocksPrimary(Object target) {
+    return 'Această sarcină blochează $target';
+  }
+
+  @override
+  String linkSummaryDuplicatesInverse(Object target) {
+    return 'Această sarcină este duplicată de $target';
+  }
+
+  @override
+  String linkSummaryDuplicatesPrimary(Object target) {
+    return 'Această sarcină duplică $target';
+  }
+
+  @override
+  String linkSummaryFixesInverse(Object target) {
+    return 'Această sarcină este rezolvată de $target';
+  }
+
+  @override
+  String linkSummaryFixesPrimary(Object target) {
+    return 'Această sarcină rezolvă $target';
+  }
+
+  @override
+  String linkSummaryFollowsUpInverse(Object target) {
+    return 'Această sarcină are continuarea $target';
+  }
+
+  @override
+  String linkSummaryFollowsUpPrimary(Object target) {
+    return 'Această sarcină continuă $target';
+  }
+
+  @override
+  String get linkSummaryNewTaskBasic =>
+      'Această sarcină are legătură cu sarcina nouă';
+
+  @override
+  String get linkSummaryNewTaskBlocksInverse =>
+      'Sarcina nouă blochează această sarcină';
+
+  @override
+  String get linkSummaryNewTaskBlocksPrimary =>
+      'Această sarcină blochează sarcina nouă';
+
+  @override
+  String get linkSummaryNewTaskDuplicatesInverse =>
+      'Sarcina nouă duplică această sarcină';
+
+  @override
+  String get linkSummaryNewTaskDuplicatesPrimary =>
+      'Această sarcină duplică sarcina nouă';
+
+  @override
+  String get linkSummaryNewTaskFixesInverse =>
+      'Sarcina nouă rezolvă această sarcină';
+
+  @override
+  String get linkSummaryNewTaskFixesPrimary =>
+      'Această sarcină rezolvă sarcina nouă';
+
+  @override
+  String get linkSummaryNewTaskFollowsUpInverse =>
+      'Sarcina nouă continuă această sarcină';
+
+  @override
+  String get linkSummaryNewTaskFollowsUpPrimary =>
+      'Această sarcină continuă sarcina nouă';
+
+  @override
+  String get linkSummaryNewTaskSupersedesInverse =>
+      'Sarcina nouă înlocuiește această sarcină';
+
+  @override
+  String get linkSummaryNewTaskSupersedesPrimary =>
+      'Această sarcină înlocuiește sarcina nouă';
+
+  @override
+  String linkSummarySupersedesInverse(Object target) {
+    return 'Această sarcină este înlocuită de $target';
+  }
+
+  @override
+  String linkSummarySupersedesPrimary(Object target) {
+    return 'Această sarcină înlocuiește $target';
   }
 
   @override

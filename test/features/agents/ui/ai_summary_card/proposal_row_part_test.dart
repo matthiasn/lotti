@@ -5,7 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
+import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
+import 'package:lotti/l10n/app_localizations_de.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -27,6 +30,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         final bench = AgentTestBench(
@@ -73,6 +77,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         final service = MockChangeSetConfirmationService();
@@ -121,6 +126,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         final service = MockChangeSetConfirmationService();
@@ -159,6 +165,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         final service = MockChangeSetConfirmationService();
@@ -218,6 +225,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         final bench = AgentTestBench(
@@ -252,6 +260,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         final bench = AgentTestBench(
@@ -301,6 +310,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         final bench = AgentTestBench(
@@ -334,6 +344,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         final service = MockChangeSetConfirmationService();
@@ -359,7 +370,7 @@ void main() {
         // short of the -70 reject trigger, so the row stays in the
         // "Reject" affordance state without firing the service.
         final gesture = await tester.startGesture(
-          tester.getCenter(find.textContaining('Set status to GROOMED')),
+          tester.getCenter(find.textContaining('Set status to Groomed')),
         );
         await gesture.moveBy(const Offset(-50, 0));
         await tester.pump();
@@ -392,6 +403,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         final service = MockChangeSetConfirmationService();
@@ -421,7 +433,7 @@ void main() {
         // Swiping the row right past the trigger still confirms too — the
         // gesture remains available alongside the buttons.
         await tester.drag(
-          find.textContaining('Set status to GROOMED'),
+          find.textContaining('Set status to Groomed'),
           const Offset(150, 0),
         );
         await tester.pump();
@@ -438,6 +450,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         final service = MockChangeSetConfirmationService();
@@ -460,7 +473,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         await tester.drag(
-          find.textContaining('Set status to GROOMED'),
+          find.textContaining('Set status to Groomed'),
           const Offset(-150, 0),
         );
         await tester.pump();
@@ -545,6 +558,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
 
@@ -599,6 +613,126 @@ void main() {
         expect(find.byIcon(Icons.check_rounded), findsNothing);
       },
     );
+  });
+  group('AiSummaryCard – proposal text is rebuilt per locale', () {
+    testWidgets('a German reader sees a German proposal, not English', (
+      tester,
+    ) async {
+      // `humanSummary` is written during a headless wake and synced verbatim,
+      // so every device stored the English string below. The row must not show
+      // it to a German reader.
+      final pending = makePending(
+        id: 'p1',
+        toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
+        humanSummary: 'Set status to GROOMED',
+      );
+      final bench = AgentTestBench(
+        suggestions: UnifiedSuggestionList(open: [pending], activity: const []),
+        locale: const Locale('de'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final german = localizedChangeSummary(
+        AppLocalizationsDe(),
+        'set_task_status',
+        const {'status': 'GROOMED'},
+      )!;
+      // Guard the guard: if the two catalogs agreed, this would prove nothing.
+      expect(german, isNot('Set status to GROOMED'));
+
+      expect(find.textContaining(german), findsOneWidget);
+      expect(find.textContaining('Set status to Groomed'), findsNothing);
+      // A known status is vocabulary, not user data: it maps onto the same
+      // localized label the task header uses, so no English token survives.
+      expect(find.textContaining('GROOMED'), findsNothing);
+      expect(german, contains('Gepflegt'));
+    });
+
+    testWidgets('a tool with no shape keeps its persisted English wording', (
+      tester,
+    ) async {
+      // The fallback that makes this change safe for an older client's tool,
+      // or one added after this build.
+      const stored = 'Something only the wake knew how to describe';
+      expect(
+        localizedChangeSummary(
+          AppLocalizationsEn(),
+          'record_observations',
+          const {},
+        ),
+        isNull,
+      );
+
+      final pending = makePending(
+        id: 'p1',
+        toolName: 'record_observations',
+        humanSummary: stored,
+      );
+      final bench = AgentTestBench(
+        suggestions: UnifiedSuggestionList(open: [pending], activity: const []),
+        locale: const Locale('de'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining(stored), findsOneWidget);
+    });
+
+    testWidgets('a rebuilt sentence does not repeat the kind chip label', (
+      tester,
+    ) async {
+      // The checklist sentences are authored as `Verb: object` for surfaces
+      // without a kind chip. Under the *Add* prefix that verb is redundant —
+      // the row must read `Add · "Buy milk"`, not `Add · Add: "Buy milk"`.
+      final pending = makePending(
+        id: 'p1',
+        toolName: 'add_checklist_item',
+        args: const {'title': 'Buy milk'},
+        humanSummary: 'Add: "Buy milk"',
+      );
+      final bench = AgentTestBench(
+        suggestions: UnifiedSuggestionList(open: [pending], activity: const []),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining('Add · "Buy milk"'), findsOneWidget);
+      expect(find.textContaining('Add: "Buy milk"'), findsNothing);
+    });
+
+    testWidgets('a sentence merely opening with the label keeps its verb', (
+      tester,
+    ) async {
+      // German's status sentence *begins* with the chip's own word — "Status
+      // auf … setzen" under a *Status* chip — but has no colon after it.
+      // Stripping the bare word would leave the fragment "auf … setzen"; only
+      // a `Label:` prefix is a duplicate, a label-initial sentence is not.
+      final pending = makePending(
+        id: 'p1',
+        toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
+        humanSummary: 'Set status to GROOMED',
+      );
+      final bench = AgentTestBench(
+        suggestions: UnifiedSuggestionList(open: [pending], activity: const []),
+        locale: const Locale('de'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining('Status auf'), findsOneWidget);
+      expect(find.textContaining('setzen'), findsOneWidget);
+    });
   });
 }
 

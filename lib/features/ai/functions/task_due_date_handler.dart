@@ -14,6 +14,22 @@ import 'package:openai_dart/openai_dart.dart';
 /// without time/timezone surprises.
 final _dateOnlyPattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
 
+/// Whether [value] is exactly the `YYYY-MM-DD` wire format encoding a real
+/// calendar date — the only shape `update_task_due_date` accepts.
+///
+/// The round-trip comparison rejects overflow dates like `2026-02-31`, which
+/// `DateTime.parse` would silently roll into March. Shared with the
+/// render-time proposal summary so a due date is only ever *formatted* for
+/// display when accepting the proposal could actually set it.
+bool isValidDueDateWireValue(String value) {
+  if (!_dateOnlyPattern.hasMatch(value)) return false;
+  final parsed = DateTime.tryParse(value);
+  return parsed != null &&
+      parsed.year == int.parse(value.substring(0, 4)) &&
+      parsed.month == int.parse(value.substring(5, 7)) &&
+      parsed.day == int.parse(value.substring(8, 10));
+}
+
 /// Result of processing a due date update tool call.
 ///
 /// Contains detailed information about the outcome for testing and logging.
@@ -193,16 +209,7 @@ class TaskDueDateHandler {
       }
 
       // Validate date-only format (YYYY-MM-DD) to prevent time/timezone issues
-      final isDateOnly = _dateOnlyPattern.hasMatch(dueDateStr);
-      final parsed = DateTime.tryParse(dueDateStr);
-      final isValidCalendarDate =
-          isDateOnly &&
-          parsed != null &&
-          parsed.year == int.parse(dueDateStr.substring(0, 4)) &&
-          parsed.month == int.parse(dueDateStr.substring(5, 7)) &&
-          parsed.day == int.parse(dueDateStr.substring(8, 10));
-
-      if (!isDateOnly || parsed == null || !isValidCalendarDate) {
+      if (!isValidDueDateWireValue(dueDateStr)) {
         final message =
             'Invalid due date format. Use YYYY-MM-DD (e.g., '
             '2024-01-19). Received: $dueDateStr';
@@ -217,7 +224,7 @@ class TaskDueDateHandler {
       }
 
       // Normalize to midnight to ensure consistent storage
-      final dueDate = parsed.dayAtMidnight;
+      final dueDate = DateTime.parse(dueDateStr).dayAtMidnight;
 
       // No-op if due date is already set to the requested value.
       final currentDue = task.data.due;
