@@ -190,7 +190,7 @@ erDiagram
     AgentTemplateEntity ||--o{ EvolutionNoteEntity : "notes (agentId = template ID)"
     AgentTemplateEntity ||--o{ TaskAgentIdentity : "template_assignment link"
 
-    AgentTemplateEntity ..o| EvolutionAgentIdentity : "Phase 2: evolution agent"
+    AgentTemplateEntity ||..o| EvolutionAgentIdentity : "Phase 2: evolution agent"
     EvolutionAgentIdentity ||--|| AgentStateEntity : "Phase 2: durable state (lastAcknowledgedAt)"
     EvolutionAgentIdentity ||--o{ AgentMessageEntity : "conversation messages"
 

@@ -43,9 +43,16 @@ mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
 const roots = process.argv.slice(2);
 if (roots.length === 0) roots.push('knowledge');
 
-function markdownFiles(dir) {
-  return readdirSync(dir).flatMap((entry) => {
-    const path = join(dir, entry);
+/// Every markdown file under `target`, which may be a directory or a single
+/// file. The file form is not a convenience: handing this a path used to throw
+/// a raw ENOTDIR stack trace, and checking one document at a time is exactly
+/// what you want while fixing the diagrams it reports.
+function markdownFiles(target) {
+  if (!statSync(target).isDirectory()) {
+    return target.endsWith('.md') ? [target] : [];
+  }
+  return readdirSync(target).flatMap((entry) => {
+    const path = join(target, entry);
     return statSync(path).isDirectory()
       ? markdownFiles(path)
       : path.endsWith('.md')
@@ -221,8 +228,7 @@ for (const block of blocks) {
 }
 
 console.log(
-  `\nmermaid: parsed ${blocks.length} block(s) in ` +
-    `${roots.map((dir) => `${dir}/`).join(', ')} — ` +
+  `\nmermaid: parsed ${blocks.length} block(s) in ${roots.join(', ')} — ` +
     `${failed} failed, ${unclosed} unclosed`,
 );
 process.exit(failed + unclosed === 0 ? 0 : 1);

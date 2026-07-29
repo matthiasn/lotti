@@ -192,9 +192,9 @@ flowchart TD
 ```mermaid
 flowchart TD
   A["Two AgentState snapshots S1 and S2 arrive"] --> B["Compare vector clocks vc1 and vc2"]
-  B -->| "vc1 < vc2" | C["Select S2"]
-  B -->| "vc2 < vc1" | D["Select S1"]
-  B -->| "vc1 || vc2" | E["Run deterministic field-level concurrent merge"]
+  B -->|"vc1 < vc2"| C["Select S2"]
+  B -->|"vc2 < vc1"| D["Select S1"]
+  B -->|"vc1 || vc2"| E["Run deterministic field-level concurrent merge"]
   E --> F["Merge processed counters by max"]
   E --> G["Merge lifecycle by precedence order"]
   E --> H["Merge pointers by ancestry then deterministic tie-break"]
@@ -227,16 +227,16 @@ flowchart TD
 ```mermaid
 flowchart TD
   A["Requested tool or model operation"] --> B["Check category and capability scope"]
-  B -->| "fail" | X["Reject: out_of_scope"]
-  B -->| "pass" | C["If inference, check provider and model allowlist"]
-  C -->| "fail" | Y["Reject: disallowed_provider_model"]
-  C -->| "pass" | D["Check privacy confirmation receipt for current policyVersion"]
-  D -->| "fail" | Z["Reject: privacy_confirmation_required"]
-  D -->| "pass" | E["Resolve secretRefId from secure store"]
-  E -->| "fail" | W["Reject: secret_unavailable"]
-  E -->| "pass" | F["Apply NEED_TO_KNOW payload projection"]
-  F -->| "overshared" | V["Reject: overshared_payload_blocked"]
-  F -->| "valid" | G["Execute operation and persist result"]
+  B -->|"fail"| X["Reject: out_of_scope"]
+  B -->|"pass"| C["If inference, check provider and model allowlist"]
+  C -->|"fail"| Y["Reject: disallowed_provider_model"]
+  C -->|"pass"| D["Check privacy confirmation receipt for current policyVersion"]
+  D -->|"fail"| Z["Reject: privacy_confirmation_required"]
+  D -->|"pass"| E["Resolve secretRefId from secure store"]
+  E -->|"fail"| W["Reject: secret_unavailable"]
+  E -->|"pass"| F["Apply NEED_TO_KNOW payload projection"]
+  F -->|"overshared"| V["Reject: overshared_payload_blocked"]
+  F -->|"valid"| G["Execute operation and persist result"]
 ```
 
 ## 1. System Model

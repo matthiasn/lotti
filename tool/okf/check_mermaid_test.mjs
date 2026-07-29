@@ -169,6 +169,21 @@ test('a semicolon inside a note body is safe', () => {
   assert.ok(r.ok, r.output);
 });
 
+test('a root may be a single file', () => {
+  // Passing a file used to throw a raw ENOTDIR stack trace. Checking one
+  // document is what you want while fixing the diagrams it reports.
+  const dir = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
+  try {
+    const file = join(dir, 'one.md');
+    writeFileSync(file, '```mermaid\nflowchart TD\n  A -->\n```\n');
+    assert.throws(() =>
+      execFileSync('node', [script, file], { encoding: 'utf8', stdio: 'pipe' }),
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('every root given is scanned, not just the first', () => {
   // The gate watched only `knowledge/` while two ADR diagrams rendered as
   // error boxes. Taking several roots is what closes that gap, so a second
