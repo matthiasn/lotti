@@ -55,12 +55,28 @@ Adoption is deliberately opt-in: use it only where the parent already owns that
 height, so accessibility does not silently make a compact list or action bar
 airier. The default remains `shrinkWrap`.
 
-`DesignSystemModalActionBar.compactPrimary` is an actual-fit footer: secondary
-actions stay grouped at the leading edge and the intrinsic primary stays at the
-trailing edge while both groups fit. When they do not, the secondary group wraps
-above on the leading edge and the primary remains trailing. Each action is still
-bounded by the footer width, so an unusually long translation ellipsizes instead
-of producing horizontal render overflow.
+`DesignSystemModalActionBar` is an actual-fit footer in **both** layouts: it
+measures the rendered actions and keeps one row only while they genuinely fit,
+rather than comparing the available width against a breakpoint. A width
+threshold cannot see a long translation, so the German and Romanian catalogs
+could satisfy it and still overflow the row — and with `dominantPrimary`, whose
+primary took whatever width was left, that left the confirm action at zero
+width.
+
+The two layouts differ only in how the primary is sized. `compactPrimary` keeps
+the primary at its intrinsic width, so spare width opens up between the groups.
+`dominantPrimary` gives the primary the width the secondaries leave, separated
+by the wider `spacing.step5` gutter, and stretches it full width once the groups
+wrap. Either way the secondary group stays on the leading edge, the primary on
+the trailing edge, and each action is bounded by the footer width, so an
+unusually long translation ellipsizes instead of producing render overflow.
+
+The measurement is a dry layout at unbounded width, not `getMaxIntrinsicWidth`.
+Two things make the intrinsic query wrong here: a `fullWidth` primary centres
+its content, so laying it out against loose constraints reports the width it was
+offered rather than the width it needs; and `RenderWrap` omits its own `spacing`
+from its intrinsic width, which under-measures a multi-action secondary group
+and lets the primary encroach on the gutter.
 
 The compact `DesignSystemCheckbox` is a 24dp control with no outer inset. A
 feature that needs a mobile-sized option target should not pad seven independent
