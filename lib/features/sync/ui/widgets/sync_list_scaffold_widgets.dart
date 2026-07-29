@@ -1,11 +1,14 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/settings_header_dimensions.dart';
 import 'package:lotti/widgets/cards/index.dart';
 
-class _FilterCard<F extends Enum> extends StatelessWidget {
+class _FilterCard<T, F extends Enum> extends StatelessWidget {
   const _FilterCard({
     required this.filters,
     required this.counts,
@@ -14,7 +17,7 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
     required this.locale,
   });
 
-  final Map<F, SyncFilterOption<dynamic>> filters;
+  final Map<F, SyncFilterOption<T>> filters;
   final Map<F, int> counts;
   final F selected;
   final ValueChanged<F> onChanged;
@@ -22,40 +25,42 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final entries = filters.entries.toList(growable: false);
     return ModernBaseCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: SettingsHeaderDimensions.filterCardPadding,
-        vertical: SettingsHeaderDimensions.filterCardVerticalPadding,
-      ),
+      padding: EdgeInsets.all(tokens.spacing.step3),
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: SettingsHeaderDimensions.filterChipSpacing,
-        runSpacing: SettingsHeaderDimensions.filterChipSpacing,
+        spacing: tokens.spacing.step2,
+        runSpacing: tokens.spacing.step2,
         children: entries.map((entry) {
           final rawLabel = entry.value.labelBuilder(context);
           final label = toBeginningOfSentenceCase(rawLabel, locale);
           final count = counts[entry.key] ?? 0;
-          final selectedColor =
-              entry.value.selectedColor ??
-              Theme.of(context).colorScheme.primary;
-          final selectedForeground =
-              entry.value.selectedForegroundColor ??
-              Theme.of(context).colorScheme.onPrimary;
+          final shouldShowCount =
+              entry.value.showCount &&
+              (!entry.value.hideCountWhenZero || count > 0);
+          final countAccent = entry.value.countAccentColor;
 
-          return _SegmentChip(
+          return DesignSystemChip(
+            key: ValueKey('syncFilter-${entry.key.name}'),
             label: label,
-            count: count,
-            filter: entry.key.name,
-            icon: entry.value.icon,
-            isSelected: selected == entry.key,
-            selectedColor: selectedColor,
-            selectedForegroundColor: selectedForeground,
-            showCount: entry.value.showCount,
-            hideCountWhenZero: entry.value.hideCountWhenZero,
-            countAccentColor: entry.value.countAccentColor,
-            countAccentForegroundColor: entry.value.countAccentForegroundColor,
-            onTap: () => onChanged(entry.key),
+            leadingIcon: entry.value.icon,
+            selected: selected == entry.key,
+            semanticsLabel: shouldShowCount ? '$label, $count' : label,
+            trailing: shouldShowCount
+                ? ExcludeSemantics(
+                    child: DsPill(
+                      variant: countAccent == null
+                          ? DsPillVariant.filled
+                          : DsPillVariant.outline,
+                      label: count.toString(),
+                      color: countAccent,
+                      bordered: countAccent == null,
+                    ),
+                  )
+                : null,
+            onPressed: () => onChanged(entry.key),
           );
         }).toList(),
       ),
@@ -88,6 +93,107 @@ class SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
   /// Pre-calculated height based on actual label widths and layout constraints.
   final double preferredHeight;
 
+  /// Measures the token-driven chips and optional summary before the
+  /// [PreferredSizeWidget] is attached to the settings header.
+  static double calculatePreferredHeight({
+    required BuildContext context,
+    required List<String> labels,
+    required List<int> counts,
+    required List<bool> haveIcons,
+    required List<bool> showCounts,
+    required double availableWidth,
+    required double horizontalPadding,
+    required String summaryText,
+  }) {
+    final tokens = context.designTokens;
+    final textDirection = Directionality.of(context);
+    final textScaler = MediaQuery.textScalerOf(context);
+    final chipGap = tokens.spacing.step2;
+    final chipHorizontalPadding = tokens.spacing.step3;
+    final chipVerticalPadding = tokens.spacing.step1;
+    final cardPadding = tokens.spacing.step3;
+    final labelStyle = tokens.typography.styles.body.bodySmall;
+    final countStyle = tokens.typography.styles.others.caption.copyWith(
+      height: 1,
+    );
+    final accessoryBoxSize = tokens.typography.lineHeight.bodySmall;
+    final rawContentWidth =
+        availableWidth - horizontalPadding - cardPadding * 2;
+    final contentWidth = math.max(BorderWidths.hairline, rawContentWidth);
+
+    final chipSizes = <Size>[];
+    for (var i = 0; i < labels.length; i++) {
+      final count = i < counts.length ? counts[i] : 0;
+      final labelPainter = TextPainter(
+        text: TextSpan(text: labels[i], style: labelStyle),
+        maxLines: 1,
+        textDirection: textDirection,
+        textScaler: textScaler,
+      )..layout();
+      var width = chipHorizontalPadding * 2 + labelPainter.width;
+      var contentHeight = labelPainter.height;
+
+      if (i < haveIcons.length && haveIcons[i]) {
+        width += chipGap + accessoryBoxSize;
+        contentHeight = math.max(contentHeight, accessoryBoxSize);
+      }
+
+      if (i < showCounts.length && showCounts[i]) {
+        final countPainter = TextPainter(
+          text: TextSpan(text: count.toString(), style: countStyle),
+          maxLines: 1,
+          textDirection: textDirection,
+          textScaler: textScaler,
+        )..layout();
+        width += chipGap + countPainter.width + tokens.spacing.step3 * 2;
+        contentHeight = math.max(contentHeight, DsPill.height);
+      }
+
+      chipSizes.add(
+        Size(width, contentHeight + chipVerticalPadding * 2),
+      );
+    }
+
+    var currentRowWidth = 0.0;
+    var currentRowHeight = 0.0;
+    var chipRowsHeight = 0.0;
+    for (final chipSize in chipSizes) {
+      final requiredWidth = currentRowWidth == 0
+          ? chipSize.width
+          : chipGap + chipSize.width;
+      if (currentRowWidth > 0 &&
+          currentRowWidth + requiredWidth > contentWidth) {
+        chipRowsHeight += currentRowHeight + chipGap;
+        currentRowWidth = chipSize.width;
+        currentRowHeight = chipSize.height;
+      } else {
+        currentRowWidth += requiredWidth;
+        currentRowHeight = math.max(currentRowHeight, chipSize.height);
+      }
+    }
+    chipRowsHeight += currentRowHeight;
+
+    var summaryHeight = 0.0;
+    if (summaryText.isNotEmpty) {
+      final summaryPainter = TextPainter(
+        text: TextSpan(
+          text: summaryText,
+          style: tokens.typography.styles.body.bodySmall,
+        ),
+        maxLines: 3,
+        textDirection: textDirection,
+        textScaler: textScaler,
+      )..layout(maxWidth: contentWidth);
+      summaryHeight = chipGap + summaryPainter.height;
+    }
+
+    return cardPadding * 2 +
+        BorderWidths.hairline * 2 +
+        chipRowsHeight +
+        summaryHeight +
+        tokens.spacing.step4;
+  }
+
   @override
   Size get preferredSize => Size.fromHeight(preferredHeight);
 
@@ -101,7 +207,7 @@ class SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _FilterCard<F>(
+          _FilterCard<T, F>(
             filters: filters,
             counts: counts,
             selected: selected,
@@ -112,180 +218,21 @@ class SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
           // pages (e.g. the outbox) that carry their own plain-language
           // summary header and would otherwise duplicate the count.
           if (summaryText.isNotEmpty) ...[
-            const SizedBox(height: SettingsHeaderDimensions.filterSummaryGap),
+            SizedBox(height: context.designTokens.spacing.step2),
             Padding(
-              padding: const EdgeInsetsDirectional.only(
-                start: SettingsHeaderDimensions.filterCardPadding,
+              padding: EdgeInsetsDirectional.only(
+                start: context.designTokens.spacing.step3,
               ),
               child: Text(
                 summaryText,
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
-                  fontSize: SettingsHeaderDimensions.filterSummaryFontSize,
-                  height: SettingsHeaderDimensions.filterSummaryLineHeight,
-                ),
+                style: context.designTokens.typography.styles.body.bodySmall
+                    .copyWith(
+                      color: context.designTokens.colors.text.mediumEmphasis,
+                    ),
               ),
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _SegmentChip extends StatelessWidget {
-  const _SegmentChip({
-    required this.label,
-    required this.count,
-    required this.filter,
-    required this.icon,
-    required this.isSelected,
-    required this.selectedColor,
-    required this.selectedForegroundColor,
-    required this.showCount,
-    required this.hideCountWhenZero,
-    required this.countAccentColor,
-    required this.countAccentForegroundColor,
-    required this.onTap,
-  });
-
-  final String label;
-  final int count;
-  final String filter;
-  final IconData? icon;
-  final bool isSelected;
-  final Color? selectedColor;
-  final Color selectedForegroundColor;
-  final bool showCount;
-  final bool hideCountWhenZero;
-  final Color? countAccentColor;
-  final Color? countAccentForegroundColor;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = context.textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    final foregroundColor = isSelected
-        ? selectedForegroundColor
-        : colorScheme.onSurface;
-    final iconColor = isSelected
-        ? selectedForegroundColor
-        : colorScheme.onSurfaceVariant;
-    final shouldShowCount = showCount && (!hideCountWhenZero || count > 0);
-    final hasAccent = shouldShowCount && count > 0 && countAccentColor != null;
-    final accentForeground = hasAccent
-        ? countAccentForegroundColor ??
-              (ThemeData.estimateBrightnessForColor(countAccentColor!) ==
-                      Brightness.dark
-                  ? Colors.white
-                  : Colors.black)
-        : null;
-    final hasAccentSelection = hasAccent && isSelected;
-    final countBackground = selectedColor;
-    final countForeground = hasAccent
-        ? accentForeground!
-        : isSelected
-        ? selectedForegroundColor
-        : colorScheme.onSurfaceVariant;
-    final countBorderColor = isSelected
-        ? countForeground.withValues(alpha: 0.68)
-        : Colors.transparent;
-
-    return Semantics(
-      button: true,
-      toggled: isSelected,
-      label: shouldShowCount ? '$label, $count' : label,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(
-          AppTheme.cardBorderRadius / 1.6,
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius / 1.6),
-          onTap: onTap,
-          child: AnimatedContainer(
-            key: ValueKey('syncFilter-$filter'),
-            duration: const Duration(milliseconds: AppTheme.animationDuration),
-            padding: const EdgeInsets.symmetric(
-              horizontal: SettingsHeaderDimensions.filterChipHorizontalPadding,
-              vertical: SettingsHeaderDimensions.filterChipVerticalPadding,
-            ),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? selectedColor
-                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.26),
-              borderRadius: BorderRadius.circular(
-                AppTheme.cardBorderRadius / 1.6,
-              ),
-              border: Border.all(
-                color: isSelected
-                    ? selectedColor ?? colorScheme.primary
-                    : colorScheme.outline.withValues(alpha: 0.08),
-                width: isSelected ? 1.4 : 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (icon != null) ...[
-                  Icon(
-                    icon,
-                    size: SettingsHeaderDimensions.filterChipIconSize,
-                    color: iconColor,
-                  ),
-                  const SizedBox(
-                    width: SettingsHeaderDimensions.filterChipIconSpacing,
-                  ),
-                ],
-                Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: textTheme.labelMedium?.copyWith(
-                    color: foregroundColor,
-                    fontSize: SettingsHeaderDimensions.filterChipFontSize,
-                  ),
-                ),
-                if (shouldShowCount) ...[
-                  const SizedBox(
-                    width: SettingsHeaderDimensions.filterChipIconSpacing,
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal:
-                          SettingsHeaderDimensions.filterChipCountPadding,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: countBackground,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: countBorderColor,
-                        width: hasAccentSelection
-                            ? 1.3
-                            : hasAccent
-                            ? 1.1
-                            : 1.2,
-                      ),
-                    ),
-                    child: Text(
-                      count.toString(),
-                      style: textTheme.labelSmall?.copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                        fontWeight: FontWeight.w600,
-                        fontSize:
-                            SettingsHeaderDimensions.filterChipCountFontSize,
-                        color: countForeground,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

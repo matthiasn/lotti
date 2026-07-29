@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -239,11 +239,8 @@ void main() {
                   context.messages.outboxMonitorLabelPending,
               predicate: (_) => true,
               icon: Icons.schedule_rounded,
-              selectedColor: syncPendingAccentColor,
-              selectedForegroundColor: syncPendingForegroundColor,
               hideCountWhenZero: true,
-              countAccentColor: syncPendingCountAccentColor,
-              countAccentForegroundColor: syncPendingForegroundColor,
+              countAccentColor: Colors.orange,
             ),
             _TestFilter.error: SyncFilterOption<_TestItem>(
               labelBuilder: (context) =>
@@ -280,41 +277,12 @@ void main() {
 
         final badgeFinder = find.descendant(
           of: pendingFilter,
-          matching: find.byWidgetPredicate((widget) {
-            if (widget is! Container) {
-              return false;
-            }
-            final decoration = widget.decoration;
-            return decoration is BoxDecoration &&
-                decoration.borderRadius == BorderRadius.circular(999);
-          }),
+          matching: find.byType(DsPill),
         );
-        final badge = tester.widget<Container>(badgeFinder.first);
-        final decoration = badge.decoration! as BoxDecoration;
-        expect(
-          decoration.color,
-          equals(syncPendingAccentColor),
-        );
-        final border = decoration.border! as Border;
-        expect(
-          border.top.color,
-          equals(
-            syncPendingForegroundColor.withValues(alpha: 0.68),
-          ),
-        );
-        expect(border.top.width, equals(1.3));
-        final countText = tester.widget<Text>(
-          find
-              .descendant(
-                of: badgeFinder,
-                matching: find.text('2'),
-              )
-              .first,
-        );
-        expect(
-          countText.style?.color,
-          equals(syncPendingForegroundColor),
-        );
+        final badge = tester.widget<DsPill>(badgeFinder);
+        expect(badge.variant, DsPillVariant.outline);
+        expect(badge.color, Colors.orange);
+        expect(badge.label, '2');
 
         final errorFilter = find.byKey(const ValueKey('syncFilter-error'));
         expect(

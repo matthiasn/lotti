@@ -194,7 +194,6 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
   @override
   Widget build(BuildContext context) {
     final colors = context.designTokens.colors;
-    final onAlert = colors.text.onInteractiveAlert;
     final filters = <_OutboxListFilter, SyncFilterOption<OutboxItem>>{
       _OutboxListFilter.waiting: SyncFilterOption<OutboxItem>(
         labelBuilder: (ctx) => ctx.messages.outboxFilterWaiting,
@@ -207,29 +206,21 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
               status == null;
         },
         icon: Icons.schedule_rounded,
-        selectedColor: colors.alert.warning.defaultColor,
-        selectedForegroundColor: onAlert,
         hideCountWhenZero: true,
-        countAccentColor: colors.alert.warning.defaultColor,
-        countAccentForegroundColor: onAlert,
+        countAccentColor: colors.alert.warning.ink,
       ),
       _OutboxListFilter.failed: SyncFilterOption<OutboxItem>(
         labelBuilder: (ctx) => ctx.messages.outboxFilterFailed,
         predicate: (item) =>
             _statusFromIndex(item.status) == OutboxStatus.error,
         icon: Icons.error_outline_rounded,
-        selectedColor: colors.alert.error.defaultColor,
-        selectedForegroundColor: onAlert,
         hideCountWhenZero: true,
-        countAccentColor: colors.alert.error.defaultColor,
-        countAccentForegroundColor: onAlert,
+        countAccentColor: colors.alert.error.ink,
       ),
       _OutboxListFilter.sent: SyncFilterOption<OutboxItem>(
         labelBuilder: (ctx) => ctx.messages.outboxStatusSent,
         predicate: (item) => _statusFromIndex(item.status) == OutboxStatus.sent,
         icon: Icons.check_circle_outline_rounded,
-        selectedColor: colors.alert.success.defaultColor,
-        selectedForegroundColor: onAlert,
         showCount: false,
       ),
     };

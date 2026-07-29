@@ -40,6 +40,13 @@ the column when it sits first on a leading edge. `alignsLabelToLeadingEdge`
 cancels exactly that inset, direction-aware, so a button can start a shared
 column without a call site open-coding a `Transform`.
 
+`DesignSystemChip` is the canonical interactive filter token. Its `selected`
+flag owns both the activated surface and selected semantics; feature code does
+not repaint selected chips with local status colours. A count or status that
+travels with the filter uses the chip's trailing slot with a `DsPill`. When the
+chip's semantic label already includes that value, the pill is excluded from
+semantics so a screen reader announces the count once.
+
 ## Below the button tier: `DesignSystemInlineAction`
 
 A caption-tier tappable row for metadata contexts — "skip this one", "change

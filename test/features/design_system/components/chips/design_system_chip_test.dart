@@ -245,6 +245,28 @@ void main() {
       expect(squareSlots.length, 2);
     });
 
+    testWidgets('renders caller-owned trailing content inside the chip', (
+      tester,
+    ) async {
+      await _pumpChip(
+        tester,
+        const DesignSystemChip(
+          label: 'Failed',
+          trailing: Text('2', key: ValueKey('count')),
+          onPressed: _noop,
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byType(DesignSystemChip),
+          matching: find.byKey(const ValueKey('count')),
+        ),
+        findsOneWidget,
+      );
+      expect(_findTextNode(tester, '2').text.style?.color, isNotNull);
+    });
+
     testWidgets('renders the touch size with a larger tokenized hit target', (
       tester,
     ) async {
@@ -298,7 +320,7 @@ void main() {
       expect(find.text('With avatar'), findsOneWidget);
     });
 
-    testWidgets('uses semanticsLabel when the visible label is omitted', (
+    testWidgets('uses semanticsLabel instead of visible child semantics', (
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
@@ -306,15 +328,17 @@ void main() {
       await _pumpChip(
         tester,
         const DesignSystemChip(
-          label: '',
-          semanticsLabel: 'Filter chip',
+          label: 'Failed',
+          semanticsLabel: 'Failed, 2',
           leadingIcon: Icons.filter_alt_rounded,
           onPressed: _noop,
         ),
       );
 
       expect(find.byIcon(Icons.filter_alt_rounded), findsOneWidget);
-      expect(find.bySemanticsLabel('Filter chip'), findsOneWidget);
+      expect(find.text('Failed'), findsOneWidget);
+      expect(find.bySemanticsLabel('Failed, 2'), findsOneWidget);
+      expect(find.bySemanticsLabel('Failed'), findsNothing);
 
       semantics.dispose();
     });

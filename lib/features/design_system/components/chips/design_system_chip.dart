@@ -19,17 +19,19 @@ enum DesignSystemChipSize {
 /// optional leading glyph and removable affordance.
 ///
 /// Shows [label] with either a [leadingIcon] or an [avatar] (not both), and an
-/// optional trailing remove "x" when [showRemove] is set. Tracks
-/// hover/pressed/activated visuals from design tokens; [selected] pins the
-/// activated (selected) look for two-state filter/toggle chips; [forcedState]
-/// pins a [DesignSystemChipVisualState] for widgetbook/tests, and a `null`
-/// [onPressed] disables it. Requires a visible [label] or a [semanticsLabel].
+/// optional [trailing] accessory or remove "x" when [showRemove] is set.
+/// Tracks hover/pressed/activated visuals from design tokens; [selected] pins
+/// the activated (selected) look for two-state filter/toggle chips;
+/// [forcedState] pins a [DesignSystemChipVisualState] for widgetbook/tests,
+/// and a `null` [onPressed] disables it. Requires a visible [label] or a
+/// [semanticsLabel].
 class DesignSystemChip extends StatefulWidget {
   const DesignSystemChip({
     required this.label,
     required this.onPressed,
     this.leadingIcon,
     this.avatar,
+    this.trailing,
     this.showRemove = false,
     this.selected = false,
     this.size = DesignSystemChipSize.compact,
@@ -49,6 +51,12 @@ class DesignSystemChip extends StatefulWidget {
   final VoidCallback? onPressed;
   final IconData? leadingIcon;
   final Widget? avatar;
+
+  /// Optional trailing content inside the chip, such as a count or status
+  /// pill. The caller owns its semantics; wrap decorative or already-announced
+  /// content in [ExcludeSemantics].
+  final Widget? trailing;
+
   final bool showRemove;
 
   /// When true the chip renders its activated (selected) look — the two-state
@@ -147,10 +155,12 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
                         widget.forcedState ==
                             DesignSystemChipVisualState.activated,
                     label: widget.semanticsLabel ?? widget.label,
+                    excludeSemantics: widget.semanticsLabel != null,
                     child: _ChipContent(
                       label: widget.label,
                       leadingIcon: widget.leadingIcon,
                       avatar: widget.avatar,
+                      trailing: widget.trailing,
                       showRemove: widget.showRemove,
                       gap: sizeSpec.itemGap,
                       accessoryBoxSize: sizeSpec.accessoryBoxSize,
@@ -194,6 +204,7 @@ class _ChipContent extends StatelessWidget {
     required this.accessoryBoxSize,
     this.leadingIcon,
     this.avatar,
+    this.trailing,
     this.showRemove = false,
   });
 
@@ -202,6 +213,7 @@ class _ChipContent extends StatelessWidget {
   final double accessoryBoxSize;
   final IconData? leadingIcon;
   final Widget? avatar;
+  final Widget? trailing;
   final bool showRemove;
 
   @override
@@ -234,6 +246,10 @@ class _ChipContent extends StatelessWidget {
           ),
         ),
       );
+    }
+
+    if (trailing != null) {
+      items.add(trailing!);
     }
 
     if (showRemove) {
