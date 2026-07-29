@@ -38,6 +38,7 @@ class SyncModal extends ConsumerWidget {
       confirmLabel: context.messages.syncEntitiesConfirm,
       isDestructive: false,
       closeOnComplete: false,
+      actionButtonSize: DesignSystemButtonSize.medium,
       confirmationContent: ValueListenableBuilder<Set<SyncStep>>(
         valueListenable: selectedStepsNotifier,
         builder: (context, selectedSteps, _) {
@@ -50,6 +51,7 @@ class SyncModal extends ConsumerWidget {
                   title: _getStepName(context, step),
                   type: DesignSystemSelectionRowType.multiSelect,
                   selected: selectedSteps.contains(step),
+                  showSelectedBackground: false,
                   onTap: () {
                     final updated = Set<SyncStep>.from(
                       selectedStepsNotifier.value,

@@ -9,8 +9,9 @@ enum DesignSystemModalActionBarLayout {
   dominantPrimary,
 
   /// Secondary actions stay grouped at the leading edge while the primary
-  /// keeps its intrinsic width at the trailing edge. The secondary group may
-  /// wrap internally when translations or text scaling need more room.
+  /// keeps its intrinsic width at the trailing edge. The bar stays horizontal
+  /// whenever the rendered labels actually fit and wraps the intrinsic groups
+  /// when they do not.
   compactPrimary,
 }
 
@@ -27,9 +28,9 @@ enum DesignSystemModalActionBarLayout {
 /// to fat-finger when reaching to confirm; secondaries are spaced from each
 /// other by the smaller `spacing.step3`.
 ///
-/// Pass [primary] as a `DesignSystemButton` with `fullWidth: true` (the bar
-/// wraps it in [Expanded], and `fullWidth` keeps its content centred rather
-/// than left-aligned). Each [secondary] is laid out at its intrinsic width.
+/// Pass [primary] as a `DesignSystemButton` with `fullWidth: true` (`fullWidth`
+/// keeps its content centred when dominant or overflow layouts stretch it).
+/// Each [secondary] is laid out at its intrinsic width.
 /// [padding] is applied around the row when provided — sticky action bars pass
 /// their sheet padding here; bars embedded in an existing padded column leave
 /// it null.
@@ -68,18 +69,16 @@ class DesignSystemModalActionBar extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final content = LayoutBuilder(
       builder: (context, constraints) {
+        if (layout == DesignSystemModalActionBarLayout.compactPrimary) {
+          return textScale > 1.3
+              ? _StackedActionLayout(primary: primary, secondary: secondary)
+              : _CompactActionLayout(primary: primary, secondary: secondary);
+        }
         final narrowBreakpoint = secondary.length > 1
             ? tokens.spacing.step13 * 2 + tokens.spacing.step11
             : tokens.spacing.step13 * 2;
         final stacked =
             constraints.maxWidth < narrowBreakpoint || textScale > 1.3;
-        if (layout == DesignSystemModalActionBarLayout.compactPrimary &&
-            !stacked) {
-          return _CompactActionLayout(
-            primary: primary,
-            secondary: secondary,
-          );
-        }
         return stacked
             ? _StackedActionLayout(primary: primary, secondary: secondary)
             : _WideActionLayout(primary: primary, secondary: secondary);
@@ -101,20 +100,32 @@ class _CompactActionLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final spacing = context.designTokens.spacing;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    return OverflowBar(
+      alignment: MainAxisAlignment.spaceBetween,
+      spacing: spacing.step3,
+      overflowSpacing: spacing.step3,
+      overflowAlignment: OverflowBarAlignment.end,
       children: [
-        if (secondary.isNotEmpty)
-          Expanded(
-            child: Wrap(
-              spacing: spacing.step3,
-              runSpacing: spacing.step3,
-              children: secondary,
-            ),
-          ),
-        if (secondary.isNotEmpty) SizedBox(width: spacing.step3),
-        primary,
+        for (final action in secondary) _IntrinsicAction(child: action),
+        _IntrinsicAction(child: primary),
       ],
+    );
+  }
+}
+
+/// Keeps an action's visual button intrinsic even when [OverflowBar] gives its
+/// overflow run the full available width.
+class _IntrinsicAction extends StatelessWidget {
+  const _IntrinsicAction({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [child],
     );
   }
 }

@@ -221,7 +221,43 @@ void main() {
   );
 
   testWidgets(
-    'compact layout stacks a full-width primary when width is narrow',
+    'compact layout keeps short phone actions on one row when they fit',
+    (tester) async {
+      await pumpBar(
+        tester,
+        DesignSystemModalActionBar(
+          layout: DesignSystemModalActionBarLayout.compactPrimary,
+          secondary: [
+            DesignSystemButton(
+              label: 'Cancel',
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.medium,
+              tapTargetSize: MaterialTapTargetSize.padded,
+              onPressed: () {},
+            ),
+          ],
+          primary: DesignSystemButton(
+            label: 'Start sync',
+            size: DesignSystemButtonSize.medium,
+            fullWidth: true,
+            tapTargetSize: MaterialTapTargetSize.padded,
+            onPressed: () {},
+          ),
+        ),
+        width: 310,
+      );
+      await tester.pump();
+
+      final cancel = find.widgetWithText(DesignSystemButton, 'Cancel');
+      final start = find.widgetWithText(DesignSystemButton, 'Start sync');
+      expect(tester.getCenter(start).dy, tester.getCenter(cancel).dy);
+      expect(tester.getSize(start).width, lessThan(200));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact layout wraps intrinsic actions when labels do not fit',
     (tester) async {
       await pumpBar(
         tester,
@@ -256,7 +292,7 @@ void main() {
 
       expect(applyCenter.dy, greaterThan(clearCenter.dy));
       expect(applyCenter.dy, greaterThan(saveCenter.dy));
-      expect(applyWidth, 320);
+      expect(applyWidth, lessThan(320));
       expect(tester.takeException(), isNull);
     },
   );

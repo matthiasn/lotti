@@ -381,12 +381,21 @@ void main() {
         expect(captured!.confirmed, isFalse);
         expect(captured!.excludedProviderModelIds, isEmpty);
 
-        // Accept variant — untick the first model row first.
+        // Accept variant — untick the first model through the card body,
+        // outside the checkbox's original compact hit region.
         captured = null;
         await tester.tap(find.text('open'));
         await tester.pumpAndSettle();
-        // Tap the first DS checkbox to untick it.
-        await tester.tap(find.byType(DesignSystemCheckbox).first);
+        final firstModelLabel = find.text(geminiPreset.models.first.name);
+        expect(
+          tester
+              .getRect(firstModelLabel)
+              .overlaps(
+                tester.getRect(find.byType(DesignSystemCheckbox).first),
+              ),
+          isFalse,
+        );
+        await tester.tap(firstModelLabel);
         await tester.pumpAndSettle();
         await tester.tap(find.text('Accept & finish'));
         await tester.pumpAndSettle();

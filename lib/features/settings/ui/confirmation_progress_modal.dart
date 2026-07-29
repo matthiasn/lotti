@@ -28,7 +28,9 @@ class ConfirmationProgressModal {
   /// shows the warning icon. [closeOnComplete] auto-dismisses the sheet
   /// when the operation finishes. [confirmationContent] injects extra UI
   /// above the action bar; [isConfirmEnabled] / [confirmEnabledListenable]
-  /// gate and reactively rebuild the confirm button.
+  /// gate and reactively rebuild the confirm button. [actionButtonSize]
+  /// changes only the visual tier; both actions retain a padded 48dp
+  /// interaction target.
   static Future<bool> show({
     required BuildContext context,
     required String message,
@@ -40,6 +42,7 @@ class ConfirmationProgressModal {
     Widget? confirmationContent,
     bool Function()? isConfirmEnabled,
     Listenable? confirmEnabledListenable,
+    DesignSystemButtonSize actionButtonSize = DesignSystemButtonSize.large,
   }) async {
     final pageIndexNotifier = ValueNotifier(0);
     final theme = Theme.of(context);
@@ -120,7 +123,8 @@ class ConfirmationProgressModal {
                     DesignSystemButton(
                       label: context.messages.cancelButton,
                       variant: DesignSystemButtonVariant.secondary,
-                      size: DesignSystemButtonSize.large,
+                      size: actionButtonSize,
+                      tapTargetSize: MaterialTapTargetSize.padded,
                       onPressed: () {
                         confirmed = false;
                         Navigator.of(modalSheetContext).pop();
@@ -137,6 +141,7 @@ class ConfirmationProgressModal {
                               onConfirm,
                               confirmLabel,
                               isDestructive,
+                              actionButtonSize,
                             );
                           },
                         )
@@ -146,6 +151,7 @@ class ConfirmationProgressModal {
                           onConfirm,
                           confirmLabel,
                           isDestructive,
+                          actionButtonSize,
                         ),
                 ),
               ],
@@ -192,6 +198,7 @@ class ConfirmationProgressModal {
     Future<void> Function() onConfirm,
     String confirmLabel,
     bool isDestructive,
+    DesignSystemButtonSize actionButtonSize,
   ) {
     final enabled = isConfirmEnabled?.call() ?? true;
     return DesignSystemButton(
@@ -201,12 +208,12 @@ class ConfirmationProgressModal {
       variant: isDestructive
           ? DesignSystemButtonVariant.danger
           : DesignSystemButtonVariant.primary,
-      size: DesignSystemButtonSize.large,
+      size: actionButtonSize,
+      tapTargetSize: MaterialTapTargetSize.padded,
       // fullWidth only centres the content; the parent decides the width. In
-      // the compact row the button keeps its intrinsic size, and when the bar
-      // falls back to its stacked layout — narrow width or text scale > 1.3 —
-      // the stretched column widens it and this keeps the icon and label
-      // centred instead of pinned to the leading edge.
+      // the compact action bar the button keeps its intrinsic size even when
+      // the actions wrap, so routine confirmations never become full-width
+      // slabs.
       fullWidth: true,
     );
   }

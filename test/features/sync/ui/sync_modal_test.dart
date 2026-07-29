@@ -385,7 +385,12 @@ void main() {
                 'type',
                 DesignSystemSelectionRowType.multiSelect,
               )
-              .having((row) => row.selected, 'selected', isTrue),
+              .having((row) => row.selected, 'selected', isTrue)
+              .having(
+                (row) => row.showSelectedBackground,
+                'showSelectedBackground',
+                isFalse,
+              ),
         ),
       );
 
@@ -407,6 +412,21 @@ void main() {
           greaterThanOrEqualTo(TapTargets.minimum),
         );
       }
+
+      final cancel = find.widgetWithText(
+        DesignSystemButton,
+        messages.cancelButton,
+      );
+      final start = find.widgetWithText(
+        DesignSystemButton,
+        messages.syncEntitiesConfirm,
+      );
+      for (final action in [cancel, start]) {
+        final button = tester.widget<DesignSystemButton>(action);
+        expect(button.size, DesignSystemButtonSize.medium);
+        expect(button.tapTargetSize, MaterialTapTargetSize.padded);
+      }
+      expect(tester.getCenter(start).dy, tester.getCenter(cancel).dy);
     },
   );
 

@@ -7,6 +7,9 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -95,6 +98,44 @@ void main() {
     expect(find.text('Custom'), findsWidgets);
     expect(find.byType(DateTimeField), findsNothing);
   });
+
+  testWidgets(
+    'entity choices use compact full-row targets with trailing checkboxes',
+    (tester) async {
+      await pumpModal(tester);
+
+      for (final (key, label) in [
+        (
+          const Key('reSyncJournalEntitiesCheckbox'),
+          'Journal entities',
+        ),
+        (
+          const Key('reSyncAgentEntitiesCheckbox'),
+          'Agent entities',
+        ),
+      ]) {
+        final row = find.byKey(key);
+        final checkbox = find.descendant(
+          of: row,
+          matching: find.byType(DesignSystemCheckbox),
+        );
+        final text = find.descendant(
+          of: row,
+          matching: find.text(label),
+        );
+
+        expect(
+          tester.widget<DesignSystemSelectionRow>(row).type,
+          DesignSystemSelectionRowType.multiSelect,
+        );
+        expect(tester.getSize(row).height, TapTargets.minimum);
+        expect(
+          tester.getCenter(checkbox).dx,
+          greaterThan(tester.getCenter(text).dx),
+        );
+      }
+    },
+  );
 
   testWidgets('starts re-sync with the selected custom interval', (
     tester,

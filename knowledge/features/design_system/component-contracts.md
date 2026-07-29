@@ -59,8 +59,10 @@ The compact `DesignSystemCheckbox` is a 24dp control with no outer inset. A
 feature that needs a mobile-sized option target should not pad seven independent
 checkboxes into a loose stack; it should use
 `DesignSystemSelectionRow.multiSelect`. That component owns the full-row target,
-keeps labels on the left and checkboxes on the right, and applies one contiguous
-selected band per option.
+keeps labels on the left and checkboxes on the right, and normally applies one
+contiguous selected band per option. Checkbox-first lists can set
+`showSelectedBackground: false` when the checkmark is the deliberate sole state
+indicator; checked semantics and the full-row action remain unchanged.
 
 ## Below the button tier: `DesignSystemInlineAction`
 

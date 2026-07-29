@@ -145,6 +145,35 @@ void main() {
       },
     );
 
+    testWidgets(
+      'default target preserves a tight parent width without fullWidth',
+      (tester) async {
+        const buttonKey = Key('tight-parent-button');
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SizedBox(
+              width: 320,
+              child: DesignSystemButton(
+                key: buttonKey,
+                label: 'Continue',
+                onPressed: _noop,
+              ),
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        final visualRect = tester.getRect(
+          find.descendant(
+            of: find.byKey(buttonKey),
+            matching: find.byType(Ink),
+          ),
+        );
+        expect(visualRect.width, 320);
+      },
+    );
+
     testWidgets('renders the tertiary hover state from tokens', (tester) async {
       const buttonKey = Key('tertiary-hover');
 

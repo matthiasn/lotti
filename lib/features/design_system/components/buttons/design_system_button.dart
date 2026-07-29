@@ -192,13 +192,19 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
         ),
       ),
     );
-    final targetConstraints =
-        widget.tapTargetSize == MaterialTapTargetSize.padded
-        ? const BoxConstraints(
-            minWidth: TapTargets.minimum,
-            minHeight: TapTargets.minimum,
+    final targetChild = widget.tapTargetSize == MaterialTapTargetSize.padded
+        ? ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: TapTargets.minimum,
+              minHeight: TapTargets.minimum,
+            ),
+            child: Center(
+              widthFactor: widget.fullWidth ? null : 1,
+              heightFactor: 1,
+              child: visualButton,
+            ),
           )
-        : const BoxConstraints();
+        : visualButton;
     final button = Material(
       color: Colors.transparent,
       child: Semantics(
@@ -225,16 +231,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
           onHighlightChanged: widget.forcedState == null && interactable
               ? (value) => setState(() => _pressed = value)
               : null,
-          child: ExcludeSemantics(
-            child: ConstrainedBox(
-              constraints: targetConstraints,
-              child: Center(
-                widthFactor: widget.fullWidth ? null : 1,
-                heightFactor: 1,
-                child: visualButton,
-              ),
-            ),
-          ),
+          child: ExcludeSemantics(child: targetChild),
         ),
       ),
     );
