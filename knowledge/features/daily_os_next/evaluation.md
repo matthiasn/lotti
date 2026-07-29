@@ -782,7 +782,10 @@ refine, and digest separately:
 - `providerTurns`: provider requests made by the wake.
 
 The benchmark has an always-on two-day schema smoke and shares the storage
-benchmark's opt-in command:
+benchmark's opt-in command. A separate always-on integration assertion verifies
+that aged plans and weekly rollups seeded under their production deterministic
+IDs actually reach the model-facing `<recent_days>` and `<recent_weeks>`
+sections:
 
 ```sh
 fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \
@@ -793,10 +796,10 @@ Baseline on the same dev machine (1 / 6 / 12 months):
 
 | wake | prompt bytes | stable prefix bytes | input tokens | output tokens | agent-repository reads | provider turns | duration range |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Parse | 3,155 / 3,155 / 3,155 | 2,273 / 2,273 / 2,273 | 1,018 / 1,018 / 1,018 | 33 / 33 / 33 | 27 / 27 / 27 | 1 / 1 / 1 | 4.1–11.2 ms |
-| Draft | 9,630 / 9,630 / 9,630 | 8,715 / 8,715 / 8,715 | 3,320 / 3,320 / 3,320 | 76 / 76 / 76 | 25 / 25 / 25 | 1 / 1 / 1 | 4.7–9.8 ms |
-| Refine | 29,125 / 29,125 / 29,125 | 11,645 / 11,645 / 11,645 | 11,016 / 11,016 / 11,016 | 94 / 94 / 94 | 29 / 29 / 29 | 2 / 2 / 2 | 8.2–16.9 ms |
-| Digest | 24,042 / 24,042 / 24,042 | 6,940 / 6,940 / 6,940 | 9,999 / 9,999 / 9,999 | 55 / 55 / 55 | 34 / 34 / 34 | 2 / 2 / 2 | 8.1–104.1 ms |
+| Parse | 3,587 / 3,587 / 3,587 | 2,273 / 2,273 / 2,273 | 1,126 / 1,126 / 1,126 | 33 / 33 / 33 | 27 / 27 / 27 | 1 / 1 / 1 | 3.9–11.6 ms |
+| Draft | 10,315 / 10,315 / 10,315 | 8,715 / 8,715 / 8,715 | 3,491 / 3,491 / 3,491 | 76 / 76 / 76 | 25 / 25 / 25 | 1 / 1 / 1 | 4.1–9.0 ms |
+| Refine | 29,167 / 29,167 / 29,167 | 11,645 / 11,645 / 11,645 | 11,026 / 11,026 / 11,026 | 94 / 94 / 94 | 29 / 29 / 29 | 2 / 2 / 2 | 6.7–13.7 ms |
+| Digest | 24,906 / 24,906 / 24,906 | 6,940 / 6,940 / 6,940 | 10,215 / 10,215 / 10,215 | 55 / 55 / 55 | 34 / 34 / 34 | 2 / 2 / 2 | 8.6–107.8 ms |
 
 Every size-dependent value is byte-for-byte flat across a twelvefold age
 increase. Stopwatch variation is scheduler noise; prompt growth and read-count

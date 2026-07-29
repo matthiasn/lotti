@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
@@ -68,9 +69,16 @@ class DayAgentWakeBenchmark {
   static final DateTime wakeTime = DateTime(2030, 1, 15, 9);
 
   final _metrics = <String, DayAgentWakeMetric>{};
+  final _modelPrompts = <String, StringBuffer>{};
   String? _activeWake;
   late final ScriptedConversationRepository _conversationRepository;
   late final DayAgentPipelineHarness _harness;
+
+  /// Complete model-facing request payloads observed for each wake.
+  Map<String, String> get modelPrompts => Map.unmodifiable({
+    for (final entry in _modelPrompts.entries)
+      entry.key: entry.value.toString(),
+  });
 
   Future<Map<String, DayAgentWakeMetric>> run() async {
     _conversationRepository = ScriptedConversationRepository(
@@ -141,6 +149,7 @@ class DayAgentWakeBenchmark {
     final prompt = jsonEncode([
       for (final message in requestMessages) message.toJson(),
     ]);
+    _modelPrompts.putIfAbsent(wake, StringBuffer.new).writeln(prompt);
     final toolSchema = jsonEncode([
       for (final tool in tools) tool.toJson(),
     ]);
@@ -359,10 +368,11 @@ class DayAgentWakeBenchmark {
         baseDay.day - offset,
       );
       final dayId = dayPlanId(day);
+      final planEntityId = dayAgentPlanEntityId(dayId);
       final at = DateTime(day.year, day.month, day.day, 8);
       entities.add(
         AgentDomainEntity.dayPlan(
-          id: 'benchmark-plan-$dayId',
+          id: planEntityId,
           agentId: dailyOsPlannerAgentId,
           dayId: dayId,
           planDate: day,
@@ -406,7 +416,7 @@ class DayAgentWakeBenchmark {
           AgentDomainEntity.changeSet(
             id: 'benchmark-diff-$dayId-$i',
             agentId: dailyOsPlannerAgentId,
-            taskId: 'benchmark-plan-$dayId',
+            taskId: planEntityId,
             threadId: 'benchmark-history',
             runKey: 'benchmark-history-$dayId-$i',
             status: i.isEven
@@ -430,11 +440,12 @@ class DayAgentWakeBenchmark {
         ),
       );
       if (offset % 7 == 0) {
+        final weekStart = weekStartFor(day);
         entities.add(
           AgentDomainEntity.weekRollup(
-            id: 'benchmark-week-$dayId',
+            id: weekRollupEntityId(weekStart),
             agentId: dailyOsPlannerAgentId,
-            weekStart: day,
+            weekStart: weekStart,
             createdAt: at,
             updatedAt: at,
             vectorClock: null,

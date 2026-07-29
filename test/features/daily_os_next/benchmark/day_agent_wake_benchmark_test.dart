@@ -37,6 +37,21 @@ void main() {
     expect(report['digest']!.providerTurns, 2);
   });
 
+  test('aged production plans and rollups reach model prompts', () async {
+    final benchmark = DayAgentWakeBenchmark(days: 15);
+
+    await benchmark.run();
+
+    expect(
+      benchmark.modelPrompts['draft'],
+      contains('Mon Jan 14 — draft plan.'),
+    );
+    expect(
+      benchmark.modelPrompts['digest'],
+      contains(r'\"daysWithPlans\": 7'),
+    );
+  });
+
   test(
     'wake prompt and token cost across 1, 6 and 12 simulated months',
     () async {

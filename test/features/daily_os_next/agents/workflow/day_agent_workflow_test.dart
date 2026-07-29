@@ -2092,6 +2092,56 @@ void main() {
         );
       });
 
+      test(
+        're-arms the next digest when provider resolution fails early',
+        () async {
+          when(
+            () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => const []);
+
+          final result = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, 'No inference provider configured');
+          final rearmed = upsertedEntities
+              .whereType<ScheduledWakeEntity>()
+              .single;
+          expect(rearmed.workspaceKey, coordinatorDigestWorkspaceKey);
+          expect(rearmed.status, ScheduledWakeStatus.pending);
+          expect(rearmed.scheduledAt, DateTime(2026, 5, 26, 6));
+          expect(
+            rearmed.triggerTokens,
+            [dayAgentDigestToken('dayplan-2026-05-26')],
+          );
+        },
+      );
+
+      test('re-arms the next digest when setup throws early', () async {
+        when(
+          () => syncService.reconciledAgentState(dailyOsPlannerAgentId),
+        ).thenThrow(StateError('state read failed'));
+
+        await expectLater(
+          executeDigest(workflow(directiveService: directiveService)),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'state read failed',
+            ),
+          ),
+        );
+
+        final rearmed = upsertedEntities
+            .whereType<ScheduledWakeEntity>()
+            .single;
+        expect(rearmed.workspaceKey, coordinatorDigestWorkspaceKey);
+        expect(rearmed.status, ScheduledWakeStatus.pending);
+        expect(rearmed.scheduledAt, DateTime(2026, 5, 26, 6));
+      });
+
       test('logs when re-arming a failed digest also fails', () async {
         conversationRepository.errorToThrow = Exception('model failed');
         when(() => syncService.upsertEntity(any())).thenAnswer((

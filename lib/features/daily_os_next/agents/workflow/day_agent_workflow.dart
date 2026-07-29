@@ -191,6 +191,47 @@ class DayAgentWorkflow {
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
+    final maintainsDigestCadence =
+        agentId == dailyOsPlannerAgentId &&
+        triggerTokens.any((token) => token.startsWith(dayAgentDigestPrefix));
+    var succeeded = false;
+    try {
+      final result = await _execute(
+        agentIdentity: agentIdentity,
+        runKey: runKey,
+        triggerTokens: triggerTokens,
+        threadId: threadId,
+        now: now,
+      );
+      succeeded = result.success;
+      return result;
+    } finally {
+      // A scheduled digest wake is consumed before execution starts. Protect
+      // its next-morning cadence across every failure boundary, including
+      // early validation returns and context/persistence exceptions that
+      // occur before inference setup reaches its own failure handling.
+      if (maintainsDigestCadence && !succeeded) {
+        try {
+          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
+        } catch (scheduleError, stackTrace) {
+          _logError(
+            'failed to re-arm coordinator digest wake',
+            error: scheduleError,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+    }
+  }
+
+  Future<WakeResult> _execute({
+    required AgentIdentityEntity agentIdentity,
+    required String runKey,
+    required Set<String> triggerTokens,
+    required String threadId,
+    required DateTime now,
+  }) async {
+    final agentId = agentIdentity.agentId;
     // The wake acts on the log-reconciled state (PR 4 B6).
     final state = await syncService.reconciledAgentState(agentId);
     if (state == null) {
@@ -639,17 +680,6 @@ class DayAgentWorkflow {
           error: stateError,
           stackTrace: stackTrace,
         );
-      }
-      if (wakeContext.isDigestWake && agentId == dailyOsPlannerAgentId) {
-        try {
-          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
-        } catch (scheduleError, stackTrace) {
-          _logError(
-            'failed to re-arm coordinator digest wake',
-            error: scheduleError,
-            stackTrace: stackTrace,
-          );
-        }
       }
       return WakeResult(success: false, error: e.toString());
     } finally {
