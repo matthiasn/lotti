@@ -496,6 +496,43 @@ void main() {
       });
     });
 
+    test(
+      'a provider stream subscribed after disposal closes without starting',
+      () async {
+        var upstreamListened = false;
+        final source = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+          onListen: () {
+            upstreamListened = true;
+          },
+        );
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _StreamInferenceRepository(source.stream),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: const Duration(seconds: 30),
+        );
+        final stream = repository.generateTextWithMessages(
+          messages: const [],
+          model: 'qwen3.5-397b-a17b',
+          temperature: 0.3,
+          provider: testInferenceProvider(),
+        );
+
+        await repository.dispose();
+
+        final chunks = await stream.toList();
+
+        expect(chunks, isEmpty);
+        expect(
+          upstreamListened,
+          isFalse,
+          reason:
+              'Disposed wake wrappers must not start new provider requests.',
+        );
+        unawaited(source.close());
+      },
+    );
+
     test('absorbs an upstream error surfaced by timeout cancellation', () {
       fakeAsync((async) {
         final source = StreamController<CreateChatCompletionStreamResponse>(
@@ -539,6 +576,29 @@ void main() {
       expect(policy.forKind(DayAgentWakeKind.refine), 4096);
       expect(policy.forKind(DayAgentWakeKind.digest), 4096);
       expect(policy.forKind(DayAgentWakeKind.general), 4096);
+    });
+
+    test('rejects a non-positive provider ceiling', () {
+      expect(
+        () => DayAgentOutputBudgetInferenceRepository(
+          delegate: const _StreamInferenceRepository(Stream.empty()),
+          wakeKind: DayAgentWakeKind.draft,
+          maxCompletionTokens: 0,
+        ),
+        throwsA(
+          isA<ArgumentError>()
+              .having(
+                (error) => error.invalidValue,
+                'invalidValue',
+                0,
+              )
+              .having(
+                (error) => error.name,
+                'name',
+                'maxCompletionTokens',
+              ),
+        ),
+      );
     });
 
     test(
