@@ -238,10 +238,11 @@ class DayAgentInferenceTimedOutException extends TimeoutException {
 
 /// Applies a mode-specific total deadline to day-agent inference streams.
 ///
-/// The timer starts when the wake wrapper is created and does not reset for a
-/// later provider turn or streamed thought/content chunk. Crossing it cancels
-/// every active upstream subscription before reporting the classified timeout,
-/// so a late tool batch cannot mutate after the outbox starts a retry.
+/// The timer starts when the first provider stream is subscribed and does not
+/// reset for a later provider turn or streamed thought/content chunk. Crossing
+/// it cancels every active upstream subscription before reporting the
+/// classified timeout, so a late tool batch cannot mutate after the outbox
+/// starts a retry.
 class DayAgentTimeoutInferenceRepository
     implements InferenceRepositoryInterface {
   DayAgentTimeoutInferenceRepository({
@@ -256,13 +257,12 @@ class DayAgentTimeoutInferenceRepository
         'must be positive',
       );
     }
-    _wakeDeadline = Timer(timeout, _expire);
   }
 
   final InferenceRepositoryInterface delegate;
   final DayAgentWakeKind wakeKind;
   final Duration timeout;
-  late final Timer _wakeDeadline;
+  Timer? _wakeDeadline;
   final _active =
       <
         StreamController<CreateChatCompletionStreamResponse>,
@@ -277,6 +277,12 @@ class DayAgentTimeoutInferenceRepository
         timeout: timeout,
       );
 
+  void _startDeadlineIfNeeded() {
+    if (_wakeDeadline == null && !_expired && !_disposed) {
+      _wakeDeadline = Timer(timeout, _expire);
+    }
+  }
+
   Future<void> _cancelSafely(Future<void> Function() cancel) async {
     try {
       await cancel();
@@ -290,7 +296,8 @@ class DayAgentTimeoutInferenceRepository
 
   void _expire() {
     if (_disposed) return;
-    _wakeDeadline.cancel();
+    _wakeDeadline?.cancel();
+    _wakeDeadline = null;
     _expired = true;
     for (final entry in _active.entries.toList()) {
       _active.remove(entry.key);
@@ -313,6 +320,7 @@ class DayAgentTimeoutInferenceRepository
           unawaited(controller.close());
           return;
         }
+        _startDeadlineIfNeeded();
         if (_expired) {
           controller.addError(_timeoutError());
           unawaited(controller.close());
@@ -345,7 +353,8 @@ class DayAgentTimeoutInferenceRepository
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    _wakeDeadline.cancel();
+    _wakeDeadline?.cancel();
+    _wakeDeadline = null;
     final active = _active.entries.toList(growable: false);
     _active.clear();
     for (final entry in active) {

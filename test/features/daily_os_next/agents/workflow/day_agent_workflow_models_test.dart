@@ -234,7 +234,8 @@ void main() {
     });
 
     test(
-      'a provider turn started after the wake deadline fails immediately',
+      'workflow setup before the first provider turn does not consume the '
+      'deadline',
       () {
         fakeAsync((async) {
           var upstreamListened = false;
@@ -264,16 +265,77 @@ void main() {
               .listen((_) {}, onError: errors.add);
           async.flushMicrotasks();
 
+          expect(upstreamListened, isTrue);
+          expect(errors, isEmpty);
+
+          async
+            ..elapse(const Duration(seconds: 29))
+            ..flushMicrotasks();
+          expect(errors, isEmpty);
+
+          async
+            ..elapse(const Duration(seconds: 1))
+            ..flushMicrotasks();
           expect(errors.single, isA<DayAgentInferenceTimedOutException>());
-          expect(
-            upstreamListened,
-            isFalse,
-            reason: 'An expired wake must not start another provider request.',
-          );
           unawaited(source.close());
         });
       },
     );
+
+    test('a later provider turn cannot start after the deadline expires', () {
+      fakeAsync((async) {
+        final first = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+        );
+        var secondListened = false;
+        final second = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+          onListen: () {
+            secondListened = true;
+          },
+        );
+        final errors = <Object>[];
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _SequenceInferenceRepository([
+            first.stream,
+            second.stream,
+          ]),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: const Duration(seconds: 30),
+        );
+
+        repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'qwen3.5-397b-a17b',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+        async
+          ..elapse(const Duration(seconds: 30))
+          ..flushMicrotasks();
+
+        repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'qwen3.5-397b-a17b',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+        async.flushMicrotasks();
+
+        expect(errors, hasLength(2));
+        expect(
+          errors,
+          everyElement(isA<DayAgentInferenceTimedOutException>()),
+        );
+        expect(secondListened, isFalse);
+        unawaited(first.close());
+        unawaited(second.close());
+      });
+    });
 
     test('downstream cancellation cancels the active provider stream', () {
       fakeAsync((async) {
