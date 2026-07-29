@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_agent_job_executor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 
@@ -603,6 +604,25 @@ void main() {
       expect(
         classifyDayAgentJobFailure(null),
         DayProcessingFailureClass.local,
+      );
+    });
+
+    test('classifies output-ceiling failures as retryable provider work', () {
+      const error = DayAgentOutputLimitExceededException(
+        wakeKind: DayAgentWakeKind.draft,
+        maxCompletionTokens: 8192,
+      );
+
+      expect(
+        classifyDayAgentJobFailure(error),
+        DayProcessingFailureClass.providerBusy,
+      );
+      expect(
+        classifyDayAgentJobFailure(StateError(error.toString())),
+        DayProcessingFailureClass.providerBusy,
+        reason:
+            'Wake completion errors cross a serialization boundary in the '
+            'durable outbox and can arrive wrapped as text.',
       );
     });
   });

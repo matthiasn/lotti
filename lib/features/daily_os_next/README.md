@@ -58,6 +58,17 @@ lib/features/daily_os_next/
 The shared day-plan aggregate lives in `lib/classes/day_plan.dart` and is extended
 here rather than duplicated.
 
+## Performance envelope
+
+The deterministic full-workflow benchmark stays flat from 1 to 12 simulated
+months: aggregate parse / draft / refine / digest provider requests remain
+3,587 / 10,315 / 29,167 / 24,906 UTF-8 bytes, with 27 / 25 / 29 / 34
+agent-repository reads. Refine and digest include their production continuation
+turn. Provider turns are bounded to 4,096 output tokens, except full day drafts
+at 8,192; a truncated tool call is discarded and retried rather than becoming a
+partial plan. The complete baseline and live Melious evidence are in
+[day-planning evaluation and benchmarks](../../../knowledge/features/daily_os_next/evaluation.md).
+
 ## How it works
 
 The runtime architecture — agent identities and the per-day cutover, the wake

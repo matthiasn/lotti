@@ -18,13 +18,6 @@ final bool benchmarkEnabled =
     const String.fromEnvironment('LOTTI_BENCHMARK').isNotEmpty ||
     const bool.fromEnvironment('LOTTI_BENCHMARK');
 
-/// Corpus ages to compare, in days.
-const Map<String, int> _corpora = {
-  '1 month': 30,
-  '6 months': 182,
-  '12 months': 365,
-};
-
 Future<Map<String, int>> _runCorpus(int days) async {
   final agentDb = AgentDatabase(inMemoryDatabase: true, background: false);
   final processingDb = DayProcessingDb(inMemoryDatabase: true);
@@ -72,7 +65,7 @@ void main() {
     'per-action cost across 1, 6 and 12 simulated months',
     () async {
       final reports = <String, Map<String, int>>{};
-      for (final entry in _corpora.entries) {
+      for (final entry in dayPlannerBenchmarkCorpora.entries) {
         reports[entry.key] = await _runCorpus(entry.value);
       }
 
@@ -83,7 +76,10 @@ void main() {
         ..writeln()
         ..writeln('Day planner cost by simulated install age (microseconds)')
         ..writeln();
-      final header = ['metric', ..._corpora.keys].join(' | ');
+      final header = [
+        'metric',
+        ...dayPlannerBenchmarkCorpora.keys,
+      ].join(' | ');
       buffer
         ..writeln(header)
         ..writeln('-' * header.length);
@@ -91,7 +87,8 @@ void main() {
         buffer.writeln(
           [
             metric,
-            for (final label in _corpora.keys) '${reports[label]![metric]}',
+            for (final label in dayPlannerBenchmarkCorpora.keys)
+              '${reports[label]![metric]}',
           ].join(' | '),
         );
       }

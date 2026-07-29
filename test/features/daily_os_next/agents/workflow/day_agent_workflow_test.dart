@@ -174,6 +174,8 @@ void main() {
     MockDayAgentDirectiveService? directiveService,
     TaskDependencyResolver? dependencyResolver,
     DayAudioEntryContextService? dayAudioEntryContextService,
+    DayAgentOutputTokenBudgetPolicy outputTokenBudgets =
+        const DayAgentOutputTokenBudgetPolicy(),
   }) {
     return DayAgentWorkflow(
       agentRepository: repository,
@@ -190,6 +192,7 @@ void main() {
       directiveService: directiveService,
       dependencyResolver: dependencyResolver,
       dayAudioEntryContextService: dayAudioEntryContextService,
+      outputTokenBudgets: outputTokenBudgets,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
@@ -2042,6 +2045,132 @@ void main() {
         );
       }
 
+      test('uses the configured digest output ceiling', () async {
+        final result = await executeDigest(
+          workflow(
+            directiveService: directiveService,
+            outputTokenBudgets: const DayAgentOutputTokenBudgetPolicy(
+              digest: 2304,
+            ),
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        final inferenceRepo =
+            conversationRepository.sendMessageCalls.single.inferenceRepo;
+        expect(inferenceRepo, isA<DayAgentTimeoutInferenceRepository>());
+        final timeoutRepo = inferenceRepo as DayAgentTimeoutInferenceRepository;
+        expect(timeoutRepo.wakeKind, DayAgentWakeKind.digest);
+        expect(timeoutRepo.timeout, const Duration(seconds: 60));
+        expect(
+          timeoutRepo.delegate,
+          isA<DayAgentOutputBudgetInferenceRepository>(),
+        );
+        final outputBudget =
+            timeoutRepo.delegate as DayAgentOutputBudgetInferenceRepository;
+        expect(outputBudget.wakeKind, DayAgentWakeKind.digest);
+        expect(outputBudget.maxCompletionTokens, 2304);
+      });
+
+      test('re-arms the next digest when provider execution fails', () async {
+        conversationRepository.errorToThrow = Exception('model failed');
+
+        final result = await executeDigest(
+          workflow(directiveService: directiveService),
+        );
+
+        expect(result.success, isFalse);
+        final rearmed = upsertedEntities
+            .whereType<ScheduledWakeEntity>()
+            .single;
+        expect(rearmed.workspaceKey, coordinatorDigestWorkspaceKey);
+        expect(rearmed.status, ScheduledWakeStatus.pending);
+        expect(rearmed.scheduledAt, DateTime(2026, 5, 26, 6));
+        expect(
+          rearmed.triggerTokens,
+          [dayAgentDigestToken('dayplan-2026-05-26')],
+        );
+      });
+
+      test(
+        're-arms the next digest when provider resolution fails early',
+        () async {
+          when(
+            () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => const []);
+
+          final result = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, 'No inference provider configured');
+          final rearmed = upsertedEntities
+              .whereType<ScheduledWakeEntity>()
+              .single;
+          expect(rearmed.workspaceKey, coordinatorDigestWorkspaceKey);
+          expect(rearmed.status, ScheduledWakeStatus.pending);
+          expect(rearmed.scheduledAt, DateTime(2026, 5, 26, 6));
+          expect(
+            rearmed.triggerTokens,
+            [dayAgentDigestToken('dayplan-2026-05-26')],
+          );
+        },
+      );
+
+      test('re-arms the next digest when setup throws early', () async {
+        when(
+          () => syncService.reconciledAgentState(dailyOsPlannerAgentId),
+        ).thenThrow(StateError('state read failed'));
+
+        await expectLater(
+          executeDigest(workflow(directiveService: directiveService)),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'state read failed',
+            ),
+          ),
+        );
+
+        final rearmed = upsertedEntities
+            .whereType<ScheduledWakeEntity>()
+            .single;
+        expect(rearmed.workspaceKey, coordinatorDigestWorkspaceKey);
+        expect(rearmed.status, ScheduledWakeStatus.pending);
+        expect(rearmed.scheduledAt, DateTime(2026, 5, 26, 6));
+      });
+
+      test('logs when re-arming a failed digest also fails', () async {
+        conversationRepository.errorToThrow = Exception('model failed');
+        when(() => syncService.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final entity =
+              invocation.positionalArguments.single as AgentDomainEntity;
+          if (entity is ScheduledWakeEntity) {
+            throw StateError('wake write failed');
+          }
+          upsertedEntities.add(entity);
+        });
+
+        final result = await executeDigest(
+          workflow(directiveService: directiveService),
+        );
+
+        expect(result.success, isFalse);
+        verify(
+          () => domainLogger.error(
+            any(),
+            any(),
+            message: 'failed to re-arm coordinator digest wake',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+      });
+
       test(
         'renders <digest> with status events, directives, and the digest '
         'rules, then re-arms the next digest',
@@ -2848,8 +2977,16 @@ void main() {
         final bounded = inferenceRepo as DayAgentTimeoutInferenceRepository;
         expect(bounded.wakeKind, DayAgentWakeKind.general);
         expect(bounded.timeout, const Duration(seconds: 60));
-        expect(bounded.delegate, isA<CloudInferenceWrapper>());
-        final wrapper = bounded.delegate as CloudInferenceWrapper;
+        expect(
+          bounded.delegate,
+          isA<DayAgentOutputBudgetInferenceRepository>(),
+        );
+        final outputBudget =
+            bounded.delegate as DayAgentOutputBudgetInferenceRepository;
+        expect(outputBudget.wakeKind, DayAgentWakeKind.general);
+        expect(outputBudget.maxCompletionTokens, 4096);
+        expect(outputBudget.delegate, isA<CloudInferenceWrapper>());
+        final wrapper = outputBudget.delegate as CloudInferenceWrapper;
         // testAiModel defaults to AiConfigModel.geminiThinkingMode == low.
         expect(wrapper.geminiThinkingMode, GeminiThinkingMode.low);
 

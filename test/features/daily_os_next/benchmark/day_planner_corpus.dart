@@ -9,6 +9,13 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 
+/// Shared corpus ages for storage and full-workflow benchmarks.
+const Map<String, int> dayPlannerBenchmarkCorpora = {
+  '1 month': 30,
+  '6 months': 182,
+  '12 months': 365,
+};
+
 /// Synthetic Daily OS history for measuring how per-action cost scales with
 /// install age (`lotti3-hkb.1`).
 ///

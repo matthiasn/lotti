@@ -19,7 +19,7 @@ sources:
   - id: executor
     resource: ../../../lib/features/daily_os_next/services/day_agent_job_executor.dart
     title: DayAgentJobExecutor
-    last_modified: 2026-07-25
+    last_modified: 2026-07-29
   - id: job-wiring
     resource: ../../../lib/features/daily_os_next/state/day_agent_job_wiring.dart
     title: Durable job wake tokens
@@ -158,10 +158,12 @@ sequenceDiagram
   every finalization point.
 - **Defers a refine job behind an in-flight draft** with a short retry rather
   than racing it.
-- Maps the workflow's forced-tool-retry exceptions to `providerBusy` (worth one
-  more attempt) and caps retries (`maxAttempts`, default 5) by downgrading to
-  `deterministic` — because unlike transcription's free backoff, **every agent
-  retry spends model tokens**.
+- Maps the workflow's forced-tool-retry and output-ceiling exceptions to
+  `providerBusy` (worth one more attempt) and caps retries (`maxAttempts`,
+  default 5) by downgrading to `deterministic` — because unlike transcription's
+  free backoff, **every agent retry spends model tokens**. The output wrapper
+  rejects a truncated stream before buffered tool calls execute, so the retry
+  never follows a half-written plan.
 
 Every agent-job wake also carries
 `processing_job:<jobId>@<requestedAtMicros>`. The per-attempt `runKey` remains

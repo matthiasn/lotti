@@ -87,6 +87,7 @@ class DayAgentWorkflow {
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
     this.inferenceTimeouts = const DayAgentInferenceTimeoutPolicy(),
+    this.outputTokenBudgets = const DayAgentOutputTokenBudgetPolicy(),
   });
 
   /// Agent repository.
@@ -155,6 +156,9 @@ class DayAgentWorkflow {
   /// Per-mode provider-stream total deadlines.
   final DayAgentInferenceTimeoutPolicy inferenceTimeouts;
 
+  /// Per-wake-kind provider output ceilings.
+  final DayAgentOutputTokenBudgetPolicy outputTokenBudgets;
+
   static const minScheduledWakeLeadTime = Duration(minutes: 15);
   static const maxScheduledWakeWritesPerDay = 4;
 
@@ -187,6 +191,47 @@ class DayAgentWorkflow {
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
+    final maintainsDigestCadence =
+        agentId == dailyOsPlannerAgentId &&
+        triggerTokens.any((token) => token.startsWith(dayAgentDigestPrefix));
+    var succeeded = false;
+    try {
+      final result = await _execute(
+        agentIdentity: agentIdentity,
+        runKey: runKey,
+        triggerTokens: triggerTokens,
+        threadId: threadId,
+        now: now,
+      );
+      succeeded = result.success;
+      return result;
+    } finally {
+      // A scheduled digest wake is consumed before execution starts. Protect
+      // its next-morning cadence across every failure boundary, including
+      // early validation returns and context/persistence exceptions that
+      // occur before inference setup reaches its own failure handling.
+      if (maintainsDigestCadence && !succeeded) {
+        try {
+          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
+        } catch (scheduleError, stackTrace) {
+          _logError(
+            'failed to re-arm coordinator digest wake',
+            error: scheduleError,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+    }
+  }
+
+  Future<WakeResult> _execute({
+    required AgentIdentityEntity agentIdentity,
+    required String runKey,
+    required Set<String> triggerTokens,
+    required String threadId,
+    required DateTime now,
+  }) async {
+    final agentId = agentIdentity.agentId;
     // The wake acts on the log-reconciled state (PR 4 B6).
     final state = await syncService.reconciledAgentState(agentId);
     if (state == null) {
@@ -384,6 +429,8 @@ class DayAgentWorkflow {
         ? DayAgentWakeKind.draft
         : wakeContext.isRefineWake
         ? DayAgentWakeKind.refine
+        : wakeContext.isDigestWake
+        ? DayAgentWakeKind.digest
         : DayAgentWakeKind.general;
     final systemPrompt = _buildSystemPrompt(
       templateCtx,
@@ -425,6 +472,7 @@ class DayAgentWorkflow {
       memoryView: memoryView,
     );
 
+    DayAgentTimeoutInferenceRepository? inferenceRepo;
     try {
       final strategy = DayAgentStrategy(
         syncService: syncService,
@@ -451,8 +499,13 @@ class DayAgentWorkflow {
         cloudRepository: cloudInferenceRepository,
         geminiThinkingMode: resolvedProfile.thinkingModel?.geminiThinkingMode,
       );
-      final inferenceRepo = DayAgentTimeoutInferenceRepository(
+      final outputBudgetRepo = DayAgentOutputBudgetInferenceRepository(
         delegate: cloudInferenceRepo,
+        wakeKind: wakeKind,
+        maxCompletionTokens: outputTokenBudgets.forKind(wakeKind),
+      );
+      inferenceRepo = DayAgentTimeoutInferenceRepository(
+        delegate: outputBudgetRepo,
         wakeKind: wakeKind,
         timeout: inferenceTimeouts.forKind(wakeKind),
       );
@@ -600,28 +653,7 @@ class DayAgentWorkflow {
             threadId: threadId,
             runKey: runKey,
           );
-          // Deterministic re-arm: the next morning digest is scheduled by
-          // code, not by the model, so a digest that forgets set_next_wake
-          // cannot break the cadence. LWW on the deterministic record id.
-          final next = nextDigestTime(now);
-          await syncService.upsertEntity(
-            AgentDomainEntity.scheduledWake(
-              id: scheduledWakeRecordId(
-                agentId,
-                workspaceKey: coordinatorDigestWorkspaceKey,
-              ),
-              agentId: agentId,
-              scheduledAt: next,
-              status: ScheduledWakeStatus.pending,
-              reason: dayAgentDigestReason,
-              updatedAt: now,
-              vectorClock: null,
-              triggerTokens: [
-                dayAgentDigestToken(dayAgentIdForDate(next)),
-              ],
-              workspaceKey: coordinatorDigestWorkspaceKey,
-            ),
-          );
+          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
         }
       });
       onPersistedStateChanged
@@ -651,7 +683,35 @@ class DayAgentWorkflow {
       }
       return WakeResult(success: false, error: e.toString());
     } finally {
+      await inferenceRepo?.dispose();
       conversationRepository.deleteConversation(conversationId);
     }
+  }
+
+  /// Schedules the coordinator's next morning digest after either success or
+  /// failure, because the current scheduled-wake record is consumed first.
+  Future<void> _scheduleNextCoordinatorDigest({
+    required String agentId,
+    required DateTime now,
+  }) async {
+    final next = nextDigestTime(now);
+    await syncService.upsertEntity(
+      AgentDomainEntity.scheduledWake(
+        id: scheduledWakeRecordId(
+          agentId,
+          workspaceKey: coordinatorDigestWorkspaceKey,
+        ),
+        agentId: agentId,
+        scheduledAt: next,
+        status: ScheduledWakeStatus.pending,
+        reason: dayAgentDigestReason,
+        updatedAt: now,
+        vectorClock: null,
+        triggerTokens: [
+          dayAgentDigestToken(dayAgentIdForDate(next)),
+        ],
+        workspaceKey: coordinatorDigestWorkspaceKey,
+      ),
+    );
   }
 }

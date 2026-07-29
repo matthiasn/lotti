@@ -827,6 +827,7 @@ void main() {
         model: 'm',
         provider: testInferenceProvider(id: 'p', apiKey: 'k'),
         inferenceRepo: inferenceRepo,
+        consumptionWakeRunKey: 'run-a',
       );
       final second = recorder.createConversation(systemMessage: 'system B');
       await recorder.sendMessage(
@@ -835,6 +836,7 @@ void main() {
         model: 'm',
         provider: testInferenceProvider(id: 'p', apiKey: 'k'),
         inferenceRepo: inferenceRepo,
+        consumptionWakeRunKey: 'run-b',
       );
 
       expect(recorder.wakes.map((w) => w.systemPrompt), [
@@ -844,6 +846,10 @@ void main() {
       expect(recorder.wakes.map((w) => w.userMessages), [
         ['user A1'],
         ['user B1'],
+      ]);
+      expect(recorder.wakes.map((w) => w.wakeRunKeys), [
+        ['run-a'],
+        ['run-b'],
       ]);
       expect(
         recorder.wakes.every((w) => !w.forcedRetry),
@@ -873,6 +879,43 @@ void main() {
         'first ask',
         'forced follow-up',
       ]);
+    });
+  });
+
+  group('day-planning message roles', () {
+    test('an untagged continuation keeps the wake primary role', () {
+      final role =
+          [
+            '<capture>Plan one focused block.</capture>',
+            'You must call record_day_directive now.',
+          ].fold<String?>(
+            null,
+            preserveDayPlanningWakeRole,
+          );
+
+      expect(role, 'captureParse');
+    });
+
+    test('a tagged message replaces an initial unclassified role', () {
+      final role =
+          [
+            'Continue.',
+            '<drafting>Build the plan.</drafting>',
+          ].fold<String?>(
+            null,
+            preserveDayPlanningWakeRole,
+          );
+
+      expect(role, 'dayDraft');
+    });
+
+    test('refine wakes have their own usage bucket', () {
+      expect(
+        dayPlanningMessageRole(
+          '<refine>Add the requested break.</refine>',
+        ),
+        'refine',
+      );
     });
   });
 

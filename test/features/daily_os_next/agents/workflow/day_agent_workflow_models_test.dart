@@ -175,6 +175,10 @@ void main() {
         const Duration(seconds: 30),
       );
       expect(
+        policy.forKind(DayAgentWakeKind.digest),
+        const Duration(seconds: 60),
+      );
+      expect(
         policy.forKind(DayAgentWakeKind.general),
         const Duration(seconds: 60),
       );
@@ -230,7 +234,8 @@ void main() {
     });
 
     test(
-      'a provider turn started after the wake deadline fails immediately',
+      'workflow setup before the first provider turn does not consume the '
+      'deadline',
       () {
         fakeAsync((async) {
           var upstreamListened = false;
@@ -260,16 +265,77 @@ void main() {
               .listen((_) {}, onError: errors.add);
           async.flushMicrotasks();
 
+          expect(upstreamListened, isTrue);
+          expect(errors, isEmpty);
+
+          async
+            ..elapse(const Duration(seconds: 29))
+            ..flushMicrotasks();
+          expect(errors, isEmpty);
+
+          async
+            ..elapse(const Duration(seconds: 1))
+            ..flushMicrotasks();
           expect(errors.single, isA<DayAgentInferenceTimedOutException>());
-          expect(
-            upstreamListened,
-            isFalse,
-            reason: 'An expired wake must not start another provider request.',
-          );
           unawaited(source.close());
         });
       },
     );
+
+    test('a later provider turn cannot start after the deadline expires', () {
+      fakeAsync((async) {
+        final first = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+        );
+        var secondListened = false;
+        final second = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+          onListen: () {
+            secondListened = true;
+          },
+        );
+        final errors = <Object>[];
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _SequenceInferenceRepository([
+            first.stream,
+            second.stream,
+          ]),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: const Duration(seconds: 30),
+        );
+
+        repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'qwen3.5-397b-a17b',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+        async
+          ..elapse(const Duration(seconds: 30))
+          ..flushMicrotasks();
+
+        repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'qwen3.5-397b-a17b',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+        async.flushMicrotasks();
+
+        expect(errors, hasLength(2));
+        expect(
+          errors,
+          everyElement(isA<DayAgentInferenceTimedOutException>()),
+        );
+        expect(secondListened, isFalse);
+        unawaited(first.close());
+        unawaited(second.close());
+      });
+    });
 
     test('downstream cancellation cancels the active provider stream', () {
       fakeAsync((async) {
@@ -451,6 +517,344 @@ void main() {
         unawaited(second.close());
       });
     });
+
+    test('disposing the wake cancels its deadline and active provider', () {
+      fakeAsync((async) {
+        var upstreamCancelled = false;
+        final source = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+          onCancel: () {
+            upstreamCancelled = true;
+          },
+        );
+        final errors = <Object>[];
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _StreamInferenceRepository(source.stream),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: const Duration(seconds: 30),
+        );
+
+        repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'qwen3.5-397b-a17b',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+        unawaited(repository.dispose());
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 31))
+          ..flushMicrotasks();
+
+        expect(upstreamCancelled, isTrue);
+        expect(
+          errors,
+          isEmpty,
+          reason: 'Disposal is normal wake teardown, not a timeout failure.',
+        );
+        unawaited(source.close());
+      });
+    });
+
+    test(
+      'a provider stream subscribed after disposal closes without starting',
+      () async {
+        var upstreamListened = false;
+        final source = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+          onListen: () {
+            upstreamListened = true;
+          },
+        );
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _StreamInferenceRepository(source.stream),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: const Duration(seconds: 30),
+        );
+        final stream = repository.generateTextWithMessages(
+          messages: const [],
+          model: 'qwen3.5-397b-a17b',
+          temperature: 0.3,
+          provider: testInferenceProvider(),
+        );
+
+        await repository.dispose();
+
+        final chunks = await stream.toList();
+
+        expect(chunks, isEmpty);
+        expect(
+          upstreamListened,
+          isFalse,
+          reason:
+              'Disposed wake wrappers must not start new provider requests.',
+        );
+        unawaited(source.close());
+      },
+    );
+
+    test('absorbs an upstream error surfaced by timeout cancellation', () {
+      fakeAsync((async) {
+        final source = StreamController<CreateChatCompletionStreamResponse>(
+          sync: true,
+          onCancel: () => Future<void>.error(
+            StateError('detached provider request failed during cancellation'),
+          ),
+        );
+        final errors = <Object>[];
+        final repository = DayAgentTimeoutInferenceRepository(
+          delegate: _StreamInferenceRepository(source.stream),
+          wakeKind: DayAgentWakeKind.draft,
+          timeout: const Duration(seconds: 30),
+        );
+
+        repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'qwen3.5-397b-a17b',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .listen((_) {}, onError: errors.add);
+        async
+          ..elapse(const Duration(seconds: 30))
+          ..flushMicrotasks();
+
+        expect(errors, hasLength(1));
+        expect(errors.single, isA<DayAgentInferenceTimedOutException>());
+        unawaited(source.close());
+      });
+    });
+  });
+
+  group('day-agent output token budget', () {
+    test('uses measured headroom per wake kind', () {
+      const policy = DayAgentOutputTokenBudgetPolicy();
+
+      expect(policy.forKind(DayAgentWakeKind.capture), 4096);
+      expect(policy.forKind(DayAgentWakeKind.draft), 8192);
+      expect(policy.forKind(DayAgentWakeKind.refine), 4096);
+      expect(policy.forKind(DayAgentWakeKind.digest), 4096);
+      expect(policy.forKind(DayAgentWakeKind.general), 4096);
+    });
+
+    test('rejects a non-positive provider ceiling', () {
+      expect(
+        () => DayAgentOutputBudgetInferenceRepository(
+          delegate: const _StreamInferenceRepository(Stream.empty()),
+          wakeKind: DayAgentWakeKind.draft,
+          maxCompletionTokens: 0,
+        ),
+        throwsA(
+          isA<ArgumentError>()
+              .having(
+                (error) => error.invalidValue,
+                'invalidValue',
+                0,
+              )
+              .having(
+                (error) => error.name,
+                'name',
+                'maxCompletionTokens',
+              ),
+        ),
+      );
+    });
+
+    test(
+      'forwards the configured ceiling and preserves a lower caller cap',
+      () async {
+        final delegate = _RecordingInferenceRepository([
+          Stream.value(
+            _textChunk(finishReason: ChatCompletionFinishReason.stop),
+          ),
+          Stream.value(
+            _textChunk(finishReason: ChatCompletionFinishReason.stop),
+          ),
+        ]);
+        final repository = DayAgentOutputBudgetInferenceRepository(
+          delegate: delegate,
+          wakeKind: DayAgentWakeKind.draft,
+          maxCompletionTokens: 8192,
+        );
+
+        await repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'glm-5.2',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .drain<void>();
+        await repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'glm-5.2',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+              maxCompletionTokens: 2048,
+            )
+            .drain<void>();
+
+        expect(delegate.maxCompletionTokens, [8192, 2048]);
+      },
+    );
+
+    test(
+      'a provider length finish becomes a typed retryable failure',
+      () async {
+        final repository = DayAgentOutputBudgetInferenceRepository(
+          delegate: _StreamInferenceRepository(
+            Stream.fromIterable([
+              _textChunk(finishReason: ChatCompletionFinishReason.length),
+              _usageChunk(outputTokens: 4096),
+            ]),
+          ),
+          wakeKind: DayAgentWakeKind.capture,
+          maxCompletionTokens: 4096,
+        );
+
+        await expectLater(
+          repository.generateTextWithMessages(
+            messages: const [],
+            model: 'glm-5.2',
+            temperature: 0.3,
+            provider: testInferenceProvider(),
+          ),
+          emitsInOrder([
+            isA<CreateChatCompletionStreamResponse>(),
+            isA<CreateChatCompletionStreamResponse>(),
+            emitsError(
+              isA<DayAgentOutputLimitExceededException>()
+                  .having(
+                    (error) => error.wakeKind,
+                    'wakeKind',
+                    DayAgentWakeKind.capture,
+                  )
+                  .having(
+                    (error) => error.maxCompletionTokens,
+                    'maxCompletionTokens',
+                    4096,
+                  ),
+            ),
+          ]),
+        );
+      },
+    );
+
+    test(
+      'usage at the ceiling catches providers that omit finish reason',
+      () async {
+        final repository = DayAgentOutputBudgetInferenceRepository(
+          delegate: _StreamInferenceRepository(
+            Stream.fromIterable([
+              _textChunk(finishReason: ChatCompletionFinishReason.stop),
+              _usageChunk(outputTokens: 4096),
+            ]),
+          ),
+          wakeKind: DayAgentWakeKind.refine,
+          maxCompletionTokens: 4096,
+        );
+
+        await expectLater(
+          repository
+              .generateText(
+                prompt: 'refine',
+                model: 'qwen3.5-397b-a17b',
+                temperature: 0.3,
+                systemMessage: null,
+                provider: testInferenceProvider(),
+              )
+              .drain<void>(),
+          throwsA(isA<DayAgentOutputLimitExceededException>()),
+        );
+      },
+    );
+
+    test(
+      'reasoning usage contributes to the provider output ceiling',
+      () async {
+        final repository = DayAgentOutputBudgetInferenceRepository(
+          delegate: _StreamInferenceRepository(
+            Stream.fromIterable([
+              _textChunk(finishReason: ChatCompletionFinishReason.stop),
+              _usageChunk(outputTokens: 3000, reasoningTokens: 1096),
+            ]),
+          ),
+          wakeKind: DayAgentWakeKind.refine,
+          maxCompletionTokens: 4096,
+        );
+
+        await expectLater(
+          repository
+              .generateText(
+                prompt: 'refine',
+                model: 'gemini-2.5-pro',
+                temperature: 0.3,
+                systemMessage: null,
+                provider: testInferenceProvider(),
+              )
+              .drain<void>(),
+          throwsA(isA<DayAgentOutputLimitExceededException>()),
+        );
+      },
+    );
+
+    test(
+      'OpenAI-compatible completion usage does not double-count reasoning',
+      () async {
+        final chunks = [
+          _textChunk(finishReason: ChatCompletionFinishReason.stop),
+          _usageChunk(outputTokens: 3000, reasoningTokens: 1096),
+        ];
+        final repository = DayAgentOutputBudgetInferenceRepository(
+          delegate: _StreamInferenceRepository(Stream.fromIterable(chunks)),
+          wakeKind: DayAgentWakeKind.refine,
+          maxCompletionTokens: 4096,
+        );
+
+        expect(
+          await repository
+              .generateText(
+                prompt: 'refine',
+                model: 'glm-5.2',
+                temperature: 0.3,
+                systemMessage: null,
+                provider: testInferenceProvider(
+                  inferenceProviderType: InferenceProviderType.melious,
+                ),
+              )
+              .toList(),
+          chunks,
+        );
+      },
+    );
+
+    test('a natural response below the ceiling completes normally', () async {
+      final chunks = [
+        _textChunk(finishReason: ChatCompletionFinishReason.stop),
+        _usageChunk(outputTokens: 1200),
+      ];
+      final repository = DayAgentOutputBudgetInferenceRepository(
+        delegate: _StreamInferenceRepository(Stream.fromIterable(chunks)),
+        wakeKind: DayAgentWakeKind.digest,
+        maxCompletionTokens: 4096,
+      );
+
+      expect(
+        await repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'glm-5.2',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .toList(),
+        chunks,
+      );
+    });
   });
 }
 
@@ -461,6 +865,39 @@ CreateChatCompletionStreamResponse _thinkingChunk(String model) =>
       model: model,
       choices: const [],
     );
+
+CreateChatCompletionStreamResponse _textChunk({
+  required ChatCompletionFinishReason finishReason,
+}) => CreateChatCompletionStreamResponse(
+  id: 'text',
+  created: 0,
+  model: 'model',
+  choices: [
+    ChatCompletionStreamResponseChoice(
+      index: 0,
+      delta: const ChatCompletionStreamResponseDelta(content: 'response'),
+      finishReason: finishReason,
+    ),
+  ],
+);
+
+CreateChatCompletionStreamResponse _usageChunk({
+  required int outputTokens,
+  int? reasoningTokens,
+}) => CreateChatCompletionStreamResponse(
+  id: 'usage',
+  created: 0,
+  model: 'model',
+  choices: const [],
+  usage: CompletionUsage(
+    promptTokens: 100,
+    completionTokens: outputTokens,
+    totalTokens: 100 + outputTokens,
+    completionTokensDetails: CompletionTokensDetails(
+      reasoningTokens: reasoningTokens,
+    ),
+  ),
+);
 
 class _StreamInferenceRepository implements InferenceRepositoryInterface {
   const _StreamInferenceRepository(this.stream);
@@ -529,4 +966,44 @@ class _SequenceInferenceRepository implements InferenceRepositoryInterface {
     int? turnIndex,
     InferenceImpactCollector? impactCollector,
   }) => _take();
+}
+
+class _RecordingInferenceRepository implements InferenceRepositoryInterface {
+  _RecordingInferenceRepository(this.streams);
+
+  final List<Stream<CreateChatCompletionStreamResponse>> streams;
+  final List<int?> maxCompletionTokens = [];
+  var _next = 0;
+
+  Stream<CreateChatCompletionStreamResponse> _take(int? limit) {
+    maxCompletionTokens.add(limit);
+    return streams[_next++];
+  }
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateText({
+    required String prompt,
+    required String model,
+    required double temperature,
+    required String? systemMessage,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+  }) => _take(maxCompletionTokens);
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
+    InferenceImpactCollector? impactCollector,
+  }) => _take(maxCompletionTokens);
 }

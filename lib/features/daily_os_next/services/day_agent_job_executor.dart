@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 
 /// Outcome of one [DayAgentJobExecutor] attempt.
@@ -342,12 +343,20 @@ DayProcessingFailureClass classifyDayAgentJobFailure(Object? error) {
   if (error == null) return DayProcessingFailureClass.local;
   if (error is SocketException) return DayProcessingFailureClass.network;
   if (error is TimeoutException) return DayProcessingFailureClass.timeout;
+  if (error is DayAgentOutputLimitExceededException) {
+    return DayProcessingFailureClass.providerBusy;
+  }
   final typeName = error.runtimeType.toString();
   if (typeName == 'MissingCaptureParseException' ||
       typeName == 'MissingDraftDayPlanException') {
     return DayProcessingFailureClass.providerBusy;
   }
   final lower = error.toString().toLowerCase();
+  if (lower.contains(
+    '$DayAgentOutputLimitExceededException'.toLowerCase(),
+  )) {
+    return DayProcessingFailureClass.providerBusy;
+  }
   if (lower.contains('ambiguous') || lower.contains('deleted')) {
     return DayProcessingFailureClass.deterministic;
   }

@@ -62,13 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Unresolved, and Resolved controls on Sync Outbox and Sync Conflicts now use
   the shared design-system chip and count treatments, with consistent selected,
   hover, pressed, light, and dark states.
-- **Daily OS planning now abandons silent AI requests quickly and retries
-  cleanly.** A provider that returned nothing could hold a plan for about two
-  minutes before the app tried again, and a retry could repeat the same
-  overcommit warning. Each draft or refinement now shares one 30-second AI
-  budget across all of its turns, cancels it before late tool calls can land,
-  and keeps each planning step focused on only the instructions and tools it
-  can actually use.
+- **Daily OS planning now gives up on stalled or overlong AI responses
+  sooner.** Cut-off answers no longer save partial plans; planning retries
+  cleanly instead.
 - **Repairing agent sync data has its own place, and runs when it matters.**
   The "Choose what to sync" list mixed two unrelated things: settings to send,
   and a repair for agent items saved without the marker other devices use to
