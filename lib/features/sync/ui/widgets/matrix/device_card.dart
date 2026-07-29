@@ -425,7 +425,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                 if (removalIsPrimary) ...[
                   DesignSystemButton(
                     key: const Key('matrix_remove_device_primary'),
-                    size: DesignSystemButtonSize.large,
+                    tapTargetSize: MaterialTapTargetSize.padded,
                     variant: DesignSystemButtonVariant.danger,
                     isLoading: _busy,
                     onPressed: () => _deleteDevice(context),
@@ -436,14 +436,14 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                     // danger primary the neutral treatment read as Cancel,
                     // and Verify is the *good* way out of this card.
                     DesignSystemButton(
-                      size: DesignSystemButtonSize.large,
+                      tapTargetSize: MaterialTapTargetSize.padded,
                       variant: DesignSystemButtonVariant.constructiveOutlined,
                       onPressed: _busy ? null : () => _verifyDevice(context),
                       label: messages.settingsMatrixVerifyLabel,
                     ),
                 ] else if (canVerify)
                   DesignSystemButton(
-                    size: DesignSystemButtonSize.large,
+                    tapTargetSize: MaterialTapTargetSize.padded,
                     onPressed: _busy ? null : () => _verifyDevice(context),
                     label: messages.settingsMatrixVerifyLabel,
                   ),

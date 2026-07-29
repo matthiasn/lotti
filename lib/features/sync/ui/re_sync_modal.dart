@@ -7,8 +7,9 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
-import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
@@ -214,24 +215,30 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
           style: tokens.typography.styles.subtitle.subtitle2,
         ),
         SizedBox(height: tokens.spacing.step2),
-        DesignSystemCheckbox(
+        DesignSystemSelectionRow(
           key: const Key('reSyncJournalEntitiesCheckbox'),
-          label: messages.maintenanceReSyncJournalEntities,
-          value: _includeJournalEntities,
-          onChanged: (value) {
+          title: messages.maintenanceReSyncJournalEntities,
+          type: DesignSystemSelectionRowType.multiSelect,
+          size: DesignSystemListItemSize.small,
+          selected: _includeJournalEntities,
+          showSelectedBackground: false,
+          onTap: () {
             setState(() {
-              _includeJournalEntities = value ?? false;
+              _includeJournalEntities = !_includeJournalEntities;
               _failed = false;
             });
           },
         ),
-        DesignSystemCheckbox(
+        DesignSystemSelectionRow(
           key: const Key('reSyncAgentEntitiesCheckbox'),
-          label: messages.maintenanceReSyncAgentEntities,
-          value: _includeAgentEntities,
-          onChanged: (value) {
+          title: messages.maintenanceReSyncAgentEntities,
+          type: DesignSystemSelectionRowType.multiSelect,
+          size: DesignSystemListItemSize.small,
+          selected: _includeAgentEntities,
+          showSelectedBackground: false,
+          onTap: () {
             setState(() {
-              _includeAgentEntities = value ?? false;
+              _includeAgentEntities = !_includeAgentEntities;
               _failed = false;
             });
           },

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
@@ -39,29 +38,25 @@ class SyncModal extends ConsumerWidget {
       confirmLabel: context.messages.syncEntitiesConfirm,
       isDestructive: false,
       closeOnComplete: false,
+      actionButtonSize: DesignSystemButtonSize.medium,
       confirmationContent: ValueListenableBuilder<Set<SyncStep>>(
         valueListenable: selectedStepsNotifier,
         builder: (context, selectedSteps, _) {
           return Column(
             mainAxisSize: MainAxisSize.min,
-            // DesignSystemCheckbox is an intrinsic-width Row, so a centered
-            // column leaves every box at a different x depending on how long
-            // its label is — which reads as arbitrary indentation rather than
-            // a list.
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: context.designTokens.spacing.step2,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               for (final step in orderedSteps)
-                DesignSystemCheckbox(
-                  value: selectedSteps.contains(step),
-                  label: _getStepName(context, step),
-                  onChanged: (value) {
+                DesignSystemSelectionRow(
+                  title: _getStepName(context, step),
+                  type: DesignSystemSelectionRowType.multiSelect,
+                  selected: selectedSteps.contains(step),
+                  showSelectedBackground: false,
+                  onTap: () {
                     final updated = Set<SyncStep>.from(
                       selectedStepsNotifier.value,
                     );
-                    if (value ?? false) {
-                      updated.add(step);
-                    } else {
+                    if (!updated.add(step)) {
                       updated.remove(step);
                     }
                     selectedStepsNotifier.value = updated;

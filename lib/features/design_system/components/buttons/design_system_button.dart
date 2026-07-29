@@ -48,7 +48,10 @@ enum DesignSystemButtonVisualState {
 /// widgetbook/tests; [fullWidth] stretches it to the parent width. When
 /// [isLoading] is true the button keeps its branded colour but stops
 /// responding to taps and swaps its leading glyph for a spinner. Asserts that
-/// an icon-only button still supplies a [semanticsLabel].
+/// an icon-only button still supplies a [semanticsLabel]. [tapTargetSize]
+/// decouples the visible pill from its pointer target: `padded` keeps the
+/// visual size but centers it in a 48dp interaction slot, while `shrinkWrap`
+/// preserves the compact layout for callers that do not own that space.
 class DesignSystemButton extends StatefulWidget {
   const DesignSystemButton({
     required this.label,
@@ -62,6 +65,7 @@ class DesignSystemButton extends StatefulWidget {
     this.fullWidth = false,
     this.isLoading = false,
     this.alignsLabelToLeadingEdge = false,
+    this.tapTargetSize = MaterialTapTargetSize.shrinkWrap,
     super.key,
   }) : assert(
          label != '' || semanticsLabel != null,
@@ -76,6 +80,7 @@ class DesignSystemButton extends StatefulWidget {
   final IconData? trailingIcon;
   final String? semanticsLabel;
   final DesignSystemButtonVisualState? forcedState;
+  final MaterialTapTargetSize tapTargetSize;
 
   /// When true, the button shows a spinner in place of its leading glyph and
   /// ignores taps, while keeping the enabled (branded) styling — the standard
@@ -106,6 +111,7 @@ class DesignSystemButton extends StatefulWidget {
 class _DesignSystemButtonState extends State<DesignSystemButton> {
   bool _hovered = false;
   bool _pressed = false;
+  bool _focused = false;
 
   @override
   void didUpdateWidget(covariant DesignSystemButton oldWidget) {
@@ -119,6 +125,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
     if (interactionModeChanged) {
       _hovered = false;
       _pressed = false;
+      _focused = false;
     }
   }
 
@@ -145,61 +152,86 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
           : BorderSide.none,
     );
 
+    final visualButton = Ink(
+      decoration: ShapeDecoration(
+        color: variantSpec.backgroundColor ?? Colors.transparent,
+        shape: buttonShape,
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: sizeSpec.horizontalPadding,
+          vertical: sizeSpec.verticalPadding,
+        ),
+        child: DefaultTextStyle.merge(
+          style: sizeSpec.labelStyle.copyWith(
+            color: variantSpec.foregroundColor,
+          ),
+          child: IconTheme.merge(
+            data: IconThemeData(
+              color: variantSpec.foregroundColor,
+              size: sizeSpec.iconSize,
+            ),
+            child: widget.fullWidth
+                ? Center(
+                    child: _ButtonContent(
+                      label: widget.label,
+                      leadingIcon: widget.leadingIcon,
+                      trailingIcon: widget.trailingIcon,
+                      gap: sizeSpec.itemGap,
+                      isLoading: widget.isLoading,
+                    ),
+                  )
+                : _ButtonContent(
+                    label: widget.label,
+                    leadingIcon: widget.leadingIcon,
+                    trailingIcon: widget.trailingIcon,
+                    gap: sizeSpec.itemGap,
+                    isLoading: widget.isLoading,
+                  ),
+          ),
+        ),
+      ),
+    );
+    final targetChild = widget.tapTargetSize == MaterialTapTargetSize.padded
+        ? ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: TapTargets.minimum,
+              minHeight: TapTargets.minimum,
+            ),
+            child: Center(
+              widthFactor: widget.fullWidth ? null : 1,
+              heightFactor: 1,
+              child: visualButton,
+            ),
+          )
+        : visualButton;
     final button = Material(
       color: Colors.transparent,
-      child: Ink(
-        decoration: ShapeDecoration(
-          color: variantSpec.backgroundColor ?? Colors.transparent,
-          shape: buttonShape,
-        ),
+      child: Semantics(
+        container: true,
+        button: true,
+        label: widget.semanticsLabel ?? widget.label,
+        enabled: interactable,
+        onTap: interactable ? widget.onPressed : null,
         child: InkWell(
+          excludeFromSemantics: true,
           borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
+          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+          splashColor: Colors.transparent,
+          hoverColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          focusColor: Colors.transparent,
           onTap: interactable ? widget.onPressed : null,
           onHover: widget.forcedState == null && interactable
               ? (value) => setState(() => _hovered = value)
               : null,
+          onFocusChange: widget.forcedState == null && interactable
+              ? (value) => setState(() => _focused = value)
+              : null,
           onHighlightChanged: widget.forcedState == null && interactable
               ? (value) => setState(() => _pressed = value)
               : null,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: sizeSpec.horizontalPadding,
-              vertical: sizeSpec.verticalPadding,
-            ),
-            child: DefaultTextStyle.merge(
-              style: sizeSpec.labelStyle.copyWith(
-                color: variantSpec.foregroundColor,
-              ),
-              child: IconTheme.merge(
-                data: IconThemeData(
-                  color: variantSpec.foregroundColor,
-                  size: sizeSpec.iconSize,
-                ),
-                child: Semantics(
-                  button: true,
-                  label: widget.semanticsLabel,
-                  enabled: interactable,
-                  child: widget.fullWidth
-                      ? Center(
-                          child: _ButtonContent(
-                            label: widget.label,
-                            leadingIcon: widget.leadingIcon,
-                            trailingIcon: widget.trailingIcon,
-                            gap: sizeSpec.itemGap,
-                            isLoading: widget.isLoading,
-                          ),
-                        )
-                      : _ButtonContent(
-                          label: widget.label,
-                          leadingIcon: widget.leadingIcon,
-                          trailingIcon: widget.trailingIcon,
-                          gap: sizeSpec.itemGap,
-                          isLoading: widget.isLoading,
-                        ),
-                ),
-              ),
-            ),
-          ),
+          child: ExcludeSemantics(child: targetChild),
         ),
       ),
     );
@@ -225,7 +257,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
     if (_pressed) {
       return DesignSystemButtonVisualState.pressed;
     }
-    if (_hovered) {
+    if (_hovered || _focused) {
       return DesignSystemButtonVisualState.hover;
     }
     return DesignSystemButtonVisualState.idle;

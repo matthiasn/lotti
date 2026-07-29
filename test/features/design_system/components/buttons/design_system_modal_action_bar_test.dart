@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -23,7 +24,7 @@ void main() {
 
   Future<void> pumpBar(
     WidgetTester tester,
-    DesignSystemModalActionBar bar, {
+    Widget bar, {
     double width = 600,
     double textScale = 1,
   }) {
@@ -221,7 +222,43 @@ void main() {
   );
 
   testWidgets(
-    'compact layout stacks a full-width primary when width is narrow',
+    'compact layout keeps short phone actions on one row when they fit',
+    (tester) async {
+      await pumpBar(
+        tester,
+        DesignSystemModalActionBar(
+          layout: DesignSystemModalActionBarLayout.compactPrimary,
+          secondary: [
+            DesignSystemButton(
+              label: 'Cancel',
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.medium,
+              tapTargetSize: MaterialTapTargetSize.padded,
+              onPressed: () {},
+            ),
+          ],
+          primary: DesignSystemButton(
+            label: 'Start sync',
+            size: DesignSystemButtonSize.medium,
+            fullWidth: true,
+            tapTargetSize: MaterialTapTargetSize.padded,
+            onPressed: () {},
+          ),
+        ),
+        width: 310,
+      );
+      await tester.pump();
+
+      final cancel = find.widgetWithText(DesignSystemButton, 'Cancel');
+      final start = find.widgetWithText(DesignSystemButton, 'Start sync');
+      expect(tester.getCenter(start).dy, tester.getCenter(cancel).dy);
+      expect(tester.getSize(start).width, lessThan(200));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact layout wraps intrinsic actions when labels do not fit',
     (tester) async {
       await pumpBar(
         tester,
@@ -253,10 +290,181 @@ void main() {
       final applyWidth = tester
           .getSize(find.widgetWithText(DesignSystemButton, 'Apply'))
           .width;
+      final barRect = tester.getRect(find.byType(DesignSystemModalActionBar));
+      final clearRect = tester.getRect(
+        find.widgetWithText(DesignSystemButton, 'Long clear action'),
+      );
+      final saveRect = tester.getRect(
+        find.widgetWithText(DesignSystemButton, 'Long save action'),
+      );
+      final applyRect = tester.getRect(
+        find.widgetWithText(DesignSystemButton, 'Apply'),
+      );
 
       expect(applyCenter.dy, greaterThan(clearCenter.dy));
       expect(applyCenter.dy, greaterThan(saveCenter.dy));
-      expect(applyWidth, 320);
+      expect(clearRect.left, closeTo(barRect.left, 0.1));
+      expect(saveRect.left, closeTo(barRect.left, 0.1));
+      expect(applyRect.right, closeTo(barRect.right, 0.1));
+      expect(applyWidth, lessThan(320));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact layout bounds an overlong action to the available width',
+    (tester) async {
+      await pumpBar(
+        tester,
+        DesignSystemModalActionBar(
+          layout: DesignSystemModalActionBarLayout.compactPrimary,
+          secondary: [
+            secondaryBtn(
+              'A translated secondary action that cannot fit intrinsically',
+            ),
+          ],
+          primary: DesignSystemButton(
+            label: 'A translated primary action that cannot fit intrinsically',
+            fullWidth: true,
+            onPressed: () {},
+          ),
+        ),
+        width: 160,
+      );
+      await tester.pump();
+
+      final primary = find.widgetWithText(
+        DesignSystemButton,
+        'A translated primary action that cannot fit intrinsically',
+      );
+      final secondary = find.widgetWithText(
+        DesignSystemButton,
+        'A translated secondary action that cannot fit intrinsically',
+      );
+      expect(tester.getSize(primary).width, 160);
+      expect(tester.getSize(secondary).width, 160);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact layout updates its groups and respects RTL edges',
+    (tester) async {
+      await pumpBar(
+        tester,
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: DesignSystemModalActionBar(
+            layout: DesignSystemModalActionBarLayout.compactPrimary,
+            primary: primaryBtn('Apply'),
+          ),
+        ),
+        width: 320,
+      );
+      await tester.pump();
+
+      await pumpBar(
+        tester,
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: DesignSystemModalActionBar(
+            layout: DesignSystemModalActionBarLayout.compactPrimary,
+            secondary: [secondaryBtn('Clear')],
+            primary: primaryBtn('Apply'),
+          ),
+        ),
+        width: 320,
+      );
+      await tester.pump();
+
+      final barRect = tester.getRect(find.byType(DesignSystemModalActionBar));
+      final clearRect = tester.getRect(
+        find.widgetWithText(DesignSystemButton, 'Clear'),
+      );
+      final applyRect = tester.getRect(
+        find.widgetWithText(DesignSystemButton, 'Apply'),
+      );
+      expect(clearRect.right, closeTo(barRect.right, 0.1));
+      expect(applyRect.left, closeTo(barRect.left, 0.1));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact layout dry size and token gap match rendered geometry',
+    (tester) async {
+      Widget themedBar(double gap) {
+        final tokens = dsTokensLight.copyWith(
+          spacing: dsTokensLight.spacing.copyWith(step3: gap),
+        );
+        return Theme(
+          data: resolveTestTheme().copyWith(
+            extensions: <ThemeExtension<dynamic>>[tokens],
+          ),
+          child: DesignSystemModalActionBar(
+            layout: DesignSystemModalActionBarLayout.compactPrimary,
+            secondary: [
+              secondaryBtn(
+                'A translated secondary action that wraps to its own row',
+              ),
+            ],
+            primary: DesignSystemButton(
+              label: 'A translated primary action that wraps to its own row',
+              fullWidth: true,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+
+      await pumpBar(tester, themedBar(8), width: 160);
+      await tester.pump();
+
+      final flow = find.descendant(
+        of: find.byType(DesignSystemModalActionBar),
+        matching: find.byWidgetPredicate(
+          (widget) => widget.runtimeType.toString() == '_CompactActionFlow',
+        ),
+      );
+      expect(flow, findsOneWidget);
+      final renderBox = tester.renderObject<RenderBox>(flow);
+      const dryConstraints = BoxConstraints(maxWidth: 160);
+      final drySize = renderBox.getDryLayout(dryConstraints);
+
+      List<RenderBox> flowChildren() {
+        final children = <RenderBox>[];
+        renderBox.visitChildren((child) => children.add(child as RenderBox));
+        return children;
+      }
+
+      Rect childRect(RenderBox child) =>
+          child.localToGlobal(Offset.zero) & child.size;
+
+      final children = flowChildren();
+      expect(children, hasLength(2));
+      expect(drySize.width, 160);
+      expect(
+        drySize.height,
+        children
+                .map((child) => child.getDryLayout(dryConstraints).height)
+                .reduce((sum, height) => sum + height) +
+            8,
+      );
+      expect(
+        childRect(children.last).top - childRect(children.first).bottom,
+        8,
+      );
+
+      await pumpBar(tester, themedBar(16), width: 160);
+      await tester.pump();
+
+      expect(tester.renderObject<RenderBox>(flow), same(renderBox));
+      final updatedChildren = flowChildren();
+      expect(
+        childRect(updatedChildren.last).top -
+            childRect(updatedChildren.first).bottom,
+        16,
+      );
       expect(tester.takeException(), isNull);
     },
   );

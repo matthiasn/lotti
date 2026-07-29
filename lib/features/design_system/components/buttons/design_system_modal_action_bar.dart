@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
@@ -9,8 +12,9 @@ enum DesignSystemModalActionBarLayout {
   dominantPrimary,
 
   /// Secondary actions stay grouped at the leading edge while the primary
-  /// keeps its intrinsic width at the trailing edge. The secondary group may
-  /// wrap internally when translations or text scaling need more room.
+  /// keeps its intrinsic width at the trailing edge. The bar stays horizontal
+  /// whenever the rendered labels actually fit and wraps the intrinsic groups
+  /// when they do not.
   compactPrimary,
 }
 
@@ -27,9 +31,9 @@ enum DesignSystemModalActionBarLayout {
 /// to fat-finger when reaching to confirm; secondaries are spaced from each
 /// other by the smaller `spacing.step3`.
 ///
-/// Pass [primary] as a `DesignSystemButton` with `fullWidth: true` (the bar
-/// wraps it in [Expanded], and `fullWidth` keeps its content centred rather
-/// than left-aligned). Each [secondary] is laid out at its intrinsic width.
+/// Pass [primary] as a `DesignSystemButton` with `fullWidth: true` (`fullWidth`
+/// keeps its content centred when dominant or overflow layouts stretch it).
+/// Each [secondary] is laid out at its intrinsic width.
 /// [padding] is applied around the row when provided — sticky action bars pass
 /// their sheet padding here; bars embedded in an existing padded column leave
 /// it null.
@@ -68,18 +72,16 @@ class DesignSystemModalActionBar extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final content = LayoutBuilder(
       builder: (context, constraints) {
+        if (layout == DesignSystemModalActionBarLayout.compactPrimary) {
+          return textScale > 1.3
+              ? _StackedActionLayout(primary: primary, secondary: secondary)
+              : _CompactActionLayout(primary: primary, secondary: secondary);
+        }
         final narrowBreakpoint = secondary.length > 1
             ? tokens.spacing.step13 * 2 + tokens.spacing.step11
             : tokens.spacing.step13 * 2;
         final stacked =
             constraints.maxWidth < narrowBreakpoint || textScale > 1.3;
-        if (layout == DesignSystemModalActionBarLayout.compactPrimary &&
-            !stacked) {
-          return _CompactActionLayout(
-            primary: primary,
-            secondary: secondary,
-          );
-        }
         return stacked
             ? _StackedActionLayout(primary: primary, secondary: secondary)
             : _WideActionLayout(primary: primary, secondary: secondary);
@@ -101,21 +103,181 @@ class _CompactActionLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final spacing = context.designTokens.spacing;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        if (secondary.isNotEmpty)
-          Expanded(
-            child: Wrap(
+    return _CompactActionFlow(
+      spacing: spacing.step3,
+      secondary: secondary.isEmpty
+          ? null
+          : Wrap(
               spacing: spacing.step3,
               runSpacing: spacing.step3,
               children: secondary,
             ),
-          ),
-        if (secondary.isNotEmpty) SizedBox(width: spacing.step3),
-        primary,
-      ],
+      primary: IntrinsicWidth(child: primary),
     );
+  }
+}
+
+/// Keeps secondary actions grouped on the leading edge and the primary action
+/// on the trailing edge, including when the groups need separate rows.
+class _CompactActionFlow extends MultiChildRenderObjectWidget {
+  _CompactActionFlow({
+    required this.spacing,
+    required Widget primary,
+    Widget? secondary,
+  }) : hasSecondary = secondary != null,
+       super(children: [?secondary, primary]);
+
+  final double spacing;
+  final bool hasSecondary;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderCompactActionFlow(
+      spacing: spacing,
+      hasSecondary: hasSecondary,
+      textDirection: Directionality.of(context),
+    );
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderCompactActionFlow renderObject,
+  ) {
+    renderObject
+      ..spacing = spacing
+      ..hasSecondary = hasSecondary
+      ..textDirection = Directionality.of(context);
+  }
+}
+
+class _CompactActionParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderCompactActionFlow extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _CompactActionParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _CompactActionParentData> {
+  _RenderCompactActionFlow({
+    required this._spacing,
+    required this._hasSecondary,
+    required this._textDirection,
+  });
+
+  double get spacing => _spacing;
+  double _spacing;
+
+  set spacing(double value) {
+    if (_spacing == value) return;
+    _spacing = value;
+    markNeedsLayout();
+  }
+
+  bool get hasSecondary => _hasSecondary;
+  bool _hasSecondary;
+
+  set hasSecondary(bool value) {
+    if (_hasSecondary == value) return;
+    _hasSecondary = value;
+    markNeedsLayout();
+  }
+
+  TextDirection get textDirection => _textDirection;
+  TextDirection _textDirection;
+
+  set textDirection(TextDirection value) {
+    if (_textDirection == value) return;
+    _textDirection = value;
+    markNeedsLayout();
+  }
+
+  RenderBox? get _secondary => hasSecondary ? firstChild : null;
+  RenderBox get _primary => lastChild!;
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _CompactActionParentData) {
+      child.parentData = _CompactActionParentData();
+    }
+  }
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    final childConstraints = constraints.loosen();
+    return _flowSize(
+      constraints: constraints,
+      secondarySize: _secondary?.getDryLayout(childConstraints),
+      primarySize: _primary.getDryLayout(childConstraints),
+    );
+  }
+
+  @override
+  void performLayout() {
+    final childConstraints = constraints.loosen();
+    final secondary = _secondary;
+    secondary?.layout(childConstraints, parentUsesSize: true);
+    final primary = _primary..layout(childConstraints, parentUsesSize: true);
+    final secondarySize = secondary?.size;
+    final primarySize = primary.size;
+    size = _flowSize(
+      constraints: constraints,
+      secondarySize: secondarySize,
+      primarySize: primarySize,
+    );
+
+    final gap = secondarySize == null ? 0.0 : spacing;
+    final combinedWidth = (secondarySize?.width ?? 0) + gap + primarySize.width;
+    final wraps = combinedWidth > size.width;
+
+    if (secondary != null && secondarySize != null) {
+      (secondary.parentData! as _CompactActionParentData).offset = Offset(
+        _leadingOffset(size.width, secondarySize.width),
+        wraps ? 0 : (size.height - secondarySize.height) / 2,
+      );
+    }
+
+    (primary.parentData! as _CompactActionParentData).offset = Offset(
+      _trailingOffset(size.width, primarySize.width),
+      wraps
+          ? (secondarySize?.height ?? 0) + gap
+          : (size.height - primarySize.height) / 2,
+    );
+  }
+
+  Size _flowSize({
+    required BoxConstraints constraints,
+    required Size? secondarySize,
+    required Size primarySize,
+  }) {
+    final gap = secondarySize == null ? 0.0 : spacing;
+    final combinedWidth = (secondarySize?.width ?? 0) + gap + primarySize.width;
+    final availableWidth = constraints.hasBoundedWidth
+        ? constraints.maxWidth
+        : combinedWidth;
+    final wraps = combinedWidth > availableWidth;
+    final height = wraps
+        ? (secondarySize?.height ?? 0) + gap + primarySize.height
+        : (secondarySize == null
+              ? primarySize.height
+              : math.max(secondarySize.height, primarySize.height));
+    return constraints.constrain(Size(availableWidth, height));
+  }
+
+  double _leadingOffset(double width, double childWidth) {
+    return textDirection == TextDirection.ltr ? 0 : width - childWidth;
+  }
+
+  double _trailingOffset(double width, double childWidth) {
+    return textDirection == TextDirection.ltr ? width - childWidth : 0;
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    defaultPaint(context, offset);
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    return defaultHitTestChildren(result, position: position);
   }
 }
 

@@ -99,36 +99,30 @@ class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
         onHighlightChanged: widget.forcedState == null && enabled
             ? (value) => setState(() => _pressed = value)
             : null,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: sizeSpec.horizontalPadding,
-            vertical: sizeSpec.verticalPadding,
-          ),
-          child: MergeSemantics(
-            child: Semantics(
-              checked: widget.value == true,
-              mixed: widget.value == null,
-              enabled: enabled,
-              label: widget.semanticsLabel ?? widget.label,
-              onTap: enabled ? _handleTap : null,
-              child: DefaultTextStyle.merge(
-                style: sizeSpec.labelStyle.copyWith(
-                  color: styleSpec.labelColor,
-                ),
-                child: _CheckboxContent(
-                  label: widget.label,
-                  labelMaxLines: widget.labelMaxLines,
-                  gap: sizeSpec.itemGap,
-                  boxSize: sizeSpec.checkboxSize,
-                  borderRadius: sizeSpec.cornerRadius,
-                  fillColor: styleSpec.backgroundColor,
-                  borderColor: styleSpec.borderColor,
-                  glyphColor: glyphColor,
-                  glyphSize: sizeSpec.glyphSize,
-                  glyphStrokeWidth: sizeSpec.glyphStrokeWidth,
-                  showGlyph: widget.value != false || showTransientGlyph,
-                  value: widget.value,
-                ),
+        child: MergeSemantics(
+          child: Semantics(
+            checked: widget.value == true,
+            mixed: widget.value == null,
+            enabled: enabled,
+            label: widget.semanticsLabel ?? widget.label,
+            onTap: enabled ? _handleTap : null,
+            child: DefaultTextStyle.merge(
+              style: sizeSpec.labelStyle.copyWith(
+                color: styleSpec.labelColor,
+              ),
+              child: _CheckboxContent(
+                label: widget.label,
+                labelMaxLines: widget.labelMaxLines,
+                gap: sizeSpec.itemGap,
+                boxSize: sizeSpec.checkboxSize,
+                borderRadius: sizeSpec.cornerRadius,
+                fillColor: styleSpec.backgroundColor,
+                borderColor: styleSpec.borderColor,
+                glyphColor: glyphColor,
+                glyphSize: sizeSpec.glyphSize,
+                glyphStrokeWidth: sizeSpec.glyphStrokeWidth,
+                showGlyph: widget.value != false || showTransientGlyph,
+                value: widget.value,
               ),
             ),
           ),
@@ -254,25 +248,20 @@ class _CheckboxSizeSpec {
     required this.checkboxSize,
     required this.glyphSize,
     required this.glyphStrokeWidth,
-    required this.horizontalPadding,
-    required this.verticalPadding,
     required this.itemGap,
     required this.cornerRadius,
     required this.labelStyle,
   });
 
   factory _CheckboxSizeSpec.fromTokens(DsTokens tokens) {
-    final checkboxSize =
-        tokens.typography.lineHeight.caption + tokens.spacing.step2;
-    final glyphStrokeWidth = tokens.spacing.step1;
+    const checkboxSize = ControlSizes.checkbox;
+    const glyphStrokeWidth = BorderWidths.emphasis;
     final glyphSize = checkboxSize - (tokens.spacing.step1 * 2);
 
     return _CheckboxSizeSpec(
       checkboxSize: checkboxSize,
       glyphSize: glyphSize,
       glyphStrokeWidth: glyphStrokeWidth,
-      horizontalPadding: tokens.spacing.step1,
-      verticalPadding: tokens.spacing.step1,
       itemGap: tokens.spacing.step2,
       cornerRadius: tokens.radii.xs,
       labelStyle: tokens.typography.styles.body.bodySmall,
@@ -282,8 +271,6 @@ class _CheckboxSizeSpec {
   final double checkboxSize;
   final double glyphSize;
   final double glyphStrokeWidth;
-  final double horizontalPadding;
-  final double verticalPadding;
   final double itemGap;
   final double cornerRadius;
   final TextStyle labelStyle;

@@ -64,6 +64,33 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets(
+    'multi selection can rely on its checkbox without tinting the row',
+    (tester) async {
+      await _pump(
+        tester,
+        DesignSystemSelectionRow(
+          key: const Key('untinted-multi-row'),
+          title: 'Labels',
+          type: DesignSystemSelectionRowType.multiSelect,
+          selected: true,
+          showSelectedBackground: false,
+          onTap: () {},
+        ),
+      );
+
+      final ink = tester.widget<Ink>(find.byType(Ink));
+      final decoration = ink.decoration! as BoxDecoration;
+      expect(decoration.color, Colors.transparent);
+
+      final semantics = tester.getSemantics(
+        find.byKey(const Key('untinted-multi-row')),
+      );
+      expect(semantics.flagsCollection.isChecked, CheckedState.isTrue);
+      expect(find.byType(DesignSystemCheckbox), findsOneWidget);
+    },
+  );
+
   testWidgets('navigation rows use a chevron and activate as one row', (
     tester,
   ) async {
@@ -148,7 +175,7 @@ void main() {
 
     expect(
       tester.getSize(find.byKey(const Key('iconless-action'))).height,
-      greaterThanOrEqualTo(dsTokensLight.spacing.step9),
+      greaterThanOrEqualTo(TapTargets.minimum),
     );
     await tester.tap(find.byKey(const Key('iconless-action')));
     expect(taps, 1);

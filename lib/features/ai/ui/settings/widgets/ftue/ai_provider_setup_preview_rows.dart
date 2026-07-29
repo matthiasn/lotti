@@ -73,49 +73,76 @@ class _ModelRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Container(
-      padding: EdgeInsets.all(tokens.spacing.step3),
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(
-          color: ticked ? accent.withValues(alpha: 0.32) : Colors.transparent,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DesignSystemCheckbox(
-            value: ticked,
-            onChanged: onChanged,
-            semanticsLabel: model.name,
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          Expanded(
-            child: Column(
+    final capabilityLabels = modelCapabilityLabels(
+      messages: context.messages,
+      isReasoning: model.isReasoningModel,
+      inputModalities: model.inputModalities,
+      outputModalities: model.outputModalities,
+    );
+    void handleTap() => onChanged(!ticked);
+    return Semantics(
+      container: true,
+      label: [
+        model.name,
+        model.providerModelId,
+        ...capabilityLabels,
+      ].join(', '),
+      checked: ticked,
+      enabled: true,
+      onTap: handleTap,
+      child: ExcludeSemantics(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: handleTap,
+          child: Container(
+            padding: EdgeInsets.all(tokens.spacing.step3),
+            decoration: BoxDecoration(
+              color: tokens.colors.background.level02,
+              borderRadius: BorderRadius.circular(tokens.radii.m),
+              border: Border.all(
+                color: ticked
+                    ? accent.withValues(alpha: 0.32)
+                    : Colors.transparent,
+              ),
+            ),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  model.name,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+                DesignSystemCheckbox(
+                  value: ticked,
+                  onChanged: onChanged,
+                  semanticsLabel: model.name,
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        model.name,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
+                      ),
+                      SizedBox(height: tokens.spacing.step1),
+                      Text(
+                        model.providerModelId,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          fontFamily: 'Inconsolata',
+                          color: tokens.colors.text.lowEmphasis,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      SizedBox(height: tokens.spacing.step2),
+                      _ChipRow(labels: capabilityLabels),
+                    ],
                   ),
                 ),
-                SizedBox(height: tokens.spacing.step1),
-                Text(
-                  model.providerModelId,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    fontFamily: 'Inconsolata',
-                    color: tokens.colors.text.lowEmphasis,
-                    letterSpacing: 0,
-                  ),
-                ),
-                SizedBox(height: tokens.spacing.step2),
-                _CapabilityChips(model: model),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -244,24 +271,6 @@ class _SectionHeader extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-class _CapabilityChips extends StatelessWidget {
-  const _CapabilityChips({required this.model});
-
-  final KnownModel model;
-
-  @override
-  Widget build(BuildContext context) {
-    final messages = context.messages;
-    final labels = modelCapabilityLabels(
-      messages: messages,
-      isReasoning: model.isReasoningModel,
-      inputModalities: model.inputModalities,
-      outputModalities: model.outputModalities,
-    );
-    return _ChipRow(labels: labels);
   }
 }
 

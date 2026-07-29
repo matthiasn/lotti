@@ -269,6 +269,7 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
                     key: const Key('sync_devices_add_device'),
                     label: messages.syncAddDeviceAction,
                     leadingIcon: Icons.add_rounded,
+                    tapTargetSize: MaterialTapTargetSize.padded,
                     onPressed: () => unawaited(AddDeviceModal.show(context)),
                   ),
                 ],

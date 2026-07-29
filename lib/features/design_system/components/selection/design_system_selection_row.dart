@@ -40,6 +40,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
     this.leading,
     this.trailing,
     this.selected = false,
+    this.showSelectedBackground = true,
     this.selectedLabel,
     this.semanticLabel,
     this.focusNode,
@@ -68,6 +69,13 @@ class DesignSystemSelectionRow extends StatelessWidget {
 
   final DesignSystemSelectionRowType type;
   final bool selected;
+
+  /// Whether a selected row also receives the selected surface fill.
+  ///
+  /// Keep this false for checkbox lists where the trailing checkbox is the
+  /// intended state indicator and tinting every checked row would merge the
+  /// list into one visual block. Selection semantics are unaffected.
+  final bool showSelectedBackground;
 
   /// Optional visible state label displayed before the selected check.
   final String? selectedLabel;
@@ -102,7 +110,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
       enabled: onTap != null,
       onTap: onTap,
       child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+        constraints: const BoxConstraints(minHeight: TapTargets.minimum),
         child: DesignSystemListItem(
           title: title,
           titleMaxLines: MediaQuery.textScalerOf(context).scale(1) > 1.3
@@ -120,7 +128,8 @@ class DesignSystemSelectionRow extends StatelessWidget {
                 ),
           trailing: trailing,
           trailingExtra: standardTrailing,
-          activated: (isSingle || isMulti) && selected,
+          activated:
+              (isSingle || isMulti) && selected && showSelectedBackground,
           activatedBackgroundColor: tokens.colors.surface.selected,
           onTap: onTap,
           focusNode: focusNode,

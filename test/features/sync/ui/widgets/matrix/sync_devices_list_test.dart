@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
@@ -590,6 +591,19 @@ void main() {
       expect(
         tester.widget<DesignSystemButton>(addDevice).variant,
         DesignSystemButtonVariant.primary,
+      );
+      expect(
+        tester.widget<DesignSystemButton>(addDevice).tapTargetSize,
+        MaterialTapTargetSize.padded,
+      );
+      expect(tester.getSize(addDevice).height, TapTargets.minimum);
+      expect(
+        tester
+            .getSize(
+              find.descendant(of: addDevice, matching: find.byType(Ink)),
+            )
+            .height,
+        lessThan(TapTargets.minimum),
       );
     }
   });

@@ -1,6 +1,7 @@
-import 'dart:ui' show PointerDeviceKind;
+import 'dart:ui' show PointerDeviceKind, SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -91,6 +92,87 @@ void main() {
         dsTokensLight.colors.text.onInteractiveAlert,
       );
     });
+
+    testWidgets(
+      'padded target stays 48dp while the small visual pill stays 36dp',
+      (tester) async {
+        var taps = 0;
+        const buttonKey = Key('padded-small');
+        final semanticsHandle = tester.ensureSemantics();
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemButton(
+              key: buttonKey,
+              label: 'Add item',
+              tapTargetSize: MaterialTapTargetSize.padded,
+              onPressed: () => taps++,
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        final targetRect = tester.getRect(find.byKey(buttonKey));
+        final visualRect = tester.getRect(
+          find.descendant(
+            of: find.byKey(buttonKey),
+            matching: find.byType(Ink),
+          ),
+        );
+        expect(targetRect.height, TapTargets.minimum);
+        expect(
+          visualRect.height,
+          dsTokensLight.typography.lineHeight.subtitle2 +
+              dsTokensLight.spacing.step3 * 2,
+        );
+        expect(visualRect.center, targetRect.center);
+
+        final semantics = tester.getSemantics(
+          find.bySemanticsLabel('Add item'),
+        );
+        expect(semantics.label, 'Add item');
+        expect(semantics.rect.height, TapTargets.minimum);
+        expect(semantics.flagsCollection.isButton, isTrue);
+        expect(
+          semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+          isTrue,
+        );
+
+        await tester.tapAt(Offset(targetRect.center.dx, targetRect.top + 1));
+        await tester.pump();
+        expect(taps, 1);
+        semanticsHandle.dispose();
+      },
+    );
+
+    testWidgets(
+      'default target preserves a tight parent width without fullWidth',
+      (tester) async {
+        const buttonKey = Key('tight-parent-button');
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SizedBox(
+              width: 320,
+              child: DesignSystemButton(
+                key: buttonKey,
+                label: 'Continue',
+                onPressed: _noop,
+              ),
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        final visualRect = tester.getRect(
+          find.descendant(
+            of: find.byKey(buttonKey),
+            matching: find.byType(Ink),
+          ),
+        );
+        expect(visualRect.width, 320);
+      },
+    );
 
     testWidgets('renders the tertiary hover state from tokens', (tester) async {
       const buttonKey = Key('tertiary-hover');
@@ -321,6 +403,7 @@ void main() {
     testWidgets('renders a disabled button as a neutral pill without the brand '
         'hue', (tester) async {
       const buttonKey = Key('danger-disabled');
+      final semanticsHandle = tester.ensureSemantics();
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -377,6 +460,15 @@ void main() {
             .onTap,
         isNull,
       );
+      final semantics = tester.getSemantics(
+        find.bySemanticsLabel('Danger'),
+      );
+      expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(
+        semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+        isFalse,
+      );
+      semanticsHandle.dispose();
     });
 
     testWidgets('renders the large size shell from tokens', (tester) async {
@@ -575,6 +667,31 @@ void main() {
       );
     });
 
+    testWidgets('keyboard focus uses the hover treatment', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemButton(
+            label: 'Focus me',
+            onPressed: _noop,
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      expect(
+        (_buttonInk(tester).decoration! as ShapeDecoration).color,
+        dsTokensLight.colors.interactive.enabled,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      expect(
+        (_buttonInk(tester).decoration! as ShapeDecoration).color,
+        dsTokensLight.colors.interactive.hover,
+      );
+    });
+
     test('asserts when no visible label or semanticsLabel is provided', () {
       expect(
         () => DesignSystemButton(
@@ -610,6 +727,46 @@ void main() {
       final buttonCenter = tester.getCenter(find.byType(DesignSystemButton)).dx;
       final labelCenter = tester.getCenter(find.text('Wide')).dx;
       expect((labelCenter - buttonCenter).abs(), lessThan(1));
+    });
+
+    testWidgets('supports intrinsic-width dialog actions', (tester) async {
+      var taps = 0;
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) {
+              return TextButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text('Confirm'),
+                      actions: [
+                        DesignSystemButton(
+                          label: 'Delete',
+                          onPressed: () => taps++,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                child: const Text('Open'),
+              );
+            },
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final action = find.widgetWithText(DesignSystemButton, 'Delete');
+      expect(tester.getSize(action).width.isFinite, isTrue);
+      await tester.tap(action);
+      expect(taps, 1);
     });
 
     testWidgets('isLoading shows a spinner, stays branded, and ignores taps', (
