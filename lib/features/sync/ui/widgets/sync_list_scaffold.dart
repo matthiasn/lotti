@@ -6,7 +6,6 @@ import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold_widgets.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/settings_header_dimensions.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
 
@@ -18,12 +17,9 @@ class SyncFilterOption<T> {
     required this.labelBuilder,
     required this.predicate,
     this.icon,
-    this.selectedColor,
-    this.selectedForegroundColor,
     this.showCount = true,
     this.hideCountWhenZero = false,
     this.countAccentColor,
-    this.countAccentForegroundColor,
   });
 
   /// Builds the localized label shown in the segmented control.
@@ -35,23 +31,14 @@ class SyncFilterOption<T> {
   /// Optional icon rendered next to the label.
   final IconData? icon;
 
-  /// Optional background color applied when the segment is selected.
-  final Color? selectedColor;
-
-  /// Optional foreground color applied when the segment is selected.
-  final Color? selectedForegroundColor;
-
   /// Whether the numeric badge should be shown for this segment.
   final bool showCount;
 
   /// Whether to suppress the badge when the count resolves to zero.
   final bool hideCountWhenZero;
 
-  /// Optional accent color applied to the count badge when a non-zero total is present.
+  /// Optional accessible text/border color applied to the count pill.
   final Color? countAccentColor;
-
-  /// Optional foreground color used with [countAccentColor].
-  final Color? countAccentForegroundColor;
 }
 
 /// Reusable scaffold for sync-oriented list pages with segmented filters,
@@ -305,20 +292,25 @@ class _SyncListScaffoldState<T, F extends Enum>
         final haveIcons = filterEntries
             .map((e) => e.value.icon != null)
             .toList();
+        final showCounts = filterEntries.map((entry) {
+          final count = counts[entry.key] ?? 0;
+          return entry.value.showCount &&
+              (!entry.value.hideCountWhenZero || count > 0);
+        }).toList();
 
         // Calculate dynamic header height based on actual content.
         final headerHorizontalPadding =
             effectivePadding.start + effectivePadding.end;
-        final headerHeight =
-            SettingsHeaderDimensions.calculateFilterHeaderHeight(
-              context: context,
-              labels: labels,
-              counts: countsList,
-              haveIcons: haveIcons,
-              availableWidth: constraints.maxWidth,
-              horizontalPadding: headerHorizontalPadding,
-              summaryText: summaryText,
-            );
+        final headerHeight = SyncHeaderBottom.calculatePreferredHeight(
+          context: context,
+          labels: labels,
+          counts: countsList,
+          haveIcons: haveIcons,
+          showCounts: showCounts,
+          availableWidth: constraints.maxWidth,
+          horizontalPadding: headerHorizontalPadding,
+          summaryText: summaryText,
+        );
 
         final headerBottom = SyncHeaderBottom<T, F>(
           filters: widget.filters,

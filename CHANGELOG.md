@@ -58,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing when there is nothing on the clipboard to paste.
 
 ### Changed
+- **Sync filters now match the rest of the app.** The Waiting, Failed, Sent,
+  Unresolved, and Resolved controls on Sync Outbox and Sync Conflicts now use
+  the shared design-system chip and count treatments, with consistent selected,
+  hover, pressed, light, and dark states.
 - **Daily OS planning now abandons silent AI requests quickly and retries
   cleanly.** A provider that returned nothing could hold a plan for about two
   minutes before the app tried again, and a retry could repeat the same

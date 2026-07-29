@@ -117,31 +117,21 @@ class _ConflictsPageState extends State<ConflictsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final colors = context.designTokens.colors;
-    // The "diverged" semantic token is the design-system equivalent of the
-    // amber once hard-coded here; its foreground pairs with alert surfaces.
-    final divergedAccent = colors.conflict.diverged.color;
-    final divergedForeground = colors.text.onInteractiveAlert;
     final filters = <_ConflictListFilter, SyncFilterOption<Conflict>>{
       _ConflictListFilter.unresolved: SyncFilterOption<Conflict>(
         labelBuilder: (ctx) => ctx.messages.conflictsUnresolved,
         predicate: (conflict) =>
             _statusFromIndex(conflict.status) == ConflictStatus.unresolved,
         icon: Icons.report_problem_outlined,
-        selectedColor: divergedAccent,
-        selectedForegroundColor: divergedForeground,
         hideCountWhenZero: true,
-        countAccentColor: divergedAccent,
-        countAccentForegroundColor: divergedForeground,
+        countAccentColor: colors.alert.warning.ink,
       ),
       _ConflictListFilter.resolved: SyncFilterOption<Conflict>(
         labelBuilder: (ctx) => ctx.messages.conflictsResolved,
         predicate: (conflict) =>
             _statusFromIndex(conflict.status) == ConflictStatus.resolved,
         icon: Icons.verified_outlined,
-        selectedColor: colorScheme.primary,
-        selectedForegroundColor: colorScheme.onPrimary,
         showCount: false,
       ),
     };
