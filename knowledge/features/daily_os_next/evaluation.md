@@ -725,8 +725,14 @@ instruction survival across capture, selection, drafting and coordination.
 # The storage benchmark
 
 `test/features/daily_os_next/benchmark/` seeds a synthetic corpus at 1, 6 and 12
-simulated months and reports the cost of the operations a user action actually
-triggers. It is opt-in:
+simulated months and measures the operations a user action actually triggers.
+Two lanes use the same corpus:
+
+- the ordinary-CI regression gate compares 1 and 12 months using deterministic
+  SQL statement and returned-row counts; and
+- the opt-in diagnostic sweep reports wall-clock medians at all three ages.
+
+Run the diagnostic sweep with:
 
 ```sh
 fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \
@@ -735,8 +741,16 @@ fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \
 
 The corpus deliberately has the shape a real install has — **a small pending head
 over a large terminal ledger** — because leaving every job pending would measure a
-backlog nobody has and hide the property under test. A smoke test runs
-unconditionally so the harness cannot rot unnoticed.
+backlog nobody has and hide the property under test. The executor-level counter
+sees rows before repository mapping or Dart filtering, so a regression that
+loads broad history and discards it in memory still fails.
+
+The always-on gate's threshold is exactly zero growth. Both corpus sizes expose
+the same current day, pending head, empty pending-diff set and seven-day
+lookback; only terminal history differs. Each operation is one SQL statement,
+returning respectively 1 claim row, 3 capture rows, 6 status rows, 1 ownership
+row, 0 pending diffs and 7 plans. The test failure names the offending metric
+and reports its 1- and 12-month values.
 
 Baseline on a dev machine (median of 9, microseconds; absolute values are
 machine-specific, **the slope is the point**):
@@ -782,10 +796,13 @@ refine, and digest separately:
 - `providerTurns`: provider requests made by the wake.
 
 The benchmark has an always-on two-day schema smoke and shares the storage
-benchmark's opt-in command. A separate always-on integration assertion verifies
-that aged plans and weekly rollups seeded under their production deterministic
-IDs actually reach the model-facing `<recent_days>` and `<recent_weeks>`
-sections:
+benchmark's opt-in command. Its ordinary-CI age gate compares 1 and 12 months
+and requires zero growth in prompt bytes and agent-repository reads for every
+wake: both fixtures expose the same current day and bounded seven-day context,
+so older plans must not enter the prompt or add repository work. A separate
+always-on integration assertion verifies that aged plans and weekly rollups
+seeded under their production deterministic IDs actually reach the model-facing
+`<recent_days>` and `<recent_weeks>` sections:
 
 ```sh
 fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \

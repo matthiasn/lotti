@@ -66,7 +66,10 @@ months: aggregate parse / draft / refine / digest provider requests remain
 agent-repository reads. Refine and digest include their production continuation
 turn. Provider turns are bounded to 4,096 output tokens, except full day drafts
 at 8,192; a truncated tool call is discarded and retried rather than becoming a
-partial plan. The complete baseline and live Melious evidence are in
+partial plan. Ordinary CI compares 1- and 12-month corpora and rejects growth in
+current-day SQL statements, returned rows, wake prompt bytes, or repository
+reads; stopwatch measurements remain an opt-in diagnostic report. The complete
+baseline and live Melious evidence are in
 [day-planning evaluation and benchmarks](../../../knowledge/features/daily_os_next/evaluation.md).
 
 ## How it works

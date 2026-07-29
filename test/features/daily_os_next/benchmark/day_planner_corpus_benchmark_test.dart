@@ -11,9 +11,10 @@ import 'day_planner_corpus.dart';
 ///   test/features/daily_os_next/benchmark/
 /// ```
 ///
-/// Opt-in because seeding twelve simulated months writes tens of thousands of
-/// rows — worth the seconds when you want the numbers, not worth them on every
-/// CI run. The smoke test below always runs so the harness itself cannot rot.
+/// Opt-in because the full timing sweep repeatedly seeds thousands of rows and
+/// runs noisy stopwatch samples — worth the seconds when you want the numbers,
+/// not worth them on every CI run. The deterministic growth gate below always
+/// runs.
 final bool benchmarkEnabled =
     const String.fromEnvironment('LOTTI_BENCHMARK').isNotEmpty ||
     const bool.fromEnvironment('LOTTI_BENCHMARK');
@@ -31,6 +32,46 @@ Future<Map<String, int>> _runCorpus(int days) async {
   );
   await corpus.seed();
   return {...await corpus.counts(), ...await corpus.measure()};
+}
+
+Future<Map<String, int>> _runOperationCorpus(int days) async {
+  final agentDb = AgentDatabase(inMemoryDatabase: true, background: false);
+  final processingDb = DayProcessingDb(
+    inMemoryDatabase: true,
+    background: false,
+  );
+  addTearDown(agentDb.close);
+  addTearDown(processingDb.close);
+
+  final corpus = DayPlannerCorpus(
+    agentDb: agentDb,
+    processingDb: processingDb,
+    days: days,
+  );
+  await corpus.seed();
+  return corpus.operationCosts();
+}
+
+void _expectNoHistoryGrowth({
+  required String metric,
+  required Map<String, int> oneMonth,
+  required Map<String, int> twelveMonths,
+}) {
+  final baseline = oneMonth[metric];
+  final aged = twelveMonths[metric];
+  expect(
+    baseline,
+    isNotNull,
+    reason: '$metric is missing from the 1-month run',
+  );
+  expect(aged, isNotNull, reason: '$metric is missing from the 12-month run');
+  expect(
+    aged,
+    lessThanOrEqualTo(baseline!),
+    reason:
+        '$metric grew with retained history: 1 month=$baseline, '
+        '12 months=$aged',
+  );
 }
 
 void main() {
@@ -60,6 +101,55 @@ void main() {
     expect(result['agentEntities'], 2 * (1 + 3 + 6 + 2));
     expect(result['processingJobs'], 2 * 3);
   });
+
+  test(
+    'current-day storage operations do not grow from 1 to 12 months',
+    () async {
+      final oneMonth = await _runOperationCorpus(
+        dayPlannerBenchmarkCorpora['1 month']!,
+      );
+      final twelveMonths = await _runOperationCorpus(
+        dayPlannerBenchmarkCorpora['12 months']!,
+      );
+
+      expect(oneMonth, {
+        'outbox.claimNext.statements': 1,
+        'outbox.claimNext.rowsReturned': 1,
+        'dayView.captures.statements': 1,
+        'dayView.captures.rowsReturned': DayPlannerCorpus.capturesPerDay,
+        'dayView.statusEvents.statements': 1,
+        'dayView.statusEvents.rowsReturned':
+            DayPlannerCorpus.statusEventsPerDay,
+        'dayView.plannerOwnsDay.statements': 1,
+        'dayView.plannerOwnsDay.rowsReturned': 1,
+        'planEditor.pendingDiffs.statements': 1,
+        'planEditor.pendingDiffs.rowsReturned': 0,
+        'planWriter.lookback.statements': 1,
+        'planWriter.lookback.rowsReturned': 7,
+      });
+
+      // Zero additional statements and rows is the deliberate threshold:
+      // both corpora have the same three captures, six status events, one
+      // ownership row, empty pending-diff set, seven-day lookback and pending
+      // outbox head. Only terminal history grows, so any positive delta means
+      // a user action has started reading or querying retained history.
+      for (final metric in oneMonth.keys) {
+        _expectNoHistoryGrowth(
+          metric: metric,
+          oneMonth: oneMonth,
+          twelveMonths: twelveMonths,
+        );
+      }
+      expect(
+        twelveMonths.keys,
+        unorderedEquals(oneMonth.keys),
+        reason:
+            'The 1-month and 12-month operation reports must cover the '
+            'same metrics.',
+      );
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
 
   test(
     'per-action cost across 1, 6 and 12 simulated months',
@@ -115,7 +205,7 @@ void main() {
         ? false
         : 'Corpus benchmark is opt-in: run with '
               '--dart-define=LOTTI_BENCHMARK=1 (seeding 12 simulated months '
-              'writes tens of thousands of rows).',
+              'writes thousands of rows).',
     timeout: const Timeout(Duration(minutes: 5)),
   );
 }

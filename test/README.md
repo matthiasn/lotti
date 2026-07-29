@@ -7,6 +7,23 @@
 - **Never pass `--coverage` to an ad-hoc `flutter test <file>` run.** It rewrites the shared `coverage/lcov.info` with only that file's data, clobbering a full-suite report someone else may be relying on. Generate coverage only through the `make` targets (`make test` / `make coverage` / `make coverage_standard`), which manage `coverage/` as a unit.
 - Prefer `tester.pump(duration)` over `tester.pumpAndSettle()` (10s default timeout → hangs if an animation never settles). Never pass `pumpAndSettle` a duration > 1s.
 
+## Aged-history cost gates
+
+Daily OS has two ordinary-CI regression tests under
+`test/features/daily_os_next/benchmark/`. They compare identical current-day
+workloads over 1- and 12-month corpora and require zero growth in:
+
+- SQL statements and rows returned for outbox claiming, day-view reads, pending
+  plan diffs and the seven-day plan lookback; and
+- model-facing prompt bytes and agent-repository reads for parse, draft, refine
+  and digest wakes.
+
+These are deterministic operation counts, not stopwatch thresholds. A failure
+names the growing metric and prints both corpus values. The opt-in
+`LOTTI_BENCHMARK=1` sweep remains the place for elapsed-time reports; wall time
+must not become an ordinary-CI assertion because scheduler and cache noise make
+it non-deterministic.
+
 ## Platform-channel calls in widgets (e.g. HapticFeedback)
 
 A widget action that `await`s a `SystemChannels.platform` call — `HapticFeedback.lightImpact()`, clipboard, etc. — never resolves under the test binding unless a mock handler is installed, so any follow-up work after the await (a DB write, a `setState`, a navigation) silently never runs and the test fails in a confusing way. Install a handler in `setUp` **and reset it in `tearDown`**, or it leaks into every later test in the same isolate under the batched (`very_good`) runner:

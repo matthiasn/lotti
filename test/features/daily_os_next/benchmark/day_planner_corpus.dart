@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -227,6 +228,70 @@ class DayPlannerCorpus {
     };
   }
 
+  /// Deterministic SQL work performed by every measured user action.
+  ///
+  /// Unlike elapsed time, statement and returned-row counts are independent of
+  /// CPU scheduling and cache warmth. Counting at Drift's executor boundary
+  /// also catches a repository that loads broad history and filters it in
+  /// Dart: those discarded rows still appear here.
+  Future<Map<String, int>> operationCosts() async {
+    final costs = <String, _SqlOperationCost>{
+      'outbox.claimNext': await _countSqlOperation(
+        processingDb,
+        outbox.claimNext,
+      ),
+      'dayView.captures': await _countSqlOperation(
+        agentDb,
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          dailyOsPlannerAgentId,
+          type: AgentEntityTypes.capture,
+          subtype: currentDayId,
+        ),
+      ),
+      'dayView.statusEvents': await _countSqlOperation(
+        agentDb,
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          dailyOsPlannerAgentId,
+          type: AgentEntityTypes.dayStatusEvent,
+          subtype: currentDayId,
+        ),
+      ),
+      'dayView.plannerOwnsDay': await _countSqlOperation(
+        agentDb,
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          dailyOsPlannerAgentId,
+          type: AgentEntityTypes.capture,
+          subtype: currentDayId,
+          limit: 1,
+        ),
+      ),
+      'planEditor.pendingDiffs': await _countSqlOperation(
+        agentDb,
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          dailyOsPlannerAgentId,
+          type: 'changeSet',
+          subtype: ChangeSetStatus.pending.name,
+        ),
+      ),
+      'planWriter.lookback': await _countSqlOperation(
+        agentDb,
+        () => repository.getEntitiesByAgentIdAndSubtypes(
+          dailyOsPlannerAgentId,
+          type: AgentEntityTypes.dayPlan,
+          subtypes: [
+            for (var offset = 0; offset < 7; offset++) dayPlanId(dayAt(offset)),
+          ],
+        ),
+      ),
+    };
+    return {
+      for (final entry in costs.entries) ...{
+        '${entry.key}.statements': entry.value.statements,
+        '${entry.key}.rowsReturned': entry.value.rowsReturned,
+      },
+    };
+  }
+
   /// Row counts, so a report states how much history produced its numbers.
   Future<Map<String, int>> counts() async {
     final agentRows = await agentDb
@@ -254,5 +319,44 @@ class DayPlannerCorpus {
     }
     samples.sort();
     return samples[samples.length ~/ 2];
+  }
+
+  static Future<_SqlOperationCost> _countSqlOperation(
+    GeneratedDatabase db,
+    Future<Object?> Function() operation,
+  ) async {
+    final interceptor = _SqlOperationCounter();
+    await db.runWithInterceptor(operation, interceptor: interceptor);
+    return _SqlOperationCost(
+      statements: interceptor.statements,
+      rowsReturned: interceptor.rowsReturned,
+    );
+  }
+}
+
+class _SqlOperationCost {
+  const _SqlOperationCost({
+    required this.statements,
+    required this.rowsReturned,
+  });
+
+  final int statements;
+  final int rowsReturned;
+}
+
+class _SqlOperationCounter extends QueryInterceptor {
+  int statements = 0;
+  int rowsReturned = 0;
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) async {
+    statements++;
+    final rows = await executor.runSelect(statement, args);
+    rowsReturned += rows.length;
+    return rows;
   }
 }
