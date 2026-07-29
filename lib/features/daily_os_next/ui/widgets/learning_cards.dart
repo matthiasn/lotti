@@ -149,7 +149,9 @@ class _GentleNudgeCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step4),
-          Row(
+          Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step2,
             children: [
               // Disabled until the day-agent layer wires the
               // accept/decline round-trip; a no-op handler would imply
@@ -172,7 +174,6 @@ class _GentleNudgeCard extends StatelessWidget {
                   context.messages.dailyOsNextDraftingNudgeAccept,
                 ),
               ),
-              SizedBox(width: tokens.spacing.step3),
               TextButton(
                 onPressed: null,
                 style: TextButton.styleFrom(

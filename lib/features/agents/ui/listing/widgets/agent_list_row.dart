@@ -94,22 +94,39 @@ class AgentListRow extends StatelessWidget {
         SizedBox(height: tokens.spacing.step3),
         Row(
           children: [
-            for (var i = 0; i < data.pills.length; i++) ...[
-              if (i > 0) SizedBox(width: tokens.spacing.step3),
-              _Pill(pill: data.pills[i]),
-            ],
-            const Spacer(),
-            if (data.metaRight != null)
-              Text(data.metaRight!, style: monoMetaStyle(tokens, colors)),
-            if (data.trailing != null) ...[
+            Expanded(
+              child: Wrap(
+                spacing: tokens.spacing.step3,
+                runSpacing: tokens.spacing.step2,
+                children: [
+                  for (final pill in data.pills) _Pill(pill: pill),
+                ],
+              ),
+            ),
+            if (data.metaRight != null ||
+                data.trailing != null ||
+                data.onTap != null) ...[
               SizedBox(width: tokens.spacing.step3),
-              data.trailing!(context),
-            ] else if (data.onTap != null) ...[
-              SizedBox(width: tokens.spacing.step3),
-              Icon(
-                Icons.chevron_right,
-                size: 16,
-                color: colors.text.lowEmphasis,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (data.metaRight != null)
+                    Text(
+                      data.metaRight!,
+                      style: monoMetaStyle(tokens, colors),
+                    ),
+                  if (data.trailing != null) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    data.trailing!(context),
+                  ] else if (data.onTap != null) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: colors.text.lowEmphasis,
+                    ),
+                  ],
+                ],
               ),
             ],
           ],
@@ -218,6 +235,8 @@ class _Pill extends StatelessWidget {
       ),
       child: Text(
         pill.label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: tokens.typography.styles.others.caption.copyWith(
           color: fg,
           fontWeight: tokens.typography.weight.semiBold,

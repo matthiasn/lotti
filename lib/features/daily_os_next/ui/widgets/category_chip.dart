@@ -40,10 +40,14 @@ class CategoryChip extends StatelessWidget {
             ),
           ),
           SizedBox(width: tokens.spacing.step2),
-          Text(
-            category.name,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+          Flexible(
+            child: Text(
+              category.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
             ),
           ),
         ],

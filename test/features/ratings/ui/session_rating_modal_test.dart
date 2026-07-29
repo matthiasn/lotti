@@ -37,6 +37,7 @@ void main() {
   Widget buildSubject({
     String catalogId = 'session',
     List<Override> overrides = const [],
+    MediaQueryData? mediaQueryData,
   }) {
     return makeTestableWidgetWithScaffold(
       RatingModal(targetId: testTimeEntryId, catalogId: catalogId),
@@ -44,6 +45,7 @@ void main() {
         ratingRepositoryProvider.overrideWithValue(mockRepository),
         ...overrides,
       ],
+      mediaQueryData: mediaQueryData,
     );
   }
 
@@ -135,6 +137,33 @@ void main() {
 
       expect(find.text('Skip'), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
+    });
+
+    testWidgets('rating form scrolls instead of overflowing iPhone SE', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(320, 568)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(
+            body: RatingModal(targetId: testTimeEntryId),
+          ),
+          overrides: [
+            ratingRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          mediaQueryData: const MediaQueryData(size: Size(320, 568)),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(SingleChildScrollView), findsWidgets);
+      expect(find.text('Rate this session'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('Save button is disabled when not all dimensions are set', (

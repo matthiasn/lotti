@@ -173,6 +173,32 @@ void main() {
   tearDown(() => beamToNamedOverride = null);
 
   group('DayTimeline', () {
+    testWidgets('short viewport prioritizes scrollable timeline over toolbar', (
+      tester,
+    ) async {
+      const size = Size(320, 39);
+      _setView(tester, size);
+
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            width: size.width,
+            height: size.height,
+            child: DayTimeline(
+              draft: _draft(),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+          ),
+          size: size,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(const Key('daily_os_timeline_scroll')), findsOneWidget);
+      expect(find.byIcon(Icons.view_week_outlined), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('renders each block from the draft without band label text', (
       tester,
     ) async {

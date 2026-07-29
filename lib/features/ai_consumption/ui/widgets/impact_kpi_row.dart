@@ -289,17 +289,15 @@ class _DeltaLine extends StatelessWidget {
     final tokens = context.designTokens;
     return Row(
       children: [
-        Flexible(
-          child: InsightsDeltaChip(
-            current: (current * _kDeltaScale).round(),
-            previous: (previous * _kDeltaScale).round(),
-            valence: valence,
-            prominent: prominent,
-          ),
+        InsightsDeltaChip(
+          current: (current * _kDeltaScale).round(),
+          previous: (previous * _kDeltaScale).round(),
+          valence: valence,
+          prominent: prominent,
         ),
         if (previousLabel != null) ...[
           SizedBox(width: tokens.spacing.step2),
-          Flexible(
+          Expanded(
             child: Text(
               context.messages.aiImpactKpiDeltaBaseline(previousLabel!),
               style: tokens.typography.styles.others.caption.copyWith(

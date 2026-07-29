@@ -94,6 +94,47 @@ class _RefineModalContentState extends ConsumerState<RefineModalContent> {
     );
     listenCaptureForRefine(ref, widget.draft);
 
+    final body = Column(
+      children: [
+        if (dailyOsTextScaleOf(context) < kDailyOsHideHeaderScale) ...[
+          // Reserved eyebrow slot mirrors the capture header anatomy
+          // so the headline baseline sits at the same height on
+          // every step.
+          Text(' ', style: calmGreetingStyle(tokens)),
+          SizedBox(height: tokens.spacing.step3),
+          _RefineHeadline(phase: state.phase),
+          SizedBox(height: tokens.spacing.step4),
+        ],
+        Expanded(
+          child: _RefineZone(draft: widget.draft, state: state),
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        Consumer(
+          builder: (context, ref, _) {
+            final (amplitudes, dbfs) = ref.watch(
+              captureControllerProvider.select(
+                (s) => (s.amplitudes, s.dbfs),
+              ),
+            );
+            return VoiceOrbZone(
+              phase: refineOrbPhaseFor(state.phase, capturePhase),
+              caption: _caption(context, state.phase),
+              captionColor: _captionColor(tokens, state.phase),
+              semanticLabel: refineVoiceLabel(context, state.phase),
+              amplitudes: amplitudes,
+              dbfs: dbfs,
+              onTap: () => handleRefineVoiceTap(
+                refineState: state,
+                refineNotifier: notifier,
+                captureNotifier: captureNotifier,
+                planDate: widget.draft.dayDate,
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
@@ -104,45 +145,18 @@ class _RefineModalContentState extends ConsumerState<RefineModalContent> {
             tokens.spacing.step5,
             tokens.spacing.step5,
           ),
-          child: Column(
-            children: [
-              if (dailyOsTextScaleOf(context) < kDailyOsHideHeaderScale) ...[
-                // Reserved eyebrow slot mirrors the capture header anatomy
-                // so the headline baseline sits at the same height on
-                // every step.
-                Text(' ', style: calmGreetingStyle(tokens)),
-                SizedBox(height: tokens.spacing.step3),
-                _RefineHeadline(phase: state.phase),
-                SizedBox(height: tokens.spacing.step4),
-              ],
-              Expanded(
-                child: _RefineZone(draft: widget.draft, state: state),
-              ),
-              SizedBox(height: tokens.spacing.step4),
-              Consumer(
-                builder: (context, ref, _) {
-                  final (amplitudes, dbfs) = ref.watch(
-                    captureControllerProvider.select(
-                      (s) => (s.amplitudes, s.dbfs),
-                    ),
-                  );
-                  return VoiceOrbZone(
-                    phase: refineOrbPhaseFor(state.phase, capturePhase),
-                    caption: _caption(context, state.phase),
-                    captionColor: _captionColor(tokens, state.phase),
-                    semanticLabel: refineVoiceLabel(context, state.phase),
-                    amplitudes: amplitudes,
-                    dbfs: dbfs,
-                    onTap: () => handleRefineVoiceTap(
-                      refineState: state,
-                      refineNotifier: notifier,
-                      captureNotifier: captureNotifier,
-                      planDate: widget.draft.dayDate,
-                    ),
-                  );
-                },
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                reverse: true,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: IntrinsicHeight(child: body),
+                ),
+              );
+            },
           ),
         ),
       ),

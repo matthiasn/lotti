@@ -64,4 +64,35 @@ void main() {
     expect(hasGreySwatch, isTrue);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('long category label fits narrow cards at large text', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(
+          size: Size(320, 568),
+          textScaler: TextScaler.linear(2),
+        ),
+        child: makeTestableWidgetNoScroll(
+          const Scaffold(
+            body: SizedBox(
+              width: 100,
+              child: CategoryChip(
+                category: DayAgentCategory(
+                  id: 'c3',
+                  name: 'Very long category',
+                  colorHex: '#4285F4',
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Very long category'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

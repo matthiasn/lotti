@@ -194,33 +194,36 @@ class _IndicatorDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(total, (index) {
-        final isActive = index == current;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(total, (index) {
+          final isActive = index == current;
 
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutQuart,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: isActive ? 28 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4),
-            color: isActive
-                ? colorScheme.primary
-                : colorScheme.outline.withValues(alpha: 0.3),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.4),
-                      blurRadius: 8,
-                    ),
-                  ]
-                : null,
-          ),
-        );
-      }),
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutQuart,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: isActive ? 28 : 8,
+            height: 8,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: isActive
+                  ? colorScheme.primary
+                  : colorScheme.outline.withValues(alpha: 0.3),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                      ),
+                    ]
+                  : null,
+            ),
+          );
+        }),
+      ),
     );
   }
 }

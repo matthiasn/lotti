@@ -5,6 +5,35 @@ import 'package:lotti/features/whats_new/ui/whats_new_navigation_footer.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
+  testWidgets('two release indicators fit an iPhone SE footer', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(320, 568)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Builder(
+          builder: (context) => NavigationFooter(
+            totalReleases: 2,
+            currentRelease: 1,
+            colorScheme: Theme.of(context).colorScheme,
+            onNavigate: (_) {},
+            onMarkAllSeen: () {},
+          ),
+        ),
+        mediaQueryData: phoneMediaQueryData.copyWith(
+          size: const Size(320, 568),
+        ),
+      ),
+    );
+
+    expect(find.text('Done'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('German skip action fits and marks releases as seen', (
     tester,
   ) async {

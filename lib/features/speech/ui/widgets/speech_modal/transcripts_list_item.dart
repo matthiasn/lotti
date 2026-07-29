@@ -114,13 +114,14 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step1,
             children: [
               Text(
                 dfShorter.format(widget.transcript.created),
                 style: titleStyle,
               ),
-              SizedBox(width: tokens.spacing.step3),
               if (processingTime != null)
                 Text(
                   '⏳${formatMmSs(processingTime)}',

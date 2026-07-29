@@ -171,6 +171,27 @@ void main() {
     expect(find.text('vs May'), findsOneWidget);
   });
 
+  testWidgets('selected delta and baseline fit an iPhone SE width', (
+    tester,
+  ) async {
+    await pumpRow(
+      tester,
+      surface: const Size(320, 568),
+      previousTotals: const ConsumptionMetrics(
+        callCount: 4,
+        totalTokens: 10000,
+        credits: 1,
+        energyKwh: 0.25,
+        carbonGCo2: 200,
+      ),
+      previousLabel: 'May',
+    );
+
+    expect(find.text('+23%'), findsWidgets);
+    expect(find.text('vs May'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('omits the delta when there is no previous period', (
     tester,
   ) async {

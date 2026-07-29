@@ -187,7 +187,7 @@ class _RatingModalState extends ConsumerState<RatingModal> {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Container(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTheme.spacingLarge),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -310,7 +310,7 @@ class _RatingModalState extends ConsumerState<RatingModal> {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Container(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTheme.spacingLarge),
         child: Column(
           mainAxisSize: MainAxisSize.min,

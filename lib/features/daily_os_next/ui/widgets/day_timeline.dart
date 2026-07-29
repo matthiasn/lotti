@@ -268,17 +268,20 @@ class _DayTimelineState extends State<DayTimeline> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final comparisonMode = _comparisonModeForWidth(constraints.maxWidth);
+        final toolbarHeight = tokens.spacing.step9 + tokens.spacing.step3;
+        final showToolbar = constraints.maxHeight >= toolbarHeight;
         return Column(
           children: [
-            _TimelineToolbar(
-              mode: comparisonMode,
-              arrangeMode: _arrangeMode,
-              showHint: widget.showGestureHint,
-              onToggleMode: _toggleComparisonMode,
-              onToggleArrange: widget.onRescheduleBlock == null
-                  ? null
-                  : _toggleArrangeMode,
-            ),
+            if (showToolbar)
+              _TimelineToolbar(
+                mode: comparisonMode,
+                arrangeMode: _arrangeMode,
+                showHint: widget.showGestureHint,
+                onToggleMode: _toggleComparisonMode,
+                onToggleArrange: widget.onRescheduleBlock == null
+                    ? null
+                    : _toggleArrangeMode,
+              ),
             Expanded(
               child: Listener(
                 onPointerDown: _handlePointerDown,

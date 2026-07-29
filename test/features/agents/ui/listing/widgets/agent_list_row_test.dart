@@ -172,6 +172,30 @@ void main() {
       expect(find.text('pill'), findsOneWidget);
     });
 
+    testWidgets('compact metadata wraps without overflowing at phone width', (
+      tester,
+    ) async {
+      await _pumpRow(
+        tester,
+        _row(
+          pills: const [
+            AgentListPill(label: 'pending'),
+            AgentListPill(label: 'scheduled'),
+          ],
+          metaRight: '12:45',
+          onTap: () {},
+        ),
+        // Agent list cards have 280 logical pixels at a 320px viewport,
+        // leaving 248px after the row's horizontal padding.
+        width: 280,
+      );
+
+      expect(find.text('pending'), findsOneWidget);
+      expect(find.text('scheduled'), findsOneWidget);
+      expect(find.text('12:45'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     // Pill-rendering invariant: every label in `pills` must appear in the
     // rendered output, regardless of list length, tone mix, or layout. The
     // repo keeps Glados `.test()` bodies for pure (synchronous) logic only —

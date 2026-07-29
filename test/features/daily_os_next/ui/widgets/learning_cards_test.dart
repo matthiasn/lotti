@@ -110,6 +110,37 @@ void main() {
       expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
     });
 
+    testWidgets('nudge actions wrap without overflowing a narrow card', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              // 294px card width leaves the same 254px action-row width
+              // observed in the 320px day-planning modal.
+              width: 294,
+              child: LearningCardsColumn(cards: [_nudge()]),
+            ),
+          ),
+        ),
+      );
+
+      final messages = tester
+          .element(find.byType(LearningCardsColumn))
+          .messages;
+      expect(
+        find.text(messages.dailyOsNextDraftingNudgeAccept),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextDraftingNudgeDecline),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('mixed list keeps standard + nudge variants distinct', (
       tester,
     ) async {
