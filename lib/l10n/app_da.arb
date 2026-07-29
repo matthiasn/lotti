@@ -837,6 +837,7 @@
   "aiInferenceErrorTimeoutTitle": "Anmodning udløbet",
   "aiInferenceErrorUnknownTitle": "Fejl",
   "aiInternalsTitle": "Agentens interne dele",
+  "aiModelCardDeleteTooltip": "Slet model",
   "aiModelDownloadCloseButton": "Luk",
   "aiModelDownloadDialogDescription": "Lotti downloader {modelName} ind i MLX Audio-cachen og bruger den til lokal talebehandling.",
   "@aiModelDownloadDialogDescription": {

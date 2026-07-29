@@ -2802,6 +2802,12 @@ abstract class AppLocalizations {
   /// **'Agent internals'**
   String get aiInternalsTitle;
 
+  /// No description provided for @aiModelCardDeleteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete model'**
+  String get aiModelCardDeleteTooltip;
+
   /// No description provided for @aiModelDownloadCloseButton.
   ///
   /// In en, this message translates to:

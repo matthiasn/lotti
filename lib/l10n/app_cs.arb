@@ -683,6 +683,7 @@
   "aiInferenceErrorTimeoutTitle": "Požadavek vypršel",
   "aiInferenceErrorUnknownTitle": "Chyba",
   "aiInternalsTitle": "Interní informace agenta",
+  "aiModelCardDeleteTooltip": "Smazat model",
   "aiModelDownloadCloseButton": "Zavřít",
   "aiModelDownloadDialogDescription": "Lotti stáhne {modelName} do cache MLX Audio a použije ho pro lokální zpracování řeči.",
   "@aiModelDownloadDialogDescription": {

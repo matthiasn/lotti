@@ -1556,6 +1556,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiInternalsTitle => 'Componente interne ale agentului';
 
   @override
+  String get aiModelCardDeleteTooltip => 'Ștergeți modelul';
+
+  @override
   String get aiModelDownloadCloseButton => 'Închideți';
 
   @override

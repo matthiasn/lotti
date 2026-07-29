@@ -836,6 +836,7 @@
   "aiInferenceErrorTimeoutTitle": "Solicitação expirou",
   "aiInferenceErrorUnknownTitle": "Erro",
   "aiInternalsTitle": "Internos do agente",
+  "aiModelCardDeleteTooltip": "Excluir modelo",
   "aiModelDownloadCloseButton": "Fechar",
   "aiModelDownloadDialogDescription": "Lotti fará o download de {modelName} no cache de áudio MLX e o usará para processamento de fala local.",
   "@aiModelDownloadDialogDescription": {

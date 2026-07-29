@@ -836,6 +836,7 @@
   "aiInferenceErrorTimeoutTitle": "Verzoek om beëindiging van de termijn",
   "aiInferenceErrorUnknownTitle": "Fout",
   "aiInternalsTitle": "Agent internals",
+  "aiModelCardDeleteTooltip": "Model verwijderen",
   "aiModelDownloadCloseButton": "Sluiten",
   "aiModelDownloadDialogDescription": "Lotti zal downloaden {modelName} in de MLX Audio cache en gebruik het voor lokale spraakverwerking.",
   "@aiModelDownloadDialogDescription": {

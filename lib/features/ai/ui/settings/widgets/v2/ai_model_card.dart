@@ -16,14 +16,15 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// modality labels). For [InferenceProviderType.mlxAudio] models it also
 /// renders a download-status badge and an install / open-progress action.
 /// Tapping the card runs [onTap]; the trailing `⋯` exposes [menuActions]
-/// (hidden when empty). See the ASCII layout sketch at the foot of
-/// `ai_provider_card.dart`.
+/// (hidden when empty), and [onDelete] adds a visible trash action next to
+/// it. See the ASCII layout sketch at the foot of `ai_provider_card.dart`.
 class AiModelCard extends StatelessWidget {
   const AiModelCard({
     required this.model,
     required this.providerType,
     required this.onTap,
     this.menuActions = const [],
+    this.onDelete,
     this.modelDownloadProgress,
     this.onInstallModel,
     super.key,
@@ -41,6 +42,13 @@ class AiModelCard extends StatelessWidget {
 
   final VoidCallback onTap;
   final List<AiCardMenuAction> menuActions;
+
+  /// When non-null, renders a trash icon in the trailing area that invokes
+  /// this callback. A visible affordance rather than a `⋯` menu row because
+  /// the provider detail page wants deletion to be discoverable at a glance —
+  /// callers are expected to confirm before actually deleting.
+  final VoidCallback? onDelete;
+
   final MlxAudioModelDownloadProgress? modelDownloadProgress;
   final VoidCallback? onInstallModel;
 
@@ -122,6 +130,14 @@ class AiModelCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: tokens.spacing.step3),
+              if (onDelete != null)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  color: tokens.colors.alert.error.ink,
+                  tooltip: messages.aiModelCardDeleteTooltip,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onDelete,
+                ),
               AiCardActionMenuButton(actions: menuActions),
             ],
           ),

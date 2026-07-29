@@ -676,6 +676,7 @@
   "aiInferenceErrorTimeoutTitle": "Tiempo de espera agotado",
   "aiInferenceErrorUnknownTitle": "Error",
   "aiInternalsTitle": "Interior del agente",
+  "aiModelCardDeleteTooltip": "Eliminar modelo",
   "aiModelDownloadCloseButton": "Cerrar",
   "aiModelDownloadDialogDescription": "Lotti descargará {modelName} en la caché de MLX Audio y lo usará para procesar voz localmente.",
   "@aiModelDownloadDialogDescription": {

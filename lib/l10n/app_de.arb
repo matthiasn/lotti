@@ -676,6 +676,7 @@
   "aiInferenceErrorTimeoutTitle": "Zeitüberschreitung",
   "aiInferenceErrorUnknownTitle": "Fehler",
   "aiInternalsTitle": "Agent-Internes",
+  "aiModelCardDeleteTooltip": "Modell löschen",
   "aiModelDownloadCloseButton": "Schließen",
   "aiModelDownloadDialogDescription": "Lotti lädt {modelName} in den MLX-Audio-Cache und nutzt es für lokale Sprachverarbeitung.",
   "@aiModelDownloadDialogDescription": {

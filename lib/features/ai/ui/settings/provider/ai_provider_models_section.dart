@@ -14,13 +14,17 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 ///
 /// Lists the provider's configured [models] (with MLX-audio download status
 /// where applicable), an "Add model" affordance ([onAddModel]), and forwards
-/// row taps to [onModelTap] to open the model edit page.
+/// row taps to [onModelTap] to open the model edit page. Each row also carries
+/// a trash action forwarding to [onDeleteModel], so a model can be removed
+/// right here instead of hunting it down on the Models tab — the page is
+/// expected to confirm before deleting.
 class ModelsSection extends StatelessWidget {
   const ModelsSection({
     required this.provider,
     required this.models,
     required this.onAddModel,
     required this.onModelTap,
+    required this.onDeleteModel,
     super.key,
   });
 
@@ -28,6 +32,7 @@ class ModelsSection extends StatelessWidget {
   final List<AiConfigModel> models;
   final VoidCallback onAddModel;
   final ValueChanged<AiConfigModel> onModelTap;
+  final ValueChanged<AiConfigModel> onDeleteModel;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +70,7 @@ class ModelsSection extends StatelessWidget {
                         model: model,
                         providerType: provider.inferenceProviderType,
                         onTap: () => onModelTap(model),
+                        onDelete: () => onDeleteModel(model),
                         modelDownloadProgress: progress,
                         onInstallModel:
                             provider.inferenceProviderType ==

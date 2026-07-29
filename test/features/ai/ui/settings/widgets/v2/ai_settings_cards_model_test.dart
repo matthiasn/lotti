@@ -39,6 +39,61 @@ void main() {
     );
 
     testWidgets(
+      'renders no delete affordance when onDelete is not provided — the '
+      'Models tab keeps its `⋯`-menu-only trailing area',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            AiModelCard(
+              model: hModel(providerId: 'p1'),
+              providerType: InferenceProviderType.gemini,
+              onTap: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byTooltip('Delete model'), findsNothing);
+        expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'onDelete renders a trash action that fires the callback without '
+      'also triggering the card tap',
+      (tester) async {
+        var deleteTaps = 0;
+        var cardTaps = 0;
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            AiModelCard(
+              model: hModel(providerId: 'p1'),
+              providerType: InferenceProviderType.gemini,
+              onTap: () => cardTaps++,
+              onDelete: () => deleteTaps++,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final trash = find.byTooltip('Delete model');
+        expect(trash, findsOneWidget);
+
+        await tester.tap(trash);
+        await tester.pump();
+
+        expect(deleteTaps, 1);
+        expect(
+          cardTaps,
+          0,
+          reason:
+              'The trash tap must not bubble into the row tap — that '
+              'would open the edit form under the confirmation modal.',
+        );
+      },
+    );
+
+    testWidgets(
       'does NOT render an on/off toggle — tweak 2 explicitly removed it',
       (tester) async {
         await tester.pumpWidget(

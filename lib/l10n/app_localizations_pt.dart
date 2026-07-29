@@ -1546,6 +1546,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiInternalsTitle => 'Internos do agente';
 
   @override
+  String get aiModelCardDeleteTooltip => 'Excluir modelo';
+
+  @override
   String get aiModelDownloadCloseButton => 'Fechar';
 
   @override

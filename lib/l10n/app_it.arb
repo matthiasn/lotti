@@ -837,6 +837,7 @@
   "aiInferenceErrorTimeoutTitle": "Richiesta tempo libero",
   "aiInferenceErrorUnknownTitle": "Errore",
   "aiInternalsTitle": "Agenti interni",
+  "aiModelCardDeleteTooltip": "Cancella modello",
   "aiModelDownloadCloseButton": "Chiudere",
   "aiModelDownloadDialogDescription": "Lotti scaricherà {modelName} nella cache MLX Audio e la userà per l'elaborazione del discorso locale.",
   "@aiModelDownloadDialogDescription": {

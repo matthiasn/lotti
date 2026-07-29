@@ -1544,6 +1544,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiInternalsTitle => 'Interní informace agenta';
 
   @override
+  String get aiModelCardDeleteTooltip => 'Smazat model';
+
+  @override
   String get aiModelDownloadCloseButton => 'Zavřít';
 
   @override
