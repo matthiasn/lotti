@@ -71,6 +71,16 @@ contiguous selected band per option. Checkbox-first lists can set
 `showSelectedBackground: false` when the checkmark is the deliberate sole state
 indicator; checked semantics and the full-row action remain unchanged.
 
+The same rule applies to structural and operational surfaces:
+`DesignSystemProgressBar` owns determinate progress and its visible value,
+`DesignSystemSectionCard` owns grouped page content, and
+`DesignSystemTextInput` owns editable settings fields. The sync maintenance
+progress views, statistics page, and this-device profile are canonical
+adopters: feature code supplies state and copy, while these components supply
+the visual and semantic grammar. `DesignSystemListItem` remains an interactive
+row; rendering a read-only value with no callback puts it into its disabled
+treatment, so static metadata should use token-styled text instead.
+
 ## Below the button tier: `DesignSystemInlineAction`
 
 A caption-tier tappable row for metadata contexts — "skip this one", "change

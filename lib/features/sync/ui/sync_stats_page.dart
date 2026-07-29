@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 // Removed Riverpod dependency here to avoid page-level rebuilds.
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/incoming_stats.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/cards/modern_base_card.dart';
 
 /// Mobile / legacy wrapper. Keeps the `SliverBoxAdapterPage` chrome
 /// + `SyncFeatureGate` and delegates content to [SyncStatsBody] so
@@ -16,12 +16,13 @@ class SyncStatsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return SyncFeatureGate(
       child: SliverBoxAdapterPage(
         title: context.messages.settingsMatrixStatsTitle,
         subtitle: context.messages.settingsSyncStatsSubtitle,
         showBackButton: true,
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(tokens.spacing.step5),
         child: const SyncStatsBody(),
       ),
     );
@@ -36,9 +37,7 @@ class SyncStatsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ModernBaseCard(
-      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      padding: EdgeInsets.all(AppTheme.cardPadding),
+    return const DesignSystemSectionCard(
       child: IncomingStats(),
     );
   }
