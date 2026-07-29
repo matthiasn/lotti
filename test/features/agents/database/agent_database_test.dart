@@ -1771,6 +1771,16 @@ void main() {
           'dayId': '',
           'runtimeType': 'capture',
         });
+        final fallbackSerialized = jsonEncode({
+          'id': 'capture-legacy-fallback',
+          'agentId': 'daily_os_planner',
+          'transcript': 'Legacy note with a stale pre-v17 subtype',
+          'capturedAt': '2026-03-30T12:00:00.000',
+          'createdAt': '2026-03-30T12:00:00.000',
+          'vectorClock': null,
+          'dayId': '',
+          'runtimeType': 'capture',
+        });
 
         rawDb
           ..execute('''
@@ -1803,6 +1813,22 @@ void main() {
               serialized,
             ],
           )
+          ..execute(
+            '''
+              INSERT INTO agent_entities (
+                id, agent_id, type, subtype, created_at, updated_at, serialized
+              ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''',
+            [
+              'capture-legacy-fallback',
+              'daily_os_planner',
+              AgentEntityTypes.capture,
+              'capture-legacy-fallback',
+              '2026-03-30T12:00:00.000',
+              '2026-03-30T12:00:00.000',
+              fallbackSerialized,
+            ],
+          )
           ..execute('PRAGMA user_version = 17')
           ..dispose();
 
@@ -1825,6 +1851,19 @@ void main() {
 
         expect(row.read<String>('subtype'), 'dayplan-2026-03-28');
         expect(migratedJson['dayId'], 'dayplan-2026-03-28');
+
+        final fallbackRow = await db
+            .customSelect(
+              'SELECT subtype, serialized FROM agent_entities '
+              'WHERE id = ?1',
+              variables: [Variable.withString('capture-legacy-fallback')],
+            )
+            .getSingle();
+        final fallbackJson =
+            jsonDecode(fallbackRow.read<String>('serialized'))
+                as Map<String, dynamic>;
+        expect(fallbackRow.read<String>('subtype'), 'dayplan-2026-03-30');
+        expect(fallbackJson['dayId'], 'dayplan-2026-03-30');
       },
     );
   });
