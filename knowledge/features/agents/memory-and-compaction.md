@@ -150,10 +150,12 @@ every day it plans; loading every transcript each wake would be O(all captures
 ever captured). The workflow loads only the active workspace through
 `getCaptureEventMetaForDay`: the capture day is stored in the indexed `subtype`
 column and persisted into legacy captures as a stable `dayId`, so timezone
-changes cannot make runtime day resolution disagree with the index. The query
-projects id plus the two ordering timestamps without the transcript. The
-compactor then pulls full text only for the handful of uncovered-tail captures.
-Folded captures live in the summary prose and are never reloaded.
+changes cannot make runtime day resolution disagree with the index. Local
+writes normalize that stable day before vector-clock stamping, so the database
+row and outbound sync envelope carry the same value. The query projects id plus
+the two ordering timestamps without the transcript. The compactor then pulls
+full text only for the handful of uncovered-tail captures. Folded captures live
+in the summary prose and are never reloaded.
 
 # Compaction folds a prefix, not a snapshot
 

@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart';
-import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_attention_projection.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
@@ -51,19 +50,9 @@ class AgentRepoCore {
     if (entity is CaptureEntity) {
       await _db.transaction(() async {
         final existing = await getEntity(entity.id);
-        final stableDayId = entity.dayId.isNotEmpty
-            ? entity.dayId
-            : existing is CaptureEntity && existing.dayId.isNotEmpty
-            ? existing.dayId
-            : dayAgentIdForDate(entity.capturedAt);
-        final entityToWrite = entity.copyWith(
-          dayId: stableDayId,
-          parseCompletedAt:
-              existing is CaptureEntity &&
-                  existing.parseCompletedAt != null &&
-                  entity.parseCompletedAt == null
-              ? existing.parseCompletedAt
-              : entity.parseCompletedAt,
+        final entityToWrite = AgentRepository.normalizeCaptureForWrite(
+          entity,
+          existing: existing is CaptureEntity ? existing : null,
         );
         await _upsertEntity(entityToWrite);
       });

@@ -249,9 +249,9 @@ class AgentSyncService {
   /// counter through the normal burn path instead of binding it to a payload
   /// that never committed.
   ///
-  /// Local capture rewrites preserve an already persisted `parseCompletedAt`
-  /// before stamping so the database row and emitted sync envelope carry the
-  /// same monotonic completion state.
+  /// Local capture rewrites preserve an already persisted `dayId` and
+  /// `parseCompletedAt` before stamping so the database row and emitted sync
+  /// envelope carry the same monotonic capture state.
   Future<void> _upsertEntityRaw(
     AgentDomainEntity entity, {
     bool fromSync = false,
@@ -272,13 +272,14 @@ class AgentSyncService {
         await _repository.upsertEntity(stamped);
       }
 
-      if (entity is CaptureEntity && entity.parseCompletedAt == null) {
+      if (entity is CaptureEntity &&
+          (entity.dayId.isEmpty || entity.parseCompletedAt == null)) {
         await _repository.runInTransaction(() async {
           final existing = await _repository.getEntity(entity.id);
-          final entityToWrite =
-              existing is CaptureEntity && existing.parseCompletedAt != null
-              ? entity.copyWith(parseCompletedAt: existing.parseCompletedAt)
-              : entity;
+          final entityToWrite = AgentRepository.normalizeCaptureForWrite(
+            entity,
+            existing: existing is CaptureEntity ? existing : null,
+          );
           await stampAndPersist(entityToWrite);
         });
       } else {
