@@ -7132,6 +7132,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get matrixStatsDbMissingBase => 'Chybí základ databáze';
 
   @override
+  String matrixStatsDbMissingBaseValue(Object count) {
+    return 'Chybí základ databáze: $count';
+  }
+
+  @override
+  String get matrixStatsDiagnostics => 'Diagnostika';
+
+  @override
   String matrixStatsDroppedByType(Object type) {
     return 'Zahozeno ($type)';
   }
@@ -7147,6 +7155,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vynutit nové skenování a dohnání nyní';
 
   @override
+  String get matrixStatsLastIgnored => 'Naposledy ignorováno:';
+
+  @override
   String get matrixStatsLegendTooltip =>
       'Legenda:\n• dbApplied = zapsané řádky databáze\n• dbIgnoredByVectorClock = starší nebo stejné příchozí údaje ignorované databází\n• conflictsCreated = zaznamenané souběžné vektorové hodiny\n• dbMissingBase = přeskočeno při čekání na chybějící závislost\n• dbEntryLinkNoop = propojení už existuje, nic se nezapsalo\n• droppedByType.<type> = zahozené zprávy podle typu po opakováních nebo ignorování starších zpráv\n• queueActive = příchozí události čekající na použití\n• signalConnectivity = podněty k synchronizaci po obnovení připojení';
 
@@ -7155,6 +7166,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get matrixStatsRefresh => 'Obnovit';
+
+  @override
+  String get matrixStatsRefreshDiagnosticsTooltip => 'Obnovit diagnostiku';
 
   @override
   String get matrixStatsRetryNow => 'Zkusit znovu';

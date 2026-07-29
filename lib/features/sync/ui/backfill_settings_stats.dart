@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
@@ -194,7 +195,7 @@ class SyncStatsCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              IconActionButton(
+              DesignSystemIconAction(
                 icon: Icons.refresh,
                 tooltip: messages.backfillStatsRefresh,
                 isBusy: isLoading,

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/ui/matrix_stats/metrics_typography.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 class DiagnosticsPanel extends StatefulWidget {
   const DiagnosticsPanel({
@@ -19,8 +23,14 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final messages = context.messages;
+    final tokens = context.designTokens;
+
     return ExpansionTile(
-      title: const Text('Diagnostics'),
+      title: Text(
+        messages.matrixStatsDiagnostics,
+        style: metricsGroupHeading(tokens),
+      ),
       onExpansionChanged: (open) {
         setState(() {
           _expanded = open;
@@ -35,9 +45,9 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
             future: _future,
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: CircularProgressIndicator(),
+                return Padding(
+                  padding: EdgeInsets.all(tokens.spacing.step3),
+                  child: const DesignSystemSpinner(),
                 );
               }
               final txt = snap.data ?? '';
@@ -55,7 +65,8 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
               final dbMissingBase = diag['dbMissingBase'] ?? '0';
               final ignoredCount =
                   int.tryParse(diag['lastIgnoredCount'] ?? '0') ?? 0;
-              final tokens = context.designTokens;
+              final bodyStyle = tokens.typography.styles.body.bodySmall
+                  .copyWith(color: tokens.colors.text.mediumEmphasis);
               // Prefetch details removed.
               return Padding(
                 padding: EdgeInsets.symmetric(
@@ -72,13 +83,19 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('dbMissingBase: $dbMissingBase'),
+                              Text(
+                                messages.matrixStatsDbMissingBaseValue(
+                                  dbMissingBase,
+                                ),
+                                style: bodyStyle,
+                              ),
                             ],
                           ),
                         ),
-                        IconButton(
-                          tooltip: 'Refresh diagnostics',
-                          icon: const Icon(Icons.refresh_rounded),
+                        DesignSystemIconAction(
+                          icon: Icons.refresh_rounded,
+                          tooltip:
+                              messages.matrixStatsRefreshDiagnosticsTooltip,
                           onPressed: () => setState(() {
                             _future = widget.fetchDiagnostics();
                           }),
@@ -87,9 +104,9 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
                     ),
                     SizedBox(height: tokens.spacing.step3),
                     if (ignoredCount > 0) ...[
-                      const Text('Last Ignored:'),
+                      Text(messages.matrixStatsLastIgnored, style: bodyStyle),
                       for (var i = 1; i <= ignoredCount; i++)
-                        Text(diag['lastIgnored.$i'] ?? ''),
+                        Text(diag['lastIgnored.$i'] ?? '', style: bodyStyle),
                       SizedBox(height: tokens.spacing.step3),
                     ],
                     // Prefetch details removed.

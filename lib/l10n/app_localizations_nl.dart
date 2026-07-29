@@ -7046,7 +7046,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get matrixStatsDbIgnoredVectorClock => 'DB-geïngeneerd (Vectorklok)';
 
   @override
-  String get matrixStatsDbMissingBase => 'DB Ontbrekende basis';
+  String get matrixStatsDbMissingBase => 'Ontbrekende DB-basis';
+
+  @override
+  String matrixStatsDbMissingBaseValue(Object count) {
+    return 'Ontbrekende DB-basis: $count';
+  }
+
+  @override
+  String get matrixStatsDiagnostics => 'Diagnostiek';
 
   @override
   String matrixStatsDroppedByType(Object type) {
@@ -7063,6 +7071,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get matrixStatsForceRescanTooltip => 'Herscannen en nu inhalen.';
 
   @override
+  String get matrixStatsLastIgnored => 'Laatst genegeerd:';
+
+  @override
   String get matrixStatsLegendTooltip =>
       'Legende:\n• dbApplied = geschreven databaserijen\n• dbIgnoredByVectorClock = oudere of identieke inkomende gegevens genegeerd door de database\n• conflictsCreated = gelijktijdige vectorklokken gelogd\n• dbMissingBase = overgeslagen terwijl op een ontbrekende afhankelijkheid wordt gewacht\n• dbEntryLinkNoop = koppeling bestaat al, niets geschreven\n• droppedByType.<type> = weggegooid per type na pogingen of het negeren van oudere berichten\n• queueActive = inkomende gebeurtenissen die nog toegepast moeten worden\n• signalConnectivity = synchronisatiezetjes nadat de verbinding terug was';
 
@@ -7071,6 +7082,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get matrixStatsRefresh => 'Verversen';
+
+  @override
+  String get matrixStatsRefreshDiagnosticsTooltip => 'Diagnostiek verversen';
 
   @override
   String get matrixStatsRetryNow => 'Nu opnieuw proberen';

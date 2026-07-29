@@ -161,6 +161,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hard to follow across the row, and the counter tiles in sync statistics were
   a little taller than wide for the same padding. All four now match the rest
   of the app.
+- **The Matrix Stats page reads as one page again.** Its headings had been set
+  by hand and disagreed with each other — "Sent messages" shouted while "Top
+  KPIs" was left at whatever size it inherited — so the page looked like three
+  unrelated panels stacked together. Every group heading now sits at the same
+  level, the counter tiles share one rhythm, and the numbers on them line up
+  with the figures on Backfill sync.
 - **Daily OS planning now gives up on stalled or overlong AI responses
   sooner.** Cut-off answers no longer save partial plans; planning retries
   cleanly instead.
@@ -322,6 +328,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **The sync diagnostics panel is translated.** Its heading, its refresh button
+  and its "Last ignored" list stayed English on every device, whatever language
+  the rest of the app was set to.
+- **The sync statistics counters say the right thing in five more languages.**
+  "DB Missing Base" counts entries held back waiting on a record that has not
+  arrived yet, but the Spanish, French and Romanian translations said *the
+  database is missing* — contradicting the legend on the very same panel — and
+  the Italian and Dutch ones stacked the words in an order that read as
+  neither. The Romanian buttons on that page also addressed you informally,
+  unlike the rest of the app.
+- **The refresh buttons on Backfill sync and sync statistics are easier to hit,
+  and say what they are.** Each was a 16-pixel icon with barely any room around
+  it, so on a phone it took an accurate tap; the button is unchanged to look at
+  but now claims the space a finger needs. Screen readers also named these
+  controls without ever saying they were buttons.
 - **Transcription now counts towards your AI usage figures.** When a recording
   was transcribed by a Melious speech model, the cost and the energy, carbon and
   water it used were reported by the provider and then thrown away — so the AI

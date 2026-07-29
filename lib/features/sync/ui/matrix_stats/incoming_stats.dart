@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/matrix_metrics_panel.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/message_counts_view.dart';
 
@@ -13,15 +14,17 @@ class IncomingStats extends ConsumerStatefulWidget {
 class _IncomingStatsState extends ConsumerState<IncomingStats> {
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      key: PageStorageKey('matrixStatsScroll'),
+    final tokens = context.designTokens;
+
+    return SingleChildScrollView(
+      key: const PageStorageKey('matrixStatsScroll'),
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RepaintBoundary(child: MessageCountsView()),
-          SizedBox(height: 16),
-          RepaintBoundary(child: MatrixSyncMetricsPanel()),
+          const RepaintBoundary(child: MessageCountsView()),
+          SizedBox(height: tokens.spacing.step5),
+          const RepaintBoundary(child: MatrixSyncMetricsPanel()),
         ],
       ),
     );

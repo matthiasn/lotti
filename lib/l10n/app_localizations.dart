@@ -12255,6 +12255,18 @@ abstract class AppLocalizations {
   /// **'DB Missing Base'**
   String get matrixStatsDbMissingBase;
 
+  /// No description provided for @matrixStatsDbMissingBaseValue.
+  ///
+  /// In en, this message translates to:
+  /// **'DB Missing Base: {count}'**
+  String matrixStatsDbMissingBaseValue(Object count);
+
+  /// No description provided for @matrixStatsDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get matrixStatsDiagnostics;
+
   /// No description provided for @matrixStatsDroppedByType.
   ///
   /// In en, this message translates to:
@@ -12279,6 +12291,12 @@ abstract class AppLocalizations {
   /// **'Force rescan and catch up now'**
   String get matrixStatsForceRescanTooltip;
 
+  /// No description provided for @matrixStatsLastIgnored.
+  ///
+  /// In en, this message translates to:
+  /// **'Last ignored:'**
+  String get matrixStatsLastIgnored;
+
   /// No description provided for @matrixStatsLegendTooltip.
   ///
   /// In en, this message translates to:
@@ -12296,6 +12314,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh'**
   String get matrixStatsRefresh;
+
+  /// No description provided for @matrixStatsRefreshDiagnosticsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh diagnostics'**
+  String get matrixStatsRefreshDiagnosticsTooltip;
 
   /// No description provided for @matrixStatsRetryNow.
   ///

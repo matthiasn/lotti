@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -326,6 +327,64 @@ void main() {
       expect(find.text(messages.matrixStatsSignalsConnectivity), findsNothing);
     },
   );
+
+  // The section stacks three levels of heading — the panel title, the "Top
+  // KPIs" lead-in, and one per grouped block. Two of those used to be an
+  // unstyled `Text` and a bare `TextStyle(fontWeight: w600)`, so they
+  // inherited whatever the ambient Material theme happened to supply.
+  group('grouped headings', () {
+    testWidgets('every group label shares one tier', (tester) async {
+      await pumpFull(tester);
+
+      final context = tester.element(find.byType(SyncMetricsSection));
+      final messages = context.messages;
+      final tokens = context.designTokens;
+
+      final expected = tokens.typography.styles.subtitle.subtitle2;
+      for (final label in [
+        messages.matrixStatsTopKpis,
+        messages.matrixStatsDbApply,
+        messages.matrixStatsSignals,
+      ]) {
+        final heading = tester.widget<Text>(find.text(label));
+        expect(
+          heading.style?.fontSize,
+          expected.fontSize,
+          reason: '"$label" is not on the group-heading tier',
+        );
+        expect(
+          heading.style?.fontWeight,
+          tokens.typography.weight.semiBold,
+          reason: '"$label" does not carry the heading weight',
+        );
+        expect(heading.style?.color, tokens.colors.text.highEmphasis);
+      }
+    });
+
+    testWidgets('group labels sit below the section title, not level with it', (
+      tester,
+    ) async {
+      await pumpFull(tester);
+
+      final context = tester.element(find.byType(SyncMetricsSection));
+      final tokens = context.designTokens;
+
+      // The panel title is subtitle1; its groups are subtitle2. If those ever
+      // converged the page would read as one flat list of equal headings.
+      // Matched against the fixture's own title rather than an ARB value that
+      // merely happens to carry the same words.
+      final title = tester.widget<Text>(find.text('Sync Metrics'));
+      final group = tester.widget<Text>(
+        find.text(context.messages.matrixStatsTopKpis),
+      );
+
+      expect(
+        title.style?.fontSize,
+        tokens.typography.styles.subtitle.subtitle1.fontSize,
+      );
+      expect(group.style!.fontSize, lessThan(title.style!.fontSize!));
+    });
+  });
 }
 
 void _noop() {}

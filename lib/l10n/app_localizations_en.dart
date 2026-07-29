@@ -6992,6 +6992,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matrixStatsDbMissingBase => 'DB Missing Base';
 
   @override
+  String matrixStatsDbMissingBaseValue(Object count) {
+    return 'DB Missing Base: $count';
+  }
+
+  @override
+  String get matrixStatsDiagnostics => 'Diagnostics';
+
+  @override
   String matrixStatsDroppedByType(Object type) {
     return 'Dropped ($type)';
   }
@@ -7006,6 +7014,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matrixStatsForceRescanTooltip => 'Force rescan and catch up now';
 
   @override
+  String get matrixStatsLastIgnored => 'Last ignored:';
+
+  @override
   String get matrixStatsLegendTooltip =>
       'Legend:\n• dbApplied = database rows written\n• dbIgnoredByVectorClock = older or identical incoming data ignored by the database\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting a missing dependency or base row\n• dbEntryLinkNoop = link already present, nothing written\n• droppedByType.<type> = per-type drops after retries or older-message ignores\n• queueActive = inbound events still waiting to be applied\n• signalConnectivity = sync nudges after connectivity returned';
 
@@ -7014,6 +7025,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get matrixStatsRefresh => 'Refresh';
+
+  @override
+  String get matrixStatsRefreshDiagnosticsTooltip => 'Refresh diagnostics';
 
   @override
   String get matrixStatsRetryNow => 'Retry Now';
@@ -11466,6 +11480,20 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get maintenanceSyncDefinitionsDescription =>
       'Sync measurables, dashboards, habits, categories, and AI settings';
+
+  @override
+  String matrixStatsDbMissingBaseValue(Object count) {
+    return 'DB Missing Base: $count';
+  }
+
+  @override
+  String get matrixStatsDiagnostics => 'Diagnostics';
+
+  @override
+  String get matrixStatsLastIgnored => 'Last ignored:';
+
+  @override
+  String get matrixStatsRefreshDiagnosticsTooltip => 'Refresh diagnostics';
 
   @override
   String get measurableDeleteConfirm => 'YES, DELETE THIS MEASURABLE';

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -968,11 +969,11 @@ void main() {
       );
       await tester.pump();
 
-      // Find the refresh icon. While loading it sits inside an
-      // `IconButton`-style widget whose `onTap` is null; we assert
-      // there's a `CircularProgressIndicator` next to the refresh
-      // call site.
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // While loading, `DesignSystemIconAction` swaps its glyph for a spinner
+      // of the same dimension — so the control does not resize mid-refresh,
+      // and the busy state is what is asserted here rather than the tap being
+      // disabled (which the widget also does).
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
 
       completer.complete(populatedStats);
       await tester.pump();

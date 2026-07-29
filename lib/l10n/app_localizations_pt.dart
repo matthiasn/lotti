@@ -7092,6 +7092,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get matrixStatsDbMissingBase => 'BD sem base';
 
   @override
+  String matrixStatsDbMissingBaseValue(Object count) {
+    return 'BD sem base: $count';
+  }
+
+  @override
+  String get matrixStatsDiagnostics => 'Diagnósticos';
+
+  @override
   String matrixStatsDroppedByType(Object type) {
     return 'Descartado ($type)';
   }
@@ -7107,6 +7115,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Force uma nova verificação e atualize agora';
 
   @override
+  String get matrixStatsLastIgnored => 'Últimos ignorados:';
+
+  @override
   String get matrixStatsLegendTooltip =>
       'Legenda:\n• dbApplied = linhas gravadas no banco de dados\n• dbIgnoredByVectorClock = dados recebidos mais antigos ou idênticos ignorados pelo banco de dados\n• conflictsCreated = relógios vetoriais simultâneos registrados\n• dbMissingBase = ignorado enquanto se espera uma dependência ausente\n• dbEntryLinkNoop = vínculo já existe, nada gravado\n• droppedByType.<type> = descartes por tipo após novas tentativas ou ao ignorar mensagens antigas\n• queueActive = eventos recebidos ainda por aplicar\n• signalConnectivity = impulsos de sincronização após a conexão voltar';
 
@@ -7115,6 +7126,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get matrixStatsRefresh => 'Atualizar';
+
+  @override
+  String get matrixStatsRefreshDiagnosticsTooltip => 'Atualizar diagnósticos';
 
   @override
   String get matrixStatsRetryNow => 'Tentar novamente agora';

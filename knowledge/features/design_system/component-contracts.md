@@ -97,6 +97,48 @@ the visual and semantic grammar. `DesignSystemListItem` remains an interactive
 row; rendering a read-only value with no callback puts it into its disabled
 treatment, so static metadata should use token-styled text instead.
 
+**`DesignSystemSectionCard` fixes its own fill** to `background.level02`, which
+is what makes it a *surface* rather than a container. A card whose fill carries
+meaning therefore cannot adopt it. `matrix_stats/metrics_grid.dart` is the
+worked example: each `MetricTile` tints itself by outcome — conflicts, drops,
+routine throughput — and moving it onto the section card would flatten that
+three-tone scale to one neutral. It stays a token-styled `Container`, taking
+`radii.m` and `decorative.level02` by hand. Reach for the section card when the
+grouping is structural; keep a container when the fill is information. See
+[design tokens and theming](tokens-and-theming.md) for why the tint could not
+be expressed as a `colorScheme.*Container` either.
+
+## Beside the button tier: `DesignSystemIconAction`
+
+A glyph-only control for card headers and panel corners — the sync statistics
+and backfill refresh controls are the reference uses. It carries no label and
+no variant, so it cannot read as a surface's primary action; where a
+caption-tier *labelled* row is wanted, use `DesignSystemInlineAction` below
+instead.
+
+**Its busy state is the reason it is a component.** The spinner it swaps in is
+the same dimension as the glyph it replaces, so the control does not resize
+under the pointer that just pressed it. It lived in
+`backfill_settings_page.dart` until three call sites across two feature
+directories were importing a *page*, and its whole get_it and controller graph,
+to render one button.
+
+**A glyph-only control cannot let its visual size be its target.** A labelled
+button borrows hit area from its text; this one has none, so the pointer target
+is pinned to `TapTargets.minimum` with the glyph centred inside it — the same
+`ConstrainedBox`/`Center` pair `DesignSystemButton` uses for
+`MaterialTapTargetSize.padded`, except here it is not optional. Its predecessor
+in the diagnostics panel was a Material `IconButton`, which supplied that floor
+for free; a compact replacement that did not would have been a silent
+regression to a 16dp target.
+
+**The tooltip is also the semantic label**, published on one explicit
+`Semantics(button: true)` node with the visual subtree under `ExcludeSemantics`.
+Both the tooltip and the spinner otherwise annotate themselves, so the control
+would announce the same words two or three times over and never say `button` —
+and while busy, when the glyph is gone, that node's label is the only remaining
+statement of which action is running.
+
 ## Below the button tier: `DesignSystemInlineAction`
 
 A caption-tier tappable row for metadata contexts — "skip this one", "change

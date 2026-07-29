@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/stats_signature.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_grid.dart';
+import 'package:lotti/features/sync/ui/matrix_stats/metrics_typography.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Sent-messages panel for Matrix Stats. Listens to the controller manually to
@@ -76,14 +78,18 @@ class MessageCountsViewState extends ConsumerState<MessageCountsView> {
       return key;
     }
 
+    final tokens = context.designTokens;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '${context.messages.settingsMatrixSentMessagesLabel} ${value.sentCount}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          // Names the grid below it, so it takes the same group-heading tier
+          // as "Top KPIs" and the grouped section headings.
+          style: metricsGroupHeading(tokens),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: tokens.spacing.step3),
         MetricsGrid(entries: entries, labelFor: labelFor),
       ],
     );

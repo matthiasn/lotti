@@ -122,11 +122,17 @@ void main() {
       expect(find.byType(MetricTile), findsNWidgets(3));
 
       // Verify tile width is based on 2-column layout:
-      // (370 - (2-1)*8) / 2 = 181
+      // The gap is the spacing token, not a literal, so the expectation is
+      // derived the same way the widget derives it.
+      final gap = tester
+          .element(find.byType(MetricTile).first)
+          .designTokens
+          .spacing
+          .step3;
       final firstTile = tester.getSize(
         find.byKey(const Key('metric:processed')),
       );
-      expect(firstTile.width, closeTo(181, 1));
+      expect(firstTile.width, closeTo((370 - gap) / 2, 1));
     });
 
     testWidgets('uses 3 columns at medium width (380-559)', (tester) async {
@@ -145,11 +151,15 @@ void main() {
 
       expect(find.byType(MetricTile), findsNWidgets(3));
 
-      // (400 - (3-1)*8) / 3 = 128
+      final gap = tester
+          .element(find.byType(MetricTile).first)
+          .designTokens
+          .spacing
+          .step3;
       final firstTile = tester.getSize(
         find.byKey(const Key('metric:processed')),
       );
-      expect(firstTile.width, closeTo(128, 1));
+      expect(firstTile.width, closeTo((400 - 2 * gap) / 3, 1));
     });
   });
 
@@ -232,9 +242,7 @@ void main() {
       );
       await tester.pump();
 
-      final scheme = Theme.of(
-        tester.element(find.byType(MetricTile).first),
-      ).colorScheme;
+      final tokens = tester.element(find.byType(MetricTile).first).designTokens;
 
       Color fillOf(String key) {
         final container = tester.widget<Container>(
@@ -246,10 +254,15 @@ void main() {
         return (container.decoration! as BoxDecoration).color!;
       }
 
+      // Asserted against the token tree, not `colorScheme`. The two agree in
+      // production because the app theme *is* DesignSystemTheme, but this
+      // harness builds a stock Material scheme with the tokens attached — so
+      // a `colorScheme` expectation here would have been checking a palette
+      // the user never sees.
       for (final (key, tone) in [
-        ('processed', scheme.primary),
-        ('conflictsCreated', scheme.error),
-        ('droppedByType.foo', scheme.tertiary),
+        ('processed', tokens.colors.interactive.enabled),
+        ('conflictsCreated', tokens.colors.alert.error.defaultColor),
+        ('droppedByType.foo', tokens.colors.alert.info.defaultColor),
       ]) {
         expect(
           fillOf(key),
@@ -301,6 +314,101 @@ void main() {
       // and drops indistinguishable from routine throughput — the categorising
       // the tint exists to carry.
       expect(fills, hasLength(3));
+    });
+
+    testWidgets('a full row of tiles fits inside its constraint', (
+      tester,
+    ) async {
+      // The Wrap's spacing and the tileWidth arithmetic read the same `gap`
+      // local. If they ever diverge the last tile in a row is pushed onto its
+      // own line, silently halving the grid's density — which a width
+      // assertion on a single tile cannot see.
+      const width = 400.0;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: width,
+            child: MetricsGrid(
+              entries: [
+                MapEntry('a', 1),
+                MapEntry('b', 2),
+                MapEntry('c', 3),
+              ],
+              labelFor: _identity,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Three tiles at this width means three columns: all share a row, so
+      // every tile's vertical centre is identical.
+      final tops = [
+        'a',
+        'b',
+        'c',
+      ].map((k) => tester.getTopLeft(find.byKey(Key('metric:$k'))).dy).toSet();
+      expect(tops, hasLength(1), reason: 'a tile wrapped onto a second row');
+
+      final right = tester.getBottomRight(find.byKey(const Key('metric:c'))).dx;
+      final left = tester.getTopLeft(find.byKey(const Key('metric:a'))).dx;
+      expect(right - left, lessThanOrEqualTo(width + 0.5));
+    });
+
+    testWidgets('the label and value take their tiers from the type scale', (
+      tester,
+    ) async {
+      final tokens = await pumpTile(tester);
+
+      final label = tester.widget<Text>(find.text('processed'));
+      final value = tester.widget<Text>(find.text('10'));
+
+      // A metric label is caption-tier; its value is the subtitle tier the
+      // sibling backfill status cells already use, so the two surfaces read
+      // as one family rather than two.
+      expect(
+        label.style!.fontSize,
+        tokens.typography.styles.others.caption.fontSize,
+      );
+      expect(
+        value.style!.fontSize,
+        tokens.typography.styles.subtitle.subtitle1.fontSize,
+      );
+      expect(value.style!.fontWeight, tokens.typography.weight.semiBold);
+      // The value changes on every poll, so its digits must not reflow the
+      // tile around them.
+      expect(
+        value.style!.fontFeatures,
+        contains(const FontFeature.tabularFigures()),
+      );
+      expect(
+        label.style!.fontSize,
+        lessThan(value.style!.fontSize!),
+        reason: 'the value must outrank its label',
+      );
+    });
+
+    testWidgets('the tile frame binds the radius and divider tokens', (
+      tester,
+    ) async {
+      final tokens = await pumpTile(tester);
+
+      final decoration =
+          tester
+                  .widget<Container>(
+                    find.descendant(
+                      of: find.byType(MetricTile),
+                      matching: find.byType(Container),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+
+      expect(decoration.borderRadius, BorderRadius.circular(tokens.radii.m));
+      expect(
+        decoration.border,
+        Border.all(color: tokens.colors.decorative.level02),
+      );
     });
 
     testWidgets('the label binds the emphasis ramp, not a faded onSurface', (

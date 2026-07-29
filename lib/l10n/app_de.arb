@@ -2948,13 +2948,22 @@
   "matrixStatsDbApply": "Datenbankanwendung",
   "matrixStatsDbIgnoredVectorClock": "Von Datenbank ignoriert (VectorClock)",
   "matrixStatsDbMissingBase": "Fehlende Datenbankbasis",
+  "matrixStatsDbMissingBaseValue": "Fehlende Datenbankbasis: {count}",
+  "@matrixStatsDbMissingBaseValue": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "matrixStatsDiagnostics": "Diagnose",
   "matrixStatsDroppedByType": "Verworfen ({type})",
   "matrixStatsEntryLinkNoops": "EntryLink-Nulloperationen",
   "matrixStatsForceRescan": "Erneut scannen erzwingen",
   "matrixStatsForceRescanTooltip": "Jetzt erneut scannen und nachholen",
+  "matrixStatsLastIgnored": "Zuletzt ignoriert:",
   "matrixStatsLegendTooltip": "Legende:\n• dbApplied = geschriebene Datenbankzeilen\n• dbIgnoredByVectorClock = von der Datenbank ignorierte ältere oder identische eingehende Daten\n• conflictsCreated = protokollierte gleichzeitige Vector Clocks\n• dbMissingBase = übersprungen, während eine fehlende Abhängigkeit erwartet wird\n• dbEntryLinkNoop = Verknüpfung bereits vorhanden, nichts geschrieben\n• droppedByType.<type> = verworfene Nachrichten pro Typ nach Wiederholungen oder Ignorieren älterer Nachrichten\n• queueActive = eingehende Ereignisse, die noch angewendet werden müssen\n• signalConnectivity = Sync-Anstöße nach Wiederkehr der Verbindung",
   "matrixStatsQueueActive": "Warteschlange (aktiv)",
   "matrixStatsRefresh": "Aktualisieren",
+  "matrixStatsRefreshDiagnosticsTooltip": "Diagnose aktualisieren",
   "matrixStatsRetryNow": "Jetzt wiederholen",
   "matrixStatsRetryNowTooltip": "Ausstehende Fehler jetzt erneut versuchen",
   "matrixStatsSignals": "Signale",
