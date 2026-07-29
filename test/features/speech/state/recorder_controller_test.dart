@@ -182,6 +182,25 @@ void main() {
     await getIt.reset();
   });
 
+  group('AudioRecorderController - construction', () {
+    test(
+      'never probes microphone permission when the provider is built',
+      () async {
+        // The app shell watches this provider to size the recording indicator, so
+        // it is built on startup. `hasPermission()` *requests* the permission on
+        // Android/iOS, which would pop the OS mic dialog before the user has
+        // asked to record anything.
+        container
+          ..read(audioRecorderControllerProvider.notifier)
+          ..read(audioRecorderControllerProvider);
+        // Drain the microtask queue: the old probe was scheduled, not inline.
+        await Future<void>.microtask(() {});
+
+        verifyNever(() => mockAudioRecorderRepository.hasPermission());
+      },
+    );
+  });
+
   group('AudioRecorderController - State Management Methods', () {
     group('setModalVisible', () {
       test('should update modalVisible to true', () {
