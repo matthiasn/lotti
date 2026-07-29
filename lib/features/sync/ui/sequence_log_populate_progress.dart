@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -14,6 +16,7 @@ class SequenceLogPopulateProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final progress = state.progress;
     final isRunning = state.isRunning;
     final error = state.error;
@@ -27,33 +30,46 @@ class SequenceLogPopulateProgress extends StatelessWidget {
         (populatedLinksCount ?? 0) +
         (populatedAgentEntitiesCount ?? 0) +
         (populatedAgentLinksCount ?? 0);
+    final phaseLabel = isRunning
+        ? switch (phase) {
+            SequenceLogPopulatePhase.populatingJournal =>
+              context.messages.maintenancePopulatePhaseJournal,
+            SequenceLogPopulatePhase.populatingLinks =>
+              context.messages.maintenancePopulatePhaseLinks,
+            SequenceLogPopulatePhase.populatingAgentEntities =>
+              context.messages.maintenancePopulatePhaseAgentEntities,
+            SequenceLogPopulatePhase.populatingAgentLinks =>
+              context.messages.maintenancePopulatePhaseAgentLinks,
+            _ => '',
+          }
+        : '';
+    final progressText = '${(progress * 100).round()}%';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(height: 16),
+        SizedBox(height: tokens.spacing.step5),
         if (error != null)
           Icon(
             Icons.error_outline,
-            size: 48,
-            color: Theme.of(context).colorScheme.error,
+            size: IconSizes.xxxl,
+            color: tokens.colors.alert.error.defaultColor,
           )
         else if (progress == 1.0 && !isRunning)
           Column(
             children: [
               Icon(
                 Icons.check_circle_outline,
-                size: 48,
-                color: Theme.of(context).colorScheme.primary,
+                size: IconSizes.xxxl,
+                color: tokens.colors.alert.success.defaultColor,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: tokens.spacing.step3),
               Text(
                 context.messages.maintenancePopulateSequenceLogComplete(
                   totalPopulated,
                 ),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                  color: tokens.colors.alert.success.ink,
                   fontFeatures: const [
                     FontFeature.tabularFigures(),
                   ],
@@ -63,73 +79,29 @@ class SequenceLogPopulateProgress extends StatelessWidget {
             ],
           )
         else
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isRunning)
-                Text(
-                  switch (phase) {
-                    SequenceLogPopulatePhase.populatingJournal =>
-                      context.messages.maintenancePopulatePhaseJournal,
-                    SequenceLogPopulatePhase.populatingLinks =>
-                      context.messages.maintenancePopulatePhaseLinks,
-                    SequenceLogPopulatePhase.populatingAgentEntities =>
-                      context.messages.maintenancePopulatePhaseAgentEntities,
-                    SequenceLogPopulatePhase.populatingAgentLinks =>
-                      context.messages.maintenancePopulatePhaseAgentLinks,
-                    _ => '',
-                  },
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 5,
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${(progress * 100).round()}%',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      fontFeatures: const [
-                        FontFeature.tabularFigures(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          DesignSystemProgressBar(
+            value: progress,
+            label: phaseLabel.isEmpty ? null : phaseLabel,
+            progressText: progressText,
+            semanticsLabel: phaseLabel.isEmpty
+                ? context.messages.maintenancePopulateSequenceLog
+                : phaseLabel,
+            semanticsValue: progressText,
           ),
-        const SizedBox(height: 16),
+        SizedBox(height: tokens.spacing.step5),
         if (error != null)
           Text(
             error,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.error,
-              fontWeight: FontWeight.bold,
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: tokens.colors.alert.error.ink,
             ),
             textAlign: TextAlign.center,
           )
         else if (!isRunning && progress < 1.0)
           Text(
             context.messages.maintenancePopulateSequenceLog,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
             ),
           ),
       ],

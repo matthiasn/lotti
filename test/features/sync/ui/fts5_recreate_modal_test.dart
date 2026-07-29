@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/sync/state/fts5_controller.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
-import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -32,33 +32,29 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ProviderScope(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => Fts5RecreateModal.show(context),
+            child: const Text('Show FTS5 Modal'),
+          ),
+        ),
         overrides: [
           fts5ControllerProvider.overrideWith(() => testController),
         ],
-        child: MaterialApp(
-          theme: resolveTestTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () => Fts5RecreateModal.show(context),
-              child: const Text('Show FTS5 Modal'),
-            ),
-          ),
-        ),
       ),
     );
 
     // Tap the button to show the modal
     await tester.tap(find.text('Show FTS5 Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Get the confirm button text from the localizations
-    final BuildContext context = tester.element(find.text('Show FTS5 Modal'));
-    final confirmText = AppLocalizations.of(
-      context,
-    )!.maintenanceRecreateFts5Confirm;
+    final confirmText = tester
+        .element(find.text('Show FTS5 Modal'))
+        .messages
+        .maintenanceRecreateFts5Confirm;
 
     // Tap the confirm button to proceed to progress page
     await tester.tap(find.text(confirmText));
@@ -66,7 +62,11 @@ void main() {
 
     // Should show 50% progress in the modal immediately
     expect(find.text('50%'), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    final progressBar = tester.widget<DesignSystemProgressBar>(
+      find.byType(DesignSystemProgressBar),
+    );
+    expect(progressBar.value, 0.5);
+    expect(progressBar.progressText, '50%');
     expect(find.byIcon(Icons.check_circle_outline), findsNothing);
 
     // Update state to error
@@ -79,7 +79,7 @@ void main() {
     // Should show error message immediately
     expect(find.text('Failed to recreate FTS5'), findsOneWidget);
     expect(find.byIcon(Icons.error_outline), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.byType(DesignSystemProgressBar), findsNothing);
 
     // Update state to complete
     testController.state = const Fts5State(
@@ -90,7 +90,7 @@ void main() {
     // Should show checkmark and 100% progress immediately
     expect(find.text('100%'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.byType(DesignSystemProgressBar), findsNothing);
   });
 
   testWidgets('Fts5RecreateModal shows error state', (
@@ -104,33 +104,29 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ProviderScope(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => Fts5RecreateModal.show(context),
+            child: const Text('Show FTS5 Modal'),
+          ),
+        ),
         overrides: [
           fts5ControllerProvider.overrideWith(() => testController),
         ],
-        child: MaterialApp(
-          theme: resolveTestTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () => Fts5RecreateModal.show(context),
-              child: const Text('Show FTS5 Modal'),
-            ),
-          ),
-        ),
       ),
     );
 
     // Tap the button to show the modal
     await tester.tap(find.text('Show FTS5 Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Get the confirm button text from the localizations
-    final BuildContext context = tester.element(find.text('Show FTS5 Modal'));
-    final confirmText = AppLocalizations.of(
-      context,
-    )!.maintenanceRecreateFts5Confirm;
+    final confirmText = tester
+        .element(find.text('Show FTS5 Modal'))
+        .messages
+        .maintenanceRecreateFts5Confirm;
 
     // Tap the confirm button to proceed to progress page
     await tester.tap(find.text(confirmText));
@@ -138,7 +134,7 @@ void main() {
 
     // Should show error state immediately
     expect(find.text('Test error'), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.byType(DesignSystemProgressBar), findsNothing);
     expect(find.byIcon(Icons.check_circle_outline), findsNothing);
   });
 }

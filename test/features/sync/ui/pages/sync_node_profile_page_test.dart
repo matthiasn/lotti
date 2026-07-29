@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
@@ -94,7 +96,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final field = tester.widget<TextFormField>(find.byType(TextFormField));
+      expect(find.byType(DesignSystemTextInput), findsOneWidget);
+      final field = tester.widget<TextField>(find.byType(TextField));
       expect(field.controller?.text, 'Studio Mac');
     },
   );
@@ -159,6 +162,16 @@ void main() {
 
       expect(find.text('Other Mac'), findsOneWidget);
       expect(find.text('Linux Box'), findsOneWidget);
+      final context = tester.element(find.text('Other Mac'));
+      final tokens = context.designTokens;
+      expect(
+        tester.widget<Text>(find.text('Other Mac')).style?.color,
+        tokens.colors.text.highEmphasis,
+      );
+      expect(
+        tester.widget<Text>(find.text('linux · Ollama LLM')).style?.color,
+        tokens.colors.text.mediumEmphasis,
+      );
       // Self is excluded from the "known nodes" section because it already
       // appears at the top of the page.
       expect(find.text('Studio Mac'), findsOneWidget); // only in the field
@@ -181,7 +194,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.enterText(find.byType(TextFormField), '  New Name  ');
+      await tester.enterText(find.byType(TextField), '  New Name  ');
       // Pump so the controller listener's setState rebuilds the
       // TextButton with `onPressed` populated — without this the tap
       // would land on a still-disabled button.
@@ -217,8 +230,7 @@ void main() {
   );
 
   testWidgets(
-    'Save with an empty display-name field surfaces the validator and '
-    'does NOT invoke the broadcaster',
+    'Save stays inert for an empty display name',
     (tester) async {
       await tester.pumpWidget(
         harness(self: _self(), directory: [_self()]),
@@ -226,8 +238,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Clear the seeded display name; this should fail validation on save.
-      await tester.enterText(find.byType(TextFormField), '   ');
+      // An empty trimmed value cannot enable the save action.
+      await tester.enterText(find.byType(TextField), '   ');
       await tester.tap(find.text('Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -261,13 +273,13 @@ void main() {
       expect(saveButton().onPressed, isNull);
 
       // User types a different name → button enables.
-      await tester.enterText(find.byType(TextFormField), 'New Name');
+      await tester.enterText(find.byType(TextField), 'New Name');
       await tester.pump();
       expect(saveButton().onPressed, isNotNull);
 
       // User reverts (including surrounding whitespace, which is trimmed
       // before comparison) → button disables again.
-      await tester.enterText(find.byType(TextFormField), '  Studio Mac  ');
+      await tester.enterText(find.byType(TextField), '  Studio Mac  ');
       await tester.pump();
       expect(saveButton().onPressed, isNull);
     },
@@ -282,7 +294,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.enterText(find.byType(TextFormField), '   ');
+      await tester.enterText(find.byType(TextField), '   ');
       await tester.pump();
 
       final saveButton = tester.widget<DesignSystemButton>(
@@ -304,7 +316,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.enterText(find.byType(TextFormField), 'Renamed');
+      await tester.enterText(find.byType(TextField), 'Renamed');
       await tester.pump();
       await tester.tap(find.text('Save'));
       await tester.pump();

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
@@ -79,10 +80,12 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       // Title and subtitle present, stats card rendered
       expect(find.text('Matrix Stats'), findsOneWidget);
       expect(find.text('Inspect sync pipeline metrics'), findsOneWidget);
+      expect(find.byType(DesignSystemSectionCard), findsOneWidget);
     });
   });
 }

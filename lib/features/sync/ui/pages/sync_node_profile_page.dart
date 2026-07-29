@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
@@ -33,7 +34,6 @@ class SyncNodeProfileBody extends ConsumerStatefulWidget {
 }
 
 class _SyncNodeProfileBodyState extends ConsumerState<SyncNodeProfileBody> {
-  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   bool _isSaving = false;
   String? _lastSeededFromHostId;
@@ -79,11 +79,11 @@ class _SyncNodeProfileBodyState extends ConsumerState<SyncNodeProfileBody> {
 
   Future<void> _save() async {
     if (_isSaving) return;
-    if (!_formKey.currentState!.validate()) return;
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) return;
     setState(() => _isSaving = true);
     try {
       final broadcaster = getIt<SyncNodeProfileBroadcaster>();
-      final newName = _nameController.text.trim();
       await broadcaster.broadcastIfChanged(displayNameOverride: newName);
       _seededName = newName;
     } finally {
@@ -119,71 +119,61 @@ class _SyncNodeProfileBodyState extends ConsumerState<SyncNodeProfileBody> {
       orElse: () => const <SyncNodeProfile>[],
     );
 
-    return Form(
-      key: _formKey,
-      child: ListView(
-        padding: EdgeInsets.all(tokens.spacing.step6),
-        children: [
-          // Save lives at the top-right of the form (not in an AppBar action),
-          // so the desktop detail pane — which already shows the breadcrumb
-          // title — doesn't render a second, near-black title bar.
-          Align(
-            alignment: Alignment.centerRight,
-            child: Tooltip(
-              message: _hasUnsavedChanges
-                  ? messages.settingsSyncNodeProfileSaveButton
-                  : messages.aiFormNoChanges,
-              child: DesignSystemButton(
-                label: messages.settingsSyncNodeProfileSaveButton,
-                leadingIcon: Icons.save_rounded,
-                onPressed: (_isSaving || !_hasUnsavedChanges) ? null : _save,
-              ),
+    return ListView(
+      padding: EdgeInsets.all(tokens.spacing.step6),
+      children: [
+        // Save lives at the top-right of the form (not in an AppBar action),
+        // so the desktop detail pane — which already shows the breadcrumb
+        // title — doesn't render a second, near-black title bar.
+        Align(
+          alignment: Alignment.centerRight,
+          child: Tooltip(
+            message: _hasUnsavedChanges
+                ? messages.settingsSyncNodeProfileSaveButton
+                : messages.aiFormNoChanges,
+            child: DesignSystemButton(
+              label: messages.settingsSyncNodeProfileSaveButton,
+              leadingIcon: Icons.save_rounded,
+              onPressed: (_isSaving || !_hasUnsavedChanges) ? null : _save,
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            messages.settingsSyncNodeProfileSubtitle,
-            style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        Text(
+          messages.settingsSyncNodeProfileSubtitle,
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
           ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _nameController,
-            decoration: InputDecoration(
-              labelText: messages.settingsSyncNodeProfileDisplayNameLabel,
-              helperText: messages.settingsSyncNodeProfileDisplayNameHelper,
-              border: const OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        DesignSystemTextInput(
+          controller: _nameController,
+          label: messages.settingsSyncNodeProfileDisplayNameLabel,
+          helperText: messages.settingsSyncNodeProfileDisplayNameHelper,
+        ),
+        SizedBox(height: tokens.spacing.sectionGap),
+        Text(
+          messages.settingsSyncNodeProfileCapabilitiesLabel,
+          style: tokens.typography.styles.subtitle.subtitle1,
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        _CapabilityChips(self: self),
+        SizedBox(height: tokens.spacing.sectionGap),
+        Text(
+          messages.settingsSyncNodeProfileKnownNodesTitle,
+          style: tokens.typography.styles.subtitle.subtitle1,
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        if (knownNodes.isEmpty)
+          Text(
+            messages.settingsSyncNodeProfileKnownNodesEmpty,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return messages.settingsSyncNodeProfileDisplayNameLabel;
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 24),
-          Text(
-            messages.settingsSyncNodeProfileCapabilitiesLabel,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          _CapabilityChips(self: self),
-          const SizedBox(height: 24),
-          Text(
-            messages.settingsSyncNodeProfileKnownNodesTitle,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          if (knownNodes.isEmpty)
-            Text(
-              messages.settingsSyncNodeProfileKnownNodesEmpty,
-              style: Theme.of(context).textTheme.bodySmall,
-            )
-          else
-            ...knownNodes.map(_KnownNodeTile.new),
-        ],
-      ),
+          )
+        else
+          ...knownNodes.map(_KnownNodeTile.new),
+      ],
     );
   }
 }
@@ -224,16 +214,19 @@ class _CapabilityChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    final tokens = context.designTokens;
     final caps = self?.capabilities ?? const <NodeCapability>[];
     if (caps.isEmpty) {
       return Text(
         messages.settingsSyncNodeProfileCapabilitiesEmpty,
-        style: Theme.of(context).textTheme.bodySmall,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
       );
     }
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: tokens.spacing.step3,
+      runSpacing: tokens.spacing.step3,
       children: [
         for (final cap in caps)
           DesignSystemBadge.outlined(
@@ -252,15 +245,33 @@ class _KnownNodeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final caps = node.capabilities
         .map((c) => _capabilityLabel(context, c))
         .toList(growable: false)
         .join(', ');
-    return ListTile(
-      title: Text(node.displayName),
-      subtitle: Text(
-        '${node.platform}'
-        '${caps.isEmpty ? '' : ' · $caps'}',
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step4,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            node.displayName,
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step1),
+          Text(
+            '${node.platform}${caps.isEmpty ? '' : ' · $caps'}',
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ],
       ),
     );
   }

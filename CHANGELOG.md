@@ -58,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing when there is nothing on the clipboard to paste.
 
 ### Changed
+- **Older sync maintenance screens now match the rest of the app.** Rebuilding
+  the search index and repairing the sequence log now use the shared progress
+  treatment, while sync statistics and this-device profile settings use the
+  same cards, fields, rows, spacing, colors, and type as newer screens.
 - **Sync filters now match the rest of the app.** The Waiting, Failed, Sent,
   Unresolved, and Resolved controls on Sync Outbox and Sync Conflicts now use
   the shared design-system chip and count treatments, with consistent selected,

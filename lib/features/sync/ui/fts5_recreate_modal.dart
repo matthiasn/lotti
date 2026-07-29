@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/features/sync/state/fts5_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -19,87 +21,65 @@ class Fts5RecreateModal {
       progressBuilder: (context) {
         return Consumer(
           builder: (context, ref, _) {
+            final tokens = context.designTokens;
             final fts5State = ref.watch(fts5ControllerProvider);
             final progress = fts5State.progress;
             final isRecreating = fts5State.isRecreating;
             final error = fts5State.error;
+            final progressText = '${(progress * 100).round()}%';
 
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 16),
+                SizedBox(height: tokens.spacing.step5),
                 if (error != null)
                   Icon(
                     Icons.error_outline,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.error,
+                    size: IconSizes.xxxl,
+                    color: tokens.colors.alert.error.defaultColor,
                   )
                 else if (progress == 1.0 && !isRecreating)
                   Column(
                     children: [
                       Icon(
                         Icons.check_circle_outline,
-                        size: 48,
-                        color: Theme.of(context).colorScheme.primary,
+                        size: IconSizes.xxxl,
+                        color: tokens.colors.alert.success.defaultColor,
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: tokens.spacing.step3),
                       Text(
                         '100%',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                          fontFeatures: const [
-                            FontFeature.tabularFigures(),
-                          ],
-                        ),
+                        style: tokens.typography.styles.subtitle.subtitle1
+                            .copyWith(
+                              color: tokens.colors.alert.success.ink,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
                       ),
                     ],
                   )
                 else
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 5,
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${(progress * 100).round()}%',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                          fontFeatures: const [
-                            FontFeature.tabularFigures(),
-                          ],
-                        ),
-                      ),
-                    ],
+                  DesignSystemProgressBar(
+                    value: progress,
+                    progressText: progressText,
+                    semanticsLabel: context.messages.maintenanceRecreateFts5,
+                    semanticsValue: progressText,
                   ),
-                const SizedBox(height: 16),
+                SizedBox(height: tokens.spacing.step5),
                 if (error != null)
                   Text(
                     error,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontWeight: FontWeight.bold,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: tokens.colors.alert.error.ink,
                     ),
                     textAlign: TextAlign.center,
                   )
                 else
                   Text(
                     context.messages.maintenanceRecreateFts5,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
+                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                      color: tokens.colors.text.highEmphasis,
                     ),
                   ),
               ],

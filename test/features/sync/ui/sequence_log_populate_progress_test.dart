@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart';
 import 'package:lotti/features/sync/ui/sequence_log_populate_progress.dart';
-import 'package:lotti/l10n/app_localizations.dart';
+
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   Widget buildTestWidget(SequenceLogPopulateState state) {
-    return MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: Center(
-          child: SizedBox(
-            width: 400,
-            child: SequenceLogPopulateProgress(state: state),
-          ),
+    return makeTestableWidgetWithScaffold(
+      Center(
+        child: SizedBox(
+          width: 400,
+          child: SequenceLogPopulateProgress(state: state),
         ),
       ),
+      theme: DesignSystemTheme.light(),
     );
   }
 
@@ -74,7 +74,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      final progressBar = tester.widget<DesignSystemProgressBar>(
+        find.byType(DesignSystemProgressBar),
+      );
+      expect(progressBar.value, 0.5);
+      expect(progressBar.progressText, '50%');
       expect(find.text('50%'), findsOneWidget);
       expect(find.text('Processing journal entries...'), findsOneWidget);
     });
@@ -92,7 +96,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemProgressBar), findsOneWidget);
       expect(find.text('38%'), findsOneWidget);
       expect(find.text('Processing entry links...'), findsOneWidget);
     });
@@ -110,7 +114,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemProgressBar), findsOneWidget);
       expect(find.text('63%'), findsOneWidget);
       expect(find.text('Processing agent entities...'), findsOneWidget);
     });
@@ -128,7 +132,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemProgressBar), findsOneWidget);
       expect(find.text('88%'), findsOneWidget);
       expect(find.text('Processing agent links...'), findsOneWidget);
     });
@@ -144,7 +148,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemProgressBar), findsOneWidget);
       expect(find.text('0%'), findsOneWidget);
       // Should not show phase message when not running
       expect(find.text('Processing journal entries...'), findsNothing);
@@ -168,7 +172,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Should show progress UI, not completed
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemProgressBar), findsOneWidget);
       expect(find.text('100%'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle_outline), findsNothing);
     });
