@@ -170,15 +170,55 @@ test('a semicolon inside a note body is safe', () => {
 });
 
 test('a root may be a single file', () => {
-  // Passing a file used to throw a raw ENOTDIR stack trace. Checking one
-  // document is what you want while fixing the diagrams it reports.
+  // Passing a file used to throw a raw ENOTDIR stack trace. Asserting only
+  // that a *broken* file fails would not distinguish the fix from that crash,
+  // so this checks a valid file is read and counted, then that a broken one
+  // fails for a mermaid reason.
   const dir = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
   try {
-    const file = join(dir, 'one.md');
-    writeFileSync(file, '```mermaid\nflowchart TD\n  A -->\n```\n');
-    assert.throws(() =>
-      execFileSync('node', [script, file], { encoding: 'utf8', stdio: 'pipe' }),
-    );
+    const valid = join(dir, 'one.md');
+    writeFileSync(valid, good);
+    const output = execFileSync('node', [script, valid], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    assert.match(output, /parsed 1 block\(s\)/);
+
+    const broken = join(dir, 'two.md');
+    writeFileSync(broken, '```mermaid\nflowchart TD\n  A -->\n```\n');
+    try {
+      execFileSync('node', [script, broken], {
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+      assert.fail('a broken diagram in a file root must fail the run');
+    } catch (error) {
+      assert.match(`${error.stdout ?? ''}${error.stderr ?? ''}`, /FAIL/);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a root that is neither a directory nor markdown is rejected', () => {
+  // Silently scanning nothing and exiting 0 is the failure mode this whole
+  // tool exists to prevent.
+  const dir = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
+  try {
+    const notMarkdown = join(dir, 'README.txt');
+    writeFileSync(notMarkdown, 'flowchart TD\n  A --> B\n');
+    try {
+      execFileSync('node', [script, notMarkdown], {
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+      assert.fail('an unsupported root must not pass silently');
+    } catch (error) {
+      assert.match(
+        `${error.stdout ?? ''}${error.stderr ?? ''}`,
+        /not a directory or a markdown file/,
+      );
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

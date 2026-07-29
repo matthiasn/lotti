@@ -13,10 +13,13 @@
 // `dedupe payload by contentDigest; append messagePayload link; retract
 // vanished sources` — parsed clean and produced six nodes instead of one.
 //
-// Usage: node tool/okf/check_mermaid.mjs [dir...]
-// Defaults to `knowledge`. Several roots can be given, because the same trap is
-// invisible in any markdown the build does not parse: two broken ADR diagrams
-// shipped while this gate watched only the knowledge bundle.
+// Usage: node tool/okf/check_mermaid.mjs [path...]
+// Defaults to `knowledge`. Each path is a directory to scan or a single `.md`
+// file to check; anything else is rejected rather than silently scanning
+// nothing. Several roots can be given, because the same trap is invisible in
+// any markdown the build does not parse: two broken ADR diagrams shipped while
+// this gate watched only the knowledge bundle, and twelve more sat under
+// `docs/`.
 // Exits 0 when every block parses and renders the nodes it declares, 1 otherwise.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -49,7 +52,16 @@ if (roots.length === 0) roots.push('knowledge');
 /// what you want while fixing the diagrams it reports.
 function markdownFiles(target) {
   if (!statSync(target).isDirectory()) {
-    return target.endsWith('.md') ? [target] : [];
+    // Returning [] here would let `check_mermaid.mjs README.txt` report
+    // "0 blocks, 0 failed" and exit 0 — a false green in the one tool that
+    // exists to prevent them.
+    if (!target.endsWith('.md')) {
+      throw new Error(
+        `not a directory or a markdown file: ${target}\n` +
+          'Pass a directory to scan, or a .md file to check on its own.',
+      );
+    }
+    return [target];
   }
   return readdirSync(target).flatMap((entry) => {
     const path = join(target, entry);
@@ -125,9 +137,19 @@ function stripDepth(line, depth) {
   return rest;
 }
 
+// A bad root is a usage error, not a crash: report it the way every other
+// failure here is reported rather than as a raw Node stack trace.
+let targets;
+try {
+  targets = roots.flatMap((dir) => markdownFiles(dir));
+} catch (error) {
+  console.error(`\nmermaid: ${error.message}`);
+  process.exit(1);
+}
+
 const blocks = [];
 let unclosed = 0;
-for (const file of roots.flatMap((dir) => markdownFiles(dir))) {
+for (const file of targets) {
   const lines = readFileSync(file, 'utf8').split('\n');
   let opener = null;
   let openedAt = 0;
