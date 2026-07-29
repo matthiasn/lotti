@@ -105,9 +105,17 @@ current modal UI**.
 
 Two state fields are vestigial and easy to misread:
 `AudioRecorderStatus.initializing` exists but `build()` returns `stopped`
-immediately, using the async step only for permission probing and logging; and
-`showIndicator` exists but the desktop and mobile indicators derive visibility
-from `status == recording && !modalVisible` instead.
+immediately — there is no asynchronous initialization step; and `showIndicator`
+exists but the desktop and mobile indicators derive visibility from
+`status == recording && !modalVisible` instead.
+
+**`build()` must never touch the microphone.** `AudioRecorderRepository
+.hasPermission()` delegates to the `record` package, where on Android and iOS
+the check *is* the permission request. The app shell watches
+`audioRecorderControllerProvider` to size the recording-indicator strip
+(`lib/beamer/beamer_app.dart`), so the controller is constructed on the first
+frame of any route — a probe in `build()` popped the OS microphone dialog over
+the task list on a fresh install. Permission is requested lazily, in `record()`.
 
 ## Navigation is kept out of teardown
 
