@@ -612,28 +612,7 @@ class DayAgentWorkflow {
             threadId: threadId,
             runKey: runKey,
           );
-          // Deterministic re-arm: the next morning digest is scheduled by
-          // code, not by the model, so a digest that forgets set_next_wake
-          // cannot break the cadence. LWW on the deterministic record id.
-          final next = nextDigestTime(now);
-          await syncService.upsertEntity(
-            AgentDomainEntity.scheduledWake(
-              id: scheduledWakeRecordId(
-                agentId,
-                workspaceKey: coordinatorDigestWorkspaceKey,
-              ),
-              agentId: agentId,
-              scheduledAt: next,
-              status: ScheduledWakeStatus.pending,
-              reason: dayAgentDigestReason,
-              updatedAt: now,
-              vectorClock: null,
-              triggerTokens: [
-                dayAgentDigestToken(dayAgentIdForDate(next)),
-              ],
-              workspaceKey: coordinatorDigestWorkspaceKey,
-            ),
-          );
+          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
         }
       });
       onPersistedStateChanged
@@ -661,10 +640,48 @@ class DayAgentWorkflow {
           stackTrace: stackTrace,
         );
       }
+      if (wakeContext.isDigestWake && agentId == dailyOsPlannerAgentId) {
+        try {
+          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
+        } catch (scheduleError, stackTrace) {
+          _logError(
+            'failed to re-arm coordinator digest wake',
+            error: scheduleError,
+            stackTrace: stackTrace,
+          );
+        }
+      }
       return WakeResult(success: false, error: e.toString());
     } finally {
       await inferenceRepo?.dispose();
       conversationRepository.deleteConversation(conversationId);
     }
+  }
+
+  /// Schedules the coordinator's next morning digest after either success or
+  /// failure, because the current scheduled-wake record is consumed first.
+  Future<void> _scheduleNextCoordinatorDigest({
+    required String agentId,
+    required DateTime now,
+  }) async {
+    final next = nextDigestTime(now);
+    await syncService.upsertEntity(
+      AgentDomainEntity.scheduledWake(
+        id: scheduledWakeRecordId(
+          agentId,
+          workspaceKey: coordinatorDigestWorkspaceKey,
+        ),
+        agentId: agentId,
+        scheduledAt: next,
+        status: ScheduledWakeStatus.pending,
+        reason: dayAgentDigestReason,
+        updatedAt: now,
+        vectorClock: null,
+        triggerTokens: [
+          dayAgentDigestToken(dayAgentIdForDate(next)),
+        ],
+        workspaceKey: coordinatorDigestWorkspaceKey,
+      ),
+    );
   }
 }

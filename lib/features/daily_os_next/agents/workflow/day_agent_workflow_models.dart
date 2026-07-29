@@ -125,6 +125,7 @@ class DayAgentOutputBudgetInferenceRepository
   Stream<CreateChatCompletionStreamResponse> _bound(
     Stream<CreateChatCompletionStreamResponse> source,
     int effectiveLimit,
+    InferenceProviderType providerType,
   ) async* {
     var reachedLimit = false;
     await for (final response in source) {
@@ -137,11 +138,15 @@ class DayAgentOutputBudgetInferenceRepository
         reachedLimit = true;
       }
       final usage = response.usage;
-      final visibleOutputTokens = usage?.completionTokens;
-      final reasoningTokens =
-          usage?.completionTokensDetails?.reasoningTokens ?? 0;
-      if (visibleOutputTokens != null &&
-          visibleOutputTokens + reasoningTokens >= effectiveLimit) {
+      final completionTokens = usage?.completionTokens;
+      final effectiveCompletionTokens = completionTokens == null
+          ? null
+          : completionTokens +
+                (providerType == InferenceProviderType.gemini
+                    ? usage?.completionTokensDetails?.reasoningTokens ?? 0
+                    : 0);
+      if (effectiveCompletionTokens != null &&
+          effectiveCompletionTokens >= effectiveLimit) {
         reachedLimit = true;
       }
       yield response;
@@ -184,6 +189,7 @@ class DayAgentOutputBudgetInferenceRepository
         impactCollector: impactCollector,
       ),
       effectiveLimit,
+      provider.inferenceProviderType,
     );
   }
 
@@ -211,6 +217,7 @@ class DayAgentOutputBudgetInferenceRepository
         toolChoice: toolChoice,
       ),
       effectiveLimit,
+      provider.inferenceProviderType,
     );
   }
 }

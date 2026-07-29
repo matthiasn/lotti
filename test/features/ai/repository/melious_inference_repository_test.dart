@@ -2448,6 +2448,30 @@ void main() {
       expect(collector.impact, isNull);
     });
 
+    test('preserves a length finish reason in the synthetic chunk', () async {
+      final repo = repositoryWith((request) async {
+        return http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {'content': 'partial'},
+                'finish_reason': 'length',
+              },
+            ],
+            'usage': {'prompt_tokens': 10, 'completion_tokens': 5},
+          }),
+          200,
+        );
+      });
+
+      final chunks = await collectChat(repo, InferenceImpactCollector());
+
+      expect(
+        chunks.first.choices!.single.finishReason,
+        ChatCompletionFinishReason.length,
+      );
+    });
+
     test(
       'generateText with a collector routes through the non-streaming path',
       () async {

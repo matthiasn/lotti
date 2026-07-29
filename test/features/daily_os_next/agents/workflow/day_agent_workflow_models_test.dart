@@ -740,6 +740,36 @@ void main() {
       },
     );
 
+    test(
+      'OpenAI-compatible completion usage does not double-count reasoning',
+      () async {
+        final chunks = [
+          _textChunk(finishReason: ChatCompletionFinishReason.stop),
+          _usageChunk(outputTokens: 3000, reasoningTokens: 1096),
+        ];
+        final repository = DayAgentOutputBudgetInferenceRepository(
+          delegate: _StreamInferenceRepository(Stream.fromIterable(chunks)),
+          wakeKind: DayAgentWakeKind.refine,
+          maxCompletionTokens: 4096,
+        );
+
+        expect(
+          await repository
+              .generateText(
+                prompt: 'refine',
+                model: 'glm-5.2',
+                temperature: 0.3,
+                systemMessage: null,
+                provider: testInferenceProvider(
+                  inferenceProviderType: InferenceProviderType.melious,
+                ),
+              )
+              .toList(),
+          chunks,
+        );
+      },
+    );
+
     test('a natural response below the ceiling completes normally', () async {
       final chunks = [
         _textChunk(finishReason: ChatCompletionFinishReason.stop),

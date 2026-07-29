@@ -2072,6 +2072,55 @@ void main() {
         expect(outputBudget.maxCompletionTokens, 2304);
       });
 
+      test('re-arms the next digest when provider execution fails', () async {
+        conversationRepository.errorToThrow = Exception('model failed');
+
+        final result = await executeDigest(
+          workflow(directiveService: directiveService),
+        );
+
+        expect(result.success, isFalse);
+        final rearmed = upsertedEntities
+            .whereType<ScheduledWakeEntity>()
+            .single;
+        expect(rearmed.workspaceKey, coordinatorDigestWorkspaceKey);
+        expect(rearmed.status, ScheduledWakeStatus.pending);
+        expect(rearmed.scheduledAt, DateTime(2026, 5, 26, 6));
+        expect(
+          rearmed.triggerTokens,
+          [dayAgentDigestToken('dayplan-2026-05-26')],
+        );
+      });
+
+      test('logs when re-arming a failed digest also fails', () async {
+        conversationRepository.errorToThrow = Exception('model failed');
+        when(() => syncService.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final entity =
+              invocation.positionalArguments.single as AgentDomainEntity;
+          if (entity is ScheduledWakeEntity) {
+            throw StateError('wake write failed');
+          }
+          upsertedEntities.add(entity);
+        });
+
+        final result = await executeDigest(
+          workflow(directiveService: directiveService),
+        );
+
+        expect(result.success, isFalse);
+        verify(
+          () => domainLogger.error(
+            any(),
+            any(),
+            message: 'failed to re-arm coordinator digest wake',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+      });
+
       test(
         'renders <digest> with status events, directives, and the digest '
         'rules, then re-arms the next digest',

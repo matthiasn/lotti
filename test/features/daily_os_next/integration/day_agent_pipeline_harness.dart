@@ -507,7 +507,7 @@ class DelegatingAgentSyncService extends MockAgentSyncService {
 class PipelineAgentRepository extends InMemoryAgentRepository {
   var _readCount = 0;
 
-  /// Counted repository reads since the last reset.
+  /// Counted agent-repository reads since the last reset.
   int get readCount => _readCount;
 
   /// Starts a fresh read-count window for one benchmarked wake.

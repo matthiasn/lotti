@@ -452,6 +452,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       choices: [
         ChatCompletionStreamResponseChoice(
           index: 0,
+          finishReason: result.finishReason,
           delta: ChatCompletionStreamResponseDelta(
             content: result.content.isEmpty ? null : result.content,
             toolCalls: result.toolCalls.isEmpty ? null : result.toolCalls,
@@ -519,6 +520,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
       return _MeliousChatResult(
         content: content is String ? content : '',
+        finishReason: _parseFinishReason(firstChoice['finish_reason']),
         toolCalls: _parseToolCalls(messageMap['tool_calls']),
         usage: parseCompletionUsage(decoded['usage']),
         impact: MeliousCallImpact.fromResponseJson(
@@ -574,6 +576,15 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       );
     }
     return out;
+  }
+
+  static ChatCompletionFinishReason? _parseFinishReason(Object? raw) {
+    if (raw is! String) return null;
+    final normalized = raw.replaceAll('_', '').toLowerCase();
+    for (final reason in ChatCompletionFinishReason.values) {
+      if (reason.name.toLowerCase() == normalized) return reason;
+    }
+    return null;
   }
 
   /// Transcribes audio through Melious' OpenAI-compatible
@@ -1242,12 +1253,14 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 class _MeliousChatResult {
   const _MeliousChatResult({
     required this.content,
+    required this.finishReason,
     required this.toolCalls,
     required this.usage,
     required this.impact,
   });
 
   final String content;
+  final ChatCompletionFinishReason? finishReason;
   final List<ChatCompletionStreamMessageToolCallChunk> toolCalls;
   final CompletionUsage? usage;
   final MeliousCallImpact impact;

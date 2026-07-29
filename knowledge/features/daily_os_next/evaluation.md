@@ -761,11 +761,11 @@ and cache warming, not a real speedup.)
 `day_agent_wake_benchmark.dart` uses the same 1 / 6 / 12-month corpus ages and
 the production `DayAgentWorkflow`. Identities, prompt construction, tool
 dispatch, plan persistence, coordinator digest, knowledge, week context, soul,
-day-audio context, log compaction wiring, and repository reads are real; only
-provider responses are scripted. Non-terminal tools drive the same continuation
-loop as production, so refine and digest each include their follow-up provider
-request and terminal summary. It reports parse, draft, refine, and digest
-separately:
+day-audio context, log compaction wiring, and agent-repository reads are real;
+only provider responses are scripted. Non-terminal tools drive the same
+continuation loop as production, so refine and digest each include their
+follow-up provider request and terminal summary. It reports parse, draft,
+refine, and digest separately:
 
 - `promptBytes`: aggregate UTF-8 bytes in the serialized provider messages
   across every turn in the wake;
@@ -776,7 +776,8 @@ separately:
 - `outputTokens`: the same estimate over scripted assistant content and tool
   calls, summed across turns;
 - `durationMicros`: monotonic end-to-end workflow time;
-- `repositoryReads`: counted repository calls during the wake; and
+- `agentRepositoryReads`: counted `AgentRepository` calls during the wake;
+  Journal DB and task-repository reads are not included;
 - `outputTokenCeiling`: the production cap selected for that wake; and
 - `providerTurns`: provider requests made by the wake.
 
@@ -790,7 +791,7 @@ fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \
 
 Baseline on the same dev machine (1 / 6 / 12 months):
 
-| wake | prompt bytes | stable prefix bytes | input tokens | output tokens | repository reads | provider turns | duration range |
+| wake | prompt bytes | stable prefix bytes | input tokens | output tokens | agent-repository reads | provider turns | duration range |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Parse | 3,155 / 3,155 / 3,155 | 2,273 / 2,273 / 2,273 | 1,018 / 1,018 / 1,018 | 33 / 33 / 33 | 27 / 27 / 27 | 1 / 1 / 1 | 4.1–11.2 ms |
 | Draft | 9,630 / 9,630 / 9,630 | 8,715 / 8,715 / 8,715 | 3,320 / 3,320 / 3,320 | 76 / 76 / 76 | 25 / 25 / 25 | 1 / 1 / 1 | 4.7–9.8 ms |

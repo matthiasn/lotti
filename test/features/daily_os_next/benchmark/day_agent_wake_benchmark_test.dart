@@ -25,7 +25,7 @@ void main() {
       expect(metric.inputTokens, greaterThan(0));
       expect(metric.outputTokens, greaterThan(0));
       expect(metric.durationMicros, greaterThan(0));
-      expect(metric.repositoryReads, greaterThan(0));
+      expect(metric.agentRepositoryReads, greaterThan(0));
     }
     expect(report['parse']!.outputTokenCeiling, 4096);
     expect(report['draft']!.outputTokenCeiling, 8192);
@@ -65,7 +65,7 @@ void main() {
           'inputTokens',
           'outputTokens',
           'durationMicros',
-          'repositoryReads',
+          'agentRepositoryReads',
           'outputTokenCeiling',
           'providerTurns',
         ]) {
