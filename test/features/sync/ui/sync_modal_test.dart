@@ -107,8 +107,6 @@ void main() {
       SyncStep.savedTaskFilters: 13,
       SyncStep.backfillAgentEntityClocks: 11,
       SyncStep.backfillAgentLinkClocks: 12,
-      SyncStep.agentEntities: 3,
-      SyncStep.agentLinks: 2,
     };
 
     Future<void> simulateStep(
@@ -185,22 +183,6 @@ void main() {
       ),
     ).thenAnswer(
       (invocation) => simulateStep(SyncStep.savedTaskFilters, invocation),
-    );
-    when(
-      () => mockSyncMaintenanceRepository.syncAgentEntities(
-        onProgress: any(named: 'onProgress'),
-        onDetailedProgress: any(named: 'onDetailedProgress'),
-      ),
-    ).thenAnswer(
-      (invocation) => simulateStep(SyncStep.agentEntities, invocation),
-    );
-    when(
-      () => mockSyncMaintenanceRepository.syncAgentLinks(
-        onProgress: any(named: 'onProgress'),
-        onDetailedProgress: any(named: 'onDetailedProgress'),
-      ),
-    ).thenAnswer(
-      (invocation) => simulateStep(SyncStep.agentLinks, invocation),
     );
     when(
       () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
@@ -328,16 +310,16 @@ void main() {
             SyncStep.habits,
             SyncStep.aiSettings,
             SyncStep.savedTaskFilters,
-            SyncStep.backfillAgentEntityClocks,
-            SyncStep.backfillAgentLinkClocks,
-            SyncStep.agentEntities,
-            SyncStep.agentLinks,
+            // Settings only. Agent entities/links are offered on the entries
+            // path (Send message history), and the two agent clock backfills
+            // are a repair on the Backfill sync page — neither belongs in a
+            // "choose the entities you want to sync" selection.
           },
         ),
       );
 
       expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
-      expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
+      expect(find.text(messages.doneButton), findsOneWidget);
       expect(find.text('5 / 5'), findsOneWidget);
       expect(find.text('6 / 6'), findsOneWidget);
       expect(find.text('7 / 7'), findsOneWidget);
@@ -374,6 +356,35 @@ void main() {
       expect(find.text(messages.syncStepDashboards), findsOneWidget);
       expect(find.text(messages.syncStepHabits), findsOneWidget);
       expect(find.text(messages.syncStepAiSettings), findsOneWidget);
+      expect(find.text(messages.syncStepSavedTaskFilters), findsOneWidget);
+
+      // Agent data is journal-side, not settings: the entries path offers it
+      // (one "Agent entities" checkbox in Send message history covering both
+      // entities and links), and the two clock backfills are a repair on the
+      // Backfill sync page. None of the four may reappear here.
+      expect(
+        find.text(messages.syncStepBackfillAgentEntityClocks),
+        findsNothing,
+      );
+      expect(find.text(messages.syncStepBackfillAgentLinkClocks), findsNothing);
+
+      // Every box shares one left edge. DesignSystemCheckbox is an
+      // intrinsic-width Row, so a centered column staggers each box by label
+      // length and the list reads as arbitrarily indented.
+      final boxes = tester
+          .widgetList<DesignSystemCheckbox>(find.byType(DesignSystemCheckbox))
+          .toList();
+      expect(boxes.length, 7);
+      final lefts = find
+          .byType(DesignSystemCheckbox)
+          .evaluate()
+          .map((e) => tester.getTopLeft(find.byWidget(e.widget)).dx)
+          .toSet();
+      expect(
+        lefts.length,
+        1,
+        reason: 'checkboxes must share one left edge, found $lefts',
+      );
     },
   );
 
@@ -533,17 +544,14 @@ void main() {
       await tester.pump();
 
       expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
-      expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
+      expect(find.text(messages.doneButton), findsOneWidget);
 
       controller.complete();
       await tester.pump();
 
       // Tapping Done invokes reset() and closes the modal.
       final doneButton = tester.widget<DesignSystemButton>(
-        find.widgetWithText(
-          DesignSystemButton,
-          messages.doneButton.toUpperCase(),
-        ),
+        find.widgetWithText(DesignSystemButton, messages.doneButton),
       );
       doneButton.onPressed?.call();
       await tester.pumpAndSettle();

@@ -327,22 +327,6 @@ void main() {
         ).thenAnswer(
           (invocation) => runStep(invocation, SyncStep.backfillAgentLinkClocks),
         );
-        when(
-          () => mockRepository.syncAgentEntities(
-            onProgress: any(named: 'onProgress'),
-            onDetailedProgress: any(named: 'onDetailedProgress'),
-          ),
-        ).thenAnswer(
-          (invocation) => runStep(invocation, SyncStep.agentEntities),
-        );
-        when(
-          () => mockRepository.syncAgentLinks(
-            onProgress: any(named: 'onProgress'),
-            onDetailedProgress: any(named: 'onDetailedProgress'),
-          ),
-        ).thenAnswer(
-          (invocation) => runStep(invocation, SyncStep.agentLinks),
-        );
 
         if (scenario.shouldFail) {
           await expectLater(

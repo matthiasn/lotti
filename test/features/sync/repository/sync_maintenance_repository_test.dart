@@ -545,20 +545,6 @@ void main() {
           })
         >[
           (
-            subDomain: 'syncAgentEntities',
-            stubThrow: () => when(
-              () => mockAgentRepository.getAllEntities(),
-            ).thenThrow(testException),
-            call: () => syncMaintenanceRepository.syncAgentEntities(),
-          ),
-          (
-            subDomain: 'syncAgentLinks',
-            stubThrow: () => when(
-              () => mockAgentRepository.getAllLinks(),
-            ).thenThrow(testException),
-            call: () => syncMaintenanceRepository.syncAgentLinks(),
-          ),
-          (
             subDomain: 'backfillAgentEntityClocks',
             stubThrow: () => when(
               () => mockAgentRepository.getEntitiesWithNullVectorClock(),
@@ -836,80 +822,19 @@ void main() {
     );
   });
 
-  group('syncAgentEntities', () {
-    test('enqueues all agent entities for sync', () async {
-      final entity = AgentDomainEntity.agent(
-        id: 'agent-1',
-        agentId: 'agent-1',
-        kind: 'task_agent',
-        displayName: 'Test Agent',
-        lifecycle: AgentLifecycle.active,
-        mode: AgentInteractionMode.autonomous,
-        allowedCategoryIds: const {},
-        currentStateId: 'state-1',
-        config: const AgentConfig(),
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: null,
-      );
-
-      when(
-        () => mockAgentRepository.getAllEntities(),
-      ).thenAnswer((_) async => [entity]);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
-      await syncMaintenanceRepository.syncAgentEntities();
-
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final msg = captured.first as SyncMessage;
-      expect(
-        msg.mapOrNull(agentEntity: (m) => m.agentEntity!.id),
-        'agent-1',
-      );
-    });
-
-    test('enqueues nothing when no agent entities exist', () async {
-      when(
-        () => mockAgentRepository.getAllEntities(),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
-      await syncMaintenanceRepository.syncAgentEntities();
-
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
-    });
-  });
-
   group('_runOperation progress callbacks', () {
-    AgentDomainEntity makeEntity(String id) => AgentDomainEntity.agent(
-      id: id,
-      agentId: id,
-      kind: 'task_agent',
-      displayName: 'Agent $id',
-      lifecycle: AgentLifecycle.active,
-      mode: AgentInteractionMode.autonomous,
-      allowedCategoryIds: const {},
-      currentStateId: 'state-$id',
-      config: const AgentConfig(),
-      createdAt: DateTime(2024, 3, 15),
-      updatedAt: DateTime(2024, 3, 15),
-      vectorClock: null,
-    );
-
     test(
       'reports per-entity progress for non-empty operation (lines 449, '
       '458-459)',
       () async {
         when(
-          () => mockAgentRepository.getAllEntities(),
-        ).thenAnswer((_) async => [makeEntity('a'), makeEntity('b')]);
+          () => mockJournalDb.getAllMeasurableDataTypes(),
+        ).thenAnswer(
+          (_) async => [
+            FakeMeasurableDataType(id: 'a'),
+            FakeMeasurableDataType(id: 'b'),
+          ],
+        );
         when(
           () => mockOutboxService.enqueueMessage(any()),
         ).thenAnswer((_) async {});
@@ -917,7 +842,7 @@ void main() {
         final progressUpdates = <double>[];
         final detailedProgress = <List<int>>[];
 
-        await syncMaintenanceRepository.syncAgentEntities(
+        await syncMaintenanceRepository.syncMeasurables(
           onProgress: progressUpdates.add,
           onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
         );
@@ -937,13 +862,13 @@ void main() {
       'reports immediate completion for empty operation (lines 444-445)',
       () async {
         when(
-          () => mockAgentRepository.getAllEntities(),
-        ).thenAnswer((_) async => []);
+          () => mockJournalDb.getAllMeasurableDataTypes(),
+        ).thenAnswer((_) async => <MeasurableDataType>[]);
 
         final progressUpdates = <double>[];
         final detailedProgress = <List<int>>[];
 
-        await syncMaintenanceRepository.syncAgentEntities(
+        await syncMaintenanceRepository.syncMeasurables(
           onProgress: progressUpdates.add,
           onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
         );
@@ -957,49 +882,6 @@ void main() {
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
       },
     );
-  });
-
-  group('syncAgentLinks', () {
-    test('enqueues all agent links for sync', () async {
-      final link = AgentLink.agentTask(
-        id: 'link-1',
-        fromId: 'agent-1',
-        toId: 'task-1',
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: null,
-      );
-
-      when(
-        () => mockAgentRepository.getAllLinks(),
-      ).thenAnswer((_) async => [link]);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
-      await syncMaintenanceRepository.syncAgentLinks();
-
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final msg = captured.first as SyncMessage;
-      expect(
-        msg.mapOrNull(agentLink: (m) => m.agentLink!.id),
-        'link-1',
-      );
-    });
-
-    test('enqueues nothing when no agent links exist', () async {
-      when(() => mockAgentRepository.getAllLinks()).thenAnswer((_) async => []);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
-      await syncMaintenanceRepository.syncAgentLinks();
-
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
-    });
   });
 
   group('syncMaintenanceRepositoryProvider', () {
@@ -1426,8 +1308,6 @@ void main() {
       SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
       SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
       SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
-      SyncStep.agentEntities: 'syncAgentEntities',
-      SyncStep.agentLinks: 'syncAgentLinks',
     };
     const expectedTotalsDomains = <SyncStep, String>{
       SyncStep.measurables: 'fetchTotals_measurables',
@@ -1440,8 +1320,6 @@ void main() {
       SyncStep.backfillAgentEntityClocks:
           'fetchTotals_backfillAgentEntityClocks',
       SyncStep.backfillAgentLinkClocks: 'fetchTotals_backfillAgentLinkClocks',
-      SyncStep.agentEntities: 'fetchTotals_agentEntities',
-      SyncStep.agentLinks: 'fetchTotals_agentLinks',
     };
 
     test('maps every non-complete step to its sync and totals subDomain', () {

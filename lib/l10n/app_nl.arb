@@ -1343,6 +1343,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Geavanceerd herstel",
+  "backfillAgentClocksDescription": "Geef agent-entiteiten en -koppelingen die zonder vectorklok zijn opgeslagen alsnog een vectorklok, zodat je andere apparaten ze kunnen ordenen en ontvangen.",
+  "backfillAgentClocksFailed": "Kon de vectorklokken van agents niet herstellen",
+  "backfillAgentClocksTitle": "Vectorklokken van agents",
+  "backfillAgentClocksTrigger": "Vectorklokken herstellen",
   "backfillAskPeersConfirmAccept": "Vragen aan gelijken",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Hiermee wordt 1 onherstelbare vermelding in het sequentielogboek weer als ontbrekend gemarkeerd, zodat de normale inhaalslag andere apparaten opnieuw bevraagt. Apparaten die de gegevens nog hebben, reageren; echt onherstelbare vermeldingen worden na het amnestievenster van zeven dagen opnieuw als onherstelbaar aangemerkt.} other{Hiermee worden alle {count} onherstelbare vermeldingen in het sequentielogboek weer als ontbrekend gemarkeerd, zodat de normale inhaalslag andere apparaten opnieuw bevraagt. Apparaten die de gegevens nog hebben, reageren; echt onherstelbare vermeldingen worden na het amnestievenster van zeven dagen opnieuw als onherstelbaar aangemerkt.}}",
   "@backfillAskPeersConfirmContent": {
@@ -4592,7 +4596,7 @@
   "syncDevicesVerifiedChip": "Geverifieerd",
   "syncDisconnectExplanation": "Je notities blijven op dit apparaat staan. Het wordt afgemeld bij het sync-account en heeft een nieuwe koppelcode nodig om weer te synchroniseren. Je andere apparaten worden niet beïnvloed.",
   "syncDisconnectFailed": "Kon de synchronisatie van dit apparaat niet stoppen. Controleer je verbinding en probeer het opnieuw.",
-  "syncEntitiesConfirm": "START SYNC",
+  "syncEntitiesConfirm": "Start sync",
   "syncEntitiesMessage": "Kies de entiteiten die u wilt synchroniseren.",
   "syncEntitiesSuccessDescription": "Alles is up-to-date.",
   "syncEntitiesSuccessTitle": "Compleet synchroniseren",
@@ -4681,8 +4685,6 @@
   "syncSetupEmptyFootnote": "Draait op je eigen synchronisatieserver · niets verlaat je apparaten onversleuteld",
   "syncSetupEmptyHint": "Je dagboek op elk apparaat dat je bezit. End-to-end versleuteld, alleen tussen jouw apparaten — zonder cloudaccount.",
   "syncSetupEmptyTitle": "Synchroniseer je apparaten",
-  "syncStepAgentEntities": "Agententiteiten",
-  "syncStepAgentLinks": "Agent links",
   "syncStepAiSettings": "AI-instellingen",
   "syncStepBackfillAgentEntityClocks": "Klokken met een eenheid van vulmiddel",
   "syncStepBackfillAgentLinkClocks": "Klokken met een koppeling tussen backfillmiddel en klokken",

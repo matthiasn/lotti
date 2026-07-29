@@ -1168,6 +1168,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Erweiterte Wiederherstellung",
+  "backfillAgentClocksDescription": "Versieh Agenten-Entitäten und Agenten-Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.",
+  "backfillAgentClocksFailed": "Agenten-Vektoruhren konnten nicht repariert werden",
+  "backfillAgentClocksTitle": "Agenten-Vektoruhren",
+  "backfillAgentClocksTrigger": "Vektoruhren reparieren",
   "backfillAskPeersConfirmAccept": "Peers fragen",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Setzt 1 unlösbaren Sequenzlog-Eintrag zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.} other{Setzt alle {count} unlösbaren Sequenzlog-Einträge zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.}}",
   "@backfillAskPeersConfirmContent": {
@@ -4042,7 +4046,7 @@
   "syncDevicesVerifiedChip": "Verifiziert",
   "syncDisconnectExplanation": "Deine Einträge bleiben auf diesem Gerät. Es wird vom Sync-Konto abgemeldet und braucht einen neuen Kopplungscode, um wieder zu synchronisieren. Deine anderen Geräte sind nicht betroffen.",
   "syncDisconnectFailed": "Die Synchronisierung dieses Geräts konnte nicht beendet werden. Prüfe deine Verbindung und versuche es erneut.",
-  "syncEntitiesConfirm": "SYNC STARTEN",
+  "syncEntitiesConfirm": "Sync starten",
   "syncEntitiesMessage": "Wähle die Daten, die du synchronisieren möchtest.",
   "syncEntitiesSuccessDescription": "Alles ist auf dem neuesten Stand.",
   "syncEntitiesSuccessTitle": "Synchronisierung abgeschlossen",
@@ -4131,8 +4135,6 @@
   "syncSetupEmptyFootnote": "Läuft auf deinem eigenen Sync-Server · nichts verlässt deine Geräte unverschlüsselt",
   "syncSetupEmptyHint": "Dein Tagebuch auf jedem deiner Geräte. Ende-zu-Ende-verschlüsselt, nur zwischen deinen Geräten — ohne Cloud-Konto.",
   "syncSetupEmptyTitle": "Geräte synchronisieren",
-  "syncStepAgentEntities": "Agent-Entitäten",
-  "syncStepAgentLinks": "Agent-Links",
   "syncStepAiSettings": "KI-Einstellungen",
   "syncStepBackfillAgentEntityClocks": "Vektoruhren für Agent-Entitäten nachtragen",
   "syncStepBackfillAgentLinkClocks": "Vektoruhren für Agent-Links nachtragen",

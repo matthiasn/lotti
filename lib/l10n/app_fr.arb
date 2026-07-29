@@ -1168,6 +1168,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Récupération avancée",
+  "backfillAgentClocksDescription": "Complète les entités et liens d'agent enregistrés sans horloge vectorielle, pour que tes autres appareils puissent les ordonner et les recevoir.",
+  "backfillAgentClocksFailed": "Impossible de réparer les horloges vectorielles des agents",
+  "backfillAgentClocksTitle": "Horloges vectorielles des agents",
+  "backfillAgentClocksTrigger": "Réparer les horloges vectorielles",
   "backfillAskPeersConfirmAccept": "Demander aux pairs",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Bascule 1 entrée du journal de séquence irrésoluble vers manquante pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d'amnistie de 7 jours.} other{Bascule les {count} entrées du journal de séquence irrésolubles vers manquantes pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d'amnistie de 7 jours.}}",
   "@backfillAskPeersConfirmContent": {
@@ -4042,7 +4046,7 @@
   "syncDevicesVerifiedChip": "Vérifié",
   "syncDisconnectExplanation": "Tes entrées restent sur cet appareil. Il est déconnecté du compte de synchronisation et aura besoin d’un nouveau code pour se resynchroniser. Tes autres appareils ne sont pas affectés.",
   "syncDisconnectFailed": "Impossible d’arrêter la synchronisation de cet appareil. Vérifie ta connexion et réessaie.",
-  "syncEntitiesConfirm": "DÉMARRER LA SYNCHRONISATION",
+  "syncEntitiesConfirm": "Démarrer la synchronisation",
   "syncEntitiesMessage": "Choisis les données à synchroniser.",
   "syncEntitiesSuccessDescription": "Tout est à jour.",
   "syncEntitiesSuccessTitle": "Synchronisation terminée",
@@ -4131,8 +4135,6 @@
   "syncSetupEmptyFootnote": "Fonctionne sur ton propre serveur de synchronisation · rien ne quitte tes appareils sans chiffrement",
   "syncSetupEmptyHint": "Ton journal sur chacun de tes appareils. Chiffré de bout en bout, uniquement entre tes appareils — sans compte cloud.",
   "syncSetupEmptyTitle": "Synchronise tes appareils",
-  "syncStepAgentEntities": "Entités d'agent",
-  "syncStepAgentLinks": "Liens d'agent",
   "syncStepAiSettings": "Paramètres IA",
   "syncStepBackfillAgentEntityClocks": "Remplir les horloges des entités d'agent",
   "syncStepBackfillAgentLinkClocks": "Remplir les horloges des liens d'agent",

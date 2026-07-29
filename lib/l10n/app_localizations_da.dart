@@ -2450,6 +2450,20 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Avanceret genopretning';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Giv agent-entiteter og -links, der blev gemt uden vektorur, et vektorur, så dine andre enheder kan sortere og modtage dem.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Agenternes vektorure kunne ikke repareres';
+
+  @override
+  String get backfillAgentClocksTitle => 'Agenternes vektorure';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Reparer vektorure';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Spørg jævnaldrende';
 
   @override
@@ -9914,7 +9928,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Synkroniseringen for denne enhed kunne ikke stoppes. Tjek din forbindelse, og prøv igen.';
 
   @override
-  String get syncEntitiesConfirm => 'START SYNC';
+  String get syncEntitiesConfirm => 'Start synk';
 
   @override
   String get syncEntitiesMessage => 'Vælg de enheder, du vil synkronisere.';
@@ -10186,12 +10200,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Synkronisér dine enheder';
-
-  @override
-  String get syncStepAgentEntities => 'Agentenheder';
-
-  @override
-  String get syncStepAgentLinks => 'Agentlinks';
 
   @override
   String get syncStepAiSettings => 'AI-indstillinger';

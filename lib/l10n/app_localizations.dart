@@ -4290,6 +4290,30 @@ abstract class AppLocalizations {
   /// **'Advanced recovery'**
   String get backfillAdvancedRecoveryTitle;
 
+  /// No description provided for @backfillAgentClocksDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a vector clock to agent entities and links that were saved without one, so your other devices can order and receive them.'**
+  String get backfillAgentClocksDescription;
+
+  /// No description provided for @backfillAgentClocksFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not repair agent vector clocks'**
+  String get backfillAgentClocksFailed;
+
+  /// No description provided for @backfillAgentClocksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent vector clocks'**
+  String get backfillAgentClocksTitle;
+
+  /// No description provided for @backfillAgentClocksTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair vector clocks'**
+  String get backfillAgentClocksTrigger;
+
   /// No description provided for @backfillAskPeersConfirmAccept.
   ///
   /// In en, this message translates to:
@@ -17046,7 +17070,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncEntitiesConfirm.
   ///
   /// In en, this message translates to:
-  /// **'START SYNC'**
+  /// **'Start sync'**
   String get syncEntitiesConfirm;
 
   /// No description provided for @syncEntitiesMessage.
@@ -17516,18 +17540,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync your devices'**
   String get syncSetupEmptyTitle;
-
-  /// No description provided for @syncStepAgentEntities.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent entities'**
-  String get syncStepAgentEntities;
-
-  /// No description provided for @syncStepAgentLinks.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent links'**
-  String get syncStepAgentLinks;
 
   /// No description provided for @syncStepAiSettings.
   ///

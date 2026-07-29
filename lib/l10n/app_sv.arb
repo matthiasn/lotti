@@ -1344,6 +1344,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Avancerad återhämtning",
+  "backfillAgentClocksDescription": "Ge agententiteter och agentlänkar som sparats utan vektorklocka en vektorklocka, så att dina andra enheter kan ordna och ta emot dem.",
+  "backfillAgentClocksFailed": "Agenternas vektorklockor kunde inte repareras",
+  "backfillAgentClocksTitle": "Agenternas vektorklockor",
+  "backfillAgentClocksTrigger": "Reparera vektorklockor",
   "backfillAskPeersConfirmAccept": "Fråga kollegor",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Detta vänder tillbaka en olösbar sekvensloggpost till att saknas, så den normala backfill-svepningen frågar om peers. Jämliker som fortfarande har nyttolasten kommer att svara; Verkligt oåterkalleliga inträden kommer att pensioneras igen efter sju dagars amnestifönster. } other{Detta vänder alla {count} olösbara sekvensloggposter tillbaka till att saknas, så att den normala backfill-sweepen frågar peers igen. Jämliker som fortfarande har nyttolasten kommer att svara; Verkligt oåterkalleliga inträden kommer att pensioneras igen efter sju dagars amnestifönster. }}",
   "@backfillAskPeersConfirmContent": {
@@ -4593,7 +4597,7 @@
   "syncDevicesVerifiedChip": "Verifierad",
   "syncDisconnectExplanation": "Dina anteckningar stannar på den här enheten. Den loggas ut från synkkontot och behöver en ny parkopplingskod för att synka igen. Dina andra enheter påverkas inte.",
   "syncDisconnectFailed": "Det gick inte att stoppa synkroniseringen för den här enheten. Kontrollera din anslutning och försök igen.",
-  "syncEntitiesConfirm": "STARTA SYNKRONISERING",
+  "syncEntitiesConfirm": "Starta synkronisering",
   "syncEntitiesMessage": "Välj de enheter du vill synka.",
   "syncEntitiesSuccessDescription": "Allt är uppdaterat.",
   "syncEntitiesSuccessTitle": "Synkronisering klar",
@@ -4682,8 +4686,6 @@
   "syncSetupEmptyFootnote": "Körs på din egen synkroniseringsserver · inget lämnar dina enheter okrypterat",
   "syncSetupEmptyHint": "Din dagbok på alla dina enheter. Totalsträckskrypterad, bara mellan dina enheter — inget molnkonto.",
   "syncSetupEmptyTitle": "Synka dina enheter",
-  "syncStepAgentEntities": "Agententiteter",
-  "syncStepAgentLinks": "Agentlänkar",
   "syncStepAiSettings": "AI-inställningar",
   "syncStepBackfillAgentEntityClocks": "Urtagningsagentens enhetsklockor",
   "syncStepBackfillAgentLinkClocks": "Klockor för backfill agent link",

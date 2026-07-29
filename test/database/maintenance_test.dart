@@ -602,6 +602,55 @@ void main() {
         );
       });
 
+      test('stamps a clockless agent entity before enqueueing it', () async {
+        // A row persisted with vectorClock: null is applied by the peer but
+        // skipped by _recordReceivedAgentEntity, so it lands invisible to the
+        // sequence log and to backfill. The sweep is the last place it can
+        // still be fixed, and stamping here rather than in a preflight keeps
+        // the repair inside the interval the user actually chose.
+        final baseDate = DateTime(2024, 10);
+        final insideDate = baseDate.add(const Duration(hours: 12));
+        const stamped = VectorClock({'node': 7});
+
+        when(
+          () => vectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+          ),
+        ).thenAnswer((_) async => stamped);
+        await populateAgentDb(
+          entities: [
+            AgentDomainEntity.agent(
+              id: 'clockless-entity',
+              agentId: 'agent-1',
+              kind: 'task_agent',
+              displayName: 'Clockless Agent',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'state-1',
+              config: const AgentConfig(),
+              createdAt: insideDate,
+              updatedAt: insideDate,
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(days: 1)),
+          end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
+        );
+
+        final sent = sentMessages.whereType<SyncAgentEntity>().toList();
+        expect(sent, hasLength(1));
+        // The message carries the clock, not the null it was stored with.
+        expect(sent.first.agentEntity?.vectorClock, stamped);
+        // And the repair is durable, not just applied to the outgoing copy.
+        final reloaded = await agentRepo.getEntity('clockless-entity');
+        expect(reloaded?.vectorClock, stamped);
+      });
+
       test('enqueues agent links updated within interval', () async {
         final baseDate = DateTime(2024, 11);
         final insideDate = baseDate.add(const Duration(hours: 6));
@@ -642,6 +691,58 @@ void main() {
         final linkMessages = sentMessages.whereType<SyncAgentLink>().toList();
         expect(linkMessages, hasLength(1));
         expect(linkMessages.first.agentLink?.id, equals('agent-link-1'));
+      });
+
+      test('stamps a clockless agent link before enqueueing it', () async {
+        final baseDate = DateTime(2024, 11);
+        final insideDate = baseDate.add(const Duration(hours: 6));
+        const stamped = VectorClock({'node': 9});
+
+        when(
+          () => vectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+          ),
+        ).thenAnswer((_) async => stamped);
+
+        // The link's endpoints must exist, and the entity carries a clock
+        // already so only the link exercises the stamping path here.
+        final entity = AgentDomainEntity.agent(
+          id: 'clockless-link-entity',
+          agentId: 'clockless-link-agent',
+          kind: 'task_agent',
+          displayName: 'Link Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: insideDate,
+          updatedAt: insideDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+        final link = agent_model.AgentLink.basic(
+          id: 'clockless-link',
+          fromId: 'clockless-link-agent',
+          toId: 'clockless-link-entity',
+          createdAt: insideDate,
+          updatedAt: insideDate,
+          vectorClock: null,
+        );
+
+        await populateAgentDb(entities: [entity], links: [link]);
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(days: 1)),
+          end: baseDate.add(const Duration(days: 1)),
+          agentRepository: agentRepo,
+        );
+
+        final sent = sentMessages.whereType<SyncAgentLink>().toList();
+        expect(sent, hasLength(1));
+        expect(sent.first.agentLink?.vectorClock, stamped);
+
+        final reloaded = await agentRepo.getLinkById('clockless-link');
+        expect(reloaded?.vectorClock, stamped);
       });
 
       test('does not enqueue agent entities outside interval', () async {

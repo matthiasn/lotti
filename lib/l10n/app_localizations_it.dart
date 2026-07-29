@@ -2486,6 +2486,20 @@ class AppLocalizationsIt extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Recupero avanzato';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Applica un orologio vettoriale alle entità e ai collegamenti degli agenti che ne sono privi, così i tuoi altri dispositivi possono ordinarli e riceverli.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Impossibile riparare gli orologi vettoriali degli agenti';
+
+  @override
+  String get backfillAgentClocksTitle => 'Orologi vettoriali degli agenti';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Ripara gli orologi vettoriali';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Chiedi ai colleghi';
 
   @override
@@ -10054,7 +10068,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non è stato possibile interrompere la sincronizzazione di questo dispositivo. Controlla la connessione e riprova.';
 
   @override
-  String get syncEntitiesConfirm => 'AVVIA SINCRONIZZAZIONE';
+  String get syncEntitiesConfirm => 'Avvia sincronizzazione';
 
   @override
   String get syncEntitiesMessage => 'Scegli le entità che vuoi sincronizzare.';
@@ -10330,12 +10344,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Sincronizza i tuoi dispositivi';
-
-  @override
-  String get syncStepAgentEntities => 'entità dell\'agente';
-
-  @override
-  String get syncStepAgentLinks => 'Link dell\'agente';
 
   @override
   String get syncStepAiSettings => 'Impostazioni dell\'intelligenza';

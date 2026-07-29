@@ -1175,6 +1175,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Pokročilé obnovení",
+  "backfillAgentClocksDescription": "Doplň vektorové hodiny agentním entitám a odkazům, které byly uloženy bez nich, aby je tvá ostatní zařízení mohla seřadit a přijmout.",
+  "backfillAgentClocksFailed": "Vektorové hodiny agentů se nepodařilo opravit",
+  "backfillAgentClocksTitle": "Vektorové hodiny agentů",
+  "backfillAgentClocksTrigger": "Opravit vektorové hodiny",
   "backfillAskPeersConfirmAccept": "Zeptat se peerů",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Toto vrátí 1 neřešitelný záznam sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.} few{Toto vrátí všechny {count} neřešitelné záznamy sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.} other{Toto vrátí všech {count} neřešitelných záznamů sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.}}",
   "@backfillAskPeersConfirmContent": {
@@ -4049,7 +4053,7 @@
   "syncDevicesVerifiedChip": "Ověřeno",
   "syncDisconnectExplanation": "Tvé záznamy zůstanou na tomto zařízení. Bude odhlášeno ze synchronizačního účtu a k opětovné synchronizaci bude potřebovat nový párovací kód. Ostatní zařízení to neovlivní.",
   "syncDisconnectFailed": "Synchronizaci tohoto zařízení se nepodařilo zastavit. Zkontroluj připojení a zkus to znovu.",
-  "syncEntitiesConfirm": "SPUSTIT SYNCHRONIZACI",
+  "syncEntitiesConfirm": "Spustit synchronizaci",
   "syncEntitiesMessage": "Vyberte entity, které chcete synchronizovat.",
   "syncEntitiesSuccessDescription": "Vše je aktuální.",
   "syncEntitiesSuccessTitle": "Synchronizace dokončena",
@@ -4138,8 +4142,6 @@
   "syncSetupEmptyFootnote": "Běží na tvém vlastním synchronizačním serveru · nic neopouští tvá zařízení nešifrované",
   "syncSetupEmptyHint": "Tvůj deník na každém tvém zařízení. End-to-end šifrovaný, jen mezi tvými zařízeními — bez cloudového účtu.",
   "syncSetupEmptyTitle": "Synchronizuj svá zařízení",
-  "syncStepAgentEntities": "Entity agentů",
-  "syncStepAgentLinks": "Propojení agentů",
   "syncStepAiSettings": "AI nastavení",
   "syncStepBackfillAgentEntityClocks": "Doplnění hodin entit agentů",
   "syncStepBackfillAgentLinkClocks": "Doplnění hodin propojení agentů",

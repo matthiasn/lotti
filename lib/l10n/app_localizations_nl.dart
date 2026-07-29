@@ -2461,6 +2461,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Geavanceerd herstel';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Geef agent-entiteiten en -koppelingen die zonder vectorklok zijn opgeslagen alsnog een vectorklok, zodat je andere apparaten ze kunnen ordenen en ontvangen.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Kon de vectorklokken van agents niet herstellen';
+
+  @override
+  String get backfillAgentClocksTitle => 'Vectorklokken van agents';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Vectorklokken herstellen';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Vragen aan gelijken';
 
   @override
@@ -9946,7 +9960,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon de synchronisatie van dit apparaat niet stoppen. Controleer je verbinding en probeer het opnieuw.';
 
   @override
-  String get syncEntitiesConfirm => 'START SYNC';
+  String get syncEntitiesConfirm => 'Start sync';
 
   @override
   String get syncEntitiesMessage =>
@@ -10221,12 +10235,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Synchroniseer je apparaten';
-
-  @override
-  String get syncStepAgentEntities => 'Agententiteiten';
-
-  @override
-  String get syncStepAgentLinks => 'Agent links';
 
   @override
   String get syncStepAiSettings => 'AI-instellingen';

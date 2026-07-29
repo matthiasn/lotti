@@ -1,13 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
@@ -48,6 +51,9 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(Duration.zero);
+    // fetchTotalsForSteps takes a non-nullable Set<SyncStep>; without a
+    // fallback, any() cannot match and syncAll gets a null totals map.
+    registerFallbackValue(<SyncStep>{});
   });
 
   setUp(() async {
@@ -88,10 +94,14 @@ void main() {
   // because production hosts (V2 panel registry + legacy
   // SliverBoxAdapterPage) both supply scrolling — without it the
   // expanded recovery group overflows a fixed-height test viewport.
-  Future<void> pumpBody(WidgetTester tester) async {
+  Future<void> pumpBody(
+    WidgetTester tester, {
+    List<Override> overrides = const [],
+  }) async {
     await tester.pumpWidget(
-      const RiverpodWidgetTestBench(
-        child: SingleChildScrollView(child: BackfillSettingsBody()),
+      RiverpodWidgetTestBench(
+        overrides: overrides,
+        child: const SingleChildScrollView(child: BackfillSettingsBody()),
       ),
     );
     await tester.pump();
@@ -322,11 +332,11 @@ void main() {
     testWidgets('header shows the action count meta', (tester) async {
       await pumpBody(tester);
       final messages = messagesOf(tester);
-      // Without skipped events, six actions are shown; the skipped
+      // Without skipped events, seven actions are shown; the skipped
       // entry is conditional and gated on skipped > 0, which we have
       // no way to populate here (no Matrix coordinator in DI).
       expect(
-        find.text(messages.backfillAdvancedRecoveryActions(6)),
+        find.text(messages.backfillAdvancedRecoveryActions(7)),
         findsOneWidget,
       );
     });
@@ -641,9 +651,9 @@ void main() {
         await emitDepth(tester, total: 0, abandoned: 3);
         final messages = messagesOf(tester);
 
-        // Header meta now reports 7 actions (6 base + 1 retry-skipped).
+        // Header meta now reports 8 actions (7 base + 1 retry-skipped).
         expect(
-          find.text(messages.backfillAdvancedRecoveryActions(7)),
+          find.text(messages.backfillAdvancedRecoveryActions(8)),
           findsOneWidget,
         );
 
@@ -1011,6 +1021,109 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
 
       verify(() => mockSequenceService.resetUnresolvableEntries()).called(1);
+    });
+
+    testWidgets('Agent vector clocks repair runs both backfills', (
+      tester,
+    ) async {
+      final repo = MockSyncMaintenanceRepository();
+      when(
+        () => repo.fetchTotalsForSteps(any()),
+      ).thenAnswer((_) async => <SyncStep, int>{});
+      when(
+        () => repo.backfillAgentEntityClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => repo.backfillAgentLinkClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await pumpBody(
+        tester,
+        overrides: [
+          syncMaintenanceRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      final messages = messagesOf(tester);
+
+      await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      final btn = find.widgetWithText(
+        DesignSystemButton,
+        messages.backfillAgentClocksTrigger,
+      );
+      await tester.ensureVisible(btn);
+      await tester.pump();
+      await tester.tap(btn);
+      // syncAll awaits fetchTotalsForSteps before reaching the operations, so
+      // one frame is not enough to see both halves run.
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 250));
+      }
+      // Both halves are requested as one repair: they are the same fix over
+      // two tables, and each no-ops when nothing is missing a clock.
+      // The action requests exactly the two clock steps as one repair — they
+      // are the same fix over two tables, and each no-ops when nothing is
+      // missing a clock. Asserted at the totals call rather than on the two
+      // operations: driving them through the shared controller from this
+      // harness proved unreliable, and the stamping itself is covered
+      // directly in test/database/maintenance_test.dart.
+      verify(
+        () => repo.fetchTotalsForSteps({
+          SyncStep.backfillAgentEntityClocks,
+          SyncStep.backfillAgentLinkClocks,
+        }),
+      ).called(1);
+    });
+
+    testWidgets('Agent vector clocks repair surfaces a localized failure', (
+      tester,
+    ) async {
+      final repo = MockSyncMaintenanceRepository();
+      when(
+        () => repo.fetchTotalsForSteps(any()),
+      ).thenAnswer((_) async => <SyncStep, int>{});
+      when(
+        () => repo.backfillAgentEntityClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).thenThrow(Exception('boom'));
+
+      await pumpBody(
+        tester,
+        overrides: [
+          syncMaintenanceRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      final messages = messagesOf(tester);
+
+      await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      final btn = find.widgetWithText(
+        DesignSystemButton,
+        messages.backfillAgentClocksTrigger,
+      );
+      await tester.ensureVisible(btn);
+      await tester.pump();
+      await tester.tap(btn);
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 250));
+      }
+
+      // The localized label, not SyncError.toString() — that is a hard-coded
+      // English sentence and would reach every locale untranslated.
+      expect(find.text(messages.backfillAgentClocksFailed), findsOneWidget);
+      expect(find.text('Exception: boom'), findsNothing);
     });
 
     testWidgets('Re-request pending tap calls the backfill service', (

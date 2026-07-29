@@ -1168,6 +1168,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Recuperación avanzada",
+  "backfillAgentClocksDescription": "Añade un reloj vectorial a las entidades y los enlaces de agente que se guardaron sin uno, para que tus otros dispositivos puedan ordenarlos y recibirlos.",
+  "backfillAgentClocksFailed": "No se han podido reparar los relojes vectoriales de agentes",
+  "backfillAgentClocksTitle": "Relojes vectoriales de agentes",
+  "backfillAgentClocksTrigger": "Reparar relojes vectoriales",
   "backfillAskPeersConfirmAccept": "Preguntar a pares",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Esto vuelve a poner 1 entrada irresoluble del registro de secuencia como faltante para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entradas realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.} other{Esto vuelve a poner las {count} entradas irresolubles del registro de secuencia como faltantes para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entradas realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.}}",
   "@backfillAskPeersConfirmContent": {
@@ -4042,7 +4046,7 @@
   "syncDevicesVerifiedChip": "Verificado",
   "syncDisconnectExplanation": "Tus entradas se quedan en este dispositivo. Se cerrará su sesión en la cuenta de sincronización y necesitará un código nuevo para volver a sincronizar. Tus otros dispositivos no se ven afectados.",
   "syncDisconnectFailed": "No se pudo detener la sincronización de este dispositivo. Comprueba tu conexión e inténtalo de nuevo.",
-  "syncEntitiesConfirm": "INICIAR SINCRONIZACIÓN",
+  "syncEntitiesConfirm": "Iniciar sincronización",
   "syncEntitiesMessage": "Elige los datos que quieres sincronizar.",
   "syncEntitiesSuccessDescription": "Todo está al día.",
   "syncEntitiesSuccessTitle": "Sincronización completada",
@@ -4131,8 +4135,6 @@
   "syncSetupEmptyFootnote": "Funciona en tu propio servidor de sincronización · nada sale de tus dispositivos sin cifrar",
   "syncSetupEmptyHint": "Tu diario en todos tus dispositivos. Cifrado de extremo a extremo, solo entre tus dispositivos: sin cuenta en la nube.",
   "syncSetupEmptyTitle": "Sincroniza tus dispositivos",
-  "syncStepAgentEntities": "Entidades de agente",
-  "syncStepAgentLinks": "Enlaces de agente",
   "syncStepAiSettings": "Configuración de IA",
   "syncStepBackfillAgentEntityClocks": "Rellenar relojes de entidades de agente",
   "syncStepBackfillAgentLinkClocks": "Rellenar relojes de enlaces de agente",

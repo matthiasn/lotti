@@ -2471,6 +2471,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Erweiterte Wiederherstellung';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Versieh Agenten-Entitäten und Agenten-Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Agenten-Vektoruhren konnten nicht repariert werden';
+
+  @override
+  String get backfillAgentClocksTitle => 'Agenten-Vektoruhren';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Vektoruhren reparieren';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Peers fragen';
 
   @override
@@ -9972,7 +9986,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Synchronisierung dieses Geräts konnte nicht beendet werden. Prüfe deine Verbindung und versuche es erneut.';
 
   @override
-  String get syncEntitiesConfirm => 'SYNC STARTEN';
+  String get syncEntitiesConfirm => 'Sync starten';
 
   @override
   String get syncEntitiesMessage =>
@@ -10249,12 +10263,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Geräte synchronisieren';
-
-  @override
-  String get syncStepAgentEntities => 'Agent-Entitäten';
-
-  @override
-  String get syncStepAgentLinks => 'Agent-Links';
 
   @override
   String get syncStepAiSettings => 'KI-Einstellungen';

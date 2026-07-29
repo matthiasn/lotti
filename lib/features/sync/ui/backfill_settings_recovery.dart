@@ -4,9 +4,11 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
+import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Collapsible group containing every recovery action. Header is
@@ -19,6 +21,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 ///   5. Re-request pending (secondary, disabled when 0)
 ///   6. Ask peers for unresolvable (primary, disabled when 0)
 ///   7. Retire stuck entries (danger-tertiary, disabled when 0)
+///   8. Agent vector clocks (primary) — repairs agent rows saved without a
+///      vector clock. Lives here rather than in the "choose the entities you
+///      want to sync" sheet: it repairs data rather than selecting what to
+///      send, and a row with no clock cannot be ordered by any peer.
 class AdvancedRecoveryGroup extends StatefulWidget {
   const AdvancedRecoveryGroup({
     required this.stats,
@@ -38,6 +44,7 @@ class AdvancedRecoveryGroup extends StatefulWidget {
 class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
     with SingleTickerProviderStateMixin {
   bool _open = false;
+  bool _isRepairingAgentClocks = false;
   late final AnimationController _chevController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 180),
@@ -266,7 +273,63 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
             ? null
             : () => _confirmAndRetireStuck(context, openCount),
       ),
+      _RecoveryAction(
+        icon: Icons.schedule_rounded,
+        title: messages.backfillAgentClocksTitle,
+        description: messages.backfillAgentClocksDescription,
+        ctaLabel: _isRepairingAgentClocks
+            ? messages.backfillManualProcessing
+            : messages.backfillAgentClocksTrigger,
+        ctaIcon: Icons.schedule_rounded,
+        tone: _RecoveryTone.primary,
+        isBusy: _isRepairingAgentClocks,
+        onPressed: (controllerBusy || _isRepairingAgentClocks)
+            ? null
+            : () => _repairAgentClocks(context),
+      ),
     ];
+  }
+
+  /// Stamps agent entities and links that were persisted without a vector
+  /// clock, then enqueues them.
+  ///
+  /// Both halves run together: they are the same repair over two tables, each
+  /// no-ops when nothing is missing a clock, and there is no reason to offer a
+  /// half-repaired state as a choice.
+  Future<void> _repairAgentClocks(BuildContext context) async {
+    final messages = context.messages;
+    final syncController = ProviderScope.containerOf(
+      context,
+    ).read(syncControllerProvider.notifier);
+    setState(() => _isRepairingAgentClocks = true);
+    try {
+      await syncController.syncAll(
+        selectedSteps: const {
+          SyncStep.backfillAgentEntityClocks,
+          SyncStep.backfillAgentLinkClocks,
+        },
+      );
+      // syncAll parks the shared controller at progress == 100 with these
+      // steps selected. SyncModal reads the same provider, so without this
+      // the next "Send settings" would open showing this repair's leftovers.
+      syncController.reset();
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: messages.backfillAgentClocksTitle,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      // A localized title: SyncError.toString() is a hard-coded English
+      // sentence, so surfacing it directly gave every non-English locale an
+      // English failure toast.
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: messages.backfillAgentClocksFailed,
+      );
+    } finally {
+      if (mounted) setState(() => _isRepairingAgentClocks = false);
+    }
   }
 
   Future<void> _kickCatchUp(

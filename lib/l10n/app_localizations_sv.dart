@@ -2456,6 +2456,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Avancerad återhämtning';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Ge agententiteter och agentlänkar som sparats utan vektorklocka en vektorklocka, så att dina andra enheter kan ordna och ta emot dem.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Agenternas vektorklockor kunde inte repareras';
+
+  @override
+  String get backfillAgentClocksTitle => 'Agenternas vektorklockor';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Reparera vektorklockor';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Fråga kollegor';
 
   @override
@@ -9913,7 +9927,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att stoppa synkroniseringen för den här enheten. Kontrollera din anslutning och försök igen.';
 
   @override
-  String get syncEntitiesConfirm => 'STARTA SYNKRONISERING';
+  String get syncEntitiesConfirm => 'Starta synkronisering';
 
   @override
   String get syncEntitiesMessage => 'Välj de enheter du vill synka.';
@@ -10185,12 +10199,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Synka dina enheter';
-
-  @override
-  String get syncStepAgentEntities => 'Agententiteter';
-
-  @override
-  String get syncStepAgentLinks => 'Agentlänkar';
 
   @override
   String get syncStepAiSettings => 'AI-inställningar';

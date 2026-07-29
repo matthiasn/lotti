@@ -1343,6 +1343,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Recuperação avançada",
+  "backfillAgentClocksDescription": "Adiciona um relógio vetorial às entidades e ligações de agente guardadas sem um, para que os teus outros dispositivos as possam ordenar e receber.",
+  "backfillAgentClocksFailed": "Não foi possível reparar os relógios vetoriais dos agentes",
+  "backfillAgentClocksTitle": "Relógios vetoriais dos agentes",
+  "backfillAgentClocksTrigger": "Reparar relógios vetoriais",
   "backfillAskPeersConfirmAccept": "Pergunte aos colegas",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Isso transforma 1 entrada de log de sequência insolúvel de volta em falta, para que a varredura de preenchimento normal pergunte novamente aos pares. Os pares que ainda possuem a carga responderão; entradas verdadeiramente irrecuperáveis ​​serão retiradas novamente após a janela de anistia de 7 dias.} other{Isso faz com que todas {count} entradas de log de sequência não resolvíveis voltem a ser perdidas, para que a varredura de preenchimento normal pergunte novamente aos pares. Os pares que ainda possuem a carga responderão; entradas verdadeiramente irrecuperáveis serão retiradas novamente após a janela de anistia de 7 dias.}}",
   "@backfillAskPeersConfirmContent": {
@@ -4592,7 +4596,7 @@
   "syncDevicesVerifiedChip": "Verificado",
   "syncDisconnectExplanation": "Suas entradas continuam neste dispositivo. Ele sai da conta de sincronização e precisará de um novo código para sincronizar de novo. Seus outros dispositivos não são afetados.",
   "syncDisconnectFailed": "Não foi possível parar a sincronização deste dispositivo. Verifique sua conexão e tente novamente.",
-  "syncEntitiesConfirm": "INICIAR SINCRONIZAÇÃO",
+  "syncEntitiesConfirm": "Iniciar sincronização",
   "syncEntitiesMessage": "Escolha as entidades que deseja sincronizar.",
   "syncEntitiesSuccessDescription": "Tudo está atualizado.",
   "syncEntitiesSuccessTitle": "Sincronização concluída",
@@ -4681,8 +4685,6 @@
   "syncSetupEmptyFootnote": "Corre no teu próprio servidor de sincronização · nada sai dos teus dispositivos sem cifra",
   "syncSetupEmptyHint": "O teu diário em todos os teus dispositivos. Cifrado de ponta a ponta, só entre os teus dispositivos — sem conta na nuvem.",
   "syncSetupEmptyTitle": "Sincroniza os teus dispositivos",
-  "syncStepAgentEntities": "Entidades agentes",
-  "syncStepAgentLinks": "Links de agente",
   "syncStepAiSettings": "Configurações de IA",
   "syncStepBackfillAgentEntityClocks": "Preencher relógios da entidade do agente",
   "syncStepBackfillAgentLinkClocks": "Relógios de link do agente de preenchimento",

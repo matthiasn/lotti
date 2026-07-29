@@ -2440,6 +2440,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Advanced recovery';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Add a vector clock to agent entities and links that were saved without one, so your other devices can order and receive them.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Could not repair agent vector clocks';
+
+  @override
+  String get backfillAgentClocksTitle => 'Agent vector clocks';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Repair vector clocks';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Ask peers';
 
   @override
@@ -9845,7 +9859,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t stop syncing this device. Check your connection and try again.';
 
   @override
-  String get syncEntitiesConfirm => 'START SYNC';
+  String get syncEntitiesConfirm => 'Start sync';
 
   @override
   String get syncEntitiesMessage => 'Choose the entities you want to sync.';
@@ -10114,12 +10128,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Sync your devices';
-
-  @override
-  String get syncStepAgentEntities => 'Agent entities';
-
-  @override
-  String get syncStepAgentLinks => 'Agent links';
 
   @override
   String get syncStepAiSettings => 'AI settings';

@@ -1438,6 +1438,10 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Advanced recovery",
+  "backfillAgentClocksDescription": "Add a vector clock to agent entities and links that were saved without one, so your other devices can order and receive them.",
+  "backfillAgentClocksFailed": "Could not repair agent vector clocks",
+  "backfillAgentClocksTitle": "Agent vector clocks",
+  "backfillAgentClocksTrigger": "Repair vector clocks",
   "backfillAskPeersConfirmAccept": "Ask peers",
   "backfillAskPeersConfirmContent": "{count, plural, =1{This flips 1 unresolvable sequence-log entry back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.} other{This flips all {count} unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.}}",
   "@backfillAskPeersConfirmContent": {
@@ -4839,7 +4843,7 @@
   "syncDevicesVerifiedChip": "Verified",
   "syncDisconnectExplanation": "Your entries stay on this device. It is signed out of the sync account and needs a new pairing code to sync again. Your other devices are not affected.",
   "syncDisconnectFailed": "Couldn't stop syncing this device. Check your connection and try again.",
-  "syncEntitiesConfirm": "START SYNC",
+  "syncEntitiesConfirm": "Start sync",
   "syncEntitiesMessage": "Choose the entities you want to sync.",
   "syncEntitiesSuccessDescription": "Everything is up to date.",
   "syncEntitiesSuccessTitle": "Sync complete",
@@ -4936,8 +4940,6 @@
   "syncSetupEmptyFootnote": "Runs on your own sync server · nothing leaves your devices unencrypted",
   "syncSetupEmptyHint": "Your journal on every device you own. End-to-end encrypted, between your devices only — no cloud account.",
   "syncSetupEmptyTitle": "Sync your devices",
-  "syncStepAgentEntities": "Agent entities",
-  "syncStepAgentLinks": "Agent links",
   "syncStepAiSettings": "AI settings",
   "syncStepBackfillAgentEntityClocks": "Backfill agent entity clocks",
   "syncStepBackfillAgentLinkClocks": "Backfill agent link clocks",

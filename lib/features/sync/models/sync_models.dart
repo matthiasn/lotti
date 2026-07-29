@@ -14,8 +14,6 @@ enum SyncStep {
   savedTaskFilters,
   backfillAgentEntityClocks,
   backfillAgentLinkClocks,
-  agentEntities,
-  agentLinks,
   complete,
 }
 

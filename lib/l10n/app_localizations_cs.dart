@@ -2475,6 +2475,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Pokročilé obnovení';
 
   @override
+  String get backfillAgentClocksDescription =>
+      'Doplň vektorové hodiny agentním entitám a odkazům, které byly uloženy bez nich, aby je tvá ostatní zařízení mohla seřadit a přijmout.';
+
+  @override
+  String get backfillAgentClocksFailed =>
+      'Vektorové hodiny agentů se nepodařilo opravit';
+
+  @override
+  String get backfillAgentClocksTitle => 'Vektorové hodiny agentů';
+
+  @override
+  String get backfillAgentClocksTrigger => 'Opravit vektorové hodiny';
+
+  @override
   String get backfillAskPeersConfirmAccept => 'Zeptat se peerů';
 
   @override
@@ -10048,7 +10062,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Synchronizaci tohoto zařízení se nepodařilo zastavit. Zkontroluj připojení a zkus to znovu.';
 
   @override
-  String get syncEntitiesConfirm => 'SPUSTIT SYNCHRONIZACI';
+  String get syncEntitiesConfirm => 'Spustit synchronizaci';
 
   @override
   String get syncEntitiesMessage =>
@@ -10320,12 +10334,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncSetupEmptyTitle => 'Synchronizuj svá zařízení';
-
-  @override
-  String get syncStepAgentEntities => 'Entity agentů';
-
-  @override
-  String get syncStepAgentLinks => 'Propojení agentů';
 
   @override
   String get syncStepAiSettings => 'AI nastavení';

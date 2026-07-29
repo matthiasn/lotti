@@ -190,7 +190,13 @@ void main() {
       expect(diagnostics.fullWidth, isFalse);
       expect(disconnect.fullWidth, isFalse);
       expect(diagnostics.size, DesignSystemButtonSize.small);
-      expect(disconnect.size, DesignSystemButtonSize.medium);
+      // Both footer actions share one size; they were medium and small,
+      // which is two pill geometries for a pair meant to read as one grammar.
+      expect(disconnect.size, DesignSystemButtonSize.small);
+      // Borderless, so its own padding has nothing to make it legible as
+      // padding — without this the glyph reads as an arbitrary indent and the
+      // footer shows three left edges.
+      expect(disconnect.alignsLabelToLeadingEdge, isTrue);
       // And it comes last in the row.
       expect(
         tester.getTopLeft(find.byType(DiagnosticInfoButton)).dx,
@@ -255,7 +261,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text(messages.syncDeleteConfigConfirm));
+      await tester.tap(
+        find.text(messages.syncDeleteConfigConfirm.toUpperCase()),
+      );
       await tester.pumpAndSettle();
 
       verify(() => mockMatrixService.deleteConfig()).called(1);

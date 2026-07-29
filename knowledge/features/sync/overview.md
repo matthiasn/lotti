@@ -231,7 +231,19 @@ the inviting device exposes both follow-up transfers in the sticky action bar:
 and re-enqueues that device's local history. The latter defaults to
 *Everything*, with *Last 30 days* and a validated custom interval available,
 and reports the journal, agent-entity and agent-link enqueue phases before
-confirming that the messages are queued. This maintenance path uses the outbox's
+confirming that the messages are queued.
+
+The agent phases stamp before they send. An agent entity or link persisted with
+`vectorClock: null` is applied by the receiving peer but skipped by
+`_recordReceivedAgentEntity`, so it lands invisible to the sequence log, gap
+detection and backfill. `reSyncInterval`'s agent `enqueueAction` therefore
+gives any clockless row a vector clock and persists it *before* enqueueing —
+inside the interval sweep, so a *Last 30 days* run repairs only what it is
+about to send rather than every legacy row in the database. Enqueue precedes
+persist within that step, so a throw leaves the row still clockless and
+therefore retryable. `SyncMaintenanceRepository.backfillAgentEntityClocks` /
+`backfillAgentLinkClocks` remain the whole-database version of the same repair,
+reachable from *Backfill sync* as the **Agent vector clocks** recovery action. This maintenance path uses the outbox's
 throwing enqueue API, so any preparation or persistence failure keeps the modal
 open with a retry action instead of claiming that a partial batch completed.
 The paired screen names both transfers because the new device cannot send
