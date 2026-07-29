@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1073]
+### Fixed
+- **The privacy policy described device pairing incorrectly.** It stated that
+  encryption keys are exchanged via the QR code and never transmitted over the
+  network. Neither half was true: the QR code carries your sync account
+  credentials, while the encryption keys travel between devices over the
+  homeserver — encrypted, and only to devices you have emoji-verified. The
+  practical consequence had gone unsaid too: anyone who photographs the pairing
+  code can sign in to your sync account and lock you out, even though they still
+  cannot read your entries. The policy now says all of this, in the same words
+  the manual already used.
+- **The privacy policy promised a data export that does not exist.** It offered
+  to export your data "at any time". There is no such feature, and none is
+  needed: your logbook is an ordinary SQLite file on your own disk that any
+  SQLite client can read. The policy now explains how to take a consistent copy
+  and where the attachments live, rather than pointing at a button that was never
+  there.
+- **Reporting a security vulnerability no longer starts by publishing it.** The
+  security policy asked for vulnerability reports in the public issue tracker,
+  which the contributing guide separately tells you not to do, and which exposes
+  everyone running Lotti before a fix exists. Reports now go through GitHub's
+  private vulnerability reporting.
+
+### Changed
+- **The app description says what Lotti actually tracks.** It now mentions that
+  every AI call's cost, energy and CO₂e are recorded per category and model, and
+  that planning and time recording stay separate so intent and outcome remain
+  distinct facts. It no longer describes third-party providers as
+  "GDPR-compliant", because that is their claim to make rather than Lotti's, and
+  no longer lists time recording twice.
+
 ## [0.9.1072]
 ### Fixed
 - **A confirm button no longer disappears when its label is long.** The buttons
