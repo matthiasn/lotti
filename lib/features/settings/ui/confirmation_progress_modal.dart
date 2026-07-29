@@ -202,6 +202,12 @@ class ConfirmationProgressModal {
           ? DesignSystemButtonVariant.danger
           : DesignSystemButtonVariant.primary,
       size: DesignSystemButtonSize.large,
+      // fullWidth only centres the content; the parent decides the width. In
+      // the compact row the button keeps its intrinsic size, and when the bar
+      // falls back to its stacked layout — narrow width or text scale > 1.3 —
+      // the stretched column widens it and this keeps the icon and label
+      // centred instead of pinned to the leading edge.
+      fullWidth: true,
     );
   }
 }
