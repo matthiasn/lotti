@@ -352,7 +352,9 @@ DayProcessingFailureClass classifyDayAgentJobFailure(Object? error) {
     return DayProcessingFailureClass.providerBusy;
   }
   final lower = error.toString().toLowerCase();
-  if (lower.contains('dayagentoutputlimitexceededexception')) {
+  if (lower.contains(
+    '$DayAgentOutputLimitExceededException'.toLowerCase(),
+  )) {
     return DayProcessingFailureClass.providerBusy;
   }
   if (lower.contains('ambiguous') || lower.contains('deleted')) {

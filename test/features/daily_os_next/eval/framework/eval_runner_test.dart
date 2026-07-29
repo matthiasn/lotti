@@ -908,6 +908,15 @@ void main() {
 
       expect(role, 'dayDraft');
     });
+
+    test('refine wakes have their own usage bucket', () {
+      expect(
+        dayPlanningMessageRole(
+          '<refine>Add the requested break.</refine>',
+        ),
+        'refine',
+      );
+    });
   });
 
   group('evalPlanDateFor', () {

@@ -697,6 +697,7 @@ List<EvalToolCall> evalToolCallsFrom(List<AgentDomainEntity> entities) {
 String dayPlanningMessageRole(String message) {
   if (message.contains('<digest>')) return 'plannerDigest';
   if (message.contains('<drafting>')) return 'dayDraft';
+  if (message.contains('<refine>')) return 'refine';
   if (message.contains('<capture>')) return 'captureParse';
   return 'other';
 }
