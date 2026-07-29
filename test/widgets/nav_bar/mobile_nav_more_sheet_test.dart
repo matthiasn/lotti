@@ -125,6 +125,44 @@ void main() {
       expect(find.byKey(const Key('trailing-badge')), findsOneWidget);
     });
 
+    testWidgets('gives each row room to breathe, not just a tap target', (
+      tester,
+    ) async {
+      await pumpAndOpenSheet(
+        tester,
+        items: [
+          for (final label in ['Projects', 'Habits', 'Calendar'])
+            MobileNavMoreSheetItem(
+              label: label,
+              icon: const Icon(Icons.folder_outlined),
+              onSelected: () {},
+            ),
+        ],
+      );
+
+      // The rows sit flush against each other with no separators, so their own
+      // height is the only thing keeping the labels from stacking up. A row
+      // sized to the bare 44px tap target reads as a cramped list.
+      final heights = [
+        for (final label in ['Projects', 'Habits', 'Calendar'])
+          tester
+              .getSize(
+                find
+                    .ancestor(
+                      of: find.text(label),
+                      matching: find.byType(InkWell),
+                    )
+                    .first,
+              )
+              .height,
+      ];
+      for (final height in heights) {
+        expect(height, greaterThanOrEqualTo(52));
+      }
+      // And every row is the same height, so the list keeps an even rhythm.
+      expect(heights.toSet(), hasLength(1));
+    });
+
     testWidgets('highlights the active destination with the accent tint', (
       tester,
     ) async {

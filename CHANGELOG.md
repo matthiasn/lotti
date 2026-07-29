@@ -206,6 +206,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   same transfers in Maintenance.
 
 ### Changed
+- **The "More" menu at the bottom of the phone screen is no longer cramped.**
+  Its rows were sized to the bare minimum a finger needs, so the destinations
+  stacked up against each other with the icons almost filling each row. Each row
+  now has room around it, and the list keeps an even rhythm from top to bottom.
 - **The linked-tasks card is a third shorter.** The relationship headings
   ("Follows up on", "Has follow-up", …) floated in the middle of a large empty
   band instead of sitting with the tasks they label, and every linked task sat
