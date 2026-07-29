@@ -148,7 +148,7 @@ void main() {
 
     expect(
       tester.getSize(find.byKey(const Key('iconless-action'))).height,
-      greaterThanOrEqualTo(dsTokensLight.spacing.step9),
+      greaterThanOrEqualTo(TapTargets.minimum),
     );
     await tester.tap(find.byKey(const Key('iconless-action')));
     expect(taps, 1);

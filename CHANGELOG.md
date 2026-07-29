@@ -81,9 +81,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sitting indented, the "This device" marker no longer outshouts everything
   around it, and the two dates on each device card are finally the same size.
   In "Choose what to sync", the list was centred, which made shorter labels
-  look like they were nested under longer ones; the checkboxes now share one
-  left edge. Confirm buttons across the sync and maintenance dialogs no longer
-  SHOUT or stretch the full width.
+  look like they were nested under longer ones; it now uses the same full-row
+  selection pattern as category pickers, with labels on the left and
+  checkboxes on the right. Confirm buttons across the sync and maintenance
+  dialogs no longer SHOUT or stretch the full width.
 - **The "Enable Sync Actor" setting is gone.** The advanced-settings toggle
   never did anything — the isolate-based sync it was meant to switch on was
   never finished or connected — so it is removed rather than left as a switch

@@ -63,6 +63,15 @@ void main() {
         dsTokensLight.typography.styles.body.bodySmall,
         dsTokensLight.colors.text.highEmphasis,
       );
+      expect(ControlSizes.checkbox, 24);
+      expect(
+        tester.getSize(find.byKey(checkboxKey)).height,
+        ControlSizes.checkbox,
+      );
+      expect(
+        tester.getSize(find.byType(DecoratedBox)),
+        const Size.square(ControlSizes.checkbox),
+      );
     });
 
     testWidgets('toggles from false to true on tap', (tester) async {

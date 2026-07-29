@@ -11,7 +11,7 @@ sources:
   - id: components
     resource: ../../../lib/features/design_system/components
     title: Design-system components
-    last_modified: 2026-07-28
+    last_modified: 2026-07-29
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
@@ -23,10 +23,11 @@ sources:
 Representative components — `DesignSystemButton`, `DesignSystemCheckbox`,
 `DesignSystemSplitButton` — derive padding, radii, icon size and text style from
 `context.designTokens`, **not local magic numbers**. Glyph and stroke
-dimensions come from the hand-authored sizing set (`IconSizes`,
-`BorderWidths` — see [tokens and theming](tokens-and-theming.md)), never from
-`spacing.stepN`: a spacing step that happens to equal 24 retunes every icon
-the moment the gap scale moves.
+dimensions come from the hand-authored sizing set (`ControlSizes`,
+`TapTargets`, `IconSizes`, `BorderWidths` — see
+[tokens and theming](tokens-and-theming.md)), never from `spacing.stepN`: a
+spacing step that happens to equal 24 retunes every icon the moment the gap
+scale moves.
 
 `DesignSystemButton` sizes run `dense` → `small` → `medium` → `large` → `jumbo`.
 **`dense` is the caption tier**: its label is
@@ -46,6 +47,20 @@ not repaint selected chips with local status colours. A count or status that
 travels with the filter uses the chip's trailing slot with a `DsPill`. When the
 chip's semantic label already includes that value, the pill is excluded from
 semantics so a screen reader announces the count once.
+
+Visible control size and interaction size are separate contracts.
+`MaterialTapTargetSize.padded` gives `DesignSystemButton` a 48dp interaction
+shell while leaving its token-derived pill unchanged and centred inside it.
+Adoption is deliberately opt-in: use it only where the parent already owns that
+height, so accessibility does not silently make a compact list or action bar
+airier. The default remains `shrinkWrap`.
+
+The compact `DesignSystemCheckbox` is a 24dp control with no outer inset. A
+feature that needs a mobile-sized option target should not pad seven independent
+checkboxes into a loose stack; it should use
+`DesignSystemSelectionRow.multiSelect`. That component owns the full-row target,
+keeps labels on the left and checkboxes on the right, and applies one contiguous
+selected band per option.
 
 ## Below the button tier: `DesignSystemInlineAction`
 
@@ -169,7 +184,8 @@ contract:
 
 Several components refuse to be built without accessible naming:
 
-- `DesignSystemButton` asserts either `label` or `semanticsLabel`.
+- `DesignSystemButton` asserts either `label` or `semanticsLabel`, merges its
+  visible content into one button node, and puts the tap action on that node.
 - `DesignSystemSplitButton` resolves explicit labels for primary and dropdown
   actions.
 - `DesignSystemCheckbox` requires a visible label or a semantics label.

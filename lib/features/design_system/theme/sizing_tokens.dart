@@ -1,4 +1,4 @@
-/// Sizing design tokens: icon dimensions and border strokes.
+/// Sizing design tokens: controls, tap targets, icon dimensions, and strokes.
 ///
 /// Hand-authored rather than generated, for the same reasons as
 /// `motion_tokens.dart`: these values are brightness-invariant (identical in
@@ -12,6 +12,26 @@
 /// and stroke dimensions — which type-checked, but meant an icon resized
 /// whenever the *gap* scale was retuned. Pick by role, not by number.
 library;
+
+/// Visible control dimensions.
+///
+/// These describe the control itself, not the spacing around it. Keeping the
+/// two separate lets a glyph grow into reclaimed inset without changing the
+/// surrounding row geometry.
+abstract final class ControlSizes {
+  /// 24 — the compact checkbox box. This fills the component's existing
+  /// 24-high row instead of spending four of those pixels on outer padding.
+  static const double checkbox = 24;
+}
+
+/// Pointer interaction targets.
+abstract final class TapTargets {
+  /// 48 — the recommended mobile touch target.
+  ///
+  /// Components opt into this only where the containing layout already owns a
+  /// 48-high slot; the target must not silently inflate compact list rhythm.
+  static const double minimum = 48;
+}
 
 /// Icon dimensions, smallest to largest.
 ///

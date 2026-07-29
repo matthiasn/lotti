@@ -19,7 +19,7 @@ sources:
   - id: theme
     resource: ../../../lib/features/design_system/theme
     title: Generated tokens, theme, access API
-    last_modified: 2026-07-28
+    last_modified: 2026-07-29
   - id: overrides
     resource: ../../../lib/themes/theme_overrides.dart
     title: App theme integration
@@ -57,10 +57,11 @@ values are brightness-invariant, so nothing lerps, and neither exists as a
 Figma variable to import: **motion** (`motion_tokens.dart`, because `Duration`
 and `Curve` are not lerp-able — see
 [agent UI surfaces](../agents/ui-surfaces.md)) and **sizing**
-(`sizing_tokens.dart`: `IconSizes` for glyph dimensions, `BorderWidths` for
+(`sizing_tokens.dart`: `ControlSizes` for visible controls, `TapTargets` for
+interaction shells, `IconSizes` for glyph dimensions, and `BorderWidths` for
 strokes). Before the sizing set existed, call sites borrowed
-`tokens.spacing.stepN` as icon and stroke dimensions, which retuned glyphs
-whenever the gap scale moved.
+`tokens.spacing.stepN` as control, icon, and stroke dimensions, which retuned
+them whenever the gap scale moved.
 
 ## One token, three names
 

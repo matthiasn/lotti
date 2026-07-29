@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
@@ -368,23 +370,43 @@ void main() {
       );
       expect(find.text(messages.syncStepBackfillAgentLinkClocks), findsNothing);
 
-      // Every box shares one left edge. DesignSystemCheckbox is an
-      // intrinsic-width Row, so a centered column staggers each box by label
-      // length and the list reads as arbitrarily indented.
-      final boxes = tester
-          .widgetList<DesignSystemCheckbox>(find.byType(DesignSystemCheckbox))
+      final rows = tester
+          .widgetList<DesignSystemSelectionRow>(
+            find.byType(DesignSystemSelectionRow),
+          )
           .toList();
-      expect(boxes.length, 7);
-      final lefts = find
-          .byType(DesignSystemCheckbox)
+      expect(rows.length, 7);
+      expect(
+        rows,
+        everyElement(
+          isA<DesignSystemSelectionRow>()
+              .having(
+                (row) => row.type,
+                'type',
+                DesignSystemSelectionRowType.multiSelect,
+              )
+              .having((row) => row.selected, 'selected', isTrue),
+        ),
+      );
+
+      final rowFinder = find.byType(DesignSystemSelectionRow);
+      final rowLefts = rowFinder
           .evaluate()
           .map((e) => tester.getTopLeft(find.byWidget(e.widget)).dx)
           .toSet();
-      expect(
-        lefts.length,
-        1,
-        reason: 'checkboxes must share one left edge, found $lefts',
-      );
+      final checkboxRights = find
+          .byType(DesignSystemCheckbox)
+          .evaluate()
+          .map((e) => tester.getTopRight(find.byWidget(e.widget)).dx)
+          .toSet();
+      expect(rowLefts.length, 1);
+      expect(checkboxRights.length, 1);
+      for (final element in rowFinder.evaluate()) {
+        expect(
+          tester.getSize(find.byWidget(element.widget)).height,
+          greaterThanOrEqualTo(TapTargets.minimum),
+        );
+      }
     },
   );
 
@@ -415,11 +437,11 @@ void main() {
     var confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
     expect(confirmButton.onPressed, isNotNull);
 
-    final checkboxFinder = find.byType(DesignSystemCheckbox);
-    final tiles = checkboxFinder.evaluate().toList();
-    for (final el in tiles) {
-      final tile = el.widget as DesignSystemCheckbox;
-      tile.onChanged?.call(false);
+    final rowFinder = find.byType(DesignSystemSelectionRow);
+    final rows = rowFinder.evaluate().toList();
+    for (final element in rows) {
+      final row = element.widget as DesignSystemSelectionRow;
+      row.onTap?.call();
       await tester.pump();
     }
 
@@ -428,8 +450,8 @@ void main() {
 
     // Re-enable by selecting the first option again.
     // Re-enable by selecting the first option again via callback
-    final firstTile = tester.widget<DesignSystemCheckbox>(checkboxFinder.first);
-    firstTile.onChanged?.call(true);
+    final firstRow = tester.widget<DesignSystemSelectionRow>(rowFinder.first);
+    firstRow.onTap?.call();
     await tester.pump();
     confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
     expect(confirmButton.onPressed, isNotNull);

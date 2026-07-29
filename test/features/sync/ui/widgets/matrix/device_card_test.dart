@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
@@ -585,6 +586,23 @@ void main() {
       expect(
         verifyButton.variant,
         DesignSystemButtonVariant.constructiveOutlined,
+      );
+      expect(verifyButton.size, DesignSystemButtonSize.small);
+      expect(
+        verifyButton.tapTargetSize,
+        MaterialTapTargetSize.padded,
+      );
+      final removeTarget = find.byKey(
+        const Key('matrix_remove_device_primary'),
+      );
+      expect(tester.getSize(removeTarget).height, TapTargets.minimum);
+      expect(
+        tester
+            .getSize(
+              find.descendant(of: removeTarget, matching: find.byType(Ink)),
+            )
+            .height,
+        lessThan(TapTargets.minimum),
       );
 
       // The labeled button still runs through the confirmation modal.
