@@ -20,6 +20,42 @@ class _TestItem {
 void main() {
   group('SyncHeaderBottom', () {
     testWidgets(
+      'preferred height grows when token-sized chips wrap',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SizedBox.shrink(),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        final context = tester.element(find.byType(Scaffold));
+        final wideHeight = SyncHeaderBottom.calculatePreferredHeight(
+          context: context,
+          labels: const ['Waiting', 'Failed'],
+          counts: const [12, 3],
+          haveIcons: const [true, true],
+          showCounts: const [true, true],
+          availableWidth: 600,
+          horizontalPadding: 0,
+          summaryText: '2 queued entries',
+        );
+        final narrowHeight = SyncHeaderBottom.calculatePreferredHeight(
+          context: context,
+          labels: const ['Waiting', 'Failed'],
+          counts: const [12, 3],
+          haveIcons: const [true, true],
+          showCounts: const [true, true],
+          availableWidth: 1,
+          horizontalPadding: 0,
+          summaryText: '2 queued entries',
+        );
+
+        expect(narrowHeight, greaterThan(wideHeight));
+      },
+    );
+
+    testWidgets(
       'uses selectable design-system chips and a semantic count pill',
       (tester) async {
         final semantics = tester.ensureSemantics();
