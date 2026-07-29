@@ -119,9 +119,20 @@ void main() {
     expect(
       DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
         'SEARCH agent_entities USING INDEX '
-        'idx_agent_entities_active_agent_type_sub_created_id',
+        'idx_agent_entities_active_agent_type_sub_created_id '
+        '(agent_id=? AND type=? AND subtype=?)',
       ),
       isFalse,
+    );
+    expect(
+      DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(
+        'SEARCH agent_entities USING INDEX '
+        'idx_agent_entities_agent_type_sub (agent_id=? AND type=?)',
+      ),
+      isTrue,
+      reason:
+          'Naming a subtype index is not enough when SQLite cannot use the '
+          'subtype column as an equality constraint.',
     );
     expect(
       DayPlannerCorpus.debugIsUnboundedHistoryPlanDetail(

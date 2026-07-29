@@ -506,18 +506,24 @@ class DelegatingAgentSyncService extends MockAgentSyncService {
 /// metadata) that the shared fixture's narrower call graph doesn't cover.
 class PipelineAgentRepository extends InMemoryAgentRepository {
   var _readCount = 0;
-  var _captureMetadataRowsRead = 0;
+  var _captureMetadataRowsReturned = 0;
 
   /// Counted agent-repository reads since the last reset.
   int get readCount => _readCount;
 
-  /// Capture metadata rows materialized since the last reset.
-  int get captureMetadataRowsRead => _captureMetadataRowsRead;
+  /// Capture metadata rows returned to the workflow since the last reset.
+  ///
+  /// This is a context-shape metric, not a storage-work metric. The aged
+  /// corpus benchmark instruments the production
+  /// `AgentRepository.getCaptureEventMetaForDay` SQL query separately, so this
+  /// in-memory fake cannot hide a broad database read followed by Dart
+  /// filtering.
+  int get captureMetadataRowsReturned => _captureMetadataRowsReturned;
 
   /// Starts a fresh read-count window for one benchmarked wake.
   void resetReadCount() {
     _readCount = 0;
-    _captureMetadataRowsRead = 0;
+    _captureMetadataRowsReturned = 0;
   }
 
   @override
@@ -617,7 +623,7 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
           ),
         )
         .toList();
-    _captureMetadataRowsRead += result.length;
+    _captureMetadataRowsReturned += result.length;
     return result;
   }
 

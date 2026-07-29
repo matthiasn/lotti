@@ -30,7 +30,7 @@ class DayAgentWakeMetric {
     required this.outputTokens,
     required this.durationMicros,
     required this.agentRepositoryReads,
-    required this.captureMetadataRowsRead,
+    required this.captureMetadataRowsReturned,
     required this.outputTokenCeiling,
     required this.providerTurns,
   });
@@ -41,7 +41,7 @@ class DayAgentWakeMetric {
   final int outputTokens;
   final int durationMicros;
   final int agentRepositoryReads;
-  final int captureMetadataRowsRead;
+  final int captureMetadataRowsReturned;
   final int outputTokenCeiling;
   final int providerTurns;
 
@@ -52,7 +52,7 @@ class DayAgentWakeMetric {
     'outputTokens': outputTokens,
     'durationMicros': durationMicros,
     'agentRepositoryReads': agentRepositoryReads,
-    'captureMetadataRowsRead': captureMetadataRowsRead,
+    'captureMetadataRowsReturned': captureMetadataRowsReturned,
     'outputTokenCeiling': outputTokenCeiling,
     'providerTurns': providerTurns,
   };
@@ -187,7 +187,7 @@ class DayAgentWakeBenchmark {
       outputTokens: (previous?.outputTokens ?? 0) + outputTokens,
       durationMicros: 0,
       agentRepositoryReads: 0,
-      captureMetadataRowsRead: 0,
+      captureMetadataRowsReturned: 0,
       outputTokenCeiling: policy.forKind(kind),
       providerTurns: (previous?.providerTurns ?? 0) + 1,
     );
@@ -235,7 +235,8 @@ class DayAgentWakeBenchmark {
       outputTokens: observed.outputTokens,
       durationMicros: stopwatch.elapsedMicroseconds,
       agentRepositoryReads: _harness.agentRepository.readCount,
-      captureMetadataRowsRead: _harness.agentRepository.captureMetadataRowsRead,
+      captureMetadataRowsReturned:
+          _harness.agentRepository.captureMetadataRowsReturned,
       outputTokenCeiling: observed.outputTokenCeiling,
       providerTurns: observed.providerTurns,
     );

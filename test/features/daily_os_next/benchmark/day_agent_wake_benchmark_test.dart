@@ -55,7 +55,7 @@ void main() {
       expect(metric.outputTokens, greaterThan(0));
       expect(metric.durationMicros, greaterThan(0));
       expect(metric.agentRepositoryReads, greaterThan(0));
-      expect(metric.captureMetadataRowsRead, greaterThan(0));
+      expect(metric.captureMetadataRowsReturned, greaterThan(0));
     }
     expect(report['parse']!.outputTokenCeiling, 4096);
     expect(report['draft']!.outputTokenCeiling, 8192);
@@ -124,9 +124,9 @@ void main() {
           twelveMonths: aged.agentRepositoryReads,
         );
         _expectSameContext(
-          metric: '$wake.captureMetadataRowsRead',
-          oneMonth: baseline.captureMetadataRowsRead,
-          twelveMonths: aged.captureMetadataRowsRead,
+          metric: '$wake.captureMetadataRowsReturned',
+          oneMonth: baseline.captureMetadataRowsReturned,
+          twelveMonths: aged.captureMetadataRowsReturned,
         );
       }
     },
@@ -162,7 +162,7 @@ void main() {
           'outputTokens',
           'durationMicros',
           'agentRepositoryReads',
-          'captureMetadataRowsRead',
+          'captureMetadataRowsReturned',
           'outputTokenCeiling',
           'providerTurns',
         ]) {

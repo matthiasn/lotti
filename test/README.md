@@ -17,13 +17,15 @@ workloads over 1- and 12-month corpora and require zero growth in:
   plan diffs and the seven-day plan lookback, plus the absence of retained-table
   access through an unbounded SQLite index or table scan; and
 - model-facing prompt bytes, agent-repository reads, and day-scoped capture
-  metadata rows for parse, draft, refine and digest wakes.
+  metadata rows returned to parse, draft, refine and digest wakes. The paired
+  storage gate instruments the production capture-metadata SQL query, including
+  its returned rows and bounded query plan.
 
 These are deterministic context and operation assertions, not stopwatch
 thresholds. Prompt bytes must be identical because the bounded inputs are
-identical; capture metadata rows must also be identical, while pure work
-counters may stay flat or decrease. A failure names the metric and prints both
-corpus values. The opt-in
+identical; returned capture metadata rows must also be identical, while pure
+work counters may stay flat or decrease. A failure names the metric and prints
+both corpus values. The opt-in
 `LOTTI_BENCHMARK=1` sweep remains the place for elapsed-time reports; wall time
 must not become an ordinary-CI assertion because scheduler and cache noise make
 it non-deterministic.

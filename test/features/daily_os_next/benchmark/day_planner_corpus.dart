@@ -179,12 +179,11 @@ class DayPlannerCorpus {
     return {
       // The drain path: what every enqueue and every retry tick costs.
       'outbox.claimNext': await _time(outbox.claimNext, repetitions),
-      // The day view: captures and the persona indicator.
+      // The day view: capture ordering metadata and the persona indicator.
       'dayView.captures': await _time(
-        () => repository.getEntitiesByAgentIdAndSubtype(
-          dailyOsPlannerAgentId,
-          type: AgentEntityTypes.capture,
-          subtype: currentDayId,
+        () => repository.getCaptureEventMetaForDay(
+          agentId: dailyOsPlannerAgentId,
+          dayId: currentDayId,
         ),
         repetitions,
       ),
@@ -243,10 +242,9 @@ class DayPlannerCorpus {
       ),
       'dayView.captures': await _countSqlOperation(
         agentDb,
-        () => repository.getEntitiesByAgentIdAndSubtype(
-          dailyOsPlannerAgentId,
-          type: AgentEntityTypes.capture,
-          subtype: currentDayId,
+        () => repository.getCaptureEventMetaForDay(
+          agentId: dailyOsPlannerAgentId,
+          dayId: currentDayId,
         ),
       ),
       'dayView.statusEvents': await _countSqlOperation(
@@ -343,13 +341,20 @@ class DayPlannerCorpus {
   /// checking for `USING INDEX` is insufficient. Outbox claims may use the
   /// pending partial index plus a primary-key `SEARCH` for the outer update;
   /// a primary-key `SCAN` is still unbounded. Day reads must use a subtype
-  /// index.
+  /// index with equality constraints for agent, type, and subtype; SQLite may
+  /// name that index even when a non-sargable subtype predicate cannot use its
+  /// final column.
   @visibleForTesting
   static bool debugIsUnboundedHistoryPlanDetail(String detail) {
     final normalized = detail.toUpperCase();
     if (normalized.contains('AGENT_ENTITIES')) {
+      final hasBoundedSubtypeConstraints =
+          RegExp(r'\bAGENT_ID=\?').hasMatch(normalized) &&
+          RegExp(r'\bTYPE=\?').hasMatch(normalized) &&
+          RegExp(r'\bSUBTYPE=\?').hasMatch(normalized);
       final boundedSubtypeLookup =
           normalized.startsWith('SEARCH ') &&
+          hasBoundedSubtypeConstraints &&
           (normalized.contains('IDX_AGENT_ENTITIES_AGENT_TYPE_SUB') ||
               normalized.contains(
                 'IDX_AGENT_ENTITIES_ACTIVE_AGENT_TYPE_SUB_CREATED_ID',
