@@ -157,7 +157,7 @@ modules:
       # Flutter SDK - inside lotti module as flatpak-flutter expects
       - type: git
         url: https://github.com/flutter/flutter.git
-        tag: 3.44.0
+        tag: 3.44.8
         dest: flutter
         disable-lfs: true
       - type: script
