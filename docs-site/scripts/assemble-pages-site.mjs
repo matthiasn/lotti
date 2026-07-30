@@ -110,8 +110,12 @@ export function compareManualVersions(a, b) {
   if (left.suffix === right.suffix) return 0;
   if (left.suffix === '') return 1;
   if (right.suffix === '') return -1;
-  const leftIds = left.suffix.split(/[-.]/);
-  const rightIds = right.suffix.split(/[-.]/);
+  // Semver: only dots separate prerelease identifiers — a hyphen inside an
+  // identifier (alpha-1) is part of it. Numeric identifiers compare as
+  // digit strings (normalized length, then lexicographic) so arbitrarily
+  // large build counters never lose precision to float coercion.
+  const leftIds = left.suffix.split('.');
+  const rightIds = right.suffix.split('.');
   const length = Math.max(leftIds.length, rightIds.length);
   for (let i = 0; i < length; i += 1) {
     const leftId = leftIds[i];
@@ -121,7 +125,15 @@ export function compareManualVersions(a, b) {
     if (leftId === rightId) continue;
     const leftNumeric = /^\d+$/.test(leftId);
     const rightNumeric = /^\d+$/.test(rightId);
-    if (leftNumeric && rightNumeric) return Number(leftId) - Number(rightId);
+    if (leftNumeric && rightNumeric) {
+      const leftDigits = leftId.replace(/^0+(?=\d)/, '');
+      const rightDigits = rightId.replace(/^0+(?=\d)/, '');
+      if (leftDigits.length !== rightDigits.length) {
+        return leftDigits.length - rightDigits.length;
+      }
+      if (leftDigits === rightDigits) continue;
+      return leftDigits < rightDigits ? -1 : 1;
+    }
     if (leftNumeric) return -1;
     if (rightNumeric) return 1;
     return leftId < rightId ? -1 : 1;

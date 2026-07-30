@@ -57,11 +57,13 @@ output is never committed: it exists only in the Actions runner, the R2
 store, and the Pages deployment artifact.
 
 Publishing a release manual is a `workflow_dispatch` of the Manual workflow
-with `manual_version: X.Y.Z` and `deploy: true`: the run resolves the newest
+with `manual_version: X.Y.Z` and `deploy: true`, leaving `publish_media` and
+`capture_screenshots` at their default of on: the run resolves the newest
 app tag of that marketing version, builds the site and screenshot catalog
 from that tag, uploads both to their immutable R2 prefixes (existing release
-snapshots are never overwritten), and redeploys Pages with every version side
-by side. Each deploy also writes a live `manual/releases.json` next to the
+snapshots are never overwritten, and a release site never deploys without a
+screenshot catalog captured from the same commit), and redeploys Pages with
+every version side by side. Each deploy also writes a live `manual/releases.json` next to the
 version directories; the version dropdown fetches it at runtime, so even old
 immutable snapshots list releases published after them.
 

@@ -43,10 +43,13 @@ on:
         required: true
         default: true
         type: boolean
+      # Defaults to true so the documented one-step release dispatch
+      # (version + deploy) publishes the catalog its site snapshot requires.
+      # Set to false for a dry-run build that must not touch the bucket.
       publish_media:
         description: 'Upload generated media to the R2 bucket'
         required: true
-        default: false
+        default: true
         type: boolean
       deploy:
         description: 'Publish the static build to GitHub Pages'
@@ -247,13 +250,28 @@ jobs:
               "published and immutable; refusing to overwrite it."
             exit 1
           fi
-          if ! aws s3api head-object --endpoint-url "$ENDPOINT" \
-              --bucket "$R2_BUCKET_NAME" \
-              --key "manual/screenshots/${MANUAL_VERSION}/manifest.json" \
-              >/dev/null 2>&1; then
+          MEDIA_KEY="manual/screenshots/${MANUAL_VERSION}/manifest.json"
+          if ! aws s3 cp "s3://${R2_BUCKET_NAME}/${MEDIA_KEY}" \
+              "${RUNNER_TEMP}/media-manifest.json" \
+              --endpoint-url "$ENDPOINT" >/dev/null 2>&1; then
             echo "::error::No screenshot catalog is published for" \
               "${MANUAL_VERSION}; run the release dispatch with" \
               "publish_media enabled before (or while) deploying it."
+            exit 1
+          fi
+          # The immutable media prefix may predate this build if a newer
+          # build tag was added for the same marketing version. Pages from
+          # one app commit must not ship with screenshots from another.
+          MEDIA_COMMIT=$(jq -r '.appCommit // empty' \
+            "${RUNNER_TEMP}/media-manifest.json")
+          if [[ -z "$MEDIA_COMMIT" ]] || { \
+              [[ "$LOTTI_COMMIT" != "$MEDIA_COMMIT"* ]] && \
+              [[ "$MEDIA_COMMIT" != "$LOTTI_COMMIT"* ]]; }; then
+            echo "::error::The published screenshot catalog for" \
+              "${MANUAL_VERSION} was captured from" \
+              "'${MEDIA_COMMIT:-unknown}' but this site build is from" \
+              "'${LOTTI_COMMIT}'. Refusing to combine pages and media from" \
+              "different app commits under an immutable version."
             exit 1
           fi
           aws s3 sync site-build "$DEST" \
@@ -374,16 +392,19 @@ jobs:
           aws s3 cp "$SRC/manifest.json" "$DEST/manifest.json" \
             --endpoint-url "$ENDPOINT"
 
+  # Two deploy jobs share the same steps but different prerequisites, so an
+  # ordinary development push never waits behind the capture job's dependency
+  # chain (a `needs` edge delays a job even when the needed job ends up
+  # skipped), while a release deploy strictly follows its snapshot publish.
+  # The shared github-pages concurrency group serializes them.
   deploy:
     name: Publish GitHub Pages
-    needs: [metadata, build, publish_site]
+    needs: [metadata, build]
     if: >-
-      always() &&
       needs.build.result == 'success' &&
-      (needs.publish_site.result == 'success' ||
-       needs.publish_site.result == 'skipped') &&
       (github.event_name == 'push' ||
-       (github.event_name == 'workflow_dispatch' && inputs.deploy))
+       (github.event_name == 'workflow_dispatch' && inputs.deploy &&
+        needs.metadata.outputs.version == 'development'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -402,6 +423,80 @@ jobs:
       # version selectable after any single-version deploy. The finalize
       # script is pinned to the default branch (a dispatch can target another
       # ref), so snapshots are always composed with current publishing logic.
+      - name: Checkout Lotti
+        uses: actions/checkout@v5
+        with:
+          path: lotti
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Mirror site snapshots from R2
+        id: mirror
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          set -euo pipefail
+          if [[ -z "$R2_ACCOUNT_ID" || -z "$R2_BUCKET_NAME" || \
+                -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+            echo "::warning::R2 credentials are not configured; skipping the" \
+              "Pages deploy — there is no site-snapshot store to publish."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          aws s3 sync "s3://${R2_BUCKET_NAME}/manual-site" \
+            "${RUNNER_TEMP}/lotti-manual-pages/manual" \
+            --endpoint-url "$ENDPOINT" --no-progress
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Finalize Pages tree
+        if: steps.mirror.outputs.ready == 'true'
+        env:
+          PAGES_PREFIX: ${{ github.event.repository.name }}
+        run: >-
+          node lotti/docs-site/scripts/assemble-pages-site.mjs
+          --finalize
+          --output-root "${RUNNER_TEMP}/lotti-manual-pages"
+          --pages-prefix "$PAGES_PREFIX"
+
+      - name: Upload GitHub Pages artifact
+        if: steps.mirror.outputs.ready == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/lotti-manual-pages
+
+      - name: Deploy artifact to GitHub Pages
+        if: steps.mirror.outputs.ready == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy_release:
+    name: Publish GitHub Pages (release)
+    needs: [metadata, publish_site]
+    if: >-
+      always() &&
+      needs.publish_site.result == 'success' &&
+      github.event_name == 'workflow_dispatch' && inputs.deploy &&
+      needs.metadata.outputs.version != 'development'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Checkout Lotti
         uses: actions/checkout@v5
         with:
