@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -293,23 +294,21 @@ void main() {
           );
           final messages = _messages(tester);
           expect(find.text(messages.settingsThemingTitle), findsWidgets);
-          expect(find.text('Sakura'), findsOneWidget);
-          expect(find.text('Outer Space'), findsOneWidget);
+          // The mode segments render icons; their localized labels ride the
+          // tooltip + semantics, so find them by tooltip rather than text.
+          expect(find.byTooltip(messages.settingsThemingDark), findsOneWidget);
+          expect(
+            find.byTooltip(messages.settingsThemingAutomatic),
+            findsOneWidget,
+          );
+          expect(find.byTooltip(messages.settingsThemingLight), findsOneWidget);
+          final toggle = tester.widget<DsSegmentedToggle<ThemeMode>>(
+            find.byType(DsSegmentedToggle<ThemeMode>),
+          );
+          expect(toggle.selected, ThemeMode.system);
           await captureScreenshot(
             tester,
             'theming_preferences_${viewport}_$theme',
-            subdir: _subdir,
-          );
-
-          final selectedLightTheme = find.text('Sakura');
-          expect(selectedLightTheme, findsOneWidget);
-          await tester.tap(selectedLightTheme);
-          await settleFrames(tester);
-          expect(find.text('Material'), findsOneWidget);
-          expect(find.text('Outer Space'), findsWidgets);
-          await captureScreenshot(
-            tester,
-            'theming_picker_${viewport}_$theme',
             subdir: _subdir,
           );
         }),
