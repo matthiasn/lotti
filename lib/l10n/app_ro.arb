@@ -676,6 +676,7 @@
   "aiInferenceErrorTimeoutTitle": "Timp de așteptare depășit",
   "aiInferenceErrorUnknownTitle": "Eroare",
   "aiInternalsTitle": "Componente interne ale agentului",
+  "aiModelCardDeleteTooltip": "Ștergeți modelul",
   "aiModelDownloadCloseButton": "Închideți",
   "aiModelDownloadDialogDescription": "Lotti va descărca {modelName} în cache-ul MLX Audio și îl va utiliza pentru procesarea vocală locală.",
   "@aiModelDownloadDialogDescription": {

@@ -18,6 +18,8 @@ import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
         mistralInferenceRepositoryProvider,
         openAiModelsRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
+import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart'
+    show kAiDeleteToastDuration;
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -701,6 +703,142 @@ void main() {
         verify(
           () => mockRepository.deleteInferenceProviderWithModels(provider.id),
         ).called(1);
+
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'model row trash opens the shared confirmation modal; confirming '
+      'deletes only that model via the repository and stays on the page',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider();
+        when(
+          () => mockRepository.deleteConfig('m1'),
+        ).thenAnswer((_) async {});
+
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: [
+            buildModel(
+              id: 'm1',
+              providerId: provider.id,
+              name: 'Model One',
+              providerModelId: 'm-one',
+            ),
+            buildModel(
+              id: 'm2',
+              providerId: provider.id,
+              name: 'Model Two',
+              providerModelId: 'm-two',
+            ),
+          ],
+          profiles: const <AiConfig>[],
+        );
+
+        // One visible trash affordance per owned model row.
+        final trash = find.byTooltip('Delete model');
+        expect(trash, findsNWidgets(2));
+
+        await tester.ensureVisible(trash.first);
+        await tester.tap(trash.first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The shared AiConfigDeleteService modal, in its model variant —
+        // NOT the provider cascade dialog.
+        expect(find.text('Delete Model'), findsOneWidget);
+        expect(find.text('This action cannot be undone'), findsOneWidget);
+        expect(
+          find.text('Associated models will also be deleted'),
+          findsNothing,
+        );
+
+        final confirmButton = find.descendant(
+          of: find.byType(Dialog),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is DesignSystemButton &&
+                widget.variant == DesignSystemButtonVariant.danger,
+          ),
+        );
+        expect(confirmButton, findsOneWidget);
+        await tester.tap(confirmButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The tapped row's model was soft-deleted — nothing else was:
+        // not the sibling model, and not the provider cascade.
+        verify(() => mockRepository.deleteConfig('m1')).called(1);
+        verifyNever(() => mockRepository.deleteConfig('m2'));
+        verifyNever(
+          () => mockRepository.deleteInferenceProviderWithModels(any()),
+        );
+        // Unlike provider removal, the page does not pop.
+        expect(find.text('Provider details'), findsOneWidget);
+
+        // Flush the undo toast's 5 s countdown so no timers leak into
+        // teardown.
+        await tester.pump(
+          kAiDeleteToastDuration + const Duration(seconds: 1),
+        );
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'cancelling the model delete modal leaves the model untouched',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider();
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: [
+            buildModel(
+              id: 'm1',
+              providerId: provider.id,
+              name: 'Model One',
+              providerModelId: 'm-one',
+            ),
+          ],
+          profiles: const <AiConfig>[],
+        );
+
+        final trash = find.byTooltip('Delete model');
+        await tester.ensureVisible(trash);
+        await tester.tap(trash);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('This action cannot be undone'), findsOneWidget);
+
+        final cancelButton = find.descendant(
+          of: find.byType(Dialog),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is DesignSystemButton &&
+                widget.variant == DesignSystemButtonVariant.tertiary,
+          ),
+        );
+        expect(cancelButton, findsOneWidget);
+        await tester.tap(cancelButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Modal dismissed, nothing deleted, row still there.
+        expect(find.text('This action cannot be undone'), findsNothing);
+        verifyNever(() => mockRepository.deleteConfig(any()));
+        verifyNever(
+          () => mockRepository.deleteInferenceProviderWithModels(any()),
+        );
+        expect(find.text('Model One'), findsOneWidget);
 
         await settleTimers(tester);
       },

@@ -1558,6 +1558,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiInternalsTitle => 'Détails internes de l\'agent';
 
   @override
+  String get aiModelCardDeleteTooltip => 'Supprimer le modèle';
+
+  @override
   String get aiModelDownloadCloseButton => 'Fermer';
 
   @override

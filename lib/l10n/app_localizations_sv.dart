@@ -1541,6 +1541,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiInternalsTitle => 'Agentens inre delar';
 
   @override
+  String get aiModelCardDeleteTooltip => 'Radera modell';
+
+  @override
   String get aiModelDownloadCloseButton => 'Stäng';
 
   @override

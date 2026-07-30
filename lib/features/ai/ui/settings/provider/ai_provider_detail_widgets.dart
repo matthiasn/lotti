@@ -28,6 +28,7 @@ class DetailBody extends StatelessWidget {
     required this.onAddModel,
     required this.onEdit,
     required this.onModelTap,
+    required this.onDeleteModel,
     required this.onProfileTap,
     required this.onRemove,
     super.key,
@@ -44,6 +45,10 @@ class DetailBody extends StatelessWidget {
   final VoidCallback onAddModel;
   final VoidCallback onEdit;
   final ValueChanged<AiConfigModel> onModelTap;
+
+  /// Trash action on each model row; the page confirms before deleting.
+  final ValueChanged<AiConfigModel> onDeleteModel;
+
   final ValueChanged<AiConfigInferenceProfile> onProfileTap;
   final VoidCallback onRemove;
 
@@ -79,6 +84,7 @@ class DetailBody extends StatelessWidget {
           models: models,
           onAddModel: onAddModel,
           onModelTap: onModelTap,
+          onDeleteModel: onDeleteModel,
         ),
         SizedBox(height: tokens.spacing.step6),
         if (showsDynamicModelCatalog) ...[

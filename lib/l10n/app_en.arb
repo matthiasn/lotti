@@ -931,6 +931,7 @@
   "aiInferenceErrorTimeoutTitle": "Request Timed Out",
   "aiInferenceErrorUnknownTitle": "Error",
   "aiInternalsTitle": "Agent internals",
+  "aiModelCardDeleteTooltip": "Delete model",
   "aiModelDownloadCloseButton": "Close",
   "aiModelDownloadDialogDescription": "Lotti will download {modelName} into the MLX Audio cache and use it for local speech processing.",
   "@aiModelDownloadDialogDescription": {

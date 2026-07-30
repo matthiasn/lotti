@@ -32,7 +32,7 @@ import 'package:lotti/services/nav_service.dart' as nav_service;
 /// │ Display name Google Gemini                                │
 /// └───────────────────────────────────────────────────────────┘
 /// ┌─ Models · 3                              [+ Add model] ───┐
-/// │ [AiModelCard] rows                                        │
+/// │ [AiModelCard] rows, each with a 🗑 delete action          │
 /// └───────────────────────────────────────────────────────────┘
 /// ┌─ Active profile ──────────────────────────────────────────┐
 /// │ [AiProfileCard]                                           │
@@ -220,6 +220,7 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
             ),
             onEdit: () => _openEditForm(focusApiKey: false),
             onModelTap: _openModelEditForm,
+            onDeleteModel: _confirmDeleteModel,
             onProfileTap: _openProfileEditForm,
             onRemove: () => _confirmRemove(context, config),
           );
@@ -238,6 +239,18 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
 
   Future<void> _openModelEditForm(AiConfigModel model) async {
     await _navigationService.navigateToConfigEdit(context, model);
+  }
+
+  /// Deletes [model] through the shared delete service — the same
+  /// confirmation modal + undo toast the Models tab and the danger zone
+  /// use. No pop afterwards: the page stays put and the models stream
+  /// removes the row.
+  Future<void> _confirmDeleteModel(AiConfigModel model) async {
+    await _deleteService.deleteConfig(
+      context: context,
+      ref: ref,
+      config: model,
+    );
   }
 
   Future<void> _openProfileEditForm(AiConfigInferenceProfile profile) async {

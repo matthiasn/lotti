@@ -837,6 +837,7 @@
   "aiInferenceErrorTimeoutTitle": "Begäran löper ut",
   "aiInferenceErrorUnknownTitle": "Fel",
   "aiInternalsTitle": "Agentens inre delar",
+  "aiModelCardDeleteTooltip": "Radera modell",
   "aiModelDownloadCloseButton": "Stäng",
   "aiModelDownloadDialogDescription": "Lotti laddar ner {modelName} till MLX Audio-cachen och använder den för lokal talbearbetning.",
   "@aiModelDownloadDialogDescription": {

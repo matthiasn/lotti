@@ -53,6 +53,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   append-only log — editing an entry overwrites it rather than adding a version.
 
 ## [0.9.1072]
+### Added
+- **Models can be removed right where a provider lists them.** A provider's
+  detail page shows its models and offers "Add model", but taking one away
+  meant switching to the Models tab and finding the same model again in the
+  full list. Each model row on the provider page now carries a small trash
+  action; a tap asks for confirmation and then removes the model, with the
+  same brief undo window available for deletions elsewhere in the app.
+
 ### Fixed
 - **A confirm button no longer disappears when its label is long.** The buttons
   at the bottom of a dialog were placed side by side or stacked according to how
