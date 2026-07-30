@@ -2947,14 +2947,23 @@
   "matrixStatsDbApplied": "Aplicado a la base de datos",
   "matrixStatsDbApply": "Aplicación a la base de datos",
   "matrixStatsDbIgnoredVectorClock": "Ignorado por la base de datos (VectorClock)",
-  "matrixStatsDbMissingBase": "Falta la base de datos",
+  "matrixStatsDbMissingBase": "Base ausente en la BD",
+  "matrixStatsDbMissingBaseValue": "Base ausente en la BD: {count}",
+  "@matrixStatsDbMissingBaseValue": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "matrixStatsDiagnostics": "Diagnósticos",
   "matrixStatsDroppedByType": "Descartado ({type})",
   "matrixStatsEntryLinkNoops": "Operaciones nulas de EntryLink",
   "matrixStatsForceRescan": "Forzar reescaneo",
   "matrixStatsForceRescanTooltip": "Forzar el reescaneo y la recuperación ahora",
+  "matrixStatsLastIgnored": "Últimos ignorados:",
   "matrixStatsLegendTooltip": "Leyenda:\n• dbApplied = filas escritas en la base de datos\n• dbIgnoredByVectorClock = datos entrantes antiguos o idénticos ignorados por la base de datos\n• conflictsCreated = relojes vectoriales simultáneos registrados\n• dbMissingBase = omitido mientras se espera una dependencia que falta\n• dbEntryLinkNoop = el enlace ya existe, no se escribió nada\n• droppedByType.<type> = descartes por tipo tras reintentos o al ignorar mensajes antiguos\n• queueActive = eventos entrantes pendientes de aplicar\n• signalConnectivity = impulsos de sincronización tras recuperar la conexión",
   "matrixStatsQueueActive": "Cola (activa)",
   "matrixStatsRefresh": "Actualizar",
+  "matrixStatsRefreshDiagnosticsTooltip": "Actualizar diagnósticos",
   "matrixStatsRetryNow": "Reintentar ahora",
   "matrixStatsRetryNowTooltip": "Reintentar ahora los fallos pendientes",
   "matrixStatsSignals": "Señales",

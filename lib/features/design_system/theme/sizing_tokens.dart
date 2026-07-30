@@ -42,6 +42,12 @@ abstract final class TapTargets {
   ///
   /// Components opt into this only where the containing layout already owns a
   /// 48-high slot; the target must not silently inflate compact list rhythm.
+  ///
+  /// `DesignSystemIconAction` is the exception, and takes the floor
+  /// unconditionally: a glyph-only control has no label to borrow hit area
+  /// from, so a compact target is its *only* target. It therefore occupies
+  /// 48×48 and grows the row it sits in — which is why it belongs in card
+  /// headers and panel corners rather than dense rows.
   static const double minimum = 48;
 }
 

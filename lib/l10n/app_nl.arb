@@ -3326,7 +3326,14 @@
   "matrixStatsDbApplied": "DB Toegepast",
   "matrixStatsDbApply": "DB toepassen",
   "matrixStatsDbIgnoredVectorClock": "DB-geïngeneerd (Vectorklok)",
-  "matrixStatsDbMissingBase": "DB Ontbrekende basis",
+  "matrixStatsDbMissingBase": "Ontbrekende DB-basis",
+  "matrixStatsDbMissingBaseValue": "Ontbrekende DB-basis: {count}",
+  "@matrixStatsDbMissingBaseValue": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "matrixStatsDiagnostics": "Diagnostiek",
   "matrixStatsDroppedByType": "Gedropt ({type})",
   "@matrixStatsDroppedByType": {
     "placeholders": {
@@ -3336,9 +3343,11 @@
   "matrixStatsEntryLinkNoops": "EntryLink No-ops",
   "matrixStatsForceRescan": "Herscanen forceren",
   "matrixStatsForceRescanTooltip": "Herscannen en nu inhalen.",
+  "matrixStatsLastIgnored": "Laatst genegeerd:",
   "matrixStatsLegendTooltip": "Legende:\n• dbApplied = geschreven databaserijen\n• dbIgnoredByVectorClock = oudere of identieke inkomende gegevens genegeerd door de database\n• conflictsCreated = gelijktijdige vectorklokken gelogd\n• dbMissingBase = overgeslagen terwijl op een ontbrekende afhankelijkheid wordt gewacht\n• dbEntryLinkNoop = koppeling bestaat al, niets geschreven\n• droppedByType.<type> = weggegooid per type na pogingen of het negeren van oudere berichten\n• queueActive = inkomende gebeurtenissen die nog toegepast moeten worden\n• signalConnectivity = synchronisatiezetjes nadat de verbinding terug was",
   "matrixStatsQueueActive": "Wachtrij (actief)",
   "matrixStatsRefresh": "Verversen",
+  "matrixStatsRefreshDiagnosticsTooltip": "Diagnostiek verversen",
   "matrixStatsRetryNow": "Nu opnieuw proberen",
   "matrixStatsRetryNowTooltip": "Herstarten van nog niet-afgebroken programma",
   "matrixStatsSignals": "Signalen",

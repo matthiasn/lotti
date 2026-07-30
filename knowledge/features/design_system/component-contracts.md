@@ -97,6 +97,66 @@ the visual and semantic grammar. `DesignSystemListItem` remains an interactive
 row; rendering a read-only value with no callback puts it into its disabled
 treatment, so static metadata should use token-styled text instead.
 
+**`DesignSystemSectionCard` fixes its own fill** to `background.level02`, which
+is what makes it a *surface* rather than a container. A card whose fill carries
+meaning therefore cannot adopt it. `matrix_stats/metrics_grid.dart` is the
+worked example: each `MetricTile` tints itself by outcome — conflicts, drops,
+routine throughput — and moving it onto the section card would flatten that
+three-tone scale to one neutral. It stays a token-styled `Container`, taking
+`radii.m` and `decorative.level02` by hand. Reach for the section card when the
+grouping is structural; keep a container when the fill is information. See
+[design tokens and theming](tokens-and-theming.md) for why the tint could not
+be expressed as a `colorScheme.*Container` either.
+
+## Beside the button tier: `DesignSystemIconAction`
+
+A glyph-only control for card headers and panel corners — the sync statistics
+and backfill refresh controls are the reference uses. It carries no label and
+no variant, so it cannot read as a surface's primary action; where a
+caption-tier *labelled* row is wanted, use `DesignSystemInlineAction` below
+instead.
+
+**Its busy state is the reason it is a component.** The spinner it swaps in is
+the same dimension as the glyph it replaces, so the control does not resize
+under the pointer that just pressed it. `isBusy` also makes it **inert**, the
+way `DesignSystemButton` treats `isLoading`: the only action a busy refresh
+button could re-trigger is the refresh already in flight, so a caller must not
+have to remember to null `onPressed` as well to avoid a duplicate submit. It was promoted out of
+`backfill_settings_page.dart`, where it sat as a private-by-convention
+`IconActionButton` — a design-system control declared in a feature page. The
+second surface that needed it, `matrix_stats/diagnostics_panel.dart`, had
+reached for a Material `IconButton` instead, so the two refresh controls on
+neighbouring sync screens had drifted to different ergonomics. That divergence
+is what the promotion fixes, not an import graph: `backfill_settings_stats.dart`
+still imports the page, for `SurfaceCard`.
+
+**A glyph-only control cannot let its visual size be its target.** A labelled
+button borrows hit area from its text; this one has none, so the pointer target
+is pinned to `TapTargets.minimum` with the glyph centred inside it — the same
+`ConstrainedBox`/`Center` pair `DesignSystemButton` uses for
+`MaterialTapTargetSize.padded`, except here it is not optional. Its predecessor
+in the diagnostics panel was a Material `IconButton`, which supplied that floor
+for free; a compact replacement that did not would have been a silent
+regression to a 16dp target.
+
+That floor is a **layout** commitment, not just a hit-test one: the control
+occupies 48×48, where the `IconActionButton` it replaces occupied 24×24
+(`IconSizes.s` plus `spacing.step2` a side). On the sync statistics card the
+header row has no other child that tall, so the row grows to 48 and the card
+with it. This is the one deliberate exception to the guidance on
+`TapTargets.minimum` in `sizing_tokens.dart`, which otherwise asks components to
+take the floor only where the containing layout already owns a 48-high slot —
+a glyph-only control has no label to borrow from, so for it there is no compact
+option that is also reachable. Put it in card headers and panel corners, which
+can absorb the height; do not put it in a dense list row.
+
+**The tooltip is also the semantic label**, published on one explicit
+`Semantics(button: true)` node with the visual subtree under `ExcludeSemantics`.
+Both the tooltip and the spinner otherwise annotate themselves, so the control
+would announce the same words two or three times over and never say `button` —
+and while busy, when the glyph is gone, that node's label is the only remaining
+statement of which action is running.
+
 ## Below the button tier: `DesignSystemInlineAction`
 
 A caption-tier tappable row for metadata contexts — "skip this one", "change

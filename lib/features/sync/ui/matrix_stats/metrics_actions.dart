@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 class MetricsActions extends StatelessWidget {
@@ -19,10 +20,11 @@ class MetricsActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    final tokens = context.designTokens;
 
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: tokens.spacing.step3,
+      runSpacing: tokens.spacing.step3,
       children: [
         Tooltip(
           message: messages.matrixStatsForceRescanTooltip,

@@ -7131,7 +7131,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ignorado por la base de datos (VectorClock)';
 
   @override
-  String get matrixStatsDbMissingBase => 'Falta la base de datos';
+  String get matrixStatsDbMissingBase => 'Base ausente en la BD';
+
+  @override
+  String matrixStatsDbMissingBaseValue(Object count) {
+    return 'Base ausente en la BD: $count';
+  }
+
+  @override
+  String get matrixStatsDiagnostics => 'Diagnósticos';
 
   @override
   String matrixStatsDroppedByType(Object type) {
@@ -7149,6 +7157,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Forzar el reescaneo y la recuperación ahora';
 
   @override
+  String get matrixStatsLastIgnored => 'Últimos ignorados:';
+
+  @override
   String get matrixStatsLegendTooltip =>
       'Leyenda:\n• dbApplied = filas escritas en la base de datos\n• dbIgnoredByVectorClock = datos entrantes antiguos o idénticos ignorados por la base de datos\n• conflictsCreated = relojes vectoriales simultáneos registrados\n• dbMissingBase = omitido mientras se espera una dependencia que falta\n• dbEntryLinkNoop = el enlace ya existe, no se escribió nada\n• droppedByType.<type> = descartes por tipo tras reintentos o al ignorar mensajes antiguos\n• queueActive = eventos entrantes pendientes de aplicar\n• signalConnectivity = impulsos de sincronización tras recuperar la conexión';
 
@@ -7157,6 +7168,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get matrixStatsRefresh => 'Actualizar';
+
+  @override
+  String get matrixStatsRefreshDiagnosticsTooltip => 'Actualizar diagnósticos';
 
   @override
   String get matrixStatsRetryNow => 'Reintentar ahora';

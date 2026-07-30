@@ -3327,6 +3327,13 @@
   "matrixStatsDbApply": "Aplicar BD",
   "matrixStatsDbIgnoredVectorClock": "BD ignorado (VectorClock)",
   "matrixStatsDbMissingBase": "BD sem base",
+  "matrixStatsDbMissingBaseValue": "BD sem base: {count}",
+  "@matrixStatsDbMissingBaseValue": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "matrixStatsDiagnostics": "Diagnósticos",
   "matrixStatsDroppedByType": "Descartado ({type})",
   "@matrixStatsDroppedByType": {
     "placeholders": {
@@ -3336,9 +3343,11 @@
   "matrixStatsEntryLinkNoops": "Operações sem efeito de EntryLink",
   "matrixStatsForceRescan": "Forçar nova verificação",
   "matrixStatsForceRescanTooltip": "Force uma nova verificação e atualize agora",
+  "matrixStatsLastIgnored": "Últimos ignorados:",
   "matrixStatsLegendTooltip": "Legenda:\n• dbApplied = linhas gravadas no banco de dados\n• dbIgnoredByVectorClock = dados recebidos mais antigos ou idênticos ignorados pelo banco de dados\n• conflictsCreated = relógios vetoriais simultâneos registrados\n• dbMissingBase = ignorado enquanto se espera uma dependência ausente\n• dbEntryLinkNoop = vínculo já existe, nada gravado\n• droppedByType.<type> = descartes por tipo após novas tentativas ou ao ignorar mensagens antigas\n• queueActive = eventos recebidos ainda por aplicar\n• signalConnectivity = impulsos de sincronização após a conexão voltar",
   "matrixStatsQueueActive": "Fila (ativa)",
   "matrixStatsRefresh": "Atualizar",
+  "matrixStatsRefreshDiagnosticsTooltip": "Atualizar diagnósticos",
   "matrixStatsRetryNow": "Tentar novamente agora",
   "matrixStatsRetryNowTooltip": "Tente novamente as falhas pendentes agora",
   "matrixStatsSignals": "Sinais",

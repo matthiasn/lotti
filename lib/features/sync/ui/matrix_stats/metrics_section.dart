@@ -3,6 +3,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/diagnostics_panel.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_actions.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_grid.dart';
+import 'package:lotti/features/sync/ui/matrix_stats/metrics_typography.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 class SyncMetricsSection extends StatelessWidget {
@@ -124,14 +125,14 @@ class SyncMetricsSection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: tokens.spacing.step3),
         MetricsActions(
           onForceRescan: onForceRescan,
           onRetryNow: onRetryNow,
           onCopyDiagnostics: onCopyDiagnostics,
           onRefresh: onRefresh,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: tokens.spacing.step4),
         // Top KPIs with optional sparklines
         Builder(
           builder: (context) {
@@ -150,10 +151,17 @@ class SyncMetricsSection extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (kpiEntries.isNotEmpty) Text(messages.matrixStatsTopKpis),
+                if (kpiEntries.isNotEmpty)
+                  Text(
+                    messages.matrixStatsTopKpis,
+                    style: metricsGroupHeading(tokens),
+                  ),
                 if (kpiEntries.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(top: 8, bottom: 12),
+                    padding: EdgeInsets.only(
+                      top: tokens.spacing.step3,
+                      bottom: tokens.spacing.step4,
+                    ),
                     child: MetricsGrid(
                       entries: kpiEntries,
                       labelFor: (key) => _labelFor(context, key),
@@ -168,10 +176,12 @@ class SyncMetricsSection extends StatelessWidget {
           (section) => [
             RepaintBoundary(
               child: Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 8),
+                padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
                 child: Text(
                   section.key,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  // Same tier as "Top KPIs" above: both name a group of
+                  // tiles, so they must not read as different levels.
+                  style: metricsGroupHeading(tokens),
                 ),
               ),
             ),
@@ -181,7 +191,7 @@ class SyncMetricsSection extends StatelessWidget {
                 labelFor: (key) => _labelFor(context, key),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: tokens.spacing.step4),
           ],
         ),
         DiagnosticsPanel(fetchDiagnostics: fetchDiagnostics),

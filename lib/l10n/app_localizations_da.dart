@@ -7029,6 +7029,14 @@ class AppLocalizationsDa extends AppLocalizations {
   String get matrixStatsDbMissingBase => 'DB Manglende Basis';
 
   @override
+  String matrixStatsDbMissingBaseValue(Object count) {
+    return 'DB Manglende Basis: $count';
+  }
+
+  @override
+  String get matrixStatsDiagnostics => 'Diagnostik';
+
+  @override
   String matrixStatsDroppedByType(Object type) {
     return 'Droppet ($type)';
   }
@@ -7043,6 +7051,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get matrixStatsForceRescanTooltip => 'Force-scan og indhent nu';
 
   @override
+  String get matrixStatsLastIgnored => 'Sidst ignoreret:';
+
+  @override
   String get matrixStatsLegendTooltip =>
       'Legende:\n• dbApplied = skrevne databaserækker\n• dbIgnoredByVectorClock = ældre eller identiske indkommende data ignoreret af databasen\n• conflictsCreated = samtidige vektorure logget\n• dbMissingBase = sprunget over mens en manglende afhængighed afventes\n• dbEntryLinkNoop = link findes allerede, intet skrevet\n• droppedByType.<type> = frasorteringer pr. type efter forsøg eller ignorering af ældre beskeder\n• queueActive = indkommende hændelser der stadig venter på at blive anvendt\n• signalConnectivity = synkroniseringspuf efter at forbindelsen kom tilbage';
 
@@ -7051,6 +7062,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get matrixStatsRefresh => 'Opfrisk';
+
+  @override
+  String get matrixStatsRefreshDiagnosticsTooltip => 'Opdater diagnostik';
 
   @override
   String get matrixStatsRetryNow => 'Prøv igen nu';

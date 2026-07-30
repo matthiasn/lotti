@@ -7069,6 +7069,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get matrixStatsDbMissingBase => 'Fehlende Datenbankbasis';
 
   @override
+  String matrixStatsDbMissingBaseValue(Object count) {
+    return 'Fehlende Datenbankbasis: $count';
+  }
+
+  @override
+  String get matrixStatsDiagnostics => 'Diagnose';
+
+  @override
   String matrixStatsDroppedByType(Object type) {
     return 'Verworfen ($type)';
   }
@@ -7084,6 +7092,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Jetzt erneut scannen und nachholen';
 
   @override
+  String get matrixStatsLastIgnored => 'Zuletzt ignoriert:';
+
+  @override
   String get matrixStatsLegendTooltip =>
       'Legende:\n• dbApplied = geschriebene Datenbankzeilen\n• dbIgnoredByVectorClock = von der Datenbank ignorierte ältere oder identische eingehende Daten\n• conflictsCreated = protokollierte gleichzeitige Vector Clocks\n• dbMissingBase = übersprungen, während eine fehlende Abhängigkeit erwartet wird\n• dbEntryLinkNoop = Verknüpfung bereits vorhanden, nichts geschrieben\n• droppedByType.<type> = verworfene Nachrichten pro Typ nach Wiederholungen oder Ignorieren älterer Nachrichten\n• queueActive = eingehende Ereignisse, die noch angewendet werden müssen\n• signalConnectivity = Sync-Anstöße nach Wiederkehr der Verbindung';
 
@@ -7092,6 +7103,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get matrixStatsRefresh => 'Aktualisieren';
+
+  @override
+  String get matrixStatsRefreshDiagnosticsTooltip => 'Diagnose aktualisieren';
 
   @override
   String get matrixStatsRetryNow => 'Jetzt wiederholen';

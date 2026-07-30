@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
@@ -283,62 +282,6 @@ class SurfaceCard extends StatelessWidget {
       ),
       padding: padding ?? EdgeInsets.all(tokens.spacing.step5),
       child: child,
-    );
-  }
-}
-
-/// Compact icon-only button used in card headers (e.g. the stats
-/// refresh control). Mirrors the Material `IconButton` ergonomics
-/// while sourcing every visual from design tokens.
-class IconActionButton extends StatelessWidget {
-  const IconActionButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-    this.isBusy = false,
-    super.key,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
-  final bool isBusy;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final enabled = onPressed != null;
-    final foreground = enabled
-        ? tokens.colors.text.mediumEmphasis
-        : tokens.colors.text.lowEmphasis;
-    final child = isBusy
-        ? SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: foreground,
-            ),
-          )
-        : Icon(icon, size: 16, color: foreground);
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(tokens.radii.smallChips),
-          onTap: enabled
-              ? () {
-                  HapticFeedback.selectionClick();
-                  onPressed!();
-                }
-              : null,
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step2),
-            child: child,
-          ),
-        ),
-      ),
     );
   }
 }

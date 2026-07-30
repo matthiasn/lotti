@@ -7145,11 +7145,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get matrixStatsConflicts => 'Conflicte';
 
   @override
-  String get matrixStatsCopyDiagnostics => 'Copiază diagnosticarea';
+  String get matrixStatsCopyDiagnostics => 'Copiați diagnosticarea';
 
   @override
   String get matrixStatsCopyDiagnosticsTooltip =>
-      'Copiază diagnosticarea sincronizării în clipboard';
+      'Copiați diagnosticarea sincronizării în clipboard';
 
   @override
   String get matrixStatsDbApplied => 'Aplicat în baza de date';
@@ -7162,7 +7162,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ignorat de baza de date (VectorClock)';
 
   @override
-  String get matrixStatsDbMissingBase => 'Lipsește baza de date';
+  String get matrixStatsDbMissingBase => 'Bază lipsă în BD';
+
+  @override
+  String matrixStatsDbMissingBaseValue(Object count) {
+    return 'Bază lipsă în BD: $count';
+  }
+
+  @override
+  String get matrixStatsDiagnostics => 'Diagnosticare';
 
   @override
   String matrixStatsDroppedByType(Object type) {
@@ -7173,11 +7181,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get matrixStatsEntryLinkNoops => 'Operațiuni fără efect EntryLink';
 
   @override
-  String get matrixStatsForceRescan => 'Forțează rescanarea';
+  String get matrixStatsForceRescan => 'Forțați rescanarea';
 
   @override
   String get matrixStatsForceRescanTooltip =>
-      'Forțează acum rescanarea și recuperarea';
+      'Forțați acum rescanarea și recuperarea';
+
+  @override
+  String get matrixStatsLastIgnored => 'Ultimele ignorate:';
 
   @override
   String get matrixStatsLegendTooltip =>
@@ -7187,14 +7198,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get matrixStatsQueueActive => 'Coadă (activă)';
 
   @override
-  String get matrixStatsRefresh => 'Reîmprospătează';
+  String get matrixStatsRefresh => 'Reîmprospătați';
 
   @override
-  String get matrixStatsRetryNow => 'Reîncearcă acum';
+  String get matrixStatsRefreshDiagnosticsTooltip =>
+      'Reîmprospătați diagnosticarea';
+
+  @override
+  String get matrixStatsRetryNow => 'Reîncercați acum';
 
   @override
   String get matrixStatsRetryNowTooltip =>
-      'Reîncearcă acum erorile în așteptare';
+      'Reîncercați acum erorile în așteptare';
 
   @override
   String get matrixStatsSignals => 'Semnale';
