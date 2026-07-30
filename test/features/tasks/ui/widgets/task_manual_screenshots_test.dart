@@ -757,22 +757,23 @@ void main() {
         final messages = AppLocalizations.of(
           tester.element(find.byType(TaskDetailsPage)),
         )!;
+        // The automation row shows the short status word next to the stale
+        // glyph; the long outdated sentence lives in the glyph's tooltip.
         expect(
-          find.text(messages.taskAgentReportOutdatedTitle),
+          find.text(messages.taskAgentStatusOutOfDate),
           findsOneWidget,
         );
-        if (device.isPhone) {
-          expect(
-            find.byKey(const ValueKey('taskAgentWakeIconButton')),
-            findsOneWidget,
-          );
-          expect(
-            find.bySemanticsLabel(messages.taskAgentUpdateNow),
-            findsOneWidget,
-          );
-        } else {
-          expect(find.text(messages.taskAgentUpdateNow), findsOneWidget);
-        }
+        expect(
+          find.byKey(const ValueKey('taskAgentStaleGlyph')),
+          findsOneWidget,
+        );
+        // The automation row keeps the worded Update-now button on every
+        // viewport; the icon-only phone variant no longer exists.
+        expect(
+          find.byKey(const ValueKey('taskAgentWakeButton')),
+          findsOneWidget,
+        );
+        expect(find.text(messages.taskAgentUpdateNow), findsOneWidget);
         await captureScreenshot(
           tester,
           'task_agent_manual_${viewport}_$theme',
@@ -1003,8 +1004,11 @@ void main() {
         final messages = AppLocalizations.of(
           tester.element(find.byType(TaskDetailsPage)),
         )!;
+        // The modal's title dropped the trailing ellipsis: the action label
+        // (linkExistingTask) stays on the trigger button underneath, while
+        // the sheet itself is titled linkExistingTaskTitle.
         expect(
-          find.text(messages.linkExistingTask),
+          find.text(messages.linkExistingTaskTitle),
           findsOneWidget,
         );
         expect(
