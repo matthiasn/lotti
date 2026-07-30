@@ -8,9 +8,12 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
-// Promoted out of `backfill_settings_page.dart`, where three call sites across
-// two feature directories had to import a page — and its get_it, service and
-// controller graph — to render one icon button.
+// Promoted out of `backfill_settings_page.dart`, where it sat as
+// `IconActionButton` — a design-system control declared in a feature page. The
+// diagnostics panel, needing the same thing, had reached for a Material
+// `IconButton` instead, so two refresh controls on neighbouring sync screens
+// carried different ergonomics. These tests pin the behaviour both of them
+// should have had.
 
 void main() {
   const actionKey = Key('icon-action');

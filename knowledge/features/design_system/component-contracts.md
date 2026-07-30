@@ -118,10 +118,14 @@ instead.
 
 **Its busy state is the reason it is a component.** The spinner it swaps in is
 the same dimension as the glyph it replaces, so the control does not resize
-under the pointer that just pressed it. It lived in
-`backfill_settings_page.dart` until three call sites across two feature
-directories were importing a *page*, and its whole get_it and controller graph,
-to render one button.
+under the pointer that just pressed it. It was promoted out of
+`backfill_settings_page.dart`, where it sat as a private-by-convention
+`IconActionButton` — a design-system control declared in a feature page. The
+second surface that needed it, `matrix_stats/diagnostics_panel.dart`, had
+reached for a Material `IconButton` instead, so the two refresh controls on
+neighbouring sync screens had drifted to different ergonomics. That divergence
+is what the promotion fixes, not an import graph: `backfill_settings_stats.dart`
+still imports the page, for `SurfaceCard`.
 
 **A glyph-only control cannot let its visual size be its target.** A labelled
 button borrows hit area from its text; this one has none, so the pointer target
@@ -131,6 +135,17 @@ is pinned to `TapTargets.minimum` with the glyph centred inside it — the same
 in the diagnostics panel was a Material `IconButton`, which supplied that floor
 for free; a compact replacement that did not would have been a silent
 regression to a 16dp target.
+
+That floor is a **layout** commitment, not just a hit-test one: the control
+occupies 48×48, where the `IconActionButton` it replaces occupied 24×24
+(`IconSizes.s` plus `spacing.step2` a side). On the sync statistics card the
+header row has no other child that tall, so the row grows to 48 and the card
+with it. This is the one deliberate exception to the guidance on
+`TapTargets.minimum` in `sizing_tokens.dart`, which otherwise asks components to
+take the floor only where the containing layout already owns a 48-high slot —
+a glyph-only control has no label to borrow from, so for it there is no compact
+option that is also reachable. Put it in card headers and panel corners, which
+can absorb the height; do not put it in a dense list row.
 
 **The tooltip is also the semantic label**, published on one explicit
 `Semantics(button: true)` node with the visual subtree under `ExcludeSemantics`.

@@ -45,9 +45,18 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
             future: _future,
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
-                return Padding(
-                  padding: EdgeInsets.all(tokens.spacing.step3),
-                  child: const DesignSystemSpinner(),
+                // The panel-loading idiom the sibling sync surfaces use
+                // (`sync_devices_list.dart`, `add_device_page.dart`): the
+                // full-size spinner centred, with room around it. A bare
+                // `step3` inset would leave the 48pt default hugging the
+                // left edge of the disclosure.
+                return Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: tokens.spacing.step6,
+                    ),
+                    child: const DesignSystemSpinner(),
+                  ),
                 );
               }
               final txt = snap.data ?? '';

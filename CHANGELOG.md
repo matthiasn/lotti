@@ -338,11 +338,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the Italian and Dutch ones stacked the words in an order that read as
   neither. The Romanian buttons on that page also addressed you informally,
   unlike the rest of the app.
-- **The refresh buttons on Backfill sync and sync statistics are easier to hit,
-  and say what they are.** Each was a 16-pixel icon with barely any room around
-  it, so on a phone it took an accurate tap; the button is unchanged to look at
-  but now claims the space a finger needs. Screen readers also named these
-  controls without ever saying they were buttons.
+- **The refresh button on Backfill sync is easier to hit, and says what it
+  is.** It was a 16-pixel icon with barely any room around it — a 24-point
+  target, half the size a finger needs — so on a phone it took an accurate tap.
+  The icon is unchanged, but the button now occupies a full touch target, which
+  makes the header of that card taller. Screen readers also named it without
+  ever saying it was a button.
 - **Transcription now counts towards your AI usage figures.** When a recording
   was transcribed by a Melious speech model, the cost and the energy, carbon and
   water it used were reported by the provider and then thrown away — so the AI

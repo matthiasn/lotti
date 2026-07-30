@@ -804,7 +804,6 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
     if (widget.knownModel.inputModalities.contains(Modality.audio)) {
       return Icons.mic_rounded;
     }
-
     // OCR / document reading.
     if (id.contains('ocr')) {
       return Icons.document_scanner_rounded;

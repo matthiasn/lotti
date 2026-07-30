@@ -12249,13 +12249,13 @@ abstract class AppLocalizations {
   /// **'DB Ignored (VectorClock)'**
   String get matrixStatsDbIgnoredVectorClock;
 
-  /// No description provided for @matrixStatsDbMissingBase.
+  /// Metric tile label for entries held back while a base record they depend on has not arrived yet. NOT 'the database is missing'. Must say the same thing as matrixStatsDbMissingBaseValue, which renders on the same panel, and as the dbMissingBase line of matrixStatsLegendTooltip.
   ///
   /// In en, this message translates to:
   /// **'DB Missing Base'**
   String get matrixStatsDbMissingBase;
 
-  /// No description provided for @matrixStatsDbMissingBaseValue.
+  /// The same counter as matrixStatsDbMissingBase, spelled out with its value in the diagnostics panel. Kept as a separate string rather than composed at the call site because the separator differs by locale (French puts a narrow space before the colon). Translate the two together.
   ///
   /// In en, this message translates to:
   /// **'DB Missing Base: {count}'**

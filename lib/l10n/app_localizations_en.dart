@@ -11482,20 +11482,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
       'Sync measurables, dashboards, habits, categories, and AI settings';
 
   @override
-  String matrixStatsDbMissingBaseValue(Object count) {
-    return 'DB Missing Base: $count';
-  }
-
-  @override
-  String get matrixStatsDiagnostics => 'Diagnostics';
-
-  @override
-  String get matrixStatsLastIgnored => 'Last ignored:';
-
-  @override
-  String get matrixStatsRefreshDiagnosticsTooltip => 'Refresh diagnostics';
-
-  @override
   String get measurableDeleteConfirm => 'YES, DELETE THIS MEASURABLE';
 
   @override
