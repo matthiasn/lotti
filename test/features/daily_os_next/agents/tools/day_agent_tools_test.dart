@@ -214,6 +214,11 @@ void main() {
         blockSchema['required'],
         containsAll(['title', 'categoryId', 'start', 'end', 'type']),
       );
+      expect(
+        properties,
+        isNot(contains('capacityMinutes')),
+        reason: 'Capacity is workflow configuration, not model authority.',
+      );
       expect(blockSchema['additionalProperties'], isFalse);
       expect(
         (blockProperties['type'] as Map<String, dynamic>)['enum'],

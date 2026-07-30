@@ -29,6 +29,7 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
@@ -284,6 +285,7 @@ void registerAllFallbackValues() {
 
   // Agent config fallback
   registerFallbackValue(const AgentConfig());
+  registerFallbackValue(const DayAgentConfig());
   registerFallbackValue(
     const AgentInferenceSetup(
       mode: AgentInferenceSetupMode.disabled,

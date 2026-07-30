@@ -445,6 +445,70 @@ void main() {
       );
       expect(parseJob.status, DayProcessingJobStatus.succeeded);
 
+      // Reproduce the live Qwen failure: the blocks total less than the
+      // configured 300-minute capacity because there is a clock gap, yet the
+      // final block runs past the configured 18:00 working-hours boundary.
+      // The production guard must reject this turn so the workflow gives the
+      // model its one forced correction attempt.
+      conversationRepository.script([
+        scriptedToolCall(
+          id: 'overcommitted-out-of-hours',
+          name: DayAgentToolNames.draftDayPlan,
+          args: {
+            'dayId': dayId,
+            'captureId': captureId.value,
+            'decidedTaskIds': overcommittedRestOfDayScenario.decidedTaskIds,
+            'blocks': [
+              _block(
+                dayDate,
+                taskId: 'task-board-deck',
+                title: 'Prepare the board deck',
+                categoryId: 'cat-leadership',
+                startHour: 13,
+                endHour: 14,
+                endMinute: 30,
+                reason: 'Honour the binding board-deck commitment.',
+              ),
+              _block(
+                dayDate,
+                taskId: 'task-release',
+                title: 'Write the release notes',
+                categoryId: 'cat-product',
+                startHour: 14,
+                startMinute: 30,
+                endHour: 15,
+                endMinute: 15,
+                reason: 'Due today.',
+              ),
+              _block(
+                dayDate,
+                taskId: 'task-inbox',
+                title: 'Clear the support inbox',
+                categoryId: 'cat-support',
+                startHour: 15,
+                startMinute: 15,
+                endHour: 15,
+                endMinute: 45,
+                reason: 'Selected short task.',
+              ),
+              _block(
+                dayDate,
+                taskId: 'task-interviews',
+                title: 'Interview two candidates',
+                categoryId: 'cat-people',
+                startHour: 17,
+                endHour: 19,
+                reason:
+                    'Uses the remaining capacity but silently overruns the '
+                    'working day.',
+              ),
+            ],
+          },
+        ),
+      ]);
+      // Separate scripted turns are the subject: the first is rejected and
+      // the workflow's forced retry consumes the second.
+      // ignore: cascade_invocations
       conversationRepository.script([
         scriptedToolCall(
           id: 'surface-omissions',
@@ -514,6 +578,17 @@ void main() {
         draft.blocks.map((block) => block.taskId),
         orderedEquals(['task-board-deck', 'task-release', 'task-inbox']),
       );
+      expect(
+        draft.blocks.every(
+          (block) => !block.end.isAfter(
+            dayDate.add(
+              const Duration(hours: 18),
+            ),
+          ),
+        ),
+        isTrue,
+      );
+      expect(conversationRepository.pendingTurns, 0);
 
       final events = await harness.agentRepository.getDayStatusEventsSince(
         DateTime(2020),
@@ -577,10 +652,10 @@ void main() {
       expect(plannerPrompt, contains('Take an afternoon walk'));
       expect(
         conversationRepository.sendCount,
-        4,
+        5,
         reason:
-            'Two planner digests plus one parse and one draft should cover '
-            'the full bidirectional protocol without terminal extra turns.',
+            'Two planner digests, one parse, one rejected draft, and one '
+            'corrected draft should cover the full bidirectional protocol.',
       );
     },
   );

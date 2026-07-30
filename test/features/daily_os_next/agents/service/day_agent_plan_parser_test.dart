@@ -657,6 +657,101 @@ void main() {
     });
   });
 
+  group('validateDraftWorkingHours', () {
+    PlannedBlock block({
+      required DateTime start,
+      required DateTime end,
+      PlannedBlockState state = PlannedBlockState.drafted,
+    }) => PlannedBlock(
+      id: 'block',
+      categoryId: 'cat-1',
+      startTime: start,
+      endTime: end,
+      title: 'Bounded work',
+      state: state,
+    );
+
+    void validate(
+      PlannedBlock planned, {
+      String start = '09:00',
+      String end = '17:00',
+    }) => validateDraftWorkingHours(
+      blocks: [planned],
+      planDate: day,
+      workingHoursStart: start,
+      workingHoursEnd: end,
+    );
+
+    test('accepts active work exactly on both configured boundaries', () {
+      expect(
+        () => validate(
+          block(
+            start: DateTime(2026, 3, 16, 9),
+            end: DateTime(2026, 3, 16, 17),
+          ),
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('rejects active work before or after the configured window', () {
+      expect(
+        () => validate(
+          block(
+            start: DateTime(2026, 3, 16, 8, 55),
+            end: DateTime(2026, 3, 16, 10),
+          ),
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('starts before'), contains('09:00')),
+          ),
+        ),
+      );
+      expect(
+        () => validate(
+          block(
+            start: DateTime(2026, 3, 16, 16),
+            end: DateTime(2026, 3, 16, 17, 5),
+          ),
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('ends after'), contains('17:00')),
+          ),
+        ),
+      );
+    });
+
+    test('does not police dropped history or invent malformed bounds', () {
+      expect(
+        () => validate(
+          block(
+            start: DateTime(2026, 3, 16, 7),
+            end: DateTime(2026, 3, 16, 19),
+            state: PlannedBlockState.dropped,
+          ),
+        ),
+        returnsNormally,
+      );
+      expect(
+        () => validate(
+          block(
+            start: DateTime(2026, 3, 16, 7),
+            end: DateTime(2026, 3, 16, 19),
+          ),
+          start: 'morning',
+          end: 'five-ish',
+        ),
+        returnsNormally,
+      );
+    });
+  });
+
   // ── Block-category invariants ────────────────────────────────────────────
   // A block naming a task is filed under that task's category. The defect this
   // replaces existed because the two were checked independently, and the fix

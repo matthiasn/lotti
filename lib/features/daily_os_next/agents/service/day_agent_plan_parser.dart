@@ -484,6 +484,43 @@ int scheduledMinutesFor(List<PlannedBlock> blocks) {
       .fold<int>(0, (sum, block) => sum + block.duration.inMinutes);
 }
 
+/// Rejects active blocks outside the configured working-hours window.
+///
+/// The prompt advertises these bounds, but model compliance is not a storage
+/// invariant. A measured Qwen draft stayed under `capacityMinutes` only because
+/// it left a clock gap, then ran its final block an hour past
+/// [workingHoursEnd]. Persisting that plan traded one constraint for another
+/// and made the draft look usable when it was not.
+///
+/// Malformed free-text working-hours values leave that boundary unenforced,
+/// matching [remainingWorkingMinutes]: inventing a fallback would reject a
+/// plan against hours the user did not configure.
+void validateDraftWorkingHours({
+  required List<PlannedBlock> blocks,
+  required DateTime planDate,
+  required String workingHoursStart,
+  required String workingHoursEnd,
+}) {
+  final start = workingHourOn(planDate, workingHoursStart);
+  final end = workingHourOn(planDate, workingHoursEnd);
+  for (final block in blocks) {
+    if (block.state == PlannedBlockState.dropped) continue;
+    if (start != null && block.startTime.isBefore(start)) {
+      throw DayAgentCaptureException(
+        'block "${block.title}" starts before configured working hours '
+        '($workingHoursStart)',
+      );
+    }
+    if (end != null && block.endTime.isAfter(end)) {
+      throw DayAgentCaptureException(
+        'block "${block.title}" ends after configured working hours '
+        '($workingHoursEnd). Shorten or omit work and surface the '
+        'overCommitted conflict instead.',
+      );
+    }
+  }
+}
+
 /// Serializes a persisted [DayPlanEntity] into the JSON tool-result shape
 /// returned to the model (plan/day ids, capacity vs. scheduled minutes, and
 /// each block + energy band).

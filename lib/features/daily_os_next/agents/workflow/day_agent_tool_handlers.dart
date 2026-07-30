@@ -116,6 +116,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         runKey: runKey,
         toolName: toolName,
         args: args,
+        planningConfig: config,
       );
       return DayAgentToolResult(
         success: result.success,

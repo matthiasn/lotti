@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_editor.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
@@ -32,6 +33,7 @@ class DayAgentPlanToolDispatcher {
     required String runKey,
     required String toolName,
     required Map<String, dynamic> args,
+    DayAgentConfig planningConfig = const DayAgentConfig(),
   }) async {
     try {
       final data = switch (toolName) {
@@ -39,6 +41,7 @@ class DayAgentPlanToolDispatcher {
           agentId,
           runKey,
           args,
+          planningConfig,
         ),
         DayAgentToolNames.summarizeRecentPatterns =>
           await _summarizeRecentPatternsTool(agentId, args),
@@ -68,6 +71,7 @@ class DayAgentPlanToolDispatcher {
     String agentId,
     String runKey,
     Map<String, dynamic> args,
+    DayAgentConfig planningConfig,
   ) async {
     final dayId = requiredStringArg(args, 'dayId');
     final planDate =
@@ -85,7 +89,12 @@ class DayAgentPlanToolDispatcher {
       decidedTaskIds: stringListArg(args['decidedTaskIds']),
       rawBlocks: objectListArg(args['blocks'], 'blocks'),
       rawEnergyBands: objectListArg(args['energyBands'], 'energyBands'),
-      capacityMinutes: optionalIntArg(args['capacityMinutes']) ?? 480,
+      // Capacity and working hours are planner configuration, not model
+      // authority. The tool may echo capacityMinutes, but it cannot enlarge
+      // the window it was given.
+      capacityMinutes: planningConfig.capacityMinutes,
+      workingHoursStart: planningConfig.workingHoursStart,
+      workingHoursEnd: planningConfig.workingHoursEnd,
       dayLabel: optionalStringArg(args['dayLabel']),
       runKey: runKey,
     );

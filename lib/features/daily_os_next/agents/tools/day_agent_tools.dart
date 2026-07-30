@@ -282,7 +282,6 @@ const dayAgentTools = <AgentToolDefinition>[
           'type': 'array',
           'items': {'type': 'string'},
         },
-        'capacityMinutes': {'type': 'integer'},
         'dayLabel': {'type': 'string'},
         'blocks': {
           'type': 'array',

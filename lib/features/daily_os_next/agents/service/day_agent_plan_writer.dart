@@ -277,6 +277,8 @@ class DayAgentPlanWriter {
     List<Object?> rawEnergyBands = const [],
     List<String> decidedTaskIds = const [],
     int capacityMinutes = 480,
+    String workingHoursStart = '09:00',
+    String workingHoursEnd = '17:00',
     String? dayLabel,
     String? runKey,
   }) async {
@@ -379,7 +381,12 @@ class DayAgentPlanWriter {
       if (byStart != 0) return byStart;
       return a.id.compareTo(b.id);
     });
-
+    validateDraftWorkingHours(
+      blocks: blocks,
+      planDate: planDate,
+      workingHoursStart: workingHoursStart,
+      workingHoursEnd: workingHoursEnd,
+    );
     final bands = [
       for (final raw in rawEnergyBands)
         parseEnergyBand(raw: raw, day: planDate),

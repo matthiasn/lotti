@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1073]
 ### Fixed
+- **Daily OS plans stay inside your configured working hours.** On an
+  overloaded day, the planner could keep the total duration under your capacity
+  by leaving a gap and then scheduling the final task after your working day
+  ended. Plans outside the configured window are now rejected and retried, so
+  work must be shortened or omitted explicitly instead of quietly overrunning.
 - **The sync diagnostics panel is translated.** Its heading, its refresh button
   and its "Last ignored" list stayed English on every device, whatever language
   the rest of the app was set to.

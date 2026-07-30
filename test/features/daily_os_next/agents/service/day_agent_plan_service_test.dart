@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -1140,6 +1141,35 @@ void main() {
       );
     });
 
+    test(
+      'persistDraftPlan rejects a plan that runs past working hours',
+      () async {
+        await expectLater(
+          withClock(
+            Clock.fixed(_now),
+            () => createService().persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: [
+                _aiBlock(
+                  start: DateTime(2026, 5, 25, 16),
+                  end: DateTime(2026, 5, 25, 17, 30),
+                ),
+              ],
+            ),
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              allOf(contains('working hours'), contains('17:00')),
+            ),
+          ),
+        );
+      },
+    );
+
     test('persistDraftPlan sorts equal-start blocks by id', () async {
       final plan = await withClock(Clock.fixed(_now), () {
         return createService().persistDraftPlan(
@@ -1204,7 +1234,7 @@ void main() {
     );
 
     test(
-      'executeTool runs decidedTaskIds + integer capacity paths end-to-end',
+      'executeTool uses planner config instead of model-authored capacity',
       () async {
         when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
           (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},
@@ -1215,10 +1245,11 @@ void main() {
             threadId: _threadId,
             runKey: _runKey,
             toolName: DayAgentToolNames.draftDayPlan,
+            planningConfig: const DayAgentConfig(capacityMinutes: 300),
             args: {
               'dayId': _dayId,
               'dayDate': DateTime(2026, 5, 25).toIso8601String(),
-              'capacityMinutes': 300,
+              'capacityMinutes': 900,
               'decidedTaskIds': const ['task-1'],
               'blocks': [_aiBlock(taskId: 'task-1')],
             },
@@ -1226,7 +1257,10 @@ void main() {
         });
 
         expect(result.success, isTrue);
-        expect(upsertedEntities.single, isA<DayPlanEntity>());
+        expect(
+          (upsertedEntities.single as DayPlanEntity).capacityMinutes,
+          300,
+        );
       },
     );
 

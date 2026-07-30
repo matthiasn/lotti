@@ -45,9 +45,9 @@ always legal, and inspecting it alone measures the guards rather than the model.
 
 | Scored on | Constraints |
 |-----------|-------------|
-| Objective structure in the persisted plan | overlap, capacity as written, estimated-capacity failures and passes that do not need partial-prose credit, working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, blocker ordering, fabricated task ids, fabricated calendar blocks, fabricated history, invented work, task-work typing, duplicate ids |
+| Objective structure in the persisted plan | overlap, capacity as written, estimated-capacity failures and passes that do not need partial-prose credit, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, blocker ordering, fabricated task ids, fabricated calendar blocks, fabricated history, invented work, task-work typing, duplicate ids |
 | Weak semantic evidence in plan prose and accepted status/diff calls | estimated-capacity passes that depend on audited partial prose, conflict surfaced, blocker-bypass justification, directive honoured — visible per constraint, but excluded from ranking |
-| The rejection count | whether the model complied without being corrected |
+| The rejection count | whether the model complied with hard guards — including configured working hours — without being corrected |
 
 A run that never attempted `draft_day_plan` is **inapplicable** for the rejection
 constraint too, not a pass: an empty rejection list would otherwise read as
