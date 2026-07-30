@@ -23,7 +23,7 @@ sources:
   - id: fvmrc
     resource: ../../.fvmrc
     title: Pinned Flutter version
-    last_modified: 2026-07-22
+    last_modified: 2026-07-30
   - id: codemagic
     resource: ../../codemagic.yaml
     title: Windows release pipeline
@@ -40,7 +40,7 @@ sources:
 | Linux | Flatpak (Flathub) and tarball |
 | Windows | MSIX |
 
-The Flutter SDK is **pinned in `.fvmrc`** (currently 3.44.7). *Locally*, every
+The Flutter SDK is **pinned in `.fvmrc`** (currently 3.44.8). *Locally*, every
 command is expected to run through FVM — `fvm flutter …`, `fvm dart …`. CI does
 not use that prefix: each provider selects the pinned SDK for the build machine
 and then invokes bare `flutter` and `dart`. The pin is honoured by SDK
@@ -61,9 +61,10 @@ written down. Most consumers follow it automatically; one does not:
 | [`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`](../../flatpak/com.matthiasn.lotti.flatpak-flutter.yml) | **No — hand-edit the Flutter `tag:`** |
 
 So a Flutter bump is `.fvmrc` **plus** the Flatpak manifest's Flutter `tag:`.
-That tag currently reads 3.44.0 against a 3.44.7 pin; it still resolves because
-the constraint floor is `>=3.44.0`, which is precisely why the drift is easy to
-miss.
+Both currently read 3.44.8. Drift there is easy to miss because a stale tag
+still resolves as long as it clears the `>=3.44.0` constraint floor — the
+manifest sat at 3.44.0 through several pin bumps before anyone noticed, meaning
+Flathub users ran an engine nobody else was building against.
 
 A stale pin does not announce itself. It surfaces one layer down, as
 `pub get` failing version solving — "the current Dart SDK version is X, because
