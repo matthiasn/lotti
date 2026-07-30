@@ -6,7 +6,6 @@ on:
     paths:
       - '.github/workflows/manual.yml'
       - 'docs-site/**'
-      - 'docs/MANUAL.md'
       - 'docs/implementation_plans/2026-07-17_automated_manual_system.md'
       - 'Makefile'
       - 'pubspec.yaml'
@@ -21,7 +20,6 @@ on:
     paths:
       - '.github/workflows/manual.yml'
       - 'docs-site/**'
-      - 'docs/MANUAL.md'
       - 'docs/implementation_plans/2026-07-17_automated_manual_system.md'
       - 'Makefile'
       - 'pubspec.yaml'
