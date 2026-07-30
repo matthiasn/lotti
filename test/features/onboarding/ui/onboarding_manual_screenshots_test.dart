@@ -217,6 +217,10 @@ void main() {
 
     aiRepository = MockAiConfigRepository();
     when(() => aiRepository.saveConfig(any())).thenAnswer((_) async {});
+    // Connecting revives the provider's bundled profile before FTUE seeding;
+    // an unstubbed call would throw into _connect's catch and strand the
+    // wizard on the API-key step instead of reaching "You're all set".
+    when(() => aiRepository.restoreConfig(any())).thenAnswer((_) async {});
 
     categoryRepository = MockCategoryRepository();
     when(
@@ -232,6 +236,7 @@ void main() {
         color: any(named: 'color'),
         defaultProfileId: any(named: 'defaultProfileId'),
         defaultTemplateId: any(named: 'defaultTemplateId'),
+        automaticInferenceEnabled: any(named: 'automaticInferenceEnabled'),
       ),
     ).thenAnswer((invocation) async {
       final name = invocation.namedArguments[#name]! as String;
