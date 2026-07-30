@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {translate} from '@docusaurus/Translate';
 import DropdownNavbarItem from '@theme/NavbarItem/DropdownNavbarItem';
@@ -19,6 +19,14 @@ type Props = Omit<
   'items' | 'label'
 >;
 
+function isCatalog(value: unknown): value is ReleaseCatalog {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Array.isArray((value as ReleaseCatalog).versions)
+  );
+}
+
 export default function ManualVersionNavbarItem(
   props: Props,
 ): React.JSX.Element {
@@ -32,15 +40,36 @@ export default function ManualVersionNavbarItem(
   const manualRootPath = String(
     siteConfig.customFields?.manualRootPath ?? '/manual',
   ).replace(/\/$/, '');
-  const catalog = siteConfig.customFields?.manualReleases as ReleaseCatalog;
+  const bakedCatalog = siteConfig.customFields?.manualReleases as ReleaseCatalog;
+  // The baked catalog only knows the releases that existed when this version
+  // was built; an immutable release snapshot would otherwise never list the
+  // versions published after it. Every Pages deploy writes a live catalog
+  // next to the version directories, so prefer that and fall back to the
+  // baked list when it is unreachable (local dev server, offline).
+  const [catalog, setCatalog] = useState<ReleaseCatalog>(bakedCatalog);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${manualRootPath}/releases.json`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((live: unknown) => {
+        if (!cancelled && isCatalog(live)) {
+          setCatalog(live);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [manualRootPath]);
+
   const localeSuffix = currentLocale === defaultLocale ? '' : `/${currentLocale}`;
   const items = catalog.versions.map((release) => ({
     label:
       release.status === 'development'
-        ? `${translate({
+        ? translate({
             id: 'manual.version.development',
             message: 'Development',
-          })} (${String(siteConfig.customFields?.sourceAppVersion)})`
+          })
         : release.label,
     href: `${manualRootPath}/${release.version}${localeSuffix}/`,
   }));
@@ -51,10 +80,10 @@ export default function ManualVersionNavbarItem(
       items={items}
       label={
         currentVersion === 'development'
-          ? translate({
+          ? `${translate({
               id: 'manual.version.development',
               message: 'Development',
-            })
+            })} (${String(siteConfig.customFields?.sourceAppVersion)})`
           : currentVersion
       }
     />

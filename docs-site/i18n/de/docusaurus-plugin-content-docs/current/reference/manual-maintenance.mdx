@@ -82,6 +82,11 @@ hinweg erhalten.
 ## Ein Release veröffentlichen
 
 Der Quelltext wird nicht für jede App-Version kopiert. Das App-Release-Tag
-bewahrt bereits den exakten Stand. CI checkt dieses Tag aus, baut mit
-`MANUAL_VERSION=<version>` und veröffentlicht ein unveränderliches statisches
-Verzeichnis. Das Versionsmenü ist ein kleines Manifest dieser Verzeichnisse.
+bewahrt bereits den exakten Stand. Veröffentlicht wird über einen manuell
+gestarteten Workflow-Lauf mit der Marketing-Version und aktiviertem Deploy:
+CI ermittelt das neueste App-Tag dieser Version, baut die Seite und ihren
+Screenshot-Katalog aus dem Tag, lädt beides in unveränderlichen versionierten
+Speicher hoch und deployt die Seite mit allen Versionen nebeneinander neu.
+Release-Snapshots werden nie überschrieben. Das Versionsmenü liest einen
+Live-Katalog, der bei jedem Deploy geschrieben wird, sodass ältere Handbücher
+auch die Releases auflisten, die nach ihnen erschienen sind.

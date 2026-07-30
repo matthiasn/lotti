@@ -79,6 +79,10 @@ skærmbilleder straks, og valget bevares på tværs af sider og åbne manualfane
 ## Publish a release
 
 Manualkilden kopieres ikke for hver appversion. Appens udgivelsestag bevarer
-allerede den præcise kilde. CI tjekker dette tag ud, bygger med
-`MANUAL_VERSION=<version>` og udgiver en uforanderlig statisk mappe.
-Udgivelsesdropdownen er et lille manifest over disse mapper.
+allerede den præcise kilde. Udgivelse sker som en manuelt startet
+workflow-kørsel med marketingversionen og deploy slået til: CI finder det
+nyeste app-tag for den version, bygger sitet og dets screenshot-katalog fra
+tagget, uploader begge dele til uforanderligt versioneret lager og gendeployer
+sitet med alle versioner side om side. Udgivelsessnapshots overskrives aldrig.
+Versionsdropdownen læser et live-katalog, der skrives ved hvert deploy, så
+ældre manualer også viser de udgivelser, der kom efter dem.

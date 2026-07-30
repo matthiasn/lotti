@@ -86,6 +86,12 @@ pages et les onglets de manuel ouverts.
 ## Publier une version
 
 La source du manuel n’est pas copiée pour chaque version de l’application. Le
-tag de version conserve déjà sa source exacte. L’intégration continue récupère
-ce tag, construit avec `MANUAL_VERSION=<version>` et publie un répertoire statique
-immuable. Le menu des versions est un petit manifeste de ces répertoires.
+tag de version conserve déjà sa source exacte. La publication est un lancement
+manuel du workflow avec la version marketing et le déploiement activé :
+l’intégration continue résout le tag d’application le plus récent de cette
+version, construit le site et son catalogue de captures à partir du tag,
+téléverse les deux vers un stockage versionné immuable, puis redéploie le site
+avec toutes les versions côte à côte. Les instantanés de version ne sont jamais
+écrasés. Le menu des versions lit un catalogue en direct écrit à chaque
+déploiement, si bien que les anciens manuels listent aussi les versions parues
+après eux.

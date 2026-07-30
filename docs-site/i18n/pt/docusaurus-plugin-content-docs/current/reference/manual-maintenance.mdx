@@ -87,7 +87,11 @@ entre páginas e abas abertas do manual.
 ## Publicar um lançamento
 
 O código-fonte do manual não é copiado para cada versão do aplicativo. A tag
-de lançamento do aplicativo já preserva sua origem exata. O CI faz checkout
-dessa tag, compila com `MANUAL_VERSION=<version>` e publica um diretório
-estático imutável. O menu suspenso de versões é um pequeno manifesto desses
-diretórios.
+de lançamento do aplicativo já preserva sua origem exata. A publicação é uma
+execução manual do workflow com a versão de marketing e o deploy habilitado: o
+CI resolve a tag de aplicativo mais recente daquela versão, compila o site e
+seu catálogo de capturas de tela a partir da tag, envia ambos para um
+armazenamento versionado imutável e reimplanta o site com todas as versões
+lado a lado. Os snapshots de lançamento nunca são sobrescritos. O menu
+suspenso de versões lê um catálogo ao vivo gravado a cada deploy, então
+manuais mais antigos também listam os lançamentos que vieram depois deles.

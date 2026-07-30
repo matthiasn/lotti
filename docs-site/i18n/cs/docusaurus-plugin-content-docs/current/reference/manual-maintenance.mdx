@@ -77,5 +77,9 @@ otevřenými kartami příručky.
 ## Publikuj vydání
 
 Zdroj příručky se nekopíruje pro každou verzi aplikace. Tag vydání už uchovává
-přesný zdroj. CI tento tag načte, sestaví s `MANUAL_VERSION=<verze>` a publikuje
-neměnný statický adresář. Výběr vydání je malý manifest těchto adresářů.
+přesný zdroj. Publikace je ruční spuštění workflow s marketingovou verzí a
+zapnutým nasazením: CI najde nejnovější tag aplikace dané verze, sestaví z něj
+web i jeho katalog snímků obrazovky, nahraje obojí do neměnného verzovaného
+úložiště a znovu nasadí web se všemi verzemi vedle sebe. Snapshoty vydání se
+nikdy nepřepisují. Výběr verzí čte živý katalog zapisovaný při každém nasazení,
+takže i starší příručky uvádějí vydání, která přišla po nich.

@@ -79,6 +79,10 @@ alla skärmdumpar direkt, och valet bevaras mellan sidor och öppna manualflikar
 ## Publish a release
 
 Manualkällan kopieras inte för varje appversion. Appens utgåvetagg bevarar
-redan exakt källa. CI checkar ut den taggen, bygger med
-`MANUAL_VERSION=<version>` och publicerar en oföränderlig statisk katalog.
-Utgåverullistan är ett litet manifest över dessa kataloger.
+redan exakt källa. Publicering är en manuellt startad workflow-körning med
+marknadsföringsversionen och deploy aktiverat: CI tar fram den senaste
+apptaggen för den versionen, bygger sajten och dess skärmdumpskatalog från
+taggen, laddar upp båda till oföränderlig versionerad lagring och deployar om
+sajten med alla versioner sida vid sida. Utgåvesnapshots skrivs aldrig över.
+Utgåverullistan läser en livekatalog som skrivs vid varje deploy, så äldre
+manualer listar även de utgåvor som kom efter dem.

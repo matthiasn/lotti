@@ -81,6 +81,10 @@ tabs.
 ## Publish a release
 
 Manual source is not copied for every app version. The app release tag already
-preserves its exact source. CI checks out that tag, builds with
-`MANUAL_VERSION=<version>`, and publishes an immutable static directory. The
-release dropdown is a small manifest of those directories.
+preserves its exact source. Publishing is a manual workflow run with the
+marketing version and deploy enabled: CI resolves the newest app tag of that
+version, builds the site and its screenshot catalog from the tag, uploads
+both to immutable versioned storage, and redeploys the site with every
+version side by side. Release snapshots are never overwritten. The version
+dropdown reads a live catalog written on every deploy, so older manuals also
+list the releases that came after them.
