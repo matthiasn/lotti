@@ -993,7 +993,11 @@ void main() {
         expect(find.byType(SpeechModalContent), findsOneWidget);
         expect(find.byType(TranscriptListItem), findsNWidgets(2));
         expect(
-          find.text('Model: Mistral, voxtral-mini-latest'),
+          find.text(
+            _messages(
+              tester,
+            ).transcriptModelLabel('Mistral', 'voxtral-mini-latest'),
+          ),
           findsOneWidget,
         );
         await captureScreenshot(
