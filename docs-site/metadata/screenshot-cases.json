@@ -577,17 +577,6 @@
       }
     },
     {
-      "id": "theming/picker",
-      "title": "Theme picker",
-      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
-      "variants": {
-        "mobile-light": "theming_picker_mobile_light.png",
-        "mobile-dark": "theming_picker_mobile_dark.png",
-        "desktop-light": "theming_picker_desktop_light.png",
-        "desktop-dark": "theming_picker_desktop_dark.png"
-      }
-    },
-    {
       "id": "recording-style/preview",
       "title": "Recording style preview",
       "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",

@@ -533,6 +533,12 @@ void main() {
     when(
       () => navService.beamToNamed(any(), data: any(named: 'data')),
     ).thenReturn(null);
+    // Desktop cards watch the split view's selection to paint the active row.
+    final desktopSelectedEntryId = ValueNotifier<String?>(null);
+    addTearDown(desktopSelectedEntryId.dispose);
+    when(
+      () => navService.desktopSelectedEntryId,
+    ).thenReturn(desktopSelectedEntryId);
     when(
       () => ratingRepository.getRatingForTargetEntry(rehearsalTimer.id),
     ).thenAnswer((_) async => sessionRating);

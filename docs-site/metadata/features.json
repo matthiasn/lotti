@@ -259,8 +259,7 @@
       "page": "reference/appearance",
       "status": "verified",
       "screenshotCases": [
-        "theming/preferences",
-        "theming/picker"
+        "theming/preferences"
       ]
     },
     {

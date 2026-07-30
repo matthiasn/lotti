@@ -9537,7 +9537,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsThemingDark => 'Mörkt utseende';
 
   @override
-  String get settingsThemingLight => 'Ljusets utseende';
+  String get settingsThemingLight => 'Ljust utseende';
 
   @override
   String get settingsThemingSubtitle => 'Anpassa appens utseende och teman';
