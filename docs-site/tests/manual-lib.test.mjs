@@ -50,6 +50,19 @@ test('unmanaged lotti-docs images are rejected outside code examples', () => {
   assert.deepEqual(findUnmanagedScreenshotReferences(source), [legacyUrl]);
 });
 
+test('hard-coded R2 screenshot URLs are rejected too', () => {
+  const bucketUrl =
+    'https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/manual/screenshots/development/theming/preferences/mobile-dark.webp';
+  const videoUrl =
+    'https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/tutorial-videos/create_task_en.mp4';
+  const source = [
+    `![Screenshot](${bucketUrl})`,
+    `A video elsewhere: ${videoUrl}`,
+  ].join('\n');
+
+  assert.deepEqual(findUnmanagedScreenshotReferences(source), [bucketUrl]);
+});
+
 test('Widgetbook and showcase imports are rejected regardless of path style', () => {
   for (const importPath of [
     'package:lotti/features/widgetbook/task_showcase.dart',

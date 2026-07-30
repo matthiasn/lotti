@@ -6,8 +6,10 @@ description: De lichtgewicht bijdrageworkflow voor handmatige inhoud en schermaf
 # Onderhoud deze handleiding
 
 De bron bevindt zich in de applicatierepository, dus een gedragsverandering en de bijbehorende
-documentatie kunnen samen worden ingediend. Gegenereerde schermafbeeldingen staan in de zuster-
-repository `lotti-docs` en worden nooit in de applicatiestructuur opgenomen.
+documentatie kunnen samen worden ingediend. Gegenereerde schermafbeeldingen
+worden gepubliceerd naar een Cloudflare R2-bucket onder één geversioneerd
+prefix per handleidingsversie en worden nooit in de applicatiestructuur
+opgenomen.
 
 ## Bewerk proza
 
@@ -60,14 +62,17 @@ pleegt.
 3. Plaats voor elk een zichtbare armatuurkopie achter `manualScreenshotText(...)`
    ondersteunde landinstelling wanneer deze nog niet wordt aangeboden door de app-lokalisatie
    bestanden.
-4. Leg elke landinstelling vast in `../lotti-docs`; nooit in deze repository.
+4. Leg elke landinstelling vast in de door git genegeerde lokale stagingmap
+   (`make manual_screenshots`); CI publiceert het resultaat naar de R2-bucket.
 5. Genereer en valideer het mediamanifest.
 6. Verwijs op elke taalpagina naar de case met
    `<ManualScreenshot caseId="…" alt="…" />`.
 
-Elke app-screenshot op een geschreven pagina moet `ManualScreenshot` gebruiken. Direct
-koppelingen naar oude `lotti-docs`-afbeeldingen mislukken handmatige validatie omdat dit niet mogelijk is
-volg de algemene Mobile/Desktop-keuze of het light/dark-thema van de handleiding.
+Elke app-screenshot op een geschreven pagina moet `ManualScreenshot` gebruiken.
+Directe koppelingen naar screenshotmedia — oude `lotti-docs`-afbeeldingen of
+de R2-bucket zelf — mislukken bij de validatie van de handleiding, omdat ze de
+algemene Mobile/Desktop-keuze of het light/dark-thema van de handleiding niet
+kunnen volgen.
 
 Elke geautomatiseerde behuizing moet mobiel-licht, mobiel-donker, desktop-licht,
 en desktop-donkere varianten in elke gepubliceerde landinstelling. Het handmatige onderdeel

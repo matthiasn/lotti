@@ -6,8 +6,9 @@ description: Der schlanke Beitragsablauf für Handbuchtexte, Übersetzungen und 
 # Dieses Handbuch pflegen
 
 Der Quelltext liegt im App-Repository, damit eine Verhaltensänderung gemeinsam
-mit ihrer Dokumentation landen kann. Erzeugte Screenshots liegen im
-Schwester-Repository `lotti-docs` und werden nie in den App-Baum eingecheckt.
+mit ihrer Dokumentation landen kann. Erzeugte Screenshots werden in einen
+Cloudflare-R2-Bucket unter einem versionierten Präfix pro Handbuchversion
+veröffentlicht und nie in den App-Baum eingecheckt.
 
 ## Texte bearbeiten
 
@@ -60,14 +61,16 @@ Commits zu blockieren.
 3. Hinterlege sichtbare Demo-Texte über `manualScreenshotText(...)` für jede
    unterstützte Sprache, wenn sie nicht bereits aus der App-Lokalisierung
    stammen.
-4. Erfasse mit `make manual_screenshots` alle Sprachen in `../lotti-docs` –
-   niemals in diesem Repository.
+4. Erfasse mit `make manual_screenshots` alle Sprachen in das lokale, per
+   Gitignore ausgeschlossene Staging-Verzeichnis; CI veröffentlicht das
+   Ergebnis in den R2-Bucket.
 5. Erzeuge und validiere das Medienmanifest.
 6. Referenziere den Fall mit `<ManualScreenshot caseId="…" alt="…" />` in
    jeder Sprachseite.
 
-Jeder App-Screenshot muss `ManualScreenshot` verwenden. Direkte Links auf alte
-`lotti-docs`-Bilder scheitern an der Validierung, weil sie weder der globalen
+Jeder App-Screenshot muss `ManualScreenshot` verwenden. Direkte Links auf
+Screenshot-Medien – alte `lotti-docs`-Bilder oder den R2-Bucket selbst –
+scheitern an der Validierung, weil sie weder der globalen
 Mobil/Desktop-Auswahl noch Hell/Dunkel oder der Dokumentsprache folgen.
 
 Jeder automatisierte Fall liefert Mobil-Hell, Mobil-Dunkel, Desktop-Hell und

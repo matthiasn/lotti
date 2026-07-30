@@ -7,8 +7,8 @@ description: El flujo de contribución ligero para el contenido y las capturas d
 
 El código fuente vive en el repositorio de la aplicación, para que un cambio de
 comportamiento y su documentación puedan publicarse juntos. Las capturas
-generadas viven en el repositorio hermano `lotti-docs` y nunca se confirman en
-el árbol de la aplicación.
+generadas se publican en un bucket de Cloudflare R2 bajo un prefijo versionado
+por cada versión del manual y nunca se confirman en el árbol de la aplicación.
 
 ## Edita el texto
 
@@ -64,14 +64,16 @@ recuentos restantes sin bloquear confirmaciones por tema.
 3. Sitúa el texto visible del conjunto tras `manualScreenshotText(...)` para cada
    idioma compatible cuando aún no lo proporcionen los archivos de localización
    de la aplicación.
-4. Captura cada idioma en `../lotti-docs`; nunca en este repositorio.
+4. Captura cada idioma en el directorio local de staging ignorado por git
+   (`make manual_screenshots`); CI publica el resultado en el bucket de R2.
 5. Genera y valida el manifiesto de medios.
 6. Haz referencia al caso con
    `<ManualScreenshot caseId="…" alt="…" />` en cada página de idioma.
 
 Cada captura de la aplicación de una página creada debe usar
-`ManualScreenshot`. Los enlaces directos a imágenes antiguas de `lotti-docs`
-no superan la validación del manual porque no pueden seguir la elección global
+`ManualScreenshot`. Los enlaces directos a los medios de capturas —ya sean
+imágenes antiguas de `lotti-docs` o el propio bucket de R2— no superan la
+validación del manual porque no pueden seguir la elección global
 Móvil/Escritorio ni el tema claro u oscuro del manual.
 
 Cada caso automatizado debe proporcionar variantes móvil-clara, móvil-oscura,

@@ -347,7 +347,7 @@ for (const docFile of localizedDocFiles) {
   }
   for (const url of findUnmanagedScreenshotReferences(source)) {
     errors.push(
-      `${docFile} embeds unmanaged lotti-docs media (${url}). ` +
+      `${docFile} embeds unmanaged screenshot media (${url}). ` +
         'App screenshots must use a registered ManualScreenshot case.',
     );
   }

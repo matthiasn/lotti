@@ -81,24 +81,30 @@ npm run pages:assemble -- \
 
 ## Screenshot workflow
 
-Generated screenshots belong in the sibling `../lotti-docs` repository. The
-registry reuses deterministic feature screenshot harnesses:
+Generated screenshots are published to the Cloudflare R2 bucket that also
+hosts the tutorial videos, under one versioned prefix per manual version
+(`manual/screenshots/<version>/…`). The `development` prefix is mutable and
+synced with deletion so retired cases disappear; release prefixes are
+immutable — publishing refuses to overwrite an existing manifest. The registry
+reuses deterministic feature screenshot harnesses:
 
 ```bash
 make manual_screenshots
 ```
 
-That command captures all registered English, German, French, Italian, Spanish,
-Czech, Romanian, Portuguese, Danish, and Swedish mobile/desktop and light/dark
-PNG inputs into an ignored staging
-directory,
-converts them to canonical WebP paths, and writes a checksum/dimension manifest under
-`../lotti-docs/manual/screenshots/development/`.
+That command captures all registered locales (English, German, French,
+Italian, Spanish, Czech, Dutch, Romanian, Portuguese, Danish, and Swedish) at
+mobile/desktop sizes in light/dark as PNG inputs into a gitignored staging
+directory (`build/manual_capture/`), converts them to canonical WebP paths,
+and writes a checksum/dimension manifest under
+`build/manual_media/development/`.
 
-CI runs this same full pipeline on every manual-relevant push to `main`, nightly
-at 02:23 UTC, and on demand. Main-branch captures fast-forward a normal commit
-to `lotti-docs/main`; pull requests only validate the site and never publish
-generated media.
+CI runs this same full pipeline on every manual-relevant push to `main`,
+nightly at 02:23 UTC, and on demand. Main-branch captures sync the materialized
+catalog to the R2 bucket (uploading `manifest.json` last, so readers never
+resolve cases whose media has not landed); pull requests only validate the
+site and never publish generated media. The site resolves media from the
+bucket's public URL; override it at build time with `MANUAL_MEDIA_BASE_URL`.
 
 When only a new or changed case needs publishing, pass its IDs to the manifest
 builder so the existing catalog remains untouched. For example:

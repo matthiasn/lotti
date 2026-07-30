@@ -23,10 +23,10 @@ import {
 const options = parseNamedArguments(process.argv.slice(2));
 const version = String(options.version ?? 'development');
 const captureDirectory = resolve(
-  String(options['capture-dir'] ?? '../lotti-docs/manual/.staging'),
+  String(options['capture-dir'] ?? `../build/manual_capture/${version}`),
 );
 const outputRoot = resolve(
-  String(options['output-root'] ?? '../lotti-docs/manual/screenshots'),
+  String(options['output-root'] ?? '../build/manual_media'),
 );
 const outputDirectory = resolve(outputRoot, version);
 const registry = await readJson(

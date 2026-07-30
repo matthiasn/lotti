@@ -6,8 +6,9 @@ description: The lightweight contribution workflow for manual content and screen
 # Maintain this manual
 
 The source lives in the application repository so a behavior change and its
-documentation can land together. Generated screenshots live in the sibling
-`lotti-docs` repository and are never committed to the application tree.
+documentation can land together. Generated screenshots are published to a
+Cloudflare R2 bucket under one versioned prefix per manual version and are
+never committed to the application tree.
 
 ## Edit prose
 
@@ -60,14 +61,16 @@ commits.
 3. Put visible fixture copy behind `manualScreenshotText(...)` for every
    supported locale when it is not already provided by the app localization
    files.
-4. Capture every locale into `../lotti-docs`; never into this repository.
+4. Capture every locale into the gitignored local staging directory
+   (`make manual_screenshots`); CI publishes the result to the R2 bucket.
 5. Generate and validate the media manifest.
 6. Reference the case with `<ManualScreenshot caseId="…" alt="…" />` on
    every language page.
 
 Every app screenshot in an authored page must use `ManualScreenshot`. Direct
-links to old `lotti-docs` images fail manual validation because they cannot
-follow the global Mobile/Desktop choice or the manual's light/dark theme.
+links to screenshot media — legacy `lotti-docs` images or the R2 bucket
+itself — fail manual validation because they cannot follow the global
+Mobile/Desktop choice or the manual's light/dark theme.
 
 Every automated case must provide mobile-light, mobile-dark, desktop-light,
 and desktop-dark variants in every published locale. The manual component
