@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   list.
 
 ### Fixed
+- **Planning after your working day has ended now finishes instead of retrying
+  an impossible answer.** Daily OS was told to add no blocks once the planning
+  window closed, but its required final step rejected an empty plan. It can now
+  save an explicit empty draft, keep any existing blocks intact, and surface
+  selected work that no longer fits instead of looping until the request fails.
 - **Daily OS plans stay inside your configured working hours.** On an
   overloaded day, the planner could keep the total duration under your capacity
   by leaving a gap and then scheduling the final task after your working day

@@ -263,10 +263,24 @@ void main() {
     });
 
     group('capacity budget validation', () {
+      test(
+        'accepts zero available minutes for a closed planning window',
+        () async {
+          final result = await executeIssue({
+            'dayId': dayId,
+            'capacityBudget': {'availableMinutes': 0},
+          });
+
+          expect(result.success, isTrue, reason: result.output);
+          final directive = upserted.single as DayDirectiveEntity;
+          expect(directive.capacityBudget?.availableMinutes, 0);
+        },
+      );
+
       test('rejects missing or out-of-range availableMinutes', () async {
         for (final budget in [
           <String, dynamic>{},
-          {'availableMinutes': 0},
+          {'availableMinutes': -1},
           {'availableMinutes': 2000},
         ]) {
           final result = await executeIssue({

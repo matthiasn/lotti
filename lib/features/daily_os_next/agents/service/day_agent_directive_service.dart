@@ -427,10 +427,10 @@ class DayAgentDirectiveService {
     final data = raw.cast<String, dynamic>();
     final availableMinutes = optionalIntArg(data['availableMinutes']);
     if (availableMinutes == null ||
-        availableMinutes <= 0 ||
+        availableMinutes < 0 ||
         availableMinutes > 24 * 60) {
       throw const DayAgentDirectiveException(
-        'capacityBudget.availableMinutes must be between 1 and 1440',
+        'capacityBudget.availableMinutes must be between 0 and 1440',
       );
     }
     final alreadyScheduled = optionalIntArg(data['alreadyScheduledMinutes']);

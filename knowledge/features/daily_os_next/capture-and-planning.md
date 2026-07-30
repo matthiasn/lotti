@@ -11,15 +11,15 @@ sources:
   - id: services
     resource: ../../../lib/features/daily_os_next/agents/service
     title: Capture and plan services
-    last_modified: 2026-07-30
+    last_modified: 2026-07-31
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Day-agent prompt builder
-    last_modified: 2026-07-29
+    last_modified: 2026-07-31
   - id: workflow
     resource: ../../../lib/features/daily_os_next/agents/workflow
     title: Day-agent workflow and terminal-tool strategy
-    last_modified: 2026-07-29
+    last_modified: 2026-07-31
   - id: processing-runtime
     resource: ../../../lib/features/daily_os_next/services/day_processing_runtime.dart
     title: Durable processing runtime
@@ -216,13 +216,18 @@ Late enough in the day, walking forward for that headroom runs past midnight,
 and a block outside the plan day is rejected just as firmly — advertising 00:05
 tomorrow would steer the model into the same rejection from the other end. So
 the window **closes**: `<planning_window>` carries `closed` instead, and the
-rules say to leave the day alone rather than add to it. The three states are
+rules say to add no new blocks. A drafting wake still has to finish with a
+durable plan artifact: with an empty baseline it first raises any required
+omission status, then persists `draft_day_plan` with `blocks: []`; with a
+non-empty baseline it repeats every existing block unchanged. The writer
+rejects additions, removals, or edits against a non-empty baseline, so "closed"
+cannot erase or rewrite work already on the day. The three states are
 deliberately distinct, because collapsing any two misleads:
 
 | `<planning_window>` | Meaning |
 |---|---|
 | `{"earliestStart": …, "availableMinutes": …}` | today, still plannable — start here, and this is how much is left |
-| `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add nothing |
+| `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add no block; a fresh draft may persist an empty terminal artifact |
 | `+ {"capacityMinutes": …, "scheduledMinutes": …}` | added on a refine wake — judge your *net* change against these, alongside whichever row above applies |
 | `{"availableMinutes": …}` | neither `earliestStart` nor `closed` — the day has not begun, so no part of it is past |
 
@@ -305,11 +310,18 @@ recompute for the same reason. A drafting baseline is replaced wholesale, so the
 whole-day budget is correct there.
 
 A day with **no working minutes left** reports `closed` rather than a start
-paired with a budget of zero. Those are the same instruction, and the pair left
-a fresh draft no coherent move: the rules forbid running past working hours,
-and there is no time left inside them. (`closed` still collides with the
-mandatory `draft_day_plan` call on a drafting wake — a pre-existing conflict
-tracked in lotti3-ddp, not introduced here.)
+paired with a budget of zero. Those are the same scheduling instruction, and
+the pair would invite the model to reconcile redundant signals. The
+coordinator's separate `DayCapacityBudget` *does* accept zero: it is the honest
+ledger value once the window closes, and allows the planner agent to issue a
+directive that the day agent can receive before reporting omissions.
+
+Closed does not skip the drafting wake. That wake may still need to create an
+approved task and must still raise a typed status for selected work that no
+longer fits. Its coherent terminal result is therefore an empty persisted plan,
+not an absent plan and not a forced retry. Empty plans remain invalid while the
+window is open. After the window closes they are valid only over an empty
+baseline; a non-empty baseline must be preserved block-for-block.
 
 The rules pair it with what to do when the work does not fit: decide visibly —
 leave work out and name it, or place a task for less than its estimate and say

@@ -371,9 +371,33 @@ class DayAgentPlanWriter {
         ),
       );
     }
-    if (blocks.isEmpty) {
+    final windowClosed = draftPlanningWindowClosed(
+      planDate: planDate,
+      now: now,
+      capacityMinutes: capacityMinutes,
+      workingHoursStart: workingHoursStart,
+      workingHoursEnd: workingHoursEnd,
+    );
+    if (windowClosed) {
+      if (baselineBlocks.isEmpty && blocks.isNotEmpty) {
+        throw const DayAgentCaptureException(
+          'The planning window is closed. A fresh draft must persist an '
+          'empty plan instead of adding blocks.',
+        );
+      }
+      final baselineRepeatedExactly =
+          baselineBlocks.length == blocks.length &&
+          blocks.every((block) => baselineBlocks[block.id] == block);
+      if (baselineBlocks.isNotEmpty && !baselineRepeatedExactly) {
+        throw const DayAgentCaptureException(
+          'The planning window is closed. Preserve every block from the '
+          'non-empty baseline unchanged.',
+        );
+      }
+    } else if (blocks.isEmpty) {
       throw const DayAgentCaptureException(
-        'draft_day_plan requires at least one block',
+        'draft_day_plan requires at least one block while the planning '
+        'window is open',
       );
     }
     blocks.sort((a, b) {

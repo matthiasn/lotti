@@ -1170,6 +1170,196 @@ void main() {
       },
     );
 
+    test(
+      'persistDraftPlan accepts an empty plan after working hours',
+      () async {
+        final plan = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 18)),
+          () => createService().persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: const [],
+            runKey: _runKey,
+          ),
+        );
+
+        expect(plan.data.plannedBlocks, isEmpty);
+        expect(plan.scheduledMinutes, 0);
+        expect(plan.runKey, _runKey);
+      },
+    );
+
+    test(
+      'a closed fresh draft rejects invented history instead of adding blocks',
+      () async {
+        await expectLater(
+          withClock(
+            Clock.fixed(DateTime(2026, 5, 25, 18)),
+            () => createService().persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: [
+                {
+                  ..._aiBlock(),
+                  'state': 'completed',
+                },
+              ],
+            ),
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              allOf(contains('closed'), contains('empty')),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('persistDraftPlan rejects an empty plan while time remains', () async {
+      await expectLater(
+        withClock(
+          Clock.fixed(_now),
+          () => createService().persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: const [],
+          ),
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (e) => e.message,
+            'message',
+            contains('requires at least one block'),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'a closed-window empty draft cannot erase a non-empty baseline',
+      () async {
+        final service = createService();
+        final baseline = await withClock(
+          Clock.fixed(_now),
+          () => service.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: [
+              _aiBlock(
+                start: DateTime(2026, 5, 25, 10),
+                end: DateTime(2026, 5, 25, 11),
+              ),
+            ],
+          ),
+        );
+
+        await expectLater(
+          withClock(
+            Clock.fixed(DateTime(2026, 5, 25, 18)),
+            () => service.persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: const [],
+            ),
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              allOf(contains('closed'), contains('baseline')),
+            ),
+          ),
+        );
+        expect(
+          (agentEntities[baseline.id]! as DayPlanEntity).data.plannedBlocks,
+          hasLength(1),
+        );
+      },
+    );
+
+    test(
+      'a closed-window redraft must repeat every baseline block unchanged',
+      () async {
+        final service = createService();
+        final baseline = await withClock(
+          Clock.fixed(_now),
+          () => service.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: [
+              _aiBlock(
+                start: DateTime(2026, 5, 25, 10),
+                end: DateTime(2026, 5, 25, 11),
+              ),
+              _aiBlock(
+                id: 'block-2',
+                title: 'Write release notes',
+                start: DateTime(2026, 5, 25, 11),
+                end: DateTime(2026, 5, 25, 12),
+                reason: 'Ship the release clearly.',
+              ),
+            ],
+          ),
+        );
+        final baselineBlocks = baseline.data.plannedBlocks;
+
+        await expectLater(
+          withClock(
+            Clock.fixed(DateTime(2026, 5, 25, 18)),
+            () => service.persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: [
+                _aiBlock(
+                  start: DateTime(2026, 5, 25, 10),
+                  end: DateTime(2026, 5, 25, 11),
+                ),
+              ],
+            ),
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              allOf(contains('closed'), contains('unchanged')),
+            ),
+          ),
+        );
+
+        final repeated = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 18)),
+          () => service.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: [
+              _aiBlock(
+                start: DateTime(2026, 5, 25, 10),
+                end: DateTime(2026, 5, 25, 11),
+              ),
+              _aiBlock(
+                id: 'block-2',
+                title: 'Write release notes',
+                start: DateTime(2026, 5, 25, 11),
+                end: DateTime(2026, 5, 25, 12),
+                reason: 'Ship the release clearly.',
+              ),
+            ],
+          ),
+        );
+        expect(repeated.data.plannedBlocks, baselineBlocks);
+      },
+    );
+
     test('persistDraftPlan sorts equal-start blocks by id', () async {
       final plan = await withClock(Clock.fixed(_now), () {
         return createService().persistDraftPlan(

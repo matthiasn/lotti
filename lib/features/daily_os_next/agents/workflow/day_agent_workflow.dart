@@ -40,7 +40,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart'
     show
         advertisedPlanningStart,
-        planningWindowClosed,
+        draftPlanningWindowClosed,
         remainingWorkingMinutes,
         scheduledMinutesFor;
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';

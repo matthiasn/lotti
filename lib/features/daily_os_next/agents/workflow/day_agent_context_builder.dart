@@ -702,6 +702,18 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
               refineBaseline.data.plannedBlocks,
             ),
           };
+    final windowClosed = draftPlanningWindowClosed(
+      planDate: planDate,
+      now: now,
+      capacityMinutes: config.capacityMinutes,
+      workingHoursStart: config.workingHoursStart,
+      workingHoursEnd: config.workingHoursEnd,
+    );
+    // Working-hours exhaustion and the end-of-day five-minute boundary are
+    // one model-facing state. The same predicate gates whether the plan writer
+    // accepts an empty fresh draft, so the prompt and persistence contract
+    // cannot contradict each other.
+    if (windowClosed) return {'closed': true, ...refineBudget};
     final available = remainingWorkingMinutes(
       planDate: planDate,
       now: now,
@@ -709,12 +721,6 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       workingHoursStart: config.workingHoursStart,
       workingHoursEnd: config.workingHoursEnd,
     );
-    // Zero working minutes is the same instruction as a closed window, so it
-    // says so rather than pairing a start with a budget of nothing. Emitting
-    // `earliestStart: 18:05` beside `availableMinutes: 0` gave a fresh draft no
-    // coherent move: the rules forbid running past working hours, and there is
-    // no time left inside them.
-    if (available == 0) return {'closed': true, ...refineBudget};
     // The clock bounds hold for refine too — `proposePlanDiff` enforces the
     // same past-start guard — so the temporal fields are *added to* the refine
     // budget rather than replacing it. Returning capacity and occupancy alone
@@ -728,9 +734,6 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     final earliest = advertisedPlanningStart(planDate: planDate, now: now);
     if (earliest != null) {
       return {'earliestStart': earliest.toIso8601String(), ...budget};
-    }
-    if (planningWindowClosed(planDate: planDate, now: now)) {
-      return {'closed': true, ...refineBudget};
     }
     return budget;
   }

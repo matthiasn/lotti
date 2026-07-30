@@ -173,7 +173,7 @@ class DayCapacityBudget {
     );
   }
 
-  /// Total plannable minutes for the day.
+  /// Total plannable minutes for the day; zero when its window is closed.
   final int availableMinutes;
 
   /// Minutes already consumed by committed blocks when the directive was
