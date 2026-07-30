@@ -38,13 +38,21 @@ class DesignSystemIconAction extends StatelessWidget {
   /// low-emphasis step.
   final VoidCallback? onPressed;
 
+  /// Swaps the glyph for a spinner **and** makes the control inert, the way
+  /// `DesignSystemButton` treats `isLoading`. The action a busy control would
+  /// re-trigger is the one already running, so leaving it live would let a
+  /// second tap start a duplicate refresh; a caller must not have to remember
+  /// to null [onPressed] as well.
   final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final enabled = onPressed != null;
-    final foreground = enabled
+    final interactable = onPressed != null && !isBusy;
+    // Keyed on the callback alone: while busy the glyph is gone, so this only
+    // ever colours the icon of a control that is disabled for want of a
+    // callback.
+    final foreground = onPressed != null
         ? tokens.colors.text.mediumEmphasis
         : tokens.colors.text.lowEmphasis;
 
@@ -57,8 +65,8 @@ class DesignSystemIconAction extends StatelessWidget {
       container: true,
       button: true,
       label: tooltip,
-      enabled: enabled,
-      onTap: enabled ? handleTap : null,
+      enabled: interactable,
+      onTap: interactable ? handleTap : null,
       child: ExcludeSemantics(
         child: Tooltip(
           message: tooltip,
@@ -66,7 +74,7 @@ class DesignSystemIconAction extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(tokens.radii.smallChips),
-              onTap: enabled ? handleTap : null,
+              onTap: interactable ? handleTap : null,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
                   minWidth: TapTargets.minimum,

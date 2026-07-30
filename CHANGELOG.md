@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1073]
 ### Fixed
+- **The sync diagnostics panel is translated.** Its heading, its refresh button
+  and its "Last ignored" list stayed English on every device, whatever language
+  the rest of the app was set to.
+- **The sync statistics counters say the right thing in five more languages.**
+  "DB Missing Base" counts entries held back waiting on a record that has not
+  arrived yet, but the Spanish, French and Romanian translations said *the
+  database is missing* — contradicting the legend on the very same panel — and
+  the Italian and Dutch ones stacked the words in an order that read as
+  neither. The Romanian buttons on that page also addressed you informally,
+  unlike the rest of the app.
+- **The refresh button on Backfill sync is easier to hit, and says what it
+  is.** It was a 16-pixel icon with barely any room around it — a 24-point
+  target, half the size a finger needs — so on a phone it took an accurate tap.
+  The icon is unchanged, but the button now occupies a full touch target, which
+  makes the header of that card taller. Screen readers also named it without
+  ever saying it was a button.
 - **The privacy policy described device pairing incorrectly.** It stated that
   encryption keys are exchanged via the QR code and never transmitted over the
   network. Neither half was true: the QR code carries your sync account
@@ -28,6 +44,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   private vulnerability reporting.
 
 ### Changed
+- **The Matrix Stats page reads as one page again.** Its headings had been set
+  by hand and disagreed with each other — "Sent messages" shouted while "Top
+  KPIs" was left at whatever size it inherited — so the page looked like three
+  unrelated panels stacked together. Every group heading now sits at the same
+  level, the counter tiles share one rhythm, and the numbers on them line up
+  with the figures on Backfill sync.
 - **The app description says what Lotti actually tracks.** It now mentions that
   AI usage is recorded per category and model — tokens and requests for every
   cloud call, and cost, energy and CO₂e wherever the provider reports them — and
@@ -161,12 +183,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hard to follow across the row, and the counter tiles in sync statistics were
   a little taller than wide for the same padding. All four now match the rest
   of the app.
-- **The Matrix Stats page reads as one page again.** Its headings had been set
-  by hand and disagreed with each other — "Sent messages" shouted while "Top
-  KPIs" was left at whatever size it inherited — so the page looked like three
-  unrelated panels stacked together. Every group heading now sits at the same
-  level, the counter tiles share one rhythm, and the numbers on them line up
-  with the figures on Backfill sync.
 - **Daily OS planning now gives up on stalled or overlong AI responses
   sooner.** Cut-off answers no longer save partial plans; planning retries
   cleanly instead.
@@ -328,22 +344,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
-- **The sync diagnostics panel is translated.** Its heading, its refresh button
-  and its "Last ignored" list stayed English on every device, whatever language
-  the rest of the app was set to.
-- **The sync statistics counters say the right thing in five more languages.**
-  "DB Missing Base" counts entries held back waiting on a record that has not
-  arrived yet, but the Spanish, French and Romanian translations said *the
-  database is missing* — contradicting the legend on the very same panel — and
-  the Italian and Dutch ones stacked the words in an order that read as
-  neither. The Romanian buttons on that page also addressed you informally,
-  unlike the rest of the app.
-- **The refresh button on Backfill sync is easier to hit, and says what it
-  is.** It was a 16-pixel icon with barely any room around it — a 24-point
-  target, half the size a finger needs — so on a phone it took an accurate tap.
-  The icon is unchanged, but the button now occupies a full touch target, which
-  makes the header of that card taller. Screen readers also named it without
-  ever saying it was a button.
 - **Transcription now counts towards your AI usage figures.** When a recording
   was transcribed by a Melious speech model, the cost and the energy, carbon and
   water it used were reported by the provider and then thrown away — so the AI

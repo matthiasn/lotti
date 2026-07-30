@@ -118,7 +118,10 @@ instead.
 
 **Its busy state is the reason it is a component.** The spinner it swaps in is
 the same dimension as the glyph it replaces, so the control does not resize
-under the pointer that just pressed it. It was promoted out of
+under the pointer that just pressed it. `isBusy` also makes it **inert**, the
+way `DesignSystemButton` treats `isLoading`: the only action a busy refresh
+button could re-trigger is the refresh already in flight, so a caller must not
+have to remember to null `onPressed` as well to avoid a duplicate submit. It was promoted out of
 `backfill_settings_page.dart`, where it sat as a private-by-convention
 `IconActionButton` — a design-system control declared in a feature page. The
 second surface that needed it, `matrix_stats/diagnostics_panel.dart`, had

@@ -86,6 +86,36 @@ void main() {
       expect(spinner.size, IconSizes.s);
     });
 
+    testWidgets('a busy control does not re-fire the action already running', (
+      tester,
+    ) async {
+      // `isBusy` alone must make the control inert: the only action a busy
+      // refresh button could re-trigger is the refresh already in flight.
+      // `backfill_settings_stats.dart` also nulls `onPressed` while loading,
+      // but a caller that forgets must not get double submits.
+      var taps = 0;
+      await pump(tester, onPressed: () => taps++, isBusy: true);
+
+      final ink = tester.widget<InkWell>(find.byType(InkWell));
+      expect(ink.onTap, isNull);
+
+      await tester.tap(find.byKey(actionKey), warnIfMissed: false);
+      await tester.pump();
+
+      expect(taps, 0);
+    });
+
+    testWidgets('a busy control announces as disabled', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, onPressed: () {}, isBusy: true);
+
+      final node = tester.getSemantics(find.byKey(actionKey));
+      expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+
+      handle.dispose();
+    });
+
     testWidgets('the busy control keeps a stable footprint', (tester) async {
       await pump(tester, onPressed: () {});
       final idle = tester.getSize(find.byType(DesignSystemIconAction));
