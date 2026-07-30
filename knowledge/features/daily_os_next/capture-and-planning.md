@@ -11,7 +11,7 @@ sources:
   - id: services
     resource: ../../../lib/features/daily_os_next/agents/service
     title: Capture and plan services
-    last_modified: 2026-07-26
+    last_modified: 2026-07-30
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Day-agent prompt builder
@@ -139,11 +139,18 @@ The distinction matters for reading eval results and for trusting the model:
 
 | Enforcement | Constraints |
 |-------------|-------------|
-| **Hard — throws `DayAgentCaptureException`**, rejecting the whole `draft_day_plan` call and handing the message back to the model, which retries | Day boundaries, `end > start`, same-day past-start, allowed categories, committed-plan overwrite, model-authored `committed` blocks, `cal` blocks, unresolvable `taskId` |
+| **Hard — throws `DayAgentCaptureException`**, rejecting the whole `draft_day_plan` call and handing the message back to the model, which retries | Day boundaries, configured working-hours bounds, `end > start`, same-day past-start, allowed categories, committed-plan overwrite, model-authored `committed` blocks, `cal` blocks, unresolvable `taskId` |
 | **Prompt contract only** | Block overlap, capacity, decided tasks actually being placed, blocker ordering |
 
 So **the persisted plan is always *legal***, and inspecting it alone measures the
 guards rather than the model. See [evaluation](evaluation.md).
+
+The working-hours guard and persisted capacity use the `DayAgentConfig`
+attached to the executing workflow; neither value is a model-writable tool
+field. A model can shorten or omit work and surface `overCommitted`; it cannot
+make an impossible day appear to fit by leaving a clock gap and extending its
+last block past the configured end. Malformed free-text working hours remain
+unenforced rather than being replaced with invented defaults.
 
 **A capture may parse to nothing.** `parse_capture_to_items` accepts an empty
 `items` array, meaning "this capture holds nothing to act on" — the only honest

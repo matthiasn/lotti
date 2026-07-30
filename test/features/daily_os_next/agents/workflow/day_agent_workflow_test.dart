@@ -313,6 +313,7 @@ void main() {
         runKey: runKey,
         toolName: DayAgentToolNames.draftDayPlan,
         args: any(named: 'args'),
+        planningConfig: any(named: 'planningConfig'),
       ),
     ).thenAnswer(
       (_) async => DayAgentDirectToolResult.success(
@@ -720,6 +721,7 @@ void main() {
             runKey: any(named: 'runKey'),
             toolName: any(named: 'toolName'),
             args: any(named: 'args'),
+            planningConfig: any(named: 'planningConfig'),
           ),
         );
       },
@@ -4014,6 +4016,7 @@ void main() {
               runKey: runKey,
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -4084,6 +4087,7 @@ void main() {
               runKey: runKey,
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
             ),
           ).called(1);
 
@@ -4110,6 +4114,7 @@ void main() {
               runKey: runKey,
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -4193,6 +4198,7 @@ void main() {
               runKey: runKey,
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.failure(
@@ -4230,6 +4236,7 @@ void main() {
               runKey: runKey,
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
             ),
           ).called(1);
         },
@@ -4271,6 +4278,7 @@ void main() {
               runKey: any(named: 'runKey'),
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
             ),
           );
         },
@@ -4479,6 +4487,7 @@ void main() {
           runKey: runKey,
           toolName: DayAgentToolNames.draftDayPlan,
           args: any(named: 'args'),
+          planningConfig: any(named: 'planningConfig'),
         ),
       ).thenAnswer(
         (_) async => DayAgentDirectToolResult.success(
@@ -4510,6 +4519,7 @@ void main() {
                   runKey: runKey,
                   toolName: DayAgentToolNames.draftDayPlan,
                   args: captureAny(named: 'args'),
+                  planningConfig: any(named: 'planningConfig'),
                 ),
               ).captured.single
               as Map<String, dynamic>;
@@ -4548,6 +4558,7 @@ void main() {
           runKey: any(named: 'runKey'),
           toolName: any(named: 'toolName'),
           args: any(named: 'args'),
+          planningConfig: any(named: 'planningConfig'),
         ),
       );
     });

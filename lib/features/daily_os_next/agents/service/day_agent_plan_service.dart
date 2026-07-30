@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -86,12 +87,14 @@ class DayAgentPlanService {
     required String runKey,
     required String toolName,
     required Map<String, dynamic> args,
+    DayAgentConfig planningConfig = const DayAgentConfig(),
   }) => _dispatcher.executeTool(
     agentId: agentId,
     threadId: threadId,
     runKey: runKey,
     toolName: toolName,
     args: args,
+    planningConfig: planningConfig,
   );
 
   /// Fetch the persisted draft plan for one day.
@@ -295,6 +298,8 @@ class DayAgentPlanService {
     List<Object?> rawEnergyBands = const [],
     List<String> decidedTaskIds = const [],
     int capacityMinutes = 480,
+    String workingHoursStart = '09:00',
+    String workingHoursEnd = '17:00',
     String? dayLabel,
     String? runKey,
   }) => _writer.persistDraftPlan(
@@ -306,6 +311,8 @@ class DayAgentPlanService {
     rawEnergyBands: rawEnergyBands,
     decidedTaskIds: decidedTaskIds,
     capacityMinutes: capacityMinutes,
+    workingHoursStart: workingHoursStart,
+    workingHoursEnd: workingHoursEnd,
     dayLabel: dayLabel,
     runKey: runKey,
   );
