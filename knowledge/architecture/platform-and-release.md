@@ -5,8 +5,8 @@ description: Five platform targets from one codebase, the checks every branch ru
 resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T16:00:00Z }
-stale_after: 2027-01-11
+generated: { by: claude-code/opus-5, at: 2026-07-30T21:16:11Z }
+stale_after: 2027-01-30
 sources:
   - id: workflows
     resource: ../../.github/workflows
@@ -40,8 +40,11 @@ sources:
 | Linux | Flatpak (Flathub) and tarball |
 | Windows | MSIX |
 
-The Flutter SDK is **pinned in `.fvmrc`** (currently 3.44.7) and every command
-is expected to run through FVM — `fvm flutter …`, `fvm dart …`.
+The Flutter SDK is **pinned in `.fvmrc`** (currently 3.44.7). *Locally*, every
+command is expected to run through FVM — `fvm flutter …`, `fvm dart …`. CI does
+not use that prefix: each provider selects the pinned SDK for the build machine
+and then invokes bare `flutter` and `dart`. The pin is honoured by SDK
+selection there, not by the command prefix.
 
 Dart SDK constraint: `>=3.12.0 <4.0.0`; Flutter `>=3.44.0`.
 
@@ -54,6 +57,7 @@ written down. Most consumers follow it automatically; one does not:
 |----------|-------------------|
 | GitHub Actions lanes | Yes — `kuhnroyal/flutter-fvm-config-action` reads it |
 | Codemagic Windows release | Yes — `environment.flutter: fvm` reads it |
+| [`.vscode/settings.json`](../../.vscode/settings.json) | Yes — points at the `.fvm/flutter_sdk` symlink, which `fvm use` repoints |
 | [`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`](../../flatpak/com.matthiasn.lotti.flatpak-flutter.yml) | **No — hand-edit the Flutter `tag:`** |
 
 So a Flutter bump is `.fvmrc` **plus** the Flatpak manifest's Flutter `tag:`.
