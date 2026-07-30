@@ -48,16 +48,22 @@ The published development manual lives at:
 
 `https://matthiasn.github.io/lotti/manual/development/`
 
-The repository root and `/lotti/manual/` redirect to that version. On every
-matching push to `main`, GitHub Actions validates and builds the site, assembles
-the repo-prefixed Pages tree, uploads it as a Pages artifact, and deploys it.
-Generated Docusaurus output is never committed: it exists only in the Actions
-runner and the immutable Pages deployment artifact.
+The repository root and `/lotti/manual/` redirect to the latest published
+release, or to `development` before the first one. On every matching push to
+`main`, GitHub Actions validates and builds the site, uploads the built tree
+to the R2 site-snapshot store (`manual-site/<version>/`), mirrors the whole
+store into one repo-prefixed Pages tree, and deploys it. Generated Docusaurus
+output is never committed: it exists only in the Actions runner, the R2
+store, and the Pages deployment artifact.
 
-The initial Pages deployment publishes `development`. Version promotion will
-assemble immutable release artifacts into the same Pages snapshot; manually
-building another version already works, but it does not replace the live
-development snapshot during this first publishing phase.
+Publishing a release manual is a `workflow_dispatch` of the Manual workflow
+with `manual_version: X.Y.Z` and `deploy: true`: the run resolves the newest
+app tag of that marketing version, builds the site and screenshot catalog
+from that tag, uploads both to their immutable R2 prefixes (existing release
+snapshots are never overwritten), and redeploys Pages with every version side
+by side. Each deploy also writes a live `manual/releases.json` next to the
+version directories; the version dropdown fetches it at runtime, so even old
+immutable snapshots list releases published after them.
 
 Run the same production build locally with:
 
@@ -175,9 +181,7 @@ MANUAL_BASE_URL=/lotti/manual/1.0.0/ \
 npm run build
 ```
 
-`metadata/releases.json` drives cross-version links and records which publicly
-distributed App Store version should receive the `latest` alias. The current
-GitHub Pages workflow publishes the development snapshot; the first App Store
-release needs the companion tagged-release job to assemble the immutable
-versioned Pages snapshot and media catalog. No `versioned_docs` directory is
-allowed.
+`metadata/releases.json` is only the build-time fallback catalog baked into
+each snapshot; the authoritative list is derived from the R2 site-snapshot
+store on every deploy and served as `manual/releases.json`, which the version
+dropdown fetches at runtime. No `versioned_docs` directory is allowed.

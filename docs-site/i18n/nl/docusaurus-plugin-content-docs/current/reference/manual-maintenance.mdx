@@ -82,7 +82,12 @@ tabbladen.
 
 ## Publiceer een release
 
-De handmatige bron wordt niet voor elke app-versie gekopieerd. De app-releasetag al
-behoudt de exacte bron. CI controleert die tag en bouwt ermee
-`MANUAL_VERSION=<version>`, en publiceert een onveranderlijke statische map. De
-release dropdown is een klein manifest van die mappen.
+De bron van de handleiding wordt niet voor elke app-versie gekopieerd. De
+app-releasetag behoudt de exacte bron al. Publiceren is een handmatig gestarte
+workflow-run met de marketingversie en deploy ingeschakeld: CI zoekt de nieuwste
+app-tag van die versie op, bouwt de site en de bijbehorende screenshotcatalogus
+vanaf de tag, uploadt beide naar onveranderlijke geversioneerde opslag en
+deployt de site opnieuw met alle versies naast elkaar. Release-snapshots worden
+nooit overschreven. De versiedropdown leest een live catalogus die bij elke
+deploy wordt geschreven, dus oudere handleidingen tonen ook de releases die na
+hen verschenen.

@@ -46,4 +46,4 @@ Fiecare caz automatizat trebuie să ofere variante mobil-luminos, mobil-întunec
 
 ## Publicați o lansare
 
-Sursa manualului nu este copiată pentru fiecare versiune a aplicației. Eticheta de lansare a aplicației păstrează deja sursa exactă. CI verifică acea etichetă, construiește cu `MANUAL_VERSION=<version>` și publică un director static imuabil. Selectorul de lansări este un manifest mic al acelor directoare.
+Sursa manualului nu este copiată pentru fiecare versiune a aplicației. Eticheta de lansare a aplicației păstrează deja sursa exactă. Publicarea este o rulare manuală a fluxului de lucru, cu versiunea de marketing și cu implementarea activată: CI determină cea mai recentă etichetă de aplicație a acelei versiuni, construiește site-ul și catalogul său de capturi de ecran din etichetă, încarcă ambele într-un spațiu de stocare versionat imuabil și reimplementează site-ul cu toate versiunile una lângă alta. Instantaneele de lansare nu sunt niciodată suprascrise. Selectorul de versiuni citește un catalog live scris la fiecare implementare, astfel încât manualele mai vechi listează și lansările apărute după ele.

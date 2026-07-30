@@ -85,7 +85,12 @@ páginas y pestañas abiertas del manual.
 ## Publica una versión
 
 El código fuente del manual no se copia para cada versión de la aplicación. La
-etiqueta de versión de la aplicación ya conserva su código exacto. CI consulta
-esa etiqueta, compila con `MANUAL_VERSION=<version>` y publica un directorio
-estático inmutable. El menú desplegable de versiones es un manifiesto pequeño de
-esos directorios.
+etiqueta de versión de la aplicación ya conserva su código exacto. Publicar es
+una ejecución manual del workflow con la versión de marketing y el despliegue
+activado: CI resuelve la etiqueta de aplicación más reciente de esa versión,
+compila el sitio y su catálogo de capturas a partir de la etiqueta, sube ambos
+a un almacenamiento versionado inmutable y vuelve a desplegar el sitio con
+todas las versiones lado a lado. Las instantáneas de versión nunca se
+sobrescriben. El menú desplegable de versiones lee un catálogo en vivo que se
+escribe en cada despliegue, así que los manuales antiguos también listan las
+versiones que llegaron después.

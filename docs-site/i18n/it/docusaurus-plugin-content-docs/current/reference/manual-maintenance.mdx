@@ -80,7 +80,13 @@ Tavole.
 
 ## Pubblica un rilascio
 
-La sorgente manuale non viene copiata per ogni versione dell'app.
-conserva la sua fonte esatta. CI controlla il tag, si costruisce con
-`MANUAL_VERSION=<version>`, e pubblica una directory statica immutabile.
-Il dropdown del rilascio è un piccolo manifesto di quelle directory.
+La sorgente del manuale non viene copiata per ogni versione dell'app. Il tag di
+rilascio dell'app conserva già la sua sorgente esatta. La pubblicazione è
+un'esecuzione manuale del workflow con la versione di marketing e il deploy
+abilitato: la CI risolve il tag dell'app più recente di quella versione,
+costruisce il sito e il suo catalogo di screenshot dal tag, carica entrambi in
+uno storage versionato immutabile e ridistribuisce il sito con tutte le
+versioni fianco a fianco. Gli snapshot di rilascio non vengono mai
+sovrascritti. Il dropdown delle versioni legge un catalogo live scritto a ogni
+deploy, quindi anche i manuali più vecchi elencano i rilasci arrivati dopo di
+loro.

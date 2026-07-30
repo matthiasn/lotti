@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import {cp, mkdir, rm, writeFile} from 'node:fs/promises';
+import {access, cp, mkdir, readdir, rm, writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -82,19 +82,124 @@ export async function assemblePagesSite({
   return {targetUrl};
 }
 
+/**
+ * Order two manual versions. `development` sorts after every release;
+ * releases compare by their numeric `major.minor.patch` triple, and a
+ * suffixed build (`1.2.3-rc.1`) sorts before the plain release it precedes.
+ */
+export function compareManualVersions(a, b) {
+  if (a === b) return 0;
+  if (a === 'development') return 1;
+  if (b === 'development') return -1;
+  const parse = (value) => {
+    const triple = value.match(/^\d+\.\d+\.\d+/)?.[0] ?? '0.0.0';
+    return {
+      numbers: triple.split('.').map(Number),
+      suffix: value.slice(triple.length),
+    };
+  };
+  const left = parse(a);
+  const right = parse(b);
+  for (let i = 0; i < 3; i += 1) {
+    const diff = (left.numbers[i] ?? 0) - (right.numbers[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  if (left.suffix === right.suffix) return 0;
+  if (left.suffix === '') return 1;
+  if (right.suffix === '') return -1;
+  return left.suffix < right.suffix ? -1 : 1;
+}
+
+/**
+ * Finalize a Pages tree whose `manual/<version>/` directories were already
+ * mirrored from the site-snapshot store: keep only complete snapshots (the
+ * `.snapshot.json` marker is uploaded last), write the live release catalog
+ * the version dropdown fetches at runtime, and point the root redirects at
+ * the latest published release — or at `development` before the first one.
+ */
+export async function finalizePagesSite({outputRoot, pagesPrefix}) {
+  const normalizedPrefix = normalizePagesPrefix(pagesPrefix);
+  const manualRoot = resolve(outputRoot, 'manual');
+  const entries = await readdir(manualRoot, {withFileTypes: true});
+  const versions = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    validateManualVersion(entry.name);
+    const marker = resolve(manualRoot, entry.name, '.snapshot.json');
+    try {
+      await access(marker);
+    } catch {
+      throw new Error(
+        `Manual version ${entry.name} has no .snapshot.json marker; ` +
+          'refusing to publish an incomplete site snapshot.',
+      );
+    }
+    versions.push(entry.name);
+  }
+  if (versions.length === 0) {
+    throw new Error('No manual site snapshots found to publish.');
+  }
+  versions.sort(compareManualVersions).reverse();
+
+  const published = versions.filter((version) => version !== 'development');
+  const latestPublished = published[0] ?? null;
+  const catalog = {
+    schemaVersion: 1,
+    latestPublished,
+    versions: [
+      ...(versions.includes('development')
+        ? [
+            {
+              version: 'development',
+              label: 'Development',
+              status: 'development',
+            },
+          ]
+        : []),
+      ...published.map((version) => ({
+        version,
+        label: version,
+        status: 'published',
+      })),
+    ],
+  };
+  await writeFile(
+    resolve(manualRoot, 'releases.json'),
+    `${JSON.stringify(catalog, null, 2)}\n`,
+  );
+
+  const targetVersion = latestPublished ?? 'development';
+  const targetUrl = `${normalizedPrefix}/manual/${targetVersion}/`;
+  const redirect = redirectDocument(targetUrl);
+  await writeFile(resolve(outputRoot, '.nojekyll'), '');
+  await writeFile(resolve(outputRoot, 'index.html'), redirect);
+  await writeFile(resolve(manualRoot, 'index.html'), redirect);
+
+  return {targetUrl, latestPublished, versions};
+}
+
 async function main() {
   const options = parseNamedArguments(process.argv.slice(2));
-  const version = String(options.version ?? 'development');
-  const buildRoot = resolve(
-    siteDirectory,
-    String(options['build-root'] ?? 'build'),
-  );
   const outputRoot = resolve(
     siteDirectory,
     String(options['output-root'] ?? 'pages-build'),
   );
   const pagesPrefix = String(options['pages-prefix'] ?? 'lotti');
 
+  if (options.finalize === true) {
+    const result = await finalizePagesSite({outputRoot, pagesPrefix});
+    console.log(
+      `GitHub Pages tree finalized: versions ${result.versions.join(', ')}; ` +
+        `root redirects to ${result.targetUrl}`,
+    );
+    return;
+  }
+
+  const version = String(options.version ?? 'development');
+  const buildRoot = resolve(
+    siteDirectory,
+    String(options['build-root'] ?? 'build'),
+  );
   const result = await assemblePagesSite({
     buildRoot,
     outputRoot,
