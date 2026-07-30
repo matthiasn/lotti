@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1073]
+### Added
+- **The manual keeps every released version readable.** The manual's version
+  dropdown now lists each published release next to Development, every release
+  keeps its exact pages and screenshots permanently, and the manual's front
+  door leads to the newest release once one exists. Older manuals also learn
+  about releases published after them, so no snapshot ever points at a stale
+  list.
+
 ### Fixed
 - **Daily OS plans stay inside your configured working hours.** On an
   overloaded day, the planner could keep the total duration under your capacity

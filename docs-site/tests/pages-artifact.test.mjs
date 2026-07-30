@@ -28,6 +28,25 @@ test('orders manual versions with development last', () => {
   ]);
 });
 
+test('compares numeric prerelease identifiers numerically', () => {
+  assert.ok(compareManualVersions('1.2.3-rc.10', '1.2.3-rc.2') > 0);
+  assert.ok(compareManualVersions('1.2.3-rc.2', '1.2.3-rc.10') < 0);
+  assert.ok(compareManualVersions('1.2.3-rc', '1.2.3-rc.1') < 0);
+  assert.ok(compareManualVersions('1.2.3-alpha', '1.2.3-beta') < 0);
+  assert.ok(compareManualVersions('1.2.3-1', '1.2.3-alpha') < 0);
+  assert.equal(compareManualVersions('1.2.3-rc.1', '1.2.3-rc.1'), 0);
+  // Only dots separate identifiers: alpha-1 is one identifier, after alpha.
+  assert.ok(compareManualVersions('1.2.3-alpha-1', '1.2.3-alpha.2') > 0);
+  // Digit-string comparison keeps precision beyond Number's safe range.
+  assert.ok(
+    compareManualVersions(
+      '1.2.3-rc.9007199254740993',
+      '1.2.3-rc.9007199254740992',
+    ) > 0,
+  );
+  assert.equal(compareManualVersions('1.2.3-rc.010', '1.2.3-rc.10'), 0);
+});
+
 test('finalizes a mirrored tree: catalog, latest redirect, marker guard', async () => {
   const root = await mkdtemp(resolve(tmpdir(), 'lotti-pages-'));
   const outputRoot = resolve(root, 'pages');

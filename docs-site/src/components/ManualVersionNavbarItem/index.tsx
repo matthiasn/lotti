@@ -3,6 +3,8 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {translate} from '@docusaurus/Translate';
 import DropdownNavbarItem from '@theme/NavbarItem/DropdownNavbarItem';
 
+import {fetchLiveCatalog} from './catalog.mjs';
+
 type Release = {
   label: string;
   status: 'development' | 'published' | 'archived';
@@ -18,14 +20,6 @@ type Props = Omit<
   import('@theme/NavbarItem/DropdownNavbarItem').Props,
   'items' | 'label'
 >;
-
-function isCatalog(value: unknown): value is ReleaseCatalog {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    Array.isArray((value as ReleaseCatalog).versions)
-  );
-}
 
 export default function ManualVersionNavbarItem(
   props: Props,
@@ -49,14 +43,11 @@ export default function ManualVersionNavbarItem(
   const [catalog, setCatalog] = useState<ReleaseCatalog>(bakedCatalog);
   useEffect(() => {
     let cancelled = false;
-    fetch(`${manualRootPath}/releases.json`)
-      .then((response) => (response.ok ? response.json() : null))
-      .then((live: unknown) => {
-        if (!cancelled && isCatalog(live)) {
-          setCatalog(live);
-        }
-      })
-      .catch(() => {});
+    void fetchLiveCatalog(`${manualRootPath}/releases.json`).then((live) => {
+      if (!cancelled && live !== null) {
+        setCatalog(live as ReleaseCatalog);
+      }
+    });
     return () => {
       cancelled = true;
     };

@@ -86,6 +86,9 @@ export async function assemblePagesSite({
  * Order two manual versions. `development` sorts after every release;
  * releases compare by their numeric `major.minor.patch` triple, and a
  * suffixed build (`1.2.3-rc.1`) sorts before the plain release it precedes.
+ * Suffixes compare identifier-wise with semver precedence: numeric
+ * identifiers compare numerically (`rc.10` > `rc.2`) and rank below
+ * alphanumeric ones; a longer identifier list wins a shared prefix.
  */
 export function compareManualVersions(a, b) {
   if (a === b) return 0;
@@ -95,7 +98,7 @@ export function compareManualVersions(a, b) {
     const triple = value.match(/^\d+\.\d+\.\d+/)?.[0] ?? '0.0.0';
     return {
       numbers: triple.split('.').map(Number),
-      suffix: value.slice(triple.length),
+      suffix: value.slice(triple.length).replace(/^[-.]/, ''),
     };
   };
   const left = parse(a);
@@ -107,7 +110,35 @@ export function compareManualVersions(a, b) {
   if (left.suffix === right.suffix) return 0;
   if (left.suffix === '') return 1;
   if (right.suffix === '') return -1;
-  return left.suffix < right.suffix ? -1 : 1;
+  // Semver: only dots separate prerelease identifiers — a hyphen inside an
+  // identifier (alpha-1) is part of it. Numeric identifiers compare as
+  // digit strings (normalized length, then lexicographic) so arbitrarily
+  // large build counters never lose precision to float coercion.
+  const leftIds = left.suffix.split('.');
+  const rightIds = right.suffix.split('.');
+  const length = Math.max(leftIds.length, rightIds.length);
+  for (let i = 0; i < length; i += 1) {
+    const leftId = leftIds[i];
+    const rightId = rightIds[i];
+    if (leftId === undefined) return -1;
+    if (rightId === undefined) return 1;
+    if (leftId === rightId) continue;
+    const leftNumeric = /^\d+$/.test(leftId);
+    const rightNumeric = /^\d+$/.test(rightId);
+    if (leftNumeric && rightNumeric) {
+      const leftDigits = leftId.replace(/^0+(?=\d)/, '');
+      const rightDigits = rightId.replace(/^0+(?=\d)/, '');
+      if (leftDigits.length !== rightDigits.length) {
+        return leftDigits.length - rightDigits.length;
+      }
+      if (leftDigits === rightDigits) continue;
+      return leftDigits < rightDigits ? -1 : 1;
+    }
+    if (leftNumeric) return -1;
+    if (rightNumeric) return 1;
+    return leftId < rightId ? -1 : 1;
+  }
+  return 0;
 }
 
 /**
