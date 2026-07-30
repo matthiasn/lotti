@@ -7,8 +7,9 @@ description: Le flux de contribution léger pour le contenu du manuel et les cap
 
 La source vit dans le dépôt de l’application afin qu’un changement de
 comportement et sa documentation puissent arriver ensemble. Les captures
-générées vivent dans le dépôt voisin `lotti-docs` et ne sont jamais ajoutées à
-l’arborescence de l’application.
+générées sont publiées dans un bucket Cloudflare R2, sous un préfixe versionné
+par version du manuel, et ne sont jamais ajoutées à l’arborescence de
+l’application.
 
 ## Modifier le texte
 
@@ -64,15 +65,17 @@ restant sans bloquer les commits par sujet.
 3. Place le texte de démonstration visible derrière `manualScreenshotText(...)`
    pour chaque langue prise en charge lorsqu’il n’est pas déjà fourni par les
    fichiers de localisation de l’application.
-4. Capture chaque langue dans `../lotti-docs`, jamais dans ce dépôt.
+4. Capture chaque langue dans le répertoire de staging local ignoré par Git
+   (`make manual_screenshots`) ; la CI publie le résultat dans le bucket R2.
 5. Génère et valide le manifeste média.
 6. Référence le cas avec `<ManualScreenshot caseId="…" alt="…" />` dans chaque
    page de langue.
 
 Chaque capture de l’application dans une page rédigée doit utiliser
-`ManualScreenshot`. Les liens directs vers d’anciennes images `lotti-docs`
-échouent à la validation du manuel, car ils ne peuvent pas suivre le choix
-global Mobile/Ordinateur ni le thème clair/sombre du manuel.
+`ManualScreenshot`. Les liens directs vers les médias de capture —
+anciennes images `lotti-docs` ou le bucket R2 lui-même — échouent à la
+validation du manuel, car ils ne peuvent pas suivre le choix global
+Mobile/Ordinateur ni le thème clair/sombre du manuel.
 
 Chaque cas automatisé doit fournir les variantes mobile clair, mobile sombre,
 ordinateur clair et ordinateur sombre dans chaque langue publiée. Le composant

@@ -6,8 +6,9 @@ description: Il flusso di lavoro del contributo leggero per contenuti e screensh
 # Mantenere questo manuale
 
 La fonte vive nel repository delle applicazioni in modo da un cambiamento di comportamento e la sua
-la documentazione può atterrare insieme. Gli screenshot generati vivono nel fratello
-`lotti-docs` repository e non sono mai impegnati nell'albero delle applicazioni.
+la documentazione può atterrare insieme. Gli screenshot generati vengono pubblicati
+in un bucket Cloudflare R2 sotto un prefisso versionato per ogni versione del
+manuale e non vengono mai committati nell'albero dell'applicazione.
 
 ## Modifica della prosa
 
@@ -60,13 +61,15 @@ commit.
 3. Metti la copia visibile dell'apparecchio dietro `manualScreenshotText(...)` per ogni
    supportato locale quando non è già fornito dalla localizzazione dell'app
    I file.
-4. Cattura ogni locale in `../lotti-docs`; mai in questo repository.
+4. Cattura ogni locale nella directory locale di staging ignorata da git
+   (`make manual_screenshots`); la CI pubblica il risultato nel bucket R2.
 5. Generare e convalidare il manifesto dei media.
 6. Riferimento del caso con `<ManualScreenshot caseId="…" alt="…" />` su
    ogni pagina di lingua.
 
-Ogni schermate di app in una pagina autorizzata deve usare `ManualScreenshot`. Direct
-link a vecchie immagini `lotti-docs` falliscono la validazione manuale perché non possono
+Ogni schermate di app in una pagina autorizzata deve usare `ManualScreenshot`.
+I link diretti ai media degli screenshot — vecchie immagini `lotti-docs` o il
+bucket R2 stesso — falliscono la validazione del manuale perché non possono
 seguire la scelta globale Mobile/Desktop o il tema light/dark del manuale.
 
 Ogni caso automatizzato deve fornire luce mobile, mobile-dark, desktop-light,

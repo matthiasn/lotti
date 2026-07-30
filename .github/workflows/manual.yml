@@ -44,7 +44,7 @@ on:
         default: true
         type: boolean
       publish_media:
-        description: 'Commit generated media to lotti-docs/main'
+        description: 'Upload generated media to the R2 bucket'
         required: true
         default: false
         type: boolean
@@ -178,18 +178,6 @@ jobs:
           path: lotti
           fetch-depth: 0
 
-      # lotti-docs is public, so the default token is enough to read it.
-      # LOTTI_DOCS_TOKEN (a PAT with contents:write on matthiasn/lotti-docs)
-      # is only required to push refreshed media back; without it the commit
-      # step below skips with a warning instead of failing the whole job.
-      - name: Checkout media repository
-        uses: actions/checkout@v5
-        with:
-          repository: matthiasn/lotti-docs
-          ref: main
-          path: lotti-docs
-          token: ${{ secrets.LOTTI_DOCS_TOKEN || github.token }}
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -222,45 +210,63 @@ jobs:
         run: >-
           make manual_screenshots
           MANUAL_VERSION="${{ needs.metadata.outputs.version }}"
-          LOTTI_DOCS_DIR="${{ github.workspace }}/lotti-docs"
+          MANUAL_MEDIA_DIR="${{ runner.temp }}/lotti-manual-media"
           MANUAL_CAPTURE_DIR="${{ runner.temp }}/lotti-manual-capture/${{ needs.metadata.outputs.version }}"
 
       - name: Upload generated media for review
         uses: actions/upload-artifact@v4
         with:
           name: lotti-manual-media-${{ needs.metadata.outputs.version }}
-          path: lotti-docs/manual/screenshots/${{ needs.metadata.outputs.version }}
+          path: ${{ runner.temp }}/lotti-manual-media/${{ needs.metadata.outputs.version }}
           if-no-files-found: error
           retention-days: 14
 
-      - name: Commit media to lotti-docs/main
+      # The manual's screenshots are served from the Cloudflare R2 bucket that
+      # also hosts the tutorial videos, under a versioned prefix per manual
+      # version. `development` is mutable and synced with deletion so retired
+      # cases disappear; release versions are immutable — publishing refuses
+      # to overwrite an existing manifest.
+      - name: Publish media to R2
         if: >-
           github.event_name == 'push' ||
           github.event_name == 'schedule' ||
           (github.event_name == 'workflow_dispatch' && inputs.publish_media)
-        working-directory: lotti-docs
         env:
           MANUAL_VERSION: ${{ needs.metadata.outputs.version }}
-          LOTTI_COMMIT: ${{ github.sha }}
-          HAS_DOCS_TOKEN: ${{ secrets.LOTTI_DOCS_TOKEN != '' }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
         run: |
           set -euo pipefail
-          if [[ "$HAS_DOCS_TOKEN" != 'true' ]]; then
-            echo "::warning::LOTTI_DOCS_TOKEN is not configured; skipping the" \
-              "media publish. Add a PAT with contents:write on" \
-              "matthiasn/lotti-docs to re-enable automatic publishing." \
-              "The capture is still available as the run artifact."
+          if [[ -z "$R2_ACCOUNT_ID" || -z "$R2_BUCKET_NAME" || \
+                -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+            echo "::warning::R2 credentials are not configured (R2_ACCOUNT_ID," \
+              "R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME);" \
+              "skipping the media publish. The capture is still available" \
+              "as the run artifact."
             exit 0
           fi
-          git config user.name 'Lotti Manual Bot'
-          git config user.email 'manual-bot@lotti.local'
-          git add "manual/screenshots/$MANUAL_VERSION"
-          if git diff --cached --quiet; then
-            echo "Screenshot catalog is already current."
-            exit 0
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          SRC="${RUNNER_TEMP}/lotti-manual-media/${MANUAL_VERSION}"
+          KEY_PREFIX="manual/screenshots/${MANUAL_VERSION}"
+          DEST="s3://${R2_BUCKET_NAME}/${KEY_PREFIX}"
+          if [[ "$MANUAL_VERSION" != 'development' ]]; then
+            if aws s3api head-object --endpoint-url "$ENDPOINT" \
+                --bucket "$R2_BUCKET_NAME" \
+                --key "${KEY_PREFIX}/manifest.json" >/dev/null 2>&1; then
+              echo "::error::Manual version ${MANUAL_VERSION} is already" \
+                "published and immutable; refusing to overwrite it."
+              exit 1
+            fi
           fi
-          git commit -m "docs: refresh $MANUAL_VERSION manual screenshots for ${LOTTI_COMMIT:0:12}"
-          git push origin HEAD:main
+          # The manifest goes up last so readers never resolve cases whose
+          # media has not landed yet.
+          aws s3 sync "$SRC" "$DEST" --endpoint-url "$ENDPOINT" \
+            --exclude 'manifest.json' --delete --no-progress
+          aws s3 cp "$SRC/manifest.json" "$DEST/manifest.json" \
+            --endpoint-url "$ENDPOINT"
 
   deploy:
     name: Publish GitHub Pages

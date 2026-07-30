@@ -7,8 +7,9 @@ description: O fluxo de contribuição leve para o conteúdo do manual e as capt
 
 O código-fonte fica no repositório do aplicativo, para que uma mudança de
 comportamento e sua documentação possam entrar juntas. As capturas de tela
-geradas ficam no repositório irmão `lotti-docs` e nunca são adicionadas à
-árvore do aplicativo.
+geradas são publicadas em um bucket do Cloudflare R2, sob um prefixo
+versionado para cada versão do manual, e nunca são adicionadas à árvore do
+aplicativo.
 
 ## Editar prosa
 
@@ -65,15 +66,17 @@ as contagens restantes sem bloquear commits do tamanho de um tópico.
 3. Coloque os textos visíveis do fixture atrás de `manualScreenshotText(...)`
    para cada localidade suportada quando eles ainda não forem fornecidos pelos
    arquivos de localização do aplicativo.
-4. Capture todas as localidades em `../lotti-docs`; nunca neste repositório.
+4. Capture todas as localidades no diretório local de staging ignorado pelo
+   git (`make manual_screenshots`); o CI publica o resultado no bucket R2.
 5. Gere e valide o manifesto de mídia.
 6. Referencie o caso com `<ManualScreenshot caseId="…" alt="…" />` em
    cada página de idioma.
 
 Toda captura de tela do aplicativo em uma página escrita deve usar
-`ManualScreenshot`. Links diretos para imagens antigas do `lotti-docs` falham
-na validação do manual porque não conseguem acompanhar a escolha global
-Mobile/Desktop nem o tema claro/escuro do manual.
+`ManualScreenshot`. Links diretos para as mídias de captura — imagens antigas
+do `lotti-docs` ou o próprio bucket R2 — falham na validação do manual porque
+não conseguem acompanhar a escolha global Mobile/Desktop nem o tema
+claro/escuro do manual.
 
 Todo caso automatizado deve fornecer as variantes mobile-light, mobile-dark,
 desktop-light e desktop-dark em cada localidade publicada. O componente do

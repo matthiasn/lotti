@@ -14,8 +14,8 @@ sources:
     last_modified: 2026-06-16
   - id: makefile
     resource: ../../Makefile
-    title: manual_screenshots targets and LOTTI_DOCS_DIR
-    last_modified: 2026-07-26
+    title: manual_screenshots targets and their staging directories
+    last_modified: 2026-07-31
   - id: gitignore
     resource: ../../.gitignore
     title: The `screenshots` ignore rule
@@ -29,9 +29,12 @@ sources:
 # Images do not live in this repository
 
 `assets/` holds what the *app* ships — icons, tutorial media, design-system
-exports. **Everything captured for humans to look at goes to the sibling
-[`lotti-docs`](https://github.com/matthiasn/lotti-docs) repository instead**, and
-is referenced from here by raw URL:
+exports. **Everything captured for humans to look at leaves this repository.**
+The generated manual catalog is published to the Cloudflare R2 bucket that
+also hosts the tutorial videos; hand-picked release imagery and pull-request
+review evidence go to the sibling
+[`lotti-docs`](https://github.com/matthiasn/lotti-docs) repository and are
+referenced from here by raw URL:
 
 ```markdown
 ![Task details on macOS](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.998/task_details_screenshot_macos.png)
@@ -48,18 +51,17 @@ be committed if you `git add` it.
 
 # Three destinations, three lifecycles
 
-`lotti-docs` is not one bucket. Which directory an image belongs in follows from
-who regenerates it:
+Which home an image belongs in follows from who regenerates it:
 
-| Directory | Contents | Lifecycle |
-|-----------|----------|-----------|
-| `manual/screenshots/<version>/<case-id>/` | The **generated** manual catalog — `mobile-light`, `mobile-dark`, `desktop-light`, `desktop-dark` per case, plus `manifest.json` | Produced by `make manual_screenshots` from this repo; never hand-edited or renamed. `development/` is refreshed, numbered release directories are immutable |
-| `images/<app-version>/` | Hand-picked shots for release communication and the README | Written once per release, then left alone |
-| `pr-screenshots/<topic-slug>/` | **Review evidence** for a pull request | Written by hand while the work is in review; kept afterwards as the record of what reviewers saw |
+| Destination | Contents | Lifecycle |
+|-------------|----------|-----------|
+| R2 bucket, `manual/screenshots/<version>/<case-id>/` | The **generated** manual catalog — `mobile-light`, `mobile-dark`, `desktop-light`, `desktop-dark` per case, plus `manifest.json` | Produced by `make manual_screenshots` and published by the `manual.yml` CI lane; never hand-edited or renamed. `development/` is refreshed with deletion (retired cases disappear), numbered release prefixes are immutable — publishing refuses to overwrite an existing manifest |
+| `lotti-docs`: `images/<app-version>/` | Hand-picked shots for release communication and the README | Written once per release, then left alone |
+| `lotti-docs`: `pr-screenshots/<topic-slug>/` | **Review evidence** for a pull request | Written by hand while the work is in review; kept afterwards as the record of what reviewers saw |
 
-`make manual_screenshots` writes through `LOTTI_DOCS_DIR`, which defaults to
-`../lotti-docs` — a sibling checkout, not a submodule. Nothing in CI enforces
-that the two repositories are in step.
+`make manual_screenshots` stages captures and the materialized catalog under
+the gitignored `build/manual_capture/` and `build/manual_media/` directories;
+only the CI publish step talks to R2, using the `R2_*` repository secrets.
 
 # A UI pull request shows before *and* after
 

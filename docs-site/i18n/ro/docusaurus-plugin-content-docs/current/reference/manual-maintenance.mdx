@@ -5,7 +5,7 @@ description: Fluxul de contribuție simplu pentru conținutul manualului și cap
 
 # Întrețineți acest manual
 
-Sursa se află în depozitul aplicației, astfel încât o schimbare de comportament și documentația ei pot fi livrate împreună. Capturile de ecran generate se află în depozitul vecin `lotti-docs` și nu sunt niciodată incluse în arborele aplicației.
+Sursa se află în depozitul aplicației, astfel încât o schimbare de comportament și documentația ei pot fi livrate împreună. Capturile de ecran generate sunt publicate într-un bucket Cloudflare R2, sub câte un prefix versionat pentru fiecare versiune a manualului, și nu sunt niciodată incluse în arborele aplicației.
 
 ## Editați textul
 
@@ -36,11 +36,11 @@ Rulați `npm --prefix docs-site run coverage:complete` pentru pragul de lansare.
 1. Adăugați sau reutilizați un harness determinist Flutter pentru capturi de ecran.
 2. Înregistrați cazul și cele patru imagini-sursă în `docs-site/metadata/screenshot-cases.json`.
 3. Puneți textul fixture vizibil în spatele `manualScreenshotText(...)` pentru fiecare limbă acceptată, când nu este deja furnizat de fișierele ARB ale aplicației.
-4. Capturați fiecare limbă în `../lotti-docs`; niciodată în acest depozit.
+4. Capturați fiecare limbă în directorul local de pregătire ignorat de git (`make manual_screenshots`); CI publică rezultatul în bucketul R2.
 5. Generați și validați manifestul media.
 6. Referiți cazul prin `<ManualScreenshot caseId="…" alt="…" />` în fiecare pagină de limbă.
 
-Fiecare captură a aplicației într-o pagină creată trebuie să folosească `ManualScreenshot`. Legăturile directe către imagini vechi din `lotti-docs` eșuează validarea manualului, fiindcă nu pot urma alegerea globală Mobil/Desktop sau tema luminoasă/întunecată a manualului.
+Fiecare captură a aplicației într-o pagină creată trebuie să folosească `ManualScreenshot`. Legăturile directe către mediile capturilor de ecran — imagini vechi din `lotti-docs` sau chiar bucketul R2 — eșuează validarea manualului, fiindcă nu pot urma alegerea globală Mobil/Desktop sau tema luminoasă/întunecată a manualului.
 
 Fiecare caz automatizat trebuie să ofere variante mobil-luminos, mobil-întunecat, desktop-luminos și desktop-întunecat pentru fiecare limbă publicată. Componenta manualului alege limba și tema potrivite. Schimbarea Mobil/Desktop pentru orice imagine actualizează imediat toate capturile și persistă între pagini și file de manual deschise.
 

@@ -22,8 +22,10 @@ THRESH ?= 1000
 LOTTI_DOCS_DIR ?= $(abspath ../lotti-docs)
 MANUAL_VERSION ?= development
 MANUAL_LOCALES ?= en de fr it es cs nl ro pt da sv
-MANUAL_CAPTURE_DIR ?= $(LOTTI_DOCS_DIR)/manual/.staging/$(MANUAL_VERSION)
-MANUAL_MEDIA_DIR ?= $(LOTTI_DOCS_DIR)/manual/screenshots
+# Manual screenshots are staged and materialized locally (gitignored), then
+# published to the R2 bucket by CI — they no longer live in lotti-docs.
+MANUAL_CAPTURE_DIR ?= $(abspath build/manual_capture)/$(MANUAL_VERSION)
+MANUAL_MEDIA_DIR ?= $(abspath build/manual_media)
 
 .PHONY: test
 test:
@@ -190,7 +192,7 @@ manual_screenshots: manual_deps
 			MANUAL_CAPTURE_DIR="$(MANUAL_CAPTURE_DIR)/$$locale"; \
 	done
 	npm --prefix docs-site run manifest -- --capture-dir "$(MANUAL_CAPTURE_DIR)" --output-root "$(MANUAL_MEDIA_DIR)" --version "$(MANUAL_VERSION)" --locales "$(MANUAL_LOCALES)"
-	$(MAKE) manual_check_media MANUAL_VERSION="$(MANUAL_VERSION)" LOTTI_DOCS_DIR="$(LOTTI_DOCS_DIR)"
+	$(MAKE) manual_check_media MANUAL_VERSION="$(MANUAL_VERSION)" MANUAL_MEDIA_DIR="$(MANUAL_MEDIA_DIR)"
 
 .PHONY: manual_screenshots_locale
 manual_screenshots_locale:

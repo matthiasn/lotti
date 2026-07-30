@@ -6,8 +6,9 @@ description: Lehký postup přispívání do obsahu příručky a snímků obraz
 # Údržba této příručky
 
 Zdroj žije v repozitáři aplikace, aby změna chování a její dokumentace mohly
-přijít společně. Vygenerované snímky žijí v sousedním repozitáři `lotti-docs`
-a nikdy se necommitují do stromu aplikace.
+přijít společně. Vygenerované snímky se publikují do bucketu Cloudflare R2
+pod jedním verzovaným prefixem pro každou verzi příručky a nikdy se
+necommitují do stromu aplikace.
 
 ## Upravuj text
 
@@ -56,14 +57,16 @@ počty bez blokování tematických commitů.
    `docs-site/metadata/screenshot-cases.json`.
 3. Viditelný ukázkový text, který neposkytují lokalizační soubory aplikace,
    vlož za `manualScreenshotText(...)` pro každý podporovaný jazyk.
-4. Zachyť všechny jazyky do `../lotti-docs`, nikdy do tohoto repozitáře.
+4. Zachyť všechny jazyky do místního přípravného adresáře ignorovaného gitem
+   (`make manual_screenshots`); výsledek pak do bucketu R2 publikuje CI.
 5. Vygeneruj a ověř manifest médií.
 6. Na každé jazykové stránce odkazuj pomocí
    `<ManualScreenshot caseId="…" alt="…" />`.
 
 Každý snímek aplikace na psané stránce musí používat `ManualScreenshot`. Přímé
-odkazy na staré obrázky `lotti-docs` neprojdou validací, protože nemohou
-následovat globální volbu Mobil/Počítač ani světlý a tmavý motiv příručky.
+odkazy na média snímků — staré obrázky `lotti-docs` i samotný bucket R2 —
+neprojdou validací, protože nemohou následovat globální volbu Mobil/Počítač
+ani světlý a tmavý motiv příručky.
 
 Každý automatický případ musí poskytnout mobilní světlou, mobilní tmavou,
 počítačovou světlou a počítačovou tmavou variantu v každém publikovaném jazyce.

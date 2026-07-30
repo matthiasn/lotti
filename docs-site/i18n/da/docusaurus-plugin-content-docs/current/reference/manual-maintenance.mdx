@@ -6,8 +6,9 @@ description: Den lette bidragsarbejdsgang for manuelt indhold og skærmbilleder.
 # Vedligehold denne manual
 
 Kildekoden ligger i applikationsarkivet, så en adfærdsændring og dens
-dokumentation kan lande sammen. Genererede skærmbilleder ligger i søsterarkivet
-`lotti-docs` og bliver aldrig commit'et til applikationstræet.
+dokumentation kan lande sammen. Genererede skærmbilleder publiceres til en
+Cloudflare R2-bucket under ét versioneret præfiks pr. manualversion og bliver
+aldrig commit'et til applikationstræet.
 
 ## Rediger prosaen
 
@@ -59,14 +60,16 @@ emneforpligtelser.
    `docs-site/metadata/screenshot-cases.json`.
 3. Læg synlig fixturetekst bag `manualScreenshotText(...)` for hvert
    understøttet sprog, når den ikke allerede leveres af appens lokaliseringsfiler.
-4. Optag hvert sprog i `../lotti-docs`, aldrig i dette arkiv.
+4. Optag hvert sprog i den gitignorerede lokale staging-mappe
+   (`make manual_screenshots`); CI publicerer resultatet til R2-bucketen.
 5. Generer og valider mediemanifestet.
 6. Henvis til sagen med `<ManualScreenshot caseId="…" alt="…" />` på
    hver sprogsideside.
 
 Alle appskærmbilleder på en forfattet side skal bruge `ManualScreenshot`. Direkte
-links til gamle `lotti-docs`-billeder fejler manuel validering, fordi de ikke kan
-følge det globale Mobile/Desktop-valg eller manualens lyse/mørke tema.
+links til skærmbilledmedier — gamle `lotti-docs`-billeder eller selve
+R2-bucketen — fejler manualvalideringen, fordi de ikke kan følge det globale
+Mobile/Desktop-valg eller manualens lyse/mørke tema.
 
 Hver automatiseret sag skal levere mobile-light-, mobile-dark-, desktop-light-
 og desktop-dark-varianter på hvert udgivet sprog. Manual-komponenten vælger det
