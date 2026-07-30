@@ -11,7 +11,7 @@ sources:
   - id: workflows
     resource: ../../.github/workflows
     title: GitHub Actions workflows
-    last_modified: 2026-07-26
+    last_modified: 2026-07-31
   - id: makefile
     resource: ../../Makefile
     title: Developer and build entry points
@@ -93,6 +93,22 @@ Two more run on **every** branch push despite looking scoped:
 Genuinely path-filtered, both on pushes *and* pull requests to `main`:
 `python-tools-ci.yml` (the Python tools) and `manual.yml` (docs-site) — the latter
 also runs on a nightly cron (`23 2 * * *`) and on manual dispatch.
+
+`manual.yml` is also the manual's **publishing** lane, built around a
+Cloudflare R2 bucket rather than git or Pages alone. Screenshots publish to
+`manual/screenshots/<version>/` and each version's built site to
+`manual-site/<version>/`; `development` prefixes are mutable (synced with
+deletion), release prefixes are immutable — publishing refuses to overwrite an
+existing manifest or `.snapshot.json` marker, and markers upload last so a
+half-uploaded snapshot is never publishable. Every Pages deploy mirrors the
+whole `manual-site/` store into one tree, writes a live `manual/releases.json`
+derived from what is actually published, and redirects the root to the latest
+release (or `development` before the first). Publishing a release manual is a
+`workflow_dispatch` with the marketing version and `deploy` enabled: the run
+resolves the newest app tag of that version, captures and builds **from that
+tag**, and refuses to advertise a release whose screenshot catalog is not in
+the bucket. Pull requests only validate; nothing publishes without the `R2_*`
+repository secrets.
 
 The ten-way shard belongs to `flutter-test-linux-faster.yml` above: it runs
 `very_good test` across a ten-job matrix. **Buildkite is not sharded** — the
