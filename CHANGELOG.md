@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The icon is unchanged, but the button now occupies a full touch target, which
   makes the header of that card taller. Screen readers also named it without
   ever saying it was a button.
+- **The Italian theming settings were labelled "Il nome" ("The name").** The
+  Italian catalog mistranslated the Theming settings entry and its logging
+  domain; both now read "Tema", and the mode labels use the standard
+  "Aspetto scuro" / "Aspetto chiaro" wording. The Dutch and Swedish light-mode
+  labels ("Lichtschijn", "Ljusets utseende") were similarly garbled and now
+  read "Licht uiterlijk" and "Ljust utseende".
 - **The privacy policy described device pairing incorrectly.** It stated that
   encryption keys are exchanged via the QR code and never transmitted over the
   network. Neither half was true: the QR code carries your sync account

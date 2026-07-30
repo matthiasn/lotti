@@ -6887,7 +6887,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get loggingDomainTasks => 'Compiti e liste di controllo';
 
   @override
-  String get loggingDomainTheming => 'Il nome';
+  String get loggingDomainTheming => 'Tema';
 
   @override
   String get loggingDomainWhatsNew => 'Cosa c\'è di nuovo';
@@ -9669,17 +9669,17 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsThemingAutomatic => 'Automatico';
 
   @override
-  String get settingsThemingDark => 'Aspetto oscuro';
+  String get settingsThemingDark => 'Aspetto scuro';
 
   @override
-  String get settingsThemingLight => 'Aspetto leggero';
+  String get settingsThemingLight => 'Aspetto chiaro';
 
   @override
   String get settingsThemingSubtitle =>
       'Personalizza l\'aspetto dell\'app e i temi';
 
   @override
-  String get settingsThemingTitle => 'Il nome';
+  String get settingsThemingTitle => 'Tema';
 
   @override
   String get settingsV2CategoryEmptyBody => 'Scegli un sub-setting a sinistra.';

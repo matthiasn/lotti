@@ -9567,7 +9567,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsThemingDark => 'Donker uiterlijk';
 
   @override
-  String get settingsThemingLight => 'Lichtschijn';
+  String get settingsThemingLight => 'Licht uiterlijk';
 
   @override
   String get settingsThemingSubtitle => 'Pas app uiterlijk en thema\'s';
