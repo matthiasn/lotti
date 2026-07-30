@@ -180,13 +180,17 @@ jobs:
           path: lotti
           fetch-depth: 0
 
+      # lotti-docs is public, so the default token is enough to read it.
+      # LOTTI_DOCS_TOKEN (a PAT with contents:write on matthiasn/lotti-docs)
+      # is only required to push refreshed media back; without it the commit
+      # step below skips with a warning instead of failing the whole job.
       - name: Checkout media repository
         uses: actions/checkout@v5
         with:
           repository: matthiasn/lotti-docs
           ref: main
           path: lotti-docs
-          token: ${{ secrets.LOTTI_DOCS_TOKEN }}
+          token: ${{ secrets.LOTTI_DOCS_TOKEN || github.token }}
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -240,8 +244,16 @@ jobs:
         env:
           MANUAL_VERSION: ${{ needs.metadata.outputs.version }}
           LOTTI_COMMIT: ${{ github.sha }}
+          HAS_DOCS_TOKEN: ${{ secrets.LOTTI_DOCS_TOKEN != '' }}
         run: |
           set -euo pipefail
+          if [[ "$HAS_DOCS_TOKEN" != 'true' ]]; then
+            echo "::warning::LOTTI_DOCS_TOKEN is not configured; skipping the" \
+              "media publish. Add a PAT with contents:write on" \
+              "matthiasn/lotti-docs to re-enable automatic publishing." \
+              "The capture is still available as the run artifact."
+            exit 0
+          fi
           git config user.name 'Lotti Manual Bot'
           git config user.email 'manual-bot@lotti.local'
           git add "manual/screenshots/$MANUAL_VERSION"
