@@ -4,7 +4,13 @@ workflows:
     instance_type: windows_x2
     max_build_duration: 90
     environment:
-      flutter: 3.41.4
+      # `fvm` makes Codemagic read the version from .fvmrc — the same pin the
+      # GitHub Actions lanes read — so this file needs no edit on a Flutter
+      # bump. Codemagic fails the build if .fvmrc is missing. A literal
+      # version here silently rots: it sat at 3.41.4 (Dart 3.11.1) long after
+      # the SDK floor moved to 3.12.0, and every Windows release failed in
+      # `pub get` with a version-solving error.
+      flutter: fvm
       groups:
         - windows_signing
     triggering:

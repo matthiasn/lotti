@@ -24,6 +24,10 @@ sources:
     resource: ../../.fvmrc
     title: Pinned Flutter version
     last_modified: 2026-07-22
+  - id: codemagic
+    resource: ../../codemagic.yaml
+    title: Windows release pipeline
+    last_modified: 2026-07-30
 ---
 
 # One codebase, five targets
@@ -37,11 +41,31 @@ sources:
 | Windows | MSIX |
 
 The Flutter SDK is **pinned in `.fvmrc`** (currently 3.44.7) and every command
-is expected to run through FVM — `fvm flutter …`, `fvm dart …`. CI reads the
-same file via `kuhnroyal/flutter-fvm-config-action`, so a local build and a CI
-build use the same SDK by construction rather than by convention.
+is expected to run through FVM — `fvm flutter …`, `fvm dart …`.
 
 Dart SDK constraint: `>=3.12.0 <4.0.0`; Flutter `>=3.44.0`.
+
+## Bumping the Flutter version
+
+`.fvmrc` is the source of truth, but it is not the only place the version is
+written down. Most consumers follow it automatically; one does not:
+
+| Consumer | Follows `.fvmrc`? |
+|----------|-------------------|
+| GitHub Actions lanes | Yes — `kuhnroyal/flutter-fvm-config-action` reads it |
+| Codemagic Windows release | Yes — `environment.flutter: fvm` reads it |
+| [`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`](../../flatpak/com.matthiasn.lotti.flatpak-flutter.yml) | **No — hand-edit the Flutter `tag:`** |
+
+So a Flutter bump is `.fvmrc` **plus** the Flatpak manifest's Flutter `tag:`.
+That tag currently reads 3.44.0 against a 3.44.7 pin; it still resolves because
+the constraint floor is `>=3.44.0`, which is precisely why the drift is easy to
+miss.
+
+A stale pin does not announce itself. It surfaces one layer down, as
+`pub get` failing version solving — "the current Dart SDK version is X, because
+lotti requires SDK version >=3.12.0 <4.0.0, version solving failed" — which
+reads like a dependency problem rather than a toolchain one. The Windows lane
+sat broken this way across a dozen consecutive release tags.
 
 # Continuous integration
 
@@ -74,7 +98,8 @@ written is in [testing conventions](../conventions/testing.md).
 # Release
 
 Release is triggered by **pushing a git tag whose name is the `pubspec.yaml`
-version**. Seven workflows listen on `push: tags: ['**']` and fan out:
+version**. Seven GitHub workflows listen on `push: tags: ['**']`, and Windows
+fans out from the same tag on a different provider:
 
 ```mermaid
 flowchart TD
@@ -86,7 +111,15 @@ flowchart TD
   Tag --> E["flutter-linux-release.yml"]
   Tag --> F["flathub-release-pr.yml"]
   Tag --> G["python-services-release.yml"]
+  Tag --> H["codemagic.yaml — Windows MSIX"]
 ```
+
+**Windows is the one target not built on GitHub Actions.** It runs on
+[Codemagic](../../codemagic.yaml), on a `windows_x2` instance, triggered by the
+same `*.*.*+*` tag pattern, and it reports back as a `Windows Release` check on
+the tagged commit. Because it lives outside `.github/workflows/`, it is easy to
+overlook when auditing CI — its failures show up only on tag commits and in the
+build-notification email, never on a pull request.
 
 `flathub-release-pr.yml` also accepts `workflow_dispatch` with an explicit
 commit SHA and version override, for re-cutting a Flathub PR without moving the
@@ -127,6 +160,7 @@ generated-code rules live.
 | Concern | File |
 |---------|------|
 | CI and release pipelines | [`.github/workflows/`](../../.github/workflows) |
+| Windows release (Codemagic) | [`codemagic.yaml`](../../codemagic.yaml) |
 | Buildkite lanes | [`.buildkite/`](../../.buildkite) |
 | Build, test, packaging targets | [`Makefile`](../../Makefile) |
 | Flatpak manifest and metainfo | [`flatpak/`](../../flatpak) |
