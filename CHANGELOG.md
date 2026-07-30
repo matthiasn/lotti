@@ -84,6 +84,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ratings, and What's New no longer overflow or cut off their controls at the
   original iPhone SE's 320 × 568 layout size. Short forms and planning panels
   scroll when necessary, while compact rows wrap or shorten safely.
+- **Sync lists line up with the rest of the app on narrow phones.** The Sync
+  Conflicts and Outbox pages gave their lists a one-off side margin on screens
+  narrower than most phones; they now use the same spacing step as every other
+  list, so the two pages no longer sit two pixels tighter than their
+  neighbours.
 
 ## [0.9.1071]
 ### Added

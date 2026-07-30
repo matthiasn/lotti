@@ -60,6 +60,7 @@ It happens when the widget's `await for` is still attached to the controller's s
 - Drive widget streams with a **finite** stream (`Stream.fromIterable([...])`) so the `await for` completes on its own, instead of an open `StreamController` you feed one event at a time.
 - If you must use a controller, `await controller.close()` **inside** the test body (before it returns) so the consumer drains before teardown — don't defer the close to `addTearDown`.
 - A test that asserts a transient mid-stream UI state ("…while an event is in flight") is inherently racy; assert the settled state after a finite stream completes instead.
+- The inverse also hangs: `close()` on a single-subscription controller that was **never listened to** returns a future that never completes, so `addTearDown(controller.close)` stalls the teardown until the test times out. If a shared pump helper creates a controller the widget under test may not consume (e.g. an `items:`-mode variant of a stream widget), discard the future — `addTearDown(() => unawaited(controller.close()))`.
 
 ## Native drag-and-drop wrappers
 
