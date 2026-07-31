@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import csv
 import gzip
+import io
 import json
+import tarfile
 import tempfile
+import threading
 import unittest
 from datetime import date
 from pathlib import Path
@@ -103,6 +107,73 @@ class ClocAggregationTest(unittest.TestCase):
             {"files": 0, "blank": 0, "comment": 0, "code": 0},
         )
 
+    def test_archive_extraction_drains_stderr_while_reading_stdout(self) -> None:
+        ready = threading.Event()
+        archive_bytes = io.BytesIO()
+        payload = b"void main() {}\n"
+        with tarfile.open(fileobj=archive_bytes, mode="w") as archive:
+            member = tarfile.TarInfo("lib/main.dart")
+            member.size = len(payload)
+            archive.addfile(member, io.BytesIO(payload))
+
+        class BlockingStdout(io.BytesIO):
+            def read(self, size: int = -1) -> bytes:
+                if not ready.wait(timeout=1):
+                    raise AssertionError("stderr was not drained concurrently")
+                return super().read(size)
+
+        class SignalingStderr(io.BytesIO):
+            def read(self, size: int = -1) -> bytes:
+                ready.set()
+                return super().read(size)
+
+        process = mock.Mock()
+        process.stdout = BlockingStdout(archive_bytes.getvalue())
+        process.stderr = SignalingStderr(b"archive diagnostic")
+        process.wait.return_value = 0
+
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp)
+            with mock.patch.object(analyze.subprocess, "Popen", return_value=process):
+                analyze._extract_archive(
+                    Path("/repo"),
+                    "a" * 40,
+                    ("lib",),
+                    destination,
+                    "git",
+                )
+
+            self.assertEqual(
+                (destination / "lib" / "main.dart").read_bytes(),
+                payload,
+            )
+
+    def test_archive_read_errors_are_reported_as_hygiene_errors(self) -> None:
+        process = mock.Mock()
+        process.stdout = io.BytesIO(b"not a tar archive")
+        process.stderr = io.BytesIO(b"truncated archive")
+        process.poll.return_value = None
+        process.wait.return_value = 1
+
+        with (
+            tempfile.TemporaryDirectory() as temp,
+            mock.patch.object(analyze.subprocess, "Popen", return_value=process),
+            self.assertRaisesRegex(
+                analyze.HygieneError,
+                "Could not read Git archive",
+            ),
+        ):
+            analyze._extract_archive(
+                Path("/repo"),
+                "a" * 40,
+                ("lib",),
+                Path(temp),
+                "git",
+            )
+
+        process.kill.assert_called_once()
+        process.wait.assert_called_once()
+
 
 class OutputTest(unittest.TestCase):
     def test_rows_expose_growth_and_shrinkage_deltas(self) -> None:
@@ -133,13 +204,13 @@ class OutputTest(unittest.TestCase):
         self.assertEqual(rows[1]["test_delta"], 5)
         self.assertEqual(rows[1]["total_delta"], -15)
 
-    def test_chart_is_standalone_and_escapes_script_closing_subjects(self) -> None:
+    def test_chart_is_standalone_and_escapes_all_subject_less_than_signs(self) -> None:
         rows = [
             {
                 "date": "2025-03-01",
                 "commit": "a" * 40,
                 "is_merge": False,
-                "subject": "avoid </script><script>alert(1)</script>",
+                "subject": "avoid <!--<script>alert(1)</script>",
                 "lib_code": 100,
                 "test_code": 50,
                 "total_code": 150,
@@ -159,8 +230,34 @@ class OutputTest(unittest.TestCase):
         self.assertIn("Math.max(0, -d.total_delta)", content)
         self.assertIn("plotTop", content)
         self.assertNotIn("right = 28, top = 35", content)
-        self.assertNotIn("</script><script>alert(1)</script>", content)
-        self.assertIn("<\\/script><script>alert(1)<\\/script>", content)
+        self.assertNotIn("<!--<script>alert(1)</script>", content)
+        self.assertIn(
+            r"avoid \u003c!--\u003cscript>alert(1)\u003c/script>",
+            content,
+        )
+
+    def test_csv_neutralizes_formula_leading_commit_subjects(self) -> None:
+        rows = []
+        for subject in ("=WEBSERVICE(\"https://example.com\")", "+1", "-1", "@SUM(1)"):
+            row = dict.fromkeys(analyze.CSV_FIELDS, 0)
+            row["subject"] = subject
+            rows.append(row)
+
+        with tempfile.TemporaryDirectory() as temp:
+            report = Path(temp) / "report.csv"
+            analyze._write_csv(report, rows)
+            with report.open(encoding="utf-8", newline="") as source:
+                subjects = [row["subject"] for row in csv.DictReader(source)]
+
+        self.assertEqual(
+            subjects,
+            [
+                "'=WEBSERVICE(\"https://example.com\")",
+                "'+1",
+                "'-1",
+                "'@SUM(1)",
+            ],
+        )
 
     def test_cache_round_trip_preserves_completed_commit(self) -> None:
         cache = analyze._empty_cache()
@@ -222,6 +319,79 @@ class OutputTest(unittest.TestCase):
 
             with self.assertRaisesRegex(analyze.HygieneError, "unsupported format"):
                 analyze._load_cache(path)
+
+    def test_recounts_only_cache_entries_from_a_different_cloc_version(self) -> None:
+        commit = _commit("a" * 40, "2025-03-01")
+        cached_record = {
+            "commit": commit.hash,
+            "date": commit.date.isoformat(),
+            "is_merge": False,
+            "subject": commit.subject,
+            "cloc_version": "1.96",
+            "lib": {"files": 1, "blank": 0, "comment": 0, "code": 10},
+            "test": {"files": 1, "blank": 0, "comment": 0, "code": 5},
+        }
+        refreshed_record = {**cached_record, "cloc_version": "1.98"}
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            cache_path = root / "cache.json"
+            cache = analyze._empty_cache()
+            cache["commits"][commit.hash] = cached_record
+            analyze._write_cache(cache_path, cache)
+
+            with (
+                mock.patch.object(analyze, "_repository_root", return_value=root),
+                mock.patch.object(
+                    analyze,
+                    "_commits_on_first_parent",
+                    return_value=[commit],
+                ),
+                mock.patch.object(analyze, "_restore_cache", return_value=None),
+                mock.patch.object(
+                    analyze,
+                    "_run",
+                    return_value=mock.Mock(stdout="1.98\n"),
+                ) as run,
+                mock.patch.object(
+                    analyze,
+                    "_count_commit",
+                    return_value=refreshed_record,
+                ) as count_commit,
+                mock.patch.object(analyze, "_write_csv"),
+                mock.patch.object(analyze, "_write_chart"),
+            ):
+                _, _, _, measured, reused = analyze.analyze(
+                    root,
+                    ref="HEAD",
+                    days=1,
+                    output_dir=root,
+                    cache_path=cache_path,
+                    git="git",
+                    cloc="cloc",
+                    refresh=False,
+                    cache_url=None,
+                    seed_cache=None,
+                )
+
+        run.assert_called_once_with(["cloc", "--version"])
+        count_commit.assert_called_once()
+        self.assertEqual((measured, reused), (1, 0))
+
+    def test_cache_record_requires_the_current_cloc_version(self) -> None:
+        self.assertTrue(
+            analyze._cache_record_uses_cloc(
+                {"cloc_version": "1.98"},
+                "1.98",
+            )
+        )
+        self.assertFalse(
+            analyze._cache_record_uses_cloc(
+                {"cloc_version": "1.96"},
+                "1.98",
+            )
+        )
+        self.assertFalse(analyze._cache_record_uses_cloc("invalid", "1.98"))
 
 
 if __name__ == "__main__":

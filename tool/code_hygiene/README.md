@@ -43,8 +43,9 @@ Results go to `build/code_hygiene/`:
 
 When that local cache is missing, the tool first restores the latest published
 cache from R2, then falls back to the bundled compressed bootstrap cache if R2
-is unavailable. Only commits absent from the restored cache are passed to CLOC.
-Pass `--cache-url ''` to disable the network restore.
+is unavailable. Commits absent from the restored cache, or measured with a
+different CLOC version, are passed to CLOC. Pass `--cache-url ''` to disable the
+network restore.
 
 Open `code_hygiene.html` in a browser. The two upper lines show `lib` and `test`
 code lines. Red-ringed points are directory-level shrinkage events; red bars in
@@ -84,9 +85,11 @@ python3 -m unittest tool.code_hygiene.analyze_test
 
 The scheduled [code-hygiene workflow](../../.github/workflows/code-hygiene.yml)
 refreshes the analysis and publishes the standalone report, PNG capture, CSV,
-and cache to Cloudflare R2 under `code-hygiene/latest/`. Every publishing run
-also writes an immutable copy under `code-hygiene/commits/<commit-sha>/` for PR
-review and historical reference.
+and cache to Cloudflare R2 under `code-hygiene/latest/`. Only trusted
+main-branch runs receive R2 credentials. Branch and pull-request runs retain a
+review artifact in GitHub Actions instead. Every publishing run also writes an
+immutable copy under `code-hygiene/commits/<commit-sha>/` for historical
+reference.
 
 - [Latest interactive chart](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/code-hygiene/latest/code_hygiene.html)
 - [Latest PNG capture](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/code-hygiene/latest/render.png)

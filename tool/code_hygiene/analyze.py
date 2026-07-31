@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import threading
 import urllib.error
 import urllib.request
 from dataclasses import asdict, dataclass
@@ -198,6 +199,24 @@ def _extract_archive(
 
     assert process.stdout is not None
     assert process.stderr is not None
+    stderr_chunks: list[bytes] = []
+
+    def drain_stderr() -> None:
+        for chunk in iter(lambda: process.stderr.read(65536), b""):
+            stderr_chunks.append(chunk)
+
+    stderr_thread = threading.Thread(target=drain_stderr, daemon=True)
+    stderr_thread.start()
+
+    def terminate_and_reap() -> None:
+        if process.poll() is None:
+            process.kill()
+        process.wait()
+        stderr_thread.join()
+
+    def stderr_text() -> str:
+        return b"".join(stderr_chunks).decode(errors="replace").strip()
+
     try:
         with tarfile.open(fileobj=process.stdout, mode="r|*") as archive:
             for member in archive:
@@ -221,12 +240,22 @@ def _extract_archive(
                 with source, target.open("wb") as output:
                     shutil.copyfileobj(source, output)
         process.stdout.close()
-        stderr = process.stderr.read().decode(errors="replace").strip()
         return_code = process.wait()
+        stderr_thread.join()
+    except tarfile.TarError as error:
+        terminate_and_reap()
+        detail = stderr_text()
+        raise HygieneError(
+            f"Could not read Git archive for {commit_hash}: "
+            f"{detail or str(error)}"
+        ) from error
     except BaseException:
-        process.kill()
-        process.wait()
+        terminate_and_reap()
         raise
+    finally:
+        process.stdout.close()
+        process.stderr.close()
+    stderr = stderr_text()
     if return_code != 0:
         raise HygieneError(
             f"git archive failed for {commit_hash}: {stderr or 'no diagnostic output'}"
@@ -381,6 +410,10 @@ def _write_cache(path: Path, cache: dict) -> None:
     _atomic_write(path, json.dumps(cache, indent=2, sort_keys=True) + "\n")
 
 
+def _cache_record_uses_cloc(record: object, cloc_version: str) -> bool:
+    return isinstance(record, dict) and record.get("cloc_version") == cloc_version
+
+
 def _rows(records: Sequence[dict]) -> list[dict]:
     rows = []
     previous = None
@@ -430,7 +463,17 @@ def _write_csv(path: Path, rows: Sequence[dict]) -> None:
         with temporary.open("w", encoding="utf-8", newline="") as output:
             writer = csv.DictWriter(output, fieldnames=CSV_FIELDS)
             writer.writeheader()
-            writer.writerows(rows)
+            writer.writerows(
+                {
+                    **row,
+                    "subject": (
+                        f"'{row['subject']}"
+                        if row["subject"].startswith(("=", "+", "-", "@"))
+                        else row["subject"]
+                    ),
+                }
+                for row in rows
+            )
             output.flush()
             os.fsync(output.fileno())
         os.replace(temporary, path)
@@ -598,7 +641,7 @@ document.getElementById('cards').innerHTML = cards.map(([label,value]) => `<div 
 def _write_chart(path: Path, rows: Sequence[dict], title: str) -> None:
     if not rows:
         raise HygieneError("Cannot render a chart without any selected commits")
-    serialized = json.dumps(rows).replace("</", "<\\/")
+    serialized = json.dumps(rows).replace("<", "\\u003c")
     content = CHART_TEMPLATE.replace("__TITLE__", html.escape(title)).replace(
         "__DATA__", serialized
     )
@@ -637,14 +680,17 @@ def analyze(
     if restored_from:
         print(f"Restored {restored_from}")
     cache = _load_cache(cache_path)
+    cloc_version = _run([cloc, "--version"]).stdout.strip()
     missing = [
         commit
         for commit in selected
-        if refresh or commit.hash not in cache["commits"]
+        if refresh
+        or commit.hash not in cache["commits"]
+        or not _cache_record_uses_cloc(
+            cache["commits"][commit.hash],
+            cloc_version,
+        )
     ]
-    cloc_version = "cached"
-    if missing:
-        cloc_version = _run([cloc, "--version"]).stdout.strip()
 
     measured = 0
     for index, commit in enumerate(missing, start=1):
