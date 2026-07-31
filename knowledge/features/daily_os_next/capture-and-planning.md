@@ -195,7 +195,9 @@ plan, `draft_day_plan` rejects any block it would be *planning* — state `draft
 or `committed` — whose start precedes the wake's planning snapshot. The
 workflow captures that instant before building the prompt and carries the same
 value through tool dispatch; direct service callers without a wake snapshot use
-the live clock.
+the live clock. The capture happens after memory, database, dependency, and
+other context awaits, immediately before prompt rendering; using the wake-entry
+clock could advertise a slot that expired while context was loading.
 
 The shared snapshot is load-bearing, and the earlier execution-time clock was
 measurably wrong. The threshold moved between rendering the prompt and enforcing
@@ -323,9 +325,13 @@ whole-day budget is correct there.
 A day with **no working minutes left** reports `closed` rather than a start
 paired with a budget of zero. Those are the same scheduling instruction, and
 the pair would invite the model to reconcile redundant signals. The
-coordinator's separate `DayCapacityBudget` *does* accept zero: it is the honest
-ledger value once the window closes, and allows the planner agent to issue a
-directive that the day agent can receive before reporting omissions.
+coordinator's separate `DayCapacityBudget.availableMinutes` is the total
+plannable budget before `alreadyScheduledMinutes` is subtracted. It accepts zero
+only once the target day's own window closes: zero is then the honest ledger
+value and lets the planner agent issue a directive that the day agent can
+receive before reporting omissions. Rejecting zero for an open or future target
+prevents a digest from issuing a directive that permits no work while the
+writer still requires a non-empty open-window plan.
 
 Closed does not skip the drafting wake. That wake may still need to create an
 approved task and must still raise a typed status for selected work that no

@@ -430,6 +430,10 @@ class DayAgentWorkflow {
         : wakeContext.isDigestWake
         ? DayAgentWakeKind.digest
         : DayAgentWakeKind.general;
+    // Context assembly includes database, memory-compaction, and dependency
+    // awaits. Capture the planning instant only after those complete so the
+    // advertised window cannot already be stale before inference starts.
+    final planningSnapshotAt = clock.now();
     final systemPrompt = _buildSystemPrompt(
       templateCtx,
       agentId: agentId,
@@ -439,7 +443,7 @@ class DayAgentWorkflow {
     final userMessage = _buildUserMessage(
       dayId: resolvedDayId,
       planDate: dayDate,
-      now: now,
+      now: planningSnapshotAt,
       triggerTokens: triggerTokens,
       observations: recentObs,
       observationPayloads: observationPayloads,
@@ -488,7 +492,7 @@ class DayAgentWorkflow {
           runKey: runKey,
           dayId: resolvedDayId,
           processingJobId: wakeContext.processingJobId,
-          planningSnapshotAt: now,
+          planningSnapshotAt: planningSnapshotAt,
           planningBaselinePlan: draftingContext?.baselinePlan,
           toolName: toolName,
           args: args,

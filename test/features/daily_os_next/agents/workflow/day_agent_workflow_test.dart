@@ -1953,6 +1953,7 @@ void main() {
               wakeDayId: any(named: 'wakeDayId'),
               runKey: any(named: 'runKey'),
               processingJobId: any(named: 'processingJobId'),
+              planningConfig: any(named: 'planningConfig'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -1985,6 +1986,7 @@ void main() {
               // the per-wake status cap.
               wakeDayId: dayId,
               runKey: runKey,
+              planningConfig: any(named: 'planningConfig'),
             ),
           ).called(1);
         },
@@ -2005,6 +2007,7 @@ void main() {
               wakeDayId: any(named: 'wakeDayId'),
               runKey: any(named: 'runKey'),
               processingJobId: any(named: 'processingJobId'),
+              planningConfig: any(named: 'planningConfig'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -2045,6 +2048,7 @@ void main() {
                 'job-1',
                 requestedAt: DateTime.utc(2026, 7, 22),
               ),
+              planningConfig: any(named: 'planningConfig'),
             ),
           ).called(1);
         },
@@ -3449,6 +3453,66 @@ void main() {
       expect(window['earliestStart'], '2026-05-25T15:05:00.000');
       expect(window.containsKey('closed'), isFalse);
     });
+
+    test(
+      'captures the planning snapshot after pre-prompt context awaits',
+      () async {
+        final planService = MockDayAgentPlanService();
+        var currentTime = DateTime(2026, 5, 25, 16, 50);
+        when(
+          () => planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async {
+          // Simulate a slow context read crossing the final usable slot before
+          // the prompt is rendered.
+          currentTime = DateTime(2026, 5, 25, 16, 58);
+          return null;
+        });
+        when(
+          () => planService.hydrateDecidedTasks(
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            explicitTaskIds: any(named: 'explicitTaskIds'),
+            parsedItems: any(named: 'parsedItems'),
+            dependencyResolver: any(named: 'dependencyResolver'),
+          ),
+        ).thenAnswer((_) async => const []);
+        stubSuccessfulDraftToolCall(planService);
+
+        final result = await withClock(
+          Clock(() => currentTime),
+          () => workflow(planService: planService).execute(
+            agentIdentity: identity(),
+            runKey: runKey,
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+            threadId: threadId,
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        final window =
+            sentPrompt().json('planning_window')! as Map<String, dynamic>;
+        expect(window, {'closed': true});
+        verify(
+          () => planService.executeTool(
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            toolName: DayAgentToolNames.draftDayPlan,
+            args: any(named: 'args'),
+            planningConfig: any(named: 'planningConfig'),
+            planningSnapshotAt: currentTime,
+            // The slow read returned no baseline.
+            // ignore: avoid_redundant_argument_values
+            planningBaselinePlan: null,
+          ),
+        ).called(1);
+      },
+    );
 
     test('states the floor on a wake that builds no mode context', () async {
       // A scheduled planning_day wake builds neither drafting nor refine

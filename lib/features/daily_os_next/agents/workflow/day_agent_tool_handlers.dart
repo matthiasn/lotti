@@ -61,6 +61,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         wakeDayId: dayId,
         runKey: runKey,
         processingJobId: processingJobId,
+        planningConfig: config,
       );
       return DayAgentToolResult(
         success: result.success,
