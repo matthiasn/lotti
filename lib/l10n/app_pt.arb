@@ -4955,7 +4955,7 @@
   "tasksAgentFilterHasAgent": "Tem agente",
   "tasksAgentFilterNoAgent": "Nenhum agente",
   "tasksAgentFilterTitle": "Agente",
-  "tasksCompactFilterCount": "{count, plural, one {1 filtro} other {{count} filtros}}",
+  "tasksCompactFilterCount": "{count, plural, one {{count} filtro} other {{count} filtros}}",
   "tasksCompactHeaderExpandHint": "Mostrar pesquisa e filtros",
   "tasksCompactSearchContext": "«{query}»",
   "tasksFilterApplyTitle": "Aplicar filtro",

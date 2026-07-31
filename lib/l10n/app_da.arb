@@ -4956,7 +4956,7 @@
   "tasksAgentFilterHasAgent": "Har agent",
   "tasksAgentFilterNoAgent": "Ingen agent",
   "tasksAgentFilterTitle": "Agent",
-  "tasksCompactFilterCount": "{count, plural, one {1 filter} other {{count} filtre}}",
+  "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filtre}}",
   "tasksCompactHeaderExpandHint": "Vis søgning og filtre",
   "tasksCompactSearchContext": "»{query}«",
   "tasksFilterApplyTitle": "Påfør filter",

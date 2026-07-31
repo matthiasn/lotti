@@ -10998,7 +10998,7 @@ class AppLocalizationsRo extends AppLocalizations {
       locale: localeName,
       other: '$count de filtre',
       few: '$count filtre',
-      one: '1 filtru',
+      one: '$count filtru',
     );
     return '$_temp0';
   }

@@ -10926,7 +10926,7 @@ class AppLocalizationsCs extends AppLocalizations {
       locale: localeName,
       other: '$count filtrů',
       few: '$count filtry',
-      one: '1 filtr',
+      one: '$count filtr',
     );
     return '$_temp0';
   }

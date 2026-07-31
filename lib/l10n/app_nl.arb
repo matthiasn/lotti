@@ -4955,7 +4955,7 @@
   "tasksAgentFilterHasAgent": "Heeft agent",
   "tasksAgentFilterNoAgent": "Geen agent.",
   "tasksAgentFilterTitle": "Agent",
-  "tasksCompactFilterCount": "{count, plural, one {1 filter} other {{count} filters}}",
+  "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filters}}",
   "tasksCompactHeaderExpandHint": "Zoeken en filters tonen",
   "tasksCompactSearchContext": "‘{query}’",
   "tasksFilterApplyTitle": "Filter toepassen",

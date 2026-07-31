@@ -748,6 +748,14 @@ void main() {
 
         expect(fakeController.setSelectedCategoryIdsCalls.last, isEmpty);
         expect(fakeController.searchStringCalls.last, isEmpty);
+        // Back to the RESTING view, not to "every status". An empty status
+        // set means "no status filter" to the query builder, so clearing
+        // filters through the rail's reset would silently ADD done, rejected
+        // and parked tasks — more than the user has ever seen on this page.
+        expect(
+          fakeController.setSelectedTaskStatusesCalls.last,
+          defaultSelectedTaskStatuses,
+        );
       },
     );
 
@@ -1795,6 +1803,23 @@ void main() {
         find.byKey(CollapsingTaskListHeaderKeys.root),
         findsNothing,
       );
+      expect(find.byType(TabSectionHeader), findsOneWidget);
+
+      // Scrolling a static-header pane must not accumulate collapse state
+      // behind it: the search field is still on screen (so unfocusing it
+      // would be inexplicable), and a later narrowing would otherwise snap
+      // the header shut with no gesture from the user.
+      final searchField = tester.widget<TextField>(
+        find.byType(TextField).first,
+      );
+      searchField.focusNode?.requestFocus();
+      await tester.pump();
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(searchField.focusNode?.hasFocus, isTrue);
       expect(find.byType(TabSectionHeader), findsOneWidget);
     });
 

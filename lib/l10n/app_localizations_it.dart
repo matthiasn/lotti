@@ -10939,7 +10939,7 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count filtri',
-      one: '1 filtro',
+      one: '$count filtro',
     );
     return '$_temp0';
   }

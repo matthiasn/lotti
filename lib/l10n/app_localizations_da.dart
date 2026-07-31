@@ -10789,7 +10789,7 @@ class AppLocalizationsDa extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count filtre',
-      one: '1 filter',
+      one: '$count filter',
     );
     return '$_temp0';
   }

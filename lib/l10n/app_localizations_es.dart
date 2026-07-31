@@ -10955,7 +10955,7 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count filtros',
-      one: '1 filtro',
+      one: '$count filtro',
     );
     return '$_temp0';
   }

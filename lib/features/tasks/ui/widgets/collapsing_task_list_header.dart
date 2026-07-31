@@ -74,6 +74,7 @@ class TaskListHeaderCollapseController extends ChangeNotifier {
   bool _collapsed = false;
   double? _lastPixels;
   double _upwardTravel = 0;
+  double? _lastMaxScrollExtent;
 
   /// Whether the header should currently render collapsed.
   bool get collapsed => _collapsed;
@@ -99,6 +100,7 @@ class TaskListHeaderCollapseController extends ChangeNotifier {
   }) {
     final lastPixels = _lastPixels;
     _lastPixels = pixels;
+    _lastMaxScrollExtent = maxScrollExtent;
     if (pixels <= expandNearTopOffset) {
       _upwardTravel = 0;
       _setCollapsed(false);
@@ -134,7 +136,26 @@ class TaskListHeaderCollapseController extends ChangeNotifier {
   /// (filter narrowed the list, entries deleted, window resized). If the list
   /// can no longer scroll there is no gesture left to restore the header, so
   /// it must expand itself.
-  void handleContentDimensionsChanged({required double maxScrollExtent}) {
+  ///
+  /// [pixels] resynchronises the delta baseline, but ONLY when the content
+  /// actually resized. Flutter can correct the scroll offset during such a
+  /// resize WITHOUT emitting a scroll update, so a baseline left at the
+  /// pre-resize offset makes the next real scroll frame diff against a
+  /// position the viewport no longer holds — a downward wheel step after a
+  /// big shrink reads as upward travel and is swallowed.
+  ///
+  /// The extent guard matters: these notifications also arrive mid-gesture,
+  /// and resyncing on those would discard the upward travel accumulating
+  /// across frames and make the header impossible to scroll back open.
+  void handleContentDimensionsChanged({
+    required double maxScrollExtent,
+    required double pixels,
+  }) {
+    if (maxScrollExtent != _lastMaxScrollExtent) {
+      _lastMaxScrollExtent = maxScrollExtent;
+      _lastPixels = pixels;
+      _upwardTravel = 0;
+    }
     if (_collapsed && maxScrollExtent <= 0) _setCollapsed(false);
   }
 

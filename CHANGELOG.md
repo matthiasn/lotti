@@ -28,9 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   list used to echo the default status set (Open, Groomed, In Progress) as
   removable chips even when nothing was narrowed, making the resting view
   look filtered. Status chips now appear only when the selection actually
-  deviates from the default open-work view, and once two or more filters are
-  active the row ends with a "Clear all" chip so leaving a filter session is
-  one tap instead of one per chip.
+  deviates from the default open-work view, and once two or more things are
+  narrowing the list — clauses, the search query, or both — the row ends with
+  a "Clear all" chip that restores the default open-work view and clears the
+  query, so leaving a filter session is one tap instead of one per chip.
 - **Numbers in the Tasks header now mean one thing.** The saved-filters
   button in the mobile rail carried the number of *saved* filters, which sat
   right next to counts that mean "how many tasks match" and read as "1

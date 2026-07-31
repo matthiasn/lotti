@@ -253,9 +253,46 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
   void _onScrolled() {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
-    widget.collapseController.handleScroll(
+    _feedScroll(
       pixels: position.pixels,
       maxScrollExtent: position.maxScrollExtent,
+    );
+  }
+
+  /// Whether this pane renders the collapsing header at all, mirrored from
+  /// the [LayoutBuilder] that decides it. A desktop-wide pane shows the
+  /// static header and must not accumulate collapse state behind it: the
+  /// state machine would unfocus the still-visible search field, and
+  /// narrowing the window later would snap the header shut with no gesture.
+  bool _collapsingPane = true;
+
+  /// Records, and answers, whether this pane keeps the static header. Called
+  /// from the layout builder so the scroll feed and the rendered header can
+  /// never disagree about which mode the pane is in.
+  bool _paneUsesStaticHeader(BoxConstraints constraints) {
+    final static = constraints.maxWidth >= kDesktopBreakpoint;
+    _collapsingPane = !static;
+    if (static && widget.collapseController.collapsed) {
+      // Resizing INTO the static header must not leave a collapsed flag
+      // behind for the next narrowing to spring on the user.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.collapseController.expand();
+      });
+    }
+    return static;
+  }
+
+  void _feedScroll({
+    required double pixels,
+    required double maxScrollExtent,
+  }) {
+    if (!_collapsingPane) {
+      widget.collapseController.expand();
+      return;
+    }
+    widget.collapseController.handleScroll(
+      pixels: pixels,
+      maxScrollExtent: maxScrollExtent,
     );
   }
 
@@ -308,11 +345,13 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
       // so a bare join cannot tell {} from {''} and the header would miss a
       // filter change across the modal round trip.
     ].map((clause) => (clause.toList()..sort()).map((id) => '[$id]').join()).join('|');
-    // The modal can also change agent mode and sort without touching a clause
-    // set; both alter what the list shows, so both must re-expand the header.
+    // The modal can also change agent mode, sort and (with vector search on)
+    // the search MODE without touching a clause set. All three alter what the
+    // list shows, so all three must re-expand the header.
     return '$clauses'
         '|${state.agentAssignmentFilter.name}'
-        '|${state.sortOption.name}';
+        '|${state.sortOption.name}'
+        '|${state.searchMode.name}';
   }
 
   @override
@@ -411,7 +450,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
               // vertical space is as scarce as on a phone, so it collapses
               // too. Only a pane that is itself desktop-wide (full-width
               // window with no split) keeps the static header.
-              if (constraints.maxWidth >= kDesktopBreakpoint)
+              if (_paneUsesStaticHeader(constraints))
                 expandedHeader
               else
                 ListenableBuilder(
@@ -437,6 +476,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                     onNotification: (notification) {
                       widget.collapseController.handleContentDimensionsChanged(
                         maxScrollExtent: notification.metrics.maxScrollExtent,
+                        pixels: notification.metrics.pixels,
                       );
                       return false;
                     },
@@ -452,7 +492,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                       onNotification: (notification) {
                         if (notification.depth == 0 &&
                             notification is ScrollUpdateNotification) {
-                          widget.collapseController.handleScroll(
+                          _feedScroll(
                             pixels: notification.metrics.pixels,
                             maxScrollExtent:
                                 notification.metrics.maxScrollExtent,
@@ -626,6 +666,36 @@ final _visibleProjectsTitleProvider =
       };
     });
 
+/// Returns the task list to its RESTING view: the default open-work status
+/// set, every optional facet cleared, and no search query.
+///
+/// Deliberately not [SavedTaskFilterActivator.clearToDefault], which the
+/// rail's "All" pill uses: that writes an EMPTY status set, and
+/// `JournalPageController._buildQueryParams` reads empty as "every status",
+/// so it deliberately *widens* the list to include done, rejected and parked
+/// tasks. "All tasks" means that; "Clear all" does not — a user removing
+/// their filters expects the view they started from, not one with more in it
+/// than they have ever seen.
+///
+/// The two writes are sequenced rather than raced: they target one controller
+/// and each triggers its own query refresh, so `Future.wait` would interleave
+/// them non-deterministically.
+Future<void> _clearAll(
+  JournalPageController controller,
+  bool searchActive,
+) async {
+  await controller.applyBatchFilterUpdate(
+    statuses: defaultSelectedTaskStatuses,
+    categoryIds: const <String>{},
+    labelIds: const <String>{},
+    projectIds: const <String>{},
+    priorities: const <String>{},
+    sortOption: TaskSortOption.byPriority,
+    agentAssignmentFilter: AgentAssignmentFilter.all,
+  );
+  if (searchActive) await controller.setSearchString('');
+}
+
 class _TasksTabActiveFilters extends ConsumerWidget {
   const _TasksTabActiveFilters();
 
@@ -791,10 +861,8 @@ class _TasksTabActiveFilters extends ConsumerWidget {
 
     // Ending a multi-clause filter session chip-by-chip is the most
     // expensive common exit on the page; from two narrowings up, one tap
-    // restores the default view. It delegates to the SAME
-    // [SavedTaskFilterActivator.clearToDefault] as the rail's "All" pill,
-    // so the two visually synonymous resets are one behavior by
-    // construction, and additionally clears the search query — "Clear all"
+    // restores the resting view. See [_clearAll] for why that is NOT the
+    // rail's "All" reset. It also clears the search query — "Clear all"
     // that leaves a query silently narrowing the list is a lie, and the
     // query is counted below so the chip appears whenever two things are
     // narrowing, whichever kind they are. The leading pad separates the
@@ -812,12 +880,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
             size: DesignSystemChipSize.compactPill,
             label: context.messages.tasksFilterClearAll,
             leadingIcon: Icons.close_rounded,
-            onPressed: () => unawaited(
-              Future.wait([
-                SavedTaskFilterActivator(controller).clearToDefault(),
-                if (searchActive) controller.setSearchString(''),
-              ]),
-            ),
+            onPressed: () => unawaited(_clearAll(controller, searchActive)),
           ),
         ),
       );

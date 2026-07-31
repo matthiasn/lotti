@@ -123,7 +123,7 @@ void main() {
 
     test('re-expands itself when content shrinks below scrollability', () {
       scrollDownTo(200);
-      controller.handleContentDimensionsChanged(maxScrollExtent: 0);
+      controller.handleContentDimensionsChanged(maxScrollExtent: 0, pixels: 0);
       expect(controller.collapsed, isFalse);
     });
 
@@ -131,7 +131,33 @@ void main() {
       'content-dimension changes leave a scrollable collapsed list alone',
       () {
         scrollDownTo(200);
-        controller.handleContentDimensionsChanged(maxScrollExtent: 400);
+        controller.handleContentDimensionsChanged(
+          maxScrollExtent: 400,
+          pixels: 200,
+        );
+        expect(controller.collapsed, isTrue);
+      },
+    );
+
+    test(
+      'a content-dimension change resyncs the delta baseline, so the next '
+      'real scroll is not diffed against an offset the viewport no longer '
+      'holds and swallowed as upward travel',
+      () {
+        scrollDownTo(300);
+        expect(controller.collapsed, isTrue);
+
+        // The list shrinks and Flutter corrects the offset to 120 WITHOUT
+        // emitting a scroll update. Still scrollable, so still collapsed.
+        controller.handleContentDimensionsChanged(
+          maxScrollExtent: 600,
+          pixels: 120,
+        );
+        expect(controller.collapsed, isTrue);
+
+        // A genuine scroll DOWN from there. Against a stale 300 baseline this
+        // would read as 180px of upward travel and expand the header.
+        controller.handleScroll(pixels: 160, maxScrollExtent: 600);
         expect(controller.collapsed, isTrue);
       },
     );

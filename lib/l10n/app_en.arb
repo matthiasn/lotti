@@ -5291,7 +5291,7 @@
   "tasksAgentFilterHasAgent": "Has Agent",
   "tasksAgentFilterNoAgent": "No Agent",
   "tasksAgentFilterTitle": "Agent",
-  "tasksCompactFilterCount": "{count, plural, one {1 filter} other {{count} filters}}",
+  "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filters}}",
   "@tasksCompactFilterCount": {
     "description": "Collapsed task-list header context: how many ad-hoc filter clauses narrow the list",
     "placeholders": {

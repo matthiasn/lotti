@@ -18552,7 +18552,7 @@ abstract class AppLocalizations {
   /// Collapsed task-list header context: how many ad-hoc filter clauses narrow the list
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one {1 filter} other {{count} filters}}'**
+  /// **'{count, plural, one {{count} filter} other {{count} filters}}'**
   String tasksCompactFilterCount(num count);
 
   /// Semantic hint on the collapsed header title button: expanding reveals search and filters

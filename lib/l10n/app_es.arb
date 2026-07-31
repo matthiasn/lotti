@@ -4397,7 +4397,7 @@
   "tasksAgentFilterHasAgent": "Con agente",
   "tasksAgentFilterNoAgent": "Sin agente",
   "tasksAgentFilterTitle": "Agente",
-  "tasksCompactFilterCount": "{count, plural, one {1 filtro} other {{count} filtros}}",
+  "tasksCompactFilterCount": "{count, plural, one {{count} filtro} other {{count} filtros}}",
   "tasksCompactHeaderExpandHint": "Mostrar búsqueda y filtros",
   "tasksCompactSearchContext": "«{query}»",
   "tasksFilterApplyTitle": "Aplicar filtro",
