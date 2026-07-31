@@ -51,6 +51,7 @@ class DayAgentStrategy extends ConversationStrategy {
     required this.executeToolHandler,
     required this.domainLogger,
     this.terminalToolNames = const {},
+    this.requiresAttentionBeforeEmptyDraft = false,
   });
 
   /// Sync-aware write service for persisted conversation messages.
@@ -78,9 +79,18 @@ class DayAgentStrategy extends ConversationStrategy {
   /// inferred globally from the tool itself.
   final Set<String> terminalToolNames;
 
+  /// Whether an empty `draft_day_plan` would omit trusted selected work.
+  ///
+  /// The workflow derives this from its drafting context and binding
+  /// directive, never from model-authored tool arguments. When true, the
+  /// strategy requires a successful `attentionNeeded` status earlier in the
+  /// same wake before accepting the empty terminal artifact.
+  final bool requiresAttentionBeforeEmptyDraft;
+
   final _observations = <ObservationRecord>[];
   var _didPersistCaptureParse = false;
   var _didPersistDraftDayPlan = false;
+  var _didRaiseAttentionStatus = false;
   String? _finalResponse;
 
   static const _uuid = Uuid();
@@ -138,7 +148,21 @@ class DayAgentStrategy extends ConversationStrategy {
       }
 
       if (DayAgentToolNames.isWorkflowHandlerTool(toolName)) {
-        final result = await executeToolHandler(toolName, args, manager);
+        late final DayAgentToolResult result;
+        if (toolName == DayAgentToolNames.draftDayPlan &&
+            requiresAttentionBeforeEmptyDraft &&
+            _isEmptyDraft(args) &&
+            !_didRaiseAttentionStatus) {
+          result = const DayAgentToolResult(
+            success: false,
+            output:
+                'Error: selected or binding work would be omitted by this '
+                'empty closed draft. Successfully call raise_day_status with '
+                'status attentionNeeded before retrying draft_day_plan.',
+          );
+        } else {
+          result = await executeToolHandler(toolName, args, manager);
+        }
         var persistedArtifact = false;
         if (toolName == DayAgentToolNames.parseCaptureToItems &&
             _didPersistCaptureParseResult(result)) {
@@ -148,6 +172,11 @@ class DayAgentStrategy extends ConversationStrategy {
         if (toolName == DayAgentToolNames.draftDayPlan && result.success) {
           _didPersistDraftDayPlan = true;
           persistedArtifact = true;
+        }
+        if (toolName == DayAgentToolNames.raiseDayStatus &&
+            result.success &&
+            args['status'] == 'attentionNeeded') {
+          _didRaiseAttentionStatus = true;
         }
         manager.addToolResponse(toolCallId: call.id, response: result.output);
         await _recordToolResultMessage(
@@ -179,6 +208,11 @@ class DayAgentStrategy extends ConversationStrategy {
     }
 
     return ConversationAction.continueConversation;
+  }
+
+  bool _isEmptyDraft(Map<String, dynamic> args) {
+    final blocks = args['blocks'];
+    return blocks is List && blocks.isEmpty;
   }
 
   Future<void> _recordCallsSkippedAfterTerminalArtifact({

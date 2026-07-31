@@ -55,6 +55,7 @@ void main() {
   DayAgentStrategy strategy({
     DayAgentToolHandler? handler,
     Set<String> terminalToolNames = const {},
+    bool requiresAttentionBeforeEmptyDraft = false,
   }) {
     return DayAgentStrategy(
       syncService: syncService,
@@ -63,6 +64,7 @@ void main() {
       runKey: _runKey,
       domainLogger: domainLogger,
       terminalToolNames: terminalToolNames,
+      requiresAttentionBeforeEmptyDraft: requiresAttentionBeforeEmptyDraft,
       executeToolHandler:
           handler ??
           (_, _, _) async => const DayAgentToolResult(
@@ -453,6 +455,69 @@ void main() {
           skippedMessages.last.metadata.errorMessage,
           contains('skipped because terminal tool'),
         );
+      },
+    );
+
+    test(
+      'runs a batched attention status after rejecting a premature empty '
+      'terminal draft',
+      () async {
+        final handledTools = <String>[];
+        final sut = strategy(
+          terminalToolNames: const {DayAgentToolNames.draftDayPlan},
+          requiresAttentionBeforeEmptyDraft: true,
+          handler: (toolName, _, _) async {
+            handledTools.add(toolName);
+            return const DayAgentToolResult(success: true, output: 'ok');
+          },
+        );
+
+        final firstAction = await sut.processToolCalls(
+          toolCalls: [
+            _toolCall(
+              name: DayAgentToolNames.draftDayPlan,
+              args: const {'blocks': <Object?>[]},
+              id: 'draft-call',
+            ),
+            _toolCall(
+              name: DayAgentToolNames.raiseDayStatus,
+              args: const {'status': 'attentionNeeded'},
+              id: 'status-call',
+            ),
+          ],
+          manager: manager,
+        );
+
+        expect(firstAction, ConversationAction.continueConversation);
+        expect(sut.didPersistDraftDayPlan, isFalse);
+        expect(handledTools, [DayAgentToolNames.raiseDayStatus]);
+        final prematureResponse =
+            verify(
+                  () => manager.addToolResponse(
+                    toolCallId: 'draft-call',
+                    response: captureAny(named: 'response'),
+                  ),
+                ).captured.single
+                as String;
+        expect(prematureResponse, contains('attentionNeeded'));
+
+        final retryAction = await sut.processToolCalls(
+          toolCalls: [
+            _toolCall(
+              name: DayAgentToolNames.draftDayPlan,
+              args: const {'blocks': <Object?>[]},
+              id: 'retry-draft-call',
+            ),
+          ],
+          manager: manager,
+        );
+
+        expect(retryAction, ConversationAction.complete);
+        expect(sut.didPersistDraftDayPlan, isTrue);
+        expect(handledTools, [
+          DayAgentToolNames.raiseDayStatus,
+          DayAgentToolNames.draftDayPlan,
+        ]);
       },
     );
 

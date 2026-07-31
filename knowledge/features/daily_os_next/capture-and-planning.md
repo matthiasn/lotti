@@ -217,15 +217,24 @@ threshold themselves. Persistence validates against the same pre-inference
 snapshot that produced this advertised start. Recomputing the padded boundary
 after the model responds can otherwise turn a final advertised 16:55–17:00 slot
 into a closed window at 16:55, even though the slot itself is still legal.
+Time-sensitive prompt inputs are built from that snapshot too: durable
+knowledge staleness, digest periods, recent-week rollups, week context,
+`<current_local_time>`, and `<planning_window>` must not disagree when an
+earlier database or dependency await crosses a time boundary.
 
 Late enough in the day, walking forward for that headroom runs past midnight,
 and a block outside the plan day is rejected just as firmly — advertising 00:05
 tomorrow would steer the model into the same rejection from the other end. So
 the window **closes**: `<planning_window>` carries `closed` instead, and the
-rules say to add no new blocks. A drafting wake still has to finish with a
-durable plan artifact: with an empty baseline it first raises any required
-omission status, then persists `draft_day_plan` with `blocks: []`; with a
-non-empty baseline it repeats every existing block unchanged. The writer
+rules say to add no new blocks. A past target day is closed as well, which keeps
+a durable retry after midnight from treating yesterday as a pristine future
+day. A drafting wake still has to finish with a durable plan artifact: with an
+empty baseline it first raises any required omission status, then persists
+`draft_day_plan` with `blocks: []`; with a non-empty baseline it repeats every
+existing block unchanged. When trusted drafting decisions or binding directive
+commitments would be omitted by that empty artifact, the strategy requires a
+successful `attentionNeeded` status earlier in the same wake; model-authored
+`decidedTaskIds` cannot waive that gate. The writer
 rejects additions, removals, or edits against a non-empty baseline, so "closed"
 cannot erase or rewrite work already on the day. A valid repeat is a true
 no-op over the stored payload: labels, energy bands, budgets, pinned tasks, and
@@ -247,6 +256,10 @@ are deliberately distinct, because collapsing any two misleads:
 | `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add no block; a fresh draft may persist an empty terminal artifact |
 | `+ {"capacityMinutes": …, "scheduledMinutes": …}` | added on a refine wake — judge your *net* change against these, alongside whichever row above applies |
 | `{"availableMinutes": …}` | neither `earliestStart` nor `closed` — the day has not begun, so no part of it is past |
+
+Open drafts also require unique block IDs. Historical plans that already
+contain duplicate IDs remain preservable in a closed-window no-op by comparing
+the full block multiset, but no new draft can create another ambiguous plan.
 
 `availableMinutes` is absent from the `closed` row deliberately, and absent
 everywhere when the working hours cannot be parsed.

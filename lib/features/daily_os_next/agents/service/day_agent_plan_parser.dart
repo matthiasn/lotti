@@ -229,29 +229,35 @@ bool planningWindowClosed({
     earliestPlannableStart(planDate: planDate, now: now) != null &&
     advertisedPlanningStart(planDate: planDate, now: now) == null;
 
-/// Whether a fresh draft has no legal planning slot left today.
+/// Whether a fresh draft has no legal planning slot left.
 ///
 /// There are two independent closing boundaries: the configured working-hours
-/// end and the final five-minute slot of the local calendar day. Keeping this
-/// predicate shared between prompt construction and persistence prevents the
-/// model from being told that the window is closed while the tool rejects the
-/// only honest artifact for a fresh day: an empty plan.
+/// end and the final five-minute slot of the local calendar day. A target day
+/// before the local day containing [now] is also closed: durable retries after
+/// midnight must not reinterpret yesterday as an untouched future day.
+/// Keeping this predicate shared between prompt construction and persistence
+/// prevents the model from being told that the window is closed while the tool
+/// rejects the only honest artifact for a fresh day: an empty plan.
 bool draftPlanningWindowClosed({
   required DateTime planDate,
   required DateTime now,
   required int capacityMinutes,
   required String workingHoursStart,
   required String workingHoursEnd,
-}) =>
-    remainingWorkingMinutes(
-          planDate: planDate,
-          now: now,
-          capacityMinutes: capacityMinutes,
-          workingHoursStart: workingHoursStart,
-          workingHoursEnd: workingHoursEnd,
-        ) ==
-        0 ||
-    planningWindowClosed(planDate: planDate, now: now);
+}) {
+  if (localDay(planDate).isBefore(localDay(now))) {
+    return true;
+  }
+  return remainingWorkingMinutes(
+            planDate: planDate,
+            now: now,
+            capacityMinutes: capacityMinutes,
+            workingHoursStart: workingHoursStart,
+            workingHoursEnd: workingHoursEnd,
+          ) ==
+          0 ||
+      planningWindowClosed(planDate: planDate, now: now);
+}
 
 /// Validates and parses one model-emitted block into a [PlannedBlock],
 /// throwing [DayAgentCaptureException] on any contract violation: a `cal`

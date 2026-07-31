@@ -689,6 +689,10 @@ void main() {
       expect(isClosed(now: DateTime(2026, 7, 26, 15)), isFalse);
       expect(isClosed(now: DateTime(2026, 7, 25, 18)), isFalse);
     });
+
+    test('closes a target day after a retry crosses local midnight', () {
+      expect(isClosed(now: DateTime(2026, 7, 27, 0, 1)), isTrue);
+    });
   });
 
   group('validateDraftWorkingHours', () {

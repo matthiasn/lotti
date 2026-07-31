@@ -3458,6 +3458,8 @@ void main() {
       'captures the planning snapshot after pre-prompt context awaits',
       () async {
         final planService = MockDayAgentPlanService();
+        final knowledgeService = MockDayAgentKnowledgeService();
+        final weekContextService = MockDayAgentWeekContextService();
         var currentTime = DateTime(2026, 5, 25, 16, 50);
         when(
           () => planService.draftPlanForDay(
@@ -3478,25 +3480,70 @@ void main() {
             dependencyResolver: any(named: 'dependencyResolver'),
           ),
         ).thenAnswer((_) async => const []);
+        when(
+          () => knowledgeService.activeFor(dailyOsPlannerAgentId),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'knowledge-crossed-boundary',
+                  agentId: dailyOsPlannerAgentId,
+                  key: 'late-day-check',
+                  hook: 're-check late-day assumptions',
+                  statementText: 'Confirm this still applies before planning.',
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: DateTime(2026, 5, 20),
+                  updatedAt: DateTime(2026, 5, 20),
+                  reviewAfter: DateTime(2026, 5, 25, 16, 55),
+                  vectorClock: null,
+                )
+                as PlannerKnowledgeEntity,
+          ],
+        );
+        when(
+          () => weekContextService.buildForDay(
+            planDate: any(named: 'planDate'),
+            now: any(named: 'now'),
+          ),
+        ).thenAnswer((_) async => null);
         stubSuccessfulDraftToolCall(planService);
 
         final result = await withClock(
           Clock(() => currentTime),
-          () => workflow(planService: planService).execute(
-            agentIdentity: identity(),
-            runKey: runKey,
-            triggerTokens: {
-              dayAgentDraftingToken(dayId),
-              dayAgentPlanningDayToken(dayId),
-            },
-            threadId: threadId,
-          ),
+          () =>
+              workflow(
+                planService: planService,
+                knowledgeService: knowledgeService,
+                weekContextService: weekContextService,
+              ).execute(
+                agentIdentity: identity(),
+                runKey: runKey,
+                triggerTokens: {
+                  dayAgentDraftingToken(dayId),
+                  dayAgentPlanningDayToken(dayId),
+                },
+                threadId: threadId,
+              ),
         );
 
         expect(result.success, isTrue, reason: result.error);
         final window =
             sentPrompt().json('planning_window')! as Map<String, dynamic>;
         expect(window, {'closed': true});
+        expect(
+          sentPrompt().section('current_local_time'),
+          '2026-05-25T16:58:00.000',
+        );
+        expect(
+          sentPrompt().section('knowledge_statements'),
+          contains('please re-confirm'),
+        );
+        verify(
+          () => weekContextService.buildForDay(
+            planDate: DateTime(2026, 5, 25),
+            now: currentTime,
+          ),
+        ).called(1);
         verify(
           () => planService.executeTool(
             agentId: agentId,
@@ -3804,6 +3851,21 @@ void main() {
       expect(window.containsKey('earliestStart'), isFalse);
     });
 
+    test('reports a past target day as closed after midnight', () async {
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 26, 0, 1)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      expect(sentPrompt().json('planning_window'), {'closed': true});
+    });
+
     test('leaves the window empty for a day that has not begun', () async {
       final result = await withClock(
         Clock.fixed(DateTime(2026, 5, 24, 20)),
@@ -4084,6 +4146,219 @@ void main() {
     );
 
     group('drafting wake final plan enforcement', () {
+      test(
+        'rejects an empty closed draft that silently omits selected work',
+        () async {
+          final planService = MockDayAgentPlanService();
+          stubDraftingPlanContext(
+            planService,
+            decidedTasks: const [
+              DecidedTaskRef(
+                id: 'task-selected',
+                title: 'Selected task',
+                categoryId: 'work',
+              ),
+            ],
+          );
+          stubSuccessfulDraftToolCall(planService);
+
+          final result = await withClock(
+            Clock.fixed(DateTime(2026, 5, 25, 18)),
+            () => workflow(planService: planService).execute(
+              agentIdentity: identity(),
+              runKey: runKey,
+              triggerTokens: {
+                dayAgentDraftingToken(dayId),
+                dayAgentPlanningDayToken(dayId),
+              },
+              threadId: threadId,
+            ),
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('draft_day_plan'));
+          expect(conversationRepository.sendMessageCalls, hasLength(2));
+          expect(
+            conversationRepository.toolResponses.last,
+            contains('attentionNeeded'),
+          );
+          verifyNever(
+            () => planService.executeTool(
+              agentId: any(named: 'agentId'),
+              threadId: any(named: 'threadId'),
+              runKey: any(named: 'runKey'),
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'rejects an empty closed draft that silently omits a binding '
+        'commitment',
+        () async {
+          final planService = MockDayAgentPlanService();
+          final directiveService = MockDayAgentDirectiveService();
+          stubDraftingPlanContext(planService);
+          stubSuccessfulDraftToolCall(planService);
+          when(
+            () => directiveService.directiveForDay(dayId),
+          ).thenAnswer(
+            (_) async => makeTestDayDirective(
+              commitments: const [
+                DayDirectiveCommitment(
+                  id: 'commitment-1',
+                  source: DayCommitmentSource.userCommitment,
+                  title: 'Finish release notes',
+                  minutes: 45,
+                ),
+              ],
+            ),
+          );
+
+          final result = await withClock(
+            Clock.fixed(DateTime(2026, 5, 25, 18)),
+            () =>
+                workflow(
+                  planService: planService,
+                  directiveService: directiveService,
+                ).execute(
+                  agentIdentity: identity(),
+                  runKey: runKey,
+                  triggerTokens: {
+                    dayAgentDraftingToken(dayId),
+                    dayAgentPlanningDayToken(dayId),
+                  },
+                  threadId: threadId,
+                ),
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            conversationRepository.toolResponses.last,
+            contains('attentionNeeded'),
+          );
+          verifyNever(
+            () => planService.executeTool(
+              agentId: any(named: 'agentId'),
+              threadId: any(named: 'threadId'),
+              runKey: any(named: 'runKey'),
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'accepts an empty closed draft with a binding commitment after a '
+        'successful attention status',
+        () async {
+          final planService = MockDayAgentPlanService();
+          final directiveService = MockDayAgentDirectiveService();
+          stubDraftingPlanContext(planService);
+          stubSuccessfulDraftToolCall(planService);
+          when(
+            () => directiveService.directiveForDay(dayId),
+          ).thenAnswer(
+            (_) async => makeTestDayDirective(
+              commitments: const [
+                DayDirectiveCommitment(
+                  id: 'commitment-1',
+                  source: DayCommitmentSource.userCommitment,
+                  title: 'Finish release notes',
+                  minutes: 45,
+                ),
+              ],
+            ),
+          );
+          when(
+            () => directiveService.executeTool(
+              agentId: agentId,
+              toolName: DayAgentToolNames.raiseDayStatus,
+              args: any(named: 'args'),
+              wakeDayId: dayId,
+              runKey: runKey,
+              processingJobId: any(named: 'processingJobId'),
+              planningConfig: any(named: 'planningConfig'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(
+              const {'id': 'day_status:$dayId:event-1'},
+            ),
+          );
+          conversationRepository.toolCalls = [
+            _toolCall(
+              id: 'status-call',
+              name: DayAgentToolNames.raiseDayStatus,
+              args: {
+                'dayId': dayId,
+                'status': 'attentionNeeded',
+                'reasons': ['overCommitted'],
+                'note': 'The binding commitment no longer fits.',
+              },
+            ),
+            _toolCall(
+              id: 'draft-call',
+              name: DayAgentToolNames.draftDayPlan,
+              args: {
+                'dayId': dayId,
+                'blocks': <Object?>[],
+              },
+            ),
+          ];
+
+          final result = await withClock(
+            Clock.fixed(DateTime(2026, 5, 25, 18)),
+            () =>
+                workflow(
+                  planService: planService,
+                  directiveService: directiveService,
+                ).execute(
+                  agentIdentity: identity(),
+                  runKey: runKey,
+                  triggerTokens: {
+                    dayAgentDraftingToken(dayId),
+                    dayAgentPlanningDayToken(dayId),
+                  },
+                  threadId: threadId,
+                ),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          verify(
+            () => directiveService.executeTool(
+              agentId: agentId,
+              toolName: DayAgentToolNames.raiseDayStatus,
+              args: any(named: 'args'),
+              wakeDayId: dayId,
+              runKey: runKey,
+              processingJobId: any(named: 'processingJobId'),
+              planningConfig: any(named: 'planningConfig'),
+            ),
+          ).called(1);
+          verify(
+            () => planService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
+            ),
+          ).called(1);
+        },
+      );
+
       test(
         'forces draft_day_plan when a drafting wake stops without drafting',
         () async {

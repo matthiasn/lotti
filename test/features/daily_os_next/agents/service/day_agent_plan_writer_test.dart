@@ -130,6 +130,30 @@ void main() {
       );
     });
 
+    test('rejects duplicate block ids while the window is open', () async {
+      final raw = _blockJson(_block());
+
+      await expectLater(
+        withClock(
+          Clock.fixed(_openAt),
+          () => writer.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: _planDate,
+            rawBlocks: [raw, raw],
+          ),
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('block ids'), contains('unique')),
+          ),
+        ),
+      );
+      expect(writes, isEmpty);
+    });
+
     test('requires the complete baseline without duplicate ids', () async {
       final baseline = _seedPlan(entities);
       final echo = _blockJson(baseline.data.plannedBlocks.single);
@@ -211,6 +235,25 @@ void main() {
         expect(repeated.data.plannedBlocks.single.reason, isNull);
       },
     );
+
+    test('preserves a legacy baseline with duplicate block ids', () async {
+      final duplicate = _block();
+      final baseline = _seedPlan(entities, blocks: [duplicate, duplicate]);
+
+      final repeated = await withClock(
+        Clock.fixed(_closedAt),
+        () => writer.persistDraftPlan(
+          agentId: _agentId,
+          dayId: _dayId,
+          planDate: _planDate,
+          rawBlocks: [_blockJson(duplicate), _blockJson(duplicate)],
+          planningSnapshotAt: _closedAt,
+          planningBaselinePlan: baseline,
+        ),
+      );
+
+      expect(repeated.data.plannedBlocks, [duplicate, duplicate]);
+    });
 
     test('rejects a legacy echo that changes a nullable field', () async {
       final legacyBlock = _block(title: null, reason: null);

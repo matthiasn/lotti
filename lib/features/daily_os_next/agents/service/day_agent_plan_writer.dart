@@ -375,12 +375,13 @@ class DayAgentPlanWriter {
         : existing;
     // A redraft may repeat a baseline block that has already started; it may
     // not invent one there.
+    final validationBaselineBlocks =
+        validationBaseline?.data.plannedBlocks ?? const <PlannedBlock>[];
     final baselineBlocks = {
-      for (final block
-          in validationBaseline?.data.plannedBlocks ?? const <PlannedBlock>[])
-        block.id: block,
+      for (final block in validationBaselineBlocks) block.id: block,
     };
-    final validateClosedBaseline = windowClosed && baselineBlocks.isNotEmpty;
+    final validateClosedBaseline =
+        windowClosed && validationBaselineBlocks.isNotEmpty;
     // Persisted task/category pairs let a closed baseline remain its own
     // authority without re-resolving today's live journal rows.
     final baselineTaskCategories = <String, String?>{
@@ -422,23 +423,24 @@ class DayAgentPlanWriter {
               ),
       );
     }
+    if (!windowClosed &&
+        {for (final block in blocks) block.id}.length != blocks.length) {
+      throw const DayAgentCaptureException(
+        'draft_day_plan block ids must be unique',
+      );
+    }
     if (windowClosed) {
-      if (baselineBlocks.isEmpty && blocks.isNotEmpty) {
+      if (validationBaselineBlocks.isEmpty && blocks.isNotEmpty) {
         throw const DayAgentCaptureException(
           'The planning window is closed. A fresh draft must persist an '
           'empty plan instead of adding blocks.',
         );
       }
-      final emittedById = <String, PlannedBlock>{
-        for (final block in blocks) block.id: block,
-      };
-      final baselineRepeatedExactly =
-          emittedById.length == blocks.length &&
-          emittedById.length == baselineBlocks.length &&
-          baselineBlocks.entries.every(
-            (entry) => emittedById[entry.key] == entry.value,
-          );
-      if (baselineBlocks.isNotEmpty && !baselineRepeatedExactly) {
+      final baselineRepeatedExactly = _sameBlocksWithMultiplicity(
+        validationBaselineBlocks,
+        blocks,
+      );
+      if (validationBaselineBlocks.isNotEmpty && !baselineRepeatedExactly) {
         throw const DayAgentCaptureException(
           'The planning window is closed. Preserve every block from the '
           'non-empty baseline unchanged.',
@@ -700,5 +702,19 @@ class DayAgentPlanWriter {
           PlannedBlockState.drafted,
       reason: optionalStringArg(data['reason']),
     );
+  }
+
+  bool _sameBlocksWithMultiplicity(
+    List<PlannedBlock> baseline,
+    List<PlannedBlock> emitted,
+  ) {
+    if (baseline.length != emitted.length) return false;
+    final unmatched = List<PlannedBlock>.of(baseline);
+    for (final block in emitted) {
+      final match = unmatched.indexOf(block);
+      if (match == -1) return false;
+      unmatched.removeAt(match);
+    }
+    return true;
   }
 }

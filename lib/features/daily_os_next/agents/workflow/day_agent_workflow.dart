@@ -389,17 +389,27 @@ class DayAgentWorkflow {
     );
     final attentionPlanning = await _attentionPlanningContext(dayDate);
     final directive = await _directiveContext(resolvedDayId);
+    final dayAudioEntries = await _dayAudioEntries(resolvedDayId);
+    // Context assembly above includes memory, database, dependency, and
+    // drafting awaits. Capture the planning instant only after those complete
+    // so the advertised window cannot already be stale before inference.
+    //
+    // Time-sensitive context below is deliberately built *from this same
+    // instant*. If an earlier await crosses midnight, current_local_time,
+    // planning_window, knowledge staleness, digest periods, recent weeks, and
+    // week context must all classify the wake against one day.
+    final planningSnapshotAt = clock.now();
     final digestContext = await _digestContext(
       agentId: agentId,
       wakeContext: wakeContext,
       dayDate: dayDate,
-      now: now,
+      now: planningSnapshotAt,
       preloadedTodayDirective: directive,
     );
     final recentWeeksContext = await _recentWeeksContext(
       agentId: agentId,
       wakeContext: wakeContext,
-      now: now,
+      now: planningSnapshotAt,
     );
     final knowledge = await _knowledgeContext(
       agentIdentity: agentIdentity,
@@ -408,12 +418,11 @@ class DayAgentWorkflow {
         draftingContext: draftingContext,
         refineContext: refineContext,
       ),
-      now: now,
+      now: planningSnapshotAt,
     );
     final weekContext = isDayTokenWake
-        ? await _weekContext(planDate: dayDate, now: now)
+        ? await _weekContext(planDate: dayDate, now: planningSnapshotAt)
         : null;
-    final dayAudioEntries = await _dayAudioEntries(resolvedDayId);
     final requiresCaptureParse = _requiresCaptureParse(
       wakeContext: wakeContext,
       captureContext: captureContext,
@@ -430,10 +439,19 @@ class DayAgentWorkflow {
         : wakeContext.isDigestWake
         ? DayAgentWakeKind.digest
         : DayAgentWakeKind.general;
-    // Context assembly includes database, memory-compaction, and dependency
-    // awaits. Capture the planning instant only after those complete so the
-    // advertised window cannot already be stale before inference starts.
-    final planningSnapshotAt = clock.now();
+    final closedEmptyDraftRequiresAttention =
+        requiresDraftDayPlan &&
+        draftPlanningWindowClosed(
+          planDate: dayDate,
+          now: planningSnapshotAt,
+          capacityMinutes: config.capacityMinutes,
+          workingHoursStart: config.workingHoursStart,
+          workingHoursEnd: config.workingHoursEnd,
+        ) &&
+        (draftingContext?.baselinePlan?.data.plannedBlocks.isEmpty ?? true) &&
+        ((draftingContext?.decidedTasks.isNotEmpty ?? false) ||
+            (draftingContext?.decidedCaptureItems.isNotEmpty ?? false) ||
+            (directive?.commitments.isNotEmpty ?? false));
     final systemPrompt = _buildSystemPrompt(
       templateCtx,
       agentId: agentId,
@@ -486,6 +504,7 @@ class DayAgentWorkflow {
           if (requiresCaptureParse) DayAgentToolNames.parseCaptureToItems,
           if (requiresDraftDayPlan) DayAgentToolNames.draftDayPlan,
         },
+        requiresAttentionBeforeEmptyDraft: closedEmptyDraftRequiresAttention,
         executeToolHandler: (toolName, args, manager) => _executeToolHandler(
           agentId: agentId,
           threadId: threadId,
