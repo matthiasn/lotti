@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -390,39 +391,60 @@ class DayAgentWorkflow {
     final attentionPlanning = await _attentionPlanningContext(dayDate);
     final directive = await _directiveContext(resolvedDayId);
     final dayAudioEntries = await _dayAudioEntries(resolvedDayId);
-    // Context assembly above includes memory, database, dependency, and
-    // drafting awaits. Capture the planning instant only after those complete
-    // so the advertised window cannot already be stale before inference.
-    //
-    // Time-sensitive context below is deliberately built *from this same
-    // instant*. If an earlier await crosses midnight, current_local_time,
-    // planning_window, knowledge staleness, digest periods, recent weeks, and
-    // week context must all classify the wake against one day.
-    final planningSnapshotAt = clock.now();
-    final digestContext = await _digestContext(
-      agentId: agentId,
-      wakeContext: wakeContext,
-      dayDate: dayDate,
-      now: planningSnapshotAt,
-      preloadedTodayDirective: directive,
+    final activeKnowledge = await _activeKnowledge();
+    final touchedScopes = _touchedScopes(
+      attentionPlanning: attentionPlanning,
+      draftingContext: draftingContext,
+      refineContext: refineContext,
     );
-    final recentWeeksContext = await _recentWeeksContext(
-      agentId: agentId,
-      wakeContext: wakeContext,
+
+    // Time-sensitive context reads can themselves cross a planning boundary.
+    // Build from one snapshot, then compare the pure day/window projection
+    // after every await. If it changed, rebuild from the fresh instant before
+    // rendering. The projection becomes permanently stable once the target
+    // window is closed, so this converges without an arbitrary retry cap.
+    var contextSnapshotAt = clock.now();
+    late DateTime planningSnapshotAt;
+    Map<String, Object?>? digestContext;
+    List<Map<String, Object?>>? recentWeeksContext;
+    WeekContext? weekContext;
+    while (true) {
+      digestContext = await _digestContext(
+        agentId: agentId,
+        wakeContext: wakeContext,
+        dayDate: dayDate,
+        now: contextSnapshotAt,
+        preloadedTodayDirective: directive,
+      );
+      recentWeeksContext = await _recentWeeksContext(
+        agentId: agentId,
+        wakeContext: wakeContext,
+        now: contextSnapshotAt,
+      );
+      weekContext = isDayTokenWake
+          ? await _weekContext(planDate: dayDate, now: contextSnapshotAt)
+          : null;
+
+      planningSnapshotAt = clock.now();
+      final contextStayedCurrent =
+          _timeSensitiveContextKey(
+            planDate: dayDate,
+            now: contextSnapshotAt,
+            refineContext: refineContext,
+          ) ==
+          _timeSensitiveContextKey(
+            planDate: dayDate,
+            now: planningSnapshotAt,
+            refineContext: refineContext,
+          );
+      if (contextStayedCurrent) break;
+      contextSnapshotAt = planningSnapshotAt;
+    }
+    final knowledge = _knowledgeContext(
+      active: activeKnowledge,
+      touchedScopes: touchedScopes,
       now: planningSnapshotAt,
     );
-    final knowledge = await _knowledgeContext(
-      agentIdentity: agentIdentity,
-      touchedScopes: _touchedScopes(
-        attentionPlanning: attentionPlanning,
-        draftingContext: draftingContext,
-        refineContext: refineContext,
-      ),
-      now: planningSnapshotAt,
-    );
-    final weekContext = isDayTokenWake
-        ? await _weekContext(planDate: dayDate, now: planningSnapshotAt)
-        : null;
     final requiresCaptureParse = _requiresCaptureParse(
       wakeContext: wakeContext,
       captureContext: captureContext,
@@ -439,7 +461,7 @@ class DayAgentWorkflow {
         : wakeContext.isDigestWake
         ? DayAgentWakeKind.digest
         : DayAgentWakeKind.general;
-    final closedEmptyDraftRequiresAttention =
+    final closedDraftRequiresAttention =
         requiresDraftDayPlan &&
         draftPlanningWindowClosed(
           planDate: dayDate,
@@ -448,10 +470,10 @@ class DayAgentWorkflow {
           workingHoursStart: config.workingHoursStart,
           workingHoursEnd: config.workingHoursEnd,
         ) &&
-        (draftingContext?.baselinePlan?.data.plannedBlocks.isEmpty ?? true) &&
-        ((draftingContext?.decidedTasks.isNotEmpty ?? false) ||
-            (draftingContext?.decidedCaptureItems.isNotEmpty ?? false) ||
-            (directive?.commitments.isNotEmpty ?? false));
+        _closedDraftOmitsTrustedWork(
+          draftingContext: draftingContext,
+          directive: directive,
+        );
     final systemPrompt = _buildSystemPrompt(
       templateCtx,
       agentId: agentId,
@@ -504,7 +526,7 @@ class DayAgentWorkflow {
           if (requiresCaptureParse) DayAgentToolNames.parseCaptureToItems,
           if (requiresDraftDayPlan) DayAgentToolNames.draftDayPlan,
         },
-        requiresAttentionBeforeEmptyDraft: closedEmptyDraftRequiresAttention,
+        requiresAttentionBeforeClosedDraft: closedDraftRequiresAttention,
         executeToolHandler: (toolName, args, manager) => _executeToolHandler(
           agentId: agentId,
           threadId: threadId,

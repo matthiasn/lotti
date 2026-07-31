@@ -334,6 +334,40 @@ void main() {
     ];
   }
 
+  PlannedBlock closedBaselineBlock({String? taskId}) => PlannedBlock(
+    id: 'baseline-block',
+    categoryId: 'work',
+    startTime: DateTime(2026, 5, 25, 9),
+    endTime: DateTime(2026, 5, 25, 10),
+    taskId: taskId,
+    title: taskId == null ? 'Existing focus block' : 'Represented task',
+    reason: 'Existing plan.',
+  );
+
+  DayPlanEntity closedBaselinePlan(PlannedBlock block) => makeTestDayPlan(
+    agentId: agentId,
+    planDate: DateTime(2026, 5, 25),
+    data: DayPlanData(
+      planDate: DateTime(2026, 5, 25),
+      status: const DayPlanStatus.draft(),
+      plannedBlocks: [block],
+    ),
+    scheduledMinutes: 60,
+  );
+
+  Map<String, Object?> closedBaselineBlockArgs(PlannedBlock block) => {
+    'id': block.id,
+    'categoryId': block.categoryId,
+    'start': block.startTime.toIso8601String(),
+    'end': block.endTime.toIso8601String(),
+    'taskId': block.taskId,
+    'title': block.title,
+    'type': block.type.name,
+    'state': block.state.name,
+    'reason': block.reason,
+    'note': block.note,
+  };
+
   void stubCaptureContext(
     MockDayAgentCaptureService captureService, {
     String captureId = 'capture-1',
@@ -3561,6 +3595,81 @@ void main() {
       },
     );
 
+    test(
+      'rebuilds time-sensitive context when its own await crosses the '
+      'planning boundary',
+      () async {
+        final planService = MockDayAgentPlanService();
+        final weekContextService = MockDayAgentWeekContextService();
+        var currentTime = DateTime(2026, 5, 25, 16, 50);
+        var weekContextCalls = 0;
+        stubDraftingPlanContext(planService);
+        when(
+          () => weekContextService.buildForDay(
+            planDate: any(named: 'planDate'),
+            now: any(named: 'now'),
+          ),
+        ).thenAnswer((_) async {
+          weekContextCalls++;
+          if (weekContextCalls == 1) {
+            currentTime = DateTime(2026, 5, 25, 17, 1);
+          }
+          return null;
+        });
+        stubSuccessfulDraftToolCall(planService);
+
+        final result = await withClock(
+          Clock(() => currentTime),
+          () =>
+              workflow(
+                planService: planService,
+                weekContextService: weekContextService,
+              ).execute(
+                agentIdentity: identity(),
+                runKey: runKey,
+                triggerTokens: {
+                  dayAgentDraftingToken(dayId),
+                  dayAgentPlanningDayToken(dayId),
+                },
+                threadId: threadId,
+              ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        expect(
+          sentPrompt().json('planning_window'),
+          {'closed': true},
+        );
+        expect(
+          sentPrompt().section('current_local_time'),
+          '2026-05-25T17:01:00.000',
+        );
+        final contextSnapshots = verify(
+          () => weekContextService.buildForDay(
+            planDate: DateTime(2026, 5, 25),
+            now: captureAny(named: 'now'),
+          ),
+        ).captured.cast<DateTime>();
+        expect(contextSnapshots, [
+          DateTime(2026, 5, 25, 16, 50),
+          DateTime(2026, 5, 25, 17, 1),
+        ]);
+        verify(
+          () => planService.executeTool(
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            toolName: DayAgentToolNames.draftDayPlan,
+            args: any(named: 'args'),
+            planningConfig: any(named: 'planningConfig'),
+            planningSnapshotAt: currentTime,
+            // ignore: avoid_redundant_argument_values
+            planningBaselinePlan: null,
+          ),
+        ).called(1);
+      },
+    );
+
     test('states the floor on a wake that builds no mode context', () async {
       // A scheduled planning_day wake builds neither drafting nor refine
       // context, yet draft_day_plan stays exposed and the writer still guards
@@ -4178,6 +4287,202 @@ void main() {
           expect(result.success, isFalse);
           expect(result.error, contains('draft_day_plan'));
           expect(conversationRepository.sendMessageCalls, hasLength(2));
+          expect(
+            conversationRepository.toolResponses.last,
+            contains('attentionNeeded'),
+          );
+          verifyNever(
+            () => planService.executeTool(
+              agentId: any(named: 'agentId'),
+              threadId: any(named: 'threadId'),
+              runKey: any(named: 'runKey'),
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'rejects an exact non-empty baseline echo that omits newly selected '
+        'work',
+        () async {
+          final planService = MockDayAgentPlanService();
+          final baselineBlock = closedBaselineBlock();
+          final baselinePlan = closedBaselinePlan(baselineBlock);
+          stubDraftingPlanContext(
+            planService,
+            baselinePlan: baselinePlan,
+            decidedTasks: const [
+              DecidedTaskRef(
+                id: 'task-new',
+                title: 'Newly selected task',
+                categoryId: 'work',
+              ),
+            ],
+          );
+          stubSuccessfulDraftToolCall(planService);
+          conversationRepository.toolCalls = [
+            _toolCall(
+              id: 'draft-call',
+              name: DayAgentToolNames.draftDayPlan,
+              args: {
+                'dayId': dayId,
+                'blocks': [closedBaselineBlockArgs(baselineBlock)],
+              },
+            ),
+          ];
+
+          final result = await withClock(
+            Clock.fixed(DateTime(2026, 5, 25, 18)),
+            () => workflow(planService: planService).execute(
+              agentIdentity: identity(),
+              runKey: runKey,
+              triggerTokens: {
+                dayAgentDraftingToken(dayId),
+                dayAgentPlanningDayToken(dayId),
+              },
+              threadId: threadId,
+            ),
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            conversationRepository.toolResponses.last,
+            contains('attentionNeeded'),
+          );
+          verifyNever(
+            () => planService.executeTool(
+              agentId: any(named: 'agentId'),
+              threadId: any(named: 'threadId'),
+              runKey: any(named: 'runKey'),
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'accepts an exact non-empty baseline echo when selected work is '
+        'already represented',
+        () async {
+          final planService = MockDayAgentPlanService();
+          final baselineBlock = closedBaselineBlock(taskId: 'task-selected');
+          final baselinePlan = closedBaselinePlan(baselineBlock);
+          stubDraftingPlanContext(
+            planService,
+            baselinePlan: baselinePlan,
+            decidedTasks: const [
+              DecidedTaskRef(
+                id: 'task-selected',
+                title: 'Represented task',
+                categoryId: 'work',
+              ),
+            ],
+          );
+          stubSuccessfulDraftToolCall(planService);
+          conversationRepository.toolCalls = [
+            _toolCall(
+              id: 'draft-call',
+              name: DayAgentToolNames.draftDayPlan,
+              args: {
+                'dayId': dayId,
+                'blocks': [closedBaselineBlockArgs(baselineBlock)],
+              },
+            ),
+          ];
+
+          final result = await withClock(
+            Clock.fixed(DateTime(2026, 5, 25, 18)),
+            () => workflow(planService: planService).execute(
+              agentIdentity: identity(),
+              runKey: runKey,
+              triggerTokens: {
+                dayAgentDraftingToken(dayId),
+                dayAgentPlanningDayToken(dayId),
+              },
+              threadId: threadId,
+            ),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          verify(
+            () => planService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+              planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: baselinePlan,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'rejects an exact non-empty baseline echo that omits a decided '
+        'capture item',
+        () async {
+          final planService = MockDayAgentPlanService();
+          final captureService = MockDayAgentCaptureService();
+          final baselineBlock = closedBaselineBlock();
+          final baselinePlan = closedBaselinePlan(baselineBlock);
+          final decidedItem = makeTestParsedItem(
+            id: 'parsed-new',
+            agentId: agentId,
+            captureId: 'capture-1',
+            kind: ParsedItemKind.matched,
+            title: 'New capture decision',
+            categoryId: 'work',
+            matchedTaskId: 'task-new',
+            createdAt: DateTime(2026, 5, 25, 8),
+          );
+          stubCaptureContext(captureService);
+          when(
+            () => captureService.parsedItemsForCapture('capture-1'),
+          ).thenAnswer((_) async => [decidedItem]);
+          stubDraftingPlanContext(planService, baselinePlan: baselinePlan);
+          stubSuccessfulDraftToolCall(planService);
+          conversationRepository.toolCalls = [
+            _toolCall(
+              id: 'draft-call',
+              name: DayAgentToolNames.draftDayPlan,
+              args: {
+                'dayId': dayId,
+                'blocks': [closedBaselineBlockArgs(baselineBlock)],
+              },
+            ),
+          ];
+
+          final result = await withClock(
+            Clock.fixed(DateTime(2026, 5, 25, 18)),
+            () =>
+                workflow(
+                  planService: planService,
+                  captureService: captureService,
+                ).execute(
+                  agentIdentity: identity(),
+                  runKey: runKey,
+                  triggerTokens: {
+                    dayAgentDraftingToken(dayId),
+                    dayAgentPlanningDayToken(dayId),
+                    dayAgentCaptureSubmittedToken('capture-1'),
+                    dayAgentDecidedCaptureItemToken('parsed-new'),
+                  },
+                  threadId: threadId,
+                ),
+          );
+
+          expect(result.success, isFalse);
           expect(
             conversationRepository.toolResponses.last,
             contains('attentionNeeded'),

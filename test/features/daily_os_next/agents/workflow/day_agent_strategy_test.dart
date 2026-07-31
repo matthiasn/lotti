@@ -55,7 +55,7 @@ void main() {
   DayAgentStrategy strategy({
     DayAgentToolHandler? handler,
     Set<String> terminalToolNames = const {},
-    bool requiresAttentionBeforeEmptyDraft = false,
+    bool requiresAttentionBeforeClosedDraft = false,
   }) {
     return DayAgentStrategy(
       syncService: syncService,
@@ -64,7 +64,7 @@ void main() {
       runKey: _runKey,
       domainLogger: domainLogger,
       terminalToolNames: terminalToolNames,
-      requiresAttentionBeforeEmptyDraft: requiresAttentionBeforeEmptyDraft,
+      requiresAttentionBeforeClosedDraft: requiresAttentionBeforeClosedDraft,
       executeToolHandler:
           handler ??
           (_, _, _) async => const DayAgentToolResult(
@@ -459,13 +459,13 @@ void main() {
     );
 
     test(
-      'runs a batched attention status after rejecting a premature empty '
+      'runs a batched attention status after rejecting a premature closed '
       'terminal draft',
       () async {
         final handledTools = <String>[];
         final sut = strategy(
           terminalToolNames: const {DayAgentToolNames.draftDayPlan},
-          requiresAttentionBeforeEmptyDraft: true,
+          requiresAttentionBeforeClosedDraft: true,
           handler: (toolName, _, _) async {
             handledTools.add(toolName);
             return const DayAgentToolResult(success: true, output: 'ok');
@@ -476,7 +476,11 @@ void main() {
           toolCalls: [
             _toolCall(
               name: DayAgentToolNames.draftDayPlan,
-              args: const {'blocks': <Object?>[]},
+              args: const {
+                'blocks': <Object?>[
+                  {'id': 'baseline-block'},
+                ],
+              },
               id: 'draft-call',
             ),
             _toolCall(
@@ -505,7 +509,11 @@ void main() {
           toolCalls: [
             _toolCall(
               name: DayAgentToolNames.draftDayPlan,
-              args: const {'blocks': <Object?>[]},
+              args: const {
+                'blocks': <Object?>[
+                  {'id': 'baseline-block'},
+                ],
+              },
               id: 'retry-draft-call',
             ),
           ],

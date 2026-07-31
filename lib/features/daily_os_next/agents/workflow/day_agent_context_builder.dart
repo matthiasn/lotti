@@ -207,39 +207,119 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     }
   }
 
-  /// Loads the coordinator's durable knowledge and renders the two-tier
-  /// prompt blocks (ADR 0022 Decisions 9–10): the always-on hook index plus
-  /// the scope-filtered full statements for the scopes this wake actually
-  /// touches (`global` always; [touchedScopes] for `category:`/`project:`).
-  /// Returns empty blocks (and the caller omits the field) when no knowledge
-  /// or no service is configured.
+  /// Loads the coordinator's durable knowledge without applying wall-clock
+  /// staleness yet.
   ///
   /// Knowledge is always read under [dailyOsPlannerAgentId], not the waking
   /// agent: durable learning lives with the coordinator (ADR 0032 §4,
   /// "coordinator-published"), so per-day agents see the same knowledge the
   /// monolith would. For coordinator wakes the two ids coincide.
-  Future<KnowledgeContext> _knowledgeContext({
-    required AgentIdentityEntity agentIdentity,
-    required Set<String> touchedScopes,
-    required DateTime now,
-  }) async {
+  Future<List<PlannerKnowledgeEntity>> _activeKnowledge() async {
     final service = knowledgeService;
-    if (service == null) return const KnowledgeContext.empty();
+    if (service == null) return const [];
     try {
-      final active = await service.activeFor(dailyOsPlannerAgentId);
-      if (active.isEmpty) return const KnowledgeContext.empty();
-      return KnowledgeContext(
-        hookIndex: renderKnowledgeHookIndex(active),
-        statements: renderKnowledgeStatements(active, touchedScopes, now: now),
-      );
+      return await service.activeFor(dailyOsPlannerAgentId);
     } catch (e, s) {
       _logError(
         'failed to load durable planner knowledge',
         error: e,
         stackTrace: s,
       );
-      return const KnowledgeContext.empty();
+      return const [];
     }
+  }
+
+  /// Renders the two-tier knowledge prompt blocks against the final planning
+  /// snapshot, after every asynchronous context read has completed.
+  KnowledgeContext _knowledgeContext({
+    required List<PlannerKnowledgeEntity> active,
+    required Set<String> touchedScopes,
+    required DateTime now,
+  }) {
+    if (active.isEmpty) return const KnowledgeContext.empty();
+    return KnowledgeContext(
+      hookIndex: renderKnowledgeHookIndex(active),
+      statements: renderKnowledgeStatements(active, touchedScopes, now: now),
+    );
+  }
+
+  /// The time-sensitive prompt context only needs rebuilding when an await
+  /// crosses a boundary that changes day classification or the advertised
+  /// planning window. Encoding the pure prompt projection keeps this check in
+  /// lockstep with what the model actually sees.
+  String _timeSensitiveContextKey({
+    required DateTime planDate,
+    required DateTime now,
+    required RefineContext? refineContext,
+  }) => jsonEncode({
+    'localDay': localDay(now).toIso8601String(),
+    'planningWindow': _planningWindowJson(
+      planDate: planDate,
+      now: now,
+      refineBaseline: refineContext?.baselinePlan,
+    ),
+  });
+
+  /// Whether the exact baseline echo that a closed window permits would omit
+  /// trusted work selected after that baseline was written.
+  ///
+  /// Task-backed decisions use their stable task id. Standalone capture items
+  /// and directive commitments have no dedicated block foreign key, so their
+  /// current contract is the same one used by the eval: the baseline's active
+  /// block prose must name the item/commitment. Directive evidence refs also
+  /// count when they point at a task already represented by a block.
+  bool _closedDraftOmitsTrustedWork({
+    required DraftingContext? draftingContext,
+    required DayDirectiveEntity? directive,
+  }) {
+    final activeBlocks =
+        draftingContext?.baselinePlan?.data.plannedBlocks
+            .where((block) => block.state != PlannedBlockState.dropped)
+            .toList() ??
+        const [];
+    final representedTaskIds = {
+      for (final block in activeBlocks)
+        if (block.taskId != null) block.taskId!,
+    };
+    final planProse = [
+      for (final block in activeBlocks)
+        [
+          block.id,
+          block.title,
+          block.reason,
+          block.note,
+        ].whereType<String>().join(' '),
+    ].join(' ').toLowerCase();
+
+    bool named(String id, String title) {
+      final normalizedId = id.trim().toLowerCase();
+      final normalizedTitle = collapseToSingleLine(title).trim().toLowerCase();
+      return (normalizedId.isNotEmpty && planProse.contains(normalizedId)) ||
+          (normalizedTitle.isNotEmpty && planProse.contains(normalizedTitle));
+    }
+
+    final omitsTask =
+        draftingContext?.decidedTasks.any(
+          (task) => !representedTaskIds.contains(task.id),
+        ) ??
+        false;
+    final omitsCaptureItem =
+        draftingContext?.decidedCaptureItems.any((item) {
+          final matchedTaskId = item.matchedTaskId;
+          return !((matchedTaskId != null &&
+                  representedTaskIds.contains(matchedTaskId)) ||
+              named(item.id, item.title));
+        }) ??
+        false;
+    final omitsCommitment =
+        directive?.commitments.any((commitment) {
+          final representedByTask =
+              representedTaskIds.contains(commitment.id) ||
+              commitment.evidenceRefs.any(representedTaskIds.contains);
+          return !(representedByTask || named(commitment.id, commitment.title));
+        }) ??
+        false;
+    return omitsTask || omitsCaptureItem || omitsCommitment;
   }
 
   /// The category/project scopes the current wake actually touches (ADR 0022

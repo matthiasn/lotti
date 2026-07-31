@@ -51,7 +51,7 @@ class DayAgentStrategy extends ConversationStrategy {
     required this.executeToolHandler,
     required this.domainLogger,
     this.terminalToolNames = const {},
-    this.requiresAttentionBeforeEmptyDraft = false,
+    this.requiresAttentionBeforeClosedDraft = false,
   });
 
   /// Sync-aware write service for persisted conversation messages.
@@ -79,13 +79,14 @@ class DayAgentStrategy extends ConversationStrategy {
   /// inferred globally from the tool itself.
   final Set<String> terminalToolNames;
 
-  /// Whether an empty `draft_day_plan` would omit trusted selected work.
+  /// Whether the only legal closed-window `draft_day_plan` would omit trusted
+  /// selected or binding work.
   ///
   /// The workflow derives this from its drafting context and binding
   /// directive, never from model-authored tool arguments. When true, the
   /// strategy requires a successful `attentionNeeded` status earlier in the
-  /// same wake before accepting the empty terminal artifact.
-  final bool requiresAttentionBeforeEmptyDraft;
+  /// same wake before accepting the terminal artifact.
+  final bool requiresAttentionBeforeClosedDraft;
 
   final _observations = <ObservationRecord>[];
   var _didPersistCaptureParse = false;
@@ -150,8 +151,7 @@ class DayAgentStrategy extends ConversationStrategy {
       if (DayAgentToolNames.isWorkflowHandlerTool(toolName)) {
         late final DayAgentToolResult result;
         if (toolName == DayAgentToolNames.draftDayPlan &&
-            requiresAttentionBeforeEmptyDraft &&
-            _isEmptyDraft(args) &&
+            requiresAttentionBeforeClosedDraft &&
             !_didRaiseAttentionStatus) {
           result = const DayAgentToolResult(
             success: false,
@@ -208,11 +208,6 @@ class DayAgentStrategy extends ConversationStrategy {
     }
 
     return ConversationAction.continueConversation;
-  }
-
-  bool _isEmptyDraft(Map<String, dynamic> args) {
-    final blocks = args['blocks'];
-    return blocks is List && blocks.isEmpty;
   }
 
   Future<void> _recordCallsSkippedAfterTerminalArtifact({
