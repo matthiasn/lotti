@@ -10920,6 +10920,26 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksAgentFilterTitle => 'Agent';
 
   @override
+  String tasksCompactFilterCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filtrů',
+      few: '$count filtry',
+      one: '$count filtr',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksCompactHeaderExpandHint => 'Zobrazit hledání a filtry';
+
+  @override
+  String tasksCompactSearchContext(String query) {
+    return '„$query“';
+  }
+
+  @override
   String get tasksFilterApplyTitle => 'Použít filtr';
 
   @override
@@ -11101,7 +11121,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Spravovat filtry úkolů';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Filtry';
+  String get tasksSavedFiltersRailButton => 'Pohledy';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

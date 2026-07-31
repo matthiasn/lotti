@@ -18549,6 +18549,24 @@ abstract class AppLocalizations {
   /// **'Agent'**
   String get tasksAgentFilterTitle;
 
+  /// Collapsed task-list header context: how many ad-hoc filter clauses narrow the list
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {{count} filter} other {{count} filters}}'**
+  String tasksCompactFilterCount(num count);
+
+  /// Semantic hint on the collapsed header title button: expanding reveals search and filters
+  ///
+  /// In en, this message translates to:
+  /// **'Show search and filters'**
+  String get tasksCompactHeaderExpandHint;
+
+  /// Collapsed task-list header context: the active search query, wrapped in locale quotation marks
+  ///
+  /// In en, this message translates to:
+  /// **'“{query}”'**
+  String tasksCompactSearchContext(String query);
+
   /// No description provided for @tasksFilterApplyTitle.
   ///
   /// In en, this message translates to:
@@ -18858,7 +18876,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersRailButton.
   ///
   /// In en, this message translates to:
-  /// **'Filters'**
+  /// **'Views'**
   String get tasksSavedFiltersRailButton;
 
   /// No description provided for @tasksSavedFiltersRenameNamed.

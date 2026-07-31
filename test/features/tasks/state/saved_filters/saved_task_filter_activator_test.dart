@@ -222,4 +222,77 @@ void main() {
       },
     );
   });
+
+  group('taskFilterNarrowingClauseCount', () {
+    test('the resting open-work view narrows nothing', () {
+      expect(
+        taskFilterNarrowingClauseCount(
+          const TasksFilter(selectedTaskStatuses: defaultSelectedTaskStatuses),
+        ),
+        0,
+      );
+      expect(
+        taskFilterIsNarrowing(
+          const TasksFilter(selectedTaskStatuses: defaultSelectedTaskStatuses),
+        ),
+        isFalse,
+      );
+    });
+
+    test(
+      'an empty status selection admits every status, so narrows nothing',
+      () {
+        expect(taskFilterNarrowingClauseCount(const TasksFilter()), 0);
+      },
+    );
+
+    test('a deviating status selection counts one clause per status', () {
+      expect(
+        taskFilterNarrowingClauseCount(
+          const TasksFilter(selectedTaskStatuses: {'BLOCKED', 'DONE'}),
+        ),
+        2,
+      );
+    });
+
+    test(
+      'the agent clause counts — the regression that let the header claim an '
+      'agent-filtered list was unfiltered while the rail called it Custom',
+      () {
+        const agentOnly = TasksFilter(
+          agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+        );
+        expect(taskFilterNarrowingClauseCount(agentOnly), 1);
+        expect(taskFilterIsNarrowing(agentOnly), isTrue);
+        // Both predicates now agree about the same filter.
+        expect(tasksFilterHasActiveClauses(agentOnly), isTrue);
+      },
+    );
+
+    test('every clause species sums into one count', () {
+      expect(
+        taskFilterNarrowingClauseCount(
+          const TasksFilter(
+            selectedTaskStatuses: {'BLOCKED'},
+            selectedCategoryIds: {'c1', 'c2'},
+            selectedProjectIds: {'p1'},
+            selectedLabelIds: {'l1'},
+            selectedPriorities: {'P0'},
+            agentAssignmentFilter: AgentAssignmentFilter.noAgent,
+          ),
+        ),
+        7,
+      );
+    });
+
+    test(
+      'sort is a reordering, not a narrowing: it moves only the saved-shape '
+      'predicate',
+      () {
+        const sorted = TasksFilter(sortOption: TaskSortOption.byDueDate);
+        expect(taskFilterIsNarrowing(sorted), isFalse);
+        expect(tasksFilterHasActiveClauses(sorted), isTrue);
+      },
+    );
+  });
 }

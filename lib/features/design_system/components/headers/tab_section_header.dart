@@ -5,6 +5,55 @@ import 'package:lotti/features/design_system/components/search/design_system_sea
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 
+/// The shared header action button used by tab headers (and their collapsed
+/// compact bars): an [IconButton] that carries the design-system "activated"
+/// treatment — accent glyph over [DesignSystemListPalette.activatedFill] —
+/// while [active] narrows the list.
+///
+/// One component instead of per-surface copies, so the expanded header and the
+/// compact bar can never drift apart in how they announce an active filter.
+class TabHeaderIconButton extends StatelessWidget {
+  const TabHeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.active = false,
+    super.key,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  /// Whether the control's concern is actively narrowing the list.
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final glyph = Icon(
+      icon,
+      // The control-glyph tier. Both former call sites hardcoded 20, which is
+      // off the ramp entirely; `m` is the role these buttons actually play.
+      size: IconSizes.m,
+      color: active
+          ? tokens.colors.interactive.enabled
+          : tokens.colors.text.mediumEmphasis,
+    );
+
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      style: active
+          ? IconButton.styleFrom(
+              backgroundColor: DesignSystemListPalette.activatedFill(tokens),
+            )
+          : null,
+      icon: glyph,
+    );
+  }
+}
+
 /// Compact header used by the Tasks and Projects tabs: a title row (with an
 /// optional trailing widget like a notification bell) and a search row with
 /// an optional trailing filter button.
@@ -60,7 +109,6 @@ class TabSectionHeader extends StatelessWidget {
         ? tokens.spacing.step5 + tokens.spacing.step2
         : tokens.spacing.step3;
     final highText = tokens.colors.text.highEmphasis;
-    final accent = tokens.colors.interactive.enabled;
 
     final effectiveTitleTrailing = titleTrailing ?? const NotificationBell();
 
@@ -91,7 +139,14 @@ class TabSectionHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                effectiveTitleTrailing,
+                // Both header rows terminate in the SAME square slot, so the
+                // bell and the funnel share one optical right edge instead of
+                // ending at whatever inset each control's own padding
+                // happens to produce.
+                SizedBox.square(
+                  dimension: TapTargets.minimum,
+                  child: Center(child: effectiveTitleTrailing),
+                ),
               ],
             ),
           ),
@@ -111,21 +166,15 @@ class TabSectionHeader extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: tokens.spacing.step4),
-                IconButton(
-                  tooltip: filterTooltip,
-                  onPressed: onFilterPressed,
-                  style: filtersActive
-                      ? IconButton.styleFrom(
-                          backgroundColor:
-                              DesignSystemListPalette.activatedFill(tokens),
-                        )
-                      : null,
-                  icon: Icon(
-                    Icons.filter_list_rounded,
-                    size: 20,
-                    color: filtersActive
-                        ? accent
-                        : tokens.colors.text.mediumEmphasis,
+                SizedBox.square(
+                  dimension: TapTargets.minimum,
+                  child: Center(
+                    child: TabHeaderIconButton(
+                      icon: Icons.filter_list_rounded,
+                      tooltip: filterTooltip,
+                      onPressed: onFilterPressed,
+                      active: filtersActive,
+                    ),
                   ),
                 ),
               ],

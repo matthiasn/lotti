@@ -4,6 +4,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1074]
+### Changed
+- **The task-list header gets out of the way while you read.** On a small
+  phone the Tasks header — title, search field, saved-filter rail and active
+  filter chips — took up to half the screen before the first task appeared.
+  Scrolling down now folds it into a slim bar with the title and two buttons,
+  so the reclaimed space shows two to three more tasks; a deliberate upward
+  scroll (or a tap on the bar's title, which carries a chevron to say it's
+  tappable) brings the full header back — an accidental thumb jiggle doesn't.
+  The same fold applies wherever the list is narrow: a narrowed desktop
+  window, and the list pane of the desktop split view. The slim bar still
+  says *what* is narrowing the list, not just that something is: an ad-hoc
+  filter is named as a count of its clauses ("3 filters"), an active saved
+  view shows its name next to the title, and an active search shows the
+  query in quotes. The search button reopens the
+  header with the field focused, the filter button opens the filters
+  directly, and applying changes there reopens the header so the chips
+  confirm what you did. Typed search text survives the fold, a list too
+  short to scroll never collapses, and with reduced motion enabled the
+  switch is instant instead of animated.
+- **An unfiltered task list no longer wears chips.** The chip row above the
+  list used to echo the default status set (Open, Groomed, In Progress) as
+  removable chips even when nothing was narrowed, making the resting view
+  look filtered. Status chips now appear only when the selection actually
+  deviates from the default open-work view, and once two or more things are
+  narrowing the list — clauses, the search query, or both — the row ends with
+  a "Clear all" chip that restores the default open-work view and clears the
+  query, so leaving a filter session is one tap instead of one per chip.
+- **Numbers in the Tasks header now mean one thing.** The saved-filters
+  button in the mobile rail carried the number of *saved* filters, which sat
+  right next to counts that mean "how many tasks match" and read as "1
+  filter is active" on an unfiltered list. The button now carries no number;
+  the saved-filters sheet itself shows what exists.
+- **The saved-views button is called Views.** It opens saved views, but it
+  was labelled "Filters" — sitting directly beside the funnel that opens the
+  actual filters, so the two most-used controls in the header shared a name
+  and led to different places.
+- **Colour in the filter chips means what the chip means.** Every active
+  filter chip sat on the same tinted plate regardless of what it stood for,
+  so a red P0 priority chip was drawn on a green background. The plate is
+  now neutral and the chip's own colour carries the meaning.
+- **An ad-hoc filter keeps its name on a narrow screen.** On a 375-point
+  phone the "Custom" pill was squeezed until only its task count was left,
+  so the one control naming your current filter showed a bare number. The
+  save affordance now yields its label first.
+
 ## [0.9.1073]
 ### Added
 - **The manual keeps every released version readable.** The manual's version

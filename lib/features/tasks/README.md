@@ -22,8 +22,13 @@ project, and relationships to other tasks.
   device.
 - **Finds the right tasks fast.** Filter by status, priority, label, category or
   project; sort by due date, priority or creation; search by text or by meaning.
-- **Saves the filters that matter.** Frequently used queries become named filters
-  with live counts, pinned in the desktop sidebar or a mobile rail.
+  In narrow panes — a phone, or a desktop split view's list pane — the
+  search-and-filter header folds into a slim bar while scrolling down the list
+  and returns on a deliberate scroll back up, so small screens show tasks
+  rather than chrome.
+- **Saves the filters that matter.** Frequently used queries become named views
+  with live counts, pinned in the desktop sidebar or reachable from the mobile
+  rail's Views button.
 - **Shows AI work in context.** The agent's summary, its proposed changes, and
   what the AI has cost for this task all live on the task itself.
 

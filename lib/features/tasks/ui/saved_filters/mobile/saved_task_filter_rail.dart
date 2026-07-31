@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -28,7 +29,7 @@ abstract final class SavedTaskFilterRailKeys {
 /// filter exists; otherwise it collapses to nothing so the layout is unchanged
 /// for users without saved filters.
 ///
-/// Left → right: a borderless, chip-chromed "Filters" button (visually distinct
+/// Left → right: a borderless, chip-chromed "Views" button (visually distinct
 /// from the bordered filter pills) carrying the saved-filter count and the
 /// rail's single panel-disclosure glyph (opens the complete sheet), then a
 /// hard-capped, non-scrolling run of pills — "All" (clears to the default
@@ -95,178 +96,197 @@ class SavedTaskFilterRail extends ConsumerWidget {
       excludeId: activeFilter?.id,
     );
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step2,
-      ),
-      child: Semantics(
-        container: true,
-        label: messages.tasksSavedFiltersGroupSemantics,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final gap = SizedBox(width: tokens.spacing.step2);
-            final savedButton = _SavedButton(
-              onTap: () => showSavedTaskFiltersSheet(context),
-              count: saved.length,
-            );
-            final saveChip = _SaveChip(
-              onTap: () => promptSaveCurrentTaskFilter(context, ref),
-            );
-
-            // Large text (textScaler ≥ ~1.3): collapse to a SINGLE horizontally
-            // scrolling run — [active anchor] [All] [Saved] [+Save?] — separated
-            // by the SAME `gap` as the normal rail, so chips never overlap (the
-            // old split, with "Saved" pinned outside an Expanded scroll, let the
-            // pinned button overlap a bisected "All" at ~1.6x). Everything lives
-            // in one scroll view, so at accessibility sizes the run scrolls
-            // instead of overflowing — acceptable here because the collapse is a
-            // handful of chips, not the many-filter scrub-to-find case the
-            // rail's no-scroll rule guards against. The active anchor LEADS so
-            // the user's current filter + count is the first thing on-screen and
-            // fully readable; "All" (the reset) follows because
-            // return-to-unfiltered is the most common escape hatch; when "All"
-            // *is* the active selection it doubles as the anchor rather than
-            // being rendered twice. A trailing alpha fade marks the row as
-            // scrollable.
-            final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
-            if (largeText) {
-              final Widget anchor;
-              final bool allIsAnchor;
-              if (activeFilter != null) {
-                allIsAnchor = false;
-                anchor = _savedPill(
-                  context,
-                  ref,
-                  filter: activeFilter,
-                  selected: true,
-                  count: counts?[activeFilter.id],
-                  countLoading: counts == null,
-                );
-              } else if (hasUnsaved) {
-                allIsAnchor = false;
-                anchor = _customPill(
-                  context,
-                  count: customCount,
-                  countLoading: customCountLoading,
-                );
-              } else {
-                allIsAnchor = true;
-                anchor = _allPill(context, ref, selected: true, total: total);
-              }
-              return ShaderMask(
-                // Trailing fade-to-transparent scroll affordance: the last
-                // `step6` band of the rail ramps out so it is obvious the row
-                // continues. `dstIn` uses the gradient's ALPHA as a mask (the
-                // white/transparent stops are opacity, not themed colours); over
-                // empty trailing space (no overflow) it is a visual no-op.
-                blendMode: BlendMode.dstIn,
-                shaderCallback: (bounds) {
-                  // Guard the divide: a zero-width bounds (initial layout pass
-                  // or a collapsed test viewport) would yield NaN/Infinity, and
-                  // `NaN.clamp(...)` throws — crashing the whole layout.
-                  final fade = bounds.width > 0
-                      ? (tokens.spacing.step6 / bounds.width).clamp(0.0, 1.0)
-                      : 0.0;
-                  return LinearGradient(
-                    stops: [0, 1 - fade, 1],
-                    colors: const [
-                      Colors.white,
-                      Colors.white,
-                      Colors.transparent,
-                    ],
-                  ).createShader(bounds);
-                },
-                child: SingleChildScrollView(
-                  key: SavedTaskFilterRailKeys.root,
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Cap the leading anchor at the viewport width: a long name
-                      // ellipsizes (the name stays `Flexible` inside DsPill, the
-                      // count is never clipped) instead of pushing the row
-                      // arbitrarily wide, while a short name stays content-sized.
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: constraints.maxWidth,
-                        ),
-                        child: anchor,
-                      ),
-                      if (!allIsAnchor) ...[
-                        gap,
-                        _allPill(context, ref, selected: false, total: total),
-                      ],
-                      gap,
-                      savedButton,
-                      if (hasUnsaved) ...[gap, saveChip],
-                    ],
-                  ),
-                ),
+    // DetailContentWidth is the same structural gutter the title/search rows
+    // above and the chip row below sit on, so the rail shares their left
+    // edge by construction — it cannot drift back to a third alignment.
+    return DetailContentWidth(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+        child: Semantics(
+          container: true,
+          label: messages.tasksSavedFiltersGroupSemantics,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // step3 keeps internal-less-than-external: each pill's label
+              // and count must sit closer together than adjacent pills, so
+              // 'All 12 / Errands 5' can never cross-pair at a glance.
+              final gap = SizedBox(width: tokens.spacing.step3);
+              final savedButton = _SavedButton(
+                onTap: () => showSavedTaskFiltersSheet(context),
               );
-            }
+              // Budget the save affordance from what the band has actually
+              // got left, not from a flat width threshold: a fixed cut-off
+              // sat above every phone's content width, so the labelled form
+              // never rendered on a phone at all.
+              final saveChip = _SaveChip(
+                labelled: _labelledSaveChipFits(
+                  tokens: tokens,
+                  available: constraints.maxWidth,
+                  hasAnchorPill: activeFilter != null || hasUnsaved,
+                ),
+                onTap: () => promptSaveCurrentTaskFilter(context, ref),
+              );
 
-            final hasAnchorPill = activeFilter != null || hasUnsaved;
-            final maxMru = _fitMruCount(
-              tokens: tokens,
-              available: constraints.maxWidth,
-              hasAnchorPill: hasAnchorPill,
-              showSaveChip: hasUnsaved,
-            );
-            final mru = mruCandidates.take(maxMru).toList(growable: false);
+              // Large text (textScaler ≥ ~1.3): collapse to a SINGLE horizontally
+              // scrolling run — [active anchor] [All] [Saved] [+Save?] — separated
+              // by the SAME `gap` as the normal rail, so chips never overlap (the
+              // old split, with "Saved" pinned outside an Expanded scroll, let the
+              // pinned button overlap a bisected "All" at ~1.6x). Everything lives
+              // in one scroll view, so at accessibility sizes the run scrolls
+              // instead of overflowing — acceptable here because the collapse is a
+              // handful of chips, not the many-filter scrub-to-find case the
+              // rail's no-scroll rule guards against. The active anchor LEADS so
+              // the user's current filter + count is the first thing on-screen and
+              // fully readable; "All" (the reset) follows because
+              // return-to-unfiltered is the most common escape hatch; when "All"
+              // *is* the active selection it doubles as the anchor rather than
+              // being rendered twice. A trailing alpha fade marks the row as
+              // scrollable.
+              final largeText =
+                  MediaQuery.textScalerOf(context).scale(1) >= 1.3;
+              if (largeText) {
+                final Widget anchor;
+                final bool allIsAnchor;
+                if (activeFilter != null) {
+                  allIsAnchor = false;
+                  anchor = _savedPill(
+                    context,
+                    ref,
+                    filter: activeFilter,
+                    selected: true,
+                    count: counts?[activeFilter.id],
+                    countLoading: counts == null,
+                  );
+                } else if (hasUnsaved) {
+                  allIsAnchor = false;
+                  anchor = _customPill(
+                    context,
+                    count: customCount,
+                    countLoading: customCountLoading,
+                  );
+                } else {
+                  allIsAnchor = true;
+                  anchor = _allPill(context, ref, selected: true, total: total);
+                }
+                return ShaderMask(
+                  // Trailing fade-to-transparent scroll affordance: the last
+                  // `step6` band of the rail ramps out so it is obvious the row
+                  // continues. `dstIn` uses the gradient's ALPHA as a mask (the
+                  // white/transparent stops are opacity, not themed colours); over
+                  // empty trailing space (no overflow) it is a visual no-op.
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: (bounds) {
+                    // Guard the divide: a zero-width bounds (initial layout pass
+                    // or a collapsed test viewport) would yield NaN/Infinity, and
+                    // `NaN.clamp(...)` throws — crashing the whole layout.
+                    final fade = bounds.width > 0
+                        ? (tokens.spacing.step6 / bounds.width).clamp(0.0, 1.0)
+                        : 0.0;
+                    return LinearGradient(
+                      stops: [0, 1 - fade, 1],
+                      colors: const [
+                        Colors.white,
+                        Colors.white,
+                        Colors.transparent,
+                      ],
+                    ).createShader(bounds);
+                  },
+                  child: SingleChildScrollView(
+                    key: SavedTaskFilterRailKeys.root,
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Cap the leading anchor at the viewport width: a long name
+                        // ellipsizes (the name stays `Flexible` inside DsPill, the
+                        // count is never clipped) instead of pushing the row
+                        // arbitrarily wide, while a short name stays content-sized.
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: constraints.maxWidth,
+                          ),
+                          child: anchor,
+                        ),
+                        if (!allIsAnchor) ...[
+                          gap,
+                          _allPill(context, ref, selected: false, total: total),
+                        ],
+                        gap,
+                        savedButton,
+                        // Flexible, and LAST in the row: when the band is tight the
+                        // save affordance is the one element that may ellipsize.
+                        // Unflexed it starved the anchor pill instead, which at
+                        // 375pt clipped "Custom" away entirely and left a bare
+                        // count — the active filter losing its own name.
+                        if (hasUnsaved) ...[gap, Flexible(child: saveChip)],
+                      ],
+                    ),
+                  ),
+                );
+              }
 
-            return Row(
-              key: SavedTaskFilterRailKeys.root,
-              children: [
-                savedButton,
-                gap,
-                _allPill(context, ref, selected: allSelected, total: total),
-                if (activeFilter != null) ...[
+              final hasAnchorPill = activeFilter != null || hasUnsaved;
+              final maxMru = _fitMruCount(
+                tokens: tokens,
+                available: constraints.maxWidth,
+                hasAnchorPill: hasAnchorPill,
+                showSaveChip: hasUnsaved,
+              );
+              final mru = mruCandidates.take(maxMru).toList(growable: false);
+
+              return Row(
+                key: SavedTaskFilterRailKeys.root,
+                children: [
+                  savedButton,
                   gap,
-                  Flexible(
-                    child: _savedPill(
-                      context,
-                      ref,
-                      filter: activeFilter,
-                      selected: true,
-                      count: counts?[activeFilter.id],
-                      countLoading: counts == null,
+                  _allPill(context, ref, selected: allSelected, total: total),
+                  if (activeFilter != null) ...[
+                    gap,
+                    Flexible(
+                      child: _savedPill(
+                        context,
+                        ref,
+                        filter: activeFilter,
+                        selected: true,
+                        count: counts?[activeFilter.id],
+                        countLoading: counts == null,
+                      ),
                     ),
-                  ),
-                ] else if (hasUnsaved) ...[
-                  gap,
-                  Flexible(
-                    child: _customPill(
-                      context,
-                      count: customCount,
-                      countLoading: customCountLoading,
+                  ] else if (hasUnsaved) ...[
+                    gap,
+                    Flexible(
+                      child: _customPill(
+                        context,
+                        count: customCount,
+                        countLoading: customCountLoading,
+                      ),
                     ),
-                  ),
+                  ],
+                  for (final f in mru) ...[
+                    gap,
+                    // `_fitMruCount` only estimates how many quick-jump pills fit
+                    // from a flat per-pill width assumption — it does not measure
+                    // the real label, so a wordy saved-filter name can still be
+                    // wider than budgeted. `Flexible` (mirroring the anchor pill
+                    // above) is the hard backstop: it lets the pill's own
+                    // ellipsis logic (`_PillLabel`) shrink the name instead of
+                    // the row overflowing.
+                    Flexible(
+                      child: _savedPill(
+                        context,
+                        ref,
+                        filter: f,
+                        selected: false,
+                        count: counts?[f.id],
+                        countLoading: counts == null,
+                      ),
+                    ),
+                  ],
+                  if (hasUnsaved) ...[gap, saveChip],
                 ],
-                for (final f in mru) ...[
-                  gap,
-                  // `_fitMruCount` only estimates how many quick-jump pills fit
-                  // from a flat per-pill width assumption — it does not measure
-                  // the real label, so a wordy saved-filter name can still be
-                  // wider than budgeted. `Flexible` (mirroring the anchor pill
-                  // above) is the hard backstop: it lets the pill's own
-                  // ellipsis logic (`_PillLabel`) shrink the name instead of
-                  // the row overflowing.
-                  Flexible(
-                    child: _savedPill(
-                      context,
-                      ref,
-                      filter: f,
-                      selected: false,
-                      count: counts?[f.id],
-                      countLoading: counts == null,
-                    ),
-                  ),
-                ],
-                if (hasUnsaved) ...[gap, saveChip],
-              ],
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -414,20 +434,47 @@ class SavedTaskFilterRail extends ConsumerWidget {
   /// chip) and a generous slot for the flexible anchor pill. Hard-capped at
   /// [maxMruPills]. Widths are token-derived layout heuristics, so overflow is
   /// decided by layout — not implementer judgement — and the rail never scrolls.
+  /// Whether the band can seat a spelled-out save affordance beside the
+  /// fixed head and the anchor pill's own NAME. When it cannot, the anchor
+  /// keeps its name and the save chip drops to its glyph — the reverse would
+  /// leave the control that names the current filter showing a bare count.
+  bool _labelledSaveChipFits({
+    required DsTokens tokens,
+    required double available,
+    required bool hasAnchorPill,
+  }) {
+    final gap = tokens.spacing.step3;
+    final savedButton = tokens.spacing.step12 + tokens.spacing.step3;
+    final allPill = tokens.spacing.step11;
+    // Enough for "Custom" plus its count slot; the anchor never needs the
+    // full quick-jump reserve to stay readable.
+    final anchorReserve = hasAnchorPill ? tokens.spacing.step12 : 0.0;
+    final labelledSaveChip = tokens.spacing.step13;
+    final head =
+        savedButton +
+        gap +
+        allPill +
+        (hasAnchorPill ? gap + anchorReserve : 0.0) +
+        gap;
+    return available - head >= labelledSaveChip;
+  }
+
   int _fitMruCount({
     required DsTokens tokens,
     required double available,
     required bool hasAnchorPill,
     required bool showSaveChip,
   }) {
-    final gap = tokens.spacing.step2; // 4
-    // The Filters button carries the shared count slot + disclosure glyph, so
-    // it is wider than the old label-only chip; reserve a count slot (step7)
-    // more so the heuristic never under-reserves and overflows.
-    final savedButton =
-        tokens.spacing.step12 + tokens.spacing.step3 + tokens.spacing.step7;
+    final gap = tokens.spacing.step3; // 8 — mirrors the rail's real gap
+    // The Filters button is label + bookmark glyph + disclosure glyph. It
+    // carries NO numeral (see _SavedButton), so no count slot is reserved —
+    // reserving one made the heuristic drop an MRU pill that fits.
+    final savedButton = tokens.spacing.step12 + tokens.spacing.step3;
     final allPill = tokens.spacing.step11; // 80
-    final saveChip = showSaveChip ? tokens.spacing.step11 : 0.0; // 80
+    // The save chip is label + leading glyph ("+ Save filter…"), far wider
+    // than a pill: reserve a realistic slot so MRU pills are dropped BEFORE
+    // the row gets tight enough to squeeze the anchor.
+    final saveChip = showSaveChip ? tokens.spacing.step13 : 0.0; // 160
     final anchorReserve = hasAnchorPill ? tokens.spacing.step13 : 0.0; // 160
     final mruPill = tokens.spacing.step12; // 96 per quick-jump pill
 
@@ -455,23 +502,21 @@ class SavedTaskFilterRail extends ConsumerWidget {
 /// It is deliberately **distinct** from the filter pills: a *borderless* filled
 /// [DsPill] (the All / active pills are filled **and bordered**), so the
 /// menu-opener never reads as just another selectable filter value. It is led
-/// by a bookmark glyph, carries the saved-filter [count] in the SAME shared
-/// count slot the rail pills use (`SavedFilterCountText`, medium-emphasis,
-/// tabular, min-width-growable) so it reads "Filters  6" consistent with
-/// "All 214", and is closed by an `unfold_more` glyph — a down-chevron implied a
-/// dropdown, but the manager rises from the bottom as a sheet, so the
-/// bidirectional unfold glyph signals "opens a panel/list".
+/// by a bookmark glyph and closed by an `unfold_more` glyph — a down-chevron
+/// implied a dropdown, but the manager rises from the bottom as a sheet, so
+/// the bidirectional unfold glyph signals "opens a panel/list". It carries
+/// **no numeral**: every other number in this header means "how much is my
+/// list narrowed" (pill result counts, the collapsed bar's clause badge), and
+/// a saved-filter *inventory* count in the same chrome read as a false
+/// "1 filter active" on an unfiltered list. The sheet shows the inventory.
 ///
 /// The label word keeps the filled pill's `text.highEmphasis`. One tap opens
 /// the complete sheet; the ≥48dp tap target comes from the padded [InkWell]
 /// wrapper, never a mutated pill height.
 class _SavedButton extends StatelessWidget {
-  const _SavedButton({required this.onTap, required this.count});
+  const _SavedButton({required this.onTap});
 
   final VoidCallback onTap;
-
-  /// Number of saved filters, rendered in the shared count slot.
-  final int count;
 
   @override
   Widget build(BuildContext context) {
@@ -490,21 +535,13 @@ class _SavedButton extends StatelessWidget {
       label: label,
       leading: Icon(
         Icons.bookmarks_outlined,
-        size: tokens.spacing.step4,
+        size: IconSizes.xs,
         color: glyphColor,
       ),
-      // The saved count in the shared slot, then the panel-disclosure glyph.
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SavedFilterCountText(count: count),
-          SizedBox(width: tokens.spacing.step2),
-          Icon(
-            Icons.unfold_more_rounded,
-            size: tokens.spacing.step4,
-            color: glyphColor,
-          ),
-        ],
+      trailing: Icon(
+        Icons.unfold_more_rounded,
+        size: IconSizes.xs,
+        color: glyphColor,
       ),
     );
 
@@ -536,9 +573,15 @@ class _SavedButton extends StatelessWidget {
 /// active / "Custom" pills already use, and NOT the muted dashed ghost-chip skin
 /// reserved for true empty/placeholder states. Wrapped in a ≥48dp tap target.
 class _SaveChip extends StatelessWidget {
-  const _SaveChip({required this.onTap});
+  const _SaveChip({required this.onTap, this.labelled = true});
 
   final VoidCallback onTap;
+
+  /// Whether to spell out the label. Dropped to a bare `+` when the band is
+  /// too tight to seat the anchor pill's own NAME beside it — losing the word
+  /// "Save" from an affordance that still reads as add-a-filter costs far
+  /// less than the active filter rendering as an anonymous count.
+  final bool labelled;
 
   @override
   Widget build(BuildContext context) {
@@ -549,16 +592,26 @@ class _SaveChip extends StatelessWidget {
     final accent = tokens.colors.interactive.enabled;
     final label = messages.tasksSavedFiltersSaveButtonLabel;
 
-    final pill = DsPill(
-      variant: DsPillVariant.tinted,
+    // bookmark_add, not a bare +: unlabelled, a plain + is the FAB's glyph
+    // in the same frame and reads as "new task" rather than "save this view".
+    final glyph = Icon(
+      labelled ? Icons.add_rounded : Icons.bookmark_add_outlined,
+      size: labelled ? IconSizes.xs : IconSizes.s,
       color: accent,
-      label: label,
-      leading: Icon(
-        Icons.add_rounded,
-        size: tokens.spacing.step4,
-        color: accent,
-      ),
     );
+    final pill = labelled
+        ? DsPill(
+            variant: DsPillVariant.tinted,
+            color: accent,
+            label: label,
+            leading: glyph,
+          )
+        : DsPill(
+            variant: DsPillVariant.tinted,
+            color: accent,
+            label: '',
+            leading: glyph,
+          );
 
     return Semantics(
       button: true,

@@ -10784,6 +10784,25 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksAgentFilterTitle => 'Agent';
 
   @override
+  String tasksCompactFilterCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filter',
+      one: '$count filter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksCompactHeaderExpandHint => 'Visa sökfält och filter';
+
+  @override
+  String tasksCompactSearchContext(String query) {
+    return '”$query”';
+  }
+
+  @override
   String get tasksFilterApplyTitle => 'Använd filter';
 
   @override
@@ -10965,7 +10984,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Hantera uppgiftsfilter';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Filter';
+  String get tasksSavedFiltersRailButton => 'Vyer';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

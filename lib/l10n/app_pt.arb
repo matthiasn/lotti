@@ -4955,6 +4955,9 @@
   "tasksAgentFilterHasAgent": "Tem agente",
   "tasksAgentFilterNoAgent": "Nenhum agente",
   "tasksAgentFilterTitle": "Agente",
+  "tasksCompactFilterCount": "{count, plural, one {{count} filtro} other {{count} filtros}}",
+  "tasksCompactHeaderExpandHint": "Mostrar pesquisa e filtros",
+  "tasksCompactSearchContext": "«{query}»",
   "tasksFilterApplyTitle": "Aplicar filtro",
   "tasksFilterClearAll": "Limpar tudo",
   "tasksFilterTitle": "Filtrar tarefas",
@@ -5058,7 +5061,7 @@
   "tasksSavedFiltersFilterNameLabel": "Nome do filtro",
   "tasksSavedFiltersGroupSemantics": "Filtros de tarefas",
   "tasksSavedFiltersManageTooltip": "Gerenciar filtros de tarefas",
-  "tasksSavedFiltersRailButton": "Filtros",
+  "tasksSavedFiltersRailButton": "Vistas",
   "tasksSavedFiltersRenameNamed": "Renomear {name}",
   "@tasksSavedFiltersRenameNamed": {
     "placeholders": {

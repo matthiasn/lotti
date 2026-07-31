@@ -12,6 +12,13 @@ enum DesignSystemChipVisualState {
 
 enum DesignSystemChipSize {
   compact,
+
+  /// Matches `ActiveFilterChip`'s metrics — caption label, pill radius, the
+  /// same vertical padding — for a chip that shares a row with removable
+  /// filter chips. Without it a batch action rendered at [compact] outranked
+  /// the filters it acts on, in both type size and corner shape.
+  compactPill,
+
   touch,
 }
 
@@ -298,6 +305,16 @@ class _ChipSizeSpec {
         itemGap: tokens.spacing.step2,
         cornerRadius: tokens.radii.s,
         accessoryBoxSize: tokens.typography.lineHeight.bodySmall,
+        accessoryIconSize: tokens.typography.lineHeight.caption,
+        minHeight: null,
+      ),
+      DesignSystemChipSize.compactPill => _ChipSizeSpec(
+        labelStyle: tokens.typography.styles.others.caption,
+        horizontalPadding: tokens.spacing.step2 + tokens.spacing.step1,
+        verticalPadding: tokens.spacing.step1,
+        itemGap: tokens.spacing.step2,
+        cornerRadius: tokens.radii.badgesPills,
+        accessoryBoxSize: tokens.typography.lineHeight.caption,
         accessoryIconSize: tokens.typography.lineHeight.caption,
         minHeight: null,
       ),

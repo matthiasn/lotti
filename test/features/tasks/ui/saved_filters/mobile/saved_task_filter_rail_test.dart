@@ -160,44 +160,37 @@ void main() {
   });
 
   testWidgets(
-    'Filters button shows the saved-filter count in the shared slot and opens '
-    'the sheet',
+    'Views button carries no numeral and opens the sheet',
     (
       tester,
     ) async {
-      // Seed has 2 filters → the Filters button reads "Filters  2", using the SAME
-      // shared count widget as the rail pills so it stays consistent with the
-      // "All 124" / per-filter numerals.
+      // Every numeral in the header means "active narrowing" (pill result
+      // counts, the collapsed clause badge); a saved-filter INVENTORY count
+      // on the sheet-opener read as a false "1 filter active" on an
+      // unfiltered list, so the button carries none — the sheet shows the
+      // inventory.
       await _pumpRail(tester, pageState: const JournalPageState());
 
       final label = tester.widget<Text>(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-          matching: find.text('Filters'),
+          matching: find.text('Views'),
         ),
       );
       // The label inherits the filled pill's high-emphasis colour…
       expect(label.style?.color, dsTokensLight.colors.text.highEmphasis);
-      // …the count rides the shared SavedFilterCountText slot (reads "2")…
+      // …and no count widget or numeral rides the button.
       expect(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
           matching: find.byType(SavedFilterCountText),
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
           matching: find.text('2'),
-        ),
-        findsOneWidget,
-      );
-      // …and the count rides the slot, never a parenthetical baked into label.
-      expect(
-        find.descendant(
-          of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-          matching: find.textContaining('('),
         ),
         findsNothing,
       );
@@ -430,7 +423,7 @@ void main() {
       );
 
       // A REAL gap between chips (no overlap): "All" starts one inter-pill gap
-      // (step2) after the anchor's right edge, never on top of it.
+      // (step3) after the anchor's right edge, never on top of it.
       final anchorRight = tester
           .getTopRight(find.byKey(SavedTaskFilterRailKeys.pill('f1')))
           .dx;
@@ -438,7 +431,7 @@ void main() {
           .getTopLeft(find.byKey(SavedTaskFilterRailKeys.allPill))
           .dx;
       expect(allLeft, greaterThanOrEqualTo(anchorRight));
-      expect(allLeft - anchorRight, closeTo(dsTokensLight.spacing.step2, 0.5));
+      expect(allLeft - anchorRight, closeTo(dsTokensLight.spacing.step3, 0.5));
 
       // …and the same true between "All" and "Saved".
       final allRight = tester
@@ -448,7 +441,7 @@ void main() {
           .getTopLeft(find.byKey(SavedTaskFilterRailKeys.savedButton))
           .dx;
       expect(savedLeft, greaterThanOrEqualTo(allRight));
-      expect(savedLeft - allRight, closeTo(dsTokensLight.spacing.step2, 0.5));
+      expect(savedLeft - allRight, closeTo(dsTokensLight.spacing.step3, 0.5));
     },
   );
 

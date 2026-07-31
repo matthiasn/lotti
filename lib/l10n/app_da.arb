@@ -4956,6 +4956,9 @@
   "tasksAgentFilterHasAgent": "Har agent",
   "tasksAgentFilterNoAgent": "Ingen agent",
   "tasksAgentFilterTitle": "Agent",
+  "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filtre}}",
+  "tasksCompactHeaderExpandHint": "Vis søgning og filtre",
+  "tasksCompactSearchContext": "»{query}«",
   "tasksFilterApplyTitle": "Påfør filter",
   "tasksFilterClearAll": "Ryd alt",
   "tasksFilterTitle": "Filteropgaver",
@@ -5059,7 +5062,7 @@
   "tasksSavedFiltersFilterNameLabel": "Filternavn",
   "tasksSavedFiltersGroupSemantics": "Opgavefiltre",
   "tasksSavedFiltersManageTooltip": "Administrer opgavefiltre",
-  "tasksSavedFiltersRailButton": "Filtre",
+  "tasksSavedFiltersRailButton": "Visninger",
   "tasksSavedFiltersRenameNamed": "Omdøb {name}",
   "@tasksSavedFiltersRenameNamed": {
     "placeholders": {
