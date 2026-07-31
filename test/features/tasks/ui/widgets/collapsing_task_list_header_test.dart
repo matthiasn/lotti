@@ -162,6 +162,27 @@ void main() {
       },
     );
 
+    test(
+      'an explicit expand survives the next scroll frame: re-collapsing costs '
+      "a fresh downward budget, so the compact bar's own restore affordance "
+      'is not undone by one stray pixel',
+      () {
+        scrollDownTo(300);
+        expect(controller.collapsed, isTrue);
+
+        controller.expand();
+        expect(controller.collapsed, isFalse);
+
+        // One pixel further down, still well past the activation offset.
+        controller.handleScroll(pixels: 301, maxScrollExtent: 1000);
+        expect(controller.collapsed, isFalse);
+
+        // A deliberate downward scroll still collapses it.
+        controller.handleScroll(pixels: 340, maxScrollExtent: 1000);
+        expect(controller.collapsed, isTrue);
+      },
+    );
+
     test('expand() collapsed -> expanded notifies exactly once', () {
       scrollDownTo(200);
       controller

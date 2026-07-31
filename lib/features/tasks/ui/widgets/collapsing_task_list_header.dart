@@ -59,6 +59,13 @@ class TaskListHeaderCollapseController extends ChangeNotifier {
   /// the top of the list where the full header belongs.
   static const double expandNearTopOffset = 8;
 
+  /// Cumulative downward travel (px) an expanded header requires before a
+  /// scroll-down collapses it. Symmetric with [expandUpwardTravel], and it
+  /// is what makes the bar's own restore affordances trustworthy: without
+  /// it, a deliberate title tap was undone by the very next pixel of scroll,
+  /// because the offset was already past [collapseActivationOffset].
+  static const double collapseDownwardTravel = 24;
+
   /// Cumulative upward travel (px) a collapsed header requires before a
   /// scroll-up expands it. The expanded header is nearly half the small-phone
   /// viewport, so a single accidental upward jiggle must not slam it back in;
@@ -74,6 +81,7 @@ class TaskListHeaderCollapseController extends ChangeNotifier {
   bool _collapsed = false;
   double? _lastPixels;
   double _upwardTravel = 0;
+  double _downwardTravel = 0;
   double? _lastMaxScrollExtent;
 
   /// Whether the header should currently render collapsed.
@@ -103,6 +111,7 @@ class TaskListHeaderCollapseController extends ChangeNotifier {
     _lastMaxScrollExtent = maxScrollExtent;
     if (pixels <= expandNearTopOffset) {
       _upwardTravel = 0;
+      _downwardTravel = 0;
       _setCollapsed(false);
       return;
     }
@@ -115,8 +124,12 @@ class TaskListHeaderCollapseController extends ChangeNotifier {
     if (delta > 0) {
       // Moving down the list.
       _upwardTravel = 0;
-      if (pixels > collapseActivationOffset &&
+      if (_collapsed) return;
+      _downwardTravel += delta;
+      if (_downwardTravel >= collapseDownwardTravel &&
+          pixels > collapseActivationOffset &&
           maxScrollExtent >= minCollapsibleExtent) {
+        _downwardTravel = 0;
         _setCollapsed(true);
       }
     } else if (delta < 0) {
@@ -127,6 +140,7 @@ class TaskListHeaderCollapseController extends ChangeNotifier {
       _upwardTravel += -delta;
       if (_upwardTravel >= expandUpwardTravel) {
         _upwardTravel = 0;
+        _downwardTravel = 0;
         _setCollapsed(false);
       }
     }
@@ -155,12 +169,21 @@ class TaskListHeaderCollapseController extends ChangeNotifier {
       _lastMaxScrollExtent = maxScrollExtent;
       _lastPixels = pixels;
       _upwardTravel = 0;
+      _downwardTravel = 0;
     }
     if (_collapsed && maxScrollExtent <= 0) _setCollapsed(false);
   }
 
   /// Expands the header immediately (compact-bar tap, focus-search command).
-  void expand() => _setCollapsed(false);
+  ///
+  /// Resets the downward budget so the deliberate action survives contact
+  /// with the scroll position it was taken at — re-collapsing costs a fresh
+  /// [collapseDownwardTravel] of movement, not one stray pixel.
+  void expand() {
+    _downwardTravel = 0;
+    _upwardTravel = 0;
+    _setCollapsed(false);
+  }
 
   void _setCollapsed(bool value) {
     if (_collapsed == value) return;

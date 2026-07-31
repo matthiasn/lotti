@@ -42,11 +42,15 @@ class ActiveFilterChip extends StatelessWidget {
 
     final accessory = avatar != null
         ? SizedBox.square(
-            dimension: 14,
+            dimension: IconSizes.xs + tokens.spacing.step1,
             child: ClipOval(child: avatar),
           )
         : leadingIcon != null
-        ? Icon(leadingIcon, size: 14, color: accentColor)
+        ? Icon(
+            leadingIcon,
+            size: IconSizes.xs + tokens.spacing.step1,
+            color: accentColor,
+          )
         : null;
 
     return Material(
@@ -70,18 +74,21 @@ class ActiveFilterChip extends StatelessWidget {
             // The leading edge gets step2 + step1 (6px): the trailing ✕ is
             // a filled 20px glyph with generous internal margins, so a
             // bare step2 on the left reads tighter than the right.
+            // step2 vertically (not step1): resolves the chip to the same
+            // height as DesignSystemChipSize.compactPill, so the two chip
+            // families in one wrap stop measuring differently.
             padding: EdgeInsets.fromLTRB(
               tokens.spacing.step2 + tokens.spacing.step1,
-              tokens.spacing.step1,
-              tokens.spacing.step1,
-              tokens.spacing.step1,
+              tokens.spacing.step2,
+              tokens.spacing.step2,
+              tokens.spacing.step2,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (accessory != null) ...[
                   accessory,
-                  const SizedBox(width: 5),
+                  SizedBox(width: tokens.spacing.step2),
                 ],
                 Flexible(
                   child: Text(
@@ -93,10 +100,13 @@ class ActiveFilterChip extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: tokens.spacing.step2),
+                // Outline close at the meta-row tier: the filled 20pt disc
+                // out-shouted the label it was attached to, and sat off the
+                // icon ramp entirely.
                 Icon(
-                  Icons.cancel_rounded,
-                  size: 20,
+                  Icons.close_rounded,
+                  size: IconSizes.s,
                   color: removeIconColor,
                 ),
               ],

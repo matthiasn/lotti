@@ -114,12 +114,16 @@ class SavedTaskFilterRail extends ConsumerWidget {
               final savedButton = _SavedButton(
                 onTap: () => showSavedTaskFiltersSheet(context),
               );
-              // Below this the anchor pill cannot seat its name beside a
-              // spelled-out save affordance, and the name is worth more.
-              final tightBand =
-                  constraints.maxWidth < tokens.spacing.step13 * 2.5;
+              // Budget the save affordance from what the band has actually
+              // got left, not from a flat width threshold: a fixed cut-off
+              // sat above every phone's content width, so the labelled form
+              // never rendered on a phone at all.
               final saveChip = _SaveChip(
-                labelled: !(tightBand && (activeFilter != null || hasUnsaved)),
+                labelled: _labelledSaveChipFits(
+                  tokens: tokens,
+                  available: constraints.maxWidth,
+                  hasAnchorPill: activeFilter != null || hasUnsaved,
+                ),
                 onTap: () => promptSaveCurrentTaskFilter(context, ref),
               );
 
@@ -430,6 +434,31 @@ class SavedTaskFilterRail extends ConsumerWidget {
   /// chip) and a generous slot for the flexible anchor pill. Hard-capped at
   /// [maxMruPills]. Widths are token-derived layout heuristics, so overflow is
   /// decided by layout — not implementer judgement — and the rail never scrolls.
+  /// Whether the band can seat a spelled-out save affordance beside the
+  /// fixed head and the anchor pill's own NAME. When it cannot, the anchor
+  /// keeps its name and the save chip drops to its glyph — the reverse would
+  /// leave the control that names the current filter showing a bare count.
+  bool _labelledSaveChipFits({
+    required DsTokens tokens,
+    required double available,
+    required bool hasAnchorPill,
+  }) {
+    final gap = tokens.spacing.step3;
+    final savedButton = tokens.spacing.step12 + tokens.spacing.step3;
+    final allPill = tokens.spacing.step11;
+    // Enough for "Custom" plus its count slot; the anchor never needs the
+    // full quick-jump reserve to stay readable.
+    final anchorReserve = hasAnchorPill ? tokens.spacing.step12 : 0.0;
+    final labelledSaveChip = tokens.spacing.step13;
+    final head =
+        savedButton +
+        gap +
+        allPill +
+        (hasAnchorPill ? gap + anchorReserve : 0.0) +
+        gap;
+    return available - head >= labelledSaveChip;
+  }
+
   int _fitMruCount({
     required DsTokens tokens,
     required double available,
@@ -563,9 +592,11 @@ class _SaveChip extends StatelessWidget {
     final accent = tokens.colors.interactive.enabled;
     final label = messages.tasksSavedFiltersSaveButtonLabel;
 
+    // bookmark_add, not a bare +: unlabelled, a plain + is the FAB's glyph
+    // in the same frame and reads as "new task" rather than "save this view".
     final glyph = Icon(
-      Icons.add_rounded,
-      size: IconSizes.xs,
+      labelled ? Icons.add_rounded : Icons.bookmark_add_outlined,
+      size: labelled ? IconSizes.xs : IconSizes.s,
       color: accent,
     );
     final pill = labelled

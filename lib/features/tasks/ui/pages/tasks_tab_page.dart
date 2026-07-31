@@ -41,6 +41,7 @@ import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Signature for the create-task action invoked by the [TasksTabPage] FAB.
@@ -696,6 +697,13 @@ Future<void> _clearAll(
   if (searchActive) await controller.setSearchString('');
 }
 
+/// The entity's own colour where it has one, falling back to the page accent.
+///
+/// Same resolution the saved-filter rail and the task rows use, so one
+/// category reads as one colour everywhere on the page.
+Color _entityAccent(String? hex, Color fallback) =>
+    hex == null || hex.isEmpty ? fallback : colorFromCssHex(hex);
+
 class _TasksTabActiveFilters extends ConsumerWidget {
   const _TasksTabActiveFilters();
 
@@ -810,7 +818,12 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       chips.add(
         ActiveFilterChip(
           label: label,
-          accentColor: accent,
+          // The category's OWN colour, resolved exactly as the rail and the
+          // task rows do. Painting every category chip with the shared teal
+          // made "Personal" mint in the header and blue on every row beneath
+          // it, and spent the selection accent on something that isn't a
+          // selection state.
+          accentColor: _entityAccent(category?.color, accent),
           onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(
               categoryIds: categoryIds.difference({id}),
@@ -830,7 +843,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       chips.add(
         ActiveFilterChip(
           label: chipLabel,
-          accentColor: accent,
+          accentColor: _entityAccent(label?.color, accent),
           onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(
               labelIds: labelIds.difference({id}),
