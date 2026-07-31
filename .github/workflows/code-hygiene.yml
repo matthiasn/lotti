@@ -1,0 +1,137 @@
+name: Code Hygiene History
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "tool/code_hygiene/**"
+      - ".github/workflows/code-hygiene.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tool/code_hygiene/**"
+      - ".github/workflows/code-hygiene.yml"
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REPORT_DIR: build/code_hygiene
+
+jobs:
+  analyze:
+    name: Analyze and render
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install CLOC
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes cloc
+
+      - name: Run focused tests
+        run: python -m unittest tool.code_hygiene.analyze_test
+
+      - name: Analyze history
+        run: >-
+          python tool/code_hygiene/analyze.py .
+          --ref HEAD
+          --days 730
+
+      - name: Capture chart
+        run: |
+          PROFILE_DIR="${RUNNER_TEMP}/code-hygiene-firefox"
+          mkdir -p "$PROFILE_DIR"
+          firefox --headless --no-remote --profile "$PROFILE_DIR" \
+            --window-size 1400,900 \
+            --screenshot "$GITHUB_WORKSPACE/$REPORT_DIR/render.png" \
+            "file://$GITHUB_WORKSPACE/$REPORT_DIR/code_hygiene.html"
+          test -s "$REPORT_DIR/render.png"
+
+      - name: Upload report for workflow review
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-hygiene-${{ github.sha }}
+          path: |
+            build/code_hygiene/cache.json
+            build/code_hygiene/code_hygiene.csv
+            build/code_hygiene/code_hygiene.html
+            build/code_hygiene/render.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish immutable report to R2
+        if: github.event_name != 'pull_request'
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          set -euo pipefail
+          if [[ -z "$R2_ACCOUNT_ID" || -z "$R2_BUCKET_NAME" || \
+                -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+            echo "::warning::R2 credentials are not configured; skipping publish"
+            exit 0
+          fi
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          DEST="s3://${R2_BUCKET_NAME}/code-hygiene/commits/${GITHUB_SHA}"
+          aws s3 cp "$REPORT_DIR/cache.json" "$DEST/cache.json" \
+            --endpoint-url "$ENDPOINT" --content-type application/json \
+            --cache-control public,max-age=31536000,immutable --only-show-errors
+          aws s3 cp "$REPORT_DIR/code_hygiene.csv" "$DEST/code_hygiene.csv" \
+            --endpoint-url "$ENDPOINT" --content-type text/csv \
+            --cache-control public,max-age=31536000,immutable --only-show-errors
+          aws s3 cp "$REPORT_DIR/code_hygiene.html" "$DEST/code_hygiene.html" \
+            --endpoint-url "$ENDPOINT" --content-type text/html \
+            --cache-control public,max-age=31536000,immutable --only-show-errors
+          aws s3 cp "$REPORT_DIR/render.png" "$DEST/render.png" \
+            --endpoint-url "$ENDPOINT" --content-type image/png \
+            --cache-control public,max-age=31536000,immutable --only-show-errors
+
+      - name: Refresh latest report in R2
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          set -euo pipefail
+          if [[ -z "$R2_ACCOUNT_ID" || -z "$R2_BUCKET_NAME" || \
+                -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+            exit 0
+          fi
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          DEST="s3://${R2_BUCKET_NAME}/code-hygiene/latest"
+          aws s3 cp "$REPORT_DIR/cache.json" "$DEST/cache.json" \
+            --endpoint-url "$ENDPOINT" --content-type application/json \
+            --cache-control no-cache --only-show-errors
+          aws s3 cp "$REPORT_DIR/code_hygiene.csv" "$DEST/code_hygiene.csv" \
+            --endpoint-url "$ENDPOINT" --content-type text/csv \
+            --cache-control no-cache --only-show-errors
+          aws s3 cp "$REPORT_DIR/code_hygiene.html" "$DEST/code_hygiene.html" \
+            --endpoint-url "$ENDPOINT" --content-type text/html \
+            --cache-control no-cache --only-show-errors
+          aws s3 cp "$REPORT_DIR/render.png" "$DEST/render.png" \
+            --endpoint-url "$ENDPOINT" --content-type image/png \
+            --cache-control no-cache --only-show-errors
