@@ -10945,7 +10945,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get tasksCompactHeaderExpandHint => 'Mostra ricerca e filtri';
+  String get tasksCompactHeaderExpandHint => 'Mostra la ricerca e i filtri';
 
   @override
   String tasksCompactSearchContext(String query) {

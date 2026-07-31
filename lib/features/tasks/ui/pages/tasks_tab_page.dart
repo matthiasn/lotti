@@ -182,7 +182,14 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
           AppCommandId.focusSearch: AppCommandHandler(
             invoke: (_) {
               _collapseController.expand();
-              _searchFocusNode.requestFocus();
+              // The field does not exist while the header is collapsed, so
+              // focusing it in the same frame as the expand is a no-op — the
+              // shortcut would silently do nothing. Wait for the frame that
+              // rebuilds the expanded header, exactly as the compact bar's
+              // search affordance does.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _searchFocusNode.requestFocus();
+              });
             },
           ),
         },
@@ -297,7 +304,10 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
       state.selectedCategoryIds,
       state.selectedLabelIds,
       state.selectedProjectIds,
-    ].map((clause) => (clause.toList()..sort()).join(',')).join('|');
+      // Bracket every id: the empty string is a real selection ("Unassigned"),
+      // so a bare join cannot tell {} from {''} and the header would miss a
+      // filter change across the modal round trip.
+    ].map((clause) => (clause.toList()..sort()).map((id) => '[$id]').join()).join('|');
     // The modal can also change agent mode and sort without touching a clause
     // set; both alter what the list shows, so both must re-expand the header.
     return '$clauses'

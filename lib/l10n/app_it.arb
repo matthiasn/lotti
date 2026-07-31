@@ -4957,7 +4957,7 @@
   "tasksAgentFilterNoAgent": "Nessun agente",
   "tasksAgentFilterTitle": "Agente",
   "tasksCompactFilterCount": "{count, plural, one {1 filtro} other {{count} filtri}}",
-  "tasksCompactHeaderExpandHint": "Mostra ricerca e filtri",
+  "tasksCompactHeaderExpandHint": "Mostra la ricerca e i filtri",
   "tasksCompactSearchContext": "“{query}”",
   "tasksFilterApplyTitle": "Applica il filtro",
   "tasksFilterClearAll": "Cancella tutto",

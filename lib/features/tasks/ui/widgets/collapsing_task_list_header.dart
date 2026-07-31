@@ -311,6 +311,11 @@ class TaskListCompactHeaderBar extends StatelessWidget {
                   button: true,
                   label: semanticsLabel,
                   hint: expandSemanticHint,
+                  // The inner tap targets are excluded from the tree below,
+                  // so this node must carry the action itself — a button
+                  // that announces a hint but has no tap action cannot be
+                  // activated by a screen reader at all.
+                  onTap: onExpandRequested,
                   child: ExcludeSemantics(
                     // The whole leading region stays tappable (opaque
                     // GestureDetector) while the ink ripple is bounded to

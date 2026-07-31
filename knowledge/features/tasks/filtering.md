@@ -230,11 +230,13 @@ stateDiagram-v2
     Collapsed --> Expanded: compact title / search button tapped, or Primary+F
     Collapsed --> Expanded: filter modal closes with a changed filter shape
     Collapsed --> Expanded: content shrinks below scrollability (no gesture left)
-    Expanded --> Expanded: search field focused — pinned open while typing
+    Collapsed --> Expanded: search field takes focus
 ```
 
-Guards that keep the user out of dead ends: the search field's focus pins the
-header open; a list shorter than `minCollapsibleExtent` never collapses (the
+Guards that keep the user out of dead ends: focusing the search field expands
+the header (it does not *pin* it — a later scroll down still collapses, and
+releases the focus so the field never keeps a caret off-screen); a list shorter
+than `minCollapsibleExtent` never collapses (the
 collapse itself grows the viewport, so the margin guarantees an upward gesture
 remains possible); a `ScrollMetricsNotification` listener re-expands when a
 filter change shrinks the content below scrollability without any scroll event;
@@ -255,8 +257,12 @@ truncates before the title. The filter button opens the modal directly; the
 search button expands the header and hands the field focus; the title
 re-expands. The chip row itself never echoes the *default* open-work status
 set — an unfiltered list renders zero chips, keeping the chip count and the
-collapsed badge count in agreement — and from two ad-hoc clauses up it ends
-with a "Clear all" chip. The rail's "Filters" opener carries no numeral (a
+collapsed badge count in agreement — and once two things are narrowing,
+clauses or the search query, it ends with a "Clear all" chip that resets both.
+Every count comes from the one `taskFilterNarrowingClauseCount` predicate in
+`saved_task_filter_activator.dart`, agent-assignment clause included, so the
+funnel tint, the badge, the collapsed caption and the chip row cannot
+disagree. The rail's "Filters" opener carries no numeral (a
 saved-filter inventory count read as a false "1 active"); every number in the
 header means *active narrowing*. Only a pane that is itself desktop-wide keeps
 the static header.

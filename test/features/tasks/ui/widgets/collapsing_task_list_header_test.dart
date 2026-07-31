@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show Glados2, IntAnys, any;
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
@@ -511,5 +512,32 @@ void main() {
       expect(find.byTooltip('Filter tasks'), findsOneWidget);
       handle.dispose();
     });
+
+    testWidgets(
+      'the title button carries a TAP ACTION, not just a hint — the inner '
+      'targets are excluded from semantics, so a screen reader can only '
+      'expand the header through this node',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(subject());
+        final before = expandRequests;
+
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Tasks')),
+          matchesSemantics(
+            label: 'Tasks',
+            hint: 'Show search and filters',
+            isButton: true,
+            hasTapAction: true,
+          ),
+        );
+
+        await tester.tap(find.bySemanticsLabel('Tasks'));
+        await tester.pump();
+
+        expect(expandRequests, before + 1);
+        handle.dispose();
+      },
+    );
   });
 }

@@ -427,11 +427,10 @@ class SavedTaskFilterRail extends ConsumerWidget {
     required bool showSaveChip,
   }) {
     final gap = tokens.spacing.step3; // 8 — mirrors the rail's real gap
-    // The Filters button carries the shared count slot + disclosure glyph, so
-    // it is wider than the old label-only chip; reserve a count slot (step7)
-    // more so the heuristic never under-reserves and overflows.
-    final savedButton =
-        tokens.spacing.step12 + tokens.spacing.step3 + tokens.spacing.step7;
+    // The Filters button is label + bookmark glyph + disclosure glyph. It
+    // carries NO numeral (see _SavedButton), so no count slot is reserved —
+    // reserving one made the heuristic drop an MRU pill that fits.
+    final savedButton = tokens.spacing.step12 + tokens.spacing.step3;
     final allPill = tokens.spacing.step11; // 80
     final saveChip = showSaveChip ? tokens.spacing.step11 : 0.0; // 80
     final anchorReserve = hasAnchorPill ? tokens.spacing.step13 : 0.0; // 160
