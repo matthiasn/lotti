@@ -1599,8 +1599,9 @@ void main() {
     });
 
     testWidgets(
-      'an ad-hoc filtered collapsed header NAMES its narrowing — localized '
-      'clause count in the title context, badge on the funnel',
+      'an ad-hoc filtered collapsed header NAMES its narrowing — one '
+      'localized clause count in the title context, and nothing numeric on '
+      'the funnel to double-encode or collide with it',
       (tester) async {
         final filteredState = JournalPageState(
           match: '',
@@ -1638,7 +1639,7 @@ void main() {
             of: find.byKey(CollapsingTaskListHeaderKeys.compactFilterButton),
             matching: find.text('3'),
           ),
-          findsOneWidget,
+          findsNothing,
         );
       },
     );
@@ -1833,7 +1834,7 @@ void main() {
           ),
           findsOneWidget,
         );
-        // …and no clause-count badge competes with it.
+        // …and nothing numeric competes with it on the funnel.
         expect(
           find.descendant(
             of: find.byKey(CollapsingTaskListHeaderKeys.compactFilterButton),

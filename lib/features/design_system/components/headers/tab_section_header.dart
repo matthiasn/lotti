@@ -8,9 +8,7 @@ import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 /// The shared header action button used by tab headers (and their collapsed
 /// compact bars): an [IconButton] that carries the design-system "activated"
 /// treatment — accent glyph over [DesignSystemListPalette.activatedFill] —
-/// while [active] narrows the list, and an optional accent count [badgeCount]
-/// so the *magnitude* of the narrowing survives even when the surrounding
-/// chrome (chip rows, search field) is collapsed away.
+/// while [active] narrows the list.
 ///
 /// One component instead of per-surface copies, so the expanded header and the
 /// compact bar can never drift apart in how they announce an active filter.
@@ -20,8 +18,6 @@ class TabHeaderIconButton extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.active = false,
-    this.badgeCount,
-    this.neutralColor,
     super.key,
   });
 
@@ -31,16 +27,6 @@ class TabHeaderIconButton extends StatelessWidget {
 
   /// Whether the control's concern is actively narrowing the list.
   final bool active;
-
-  /// Number of active clauses to surface on an accent badge; hidden when
-  /// `null` or zero. Numerals need no localization.
-  final int? badgeCount;
-
-  /// Glyph color while inactive. Defaults to medium emphasis (the expanded
-  /// header's resting look); the collapsed compact bar passes high emphasis
-  /// because its glyphs are the only affordances on a raised chrome plane
-  /// and must not fade into it for low-vision users.
-  final Color? neutralColor;
 
   @override
   Widget build(BuildContext context) {
@@ -53,25 +39,8 @@ class TabHeaderIconButton extends StatelessWidget {
       size: 20,
       color: active
           ? tokens.colors.interactive.enabled
-          : neutralColor ?? tokens.colors.text.mediumEmphasis,
+          : tokens.colors.text.mediumEmphasis,
     );
-    final showBadge = (badgeCount ?? 0) > 0;
-
-    final Widget iconChild;
-    if (showBadge) {
-      iconChild = Badge.count(
-        count: badgeCount!,
-        backgroundColor: tokens.colors.interactive.enabled,
-        textColor: tokens.colors.text.onInteractiveAlert,
-        textStyle: tokens.typography.styles.others.caption,
-        // Lift the numeral clear of the glyph and the activated fill's rim
-        // so it reads as a deliberate mark, not a collision.
-        offset: Offset(tokens.spacing.step2, -tokens.spacing.step2),
-        child: glyph,
-      );
-    } else {
-      iconChild = glyph;
-    }
 
     return IconButton(
       tooltip: tooltip,
@@ -81,7 +50,7 @@ class TabHeaderIconButton extends StatelessWidget {
               backgroundColor: DesignSystemListPalette.activatedFill(tokens),
             )
           : null,
-      icon: iconChild,
+      icon: glyph,
     );
   }
 }

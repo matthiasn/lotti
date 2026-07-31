@@ -326,7 +326,6 @@ void main() {
     Widget subject({
       bool filtersActive = false,
       bool searchActive = false,
-      int activeFilterCount = 0,
       String? contextLabel,
     }) {
       return makeTestableWidgetNoScroll(
@@ -337,7 +336,6 @@ void main() {
             filterTooltip: 'Filter tasks',
             expandSemanticHint: 'Show search and filters',
             filtersActive: filtersActive,
-            activeFilterCount: activeFilterCount,
             searchActive: searchActive,
             contextLabel: contextLabel,
             onExpandRequested: () => expandRequests++,
@@ -401,7 +399,8 @@ void main() {
         ).style,
         isNull,
       );
-      // No clauses -> no badge.
+      // The magnitude of a narrowing is spelled out in the context label,
+      // never repeated as a numeral on the glyph it would collide with.
       expect(find.byType(Badge), findsNothing);
     });
 
@@ -431,18 +430,16 @@ void main() {
     );
 
     testWidgets(
-      'the filter button carries the active-clause count so magnitude '
-      'survives the collapse',
+      'magnitude travels in the context label, never as a numeral badge on '
+      'the funnel it would sit on top of',
       (tester) async {
         await tester.pumpWidget(
-          subject(filtersActive: true, activeFilterCount: 4),
+          subject(filtersActive: true, contextLabel: '4 filters'),
         );
 
+        expect(find.byType(Badge), findsNothing);
         expect(
-          find.descendant(
-            of: find.byKey(CollapsingTaskListHeaderKeys.compactFilterButton),
-            matching: find.text('4'),
-          ),
+          find.textContaining('4 filters', findRichText: true),
           findsOneWidget,
         );
       },

@@ -214,8 +214,12 @@ class CollapsingTaskListHeader extends StatelessWidget {
     }
     // The seat hairline lives on the wrapper, not the compact bar, so BOTH
     // header states sit against the content scrolling beneath them and the
-    // line cannot pop in or out mid cross-fade.
+    // line cannot pop in or out mid cross-fade. It must paint in the
+    // FOREGROUND: the compact bar fills its own level02 plane, which would
+    // otherwise cover a background-painted border and leave chrome and the
+    // first task card meeting at the same value with no edge between them.
     return DecoratedBox(
+      position: DecorationPosition.foreground,
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: TaskShowcasePalette.border(context)),
@@ -231,11 +235,13 @@ class CollapsingTaskListHeader extends StatelessWidget {
 /// Left → right: the tab title (tapping it re-expands the header), then
 /// [TabHeaderIconButton]s for search (re-expands and focuses the field) and
 /// filters (opens the filter modal directly). Both buttons reuse the expanded
-/// header's activated treatment — accent glyph over the activated fill — and
-/// the filter button additionally carries [activeFilterCount] on an accent
-/// badge, so while collapsed the list still shows not just *that* it is
-/// narrowed but *by how many* clauses. A token hairline seats the bar against
-/// the content scrolling beneath it. Every control keeps a ≥48dp tap target
+/// header's activated treatment — accent glyph over the activated fill, at
+/// the same ink as the expanded header so the collapse changes layout only
+/// and never brightness. The magnitude of the narrowing is spelled out in
+/// [contextLabel] ("4 filters") rather than repeated as a numeral on the
+/// funnel: one channel, in words, that localizes and cannot collide with the
+/// glyph it sits on. A token hairline seats the bar against the content
+/// scrolling beneath it. Every control keeps a ≥48dp tap target
 /// via the standard [IconButton] constraints and the min-height title InkWell.
 class TaskListCompactHeaderBar extends StatelessWidget {
   const TaskListCompactHeaderBar({
@@ -244,7 +250,6 @@ class TaskListCompactHeaderBar extends StatelessWidget {
     required this.filterTooltip,
     required this.expandSemanticHint,
     required this.filtersActive,
-    required this.activeFilterCount,
     required this.searchActive,
     required this.onExpandRequested,
     required this.onSearchRequested,
@@ -264,13 +269,6 @@ class TaskListCompactHeaderBar extends StatelessWidget {
   /// Whether any filter currently narrows the list (mirrors the expanded
   /// header's `filtersActive` affordance).
   final bool filtersActive;
-
-  /// How many filter clauses are narrowing the list; shown as a badge on the
-  /// filter button while > 0 so magnitude survives the collapse. Pass 0 when
-  /// an active *saved view* is the narrowing — the view's name (via
-  /// [contextLabel]) is its representation, matching the expanded header,
-  /// which suppresses the clause chips for a resolved saved view too.
-  final int activeFilterCount;
 
   /// Medium-emphasis context rendered after the title — the active saved
   /// view's name, or the current search query — so the collapsed bar states
@@ -429,7 +427,6 @@ class TaskListCompactHeaderBar extends StatelessWidget {
                 tooltip: searchTooltip,
                 onPressed: onSearchRequested,
                 active: searchActive,
-                neutralColor: tokens.colors.text.highEmphasis,
               ),
               TabHeaderIconButton(
                 key: CollapsingTaskListHeaderKeys.compactFilterButton,
@@ -437,8 +434,6 @@ class TaskListCompactHeaderBar extends StatelessWidget {
                 tooltip: filterTooltip,
                 onPressed: onFilterPressed,
                 active: filtersActive,
-                badgeCount: activeFilterCount,
-                neutralColor: tokens.colors.text.highEmphasis,
               ),
             ],
           ),

@@ -390,9 +390,6 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
       filterTooltip: context.messages.tasksFilterTitle,
       expandSemanticHint: context.messages.tasksCompactHeaderExpandHint,
       filtersActive: filtersActive,
-      activeFilterCount: filtersActive && activeSavedFilterName == null
-          ? activeFilterCount
-          : 0,
       searchActive: state.match.isNotEmpty,
       contextLabel: contextParts.isEmpty ? null : contextParts.join(' · '),
       onExpandRequested: widget.collapseController.expand,
