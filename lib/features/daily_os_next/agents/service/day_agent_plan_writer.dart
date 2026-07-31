@@ -356,10 +356,14 @@ class DayAgentPlanWriter {
       workingHoursEnd: workingHoursEnd,
     );
     if (planningBaselinePlan != null &&
-        (planningBaselinePlan.agentId != agentId ||
-            planningBaselinePlan.dayId != dayId)) {
+        (planningBaselinePlan.dayId != dayId ||
+            !canReadDailyOsDayArtifact(
+              readerAgentId: agentId,
+              ownerAgentId: planningBaselinePlan.agentId,
+              dayId: dayId,
+            ))) {
       throw const DayAgentCaptureException(
-        'planning baseline must belong to the target agent and day',
+        'planning baseline must belong to the readable target day',
       );
     }
     // A closed wake validates the echo against the exact plan serialized into

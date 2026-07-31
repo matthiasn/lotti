@@ -1593,8 +1593,53 @@ void main() {
       );
 
       expect(result.success, isFalse);
-      expect(result.output, contains('target agent and day'));
+      expect(result.output, contains('readable target day'));
     });
+
+    test(
+      'accepts the coordinator-owned planning baseline during ownership '
+      'cutover',
+      () async {
+        final cutoverAgentId = perDayAgentId(_dayId);
+        agentEntities[cutoverAgentId] = makeTestIdentity(
+          id: cutoverAgentId,
+          agentId: cutoverAgentId,
+          kind: AgentKinds.dayAgent,
+          allowedCategoryIds: {'work', 'life'},
+        );
+        final coordinatorBaseline = seedPlanEntity(
+          agentId: dailyOsPlannerAgentId,
+        );
+
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 18)),
+          () => createService().executeTool(
+            agentId: cutoverAgentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.draftDayPlan,
+            planningSnapshotAt: DateTime(2026, 5, 25, 18),
+            planningBaselinePlan: coordinatorBaseline,
+            args: {
+              'dayId': _dayId,
+              'blocks': [
+                _aiBlock(
+                  start: DateTime(2026, 5, 25, 9),
+                  end: DateTime(2026, 5, 25, 10),
+                  reason: 'Morning focus.',
+                ),
+              ],
+            },
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.output);
+        final persisted =
+            agentEntities[coordinatorBaseline.id]! as DayPlanEntity;
+        expect(persisted.agentId, dailyOsPlannerAgentId);
+        expect(persisted.runKey, _runKey);
+      },
+    );
 
     test('persistDraftPlan sorts equal-start blocks by id', () async {
       final plan = await withClock(Clock.fixed(_now), () {
