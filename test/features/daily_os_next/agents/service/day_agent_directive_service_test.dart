@@ -264,7 +264,7 @@ void main() {
 
     group('capacity budget validation', () {
       test(
-        'accepts zero available minutes for a closed planning window',
+        'accepts and persists zero available minutes',
         () async {
           final result = await executeIssue({
             'dayId': dayId,

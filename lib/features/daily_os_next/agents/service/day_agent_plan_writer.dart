@@ -385,9 +385,15 @@ class DayAgentPlanWriter {
           'empty plan instead of adding blocks.',
         );
       }
+      final emittedById = <String, PlannedBlock>{
+        for (final block in blocks) block.id: block,
+      };
       final baselineRepeatedExactly =
-          baselineBlocks.length == blocks.length &&
-          blocks.every((block) => baselineBlocks[block.id] == block);
+          emittedById.length == blocks.length &&
+          emittedById.length == baselineBlocks.length &&
+          baselineBlocks.entries.every(
+            (entry) => emittedById[entry.key] == entry.value,
+          );
       if (baselineBlocks.isNotEmpty && !baselineRepeatedExactly) {
         throw const DayAgentCaptureException(
           'The planning window is closed. Preserve every block from the '

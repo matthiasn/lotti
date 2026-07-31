@@ -1335,6 +1335,34 @@ void main() {
           ),
         );
 
+        await expectLater(
+          withClock(
+            Clock.fixed(DateTime(2026, 5, 25, 18)),
+            () => service.persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: [
+                _aiBlock(
+                  start: DateTime(2026, 5, 25, 10),
+                  end: DateTime(2026, 5, 25, 11),
+                ),
+                _aiBlock(
+                  start: DateTime(2026, 5, 25, 10),
+                  end: DateTime(2026, 5, 25, 11),
+                ),
+              ],
+            ),
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              allOf(contains('closed'), contains('unchanged')),
+            ),
+          ),
+        );
+
         final repeated = await withClock(
           Clock.fixed(DateTime(2026, 5, 25, 18)),
           () => service.persistDraftPlan(
