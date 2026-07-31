@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show Glados2, IntAnys, any;
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
