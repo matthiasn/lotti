@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
@@ -381,14 +382,14 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(TaskShowcaseEmptyResults), findsNothing);
+      expect(find.byType(DesignSystemEmptyState), findsNothing);
 
       // Enter a query that matches no task title, category, or project.
       final searchField = find.byType(TextField).first;
       await tester.enterText(searchField, 'zzznomatch999');
       await tester.pump();
 
-      expect(find.byType(TaskShowcaseEmptyResults), findsOneWidget);
+      expect(find.byType(DesignSystemEmptyState), findsOneWidget);
       expect(
         container
             .read(taskListDetailShowcaseControllerProvider)

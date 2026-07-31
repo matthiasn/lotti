@@ -50,6 +50,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so the one control naming your current filter showed a bare number. The
   save affordance now yields its label first.
 
+### Fixed
+- **The "no tasks match" message no longer sticks to the screen edge.** When
+  the Tasks list's empty-state message wrapped to a second line — a longer
+  language such as German, or a larger system text size — it was laid out
+  across the full width of the screen, flush against the left edge with no
+  margin. It now uses the same centered, inset empty-state treatment as the
+  Logbook, with the tasks glyph above it.
+
 ## [0.9.1073]
 ### Added
 - **The manual keeps every released version readable.** The manual's version

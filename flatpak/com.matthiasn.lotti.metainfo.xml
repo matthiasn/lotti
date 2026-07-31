@@ -44,6 +44,7 @@
         <p>Changed: the saved-views button is called Views. It opens saved views, but it was labelled "Filters" — sitting directly beside the funnel that opens the actual filters, so the two most-used controls in the header shared a name and led to different places.</p>
         <p>Changed: colour in the filter chips means what the chip means. Every active filter chip sat on the same tinted plate regardless of what it stood for, so a red P0 priority chip was drawn on a green background. The plate is now neutral and the chip's own colour carries the meaning.</p>
         <p>Fixed: an ad-hoc filter keeps its name on a narrow screen. On a 375-point phone the "Custom" pill was squeezed until only its task count was left, so the one control naming your current filter showed a bare number. The save affordance now yields its label first.</p>
+        <p>Fixed: the "no tasks match" message no longer sticks to the screen edge. When the Tasks list's empty-state message wrapped to a second line — a longer language such as German, or a larger system text size — it was laid out across the full width of the screen, flush against the left edge with no margin. It now uses the same centered, inset empty-state treatment as the Logbook, with the tasks glyph above it.</p>
       </description>
     </release>
     <release version="0.9.1073" date="2026-07-29">

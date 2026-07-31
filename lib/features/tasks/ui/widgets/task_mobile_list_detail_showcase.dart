@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_chrome.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
@@ -190,8 +191,9 @@ class _TaskMobileListScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: state.visibleSections.isEmpty
-                      ? TaskShowcaseEmptyResults(
-                          message: context.messages.taskShowcaseNoResults,
+                      ? DesignSystemEmptyState(
+                          icon: Icons.list_outlined,
+                          title: context.messages.taskShowcaseNoResults,
                         )
                       : TaskListSectionsList(
                           sections: state.visibleSections,
