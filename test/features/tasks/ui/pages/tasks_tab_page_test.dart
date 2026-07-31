@@ -2,6 +2,7 @@
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -11,7 +12,9 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -1243,22 +1246,139 @@ void main() {
     });
   });
 
-  testWidgets(
-    'shows the noItemsFound indicator when the page is empty',
-    (tester) async {
+  group('no-results empty state', () {
+    const message = 'No tasks match your search.';
+
+    setUp(() {
       pagingController.value = PagingState<int, JournalEntity>(
         pages: const [<JournalEntity>[]],
         keys: const [0],
         hasNextPage: false,
       );
+    });
 
-      await tester.pumpWidget(buildSubject(state: state()));
+    Future<void> pumpEmpty(
+      WidgetTester tester, {
+      MediaQueryData? mediaQueryData,
+    }) async {
+      await tester.pumpWidget(
+        buildSubject(state: state(), mediaQueryData: mediaQueryData),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+    }
 
-      expect(find.text('No tasks match your search.'), findsOneWidget);
-    },
-  );
+    testWidgets(
+      'composes the design-system empty state with the tasks glyph',
+      (tester) async {
+        await pumpEmpty(tester);
+
+        final emptyState = find.byType(DesignSystemEmptyState);
+        expect(emptyState, findsOneWidget);
+        expect(
+          tester.widget<DesignSystemEmptyState>(emptyState).icon,
+          Icons.list_outlined,
+        );
+        expect(
+          find.descendant(of: emptyState, matching: find.text(message)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'the message is never laid out edge to edge on a phone-width pane',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(390, 844)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await pumpEmpty(
+          tester,
+          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+        );
+
+        final messageFinder = find.text(message);
+        final inset = tester.element(messageFinder).designTokens.spacing.step6;
+        final paragraph = tester.renderObject<RenderParagraph>(messageFinder);
+
+        // The layout contract, not the painted position: whatever width the
+        // rendered lines happen to take, the paragraph must never be OFFERED
+        // the full pane width — that is exactly the state in which a wrapping
+        // message painted flush against the screen edge.
+        expect(
+          paragraph.constraints.maxWidth,
+          lessThanOrEqualTo(390 - 2 * inset + 0.01),
+        );
+      },
+    );
+
+    testWidgets(
+      'a message wrapped by a large text scale keeps clear of both edges',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(390, 844)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await pumpEmpty(
+          tester,
+          mediaQueryData: const MediaQueryData(
+            size: Size(390, 844),
+            textScaler: TextScaler.linear(2),
+          ),
+        );
+
+        final messageFinder = find.text(message);
+        final inset = tester.element(messageFinder).designTokens.spacing.step6;
+        final paragraph = tester.renderObject<RenderParagraph>(messageFinder);
+
+        // Measure per word, not over the whole string: a wrapped line's
+        // trailing space glyph legitimately extends past the visual line
+        // edge, so its selection box would fail an edge assertion without
+        // any ink being rendered there.
+        final wordBoxes = <TextBox>[];
+        var searchStart = 0;
+        for (final word in message.split(' ')) {
+          final start = message.indexOf(word, searchStart);
+          searchStart = start + word.length;
+          wordBoxes.addAll(
+            paragraph.getBoxesForSelection(
+              TextSelection(baseOffset: start, extentOffset: searchStart),
+            ),
+          );
+        }
+
+        // Guard against a vacuous pass: the accessibility scale must
+        // actually wrap the message, since a single centered line kept
+        // clear of the edges even before the empty state carried an inset.
+        final lineTops = wordBoxes.map((box) => box.top).toSet();
+        expect(
+          lineTops.length,
+          greaterThan(1),
+          reason: 'the scaled message must wrap for this test to bite',
+        );
+
+        for (final box in wordBoxes) {
+          final left = paragraph.localToGlobal(Offset(box.left, box.top)).dx;
+          final right = paragraph.localToGlobal(Offset(box.right, box.top)).dx;
+          expect(
+            left,
+            greaterThanOrEqualTo(inset - 0.01),
+            reason: 'no rendered word may reach the left screen edge',
+          );
+          expect(
+            right,
+            lessThanOrEqualTo(390 - inset + 0.01),
+            reason: 'no rendered word may reach the right screen edge',
+          );
+        }
+      },
+    );
+  });
 
   testWidgets(
     'header filter is inactive for the default status set and no other facets',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
@@ -16,7 +17,7 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dar
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Left pane of the task showcase: a search header, the active-filter chip
-/// row (when filters are applied), and either [TaskShowcaseEmptyResults] or a
+/// row (when filters are applied), and either a [DesignSystemEmptyState] or a
 /// [TaskListSectionsList] of the visible sections. Search/filter/selection
 /// interactions are forwarded to the supplied callbacks.
 class TaskListPane extends StatelessWidget {
@@ -58,8 +59,9 @@ class TaskListPane extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               child: state.visibleSections.isEmpty
-                  ? TaskShowcaseEmptyResults(
-                      message: context.messages.taskShowcaseNoResults,
+                  ? DesignSystemEmptyState(
+                      icon: Icons.list_outlined,
+                      title: context.messages.taskShowcaseNoResults,
                     )
                   : TaskListSectionsList(
                       sections: state.visibleSections,
@@ -403,24 +405,6 @@ class _TaskListSearchHeader extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-      ),
-    );
-  }
-}
-
-/// Centered placeholder shown when no tasks match the current search/filters.
-class TaskShowcaseEmptyResults extends StatelessWidget {
-  const TaskShowcaseEmptyResults({required this.message, super.key});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        message,
-        style: context.designTokens.typography.styles.subtitle.subtitle1
-            .copyWith(color: TaskShowcasePalette.mediumText(context)),
       ),
     );
   }

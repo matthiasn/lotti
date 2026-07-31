@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -548,17 +549,24 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                                 CircularProgressIndicator.adaptive(),
                                           ),
                                         ),
-                                    noItemsFoundIndicatorBuilder: (_) =>
+                                    // The sliver has no horizontal inset, so
+                                    // this indicator must bring its own — a
+                                    // message long enough to wrap (long
+                                    // locale, large text scale) otherwise
+                                    // renders flush against the screen edge.
+                                    noItemsFoundIndicatorBuilder: (context) =>
                                         Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 48,
+                                          padding: EdgeInsets.only(
+                                            top: context
+                                                .designTokens
+                                                .spacing
+                                                .step9,
                                           ),
-                                          child: Center(
-                                            child: Text(
-                                              context
-                                                  .messages
-                                                  .taskShowcaseNoResults,
-                                            ),
+                                          child: DesignSystemEmptyState(
+                                            icon: Icons.list_outlined,
+                                            title: context
+                                                .messages
+                                                .taskShowcaseNoResults,
                                           ),
                                         ),
                                     itemBuilder: (context, item, index) {

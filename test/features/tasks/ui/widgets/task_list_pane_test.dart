@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -512,9 +513,9 @@ void main() {
   });
 
   group('TaskListPane chrome', () {
-    testWidgets('list pane paints background.level01 to match sidebar', (
-      tester,
-    ) async {
+    // A pane over zero tasks: every chrome test also implicitly renders the
+    // empty branch, and the empty-state test asserts on it directly.
+    Future<void> pumpEmptyPane(WidgetTester tester) async {
       final state = TaskListDetailState(
         data: TaskListData(
           categories: const [],
@@ -542,6 +543,12 @@ void main() {
         ),
       );
       await tester.pump();
+    }
+
+    testWidgets('list pane paints background.level01 to match sidebar', (
+      tester,
+    ) async {
+      await pumpEmptyPane(tester);
 
       final decoratedBox = tester.widget<DecoratedBox>(
         find
@@ -556,36 +563,31 @@ void main() {
     });
 
     testWidgets('filter icon is the Figma funnel glyph', (tester) async {
-      final state = TaskListDetailState(
-        data: TaskListData(
-          categories: const [],
-          tasks: const [],
-          currentTime: DateTime(2026, 4, 17),
-        ),
-        searchQuery: '',
-        selectedTaskId: '',
-        filterState: DesignSystemTaskFilterState(
-          title: 'Filters',
-          clearAllLabel: 'Clear',
-          applyLabel: 'Apply',
-        ),
-      );
-
-      await tester.pumpWidget(
-        wrap(
-          TaskListPane(
-            state: state,
-            onTaskSelected: (_) {},
-            onSearchChanged: (_) {},
-            onSearchCleared: () {},
-            onFilterPressed: () {},
-          ),
-        ),
-      );
-      await tester.pump();
+      await pumpEmptyPane(tester);
 
       expect(find.byIcon(Icons.filter_list_rounded), findsOneWidget);
       expect(find.byIcon(Icons.tune_rounded), findsNothing);
     });
+
+    testWidgets(
+      'no visible sections compose the design-system empty state',
+      (tester) async {
+        await pumpEmptyPane(tester);
+
+        final emptyState = find.byType(DesignSystemEmptyState);
+        expect(emptyState, findsOneWidget);
+        expect(
+          tester.widget<DesignSystemEmptyState>(emptyState).icon,
+          Icons.list_outlined,
+        );
+        expect(
+          find.descendant(
+            of: emptyState,
+            matching: find.text('No tasks match your search.'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }
