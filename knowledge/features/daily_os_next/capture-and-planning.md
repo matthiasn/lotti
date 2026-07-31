@@ -233,9 +233,13 @@ blocks are retained verbatim, even if a referenced task was deleted or moved
 categories while inference ran; only the wake provenance and write timestamp
 advance. The workflow also carries the exact baseline serialized into the
 prompt through tool dispatch. The model's echo is validated against that
-snapshot, while a newer persisted edit wins the no-op; a concurrent deletion is
-reported as stale instead of being resurrected. The three states are
-deliberately distinct, because collapsing any two misleads:
+snapshot. This comparison decodes the historical stored shape rather than the
+current block-creation contract, so a legacy block with a nullable title or AI
+reason can still be repeated exactly without making those nulls valid for new
+blocks. The writer re-reads the live plan inside the same transaction as the
+no-op write, so an edit arriving during finalization wins too; a concurrent
+deletion is reported as stale instead of being resurrected. The three states
+are deliberately distinct, because collapsing any two misleads:
 
 | `<planning_window>` | Meaning |
 |---|---|

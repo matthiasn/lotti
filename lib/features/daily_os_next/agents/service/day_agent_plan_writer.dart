@@ -404,22 +404,22 @@ class DayAgentPlanWriter {
     final blocks = <PlannedBlock>[];
     for (final raw in rawBlocks) {
       blocks.add(
-        parsePlannedBlock(
-          raw: raw,
-          day: planDate,
-          earliestDraftStart: earliestDraftStart,
-          // A closed baseline is already persisted user state. Validate the
-          // model's echo against that snapshot rather than today's live task
-          // or category rows, which may have been deleted or moved since the
-          // plan was written; the accepted result below preserves the stored
-          // payload verbatim.
-          allowedCategoryIds: validateClosedBaseline
-              ? const {}
-              : allowedCategoryIds,
-          decidedTaskIds: decidedTasks,
-          allowedExistingTaskIds: allowedExistingTaskIds,
-          baselineBlocks: baselineBlocks,
-        ),
+        validateClosedBaseline
+            // Closed-window validation compares the model echo with historical
+            // stored data. Legacy blocks may have nullable title/reason fields
+            // that the current creation contract rejects, so decode only the
+            // persisted shape here and let exact equality below enforce the
+            // no-op. The accepted result never replaces the stored payload.
+            ? _parseClosedBaselineEcho(raw)
+            : parsePlannedBlock(
+                raw: raw,
+                day: planDate,
+                earliestDraftStart: earliestDraftStart,
+                allowedCategoryIds: allowedCategoryIds,
+                decidedTaskIds: decidedTasks,
+                allowedExistingTaskIds: allowedExistingTaskIds,
+                baselineBlocks: baselineBlocks,
+              ),
       );
     }
     if (windowClosed) {
@@ -456,18 +456,8 @@ class DayAgentPlanWriter {
         'window is open',
       );
     }
-    late final DayPlanEntity plan;
-    if (windowClosed && existing != null) {
-      // A concurrent edit after prompt construction wins. The model still has
-      // to echo the baseline it actually saw, but the accepted closed-window
-      // no-op preserves the latest persisted payload rather than overwriting
-      // it with stale prompt state.
-      plan = existing.copyWith(
-        runKey: runKey ?? existing.runKey,
-        updatedAt: now,
-        vectorClock: existing.vectorClock,
-      );
-    } else {
+    DayPlanEntity? preparedPlan;
+    if (!windowClosed || existing == null) {
       blocks.sort((a, b) {
         final byStart = a.startTime.compareTo(b.startTime);
         if (byStart != 0) return byStart;
@@ -485,7 +475,7 @@ class DayAgentPlanWriter {
       ];
       final scheduledMinutes = scheduledMinutesFor(blocks);
       final pinnedTasks = pinnedTasksFor(blocks);
-      plan =
+      preparedPlan =
           AgentDomainEntity.dayPlan(
                 id: dayAgentPlanEntityId(dayId),
                 agentId: agentId,
@@ -519,20 +509,48 @@ class DayAgentPlanWriter {
               as DayPlanEntity;
     }
 
-    await syncService.runInTransaction(() async {
-      await syncService.upsertEntity(plan);
+    final plan = await syncService.runInTransaction(() async {
+      late final DayPlanEntity planToWrite;
+      if (windowClosed) {
+        // Re-read inside the same transaction as the no-op write. A manual or
+        // synced edit can land after the earlier validation read; copying that
+        // transactional value ensures finalization cannot overwrite it with a
+        // stale whole-row snapshot.
+        final latest = await reads.draftPlanForDay(
+          agentId: agentId,
+          dayId: dayId,
+        );
+        if (validationBaseline != null && latest == null) {
+          throw const DayAgentCaptureException(
+            'The planning baseline changed while the plan was being drafted. '
+            'The deleted plan was not restored.',
+          );
+        }
+        planToWrite = latest == null
+            ? preparedPlan!
+            : latest.copyWith(
+                runKey: runKey ?? latest.runKey,
+                updatedAt: now,
+                vectorClock: latest.vectorClock,
+              );
+      } else {
+        planToWrite = preparedPlan!;
+      }
+
+      await syncService.upsertEntity(planToWrite);
       if (captureId != null) {
         await syncService.upsertLink(
           AgentLink.captureToPlan(
-            id: 'capture_to_plan:$captureId:${plan.id}',
+            id: 'capture_to_plan:$captureId:${planToWrite.id}',
             fromId: captureId,
-            toId: plan.id,
+            toId: planToWrite.id,
             createdAt: now,
             updatedAt: now,
             vectorClock: null,
           ),
         );
       }
+      return planToWrite;
     });
 
     onPersistedStateChanged
@@ -654,4 +672,33 @@ class DayAgentPlanWriter {
     taskIds: taskIds,
     allowedCategoryIds: allowedCategoryIds,
   );
+
+  PlannedBlock _parseClosedBaselineEcho(Object? raw) {
+    if (raw is! Map) {
+      throw const DayAgentCaptureException('block must be an object');
+    }
+    final data = raw.cast<String, dynamic>();
+    return PlannedBlock(
+      id: requiredStringArg(data, 'id'),
+      categoryId: requiredStringArg(data, 'categoryId'),
+      startTime: requiredDateTimeArg(data, 'start'),
+      endTime: requiredDateTimeArg(data, 'end'),
+      note: optionalStringArg(data['note']),
+      taskId: optionalStringArg(data['taskId']),
+      title: optionalStringArg(data['title']),
+      type:
+          optionalEnumArg(
+            PlannedBlockType.values,
+            optionalStringArg(data['type']),
+          ) ??
+          PlannedBlockType.ai,
+      state:
+          optionalEnumArg(
+            PlannedBlockState.values,
+            optionalStringArg(data['state']),
+          ) ??
+          PlannedBlockState.drafted,
+      reason: optionalStringArg(data['reason']),
+    );
+  }
 }
