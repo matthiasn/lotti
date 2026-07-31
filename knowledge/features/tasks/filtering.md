@@ -245,8 +245,11 @@ the half-viewport header back over the list.
 
 The compact bar states *what* narrows the list, not only that something does,
 via the shared `TabHeaderIconButton` (one design-system component consumed by
-both header states, so their activated treatments cannot drift): an ad-hoc
-filter shows an accent count badge with the number of active clauses; an active
+both header states, so their activated treatments cannot drift, at identical
+glyph ink so the collapse changes layout and never brightness): an ad-hoc
+filter is named as a localized clause count in the title context — spelled
+out once, never also repeated as a numeral on the funnel it would sit on top
+of; an active
 saved view shows its **name** beside the title with no badge (mirroring the
 expanded header, which suppresses clause chips for a resolved saved view); an
 active search shows the **quoted** query beside the title — `Tasks ⌄ · "x"`

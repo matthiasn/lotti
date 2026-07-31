@@ -16,9 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The same fold applies wherever the list is narrow: a narrowed desktop
   window, and the list pane of the desktop split view. The slim bar still
   says *what* is narrowing the list, not just that something is: an ad-hoc
-  filter shows a count of its active clauses on the filter button, an active
-  saved view shows its name next to the title, and an active search shows
-  the query plus a dot on the search button. The search button reopens the
+  filter is named as a count of its clauses ("3 filters"), an active saved
+  view shows its name next to the title, and an active search shows the
+  query in quotes. The search button reopens the
   header with the field focused, the filter button opens the filters
   directly, and applying changes there reopens the header so the chips
   confirm what you did. Typed search text survives the fold, a list too
@@ -36,6 +36,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   right next to counts that mean "how many tasks match" and read as "1
   filter is active" on an unfiltered list. The button now carries no number;
   the saved-filters sheet itself shows what exists.
+- **The saved-views button is called Views.** It opens saved views, but it
+  was labelled "Filters" — sitting directly beside the funnel that opens the
+  actual filters, so the two most-used controls in the header shared a name
+  and led to different places.
+- **Colour in the filter chips means what the chip means.** Every active
+  filter chip sat on the same tinted plate regardless of what it stood for,
+  so a red P0 priority chip was drawn on a green background. The plate is
+  now neutral and the chip's own colour carries the meaning.
+- **An ad-hoc filter keeps its name on a narrow screen.** On a 375-point
+  phone the "Custom" pill was squeezed until only its task count was left,
+  so the one control naming your current filter showed a bare number. The
+  save affordance now yields its label first.
 
 ## [0.9.1073]
 ### Added
