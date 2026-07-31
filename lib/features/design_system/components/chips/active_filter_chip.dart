@@ -101,12 +101,14 @@ class ActiveFilterChip extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: tokens.spacing.step2),
-                // Outline close at the meta-row tier: the filled 20pt disc
-                // out-shouted the label it was attached to, and sat off the
-                // icon ramp entirely.
+                // The filled disc at 20 is a deliberate, separately-tested
+                // decision (see active_filter_chip_test.dart): the remove
+                // affordance must be unambiguous. It sits between icon-ramp
+                // steps, so it stays an explicit constant here rather than
+                // being snapped to a neighbouring tier that would weaken it.
                 Icon(
-                  Icons.close_rounded,
-                  size: IconSizes.s,
+                  Icons.cancel_rounded,
+                  size: 20,
                   color: removeIconColor,
                 ),
               ],
