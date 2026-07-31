@@ -362,18 +362,20 @@ class DayAgentPlanWriter {
       workingHoursEnd: workingHoursEnd,
     );
     final preserveClosedBaseline = windowClosed && baselineBlocks.isNotEmpty;
-    // Resolved and category-filtered like every other task reference. This
-    // argument is written by the model itself, so an unchecked set let it
+    // Persisted task/category pairs let a closed baseline remain its own
+    // authority without re-resolving today's live journal rows.
+    final baselineTaskCategories = <String, String?>{
+      for (final block in baselineBlocks.values)
+        ?block.taskId: block.categoryId,
+    };
+    // Otherwise resolve and category-filter like every other task reference.
+    // This argument is written by the model itself, so an unchecked set let it
     // reference a deleted task, a non-existent one, or one belonging to a
     // category this agent may not touch, just by echoing the id into its own
     // `draft_day_plan` call. Legitimate decided tasks survive: they are
     // hydrated for the prompt through `hydrateDecidedTasks`, which already
     // applies exactly this filter, so the only ids dropped here are ones the
     // model was never given.
-    final baselineTaskCategories = <String, String?>{
-      for (final block in baselineBlocks.values)
-        ?block.taskId: block.categoryId,
-    };
     final decidedTasks = preserveClosedBaseline
         ? baselineTaskCategories
         : await _resolveTaskIds(decidedTaskIds, allowedCategoryIds);
