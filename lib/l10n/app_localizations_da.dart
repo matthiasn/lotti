@@ -10982,7 +10982,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Administrer opgavefiltre';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Filtre';
+  String get tasksSavedFiltersRailButton => 'Visninger';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

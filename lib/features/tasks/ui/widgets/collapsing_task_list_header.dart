@@ -383,7 +383,7 @@ class TaskListCompactHeaderBar extends StatelessWidget {
                                         // so.
                                         child: Icon(
                                           Icons.expand_more_rounded,
-                                          size: tokens.spacing.step5,
+                                          size: IconSizes.s,
                                           color:
                                               tokens.colors.text.mediumEmphasis,
                                         ),

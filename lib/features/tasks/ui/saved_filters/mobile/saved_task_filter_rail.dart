@@ -29,7 +29,7 @@ abstract final class SavedTaskFilterRailKeys {
 /// filter exists; otherwise it collapses to nothing so the layout is unchanged
 /// for users without saved filters.
 ///
-/// Left → right: a borderless, chip-chromed "Filters" button (visually distinct
+/// Left → right: a borderless, chip-chromed "Views" button (visually distinct
 /// from the bordered filter pills) carrying the saved-filter count and the
 /// rail's single panel-disclosure glyph (opens the complete sheet), then a
 /// hard-capped, non-scrolling run of pills — "All" (clears to the default
@@ -114,7 +114,12 @@ class SavedTaskFilterRail extends ConsumerWidget {
               final savedButton = _SavedButton(
                 onTap: () => showSavedTaskFiltersSheet(context),
               );
+              // Below this the anchor pill cannot seat its name beside a
+              // spelled-out save affordance, and the name is worth more.
+              final tightBand =
+                  constraints.maxWidth < tokens.spacing.step13 * 2.5;
               final saveChip = _SaveChip(
+                labelled: !(tightBand && (activeFilter != null || hasUnsaved)),
                 onTap: () => promptSaveCurrentTaskFilter(context, ref),
               );
 
@@ -204,7 +209,12 @@ class SavedTaskFilterRail extends ConsumerWidget {
                         ],
                         gap,
                         savedButton,
-                        if (hasUnsaved) ...[gap, saveChip],
+                        // Flexible, and LAST in the row: when the band is tight the
+                        // save affordance is the one element that may ellipsize.
+                        // Unflexed it starved the anchor pill instead, which at
+                        // 375pt clipped "Custom" away entirely and left a bare
+                        // count — the active filter losing its own name.
+                        if (hasUnsaved) ...[gap, Flexible(child: saveChip)],
                       ],
                     ),
                   ),
@@ -432,7 +442,10 @@ class SavedTaskFilterRail extends ConsumerWidget {
     // reserving one made the heuristic drop an MRU pill that fits.
     final savedButton = tokens.spacing.step12 + tokens.spacing.step3;
     final allPill = tokens.spacing.step11; // 80
-    final saveChip = showSaveChip ? tokens.spacing.step11 : 0.0; // 80
+    // The save chip is label + leading glyph ("+ Save filter…"), far wider
+    // than a pill: reserve a realistic slot so MRU pills are dropped BEFORE
+    // the row gets tight enough to squeeze the anchor.
+    final saveChip = showSaveChip ? tokens.spacing.step13 : 0.0; // 160
     final anchorReserve = hasAnchorPill ? tokens.spacing.step13 : 0.0; // 160
     final mruPill = tokens.spacing.step12; // 96 per quick-jump pill
 
@@ -493,12 +506,12 @@ class _SavedButton extends StatelessWidget {
       label: label,
       leading: Icon(
         Icons.bookmarks_outlined,
-        size: tokens.spacing.step4,
+        size: IconSizes.xs,
         color: glyphColor,
       ),
       trailing: Icon(
         Icons.unfold_more_rounded,
-        size: tokens.spacing.step4,
+        size: IconSizes.xs,
         color: glyphColor,
       ),
     );
@@ -531,9 +544,15 @@ class _SavedButton extends StatelessWidget {
 /// active / "Custom" pills already use, and NOT the muted dashed ghost-chip skin
 /// reserved for true empty/placeholder states. Wrapped in a ≥48dp tap target.
 class _SaveChip extends StatelessWidget {
-  const _SaveChip({required this.onTap});
+  const _SaveChip({required this.onTap, this.labelled = true});
 
   final VoidCallback onTap;
+
+  /// Whether to spell out the label. Dropped to a bare `+` when the band is
+  /// too tight to seat the anchor pill's own NAME beside it — losing the word
+  /// "Save" from an affordance that still reads as add-a-filter costs far
+  /// less than the active filter rendering as an anonymous count.
+  final bool labelled;
 
   @override
   Widget build(BuildContext context) {
@@ -544,16 +563,24 @@ class _SaveChip extends StatelessWidget {
     final accent = tokens.colors.interactive.enabled;
     final label = messages.tasksSavedFiltersSaveButtonLabel;
 
-    final pill = DsPill(
-      variant: DsPillVariant.tinted,
+    final glyph = Icon(
+      Icons.add_rounded,
+      size: IconSizes.xs,
       color: accent,
-      label: label,
-      leading: Icon(
-        Icons.add_rounded,
-        size: tokens.spacing.step4,
-        color: accent,
-      ),
     );
+    final pill = labelled
+        ? DsPill(
+            variant: DsPillVariant.tinted,
+            color: accent,
+            label: label,
+            leading: glyph,
+          )
+        : DsPill(
+            variant: DsPillVariant.tinted,
+            color: accent,
+            label: '',
+            leading: glyph,
+          );
 
     return Semantics(
       button: true,

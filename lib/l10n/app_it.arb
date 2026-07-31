@@ -5062,7 +5062,7 @@
   "tasksSavedFiltersFilterNameLabel": "Nome del filtro",
   "tasksSavedFiltersGroupSemantics": "Filtri di attività",
   "tasksSavedFiltersManageTooltip": "Gestire i filtri delle attività",
-  "tasksSavedFiltersRailButton": "Filtri",
+  "tasksSavedFiltersRailButton": "Viste",
   "tasksSavedFiltersRenameNamed": "Rinomina {name}",
   "@tasksSavedFiltersRenameNamed": {
     "placeholders": {

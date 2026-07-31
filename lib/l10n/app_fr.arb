@@ -4482,7 +4482,7 @@
   "tasksSavedFiltersFilterNameLabel": "Nom du filtre",
   "tasksSavedFiltersGroupSemantics": "Filtres de tâches",
   "tasksSavedFiltersManageTooltip": "Gérer les filtres de tâches",
-  "tasksSavedFiltersRailButton": "Filtres",
+  "tasksSavedFiltersRailButton": "Vues",
   "tasksSavedFiltersRenameNamed": "Renommer {name}",
   "tasksSavedFiltersReorderHelper": "Fais glisser les filtres pour les ordonner. Les cinq premiers apparaissent dans la barre latérale.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Enregistrer comme nouveau…",

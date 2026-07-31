@@ -11155,7 +11155,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Gestionar filtros de tareas';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Filtros';
+  String get tasksSavedFiltersRailButton => 'Vistas';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

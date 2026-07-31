@@ -31,12 +31,11 @@ class TabHeaderIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    // 20 predates this component (both former call sites hardcoded it) and
-    // sits between spacing steps (16/24); introducing a new sizing token is a
-    // separate decision, so the established value is kept in ONE place here.
     final glyph = Icon(
       icon,
-      size: 20,
+      // The control-glyph tier. Both former call sites hardcoded 20, which is
+      // off the ramp entirely; `m` is the role these buttons actually play.
+      size: IconSizes.m,
       color: active
           ? tokens.colors.interactive.enabled
           : tokens.colors.text.mediumEmphasis,
@@ -140,7 +139,14 @@ class TabSectionHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                effectiveTitleTrailing,
+                // Both header rows terminate in the SAME square slot, so the
+                // bell and the funnel share one optical right edge instead of
+                // ending at whatever inset each control's own padding
+                // happens to produce.
+                SizedBox.square(
+                  dimension: TapTargets.minimum,
+                  child: Center(child: effectiveTitleTrailing),
+                ),
               ],
             ),
           ),
@@ -160,11 +166,16 @@ class TabSectionHeader extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: tokens.spacing.step4),
-                TabHeaderIconButton(
-                  icon: Icons.filter_list_rounded,
-                  tooltip: filterTooltip,
-                  onPressed: onFilterPressed,
-                  active: filtersActive,
+                SizedBox.square(
+                  dimension: TapTargets.minimum,
+                  child: Center(
+                    child: TabHeaderIconButton(
+                      icon: Icons.filter_list_rounded,
+                      tooltip: filterTooltip,
+                      onPressed: onFilterPressed,
+                      active: filtersActive,
+                    ),
+                  ),
                 ),
               ],
             ),

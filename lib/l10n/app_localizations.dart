@@ -18876,7 +18876,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersRailButton.
   ///
   /// In en, this message translates to:
-  /// **'Filters'**
+  /// **'Views'**
   String get tasksSavedFiltersRailButton;
 
   /// No description provided for @tasksSavedFiltersRenameNamed.

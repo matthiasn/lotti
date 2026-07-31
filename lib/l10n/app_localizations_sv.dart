@@ -10984,7 +10984,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Hantera uppgiftsfilter';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Filter';
+  String get tasksSavedFiltersRailButton => 'Vyer';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

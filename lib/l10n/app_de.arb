@@ -4482,7 +4482,7 @@
   "tasksSavedFiltersFilterNameLabel": "Filtername",
   "tasksSavedFiltersGroupSemantics": "Aufgabenfilter",
   "tasksSavedFiltersManageTooltip": "Aufgabenfilter verwalten",
-  "tasksSavedFiltersRailButton": "Filter",
+  "tasksSavedFiltersRailButton": "Ansichten",
   "tasksSavedFiltersRenameNamed": "{name} umbenennen",
   "tasksSavedFiltersReorderHelper": "Zieh die Filter in die gewünschte Reihenfolge. Die ersten fünf erscheinen in der Seitenleiste.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Als neuen Filter speichern…",

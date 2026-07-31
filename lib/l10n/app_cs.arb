@@ -4489,7 +4489,7 @@
   "tasksSavedFiltersFilterNameLabel": "Název filtru",
   "tasksSavedFiltersGroupSemantics": "Filtry úkolů",
   "tasksSavedFiltersManageTooltip": "Spravovat filtry úkolů",
-  "tasksSavedFiltersRailButton": "Filtry",
+  "tasksSavedFiltersRailButton": "Pohledy",
   "tasksSavedFiltersRenameNamed": "Přejmenovat {name}",
   "tasksSavedFiltersReorderHelper": "Přetažením nastavíš pořadí. Prvních pět filtrů se zobrazí v postranním panelu.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Uložit jako nový…",

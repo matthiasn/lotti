@@ -11195,7 +11195,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Gestionați filtrele de sarcini';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Filtre';
+  String get tasksSavedFiltersRailButton => 'Vizualizări';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

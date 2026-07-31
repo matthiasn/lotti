@@ -126,7 +126,7 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Icon(iconData, size: 24, color: highText),
+                    Icon(iconData, size: IconSizes.l, color: highText),
                     if (hasUnseen)
                       Positioned(
                         top: 6,

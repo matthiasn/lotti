@@ -5061,7 +5061,7 @@
   "tasksSavedFiltersFilterNameLabel": "Nome do filtro",
   "tasksSavedFiltersGroupSemantics": "Filtros de tarefas",
   "tasksSavedFiltersManageTooltip": "Gerenciar filtros de tarefas",
-  "tasksSavedFiltersRailButton": "Filtros",
+  "tasksSavedFiltersRailButton": "Vistas",
   "tasksSavedFiltersRenameNamed": "Renomear {name}",
   "@tasksSavedFiltersRenameNamed": {
     "placeholders": {

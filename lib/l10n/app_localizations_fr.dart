@@ -11199,7 +11199,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Gérer les filtres de tâches';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Filtres';
+  String get tasksSavedFiltersRailButton => 'Vues';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

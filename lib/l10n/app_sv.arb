@@ -5062,7 +5062,7 @@
   "tasksSavedFiltersFilterNameLabel": "Filternamn",
   "tasksSavedFiltersGroupSemantics": "Uppgiftsfilter",
   "tasksSavedFiltersManageTooltip": "Hantera uppgiftsfilter",
-  "tasksSavedFiltersRailButton": "Filter",
+  "tasksSavedFiltersRailButton": "Vyer",
   "tasksSavedFiltersRenameNamed": "Byt namn på {name}",
   "@tasksSavedFiltersRenameNamed": {
     "placeholders": {

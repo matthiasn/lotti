@@ -11121,7 +11121,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Spravovat filtry úkolů';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Filtry';
+  String get tasksSavedFiltersRailButton => 'Pohledy';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

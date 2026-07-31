@@ -3,10 +3,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Pill-shaped chip used by the Tasks/Projects tab active-filter rows.
 ///
-/// Matches the Figma reference: dark surface, accent-tinted outline, icon
-/// in the accent colour, high-emphasis label text, and a filled ✕ on the
-/// trailing end that removes the filter. Tapping anywhere on the chip
-/// removes the filter.
+/// A neutral raised plate with an accent-tinted outline, the icon in the
+/// accent colour, high-emphasis label text, and a filled ✕ on the trailing
+/// end. Tapping anywhere on the chip removes the filter. Colour is reserved
+/// for the chip's own semantics (status, priority) — the plate never tints,
+/// so a red priority and a green status read as themselves.
 class ActiveFilterChip extends StatelessWidget {
   const ActiveFilterChip({
     required this.label,
@@ -30,7 +31,12 @@ class ActiveFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    final backgroundColor = tokens.colors.surface.selected;
+    // A NEUTRAL plate, not `surface.selected`: the fill was constant across
+    // every chip, so it carried no information — while its tint fought the
+    // accent of any chip that isn't the same hue (a red P0 chip sat on a
+    // mint plate). The accent outline and glyph carry the semantics; the
+    // plate only lifts the chip off the page surface.
+    final backgroundColor = tokens.colors.background.level02;
     final labelColor = tokens.colors.text.highEmphasis;
     final removeIconColor = tokens.colors.text.mediumEmphasis;
 

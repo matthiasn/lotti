@@ -806,6 +806,10 @@ class _TasksTabActiveFilters extends ConsumerWidget {
         Padding(
           padding: EdgeInsets.only(left: tokens.spacing.step3),
           child: DesignSystemChip(
+            // Same metrics as the ActiveFilterChips it shares the wrap with,
+            // so the batch action reads as part of that row rather than as a
+            // louder, squarer component glued onto it.
+            size: DesignSystemChipSize.compactPill,
             label: context.messages.tasksFilterClearAll,
             leadingIcon: Icons.close_rounded,
             onPressed: () => unawaited(
@@ -831,6 +835,9 @@ class _TasksTabActiveFilters extends ConsumerWidget {
         child: SizedBox(
           width: double.infinity,
           child: Wrap(
+            // Chips in a run differ slightly in height (glyph vs avatar vs
+            // plain); centre them so a shorter one stops hanging off the top.
+            crossAxisAlignment: WrapCrossAlignment.center,
             spacing: tokens.spacing.step3,
             runSpacing: tokens.spacing.step3,
             children: chips,

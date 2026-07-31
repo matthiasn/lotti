@@ -5061,7 +5061,7 @@
   "tasksSavedFiltersFilterNameLabel": "Filternaam",
   "tasksSavedFiltersGroupSemantics": "Taakfilters",
   "tasksSavedFiltersManageTooltip": "Taakfilters beheren",
-  "tasksSavedFiltersRailButton": "Filters",
+  "tasksSavedFiltersRailButton": "Weergaven",
   "tasksSavedFiltersRenameNamed": "Hernoemen {name}",
   "@tasksSavedFiltersRenameNamed": {
     "placeholders": {

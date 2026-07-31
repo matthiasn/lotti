@@ -4482,7 +4482,7 @@
   "tasksSavedFiltersFilterNameLabel": "Numele filtrului",
   "tasksSavedFiltersGroupSemantics": "Filtre de sarcini",
   "tasksSavedFiltersManageTooltip": "Gestionați filtrele de sarcini",
-  "tasksSavedFiltersRailButton": "Filtre",
+  "tasksSavedFiltersRailButton": "Vizualizări",
   "tasksSavedFiltersRenameNamed": "Redenumiți {name}",
   "tasksSavedFiltersReorderHelper": "Trageți pentru a stabili ordinea. Primele cinci filtre apar în bara laterală.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Salvați ca filtru nou…",

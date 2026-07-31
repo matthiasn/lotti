@@ -5062,7 +5062,7 @@
   "tasksSavedFiltersFilterNameLabel": "Filternavn",
   "tasksSavedFiltersGroupSemantics": "Opgavefiltre",
   "tasksSavedFiltersManageTooltip": "Administrer opgavefiltre",
-  "tasksSavedFiltersRailButton": "Filtre",
+  "tasksSavedFiltersRailButton": "Visninger",
   "tasksSavedFiltersRenameNamed": "Omdøb {name}",
   "@tasksSavedFiltersRenameNamed": {
     "placeholders": {

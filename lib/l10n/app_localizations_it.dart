@@ -11136,7 +11136,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Gestire i filtri delle attività';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Filtri';
+  String get tasksSavedFiltersRailButton => 'Viste';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {

@@ -160,7 +160,7 @@ void main() {
   });
 
   testWidgets(
-    'Filters button carries no numeral and opens the sheet',
+    'Views button carries no numeral and opens the sheet',
     (
       tester,
     ) async {
@@ -174,7 +174,7 @@ void main() {
       final label = tester.widget<Text>(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-          matching: find.text('Filters'),
+          matching: find.text('Views'),
         ),
       );
       // The label inherits the filled pill's high-emphasis colour…

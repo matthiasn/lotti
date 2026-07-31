@@ -687,6 +687,7 @@ void main() {
           find.byType(ActiveFilterChip),
         );
         expect(chip.leadingIcon, Icons.smart_toy_outlined);
+        expect(chip.label, 'Has Agent');
 
         await tester.tap(find.byType(ActiveFilterChip));
         await tester.pump();
@@ -698,6 +699,27 @@ void main() {
         );
       },
     );
+
+    testWidgets('the noAgent clause names itself too, not just hasAgent', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(
+            selectedTaskStatuses: const <String>{},
+            selectedCategoryIds: const <String>{},
+            agentAssignmentFilter: AgentAssignmentFilter.noAgent,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        tester.widget<ActiveFilterChip>(find.byType(ActiveFilterChip)).label,
+        'No Agent',
+      );
+    });
 
     testWidgets(
       'Clear all clears the search query it sits beside, not just the '
@@ -1033,7 +1055,7 @@ void main() {
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
       // The Filters button keeps a plain label (its saved-count rides a
       // separate slot, not a parenthetical).
-      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Views'), findsOneWidget);
       // The active pill shows the saved filter's name. Scoped to the rail:
       // the (offstage) collapsed compact bar now carries the name too, as
       // its context label.
@@ -1671,6 +1693,64 @@ void main() {
       // Opening filters does not expand the header behind the sheet.
       expect(crossFadeState(tester), CrossFadeState.showSecond);
     });
+
+    testWidgets(
+      'dismissing the compact filter modal without changing the filter shape '
+      'leaves the header collapsed — the scroll position keeps its context',
+      (tester) async {
+        await pumpCollapsed(tester);
+
+        await tester.tap(
+          find.byKey(CollapsingTaskListHeaderKeys.compactFilterButton),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Filter tasks'), findsOneWidget);
+
+        // Close it the way a back gesture would, with nothing changed.
+        tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+        await tester.pumpAndSettle();
+
+        expect(find.text('Filter tasks'), findsNothing);
+        expect(crossFadeState(tester), CrossFadeState.showSecond);
+      },
+    );
+
+    testWidgets(
+      'a collapse releases the search field: a focused field scrolled off '
+      'screen would keep an invisible caret and swallow typing',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(state: longListState()));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byType(TextField).first);
+        await tester.pump();
+        expect(
+          tester
+              .widget<TextField>(find.byType(TextField).first)
+              .focusNode
+              ?.hasFocus,
+          isTrue,
+        );
+
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -400),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(crossFadeState(tester), CrossFadeState.showSecond);
+        expect(
+          tester
+              .widget<TextField>(find.byType(TextField).first)
+              .focusNode
+              ?.hasFocus,
+          isFalse,
+        );
+      },
+    );
 
     testWidgets('a short list keeps the header expanded', (tester) async {
       await tester.pumpWidget(buildSubject(state: state()));
