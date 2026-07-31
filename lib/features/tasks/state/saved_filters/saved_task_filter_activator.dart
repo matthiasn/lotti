@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -92,22 +93,47 @@ bool taskFiltersHaveSameSavedShape(TasksFilter saved, TasksFilter live) {
       saved.agentAssignmentFilter == live.agentAssignmentFilter;
 }
 
-/// Returns true when the live tasks filter has at least one active clause
-/// — non-empty selection sets, a non-default agent mode, or a non-default
-/// sort. Display toggles do not count.
+/// How many clauses [live] narrows the task list by, relative to the page's
+/// resting open-work view.
 ///
-/// Sort is included because [taskFiltersHaveSameSavedShape] also compares it:
-/// a saved filter that differs only by sort would otherwise leave Save
-/// disabled even though the live shape doesn't match any saved entry.
-bool tasksFilterHasActiveClauses(TasksFilter live) {
-  return live.selectedTaskStatuses.isNotEmpty ||
-      live.selectedCategoryIds.isNotEmpty ||
-      live.selectedProjectIds.isNotEmpty ||
-      live.selectedLabelIds.isNotEmpty ||
-      live.selectedPriorities.isNotEmpty ||
-      live.agentAssignmentFilter != AgentAssignmentFilter.all ||
-      live.sortOption != TaskSortOption.byPriority;
+/// The single source of truth for "is this list filtered, and by how much" —
+/// the header's tinted funnel, its clause badge, the collapsed bar's caption
+/// and the chip row all count from here, so they cannot disagree about
+/// whether a list is narrowed.
+///
+/// Two status selections narrow nothing and so count zero: the default
+/// open-work set, which is the page's resting view, and the empty set, which
+/// admits every status. Any other selection counts one clause per status.
+/// Sort is excluded: reordering the same rows narrows nothing.
+int taskFilterNarrowingClauseCount(TasksFilter live) {
+  final statuses = live.selectedTaskStatuses;
+  final statusClauses =
+      statuses.isEmpty || setEquals(statuses, defaultSelectedTaskStatuses)
+      ? 0
+      : statuses.length;
+
+  return statusClauses +
+      live.selectedCategoryIds.length +
+      live.selectedProjectIds.length +
+      live.selectedLabelIds.length +
+      live.selectedPriorities.length +
+      (live.agentAssignmentFilter != AgentAssignmentFilter.all ? 1 : 0);
 }
+
+/// Whether [live] narrows the task list at all — see
+/// [taskFilterNarrowingClauseCount].
+bool taskFilterIsNarrowing(TasksFilter live) =>
+    taskFilterNarrowingClauseCount(live) > 0;
+
+/// Returns true when the live tasks filter departs from the default shape —
+/// it narrows the list, or it reorders it. Display toggles do not count.
+///
+/// Sort is included here but not in [taskFilterNarrowingClauseCount] because
+/// [taskFiltersHaveSameSavedShape] also compares it: a saved filter that
+/// differs only by sort would otherwise leave Save disabled even though the
+/// live shape doesn't match any saved entry.
+bool tasksFilterHasActiveClauses(TasksFilter live) =>
+    taskFilterIsNarrowing(live) || live.sortOption != TaskSortOption.byPriority;
 
 /// id of the saved filter whose persisted shape matches the live tasks-page
 /// filter, or null when no saved filter matches.

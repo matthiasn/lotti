@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -291,30 +290,32 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
 
   /// Order-insensitive digest of every filter clause set, for detecting a
   /// changed filter shape across the modal round trip.
-  static String _filterFingerprint(JournalPageState state) => [
-    state.selectedTaskStatuses,
-    state.selectedPriorities,
-    state.selectedCategoryIds,
-    state.selectedLabelIds,
-    state.selectedProjectIds,
-  ].map((clause) => (clause.toList()..sort()).join(',')).join('|');
+  static String _filterFingerprint(JournalPageState state) {
+    final clauses = [
+      state.selectedTaskStatuses,
+      state.selectedPriorities,
+      state.selectedCategoryIds,
+      state.selectedLabelIds,
+      state.selectedProjectIds,
+    ].map((clause) => (clause.toList()..sort()).join(',')).join('|');
+    // The modal can also change agent mode and sort without touching a clause
+    // set; both alter what the list shows, so both must re-expand the header.
+    return '$clauses'
+        '|${state.agentAssignmentFilter.name}'
+        '|${state.sortOption.name}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(journalPageControllerProvider(true));
     final controller = ref.read(journalPageControllerProvider(true).notifier);
 
-    // A status selection differing from the default open-work set is
-    // itself a narrowing, alongside the optional facets.
-    final filtersActive =
-        state.selectedCategoryIds.isNotEmpty ||
-        state.selectedLabelIds.isNotEmpty ||
-        state.selectedPriorities.isNotEmpty ||
-        state.selectedProjectIds.isNotEmpty ||
-        !setEquals(
-          state.selectedTaskStatuses,
-          defaultSelectedTaskStatuses,
-        );
+    // One narrowing predicate for the whole page — the funnel tint, the
+    // clause badge, the collapsed caption and the chip row all read the same
+    // count, so they cannot claim different things about the same list.
+    final liveFilter = liveTasksFilterFor(state);
+    final activeFilterCount = taskFilterNarrowingClauseCount(liveFilter);
+    final filtersActive = activeFilterCount > 0;
 
     final expandedHeader = Column(
       mainAxisSize: MainAxisSize.min,
@@ -344,21 +345,6 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
         const _TasksTabActiveFilters(),
       ],
     );
-
-    // Clauses beyond the default open-work view: every selected facet, plus
-    // the status selection itself when it deviates from the default set. A
-    // deviating EMPTY status selection ("any status") still counts as one
-    // clause — the tinted funnel must never caption itself "0 filters".
-    final statusClauses =
-        setEquals(state.selectedTaskStatuses, defaultSelectedTaskStatuses)
-        ? 0
-        : math.max(1, state.selectedTaskStatuses.length);
-    final activeFilterCount =
-        state.selectedCategoryIds.length +
-        state.selectedLabelIds.length +
-        state.selectedPriorities.length +
-        state.selectedProjectIds.length +
-        statusClauses;
 
     // A resolved saved view is the *named* abstraction of its clause shape:
     // the expanded header suppresses the clause chips for it, so the
@@ -447,144 +433,171 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                       );
                       return false;
                     },
-                    child: CustomScrollView(
-                      scrollCacheExtent: const ScrollCacheExtent.pixels(1500),
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      controller: _scrollController,
-                      slivers: [
-                        if (state.pagingController case final pagingController?)
-                          PagingListener<int, JournalEntity>(
-                            key: const ValueKey('tasks-tab-paged-list'),
-                            controller: pagingController,
-                            builder: (context, pagingState, fetchNextPage) {
-                              final entries = buildTaskBrowseEntries(
-                                items:
-                                    pagingState.items ??
-                                    const <JournalEntity>[],
-                                sortOption: state.sortOption,
-                                now: clock.now(),
-                                hasNextPage: pagingState.hasNextPage,
-                              );
-                              final entryIndexByTaskId = <String, int>{
-                                for (var i = 0; i < entries.length; i++)
-                                  entries[i].task.meta.id: i,
-                              };
+                    child: NotificationListener<ScrollNotification>(
+                      // The scrollable's own notifications — not the
+                      // [ScrollController] listener — are the authoritative
+                      // scroll signal: they fire for every input path (touch
+                      // drag, trackpad, wheel, scrollbar jump, keyboard) and
+                      // survive a controller that is momentarily detached or
+                      // attached to a rebuilt viewport. depth 0 keeps nested
+                      // horizontal scrollers inside rows from driving the
+                      // header.
+                      onNotification: (notification) {
+                        if (notification.depth == 0 &&
+                            notification is ScrollUpdateNotification) {
+                          widget.collapseController.handleScroll(
+                            pixels: notification.metrics.pixels,
+                            maxScrollExtent:
+                                notification.metrics.maxScrollExtent,
+                          );
+                        }
+                        return false;
+                      },
+                      child: CustomScrollView(
+                        scrollCacheExtent: const ScrollCacheExtent.pixels(1500),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        controller: _scrollController,
+                        slivers: [
+                          if (state.pagingController
+                              case final pagingController?)
+                            PagingListener<int, JournalEntity>(
+                              key: const ValueKey('tasks-tab-paged-list'),
+                              controller: pagingController,
+                              builder: (context, pagingState, fetchNextPage) {
+                                final entries = buildTaskBrowseEntries(
+                                  items:
+                                      pagingState.items ??
+                                      const <JournalEntity>[],
+                                  sortOption: state.sortOption,
+                                  now: clock.now(),
+                                  hasNextPage: pagingState.hasNextPage,
+                                );
+                                final entryIndexByTaskId = <String, int>{
+                                  for (var i = 0; i < entries.length; i++)
+                                    entries[i].task.meta.id: i,
+                                };
 
-                              return PagedSliverList<int, JournalEntity>(
-                                state: pagingState,
-                                fetchNextPage: fetchNextPage,
-                                builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
-                                  invisibleItemsThreshold: 10,
-                                  firstPageProgressIndicatorBuilder: (_) =>
-                                      const Padding(
-                                        padding: EdgeInsets.only(top: 32),
-                                        child: Center(
-                                          child:
-                                              CircularProgressIndicator.adaptive(),
+                                return PagedSliverList<int, JournalEntity>(
+                                  state: pagingState,
+                                  fetchNextPage: fetchNextPage,
+                                  builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
+                                    invisibleItemsThreshold: 10,
+                                    firstPageProgressIndicatorBuilder: (_) =>
+                                        const Padding(
+                                          padding: EdgeInsets.only(top: 32),
+                                          child: Center(
+                                            child:
+                                                CircularProgressIndicator.adaptive(),
+                                          ),
                                         ),
-                                      ),
-                                  newPageProgressIndicatorBuilder: (_) =>
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: 24,
+                                    newPageProgressIndicatorBuilder: (_) =>
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 24,
+                                          ),
+                                          child: Center(
+                                            child:
+                                                CircularProgressIndicator.adaptive(),
+                                          ),
                                         ),
-                                        child: Center(
-                                          child:
-                                              CircularProgressIndicator.adaptive(),
+                                    noItemsFoundIndicatorBuilder: (_) =>
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 48,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              context
+                                                  .messages
+                                                  .taskShowcaseNoResults,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                  noItemsFoundIndicatorBuilder: (_) => Padding(
-                                    padding: const EdgeInsets.only(top: 48),
-                                    child: Center(
-                                      child: Text(
-                                        context.messages.taskShowcaseNoResults,
-                                      ),
-                                    ),
+                                    itemBuilder: (context, item, index) {
+                                      if (item is! Task) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final entryIndex =
+                                          entryIndexByTaskId[item.meta.id];
+                                      if (entryIndex == null) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final entry = entries[entryIndex];
+
+                                      final distance = state.showDistances
+                                          ? state.vectorSearchDistances[item
+                                                .meta
+                                                .id]
+                                          : null;
+
+                                      return KeyedSubtree(
+                                        key: ValueKey(item.meta.id),
+                                        child: DetailContentWidth(
+                                          child: TaskBrowseListItem(
+                                            entry: entry,
+                                            sortOption: state.sortOption,
+                                            showCreationDate:
+                                                state.showCreationDate,
+                                            showDueDate: state.showDueDate,
+                                            showCoverArt: true,
+                                            // When the user has narrowed the list
+                                            // to a single status via the filter,
+                                            // every row would carry the same
+                                            // chip — drop it. With 0 (no filter)
+                                            // or 2+ statuses selected the chip
+                                            // disambiguates rows.
+                                            showStatus:
+                                                state
+                                                    .selectedTaskStatuses
+                                                    .length !=
+                                                1,
+                                            vectorDistance: distance,
+                                            previousTaskIdInSection:
+                                                entryIndex > 0 &&
+                                                    !entry.isFirstInSection
+                                                ? entries[entryIndex - 1]
+                                                      .task
+                                                      .meta
+                                                      .id
+                                                : null,
+                                            nextTaskIdInSection:
+                                                !entry.isLastInSection &&
+                                                    entryIndex <
+                                                        entries.length - 1
+                                                ? entries[entryIndex + 1]
+                                                      .task
+                                                      .meta
+                                                      .id
+                                                : null,
+                                            selectedTaskId: activeTaskId,
+                                            hoveredTaskIdNotifier:
+                                                _hoveredTaskIdNotifier,
+                                            onTap: () =>
+                                                getIt<NavService>().beamToNamed(
+                                                  '/tasks/${item.meta.id}',
+                                                ),
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
-                                  itemBuilder: (context, item, index) {
-                                    if (item is! Task) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    final entryIndex =
-                                        entryIndexByTaskId[item.meta.id];
-                                    if (entryIndex == null) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    final entry = entries[entryIndex];
-
-                                    final distance = state.showDistances
-                                        ? state.vectorSearchDistances[item
-                                              .meta
-                                              .id]
-                                        : null;
-
-                                    return KeyedSubtree(
-                                      key: ValueKey(item.meta.id),
-                                      child: DetailContentWidth(
-                                        child: TaskBrowseListItem(
-                                          entry: entry,
-                                          sortOption: state.sortOption,
-                                          showCreationDate:
-                                              state.showCreationDate,
-                                          showDueDate: state.showDueDate,
-                                          showCoverArt: true,
-                                          // When the user has narrowed the list
-                                          // to a single status via the filter,
-                                          // every row would carry the same
-                                          // chip — drop it. With 0 (no filter)
-                                          // or 2+ statuses selected the chip
-                                          // disambiguates rows.
-                                          showStatus:
-                                              state
-                                                  .selectedTaskStatuses
-                                                  .length !=
-                                              1,
-                                          vectorDistance: distance,
-                                          previousTaskIdInSection:
-                                              entryIndex > 0 &&
-                                                  !entry.isFirstInSection
-                                              ? entries[entryIndex - 1]
-                                                    .task
-                                                    .meta
-                                                    .id
-                                              : null,
-                                          nextTaskIdInSection:
-                                              !entry.isLastInSection &&
-                                                  entryIndex <
-                                                      entries.length - 1
-                                              ? entries[entryIndex + 1]
-                                                    .task
-                                                    .meta
-                                                    .id
-                                              : null,
-                                          selectedTaskId: activeTaskId,
-                                          hoveredTaskIdNotifier:
-                                              _hoveredTaskIdNotifier,
-                                          onTap: () =>
-                                              getIt<NavService>().beamToNamed(
-                                                '/tasks/${item.meta.id}',
-                                              ),
-                                        ),
-                                      ),
-                                    );
-                                  },
+                                );
+                              },
+                            )
+                          else
+                            const SliverToBoxAdapter(
+                              child: Padding(
+                                padding: EdgeInsets.only(top: 32),
+                                child: Center(
+                                  child: CircularProgressIndicator.adaptive(),
                                 ),
-                              );
-                            },
-                          )
-                        else
-                          const SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.only(top: 32),
-                              child: Center(
-                                child: CircularProgressIndicator.adaptive(),
                               ),
                             ),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 120),
                           ),
-                        const SliverToBoxAdapter(
-                          child: SizedBox(height: 120),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -646,15 +659,33 @@ class _TasksTabActiveFilters extends ConsumerWidget {
     // clause badge. Status chips appear only once the selection deviates.
     final statusesNarrowed = !setEquals(statuses, defaultSelectedTaskStatuses);
 
-    final total =
-        (statusesNarrowed ? statuses.length : 0) +
-        priorities.length +
-        categoryIds.length +
-        labelIds.length +
-        projectIds.length;
-    if (total == 0) return const SizedBox.shrink();
+    final agentFilter = state.agentAssignmentFilter;
+
+    if (taskFilterNarrowingClauseCount(liveTasksFilterFor(state)) == 0) {
+      return const SizedBox.shrink();
+    }
 
     final chips = <Widget>[];
+
+    // The agent clause narrows the list exactly like a facet does, so it is
+    // represented and removable exactly like one — otherwise the header could
+    // read "1 filter" with an empty chip row below it.
+    if (agentFilter != AgentAssignmentFilter.all) {
+      chips.add(
+        ActiveFilterChip(
+          label: agentFilter == AgentAssignmentFilter.hasAgent
+              ? context.messages.tasksAgentFilterHasAgent
+              : context.messages.tasksAgentFilterNoAgent,
+          accentColor: accent,
+          leadingIcon: Icons.smart_toy_outlined,
+          onRemove: () => unawaited(
+            controller.applyBatchFilterUpdate(
+              agentAssignmentFilter: AgentAssignmentFilter.all,
+            ),
+          ),
+        ),
+      );
+    }
 
     for (final status in statusesNarrowed ? statuses : const <String>{}) {
       chips.add(
@@ -752,13 +783,17 @@ class _TasksTabActiveFilters extends ConsumerWidget {
     if (chips.isEmpty) return const SizedBox.shrink();
 
     // Ending a multi-clause filter session chip-by-chip is the most
-    // expensive common exit on the page; from two clauses up, one tap
+    // expensive common exit on the page; from two narrowings up, one tap
     // restores the default view. It delegates to the SAME
     // [SavedTaskFilterActivator.clearToDefault] as the rail's "All" pill,
     // so the two visually synonymous resets are one behavior by
-    // construction. The leading pad separates the batch action from the
-    // single-chip removals beside it.
-    if (chips.length >= 2) {
+    // construction, and additionally clears the search query — "Clear all"
+    // that leaves a query silently narrowing the list is a lie, and the
+    // query is counted below so the chip appears whenever two things are
+    // narrowing, whichever kind they are. The leading pad separates the
+    // batch action from the single-chip removals beside it.
+    final searchActive = state.match.isNotEmpty;
+    if (chips.length + (searchActive ? 1 : 0) >= 2) {
       final tokens = context.designTokens;
       chips.add(
         Padding(
@@ -767,7 +802,10 @@ class _TasksTabActiveFilters extends ConsumerWidget {
             label: context.messages.tasksFilterClearAll,
             leadingIcon: Icons.close_rounded,
             onPressed: () => unawaited(
-              SavedTaskFilterActivator(controller).clearToDefault(),
+              Future.wait([
+                SavedTaskFilterActivator(controller).clearToDefault(),
+                if (searchActive) controller.setSearchString(''),
+              ]),
             ),
           ),
         ),

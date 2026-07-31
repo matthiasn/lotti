@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
@@ -171,9 +172,12 @@ void main() {
     Set<String> selectedProjectIds = const <String>{},
     bool enableVectorSearch = false,
     bool enableProjects = false,
+    AgentAssignmentFilter agentAssignmentFilter = AgentAssignmentFilter.all,
+    String match = '',
   }) {
     return JournalPageState(
-      match: '',
+      match: match,
+      agentAssignmentFilter: agentAssignmentFilter,
       showTasks: true,
       pagingController: pagingController,
       taskStatuses: const ['OPEN', 'IN PROGRESS'],
@@ -662,6 +666,69 @@ void main() {
   );
 
   group('active-filter chip row', () {
+    testWidgets(
+      'the agent clause is a removable chip, so the funnel and the chip row '
+      'agree about what is narrowing the list',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: state(
+              selectedTaskStatuses: const <String>{},
+              selectedCategoryIds: const <String>{},
+              agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+        final chip = tester.widget<ActiveFilterChip>(
+          find.byType(ActiveFilterChip),
+        );
+        expect(chip.leadingIcon, Icons.smart_toy_outlined);
+
+        await tester.tap(find.byType(ActiveFilterChip));
+        await tester.pump();
+
+        expect(fakeController.applyBatchFilterUpdateCalled, 1);
+        expect(
+          fakeController.agentAssignmentFilterCalls.last,
+          AgentAssignmentFilter.all,
+        );
+      },
+    );
+
+    testWidgets(
+      'Clear all clears the search query it sits beside, not just the '
+      'clauses — and appears once a query plus one clause are narrowing',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: state(
+              selectedTaskStatuses: const <String>{},
+              selectedCategoryIds: const <String>{'cat-1'},
+              match: 'roof',
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // One clause chip only, yet the batch reset is offered: the query is
+        // the second narrowing.
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+        final clearAll = find.widgetWithText(DesignSystemChip, 'Clear all');
+        expect(clearAll, findsOneWidget);
+
+        await tester.tap(clearAll);
+        await tester.pump();
+
+        expect(fakeController.setSelectedCategoryIdsCalls.last, isEmpty);
+        expect(fakeController.searchStringCalls.last, isEmpty);
+      },
+    );
+
     testWidgets(
       'is hidden entirely when no status/priority/category/label/project '
       'filters are selected',
