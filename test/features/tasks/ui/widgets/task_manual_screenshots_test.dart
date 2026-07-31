@@ -33,6 +33,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -792,7 +793,17 @@ void main() {
           surface: const TasksRootPage(),
         );
 
-        await tester.tap(find.byIcon(Icons.filter_list_rounded).first);
+        // The collapsing header keeps both states in the tree at once, so the
+        // same filter icon exists twice: once in the expanded header a reader
+        // sees, once in the compact bar behind `IgnorePointer`. Scope to the
+        // expanded header and take no `.first` — an ambiguous finder here
+        // silently tapped the unhittable copy instead of failing.
+        await tester.tap(
+          find.descendant(
+            of: find.byType(TabSectionHeader),
+            matching: find.byIcon(Icons.filter_list_rounded),
+          ),
+        );
         await settleFrames(tester, 6);
         final messages = AppLocalizations.of(
           tester.element(find.byType(TasksRootPage)),
