@@ -1331,6 +1331,20 @@ void main() {
         when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
           (_) async => const <String, JournalEntity>{},
         );
+        final exactBaselineEcho = [
+          _aiBlock(
+            taskId: 'task-1',
+            start: DateTime(2026, 5, 25, 10),
+            end: DateTime(2026, 5, 25, 11),
+          ),
+          _aiBlock(
+            id: 'block-2',
+            title: 'Write release notes',
+            start: DateTime(2026, 5, 25, 11),
+            end: DateTime(2026, 5, 25, 12),
+            reason: 'Ship the release clearly.',
+          ),
+        ];
 
         await expectLater(
           withClock(
@@ -1393,20 +1407,7 @@ void main() {
             agentId: _agentId,
             dayId: _dayId,
             planDate: DateTime(2026, 5, 25),
-            rawBlocks: [
-              _aiBlock(
-                taskId: 'task-1',
-                start: DateTime(2026, 5, 25, 10),
-                end: DateTime(2026, 5, 25, 11),
-              ),
-              _aiBlock(
-                id: 'block-2',
-                title: 'Write release notes',
-                start: DateTime(2026, 5, 25, 11),
-                end: DateTime(2026, 5, 25, 12),
-                reason: 'Ship the release clearly.',
-              ),
-            ],
+            rawBlocks: exactBaselineEcho,
             runKey: _runKey,
           ),
         );
@@ -1416,6 +1417,21 @@ void main() {
         expect(repeated.capacityMinutes, baseline.capacityMinutes);
         expect(repeated.scheduledMinutes, baseline.scheduledMinutes);
         expect(repeated.runKey, _runKey);
+
+        final repeatedWithoutRunKey = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 18, 1)),
+          () => service.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: exactBaselineEcho,
+          ),
+        );
+        expect(
+          repeatedWithoutRunKey.runKey,
+          _runKey,
+          reason: 'an absent wake key must not clear existing provenance',
+        );
       },
     );
 
