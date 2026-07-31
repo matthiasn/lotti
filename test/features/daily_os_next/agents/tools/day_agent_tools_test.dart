@@ -108,6 +108,13 @@ void main() {
           budgetProperties['availableMinutes'] as Map<String, dynamic>;
       expect(availableMinutes['minimum'], 0);
       expect(availableMinutes['maximum'], 1440);
+      expect(
+        availableMinutes['description'],
+        allOf(
+          contains('Total plannable minutes'),
+          contains('before subtracting alreadyScheduledMinutes'),
+        ),
+      );
     });
 
     test(

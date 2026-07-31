@@ -1435,6 +1435,167 @@ void main() {
       },
     );
 
+    test(
+      'a closed redraft validates the prompted baseline without overwriting '
+      'a concurrent edit',
+      () async {
+        final service = createService();
+        final promptedBaseline = await withClock(
+          Clock.fixed(_now),
+          () => service.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: [
+              _aiBlock(
+                title: 'Prompt baseline',
+                start: DateTime(2026, 5, 25, 10),
+                end: DateTime(2026, 5, 25, 11),
+              ),
+            ],
+          ),
+        );
+        final concurrentBlock = PlannedBlock(
+          id: 'block-1',
+          categoryId: 'work',
+          startTime: DateTime(2026, 5, 25, 10),
+          endTime: DateTime(2026, 5, 25, 11),
+          title: 'Concurrent edit',
+          reason: 'Edited while inference was running.',
+        );
+        final concurrentPlan = promptedBaseline.copyWith(
+          data: promptedBaseline.data.copyWith(
+            dayLabel: 'Latest persisted plan',
+            plannedBlocks: [concurrentBlock],
+          ),
+          updatedAt: DateTime(2026, 5, 25, 18, 1),
+        );
+        agentEntities[promptedBaseline.id] = concurrentPlan;
+
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 18, 2)),
+          () => service.executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.draftDayPlan,
+            planningSnapshotAt: DateTime(2026, 5, 25, 18),
+            planningBaselinePlan: promptedBaseline,
+            args: {
+              'dayId': _dayId,
+              'blocks': [
+                _aiBlock(
+                  title: 'Prompt baseline',
+                  start: DateTime(2026, 5, 25, 10),
+                  end: DateTime(2026, 5, 25, 11),
+                ),
+              ],
+            },
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.output);
+        final persisted = agentEntities[promptedBaseline.id]! as DayPlanEntity;
+        expect(persisted.data, concurrentPlan.data);
+        expect(persisted.data.plannedBlocks.single.title, 'Concurrent edit');
+        expect(persisted.runKey, _runKey);
+      },
+    );
+
+    test(
+      'a closed redraft does not resurrect a baseline deleted during '
+      'inference',
+      () async {
+        final service = createService();
+        final promptedBaseline = await withClock(
+          Clock.fixed(_now),
+          () => service.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: [
+              _aiBlock(
+                title: 'Prompt baseline',
+                start: DateTime(2026, 5, 25, 10),
+                end: DateTime(2026, 5, 25, 11),
+              ),
+            ],
+          ),
+        );
+        agentEntities.remove(promptedBaseline.id);
+        upsertedEntities.clear();
+
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 18, 2)),
+          () => service.executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.draftDayPlan,
+            planningSnapshotAt: DateTime(2026, 5, 25, 18),
+            planningBaselinePlan: promptedBaseline,
+            args: {
+              'dayId': _dayId,
+              'blocks': [
+                _aiBlock(
+                  title: 'Prompt baseline',
+                  start: DateTime(2026, 5, 25, 10),
+                  end: DateTime(2026, 5, 25, 11),
+                ),
+              ],
+            },
+          ),
+        );
+
+        expect(result.success, isFalse);
+        expect(
+          result.output,
+          allOf(contains('changed'), contains('not restored')),
+        );
+        expect(upsertedEntities, isEmpty);
+        expect(agentEntities, isNot(contains(promptedBaseline.id)));
+      },
+    );
+
+    test('rejects a planning baseline from another day', () async {
+      final service = createService();
+      final promptedBaseline = await withClock(
+        Clock.fixed(_now),
+        () => service.persistDraftPlan(
+          agentId: _agentId,
+          dayId: _dayId,
+          planDate: DateTime(2026, 5, 25),
+          rawBlocks: [
+            _aiBlock(
+              start: DateTime(2026, 5, 25, 10),
+              end: DateTime(2026, 5, 25, 11),
+            ),
+          ],
+        ),
+      );
+
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 18)),
+        () => service.executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.draftDayPlan,
+          planningSnapshotAt: DateTime(2026, 5, 25, 18),
+          planningBaselinePlan: promptedBaseline.copyWith(
+            dayId: 'dayplan-2026-05-26',
+          ),
+          args: {
+            'dayId': _dayId,
+            'blocks': const <Object?>[],
+          },
+        ),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.output, contains('target agent and day'));
+    });
+
     test('persistDraftPlan sorts equal-start blocks by id', () async {
       final plan = await withClock(Clock.fixed(_now), () {
         return createService().persistDraftPlan(

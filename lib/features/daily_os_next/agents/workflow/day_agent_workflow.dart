@@ -489,6 +489,7 @@ class DayAgentWorkflow {
           dayId: resolvedDayId,
           processingJobId: wakeContext.processingJobId,
           planningSnapshotAt: now,
+          planningBaselinePlan: draftingContext?.baselinePlan,
           toolName: toolName,
           args: args,
         ),

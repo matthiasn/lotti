@@ -315,6 +315,7 @@ void main() {
         args: any(named: 'args'),
         planningConfig: any(named: 'planningConfig'),
         planningSnapshotAt: any(named: 'planningSnapshotAt'),
+        planningBaselinePlan: any(named: 'planningBaselinePlan'),
       ),
     ).thenAnswer(
       (_) async => DayAgentDirectToolResult.success(
@@ -724,6 +725,7 @@ void main() {
             args: any(named: 'args'),
             planningConfig: any(named: 'planningConfig'),
             planningSnapshotAt: any(named: 'planningSnapshotAt'),
+            planningBaselinePlan: any(named: 'planningBaselinePlan'),
           ),
         );
       },
@@ -3850,6 +3852,18 @@ void main() {
         final bands = plan['energyBands'] as List<dynamic>;
         expect(bands, hasLength(1));
         expect((bands.single as Map<String, dynamic>)['level'], 'high');
+        verify(
+          () => planService.executeTool(
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            toolName: DayAgentToolNames.draftDayPlan,
+            args: any(named: 'args'),
+            planningConfig: any(named: 'planningConfig'),
+            planningSnapshotAt: now,
+            planningBaselinePlan: baselinePlan,
+          ),
+        ).called(1);
       },
     );
 
@@ -4020,6 +4034,7 @@ void main() {
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
               planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -4092,6 +4107,7 @@ void main() {
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
               planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
             ),
           ).called(1);
 
@@ -4120,6 +4136,7 @@ void main() {
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
               planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -4205,6 +4222,7 @@ void main() {
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
               planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.failure(
@@ -4244,6 +4262,7 @@ void main() {
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
               planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
             ),
           ).called(1);
         },
@@ -4287,6 +4306,7 @@ void main() {
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
               planningSnapshotAt: any(named: 'planningSnapshotAt'),
+              planningBaselinePlan: any(named: 'planningBaselinePlan'),
             ),
           );
         },
@@ -4497,6 +4517,7 @@ void main() {
           args: any(named: 'args'),
           planningConfig: any(named: 'planningConfig'),
           planningSnapshotAt: any(named: 'planningSnapshotAt'),
+          planningBaselinePlan: any(named: 'planningBaselinePlan'),
         ),
       ).thenAnswer(
         (_) async => DayAgentDirectToolResult.success(
@@ -4530,6 +4551,9 @@ void main() {
                   args: captureAny(named: 'args'),
                   planningConfig: any(named: 'planningConfig'),
                   planningSnapshotAt: now,
+                  // The no-drafting-context dispatch is intentionally null.
+                  // ignore: avoid_redundant_argument_values
+                  planningBaselinePlan: null,
                 ),
               ).captured.single
               as Map<String, dynamic>;
@@ -4570,6 +4594,7 @@ void main() {
           args: any(named: 'args'),
           planningConfig: any(named: 'planningConfig'),
           planningSnapshotAt: any(named: 'planningSnapshotAt'),
+          planningBaselinePlan: any(named: 'planningBaselinePlan'),
         ),
       );
     });

@@ -229,8 +229,11 @@ cannot erase or rewrite work already on the day. A valid repeat is a true
 no-op over the stored payload: labels, energy bands, budgets, pinned tasks, and
 blocks are retained verbatim, even if a referenced task was deleted or moved
 categories while inference ran; only the wake provenance and write timestamp
-advance. The three states are deliberately distinct, because collapsing any two
-misleads:
+advance. The workflow also carries the exact baseline serialized into the
+prompt through tool dispatch. The model's echo is validated against that
+snapshot, while a newer persisted edit wins the no-op; a concurrent deletion is
+reported as stale instead of being resurrected. The three states are
+deliberately distinct, because collapsing any two misleads:
 
 | `<planning_window>` | Meaning |
 |---|---|

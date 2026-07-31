@@ -603,8 +603,9 @@ const dayAgentTools = <AgentToolDefinition>[
               'minimum': 0,
               'maximum': 1440,
               'description':
-                  'Remaining minutes the day agent may schedule. Use 0 when '
-                  'the planning window is closed.',
+                  'Total plannable minutes for the day before subtracting '
+                  'alreadyScheduledMinutes. Use 0 when the planning window '
+                  'is closed.',
             },
             'alreadyScheduledMinutes': {'type': 'integer'},
             'energyBands': {

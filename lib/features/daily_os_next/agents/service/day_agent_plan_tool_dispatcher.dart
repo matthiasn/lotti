@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_editor.dart';
@@ -35,6 +36,7 @@ class DayAgentPlanToolDispatcher {
     required Map<String, dynamic> args,
     DayAgentConfig planningConfig = const DayAgentConfig(),
     DateTime? planningSnapshotAt,
+    DayPlanEntity? planningBaselinePlan,
   }) async {
     try {
       final data = switch (toolName) {
@@ -44,6 +46,7 @@ class DayAgentPlanToolDispatcher {
           args,
           planningConfig,
           planningSnapshotAt,
+          planningBaselinePlan,
         ),
         DayAgentToolNames.summarizeRecentPatterns =>
           await _summarizeRecentPatternsTool(agentId, args),
@@ -75,6 +78,7 @@ class DayAgentPlanToolDispatcher {
     Map<String, dynamic> args,
     DayAgentConfig planningConfig,
     DateTime? planningSnapshotAt,
+    DayPlanEntity? planningBaselinePlan,
   ) async {
     final dayId = requiredStringArg(args, 'dayId');
     final planDate =
@@ -101,6 +105,7 @@ class DayAgentPlanToolDispatcher {
       dayLabel: optionalStringArg(args['dayLabel']),
       runKey: runKey,
       planningSnapshotAt: planningSnapshotAt,
+      planningBaselinePlan: planningBaselinePlan,
     );
     return planJson(plan);
   }

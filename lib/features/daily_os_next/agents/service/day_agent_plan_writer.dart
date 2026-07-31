@@ -288,6 +288,7 @@ class DayAgentPlanWriter {
     String? dayLabel,
     String? runKey,
     DateTime? planningSnapshotAt,
+    DayPlanEntity? planningBaselinePlan,
   }) async {
     final identity = await reads.requireIdentity(agentId);
     if (identity.allowedCategoryIds.isNotEmpty) {
@@ -347,13 +348,6 @@ class DayAgentPlanWriter {
         'with propose_plan_diff instead so the user can approve them.',
       );
     }
-    // The blocks already on the plan. A redraft may repeat one that has
-    // already started; it may not invent one there.
-    final baselineBlocks = {
-      for (final block
-          in existing?.data.plannedBlocks ?? const <PlannedBlock>[])
-        block.id: block,
-    };
     final windowClosed = draftPlanningWindowClosed(
       planDate: planDate,
       now: validationNow,
@@ -361,7 +355,28 @@ class DayAgentPlanWriter {
       workingHoursStart: workingHoursStart,
       workingHoursEnd: workingHoursEnd,
     );
-    final preserveClosedBaseline = windowClosed && baselineBlocks.isNotEmpty;
+    if (planningBaselinePlan != null &&
+        (planningBaselinePlan.agentId != agentId ||
+            planningBaselinePlan.dayId != dayId)) {
+      throw const DayAgentCaptureException(
+        'planning baseline must belong to the target agent and day',
+      );
+    }
+    // A closed wake validates the echo against the exact plan serialized into
+    // its prompt, not a second read after inference. Without a workflow
+    // snapshot (direct service callers), the current plan remains the
+    // baseline.
+    final validationBaseline = windowClosed && planningSnapshotAt != null
+        ? planningBaselinePlan
+        : existing;
+    // A redraft may repeat a baseline block that has already started; it may
+    // not invent one there.
+    final baselineBlocks = {
+      for (final block
+          in validationBaseline?.data.plannedBlocks ?? const <PlannedBlock>[])
+        block.id: block,
+    };
+    final validateClosedBaseline = windowClosed && baselineBlocks.isNotEmpty;
     // Persisted task/category pairs let a closed baseline remain its own
     // authority without re-resolving today's live journal rows.
     final baselineTaskCategories = <String, String?>{
@@ -376,10 +391,10 @@ class DayAgentPlanWriter {
     // hydrated for the prompt through `hydrateDecidedTasks`, which already
     // applies exactly this filter, so the only ids dropped here are ones the
     // model was never given.
-    final decidedTasks = preserveClosedBaseline
+    final decidedTasks = validateClosedBaseline
         ? baselineTaskCategories
         : await _resolveTaskIds(decidedTaskIds, allowedCategoryIds);
-    final allowedExistingTaskIds = preserveClosedBaseline
+    final allowedExistingTaskIds = validateClosedBaseline
         ? baselineTaskCategories
         : await _allowedExistingTaskIds(rawBlocks, allowedCategoryIds);
     final blocks = <PlannedBlock>[];
@@ -394,7 +409,7 @@ class DayAgentPlanWriter {
           // or category rows, which may have been deleted or moved since the
           // plan was written; the accepted result below preserves the stored
           // payload verbatim.
-          allowedCategoryIds: preserveClosedBaseline
+          allowedCategoryIds: validateClosedBaseline
               ? const {}
               : allowedCategoryIds,
           decidedTaskIds: decidedTasks,
@@ -425,6 +440,12 @@ class DayAgentPlanWriter {
           'non-empty baseline unchanged.',
         );
       }
+      if (validationBaseline != null && existing == null) {
+        throw const DayAgentCaptureException(
+          'The planning baseline changed while the plan was being drafted. '
+          'The deleted plan was not restored.',
+        );
+      }
     } else if (blocks.isEmpty) {
       throw const DayAgentCaptureException(
         'draft_day_plan requires at least one block while the planning '
@@ -432,8 +453,12 @@ class DayAgentPlanWriter {
       );
     }
     late final DayPlanEntity plan;
-    if (preserveClosedBaseline) {
-      plan = existing!.copyWith(
+    if (windowClosed && existing != null) {
+      // A concurrent edit after prompt construction wins. The model still has
+      // to echo the baseline it actually saw, but the accepted closed-window
+      // no-op preserves the latest persisted payload rather than overwriting
+      // it with stale prompt state.
+      plan = existing.copyWith(
         runKey: runKey ?? existing.runKey,
         updatedAt: now,
         vectorClock: existing.vectorClock,
