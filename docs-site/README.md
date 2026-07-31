@@ -63,7 +63,10 @@ app tag of that marketing version, builds the site and screenshot catalog
 from that tag, uploads both to their immutable R2 prefixes (existing release
 snapshots are never overwritten, and a release site never deploys without a
 screenshot catalog captured from the same commit), and redeploys Pages with
-every version side by side. Each deploy also writes a live `manual/releases.json` next to the
+every version side by side. The capture targets live in the resolved tag's own
+Makefile, next to the screenshot tests they invoke, so a release manual can
+only be published from a tag that contains the sharded pipeline; the run says
+so immediately rather than failing once capture is under way. Each deploy also writes a live `manual/releases.json` next to the
 version directories; the version dropdown fetches it at runtime, so even old
 immutable snapshots list releases published after them.
 

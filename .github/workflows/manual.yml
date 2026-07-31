@@ -119,6 +119,26 @@ jobs:
         id: commit
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      # A release builds from its tag, and the capture targets live in that
+      # tag's Makefile alongside the screenshot tests they invoke. Tags cut
+      # before the sharded pipeline cannot be captured this way — say so here,
+      # in seconds, rather than through eleven runners each failing on a
+      # missing target after twelve minutes of capture.
+      - name: Verify the resolved tree supports sharded capture
+        if: steps.version.outputs.version != 'development'
+        env:
+          MANUAL_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if ! make -n manual_screenshots_shard MANUAL_LOCALE=en \
+              >/dev/null 2>&1; then
+            echo "::error::The tag resolved for ${MANUAL_VERSION} predates the" \
+              "sharded screenshot pipeline and has no" \
+              "'manual_screenshots_shard' target, so its catalog cannot be" \
+              "captured. Publish a release manual from a tag that contains it."
+            exit 1
+          fi
+
       # The capture matrix comes from the registry, so adding a manual locale
       # cannot silently leave that locale uncaptured.
       - name: Resolve the capture locales
