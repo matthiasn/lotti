@@ -55,13 +55,25 @@ Which home an image belongs in follows from who regenerates it:
 
 | Destination | Contents | Lifecycle |
 |-------------|----------|-----------|
-| R2 bucket, `manual/screenshots/<version>/<case-id>/` | The **generated** manual catalog — `mobile-light`, `mobile-dark`, `desktop-light`, `desktop-dark` per case, plus `manifest.json` | Produced by `make manual_screenshots` and published by the `manual.yml` CI lane; never hand-edited or renamed. `development/` is refreshed with deletion (retired cases disappear), numbered release prefixes are immutable — publishing refuses to overwrite an existing manifest |
+| R2 bucket, `manual/screenshots/<version>/<case-id>/` | The **generated** manual catalog — `mobile-light`, `mobile-dark`, `desktop-light`, `desktop-dark` per case, plus `manifest.json` | Produced by `make manual_screenshots` and published by the `manual.yml` CI lane; never hand-edited or renamed. `development/` is refreshed with deletion (retired cases disappear), numbered release prefixes are immutable — publishing refuses to overwrite an existing manifest. The app `README.md` embeds from this catalog too, so its screenshots age with the app rather than with whoever last remembered to retake them |
 | `lotti-docs`: `images/<app-version>/` | Hand-picked shots for release communication and the README | Written once per release, then left alone |
 | `lotti-docs`: `pr-screenshots/<topic-slug>/` | **Review evidence** for a pull request | Written by hand while the work is in review; kept afterwards as the record of what reviewers saw |
 
 `make manual_screenshots` stages captures and the materialized catalog under
 the gitignored `build/manual_capture/` and `build/manual_media/` directories;
 only the CI publish step talks to R2, using the `R2_*` repository secrets.
+
+It is a loop over two smaller targets, and CI uses those directly rather than
+the loop: `manual_screenshots_shard` captures **one** locale and converts only
+that locale to WebP, and `manual_screenshots_manifest` writes and validates the
+manifest over whatever complete media tree exists. CI runs one shard job per
+locale in parallel and merges them, because a locale takes about twelve
+minutes and the full catalog does not fit in a single job's timeout. Run a
+single locale the same way CI does when iterating on one language:
+
+```bash
+make manual_screenshots_shard MANUAL_LOCALE=de
+```
 
 # A UI pull request shows before *and* after
 

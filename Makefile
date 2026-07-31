@@ -161,8 +161,14 @@ fluttium_docs: manual_screenshots
 	@echo "fluttium_docs is deprecated; generated manual media is ready in $(MANUAL_MEDIA_DIR)."
 
 .PHONY: manual_deps
-manual_deps:
+manual_deps: docs-site/node_modules
+
+# A real file target, not a phony one: the screenshot targets below each need
+# these dependencies, and the eleven-locale loop would otherwise pay `npm ci`
+# eleven times. Reinstalls only when the lockfile is newer than the tree.
+docs-site/node_modules: docs-site/package-lock.json
 	npm --prefix docs-site ci
+	@touch $@
 
 .PHONY: manual_start
 manual_start:
@@ -187,11 +193,27 @@ manual_check_media:
 .PHONY: manual_screenshots
 manual_screenshots: manual_deps
 	@set -e; for locale in $(MANUAL_LOCALES); do \
-		$(MAKE) manual_screenshots_locale \
-			MANUAL_LOCALE="$$locale" \
-			MANUAL_CAPTURE_DIR="$(MANUAL_CAPTURE_DIR)/$$locale"; \
+		$(MAKE) manual_screenshots_shard MANUAL_LOCALE="$$locale"; \
 	done
-	npm --prefix docs-site run manifest -- --capture-dir "$(MANUAL_CAPTURE_DIR)" --output-root "$(MANUAL_MEDIA_DIR)" --version "$(MANUAL_VERSION)" --locales "$(MANUAL_LOCALES)"
+	$(MAKE) manual_screenshots_manifest
+
+# One locale's slice of the catalog: capture its PNGs, then convert only that
+# locale to WebP and leave the manifest to a later pass over the merged tree.
+# CI fans these out across runners — capturing all $(words $(MANUAL_LOCALES))
+# locales in sequence takes over two hours, more than a single job can spend.
+.PHONY: manual_screenshots_shard
+manual_screenshots_shard: docs-site/node_modules
+	$(MAKE) manual_screenshots_locale \
+		MANUAL_LOCALE="$(MANUAL_LOCALE)" \
+		MANUAL_CAPTURE_DIR="$(MANUAL_CAPTURE_DIR)/$(MANUAL_LOCALE)"
+	npm --prefix docs-site run manifest -- --capture-dir "$(MANUAL_CAPTURE_DIR)" --output-root "$(MANUAL_MEDIA_DIR)" --version "$(MANUAL_VERSION)" --locales "$(MANUAL_LOCALE)" --skip-manifest
+
+# Write and validate the manifest over an already-materialized media tree.
+# Every locale's WebP files must be present, whether one machine produced them
+# or eleven did.
+.PHONY: manual_screenshots_manifest
+manual_screenshots_manifest: docs-site/node_modules
+	npm --prefix docs-site run manifest -- --output-root "$(MANUAL_MEDIA_DIR)" --version "$(MANUAL_VERSION)" --manifest-only
 	$(MAKE) manual_check_media MANUAL_VERSION="$(MANUAL_VERSION)" MANUAL_MEDIA_DIR="$(MANUAL_MEDIA_DIR)"
 
 .PHONY: manual_screenshots_locale

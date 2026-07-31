@@ -110,6 +110,18 @@ tag**, and refuses to advertise a release whose screenshot catalog is not in
 the bucket. Pull requests only validate; nothing publishes without the `R2_*`
 repository secrets.
 
+The capture itself is **sharded one job per manual locale**, with the matrix
+read from the screenshot registry so a newly registered locale cannot go
+uncaptured. A locale takes roughly twelve minutes, so the eleven-locale
+catalog needs over two hours in sequence — as a single job it was killed at
+its timeout every night and published nothing. Each shard converts only its
+own locale to WebP (`make manual_screenshots_shard`); a following
+`screenshot_catalog` job merges the slices, writes the manifest across all of
+them and validates the complete matrix (`make manual_screenshots_manifest`)
+before anything reaches the bucket. All jobs check out one commit resolved
+once by the `metadata` job, so a run's site, screenshots and snapshot marker
+can never describe different commits.
+
 The ten-way shard belongs to `flutter-test-linux-faster.yml` above: it runs
 `very_good test` across a ten-job matrix. **Buildkite is not sharded** — the
 pipelines under `.buildkite/` run a bare `flutter test` for the Linux and Windows
