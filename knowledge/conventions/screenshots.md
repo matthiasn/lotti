@@ -67,9 +67,13 @@ It is a loop over two smaller targets, and CI uses those directly rather than
 the loop: `manual_screenshots_shard` captures **one** locale and converts only
 that locale to WebP, and `manual_screenshots_manifest` writes and validates the
 manifest over whatever complete media tree exists. CI runs one shard job per
-locale in parallel and merges them, because a locale takes about twelve
-minutes and the full catalog does not fit in a single job's timeout. Run a
-single locale the same way CI does when iterating on one language:
+locale and merges them, because a locale takes about twelve minutes and the
+full catalog does not fit in a single job's timeout — nightly and on dispatch
+only, four at a time, because eleven runners per merge is more than a catalog
+that rarely changes is worth. **A UI change therefore ships before its manual
+media does**; dispatch the workflow when a screenshot needs to be current
+sooner. Run a single locale the same way CI does when iterating on one
+language:
 
 ```bash
 make manual_screenshots_shard MANUAL_LOCALE=de

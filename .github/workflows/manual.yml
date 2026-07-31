@@ -330,11 +330,16 @@ jobs:
   # than a runner should hold, and the reason this job used to be killed at
   # its timeout without ever publishing. Each shard converts its own locale to
   # WebP and leaves the manifest to `screenshot_catalog`, which sees them all.
+  # Deliberately NOT on push. A capture costs eleven runners for around twenty
+  # minutes each, and almost nothing that lands on main changes a screenshot —
+  # the path filter admits prose edits under docs-site/, which cannot change
+  # one at all. Refreshing nightly keeps the catalog at most a day behind the
+  # UI for a fraction of the runner budget; a UI change that needs its media
+  # immediately can dispatch the workflow.
   screenshots:
     name: Capture ${{ matrix.locale }} screenshots
     needs: metadata
     if: >-
-      github.event_name == 'push' ||
       github.event_name == 'schedule' ||
       (github.event_name == 'workflow_dispatch' && inputs.capture_screenshots)
     runs-on: ubuntu-latest
@@ -343,6 +348,9 @@ jobs:
       # Report every broken locale in one run: a capture that only fails in,
       # say, German is exactly the kind of defect a cancelled matrix hides.
       fail-fast: false
+      # Leave room for the ten-way test shards and everything else that shares
+      # this account's runner pool; the nightly has all night to finish.
+      max-parallel: 4
       matrix:
         locale: ${{ fromJSON(needs.metadata.outputs.locales) }}
     steps:
@@ -471,7 +479,6 @@ jobs:
       # to overwrite an existing manifest.
       - name: Publish media to R2
         if: >-
-          github.event_name == 'push' ||
           github.event_name == 'schedule' ||
           (github.event_name == 'workflow_dispatch' && inputs.publish_media)
         env:

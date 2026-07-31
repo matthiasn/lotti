@@ -596,7 +596,8 @@ make manual_screenshots_shard MANUAL_LOCALE=de   # just one, as CI does
 
 Prefer the single-locale form while iterating: the full catalog is eleven
 locales at roughly twelve minutes each, which is why CI fans the locales out
-across parallel jobs rather than looping.
+across parallel jobs rather than looping — and why it does so nightly rather
+than per push.
 
 The case contract lives in `docs-site/metadata/screenshot-cases.json`. Each
 case must name a deterministic source test and provide all four inputs:

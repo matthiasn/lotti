@@ -114,7 +114,11 @@ The capture itself is **sharded one job per manual locale**, with the matrix
 read from the screenshot registry so a newly registered locale cannot go
 uncaptured. A locale takes roughly twelve minutes, so the eleven-locale
 catalog needs over two hours in sequence — as a single job it was killed at
-its timeout every night and published nothing. Each shard converts only its
+its timeout every night and published nothing. Capture runs **nightly and on
+dispatch, never on push**, at `max-parallel: 4`: eleven runners is too large a
+share of the pool to spend per merge when almost nothing that lands changes a
+screenshot. The site itself still builds and deploys per push, so the two
+cadences differ — prose is immediate, media is at most a day behind. Each shard converts only its
 own locale to WebP (`make manual_screenshots_shard`); a following
 `screenshot_catalog` job merges the slices, writes the manifest across all of
 them and validates the complete matrix (`make manual_screenshots_manifest`)
