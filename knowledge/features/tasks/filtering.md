@@ -203,7 +203,63 @@ The redesigned browse page preserves the existing non-filter behaviour:
 pull-to-refresh, the full-text versus vector search toggle, the create-task FAB
 and auto-assign flow, and `/tasks/:taskId` navigation on row selection.
 
-# Desktop keyboard commands
+# The header collapses on scroll in narrow panes
+
+Whenever the pane hosting the list is narrower than `kDesktopBreakpoint` — a
+phone, a narrowed desktop window, or the desktop split view's ~400px list pane
+(the gate is the pane's own `LayoutBuilder` width, not the window's) — the
+header stack above the list — `TabSectionHeader` (title + search), the
+saved-filter rail, and the active-filter chip row — folds into a one-row
+compact bar while the user scrolls down, and unfolds on a deliberate upward
+scroll. The mechanism lives in
+`lib/features/tasks/ui/widgets/collapsing_task_list_header.dart`:
+`TaskListHeaderCollapseController` is a pure, widget-free state machine fed by
+the page's scroll listener (mirroring how the task-details page feeds its offset
+into `taskAppBarControllerProvider`), and `CollapsingTaskListHeader` renders the
+decision as an `AnimatedCrossFade` (height tween + fade, `MotionDurations.medium1`)
+— or a plain `Offstage` swap under reduced motion — under a shared bottom
+hairline that seats **both** states against the scrolling content. Both
+representations stay mounted, so typed search text survives a collapse.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Expanded
+    Expanded --> Collapsed: scroll down past 48px AND list long enough to stay scrollable
+    Collapsed --> Expanded: upward scroll accumulating ≥24px travel
+    Collapsed --> Expanded: viewport back at top (≤8px)
+    Collapsed --> Expanded: compact title / search button tapped, or Primary+F
+    Collapsed --> Expanded: filter modal closes with a changed filter shape
+    Collapsed --> Expanded: content shrinks below scrollability (no gesture left)
+    Expanded --> Expanded: search field focused — pinned open while typing
+```
+
+Guards that keep the user out of dead ends: the search field's focus pins the
+header open; a list shorter than `minCollapsibleExtent` never collapses (the
+collapse itself grows the viewport, so the margin guarantees an upward gesture
+remains possible); a `ScrollMetricsNotification` listener re-expands when a
+filter change shrinks the content below scrollability without any scroll event;
+and the 24px upward-travel threshold keeps an accidental jiggle from slamming
+the half-viewport header back over the list.
+
+The compact bar states *what* narrows the list, not only that something does,
+via the shared `TabHeaderIconButton` (one design-system component consumed by
+both header states, so their activated treatments cannot drift): an ad-hoc
+filter shows an accent count badge with the number of active clauses; an active
+saved view shows its **name** beside the title with no badge (mirroring the
+expanded header, which suppresses clause chips for a resolved saved view); an
+active search shows the **quoted** query beside the title — `Tasks ⌄ · "x"`
+versus `Tasks ⌄ · Errands`, so a query and a view name are typographically
+distinct. The title, chevron and context render as one rich-text run: shared
+baseline, chevron anchored to the title, and end-ellipsis so the context
+truncates before the title. The filter button opens the modal directly; the
+search button expands the header and hands the field focus; the title
+re-expands. The chip row itself never echoes the *default* open-work status
+set — an unfiltered list renders zero chips, keeping the chip count and the
+collapsed badge count in agreement — and from two ad-hoc clauses up it ends
+with a "Clear all" chip. The rail's "Filters" opener carries no numeral (a
+saved-filter inventory count read as a false "1 active"); every number in the
+header means *active narrowing*. Only a pane that is itself desktop-wide keeps
+the static header.
 
 The task-list page contributes commands **only while its pane owns focus**:
 

@@ -37,6 +37,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1074" date="2026-07-31">
+      <description>
+        <p>Changed: the task-list header gets out of the way while you read. On a small phone the Tasks header — title, search field, saved-filter rail and active filter chips — took up to half the screen before the first task appeared. Scrolling down now folds it into a slim bar with the title and two buttons, so the reclaimed space shows two to three more tasks; a deliberate upward scroll (or a tap on the bar's title) brings the full header back. The same fold applies wherever the list is narrow, including the desktop split view's list pane. The slim bar still says what is narrowing the list: an ad-hoc filter shows a clause count on the filter button, an active saved view shows its name next to the title, and an active search shows the query plus a dot on the search button. Typed search text survives the fold, a list too short to scroll never collapses, and with reduced motion enabled the switch is instant instead of animated.</p>
+        <p>Changed: an unfiltered task list no longer wears chips. The chip row used to echo the default status set (Open, Groomed, In Progress) as removable chips even when nothing was narrowed, making the resting view look filtered. Status chips now appear only when the selection deviates from the default open-work view, and with two or more filters active the row ends with a "Clear all" chip. The saved-filters button in the mobile rail also dropped its saved-filter count, which read as "1 filter is active" on an unfiltered list — numbers in the header now consistently mean how much the list is narrowed.</p>
+      </description>
+    </release>
     <release version="0.9.1073" date="2026-07-29">
       <description>
         <p>Fixed: planning after your working day has ended now finishes instead of retrying an impossible answer. Daily OS was told to add no blocks once the planning window closed, but its required final step rejected an empty plan. It can now save an explicit empty draft, keep any existing blocks intact, and surface selected work that no longer fits instead of looping until the request fails.</p>

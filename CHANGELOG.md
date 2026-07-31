@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1074]
+### Changed
+- **The task-list header gets out of the way while you read.** On a small
+  phone the Tasks header — title, search field, saved-filter rail and active
+  filter chips — took up to half the screen before the first task appeared.
+  Scrolling down now folds it into a slim bar with the title and two buttons,
+  so the reclaimed space shows two to three more tasks; a deliberate upward
+  scroll (or a tap on the bar's title, which carries a chevron to say it's
+  tappable) brings the full header back — an accidental thumb jiggle doesn't.
+  The same fold applies wherever the list is narrow: a narrowed desktop
+  window, and the list pane of the desktop split view. The slim bar still
+  says *what* is narrowing the list, not just that something is: an ad-hoc
+  filter shows a count of its active clauses on the filter button, an active
+  saved view shows its name next to the title, and an active search shows
+  the query plus a dot on the search button. The search button reopens the
+  header with the field focused, the filter button opens the filters
+  directly, and applying changes there reopens the header so the chips
+  confirm what you did. Typed search text survives the fold, a list too
+  short to scroll never collapses, and with reduced motion enabled the
+  switch is instant instead of animated.
+- **An unfiltered task list no longer wears chips.** The chip row above the
+  list used to echo the default status set (Open, Groomed, In Progress) as
+  removable chips even when nothing was narrowed, making the resting view
+  look filtered. Status chips now appear only when the selection actually
+  deviates from the default open-work view, and once two or more filters are
+  active the row ends with a "Clear all" chip so leaving a filter session is
+  one tap instead of one per chip.
+- **Numbers in the Tasks header now mean one thing.** The saved-filters
+  button in the mobile rail carried the number of *saved* filters, which sat
+  right next to counts that mean "how many tasks match" and read as "1
+  filter is active" on an unfiltered list. The button now carries no number;
+  the saved-filters sheet itself shows what exists.
+
 ## [0.9.1073]
 ### Added
 - **The manual keeps every released version readable.** The manual's version

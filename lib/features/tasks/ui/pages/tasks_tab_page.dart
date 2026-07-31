@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -29,6 +31,7 @@ import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
@@ -109,10 +112,36 @@ class TasksTabPage extends ConsumerStatefulWidget {
 
 class _TasksTabPageState extends ConsumerState<TasksTabPage> {
   final _searchFocusNode = FocusNode(debugLabel: 'tasks-search');
+  final _collapseController = TaskListHeaderCollapseController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchFocusNode.addListener(_onSearchFocusChanged);
+    _collapseController.addListener(_onCollapseChanged);
+  }
+
+  void _onSearchFocusChanged() {
+    _collapseController.setSearchFocused(focused: _searchFocusNode.hasFocus);
+  }
+
+  /// A scroll-driven collapse hides the search field, so a field left focused
+  /// (desktop keeps focus indefinitely after a click) must release it — the
+  /// typed text lives in the page state and survives.
+  void _onCollapseChanged() {
+    if (_collapseController.collapsed && _searchFocusNode.hasFocus) {
+      _searchFocusNode.unfocus();
+    }
+  }
 
   @override
   void dispose() {
-    _searchFocusNode.dispose();
+    _searchFocusNode
+      ..removeListener(_onSearchFocusChanged)
+      ..dispose();
+    _collapseController
+      ..removeListener(_onCollapseChanged)
+      ..dispose();
     super.dispose();
   }
 
@@ -152,7 +181,10 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
                 ),
           ),
           AppCommandId.focusSearch: AppCommandHandler(
-            invoke: (_) => _searchFocusNode.requestFocus(),
+            invoke: (_) {
+              _collapseController.expand();
+              _searchFocusNode.requestFocus();
+            },
           ),
         },
         child: Scaffold(
@@ -164,7 +196,10 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
           floatingActionButton: DesignSystemBottomNavigationFabPadding(
             child: floatingActionButton,
           ),
-          body: _TasksTabPageBody(searchFocusNode: _searchFocusNode),
+          body: _TasksTabPageBody(
+            searchFocusNode: _searchFocusNode,
+            collapseController: _collapseController,
+          ),
         ),
       ),
     );
@@ -172,9 +207,13 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
 }
 
 class _TasksTabPageBody extends ConsumerStatefulWidget {
-  const _TasksTabPageBody({required this.searchFocusNode});
+  const _TasksTabPageBody({
+    required this.searchFocusNode,
+    required this.collapseController,
+  });
 
   final FocusNode searchFocusNode;
+  final TaskListHeaderCollapseController collapseController;
 
   @override
   ConsumerState<_TasksTabPageBody> createState() => _TasksTabPageBodyState();
@@ -192,7 +231,26 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
   void initState() {
     super.initState();
     final listener = getIt<UserActivityService>().updateActivity;
-    _scrollController.addListener(listener);
+    _scrollController
+      ..addListener(listener)
+      ..addListener(_onScrolled);
+    // Seed the collapse controller's delta baseline once the scroll view has
+    // laid out, so even the first scroll event has an offset to diff against.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      widget.collapseController.primeBaseline(_scrollController.offset);
+    });
+  }
+
+  /// Forwards each scroll frame to the collapse controller, mirroring how the
+  /// task details page feeds its offset into `taskAppBarControllerProvider`.
+  void _onScrolled() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    widget.collapseController.handleScroll(
+      pixels: position.pixels,
+      maxScrollExtent: position.maxScrollExtent,
+    );
   }
 
   @override
@@ -200,15 +258,151 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
     final listener = getIt<UserActivityService>().updateActivity;
     _scrollController
       ..removeListener(listener)
+      ..removeListener(_onScrolled)
       ..dispose();
     _hoveredTaskIdNotifier.dispose();
     super.dispose();
   }
 
+  /// Re-expands the header and, once the search field is back on screen,
+  /// hands it focus — the compact bar's search affordance.
+  void _expandAndFocusSearch() {
+    widget.collapseController.expand();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.searchFocusNode.requestFocus();
+    });
+  }
+
+  /// Opens the filter modal from the compact bar and, when it closes with a
+  /// changed filter shape, re-expands the header so the chip row confirms
+  /// what the user just applied. Closing without changes leaves the compact
+  /// bar (and the user's scroll position focus) alone.
+  Future<void> _openFiltersFromCompactBar() async {
+    final before = _filterFingerprint(
+      ref.read(journalPageControllerProvider(true)),
+    );
+    await showTaskFilterModal(context, showTasks: true);
+    if (!mounted) return;
+    final after = _filterFingerprint(
+      ref.read(journalPageControllerProvider(true)),
+    );
+    if (before != after) widget.collapseController.expand();
+  }
+
+  /// Order-insensitive digest of every filter clause set, for detecting a
+  /// changed filter shape across the modal round trip.
+  static String _filterFingerprint(JournalPageState state) => [
+    state.selectedTaskStatuses,
+    state.selectedPriorities,
+    state.selectedCategoryIds,
+    state.selectedLabelIds,
+    state.selectedProjectIds,
+  ].map((clause) => (clause.toList()..sort()).join(',')).join('|');
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(journalPageControllerProvider(true));
     final controller = ref.read(journalPageControllerProvider(true).notifier);
+
+    // A status selection differing from the default open-work set is
+    // itself a narrowing, alongside the optional facets.
+    final filtersActive =
+        state.selectedCategoryIds.isNotEmpty ||
+        state.selectedLabelIds.isNotEmpty ||
+        state.selectedPriorities.isNotEmpty ||
+        state.selectedProjectIds.isNotEmpty ||
+        !setEquals(
+          state.selectedTaskStatuses,
+          defaultSelectedTaskStatuses,
+        );
+
+    final expandedHeader = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TabSectionHeader(
+          searchFocusNode: widget.searchFocusNode,
+          title: context.messages.navTabTitleTasks,
+          query: state.match,
+          searchHint: context.messages.searchTasksHint,
+          filterTooltip: context.messages.tasksFilterTitle,
+          filtersActive: filtersActive,
+          onSearchChanged: (value) {
+            unawaited(controller.setSearchString(value));
+          },
+          onSearchCleared: () {
+            unawaited(controller.setSearchString(''));
+          },
+          onSearchPressed: (value) {
+            unawaited(controller.setSearchString(value));
+          },
+          onFilterPressed: () => showTaskFilterModal(context, showTasks: true),
+        ),
+        // Desktop saved filters live under Tasks in the global sidebar.
+        // Mobile retains the compact task-pane switcher because it has no
+        // persistent navigation sidebar.
+        if (!isDesktopLayout(context)) const SavedTaskFilterRail(),
+        const _TasksTabActiveFilters(),
+      ],
+    );
+
+    // Clauses beyond the default open-work view: every selected facet, plus
+    // the status selection itself when it deviates from the default set. A
+    // deviating EMPTY status selection ("any status") still counts as one
+    // clause — the tinted funnel must never caption itself "0 filters".
+    final statusClauses =
+        setEquals(state.selectedTaskStatuses, defaultSelectedTaskStatuses)
+        ? 0
+        : math.max(1, state.selectedTaskStatuses.length);
+    final activeFilterCount =
+        state.selectedCategoryIds.length +
+        state.selectedLabelIds.length +
+        state.selectedPriorities.length +
+        state.selectedProjectIds.length +
+        statusClauses;
+
+    // A resolved saved view is the *named* abstraction of its clause shape:
+    // the expanded header suppresses the clause chips for it, so the
+    // collapsed bar mirrors that — name in the title, no clause-count badge —
+    // and the two states never disagree about how narrowing is represented.
+    final activeSavedFilterId = ref.watch(currentSavedTaskFilterIdProvider);
+    final savedFilters =
+        ref.watch(savedTaskFiltersControllerProvider).value ??
+        const <SavedTaskFilter>[];
+    final activeSavedFilterName = activeSavedFilterId == null
+        ? null
+        : savedFilters
+              .where((filter) => filter.id == activeSavedFilterId)
+              .firstOrNull
+              ?.name;
+
+    // The compact title's context run names every narrowing species through
+    // one channel, composed rather than precedence-picked: the saved view's
+    // name OR the localized ad-hoc clause count, then the search query in
+    // locale quotation marks — 'Errands · “x”', '4 filters', '“x”'.
+    final contextParts = <String>[
+      if (activeSavedFilterName != null)
+        activeSavedFilterName
+      else if (filtersActive)
+        context.messages.tasksCompactFilterCount(activeFilterCount),
+      if (state.match.isNotEmpty)
+        context.messages.tasksCompactSearchContext(state.match),
+    ];
+
+    final compactBar = TaskListCompactHeaderBar(
+      title: context.messages.navTabTitleTasks,
+      searchTooltip: context.messages.searchTasksHint,
+      filterTooltip: context.messages.tasksFilterTitle,
+      expandSemanticHint: context.messages.tasksCompactHeaderExpandHint,
+      filtersActive: filtersActive,
+      activeFilterCount: filtersActive && activeSavedFilterName == null
+          ? activeFilterCount
+          : 0,
+      searchActive: state.match.isNotEmpty,
+      contextLabel: contextParts.isEmpty ? null : contextParts.join(' · '),
+      onExpandRequested: widget.collapseController.expand,
+      onSearchRequested: _expandAndFocusSearch,
+      onFilterPressed: () => unawaited(_openFiltersFromCompactBar()),
+    );
 
     return SafeArea(
       bottom: false,
@@ -216,177 +410,187 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
         valueListenable: isDesktopLayout(context)
             ? getIt<NavService>().desktopSelectedTaskId
             : _noSelectionNotifier,
-        builder: (context, activeTaskId, _) => Column(
-          children: [
-            TabSectionHeader(
-              searchFocusNode: widget.searchFocusNode,
-              title: context.messages.navTabTitleTasks,
-              query: state.match,
-              searchHint: context.messages.searchTasksHint,
-              filterTooltip: context.messages.tasksFilterTitle,
-              // A status selection differing from the default open-work set is
-              // itself a narrowing, alongside the optional facets.
-              filtersActive:
-                  state.selectedCategoryIds.isNotEmpty ||
-                  state.selectedLabelIds.isNotEmpty ||
-                  state.selectedPriorities.isNotEmpty ||
-                  state.selectedProjectIds.isNotEmpty ||
-                  !setEquals(
-                    state.selectedTaskStatuses,
-                    defaultSelectedTaskStatuses,
+        builder: (context, activeTaskId, _) => LayoutBuilder(
+          builder: (context, constraints) => Column(
+            children: [
+              // Gate on the PANE's width, not the window's: the desktop
+              // split view hosts this page in a ~400px list pane where
+              // vertical space is as scarce as on a phone, so it collapses
+              // too. Only a pane that is itself desktop-wide (full-width
+              // window with no split) keeps the static header.
+              if (constraints.maxWidth >= kDesktopBreakpoint)
+                expandedHeader
+              else
+                ListenableBuilder(
+                  listenable: widget.collapseController,
+                  builder: (context, _) => CollapsingTaskListHeader(
+                    collapsed: widget.collapseController.collapsed,
+                    reduceMotion: MediaQuery.disableAnimationsOf(context),
+                    expandedHeader: expandedHeader,
+                    compactBar: compactBar,
                   ),
-              onSearchChanged: (value) {
-                unawaited(controller.setSearchString(value));
-              },
-              onSearchCleared: () {
-                unawaited(controller.setSearchString(''));
-              },
-              onSearchPressed: (value) {
-                unawaited(controller.setSearchString(value));
-              },
-              onFilterPressed: () =>
-                  showTaskFilterModal(context, showTasks: true),
-            ),
-            // Desktop saved filters live under Tasks in the global sidebar.
-            // Mobile retains the compact task-pane switcher because it has no
-            // persistent navigation sidebar.
-            if (!isDesktopLayout(context)) const SavedTaskFilterRail(),
-            const _TasksTabActiveFilters(),
-            Expanded(
-              child: RefreshIndicator(
-                // Keep the current page's items visible while re-fetching
-                // so pull-to-refresh swaps the list atomically instead of
-                // blanking it mid-animation.
-                onRefresh: () =>
-                    controller.refreshQuery(preserveVisibleItems: true),
-                child: CustomScrollView(
-                  scrollCacheExtent: const ScrollCacheExtent.pixels(1500),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  controller: _scrollController,
-                  slivers: [
-                    if (state.pagingController case final pagingController?)
-                      PagingListener<int, JournalEntity>(
-                        key: const ValueKey('tasks-tab-paged-list'),
-                        controller: pagingController,
-                        builder: (context, pagingState, fetchNextPage) {
-                          final entries = buildTaskBrowseEntries(
-                            items: pagingState.items ?? const <JournalEntity>[],
-                            sortOption: state.sortOption,
-                            now: clock.now(),
-                            hasNextPage: pagingState.hasNextPage,
-                          );
-                          final entryIndexByTaskId = <String, int>{
-                            for (var i = 0; i < entries.length; i++)
-                              entries[i].task.meta.id: i,
-                          };
+                ),
+              Expanded(
+                child: RefreshIndicator(
+                  // Keep the current page's items visible while re-fetching
+                  // so pull-to-refresh swaps the list atomically instead of
+                  // blanking it mid-animation.
+                  onRefresh: () =>
+                      controller.refreshQuery(preserveVisibleItems: true),
+                  child: NotificationListener<ScrollMetricsNotification>(
+                    // Content can shrink without any gesture (a filter narrowing
+                    // the list); if it can no longer scroll, the collapse
+                    // controller must re-expand the header itself.
+                    onNotification: (notification) {
+                      widget.collapseController.handleContentDimensionsChanged(
+                        maxScrollExtent: notification.metrics.maxScrollExtent,
+                      );
+                      return false;
+                    },
+                    child: CustomScrollView(
+                      scrollCacheExtent: const ScrollCacheExtent.pixels(1500),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      controller: _scrollController,
+                      slivers: [
+                        if (state.pagingController case final pagingController?)
+                          PagingListener<int, JournalEntity>(
+                            key: const ValueKey('tasks-tab-paged-list'),
+                            controller: pagingController,
+                            builder: (context, pagingState, fetchNextPage) {
+                              final entries = buildTaskBrowseEntries(
+                                items:
+                                    pagingState.items ??
+                                    const <JournalEntity>[],
+                                sortOption: state.sortOption,
+                                now: clock.now(),
+                                hasNextPage: pagingState.hasNextPage,
+                              );
+                              final entryIndexByTaskId = <String, int>{
+                                for (var i = 0; i < entries.length; i++)
+                                  entries[i].task.meta.id: i,
+                              };
 
-                          return PagedSliverList<int, JournalEntity>(
-                            state: pagingState,
-                            fetchNextPage: fetchNextPage,
-                            builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
-                              invisibleItemsThreshold: 10,
-                              firstPageProgressIndicatorBuilder: (_) =>
-                                  const Padding(
-                                    padding: EdgeInsets.only(top: 32),
+                              return PagedSliverList<int, JournalEntity>(
+                                state: pagingState,
+                                fetchNextPage: fetchNextPage,
+                                builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
+                                  invisibleItemsThreshold: 10,
+                                  firstPageProgressIndicatorBuilder: (_) =>
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 32),
+                                        child: Center(
+                                          child:
+                                              CircularProgressIndicator.adaptive(),
+                                        ),
+                                      ),
+                                  newPageProgressIndicatorBuilder: (_) =>
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 24,
+                                        ),
+                                        child: Center(
+                                          child:
+                                              CircularProgressIndicator.adaptive(),
+                                        ),
+                                      ),
+                                  noItemsFoundIndicatorBuilder: (_) => Padding(
+                                    padding: const EdgeInsets.only(top: 48),
                                     child: Center(
-                                      child:
-                                          CircularProgressIndicator.adaptive(),
+                                      child: Text(
+                                        context.messages.taskShowcaseNoResults,
+                                      ),
                                     ),
                                   ),
-                              newPageProgressIndicatorBuilder: (_) =>
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: 24,
-                                    ),
-                                    child: Center(
-                                      child:
-                                          CircularProgressIndicator.adaptive(),
-                                    ),
-                                  ),
-                              noItemsFoundIndicatorBuilder: (_) => Padding(
-                                padding: const EdgeInsets.only(top: 48),
-                                child: Center(
-                                  child: Text(
-                                    context.messages.taskShowcaseNoResults,
-                                  ),
+                                  itemBuilder: (context, item, index) {
+                                    if (item is! Task) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    final entryIndex =
+                                        entryIndexByTaskId[item.meta.id];
+                                    if (entryIndex == null) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    final entry = entries[entryIndex];
+
+                                    final distance = state.showDistances
+                                        ? state.vectorSearchDistances[item
+                                              .meta
+                                              .id]
+                                        : null;
+
+                                    return KeyedSubtree(
+                                      key: ValueKey(item.meta.id),
+                                      child: DetailContentWidth(
+                                        child: TaskBrowseListItem(
+                                          entry: entry,
+                                          sortOption: state.sortOption,
+                                          showCreationDate:
+                                              state.showCreationDate,
+                                          showDueDate: state.showDueDate,
+                                          showCoverArt: true,
+                                          // When the user has narrowed the list
+                                          // to a single status via the filter,
+                                          // every row would carry the same
+                                          // chip — drop it. With 0 (no filter)
+                                          // or 2+ statuses selected the chip
+                                          // disambiguates rows.
+                                          showStatus:
+                                              state
+                                                  .selectedTaskStatuses
+                                                  .length !=
+                                              1,
+                                          vectorDistance: distance,
+                                          previousTaskIdInSection:
+                                              entryIndex > 0 &&
+                                                  !entry.isFirstInSection
+                                              ? entries[entryIndex - 1]
+                                                    .task
+                                                    .meta
+                                                    .id
+                                              : null,
+                                          nextTaskIdInSection:
+                                              !entry.isLastInSection &&
+                                                  entryIndex <
+                                                      entries.length - 1
+                                              ? entries[entryIndex + 1]
+                                                    .task
+                                                    .meta
+                                                    .id
+                                              : null,
+                                          selectedTaskId: activeTaskId,
+                                          hoveredTaskIdNotifier:
+                                              _hoveredTaskIdNotifier,
+                                          onTap: () =>
+                                              getIt<NavService>().beamToNamed(
+                                                '/tasks/${item.meta.id}',
+                                              ),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
+                              );
+                            },
+                          )
+                        else
+                          const SliverToBoxAdapter(
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 32),
+                              child: Center(
+                                child: CircularProgressIndicator.adaptive(),
                               ),
-                              itemBuilder: (context, item, index) {
-                                if (item is! Task) {
-                                  return const SizedBox.shrink();
-                                }
-                                final entryIndex =
-                                    entryIndexByTaskId[item.meta.id];
-                                if (entryIndex == null) {
-                                  return const SizedBox.shrink();
-                                }
-                                final entry = entries[entryIndex];
-
-                                final distance = state.showDistances
-                                    ? state.vectorSearchDistances[item.meta.id]
-                                    : null;
-
-                                return KeyedSubtree(
-                                  key: ValueKey(item.meta.id),
-                                  child: DetailContentWidth(
-                                    child: TaskBrowseListItem(
-                                      entry: entry,
-                                      sortOption: state.sortOption,
-                                      showCreationDate: state.showCreationDate,
-                                      showDueDate: state.showDueDate,
-                                      showCoverArt: true,
-                                      // When the user has narrowed the list
-                                      // to a single status via the filter,
-                                      // every row would carry the same
-                                      // chip — drop it. With 0 (no filter)
-                                      // or 2+ statuses selected the chip
-                                      // disambiguates rows.
-                                      showStatus:
-                                          state.selectedTaskStatuses.length !=
-                                          1,
-                                      vectorDistance: distance,
-                                      previousTaskIdInSection:
-                                          entryIndex > 0 &&
-                                              !entry.isFirstInSection
-                                          ? entries[entryIndex - 1].task.meta.id
-                                          : null,
-                                      nextTaskIdInSection:
-                                          !entry.isLastInSection &&
-                                              entryIndex < entries.length - 1
-                                          ? entries[entryIndex + 1].task.meta.id
-                                          : null,
-                                      selectedTaskId: activeTaskId,
-                                      hoveredTaskIdNotifier:
-                                          _hoveredTaskIdNotifier,
-                                      onTap: () =>
-                                          getIt<NavService>().beamToNamed(
-                                            '/tasks/${item.meta.id}',
-                                          ),
-                                    ),
-                                  ),
-                                );
-                              },
                             ),
-                          );
-                        },
-                      )
-                    else
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.only(top: 32),
-                          child: Center(
-                            child: CircularProgressIndicator.adaptive(),
                           ),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 120),
                         ),
-                      ),
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 120),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -436,8 +640,14 @@ class _TasksTabActiveFilters extends ConsumerWidget {
     final labelIds = state.selectedLabelIds;
     final projectIds = state.selectedProjectIds;
 
+    // The default open-work status set is the page's resting view, not a
+    // narrowing — echoing it as removable chips made an unfiltered list look
+    // filtered, and made the chip count disagree with the collapsed bar's
+    // clause badge. Status chips appear only once the selection deviates.
+    final statusesNarrowed = !setEquals(statuses, defaultSelectedTaskStatuses);
+
     final total =
-        statuses.length +
+        (statusesNarrowed ? statuses.length : 0) +
         priorities.length +
         categoryIds.length +
         labelIds.length +
@@ -446,7 +656,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
 
     final chips = <Widget>[];
 
-    for (final status in statuses) {
+    for (final status in statusesNarrowed ? statuses : const <String>{}) {
       chips.add(
         ActiveFilterChip(
           label: taskLabelFromStatusString(status, context),
@@ -541,10 +751,38 @@ class _TasksTabActiveFilters extends ConsumerWidget {
 
     if (chips.isEmpty) return const SizedBox.shrink();
 
+    // Ending a multi-clause filter session chip-by-chip is the most
+    // expensive common exit on the page; from two clauses up, one tap
+    // restores the default view. It delegates to the SAME
+    // [SavedTaskFilterActivator.clearToDefault] as the rail's "All" pill,
+    // so the two visually synonymous resets are one behavior by
+    // construction. The leading pad separates the batch action from the
+    // single-chip removals beside it.
+    if (chips.length >= 2) {
+      final tokens = context.designTokens;
+      chips.add(
+        Padding(
+          padding: EdgeInsets.only(left: tokens.spacing.step3),
+          child: DesignSystemChip(
+            label: context.messages.tasksFilterClearAll,
+            leadingIcon: Icons.close_rounded,
+            onPressed: () => unawaited(
+              SavedTaskFilterActivator(controller).clearToDefault(),
+            ),
+          ),
+        ),
+      );
+    }
+
     final tokens = context.designTokens;
     return DetailContentWidth(
       child: Padding(
-        padding: EdgeInsets.only(bottom: tokens.spacing.step5),
+        // The step2 top beat matches the rail's own vertical padding, so
+        // search -> rail and rail -> chips share one rhythm.
+        padding: EdgeInsets.only(
+          top: tokens.spacing.step2,
+          bottom: tokens.spacing.step5,
+        ),
         child: SizedBox(
           width: double.infinity,
           child: Wrap(

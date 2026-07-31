@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -22,6 +23,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
+import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -347,7 +349,14 @@ void main() {
     await tester.pump();
     expect(fakeController.searchStringCalls, contains('agentic'));
 
-    await tester.tap(find.byIcon(Icons.filter_list_rounded));
+    // The compact bar keeps an (offstage) filter icon of its own, so scope
+    // the tap to the expanded header's button.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(TabSectionHeader),
+        matching: find.byIcon(Icons.filter_list_rounded),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Filter tasks'), findsOneWidget);
@@ -463,8 +472,15 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Header should still render at compact width
-    expect(find.text('Tasks'), findsOneWidget);
+    // Header should still render at compact width (the collapsed bar keeps
+    // an offstage 'Tasks' title of its own, so scope to the visible header).
+    expect(
+      find.descendant(
+        of: find.byType(TabSectionHeader),
+        matching: find.text('Tasks'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('default FAB creates task and navigates', (tester) async {
@@ -918,7 +934,15 @@ void main() {
       // The mobile rail collapses to nothing — no Filters button — and the old
       // "· {name}" header suffix is gone for good.
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsNothing);
-      expect(find.textContaining('· '), findsNothing);
+      // No "· {name}" suffix in the expanded header title (the collapsed
+      // compact bar legitimately uses a middot for its context run).
+      expect(
+        find.descendant(
+          of: find.byType(TabSectionHeader),
+          matching: find.textContaining('· '),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('surfaces the active saved filter name in the rail', (
@@ -943,8 +967,16 @@ void main() {
       // The Filters button keeps a plain label (its saved-count rides a
       // separate slot, not a parenthetical).
       expect(find.text('Filters'), findsOneWidget);
-      // The active pill shows the saved filter's name.
-      expect(find.text('In Progress P0'), findsOneWidget);
+      // The active pill shows the saved filter's name. Scoped to the rail:
+      // the (offstage) collapsed compact bar now carries the name too, as
+      // its context label.
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFilterRailKeys.root),
+          matching: find.text('In Progress P0'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('does not duplicate saved filters in the desktop task pane', (
@@ -955,6 +987,12 @@ void main() {
       when(
         () => mockNavService.desktopSelectedTaskId,
       ).thenReturn(selectedTaskId);
+
+      // The collapse gate reads the real pane width via LayoutBuilder, so the
+      // desktop scenario needs a desktop-sized VIEW, not just a MediaQuery.
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
 
       await tester.pumpWidget(
         buildSubjectWithSavedFilter(
@@ -984,6 +1022,11 @@ void main() {
         when(
           () => mockNavService.desktopSelectedTaskId,
         ).thenReturn(selectedTaskId);
+
+        // Desktop-sized VIEW so the pane-width collapse gate stays static.
+        tester.view.physicalSize = const Size(1400, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
 
         await tester.pumpWidget(
           buildSubjectWithSavedFilter(
@@ -1315,6 +1358,425 @@ void main() {
       expect(unwrapToCenter(newPageWidget), isA<CircularProgressIndicator>());
     },
   );
+
+  group('collapsing header', () {
+    late PagingController<int, JournalEntity> longListController;
+
+    setUp(() {
+      final manyTasks = [
+        for (var i = 0; i < 20; i++)
+          TestTaskFactory.create(
+            id: 'scroll-task-$i',
+            title: 'Scrollable task $i',
+            categoryId: 'cat-1',
+            dateFrom: DateTime(2026, 4, 8, 9),
+            dateTo: DateTime(2026, 4, 8, 10),
+          ),
+      ];
+      longListController =
+          PagingController<int, JournalEntity>(
+              getNextPageKey: (_) => null,
+              fetchPage: (_) async => const <JournalEntity>[],
+            )
+            ..value = PagingState<int, JournalEntity>(
+              pages: [manyTasks],
+              keys: const [0],
+              hasNextPage: false,
+            );
+    });
+
+    tearDown(() => longListController.dispose());
+
+    JournalPageState longListState() {
+      return JournalPageState(
+        match: '',
+        showTasks: true,
+        pagingController: longListController,
+        taskStatuses: const ['OPEN', 'IN PROGRESS'],
+        selectedTaskStatuses: const {'OPEN'},
+        selectedCategoryIds: const {'cat-1'},
+        selectedEntryTypes: const ['Task'],
+        fullTextMatches: const <String>{},
+      );
+    }
+
+    CrossFadeState crossFadeState(WidgetTester tester) => tester
+        .widget<AnimatedCrossFade>(
+          find.byKey(CollapsingTaskListHeaderKeys.root),
+        )
+        .crossFadeState;
+
+    Future<void> pumpCollapsed(WidgetTester tester) async {
+      await tester.pumpWidget(buildSubject(state: longListState()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.drag(
+        find.byType(CustomScrollView),
+        const Offset(0, -400),
+      );
+      // One pump to start the cross-fade, one to run it to completion.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('scrolling down collapses the header to the compact bar', (
+      tester,
+    ) async {
+      await pumpCollapsed(tester);
+
+      expect(crossFadeState(tester), CrossFadeState.showSecond);
+      // The compact bar is a fraction of the expanded header's height, so
+      // the collapse reclaims real list space.
+      final compactHeight = tester
+          .getSize(find.byKey(CollapsingTaskListHeaderKeys.root))
+          .height;
+      expect(compactHeight, lessThan(64));
+    });
+
+    testWidgets(
+      'mouse-wheel scrolling (PointerScrollEvent) collapses and restores '
+      'the header — the desktop input path, not just touch drags',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(state: longListState()));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final center = tester.getCenter(find.byType(CustomScrollView));
+        final testPointer = TestPointer(1, PointerDeviceKind.mouse)
+          ..hover(center);
+        // Three wheel notches down.
+        for (var i = 0; i < 3; i++) {
+          await tester.sendEventToBinding(
+            testPointer.scroll(const Offset(0, 120)),
+          );
+          await tester.pump();
+        }
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(crossFadeState(tester), CrossFadeState.showSecond);
+
+        // One deliberate notch up restores.
+        await tester.sendEventToBinding(
+          testPointer.scroll(const Offset(0, -120)),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(crossFadeState(tester), CrossFadeState.showFirst);
+      },
+    );
+
+    testWidgets('scrolling back up restores the full header', (tester) async {
+      await pumpCollapsed(tester);
+
+      await tester.drag(
+        find.byType(CustomScrollView),
+        const Offset(0, 100),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(crossFadeState(tester), CrossFadeState.showFirst);
+      expect(find.byType(TabSectionHeader), findsOneWidget);
+    });
+
+    testWidgets('typed search input survives a collapse/expand round trip', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(state: longListState()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.enterText(find.byType(TextField), 'migration');
+      // Drop focus so the focus pin doesn't (correctly) block the collapse.
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+
+      await tester.drag(
+        find.byType(CustomScrollView),
+        const Offset(0, -400),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(crossFadeState(tester), CrossFadeState.showSecond);
+
+      await tester.drag(
+        find.byType(CustomScrollView),
+        const Offset(0, 100),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(crossFadeState(tester), CrossFadeState.showFirst);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        'migration',
+      );
+    });
+
+    testWidgets('compact search affordance re-expands and focuses the field', (
+      tester,
+    ) async {
+      await pumpCollapsed(tester);
+
+      await tester.tap(
+        find.byKey(CollapsingTaskListHeaderKeys.compactSearchButton),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(crossFadeState(tester), CrossFadeState.showFirst);
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'tasks-search',
+      );
+    });
+
+    testWidgets(
+      'an ad-hoc filtered collapsed header NAMES its narrowing — localized '
+      'clause count in the title context, badge on the funnel',
+      (tester) async {
+        final filteredState = JournalPageState(
+          match: '',
+          showTasks: true,
+          pagingController: longListController,
+          taskStatuses: const ['OPEN', 'IN PROGRESS'],
+          selectedTaskStatuses: const {'OPEN'},
+          selectedCategoryIds: const {'cat-1'},
+          selectedPriorities: const {'P0'},
+          selectedEntryTypes: const ['Task'],
+          fullTextMatches: const <String>{},
+        );
+        await tester.pumpWidget(buildSubject(state: filteredState));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -400),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(crossFadeState(tester), CrossFadeState.showSecond);
+
+        // 1 status (deviating) + 1 category + 1 priority = 3 clauses.
+        expect(
+          find.descendant(
+            of: find.byKey(CollapsingTaskListHeaderKeys.compactBar),
+            matching: find.textContaining('3 filters', findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(CollapsingTaskListHeaderKeys.compactFilterButton),
+            matching: find.text('3'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('compact title tap re-expands the header', (tester) async {
+      await pumpCollapsed(tester);
+
+      await tester.tap(
+        find.byKey(CollapsingTaskListHeaderKeys.compactTitle),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(crossFadeState(tester), CrossFadeState.showFirst);
+    });
+
+    testWidgets('compact filter affordance opens the filter modal directly', (
+      tester,
+    ) async {
+      await pumpCollapsed(tester);
+
+      await tester.tap(
+        find.byKey(CollapsingTaskListHeaderKeys.compactFilterButton),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Filter tasks'), findsOneWidget);
+      // Opening filters does not expand the header behind the sheet.
+      expect(crossFadeState(tester), CrossFadeState.showSecond);
+    });
+
+    testWidgets('a short list keeps the header expanded', (tester) async {
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.drag(
+        find.byType(CustomScrollView),
+        const Offset(0, -400),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(crossFadeState(tester), CrossFadeState.showFirst);
+    });
+
+    testWidgets('desktop layout keeps the static header (no collapse)', (
+      tester,
+    ) async {
+      final selectedNotifier = ValueNotifier<String?>(null);
+      addTearDown(selectedNotifier.dispose);
+      when(
+        () => mockNavService.desktopSelectedTaskId,
+      ).thenReturn(selectedNotifier);
+
+      // The gate reads the real pane width via LayoutBuilder, so the
+      // desktop scenario needs a desktop-sized VIEW, not just a MediaQuery.
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        buildSubject(
+          state: longListState(),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.byKey(CollapsingTaskListHeaderKeys.root),
+        findsNothing,
+      );
+      expect(find.byType(TabSectionHeader), findsOneWidget);
+    });
+
+    testWidgets(
+      'a narrow desktop split-view list pane collapses like a phone: the '
+      'gate is the pane width, not the window width',
+      (tester) async {
+        final selectedNotifier = ValueNotifier<String?>(null);
+        addTearDown(selectedNotifier.dispose);
+        when(
+          () => mockNavService.desktopSelectedTaskId,
+        ).thenReturn(selectedNotifier);
+
+        fakeController = FakeJournalPageController(longListState());
+        // A desktop-sized window (1280) hosting the page in a ~400px pane,
+        // exactly the split-view shape TasksRootPage produces.
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const AppCommandHost(
+              handlers: {},
+              platform: TargetPlatform.windows,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: 400,
+                  child: TasksTabPage(),
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+            overrides: [
+              journalPageScopeProvider.overrideWithValue(true),
+              journalPageControllerProvider(
+                true,
+              ).overrideWith(() => fakeController),
+              taskAgentServiceProvider.overrideWithValue(
+                MockTaskAgentService(),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.byKey(CollapsingTaskListHeaderKeys.root),
+          findsOneWidget,
+        );
+
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -400),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(crossFadeState(tester), CrossFadeState.showSecond);
+      },
+    );
+
+    testWidgets(
+      'an active saved view collapses to its NAME, not a clause-count '
+      "badge, matching the expanded header's suppressed chip row",
+      (tester) async {
+        fakeController = FakeJournalPageController(longListState());
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const AppCommandHost(
+              handlers: {},
+              platform: TargetPlatform.windows,
+              child: TasksTabPage(),
+            ),
+            overrides: [
+              journalPageScopeProvider.overrideWithValue(true),
+              journalPageControllerProvider(
+                true,
+              ).overrideWith(() => fakeController),
+              taskAgentServiceProvider.overrideWithValue(
+                MockTaskAgentService(),
+              ),
+              savedTaskFiltersControllerProvider.overrideWith(
+                () => _StubSavedTaskFiltersController(const [
+                  SavedTaskFilter(
+                    id: 'sv-1',
+                    name: 'Deep Work',
+                    filter: TasksFilter(),
+                  ),
+                ]),
+              ),
+              currentSavedTaskFilterIdProvider.overrideWith((ref) => 'sv-1'),
+              tasksFilterHasUnsavedClausesProvider.overrideWith(
+                (ref) => false,
+              ),
+              savedTaskFilterCountsProvider.overrideWith(
+                (ref) async => const {'sv-1': 3},
+              ),
+              allTasksTotalCountProvider.overrideWith((ref) async => 50),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -400),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(crossFadeState(tester), CrossFadeState.showSecond);
+
+        // The saved view's name is the collapsed representation…
+        expect(
+          find.descendant(
+            of: find.byKey(CollapsingTaskListHeaderKeys.compactBar),
+            matching: find.textContaining('Deep Work', findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        // …and no clause-count badge competes with it.
+        expect(
+          find.descendant(
+            of: find.byKey(CollapsingTaskListHeaderKeys.compactFilterButton),
+            matching: find.byType(Badge),
+          ),
+          findsNothing,
+        );
+      },
+    );
+  });
 }
 
 class _StubSavedTaskFiltersController extends SavedTaskFiltersController {

@@ -5291,6 +5291,28 @@
   "tasksAgentFilterHasAgent": "Has Agent",
   "tasksAgentFilterNoAgent": "No Agent",
   "tasksAgentFilterTitle": "Agent",
+  "tasksCompactFilterCount": "{count, plural, one {1 filter} other {{count} filters}}",
+  "@tasksCompactFilterCount": {
+    "description": "Collapsed task-list header context: how many ad-hoc filter clauses narrow the list",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "tasksCompactHeaderExpandHint": "Show search and filters",
+  "@tasksCompactHeaderExpandHint": {
+    "description": "Semantic hint on the collapsed header title button: expanding reveals search and filters"
+  },
+  "tasksCompactSearchContext": "“{query}”",
+  "@tasksCompactSearchContext": {
+    "description": "Collapsed task-list header context: the active search query, wrapped in locale quotation marks",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "tasksFilterApplyTitle": "Apply filter",
   "tasksFilterClearAll": "Clear all",
   "tasksFilterTitle": "Filter tasks",

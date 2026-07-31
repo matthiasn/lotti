@@ -10950,6 +10950,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksAgentFilterTitle => 'Agente';
 
   @override
+  String tasksCompactFilterCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filtros',
+      one: '1 filtro',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksCompactHeaderExpandHint => 'Mostrar búsqueda y filtros';
+
+  @override
+  String tasksCompactSearchContext(String query) {
+    return '«$query»';
+  }
+
+  @override
   String get tasksFilterApplyTitle => 'Aplicar filtro';
 
   @override
