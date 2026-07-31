@@ -175,7 +175,8 @@ class DayAgentStrategy extends ConversationStrategy {
         }
         if (toolName == DayAgentToolNames.raiseDayStatus &&
             result.success &&
-            args['status'] == 'attentionNeeded') {
+            args['status'] is String &&
+            (args['status'] as String).trim() == 'attentionNeeded') {
           _didRaiseAttentionStatus = true;
         }
         manager.addToolResponse(toolCallId: call.id, response: result.output);

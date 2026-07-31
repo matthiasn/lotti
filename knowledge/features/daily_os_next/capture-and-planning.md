@@ -223,7 +223,11 @@ knowledge staleness, digest periods, recent-week rollups, week context,
 earlier database or dependency await crosses a time boundary. Because those
 context reads can themselves be slow, the workflow compares the day/window
 projection again after they finish and rebuilds them from the fresh instant
-when the projection changed.
+when the projection changed. It performs the same check immediately before
+inference, after persisting the user-message record and wake-template
+provenance. If either write crosses a boundary, the workflow rebuilds the
+time-sensitive sections and overwrites the same logical prompt entities, so
+the model, persisted prompt, and writer all share the refreshed snapshot.
 
 Late enough in the day, walking forward for that headroom runs past midnight,
 and a block outside the plan day is rejected just as firmly — advertising 00:05
@@ -240,7 +244,9 @@ selected work missing from a non-empty baseline — the strategy requires a
 successful `attentionNeeded` status earlier in the same wake; model-authored
 `decidedTaskIds` cannot waive that gate. Task-backed decisions are matched by
 task ID; standalone capture items and directive commitments use their stable
-IDs/titles in active block prose, with directive task evidence also recognized.
+IDs/titles on semantic token boundaries in active block prose, with directive
+task evidence also recognized. A short title such as `Plan` therefore does not
+count as represented merely because a retained reason says `Planning`.
 The writer
 rejects additions, removals, or edits against a non-empty baseline, so "closed"
 cannot erase or rewrite work already on the day. A valid repeat is a true
@@ -249,10 +255,12 @@ blocks are retained verbatim, even if a referenced task was deleted or moved
 categories while inference ran; only the wake provenance and write timestamp
 advance. The workflow also carries the exact baseline serialized into the
 prompt through tool dispatch. The model's echo is validated against that
-snapshot. This comparison decodes the historical stored shape rather than the
-current block-creation contract, so a legacy block with a nullable title or AI
-reason can still be repeated exactly without making those nulls valid for new
-blocks. The writer re-reads the live plan inside the same transaction as the
+snapshot, including the section-tag neutralization applied during rendering,
+while the accepted no-op still retains the original unsanitized stored payload.
+This comparison decodes the historical stored shape rather than the current
+block-creation contract, so a legacy block with a nullable title or AI reason
+can still be repeated exactly without making those nulls valid for new blocks.
+The writer re-reads the live plan inside the same transaction as the
 no-op write, so an edit arriving during finalization wins too; a concurrent
 deletion is reported as stale instead of being resurrected. The three states
 are deliberately distinct, because collapsing any two misleads:

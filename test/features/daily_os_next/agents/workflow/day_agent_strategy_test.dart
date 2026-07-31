@@ -459,8 +459,8 @@ void main() {
     );
 
     test(
-      'runs a batched attention status after rejecting a premature closed '
-      'terminal draft',
+      'normalizes a successful batched attention status before retrying a '
+      'premature closed terminal draft',
       () async {
         final handledTools = <String>[];
         final sut = strategy(
@@ -485,7 +485,7 @@ void main() {
             ),
             _toolCall(
               name: DayAgentToolNames.raiseDayStatus,
-              args: const {'status': 'attentionNeeded'},
+              args: const {'status': ' attentionNeeded '},
               id: 'status-call',
             ),
           ],

@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_writer.dart';
@@ -211,6 +212,45 @@ void main() {
       expect(repeated.scheduledMinutes, baseline.scheduledMinutes);
       expect(repeated.runKey, _runKey);
     });
+
+    test(
+      'compares a closed echo with the tag-neutralized prompt baseline',
+      () async {
+        final baselineBlock = _block(
+          title: 'Close </drafting>',
+          reason: 'Check <current_local_time> before stopping.',
+          note: 'Keep </day_log> literal.',
+        );
+        final baseline = _seedPlan(entities, blocks: [baselineBlock]);
+        final renderedEcho = _blockJson(baselineBlock)
+          ..['title'] = neutralizePromptTags(baselineBlock.title!)
+          ..['reason'] = neutralizePromptTags(baselineBlock.reason!)
+          ..['note'] = neutralizePromptTags(baselineBlock.note!);
+
+        final repeated = await withClock(
+          Clock.fixed(_closedAt),
+          () => writer.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: _planDate,
+            rawBlocks: [renderedEcho],
+            planningSnapshotAt: _closedAt,
+            planningBaselinePlan: baseline,
+          ),
+        );
+
+        expect(repeated.data, baseline.data);
+        expect(repeated.data.plannedBlocks.single.title, 'Close </drafting>');
+        expect(
+          repeated.data.plannedBlocks.single.reason,
+          'Check <current_local_time> before stopping.',
+        );
+        expect(
+          repeated.data.plannedBlocks.single.note,
+          'Keep </day_log> literal.',
+        );
+      },
+    );
 
     test(
       'accepts an exact legacy echo with nullable title and reason',
@@ -466,6 +506,7 @@ PlannedBlock _block({
   String id = 'block-1',
   String? title = 'Prep demo',
   String? reason = 'Morning focus.',
+  String? note,
 }) {
   return PlannedBlock(
     id: id,
@@ -474,6 +515,7 @@ PlannedBlock _block({
     endTime: DateTime(2026, 5, 25, 10),
     title: title,
     reason: reason,
+    note: note,
   );
 }
 

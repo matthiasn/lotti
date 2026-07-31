@@ -3,6 +3,62 @@ part of 'day_agent_workflow.dart';
 /// Pure context-assembly helpers of [DayAgentWorkflow]: user-message
 /// construction and the capture/drafting/refine context builders.
 extension DayAgentContextBuilder on DayAgentWorkflow {
+  Future<_TimeSensitiveDayAgentContext> _loadTimeSensitiveContext({
+    required String agentId,
+    required DailyOsPlannerWakeContext wakeContext,
+    required DateTime planDate,
+    required bool isDayTokenWake,
+    required DayDirectiveEntity? directive,
+    required RefineContext? refineContext,
+    DateTime? initialSnapshotAt,
+  }) async {
+    // Time-sensitive context reads can themselves cross a planning boundary.
+    // Build from one snapshot, then compare the pure day/window projection
+    // after every await. If it changed, rebuild from the fresh instant before
+    // rendering. The projection becomes permanently stable once the target
+    // window is closed, so this converges without an arbitrary retry cap.
+    var contextSnapshotAt = initialSnapshotAt ?? clock.now();
+    while (true) {
+      final digestContext = await _digestContext(
+        agentId: agentId,
+        wakeContext: wakeContext,
+        dayDate: planDate,
+        now: contextSnapshotAt,
+        preloadedTodayDirective: directive,
+      );
+      final recentWeeksContext = await _recentWeeksContext(
+        agentId: agentId,
+        wakeContext: wakeContext,
+        now: contextSnapshotAt,
+      );
+      final weekContext = isDayTokenWake
+          ? await _weekContext(planDate: planDate, now: contextSnapshotAt)
+          : null;
+
+      final planningSnapshotAt = clock.now();
+      final contextStayedCurrent =
+          _timeSensitiveContextKey(
+            planDate: planDate,
+            now: contextSnapshotAt,
+            refineContext: refineContext,
+          ) ==
+          _timeSensitiveContextKey(
+            planDate: planDate,
+            now: planningSnapshotAt,
+            refineContext: refineContext,
+          );
+      if (contextStayedCurrent) {
+        return (
+          digestContext: digestContext,
+          planningSnapshotAt: planningSnapshotAt,
+          recentWeeksContext: recentWeeksContext,
+          weekContext: weekContext,
+        );
+      }
+      contextSnapshotAt = planningSnapshotAt;
+    }
+  }
+
   String _buildUserMessage({
     required String dayId,
     required DateTime planDate,
@@ -281,21 +337,21 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       for (final block in activeBlocks)
         if (block.taskId != null) block.taskId!,
     };
-    final planProse = [
-      for (final block in activeBlocks)
-        [
-          block.id,
-          block.title,
-          block.reason,
-          block.note,
-        ].whereType<String>().join(' '),
-    ].join(' ').toLowerCase();
+    final planTokens = _semanticTokens(
+      [
+        for (final block in activeBlocks)
+          [
+            block.id,
+            block.title,
+            block.reason,
+            block.note,
+          ].whereType<String>().join(' '),
+      ].join(' '),
+    );
 
     bool named(String id, String title) {
-      final normalizedId = id.trim().toLowerCase();
-      final normalizedTitle = collapseToSingleLine(title).trim().toLowerCase();
-      return (normalizedId.isNotEmpty && planProse.contains(normalizedId)) ||
-          (normalizedTitle.isNotEmpty && planProse.contains(normalizedTitle));
+      return _containsSemanticPhrase(planTokens, id) ||
+          _containsSemanticPhrase(planTokens, title);
     }
 
     final omitsTask =
@@ -320,6 +376,34 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         }) ??
         false;
     return omitsTask || omitsCaptureItem || omitsCommitment;
+  }
+
+  List<String> _semanticTokens(String value) => collapseToSingleLine(value)
+      .toLowerCase()
+      .split(RegExp(r'[^\p{L}\p{N}]+', unicode: true))
+      .where((token) => token.isNotEmpty)
+      .toList();
+
+  bool _containsSemanticPhrase(List<String> proseTokens, String phrase) {
+    final phraseTokens = _semanticTokens(phrase);
+    if (phraseTokens.isEmpty || phraseTokens.length > proseTokens.length) {
+      return false;
+    }
+    for (
+      var start = 0;
+      start <= proseTokens.length - phraseTokens.length;
+      start++
+    ) {
+      var matches = true;
+      for (var offset = 0; offset < phraseTokens.length; offset++) {
+        if (proseTokens[start + offset] != phraseTokens[offset]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) return true;
+    }
+    return false;
   }
 
   /// The category/project scopes the current wake actually touches (ADR 0022

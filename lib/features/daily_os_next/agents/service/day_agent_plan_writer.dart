@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_diff.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
@@ -436,8 +437,11 @@ class DayAgentPlanWriter {
           'empty plan instead of adding blocks.',
         );
       }
+      final promptBaselineBlocks = planningSnapshotAt == null
+          ? validationBaselineBlocks
+          : validationBaselineBlocks.map(_asRenderedPromptBlock).toList();
       final baselineRepeatedExactly = _sameBlocksWithMultiplicity(
-        validationBaselineBlocks,
+        promptBaselineBlocks,
         blocks,
       );
       if (validationBaselineBlocks.isNotEmpty && !baselineRepeatedExactly) {
@@ -717,4 +721,13 @@ class DayAgentPlanWriter {
     }
     return true;
   }
+
+  PlannedBlock _asRenderedPromptBlock(PlannedBlock block) => block.copyWith(
+    id: neutralizePromptTags(block.id),
+    categoryId: neutralizePromptTags(block.categoryId),
+    note: block.note == null ? null : neutralizePromptTags(block.note!),
+    taskId: block.taskId == null ? null : neutralizePromptTags(block.taskId!),
+    title: block.title == null ? null : neutralizePromptTags(block.title!),
+    reason: block.reason == null ? null : neutralizePromptTags(block.reason!),
+  );
 }
