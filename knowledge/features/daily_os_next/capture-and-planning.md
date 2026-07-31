@@ -192,16 +192,18 @@ and a concurrent tombstone is never revived.
 
 **Planning into the past is refused, whatever the block's type.** For today's
 plan, `draft_day_plan` rejects any block it would be *planning* — state `drafted`
-or `committed` — whose start precedes `clock.now()` **at the moment the tool
-executes**.
+or `committed` — whose start precedes the wake's planning snapshot. The
+workflow captures that instant before building the prompt and carries the same
+value through tool dispatch; direct service callers without a wake snapshot use
+the live clock.
 
-That last clause is load-bearing, and getting it wrong was measurable. The
-threshold moves between rendering the prompt and enforcing it, because the model
-thinks in between — 13s to 152s in the eval. So a plan whose first block starts
-at the instant the prompt advertised is *always* rejected: every sampled
-`lateStart` cell across both models started the day at 15:00 when the prompt read
-`15:00:00.005877`, and all 6/6 lost by under six milliseconds. Complying would
-have meant predicting inference latency.
+The shared snapshot is load-bearing, and the earlier execution-time clock was
+measurably wrong. The threshold moved between rendering the prompt and enforcing
+it because the model thought in between — 13s to 152s in the eval. A plan whose
+first block started at the instant the prompt advertised was therefore rejected:
+every sampled `lateStart` cell across both models started the day at 15:00 when
+the prompt read `15:00:00.005877`, and all 6/6 lost by under six milliseconds.
+Complying would have meant predicting inference latency.
 
 The prompt therefore carries a top-level `<planning_window>` section —
 `advertisedPlanningStart`, the first five-minute boundary at least three minutes
@@ -209,8 +211,10 @@ out — rather than the raw instant. It is **top-level on purpose**: the
 constraint belongs to the day, not to a wake mode. `draft_day_plan` is always
 exposed and a scheduled `planning_day` wake builds neither a drafting nor a
 refine context, so nesting it under either left exactly those wakes deriving the
-threshold themselves. The guard is unchanged and unweakened; only what the model
-is *told to aim at* moved.
+threshold themselves. Persistence validates against the same pre-inference
+snapshot that produced this advertised start. Recomputing the padded boundary
+after the model responds can otherwise turn a final advertised 16:55–17:00 slot
+into a closed window at 16:55, even though the slot itself is still legal.
 
 Late enough in the day, walking forward for that headroom runs past midnight,
 and a block outside the plan day is rejected just as firmly — advertising 00:05
@@ -221,8 +225,12 @@ durable plan artifact: with an empty baseline it first raises any required
 omission status, then persists `draft_day_plan` with `blocks: []`; with a
 non-empty baseline it repeats every existing block unchanged. The writer
 rejects additions, removals, or edits against a non-empty baseline, so "closed"
-cannot erase or rewrite work already on the day. The three states are
-deliberately distinct, because collapsing any two misleads:
+cannot erase or rewrite work already on the day. A valid repeat is a true
+no-op over the stored payload: labels, energy bands, budgets, pinned tasks, and
+blocks are retained verbatim, even if a referenced task was deleted or moved
+categories while inference ran; only the wake provenance and write timestamp
+advance. The three states are deliberately distinct, because collapsing any two
+misleads:
 
 | `<planning_window>` | Meaning |
 |---|---|

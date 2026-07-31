@@ -108,20 +108,21 @@ const minimumPlanningHeadroom = Duration(minutes: 3);
 /// begun.
 ///
 /// Deliberately later than [earliestPlannableStart], and that asymmetry is the
-/// whole point. The guard compares against `clock.now()` at the moment
-/// `draft_day_plan` executes, which is unavoidably *after* the instant rendered
-/// into the prompt — the model has to think in between. Advertising the raw
-/// instant therefore asks the model to predict its own latency: it reads
-/// "15:00:00.005877", sensibly starts the day at 15:00, and is rejected by five
-/// milliseconds.
+/// whole point. The workflow carries the pre-inference planning snapshot into
+/// `draft_day_plan`, so persistence validates the same floor that produced the
+/// prompt instead of moving it while the model thinks. Advertising the raw
+/// instant would still make the plan stale on arrival: it reads
+/// "15:00:00.005877", sensibly starts the day at 15:00, and inference finishes
+/// after that instant.
 ///
 /// That is not hypothetical. Every sampled `lateStart` cell across both models
 /// did exactly this and was rejected, 6/6, burning a whole round trip on the
 /// most ordinary case there is — planning a day that has already started.
 ///
 /// It is the first [advertisedStartGranularity] boundary at least
-/// [minimumPlanningHeadroom] after [now], so the advertised value is still
-/// valid when the guard runs — without weakening the guard by a single second.
+/// [minimumPlanningHeadroom] after [now], so the advertised value remains a
+/// genuinely future slot when the tool call lands, while the shared snapshot
+/// keeps validation deterministic.
 DateTime? advertisedPlanningStart({
   required DateTime planDate,
   required DateTime now,

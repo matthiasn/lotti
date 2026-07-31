@@ -314,6 +314,7 @@ void main() {
         toolName: DayAgentToolNames.draftDayPlan,
         args: any(named: 'args'),
         planningConfig: any(named: 'planningConfig'),
+        planningSnapshotAt: any(named: 'planningSnapshotAt'),
       ),
     ).thenAnswer(
       (_) async => DayAgentDirectToolResult.success(
@@ -722,6 +723,7 @@ void main() {
             toolName: any(named: 'toolName'),
             args: any(named: 'args'),
             planningConfig: any(named: 'planningConfig'),
+            planningSnapshotAt: any(named: 'planningSnapshotAt'),
           ),
         );
       },
@@ -4017,6 +4019,7 @@ void main() {
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -4088,6 +4091,7 @@ void main() {
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
             ),
           ).called(1);
 
@@ -4115,6 +4119,7 @@ void main() {
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -4199,6 +4204,7 @@ void main() {
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.failure(
@@ -4237,6 +4243,7 @@ void main() {
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
             ),
           ).called(1);
         },
@@ -4279,6 +4286,7 @@ void main() {
               toolName: DayAgentToolNames.draftDayPlan,
               args: any(named: 'args'),
               planningConfig: any(named: 'planningConfig'),
+              planningSnapshotAt: any(named: 'planningSnapshotAt'),
             ),
           );
         },
@@ -4488,6 +4496,7 @@ void main() {
           toolName: DayAgentToolNames.draftDayPlan,
           args: any(named: 'args'),
           planningConfig: any(named: 'planningConfig'),
+          planningSnapshotAt: any(named: 'planningSnapshotAt'),
         ),
       ).thenAnswer(
         (_) async => DayAgentDirectToolResult.success(
@@ -4520,6 +4529,7 @@ void main() {
                   toolName: DayAgentToolNames.draftDayPlan,
                   args: captureAny(named: 'args'),
                   planningConfig: any(named: 'planningConfig'),
+                  planningSnapshotAt: now,
                 ),
               ).captured.single
               as Map<String, dynamic>;
@@ -4559,6 +4569,7 @@ void main() {
           toolName: any(named: 'toolName'),
           args: any(named: 'args'),
           planningConfig: any(named: 'planningConfig'),
+          planningSnapshotAt: any(named: 'planningSnapshotAt'),
         ),
       );
     });

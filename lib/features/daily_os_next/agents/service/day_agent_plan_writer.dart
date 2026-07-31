@@ -268,6 +268,12 @@ class DayAgentPlanWriter {
   }
 
   /// Persist a model-emitted draft plan.
+  ///
+  /// Open-window drafts must contain at least one valid block. Once the
+  /// planning window advertised to the model is closed, a fresh draft must be
+  /// empty, while a non-empty baseline must be echoed exactly and is persisted
+  /// as a metadata-preserving no-op with only wake provenance and the write
+  /// timestamp advanced.
   Future<DayPlanEntity> persistDraftPlan({
     required String agentId,
     required String dayId,
@@ -281,6 +287,7 @@ class DayAgentPlanWriter {
     String workingHoursEnd = '17:00',
     String? dayLabel,
     String? runKey,
+    DateTime? planningSnapshotAt,
   }) async {
     final identity = await reads.requireIdentity(agentId);
     if (identity.allowedCategoryIds.isNotEmpty) {
@@ -316,27 +323,17 @@ class DayAgentPlanWriter {
     }
 
     final now = clock.now();
+    // The model planned against the window rendered before inference. Reusing
+    // that snapshot here prevents the padded advertised start from moving
+    // while the model thinks and turning a valid final slot into a closed
+    // window at persistence time. Direct service callers still validate
+    // against the live clock.
+    final validationNow = planningSnapshotAt ?? now;
     final earliestDraftStart = earliestPlannableStart(
       planDate: planDate,
-      now: now,
+      now: validationNow,
     );
     final allowedCategoryIds = identity.allowedCategoryIds;
-    // Resolved and category-filtered like every other task reference. This
-    // argument is written by the model itself, so an unchecked set let it
-    // reference a deleted task, a non-existent one, or one belonging to a
-    // category this agent may not touch, just by echoing the id into its own
-    // `draft_day_plan` call. Legitimate decided tasks survive: they are
-    // hydrated for the prompt through `hydrateDecidedTasks`, which already
-    // applies exactly this filter, so the only ids dropped here are ones the
-    // model was never given.
-    final decidedTasks = await _resolveTaskIds(
-      decidedTaskIds,
-      allowedCategoryIds,
-    );
-    final allowedExistingTaskIds = await _allowedExistingTaskIds(
-      rawBlocks,
-      allowedCategoryIds,
-    );
     final existing = await reads.draftPlanForDay(
       agentId: agentId,
       dayId: dayId,
@@ -357,6 +354,32 @@ class DayAgentPlanWriter {
           in existing?.data.plannedBlocks ?? const <PlannedBlock>[])
         block.id: block,
     };
+    final windowClosed = draftPlanningWindowClosed(
+      planDate: planDate,
+      now: validationNow,
+      capacityMinutes: capacityMinutes,
+      workingHoursStart: workingHoursStart,
+      workingHoursEnd: workingHoursEnd,
+    );
+    final preserveClosedBaseline = windowClosed && baselineBlocks.isNotEmpty;
+    // Resolved and category-filtered like every other task reference. This
+    // argument is written by the model itself, so an unchecked set let it
+    // reference a deleted task, a non-existent one, or one belonging to a
+    // category this agent may not touch, just by echoing the id into its own
+    // `draft_day_plan` call. Legitimate decided tasks survive: they are
+    // hydrated for the prompt through `hydrateDecidedTasks`, which already
+    // applies exactly this filter, so the only ids dropped here are ones the
+    // model was never given.
+    final baselineTaskCategories = <String, String?>{
+      for (final block in baselineBlocks.values)
+        ?block.taskId: block.categoryId,
+    };
+    final decidedTasks = preserveClosedBaseline
+        ? baselineTaskCategories
+        : await _resolveTaskIds(decidedTaskIds, allowedCategoryIds);
+    final allowedExistingTaskIds = preserveClosedBaseline
+        ? baselineTaskCategories
+        : await _allowedExistingTaskIds(rawBlocks, allowedCategoryIds);
     final blocks = <PlannedBlock>[];
     for (final raw in rawBlocks) {
       blocks.add(
@@ -364,20 +387,20 @@ class DayAgentPlanWriter {
           raw: raw,
           day: planDate,
           earliestDraftStart: earliestDraftStart,
-          allowedCategoryIds: allowedCategoryIds,
+          // A closed baseline is already persisted user state. Validate the
+          // model's echo against that snapshot rather than today's live task
+          // or category rows, which may have been deleted or moved since the
+          // plan was written; the accepted result below preserves the stored
+          // payload verbatim.
+          allowedCategoryIds: preserveClosedBaseline
+              ? const {}
+              : allowedCategoryIds,
           decidedTaskIds: decidedTasks,
           allowedExistingTaskIds: allowedExistingTaskIds,
           baselineBlocks: baselineBlocks,
         ),
       );
     }
-    final windowClosed = draftPlanningWindowClosed(
-      planDate: planDate,
-      now: now,
-      capacityMinutes: capacityMinutes,
-      workingHoursStart: workingHoursStart,
-      workingHoursEnd: workingHoursEnd,
-    );
     if (windowClosed) {
       if (baselineBlocks.isEmpty && blocks.isNotEmpty) {
         throw const DayAgentCaptureException(
@@ -406,55 +429,64 @@ class DayAgentPlanWriter {
         'window is open',
       );
     }
-    blocks.sort((a, b) {
-      final byStart = a.startTime.compareTo(b.startTime);
-      if (byStart != 0) return byStart;
-      return a.id.compareTo(b.id);
-    });
-    validateDraftWorkingHours(
-      blocks: blocks,
-      planDate: planDate,
-      workingHoursStart: workingHoursStart,
-      workingHoursEnd: workingHoursEnd,
-    );
-    final bands = [
-      for (final raw in rawEnergyBands)
-        parseEnergyBand(raw: raw, day: planDate),
-    ];
-    final scheduledMinutes = scheduledMinutesFor(blocks);
-    final pinnedTasks = pinnedTasksFor(blocks);
-    final plan =
-        AgentDomainEntity.dayPlan(
-              id: dayAgentPlanEntityId(dayId),
-              agentId: agentId,
-              dayId: dayId,
-              captureId: captureId,
-              // Provenance for the durable draft job: which wake wrote this.
-              // Without it the executor can only ask "was a plan touched
-              // after I asked?", which a concurrent wake's write answers just
-              // as well as this job's own.
-              runKey: runKey,
-              planDate: localDay(planDate),
-              data: DayPlanData(
+    late final DayPlanEntity plan;
+    if (preserveClosedBaseline) {
+      plan = existing!.copyWith(
+        runKey: runKey ?? existing.runKey,
+        updatedAt: now,
+        vectorClock: existing.vectorClock,
+      );
+    } else {
+      blocks.sort((a, b) {
+        final byStart = a.startTime.compareTo(b.startTime);
+        if (byStart != 0) return byStart;
+        return a.id.compareTo(b.id);
+      });
+      validateDraftWorkingHours(
+        blocks: blocks,
+        planDate: planDate,
+        workingHoursStart: workingHoursStart,
+        workingHoursEnd: workingHoursEnd,
+      );
+      final bands = [
+        for (final raw in rawEnergyBands)
+          parseEnergyBand(raw: raw, day: planDate),
+      ];
+      final scheduledMinutes = scheduledMinutesFor(blocks);
+      final pinnedTasks = pinnedTasksFor(blocks);
+      plan =
+          AgentDomainEntity.dayPlan(
+                id: dayAgentPlanEntityId(dayId),
+                agentId: agentId,
+                dayId: dayId,
+                captureId: captureId,
+                // Provenance for the durable draft job: which wake wrote this.
+                // Without it the executor can only ask "was a plan touched
+                // after I asked?", which a concurrent wake's write answers just
+                // as well as this job's own.
+                runKey: runKey,
                 planDate: localDay(planDate),
-                status: const DayPlanStatus.draft(),
-                dayLabel: blankToNull(dayLabel),
-                plannedBlocks: blocks,
-                pinnedTasks: pinnedTasks,
-              ),
-              energyBands: bands,
-              capacityMinutes: capacityMinutes,
-              scheduledMinutes: scheduledMinutes,
-              createdAt: existing?.createdAt ?? now,
-              updatedAt: now,
-              // Seed from the persisted register so the sync layer's
-              // next-clock stamp causally DOMINATES the prior plan (same
-              // discipline as _writeDaySummary and the rollup rewrite);
-              // null would downgrade a redraft to wall-clock LWW against
-              // any revision that synced in meanwhile.
-              vectorClock: existing?.vectorClock,
-            )
-            as DayPlanEntity;
+                data: DayPlanData(
+                  planDate: localDay(planDate),
+                  status: const DayPlanStatus.draft(),
+                  dayLabel: blankToNull(dayLabel),
+                  plannedBlocks: blocks,
+                  pinnedTasks: pinnedTasks,
+                ),
+                energyBands: bands,
+                capacityMinutes: capacityMinutes,
+                scheduledMinutes: scheduledMinutes,
+                createdAt: existing?.createdAt ?? now,
+                updatedAt: now,
+                // Seed from the persisted register so the sync layer's
+                // next-clock stamp causally DOMINATES the prior plan (same
+                // discipline as _writeDaySummary and the rollup rewrite);
+                // null would downgrade a redraft to wall-clock LWW against
+                // any revision that synced in meanwhile.
+                vectorClock: existing?.vectorClock,
+              )
+              as DayPlanEntity;
+    }
 
     await syncService.runInTransaction(() async {
       await syncService.upsertEntity(plan);

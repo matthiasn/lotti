@@ -34,6 +34,7 @@ class DayAgentPlanToolDispatcher {
     required String toolName,
     required Map<String, dynamic> args,
     DayAgentConfig planningConfig = const DayAgentConfig(),
+    DateTime? planningSnapshotAt,
   }) async {
     try {
       final data = switch (toolName) {
@@ -42,6 +43,7 @@ class DayAgentPlanToolDispatcher {
           runKey,
           args,
           planningConfig,
+          planningSnapshotAt,
         ),
         DayAgentToolNames.summarizeRecentPatterns =>
           await _summarizeRecentPatternsTool(agentId, args),
@@ -72,6 +74,7 @@ class DayAgentPlanToolDispatcher {
     String runKey,
     Map<String, dynamic> args,
     DayAgentConfig planningConfig,
+    DateTime? planningSnapshotAt,
   ) async {
     final dayId = requiredStringArg(args, 'dayId');
     final planDate =
@@ -97,6 +100,7 @@ class DayAgentPlanToolDispatcher {
       workingHoursEnd: planningConfig.workingHoursEnd,
       dayLabel: optionalStringArg(args['dayLabel']),
       runKey: runKey,
+      planningSnapshotAt: planningSnapshotAt,
     );
     return planJson(plan);
   }

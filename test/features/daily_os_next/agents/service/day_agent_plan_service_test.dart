@@ -1287,6 +1287,9 @@ void main() {
     test(
       'a closed-window redraft must repeat every baseline block unchanged',
       () async {
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},
+        );
         final service = createService();
         final baseline = await withClock(
           Clock.fixed(_now),
@@ -1294,8 +1297,19 @@ void main() {
             agentId: _agentId,
             dayId: _dayId,
             planDate: DateTime(2026, 5, 25),
+            dayLabel: 'Focused finish',
+            rawEnergyBands: [
+              {
+                'start': DateTime(2026, 5, 25, 9).toIso8601String(),
+                'end': DateTime(2026, 5, 25, 12).toIso8601String(),
+                'level': 'high',
+                'label': 'Deep work',
+              },
+            ],
+            decidedTaskIds: const ['task-1'],
             rawBlocks: [
               _aiBlock(
+                taskId: 'task-1',
                 start: DateTime(2026, 5, 25, 10),
                 end: DateTime(2026, 5, 25, 11),
               ),
@@ -1307,9 +1321,16 @@ void main() {
                 reason: 'Ship the release clearly.',
               ),
             ],
+            runKey: 'baseline-run',
           ),
         );
         final baselineBlocks = baseline.data.plannedBlocks;
+        // The persisted plan is the authority for a closed-window no-op. A
+        // task may be deleted or move categories while the model is thinking;
+        // that must not make preserving the existing plan impossible.
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => const <String, JournalEntity>{},
+        );
 
         await expectLater(
           withClock(
@@ -1320,6 +1341,7 @@ void main() {
               planDate: DateTime(2026, 5, 25),
               rawBlocks: [
                 _aiBlock(
+                  taskId: 'task-1',
                   start: DateTime(2026, 5, 25, 10),
                   end: DateTime(2026, 5, 25, 11),
                 ),
@@ -1344,10 +1366,12 @@ void main() {
               planDate: DateTime(2026, 5, 25),
               rawBlocks: [
                 _aiBlock(
+                  taskId: 'task-1',
                   start: DateTime(2026, 5, 25, 10),
                   end: DateTime(2026, 5, 25, 11),
                 ),
                 _aiBlock(
+                  taskId: 'task-1',
                   start: DateTime(2026, 5, 25, 10),
                   end: DateTime(2026, 5, 25, 11),
                 ),
@@ -1371,6 +1395,7 @@ void main() {
             planDate: DateTime(2026, 5, 25),
             rawBlocks: [
               _aiBlock(
+                taskId: 'task-1',
                 start: DateTime(2026, 5, 25, 10),
                 end: DateTime(2026, 5, 25, 11),
               ),
@@ -1382,9 +1407,15 @@ void main() {
                 reason: 'Ship the release clearly.',
               ),
             ],
+            runKey: _runKey,
           ),
         );
+        expect(repeated.data, baseline.data);
         expect(repeated.data.plannedBlocks, baselineBlocks);
+        expect(repeated.energyBands, baseline.energyBands);
+        expect(repeated.capacityMinutes, baseline.capacityMinutes);
+        expect(repeated.scheduledMinutes, baseline.scheduledMinutes);
+        expect(repeated.runKey, _runKey);
       },
     );
 
@@ -1478,6 +1509,43 @@ void main() {
         expect(
           (upsertedEntities.single as DayPlanEntity).capacityMinutes,
           300,
+        );
+      },
+    );
+
+    test(
+      'executeTool validates a draft against the planning snapshot advertised '
+      'before inference',
+      () async {
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 16, 55, 1)),
+          () => createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.draftDayPlan,
+            planningSnapshotAt: DateTime(2026, 5, 25, 16, 52),
+            args: {
+              'dayId': _dayId,
+              'dayDate': DateTime(2026, 5, 25).toIso8601String(),
+              'blocks': [
+                _aiBlock(
+                  start: DateTime(2026, 5, 25, 16, 55),
+                  end: DateTime(2026, 5, 25, 17),
+                ),
+              ],
+            },
+          ),
+        );
+
+        expect(result.success, isTrue);
+        expect(
+          (agentEntities['day_agent_plan:$_dayId']! as DayPlanEntity)
+              .data
+              .plannedBlocks
+              .single
+              .startTime,
+          DateTime(2026, 5, 25, 16, 55),
         );
       },
     );

@@ -10,6 +10,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
     required String runKey,
     required String dayId,
     required String? processingJobId,
+    required DateTime planningSnapshotAt,
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
@@ -117,6 +118,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         toolName: toolName,
         args: args,
         planningConfig: config,
+        planningSnapshotAt: planningSnapshotAt,
       );
       return DayAgentToolResult(
         success: result.success,
