@@ -97,7 +97,7 @@ void main() {
       await pumpProjectCard(tester, changeSets: [changeSet]);
 
       await tester.drag(
-        find.text('Update project status to active'),
+        find.text('Update project status to Active'),
         const Offset(300, 0),
       );
       await _pumpUi(tester);
@@ -116,7 +116,7 @@ void main() {
           ChangeItem(
             toolName: 'update_project_status',
             args: {'status': 'on_hold', 'reason': 'Dependency blocked'},
-            humanSummary: 'Update project status to on hold',
+            humanSummary: 'Update project status to on_hold',
           ),
         ],
       );
@@ -132,7 +132,7 @@ void main() {
       await pumpProjectCard(tester, changeSets: [changeSet]);
 
       await tester.drag(
-        find.text('Update project status to on hold'),
+        find.text('Update project status to On Hold'),
         const Offset(-300, 0),
       );
       await _pumpUi(tester);
@@ -169,7 +169,7 @@ void main() {
         await pumpProjectCard(tester, changeSets: [changeSet]);
 
         await tester.drag(
-          find.text('Update project status to active'),
+          find.text('Update project status to Active'),
           const Offset(300, 0),
         );
         await _pumpUi(tester);
@@ -206,7 +206,7 @@ void main() {
         await pumpProjectCard(tester, changeSets: [changeSet]);
 
         await tester.drag(
-          find.text('Update project status to active'),
+          find.text('Update project status to Active'),
           const Offset(300, 0),
         );
         await _pumpUi(tester);
@@ -242,7 +242,7 @@ void main() {
         await pumpProjectCard(tester, changeSets: [changeSet]);
 
         await tester.drag(
-          find.text('Update project status to active'),
+          find.text('Update project status to Active'),
           const Offset(300, 0),
         );
         await _pumpUi(tester);
@@ -273,7 +273,7 @@ void main() {
         await pumpProjectCard(tester, changeSets: [changeSet]);
 
         await tester.drag(
-          find.text('Update project status to active'),
+          find.text('Update project status to Active'),
           const Offset(300, 0),
         );
         await _pumpUi(tester);
@@ -290,7 +290,7 @@ void main() {
           ChangeItem(
             toolName: 'update_project_status',
             args: {'status': 'on_hold'},
-            humanSummary: 'Update project status to on hold',
+            humanSummary: 'Update project status to on_hold',
           ),
         ],
       );
@@ -306,7 +306,7 @@ void main() {
       await pumpProjectCard(tester, changeSets: [changeSet]);
 
       await tester.drag(
-        find.text('Update project status to on hold'),
+        find.text('Update project status to On Hold'),
         const Offset(-300, 0),
       );
       await _pumpUi(tester);
@@ -322,7 +322,7 @@ void main() {
           ChangeItem(
             toolName: 'update_project_status',
             args: {'status': 'on_hold'},
-            humanSummary: 'Update project status to on hold',
+            humanSummary: 'Update project status to on_hold',
           ),
         ],
       );
@@ -338,7 +338,7 @@ void main() {
       await pumpProjectCard(tester, changeSets: [changeSet]);
 
       await tester.drag(
-        find.text('Update project status to on hold'),
+        find.text('Update project status to On Hold'),
         const Offset(-300, 0),
       );
       await _pumpUi(tester);
@@ -354,7 +354,7 @@ void main() {
           ChangeItem(
             toolName: 'update_project_status',
             args: {'status': 'on_hold'},
-            humanSummary: 'Update project status to on hold',
+            humanSummary: 'Update project status to on_hold',
           ),
         ],
       );
@@ -370,7 +370,7 @@ void main() {
       await pumpProjectCard(tester, changeSets: [changeSet]);
 
       await tester.drag(
-        find.text('Update project status to on hold'),
+        find.text('Update project status to On Hold'),
         const Offset(-300, 0),
       );
       await _pumpUi(tester);

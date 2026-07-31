@@ -820,6 +820,162 @@ class AppLocalizationsNl extends AppLocalizations {
       'Oorspronkelijk item niet beschikbaar';
 
   @override
+  String agentSummaryAddItem(Object title) {
+    return 'Toevoegen: \"$title\"';
+  }
+
+  @override
+  String agentSummaryArchiveItem(Object title) {
+    return 'Archiveren: \"$title\"';
+  }
+
+  @override
+  String agentSummaryCheckItem(Object title) {
+    return 'Afvinken: \"$title\"';
+  }
+
+  @override
+  String agentSummaryCreateFollowUp(Object title) {
+    return 'Vervolgtaak maken: \"$title\"';
+  }
+
+  @override
+  String agentSummaryCreateFollowUpRelated(Object title, Object relation) {
+    return 'Vervolgtaak maken: \"$title\" — $relation';
+  }
+
+  @override
+  String agentSummaryCreateTask(Object title) {
+    return 'Taak maken: $title';
+  }
+
+  @override
+  String agentSummaryFollowUpTask(Object title) {
+    return 'Vervolgtaak: $title';
+  }
+
+  @override
+  String agentSummaryMigrateItem(Object title) {
+    return 'Verplaatsen naar vervolgtaak: \"$title\"';
+  }
+
+  @override
+  String get agentSummaryRecommendNextSteps => 'Volgende stappen voorstellen';
+
+  @override
+  String agentSummaryRecommendNextStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count volgende stappen voorstellen',
+      one: '1 volgende stap voorstellen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentSummaryRestoreItem(Object title) {
+    return 'Herstellen: \"$title\"';
+  }
+
+  @override
+  String agentSummaryReviseTimeEntryText(Object summary) {
+    return 'Tekst van de tijdregistratie herzien: \"$summary\"';
+  }
+
+  @override
+  String agentSummarySetDueDate(Object date) {
+    return 'Deadline instellen op $date';
+  }
+
+  @override
+  String agentSummarySetEstimate(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Schatting instellen op $minutes minuten',
+      one: 'Schatting instellen op 1 minuut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentSummarySetLanguage(Object language) {
+    return 'Taal instellen op \"$language\"';
+  }
+
+  @override
+  String agentSummarySetPriority(Object priority) {
+    return 'Prioriteit instellen op $priority';
+  }
+
+  @override
+  String agentSummarySetStatus(Object status) {
+    return 'Status instellen op $status';
+  }
+
+  @override
+  String agentSummarySetTitle(Object title) {
+    return 'Titel instellen op \"$title\"';
+  }
+
+  @override
+  String get agentSummarySuggestFollowUpTask => 'Een vervolgtaak voorstellen';
+
+  @override
+  String agentSummaryTimeEntry(Object range, Object summary) {
+    return 'Tijdregistratie $range: \"$summary\"';
+  }
+
+  @override
+  String agentSummaryTimeRangeBetween(Object start, Object end) {
+    return '$start–$end';
+  }
+
+  @override
+  String agentSummaryTimeRangeFrom(Object start) {
+    return 'vanaf $start';
+  }
+
+  @override
+  String agentSummaryTimeRangeUntil(Object end) {
+    return 'tot $end';
+  }
+
+  @override
+  String agentSummaryUncheckItem(Object title) {
+    return 'Vinkje verwijderen: \"$title\"';
+  }
+
+  @override
+  String agentSummaryUpdateItem(Object title) {
+    return 'Wijzigen: \"$title\"';
+  }
+
+  @override
+  String agentSummaryUpdateProjectStatus(Object status) {
+    return 'Projectstatus instellen op $status';
+  }
+
+  @override
+  String agentSummaryUpdateRunningTimer(Object summary) {
+    return 'Tekst van de lopende timer wijzigen: \"$summary\"';
+  }
+
+  @override
+  String get agentSummaryUpdateTimeEntry => 'Tijdregistratie bijwerken';
+
+  @override
+  String agentSummaryUpdateTimeEntryRange(Object range) {
+    return 'Tijdregistratie $range bijwerken';
+  }
+
+  @override
+  String agentSummaryUpdateTimeEntryRangeText(Object range, Object summary) {
+    return 'Tijdregistratie $range bijwerken: \"$summary\"';
+  }
+
+  @override
   String get agentTabActivity => 'Activiteit';
 
   @override
@@ -6735,6 +6891,105 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String linkPickerCreateTaskSemanticLabel(String title) {
     return 'Create task: $title';
+  }
+
+  @override
+  String linkSummaryBasic(Object target) {
+    return 'Deze taak heeft betrekking op $target';
+  }
+
+  @override
+  String linkSummaryBlocksInverse(Object target) {
+    return 'Deze taak wordt geblokkeerd door $target';
+  }
+
+  @override
+  String linkSummaryBlocksPrimary(Object target) {
+    return 'Deze taak blokkeert $target';
+  }
+
+  @override
+  String linkSummaryDuplicatesInverse(Object target) {
+    return 'Deze taak wordt gedupliceerd door $target';
+  }
+
+  @override
+  String linkSummaryDuplicatesPrimary(Object target) {
+    return 'Deze taak dupliceert $target';
+  }
+
+  @override
+  String linkSummaryFixesInverse(Object target) {
+    return 'Deze taak wordt opgelost door $target';
+  }
+
+  @override
+  String linkSummaryFixesPrimary(Object target) {
+    return 'Deze taak lost $target op';
+  }
+
+  @override
+  String linkSummaryFollowsUpInverse(Object target) {
+    return 'Deze taak heeft als vervolg $target';
+  }
+
+  @override
+  String linkSummaryFollowsUpPrimary(Object target) {
+    return 'Deze taak volgt op $target';
+  }
+
+  @override
+  String get linkSummaryNewTaskBasic =>
+      'Deze taak heeft betrekking op de nieuwe taak';
+
+  @override
+  String get linkSummaryNewTaskBlocksInverse =>
+      'De nieuwe taak blokkeert deze taak';
+
+  @override
+  String get linkSummaryNewTaskBlocksPrimary =>
+      'Deze taak blokkeert de nieuwe taak';
+
+  @override
+  String get linkSummaryNewTaskDuplicatesInverse =>
+      'De nieuwe taak dupliceert deze taak';
+
+  @override
+  String get linkSummaryNewTaskDuplicatesPrimary =>
+      'Deze taak dupliceert de nieuwe taak';
+
+  @override
+  String get linkSummaryNewTaskFixesInverse =>
+      'De nieuwe taak lost deze taak op';
+
+  @override
+  String get linkSummaryNewTaskFixesPrimary =>
+      'Deze taak lost de nieuwe taak op';
+
+  @override
+  String get linkSummaryNewTaskFollowsUpInverse =>
+      'De nieuwe taak volgt op deze taak';
+
+  @override
+  String get linkSummaryNewTaskFollowsUpPrimary =>
+      'Deze taak volgt op de nieuwe taak';
+
+  @override
+  String get linkSummaryNewTaskSupersedesInverse =>
+      'De nieuwe taak vervangt deze taak';
+
+  @override
+  String get linkSummaryNewTaskSupersedesPrimary =>
+      'Deze taak vervangt de nieuwe taak';
+
+  @override
+  String linkSummarySupersedesInverse(Object target) {
+    return 'Deze taak wordt vervangen door $target';
+  }
+
+  @override
+  String linkSummarySupersedesPrimary(Object target) {
+    return 'Deze taak vervangt $target';
   }
 
   @override

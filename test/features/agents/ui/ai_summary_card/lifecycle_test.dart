@@ -234,9 +234,13 @@ void main() {
         // present already inside initState → _startSuggestionSubscriptions
         // → _syncVisibleSuggestions(notify:false) takes the early
         // assignment branch instead of calling setState.
+        // The args carry the body text because the row rebuilds its summary
+        // from them rather than from the persisted string — this test is about
+        // the synchronous first frame, not the wording.
         final pending = makePending(
           id: 'sync-1',
           toolName: 'set_task_status',
+          args: const {'status': 'Synchronous proposal body'},
           humanSummary: 'Synchronous proposal body',
         );
         final list = UnifiedSuggestionList(

@@ -12,6 +12,30 @@ abstract final class ProjectAgentToolNames {
   static const createTask = 'create_task';
 }
 
+/// The canonical `update_project_status` wire value for [raw], or `null` when
+/// it is outside the vocabulary.
+///
+/// One alias table shared by the apply path (which turns the canonical value
+/// into a `ProjectStatus`) and the render-time proposal summary (which turns
+/// it into the localized status label) — so a proposal can never *display* a
+/// different status than accepting it would set.
+String? canonicalProjectStatus(String raw) {
+  final normalized = raw
+      .trim()
+      .toLowerCase()
+      .replaceAll('-', '_')
+      .replaceAll(' ', '_');
+  return switch (normalized) {
+    'open' => 'open',
+    'active' || 'on_track' || 'in_progress' => 'active',
+    'monitoring' || 'monitor' => 'monitoring',
+    'on_hold' || 'hold' || 'blocked' || 'at_risk' => 'on_hold',
+    'completed' || 'complete' || 'done' => 'completed',
+    'archived' || 'archive' || 'cancelled' || 'canceled' => 'archived',
+    _ => null,
+  };
+}
+
 /// All tools available to the Project Agent.
 const projectAgentTools = <AgentToolDefinition>[
   AgentToolDefinition(

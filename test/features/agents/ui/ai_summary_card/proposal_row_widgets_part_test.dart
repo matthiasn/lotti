@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../test_data/change_set_factories.dart';
 import 'test_bench.dart';
+
+/// The text the row will actually render for [tool].
+///
+/// The row rebuilds its body from `toolName` + `args` so a non-English reader
+/// sees a translated proposal, falling back to the persisted summary only for
+/// tools it cannot reconstruct. These tests are about the inline *kind* prefix
+/// rather than the body wording, so the expectation is derived the same way the
+/// row derives it instead of hardcoding one or the other.
+String _bodyFor(String tool) =>
+    localizedChangeSummary(AppLocalizationsEn(), tool, const {}) ??
+    'Body for $tool';
 
 PendingSuggestion _pending(String tool) {
   return makePending(
@@ -61,7 +74,7 @@ void main() {
           );
           // The label leads the row's own text — one rich text per row.
           expect(
-            find.textContaining('${c.expectedLabel} · Body for ${c.tool}'),
+            find.textContaining('${c.expectedLabel} · ${_bodyFor(c.tool)}'),
             findsOneWidget,
           );
         },
@@ -109,7 +122,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       final text = tester.widget<Text>(
-        find.textContaining('Status · Body for set_task_status'),
+        find.textContaining('Status · ${_bodyFor('set_task_status')}'),
       );
       final context = tester.element(find.byType(Text).first);
       final bodySmall = context.designTokens.typography.styles.body.bodySmall;

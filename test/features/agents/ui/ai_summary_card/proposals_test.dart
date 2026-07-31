@@ -114,7 +114,13 @@ void main() {
 
       expect(find.text('Proposed changes'), findsOneWidget);
       expect(find.textContaining('Estimate · '), findsOneWidget);
-      expect(find.textContaining('1h 30m → 3h 15m'), findsOneWidget);
+      // The body is rebuilt from args rather than read off the persisted
+      // string, so it states the value the tool call actually carries.
+      expect(
+        find.textContaining('Set estimate to 195 minutes'),
+        findsOneWidget,
+      );
+      // The persisted wording, and its redundant kind prefix, are gone.
       expect(find.textContaining('Estimate: 1h 30m'), findsNothing);
     });
 
@@ -127,6 +133,7 @@ void main() {
             makePending(
               id: 'only',
               toolName: 'set_task_status',
+              args: const {'status': 'GROOMED'},
               humanSummary: 'Set status to GROOMED',
             ),
           ],
@@ -218,6 +225,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
 
@@ -259,6 +267,7 @@ void main() {
         final pending = makePending(
           id: 'p1',
           toolName: 'set_task_status',
+          args: const {'status': 'GROOMED'},
           humanSummary: 'Set status to GROOMED',
         );
         var currentSuggestions = UnifiedSuggestionList(
@@ -289,13 +298,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.textContaining('Set status to GROOMED'), findsOneWidget);
+        expect(find.textContaining('Set status to Groomed'), findsOneWidget);
 
         runningController.add(true);
         await tester.pump();
         await tester.pump();
 
-        expect(find.textContaining('Set status to GROOMED'), findsOneWidget);
+        expect(find.textContaining('Set status to Groomed'), findsOneWidget);
         expect(find.text('1 pending'), findsOneWidget);
 
         currentSuggestions = const UnifiedSuggestionList.empty();
@@ -303,7 +312,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.textContaining('Set status to GROOMED'), findsNothing);
+        expect(find.textContaining('Set status to Groomed'), findsNothing);
         expect(find.text('0 pending'), findsNothing);
         expect(find.text('1 pending'), findsNothing);
       },
@@ -319,6 +328,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
 
@@ -340,14 +350,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.textContaining('Set status to GROOMED'), findsOneWidget);
+      expect(find.textContaining('Set status to Groomed'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
       runningController.add(true);
       await tester.pump();
 
-      expect(find.textContaining('Set status to GROOMED'), findsNothing);
+      expect(find.textContaining('Set status to Groomed'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -369,6 +379,7 @@ void main() {
         final pending = makePending(
           id: 'task-one-proposal',
           toolName: 'set_task_status',
+          args: const {'status': 'TASK-ONE-GROOMED'},
           humanSummary: 'Set task one to GROOMED',
         );
 
@@ -417,13 +428,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 250));
 
-        expect(find.textContaining('Set task one to GROOMED'), findsOneWidget);
+        expect(find.textContaining('TASK-ONE-GROOMED'), findsOneWidget);
 
         taskIdNotifier.value = 'task-002';
         await tester.pump();
         await tester.pump();
 
-        expect(find.textContaining('Set task one to GROOMED'), findsNothing);
+        expect(find.textContaining('TASK-ONE-GROOMED'), findsNothing);
         expect(find.text('Task Agent Two'), findsOneWidget);
       },
     );
@@ -434,6 +445,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
 
@@ -471,6 +483,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
 
@@ -507,6 +520,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
 
@@ -527,7 +541,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       await tester.drag(
-        find.textContaining('Set status to GROOMED'),
+        find.textContaining('Set status to Groomed'),
         const Offset(150, 0),
       );
       await tester.pump();
@@ -542,6 +556,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
 
@@ -562,7 +577,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       await tester.drag(
-        find.textContaining('Set status to GROOMED'),
+        find.textContaining('Set status to Groomed'),
         const Offset(-150, 0),
       );
       await tester.pump();
@@ -577,6 +592,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
 
@@ -594,7 +610,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       await tester.drag(
-        find.textContaining('Set status to GROOMED'),
+        find.textContaining('Set status to Groomed'),
         const Offset(40, 0),
       );
       await tester.pump();
@@ -609,6 +625,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
       final service = MockChangeSetConfirmationService();
@@ -640,6 +657,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
       final service = MockChangeSetConfirmationService();
@@ -671,6 +689,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
       final service = MockChangeSetConfirmationService();
@@ -819,6 +838,7 @@ void main() {
       final pending = makePending(
         id: 'p1',
         toolName: 'set_task_status',
+        args: const {'status': 'GROOMED'},
         humanSummary: 'Set status to GROOMED',
       );
       final service = MockChangeSetConfirmationService();
@@ -834,7 +854,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       final gesture = await tester.startGesture(
-        tester.getCenter(find.textContaining('Set status to GROOMED')),
+        tester.getCenter(find.textContaining('Set status to Groomed')),
       );
       await gesture.moveBy(const Offset(40, 0));
       await tester.pump();
@@ -857,6 +877,7 @@ void main() {
               makePending(
                 id: 'open-a',
                 toolName: 'set_task_status',
+                args: const {'status': 'GROOMED'},
                 humanSummary: 'Set status to GROOMED',
               ),
               makePending(
@@ -937,6 +958,7 @@ void main() {
             makeLedgerEntry(
               id: 'h1',
               status: ChangeItemStatus.confirmed,
+              args: const {'status': 'OPEN → GROOMED'},
               humanSummary: 'Status: OPEN → GROOMED',
             ),
             makeLedgerEntry(
@@ -1161,6 +1183,7 @@ void main() {
               makePending(
                 id: 'a',
                 toolName: 'set_task_status',
+                args: const {'status': 'GROOMED'},
                 humanSummary: 'Set status to GROOMED',
               ),
               makePending(
@@ -1207,7 +1230,7 @@ void main() {
           items: const [
             ChangeItem(
               toolName: 'set_task_status',
-              args: {'status': 'GROOMED'},
+              args: {'status': 'Alpha proposal'},
               humanSummary: 'Alpha proposal',
             ),
           ],
@@ -1217,7 +1240,7 @@ void main() {
           items: const [
             ChangeItem(
               toolName: 'update_task_priority',
-              args: {'priority': 'P1'},
+              args: {'priority': 'Beta proposal'},
               humanSummary: 'Beta proposal',
             ),
           ],

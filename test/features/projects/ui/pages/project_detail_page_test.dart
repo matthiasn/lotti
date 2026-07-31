@@ -508,7 +508,10 @@ void main() {
 
           expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
           expect(find.text('Proposed changes'), findsOneWidget);
-          expect(find.text('Update project status to active'), findsOneWidget);
+          // The row is rebuilt in the reader's locale: the wire value
+          // "active" renders as the same localized label the status chips
+          // use, not as the persisted English humanSummary.
+          expect(find.text('Update project status to Active'), findsOneWidget);
         },
       );
 

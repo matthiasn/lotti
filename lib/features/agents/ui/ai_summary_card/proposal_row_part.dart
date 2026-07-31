@@ -13,9 +13,11 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
+import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Whether the one-shot swipe-affordance nudge has already played this session.
@@ -318,8 +320,35 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
       widget.suggestion?.item.toolName ?? widget.entry!.toolName;
   Map<String, dynamic> get _args =>
       widget.suggestion?.item.args ?? widget.entry!.args;
-  String get _humanSummary =>
+
+  /// The persisted, English-at-generation-time summary. Kept as the fallback
+  /// for tools [localizedChangeSummary] cannot rebuild.
+  String get _persistedSummary =>
       widget.suggestion?.item.humanSummary ?? widget.entry!.humanSummary;
+
+  /// The row's display text in the reader's language.
+  ///
+  /// `humanSummary` is written during a headless wake and synced as-is, so it
+  /// is English on every device regardless of locale. Rebuilding it from
+  /// `toolName` + `args` at render time is what makes a proposal readable to a
+  /// non-English user; the persisted string remains the fallback.
+  ///
+  /// Both paths then drop a leading kind label the chip already shows, but
+  /// under different rules. The persisted fallback strips the bare word — the
+  /// headless generator often duplicated it ("Estimate: 1h 30m" under an
+  /// *Estimate* chip). A rebuilt sentence is stripped **only when the label is
+  /// followed by a colon** (`Add: "Buy milk"` under an *Add* chip): the
+  /// checklist sentences are authored as `Verb: object` for surfaces without
+  /// a chip, while a sentence that merely *opens* with the label word — as
+  /// German's "Status auf … setzen" does — must keep it, because stripping it
+  /// would leave a fragment.
+  String _displaySummary(AppLocalizations messages, String kindLabel) {
+    final rebuilt = localizedChangeSummary(messages, _toolName, _args);
+    return rebuilt == null
+        ? _stripKindPrefix(_persistedSummary, kindLabel, requireColon: false)
+        : _stripKindPrefix(rebuilt, kindLabel, requireColon: true);
+  }
+
   ChangeItemStatus? get _resolvedStatus => widget.entry?.status;
 
   // The row uses a `GestureDetector` (not a raw `Listener`) so its
@@ -579,7 +608,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     final ai = tokens.colors.aiCard;
     final kind = resolveKind(_toolName, _args);
     final meta = kindMeta(context, kind);
-    final cleanText = _cleanText(_humanSummary, meta.label);
+    final cleanText = _displaySummary(context.messages, meta.label);
     final errorColor = tokens.colors.alert.error.defaultColor;
 
     final resolveKindLocal = _resolveKind;
@@ -799,11 +828,16 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
   String? _cachedCleanText;
   String? _cachedCleanInputKey;
 
-  String _cleanText(String summary, String kindLabel) {
-    final key = '$kindLabel $summary';
+  String _stripKindPrefix(
+    String summary,
+    String kindLabel, {
+    required bool requireColon,
+  }) {
+    final key = '$requireColon|$kindLabel|$summary';
     if (_cachedCleanInputKey == key) return _cachedCleanText!;
+    final label = RegExp.escape(kindLabel);
     final pattern = RegExp(
-      '^\\s*${RegExp.escape(kindLabel)}\\b[\\s:]*',
+      requireColon ? '^\\s*$label\\s*:\\s*' : '^\\s*$label\\b[\\s:]*',
       caseSensitive: false,
     );
     final result = summary.replaceFirst(pattern, '').trim();

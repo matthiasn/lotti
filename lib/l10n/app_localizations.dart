@@ -1531,6 +1531,186 @@ abstract class AppLocalizations {
   /// **'Original entry not available'**
   String get agentSuggestionTimeEntryUpdateUnavailable;
 
+  /// No description provided for @agentSummaryAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add: \"{title}\"'**
+  String agentSummaryAddItem(Object title);
+
+  /// No description provided for @agentSummaryArchiveItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive: \"{title}\"'**
+  String agentSummaryArchiveItem(Object title);
+
+  /// No description provided for @agentSummaryCheckItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Check: \"{title}\"'**
+  String agentSummaryCheckItem(Object title);
+
+  /// No description provided for @agentSummaryCreateFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Create follow-up task: \"{title}\"'**
+  String agentSummaryCreateFollowUp(Object title);
+
+  /// No description provided for @agentSummaryCreateFollowUpRelated.
+  ///
+  /// In en, this message translates to:
+  /// **'Create follow-up task: \"{title}\" — {relation}'**
+  String agentSummaryCreateFollowUpRelated(Object title, Object relation);
+
+  /// No description provided for @agentSummaryCreateTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Create task: {title}'**
+  String agentSummaryCreateTask(Object title);
+
+  /// No description provided for @agentSummaryFollowUpTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up task: {title}'**
+  String agentSummaryFollowUpTask(Object title);
+
+  /// No description provided for @agentSummaryMigrateItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Migrate to follow-up: \"{title}\"'**
+  String agentSummaryMigrateItem(Object title);
+
+  /// No description provided for @agentSummaryRecommendNextSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommend next steps'**
+  String get agentSummaryRecommendNextSteps;
+
+  /// No description provided for @agentSummaryRecommendNextStepsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Recommend 1 next step} other{Recommend {count} next steps}}'**
+  String agentSummaryRecommendNextStepsCount(int count);
+
+  /// No description provided for @agentSummaryRestoreItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore: \"{title}\"'**
+  String agentSummaryRestoreItem(Object title);
+
+  /// No description provided for @agentSummaryReviseTimeEntryText.
+  ///
+  /// In en, this message translates to:
+  /// **'Revise time entry text: \"{summary}\"'**
+  String agentSummaryReviseTimeEntryText(Object summary);
+
+  /// No description provided for @agentSummarySetDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Set due date to {date}'**
+  String agentSummarySetDueDate(Object date);
+
+  /// No description provided for @agentSummarySetEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{Set estimate to 1 minute} other{Set estimate to {minutes} minutes}}'**
+  String agentSummarySetEstimate(int minutes);
+
+  /// No description provided for @agentSummarySetLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Set language to \"{language}\"'**
+  String agentSummarySetLanguage(Object language);
+
+  /// No description provided for @agentSummarySetPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Set priority to {priority}'**
+  String agentSummarySetPriority(Object priority);
+
+  /// No description provided for @agentSummarySetStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Set status to {status}'**
+  String agentSummarySetStatus(Object status);
+
+  /// No description provided for @agentSummarySetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set title to \"{title}\"'**
+  String agentSummarySetTitle(Object title);
+
+  /// No description provided for @agentSummarySuggestFollowUpTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest a follow-up task'**
+  String get agentSummarySuggestFollowUpTask;
+
+  /// No description provided for @agentSummaryTimeEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Time entry {range}: \"{summary}\"'**
+  String agentSummaryTimeEntry(Object range, Object summary);
+
+  /// No description provided for @agentSummaryTimeRangeBetween.
+  ///
+  /// In en, this message translates to:
+  /// **'{start}–{end}'**
+  String agentSummaryTimeRangeBetween(Object start, Object end);
+
+  /// No description provided for @agentSummaryTimeRangeFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'from {start}'**
+  String agentSummaryTimeRangeFrom(Object start);
+
+  /// No description provided for @agentSummaryTimeRangeUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'until {end}'**
+  String agentSummaryTimeRangeUntil(Object end);
+
+  /// No description provided for @agentSummaryUncheckItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncheck: \"{title}\"'**
+  String agentSummaryUncheckItem(Object title);
+
+  /// No description provided for @agentSummaryUpdateItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Update: \"{title}\"'**
+  String agentSummaryUpdateItem(Object title);
+
+  /// No description provided for @agentSummaryUpdateProjectStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Update project status to {status}'**
+  String agentSummaryUpdateProjectStatus(Object status);
+
+  /// No description provided for @agentSummaryUpdateRunningTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Update running timer text: \"{summary}\"'**
+  String agentSummaryUpdateRunningTimer(Object summary);
+
+  /// No description provided for @agentSummaryUpdateTimeEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Update time entry'**
+  String get agentSummaryUpdateTimeEntry;
+
+  /// No description provided for @agentSummaryUpdateTimeEntryRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Update time entry {range}'**
+  String agentSummaryUpdateTimeEntryRange(Object range);
+
+  /// No description provided for @agentSummaryUpdateTimeEntryRangeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Update time entry {range}: \"{summary}\"'**
+  String agentSummaryUpdateTimeEntryRangeText(Object range, Object summary);
+
   /// No description provided for @agentTabActivity.
   ///
   /// In en, this message translates to:
@@ -11710,6 +11890,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create task: {title}'**
   String linkPickerCreateTaskSemanticLabel(String title);
+
+  /// No description provided for @linkSummaryBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'This task relates to {target}'**
+  String linkSummaryBasic(Object target);
+
+  /// No description provided for @linkSummaryBlocksInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'This task is blocked by {target}'**
+  String linkSummaryBlocksInverse(Object target);
+
+  /// No description provided for @linkSummaryBlocksPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'This task blocks {target}'**
+  String linkSummaryBlocksPrimary(Object target);
+
+  /// No description provided for @linkSummaryDuplicatesInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'This task is duplicated by {target}'**
+  String linkSummaryDuplicatesInverse(Object target);
+
+  /// No description provided for @linkSummaryDuplicatesPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'This task duplicates {target}'**
+  String linkSummaryDuplicatesPrimary(Object target);
+
+  /// No description provided for @linkSummaryFixesInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'This task is fixed by {target}'**
+  String linkSummaryFixesInverse(Object target);
+
+  /// No description provided for @linkSummaryFixesPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'This task fixes {target}'**
+  String linkSummaryFixesPrimary(Object target);
+
+  /// No description provided for @linkSummaryFollowsUpInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'This task has a follow-up {target}'**
+  String linkSummaryFollowsUpInverse(Object target);
+
+  /// No description provided for @linkSummaryFollowsUpPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'This task follows up on {target}'**
+  String linkSummaryFollowsUpPrimary(Object target);
+
+  /// No description provided for @linkSummaryNewTaskBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'This task relates to the new task'**
+  String get linkSummaryNewTaskBasic;
+
+  /// No description provided for @linkSummaryNewTaskBlocksInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'The new task blocks this task'**
+  String get linkSummaryNewTaskBlocksInverse;
+
+  /// No description provided for @linkSummaryNewTaskBlocksPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'This task blocks the new task'**
+  String get linkSummaryNewTaskBlocksPrimary;
+
+  /// No description provided for @linkSummaryNewTaskDuplicatesInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'The new task duplicates this task'**
+  String get linkSummaryNewTaskDuplicatesInverse;
+
+  /// No description provided for @linkSummaryNewTaskDuplicatesPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'This task duplicates the new task'**
+  String get linkSummaryNewTaskDuplicatesPrimary;
+
+  /// No description provided for @linkSummaryNewTaskFixesInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'The new task fixes this task'**
+  String get linkSummaryNewTaskFixesInverse;
+
+  /// No description provided for @linkSummaryNewTaskFixesPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'This task fixes the new task'**
+  String get linkSummaryNewTaskFixesPrimary;
+
+  /// No description provided for @linkSummaryNewTaskFollowsUpInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'The new task follows up on this task'**
+  String get linkSummaryNewTaskFollowsUpInverse;
+
+  /// No description provided for @linkSummaryNewTaskFollowsUpPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'This task follows up on the new task'**
+  String get linkSummaryNewTaskFollowsUpPrimary;
+
+  /// No description provided for @linkSummaryNewTaskSupersedesInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'The new task supersedes this task'**
+  String get linkSummaryNewTaskSupersedesInverse;
+
+  /// No description provided for @linkSummaryNewTaskSupersedesPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'This task supersedes the new task'**
+  String get linkSummaryNewTaskSupersedesPrimary;
+
+  /// No description provided for @linkSummarySupersedesInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'This task is superseded by {target}'**
+  String linkSummarySupersedesInverse(Object target);
+
+  /// No description provided for @linkSummarySupersedesPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'This task supersedes {target}'**
+  String linkSummarySupersedesPrimary(Object target);
 
   /// Short verb label for the Linked Tasks card header action that opens the link picker. Mirrors the Done button occupying the same slot in manage mode.
   ///

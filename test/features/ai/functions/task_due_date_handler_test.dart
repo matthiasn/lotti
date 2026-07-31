@@ -431,6 +431,26 @@ void main() {
       });
     });
 
+    group('isValidDueDateWireValue', () {
+      test('accepts exactly YYYY-MM-DD encoding a real calendar date', () {
+        expect(isValidDueDateWireValue('2026-08-01'), isTrue);
+        expect(isValidDueDateWireValue('2024-02-29'), isTrue); // leap day
+      });
+
+      test('rejects every other shape the handler rejects', () {
+        // Shared with the render-time proposal summary: a value rejected here
+        // must never be prettified into a plausible-looking date in a row.
+        expect(isValidDueDateWireValue('2026-08-01T12:00:00'), isFalse);
+        expect(isValidDueDateWireValue('01-08-2026'), isFalse);
+        expect(isValidDueDateWireValue('next Tuesday'), isFalse);
+        expect(isValidDueDateWireValue(''), isFalse);
+        // Parseable overflow — DateTime rolls Feb 31 into March, but the
+        // handler refuses it, so the round-trip check must too.
+        expect(isValidDueDateWireValue('2026-02-31'), isFalse);
+        expect(isValidDueDateWireValue('2023-02-29'), isFalse); // no leap day
+      });
+    });
+
     group('validation errors', () {
       test('should reject null dueDate', () async {
         final task = createTask();

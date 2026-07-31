@@ -422,6 +422,179 @@
   "@agentSuggestionTimeEntryUpdateUnavailable": {
     "description": "Message shown when the original time entry cannot be loaded for an agent-proposed edit."
   },
+  "agentSummaryAddItem": "Add: \"{title}\"",
+  "@agentSummaryAddItem": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummaryArchiveItem": "Archive: \"{title}\"",
+  "@agentSummaryArchiveItem": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummaryCheckItem": "Check: \"{title}\"",
+  "@agentSummaryCheckItem": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummaryCreateFollowUp": "Create follow-up task: \"{title}\"",
+  "@agentSummaryCreateFollowUp": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummaryCreateFollowUpRelated": "Create follow-up task: \"{title}\" — {relation}",
+  "@agentSummaryCreateFollowUpRelated": {
+    "placeholders": {
+      "title": {},
+      "relation": {}
+    }
+  },
+  "agentSummaryCreateTask": "Create task: {title}",
+  "@agentSummaryCreateTask": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummaryFollowUpTask": "Follow-up task: {title}",
+  "@agentSummaryFollowUpTask": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummaryMigrateItem": "Migrate to follow-up: \"{title}\"",
+  "@agentSummaryMigrateItem": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummaryRecommendNextSteps": "Recommend next steps",
+  "agentSummaryRecommendNextStepsCount": "{count, plural, =1{Recommend 1 next step} other{Recommend {count} next steps}}",
+  "@agentSummaryRecommendNextStepsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSummaryRestoreItem": "Restore: \"{title}\"",
+  "@agentSummaryRestoreItem": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummaryReviseTimeEntryText": "Revise time entry text: \"{summary}\"",
+  "@agentSummaryReviseTimeEntryText": {
+    "placeholders": {
+      "summary": {}
+    }
+  },
+  "agentSummarySetDueDate": "Set due date to {date}",
+  "@agentSummarySetDueDate": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "agentSummarySetEstimate": "{minutes, plural, =1{Set estimate to 1 minute} other{Set estimate to {minutes} minutes}}",
+  "@agentSummarySetEstimate": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSummarySetLanguage": "Set language to \"{language}\"",
+  "@agentSummarySetLanguage": {
+    "placeholders": {
+      "language": {}
+    }
+  },
+  "agentSummarySetPriority": "Set priority to {priority}",
+  "@agentSummarySetPriority": {
+    "placeholders": {
+      "priority": {}
+    }
+  },
+  "agentSummarySetStatus": "Set status to {status}",
+  "@agentSummarySetStatus": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "agentSummarySetTitle": "Set title to \"{title}\"",
+  "@agentSummarySetTitle": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummarySuggestFollowUpTask": "Suggest a follow-up task",
+  "agentSummaryTimeEntry": "Time entry {range}: \"{summary}\"",
+  "@agentSummaryTimeEntry": {
+    "placeholders": {
+      "range": {},
+      "summary": {}
+    }
+  },
+  "agentSummaryTimeRangeBetween": "{start}–{end}",
+  "@agentSummaryTimeRangeBetween": {
+    "placeholders": {
+      "start": {},
+      "end": {}
+    }
+  },
+  "agentSummaryTimeRangeFrom": "from {start}",
+  "@agentSummaryTimeRangeFrom": {
+    "placeholders": {
+      "start": {}
+    }
+  },
+  "agentSummaryTimeRangeUntil": "until {end}",
+  "@agentSummaryTimeRangeUntil": {
+    "placeholders": {
+      "end": {}
+    }
+  },
+  "agentSummaryUncheckItem": "Uncheck: \"{title}\"",
+  "@agentSummaryUncheckItem": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummaryUpdateItem": "Update: \"{title}\"",
+  "@agentSummaryUpdateItem": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "agentSummaryUpdateProjectStatus": "Update project status to {status}",
+  "@agentSummaryUpdateProjectStatus": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "agentSummaryUpdateRunningTimer": "Update running timer text: \"{summary}\"",
+  "@agentSummaryUpdateRunningTimer": {
+    "placeholders": {
+      "summary": {}
+    }
+  },
+  "agentSummaryUpdateTimeEntry": "Update time entry",
+  "agentSummaryUpdateTimeEntryRange": "Update time entry {range}",
+  "@agentSummaryUpdateTimeEntryRange": {
+    "placeholders": {
+      "range": {}
+    }
+  },
+  "agentSummaryUpdateTimeEntryRangeText": "Update time entry {range}: \"{summary}\"",
+  "@agentSummaryUpdateTimeEntryRangeText": {
+    "placeholders": {
+      "range": {},
+      "summary": {}
+    }
+  },
   "agentTabActivity": "Activity",
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",
@@ -3430,6 +3603,83 @@
       }
     },
     "description": "Spoken name for the link picker's create row. States that activating it creates a task rather than selecting an existing one."
+  },
+  "linkSummaryBasic": "This task relates to {target}",
+  "@linkSummaryBasic": {
+    "placeholders": {
+      "target": {}
+    }
+  },
+  "linkSummaryBlocksInverse": "This task is blocked by {target}",
+  "@linkSummaryBlocksInverse": {
+    "placeholders": {
+      "target": {}
+    }
+  },
+  "linkSummaryBlocksPrimary": "This task blocks {target}",
+  "@linkSummaryBlocksPrimary": {
+    "placeholders": {
+      "target": {}
+    }
+  },
+  "linkSummaryDuplicatesInverse": "This task is duplicated by {target}",
+  "@linkSummaryDuplicatesInverse": {
+    "placeholders": {
+      "target": {}
+    }
+  },
+  "linkSummaryDuplicatesPrimary": "This task duplicates {target}",
+  "@linkSummaryDuplicatesPrimary": {
+    "placeholders": {
+      "target": {}
+    }
+  },
+  "linkSummaryFixesInverse": "This task is fixed by {target}",
+  "@linkSummaryFixesInverse": {
+    "placeholders": {
+      "target": {}
+    }
+  },
+  "linkSummaryFixesPrimary": "This task fixes {target}",
+  "@linkSummaryFixesPrimary": {
+    "placeholders": {
+      "target": {}
+    }
+  },
+  "linkSummaryFollowsUpInverse": "This task has a follow-up {target}",
+  "@linkSummaryFollowsUpInverse": {
+    "placeholders": {
+      "target": {}
+    }
+  },
+  "linkSummaryFollowsUpPrimary": "This task follows up on {target}",
+  "@linkSummaryFollowsUpPrimary": {
+    "placeholders": {
+      "target": {}
+    }
+  },
+  "linkSummaryNewTaskBasic": "This task relates to the new task",
+  "linkSummaryNewTaskBlocksInverse": "The new task blocks this task",
+  "linkSummaryNewTaskBlocksPrimary": "This task blocks the new task",
+  "linkSummaryNewTaskDuplicatesInverse": "The new task duplicates this task",
+  "linkSummaryNewTaskDuplicatesPrimary": "This task duplicates the new task",
+  "linkSummaryNewTaskFixesInverse": "The new task fixes this task",
+  "linkSummaryNewTaskFixesPrimary": "This task fixes the new task",
+  "linkSummaryNewTaskFollowsUpInverse": "The new task follows up on this task",
+  "linkSummaryNewTaskFollowsUpPrimary": "This task follows up on the new task",
+  "linkSummaryNewTaskSupersedesInverse": "The new task supersedes this task",
+  "linkSummaryNewTaskSupersedesPrimary": "This task supersedes the new task",
+  "linkSummarySupersedesInverse": "This task is superseded by {target}",
+  "@linkSummarySupersedesInverse": {
+    "placeholders": {
+      "target": {}
+    }
+  },
+  "linkSummarySupersedesPrimary": "This task supersedes {target}",
+  "@linkSummarySupersedesPrimary": {
+    "placeholders": {
+      "target": {}
+    }
   },
   "linkTaskButton": "Link",
   "@linkTaskButton": {

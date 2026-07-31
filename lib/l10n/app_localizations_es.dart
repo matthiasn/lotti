@@ -824,6 +824,164 @@ class AppLocalizationsEs extends AppLocalizations {
       'Entrada original no disponible';
 
   @override
+  String agentSummaryAddItem(Object title) {
+    return 'Añadir: «$title»';
+  }
+
+  @override
+  String agentSummaryArchiveItem(Object title) {
+    return 'Archivar: «$title»';
+  }
+
+  @override
+  String agentSummaryCheckItem(Object title) {
+    return 'Marcar: «$title»';
+  }
+
+  @override
+  String agentSummaryCreateFollowUp(Object title) {
+    return 'Crear tarea de seguimiento: «$title»';
+  }
+
+  @override
+  String agentSummaryCreateFollowUpRelated(Object title, Object relation) {
+    return 'Crear tarea de seguimiento: «$title» — $relation';
+  }
+
+  @override
+  String agentSummaryCreateTask(Object title) {
+    return 'Crear tarea: $title';
+  }
+
+  @override
+  String agentSummaryFollowUpTask(Object title) {
+    return 'Tarea de seguimiento: $title';
+  }
+
+  @override
+  String agentSummaryMigrateItem(Object title) {
+    return 'Mover a la tarea de seguimiento: «$title»';
+  }
+
+  @override
+  String get agentSummaryRecommendNextSteps =>
+      'Recomendar los pasos siguientes';
+
+  @override
+  String agentSummaryRecommendNextStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Recomendar $count pasos siguientes',
+      one: 'Recomendar 1 paso siguiente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentSummaryRestoreItem(Object title) {
+    return 'Restaurar: «$title»';
+  }
+
+  @override
+  String agentSummaryReviseTimeEntryText(Object summary) {
+    return 'Revisar el texto del registro de tiempo: «$summary»';
+  }
+
+  @override
+  String agentSummarySetDueDate(Object date) {
+    return 'Poner la fecha límite en $date';
+  }
+
+  @override
+  String agentSummarySetEstimate(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Poner la estimación en $minutes minutos',
+      one: 'Poner la estimación en 1 minuto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentSummarySetLanguage(Object language) {
+    return 'Poner el idioma en «$language»';
+  }
+
+  @override
+  String agentSummarySetPriority(Object priority) {
+    return 'Poner la prioridad en $priority';
+  }
+
+  @override
+  String agentSummarySetStatus(Object status) {
+    return 'Poner el estado en $status';
+  }
+
+  @override
+  String agentSummarySetTitle(Object title) {
+    return 'Poner el título en «$title»';
+  }
+
+  @override
+  String get agentSummarySuggestFollowUpTask =>
+      'Proponer una tarea de seguimiento';
+
+  @override
+  String agentSummaryTimeEntry(Object range, Object summary) {
+    return 'Registro de tiempo $range: «$summary»';
+  }
+
+  @override
+  String agentSummaryTimeRangeBetween(Object start, Object end) {
+    return '$start–$end';
+  }
+
+  @override
+  String agentSummaryTimeRangeFrom(Object start) {
+    return 'desde $start';
+  }
+
+  @override
+  String agentSummaryTimeRangeUntil(Object end) {
+    return 'hasta $end';
+  }
+
+  @override
+  String agentSummaryUncheckItem(Object title) {
+    return 'Desmarcar: «$title»';
+  }
+
+  @override
+  String agentSummaryUpdateItem(Object title) {
+    return 'Modificar: «$title»';
+  }
+
+  @override
+  String agentSummaryUpdateProjectStatus(Object status) {
+    return 'Poner el estado del proyecto en $status';
+  }
+
+  @override
+  String agentSummaryUpdateRunningTimer(Object summary) {
+    return 'Cambiar el texto del temporizador en curso: «$summary»';
+  }
+
+  @override
+  String get agentSummaryUpdateTimeEntry => 'Actualizar el registro de tiempo';
+
+  @override
+  String agentSummaryUpdateTimeEntryRange(Object range) {
+    return 'Actualizar el registro de tiempo $range';
+  }
+
+  @override
+  String agentSummaryUpdateTimeEntryRangeText(Object range, Object summary) {
+    return 'Actualizar el registro de tiempo $range: «$summary»';
+  }
+
+  @override
   String get agentTabActivity => 'Actividad';
 
   @override
@@ -6787,7 +6945,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkPhraseFixesPrimary => 'Corrige';
 
   @override
-  String get linkPhraseFollowsUpInverse => 'Tiene seguimiento de';
+  String get linkPhraseFollowsUpInverse => 'Tiene como seguimiento';
 
   @override
   String get linkPhraseFollowsUpPrimary => 'Da seguimiento a';
@@ -6801,6 +6959,105 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String linkPickerCreateTaskSemanticLabel(String title) {
     return 'Crear tarea: $title';
+  }
+
+  @override
+  String linkSummaryBasic(Object target) {
+    return 'Esta tarea se relaciona con $target';
+  }
+
+  @override
+  String linkSummaryBlocksInverse(Object target) {
+    return 'Esta tarea está bloqueada por $target';
+  }
+
+  @override
+  String linkSummaryBlocksPrimary(Object target) {
+    return 'Esta tarea bloquea $target';
+  }
+
+  @override
+  String linkSummaryDuplicatesInverse(Object target) {
+    return 'Esta tarea está duplicada por $target';
+  }
+
+  @override
+  String linkSummaryDuplicatesPrimary(Object target) {
+    return 'Esta tarea duplica $target';
+  }
+
+  @override
+  String linkSummaryFixesInverse(Object target) {
+    return 'Esta tarea está corregida por $target';
+  }
+
+  @override
+  String linkSummaryFixesPrimary(Object target) {
+    return 'Esta tarea corrige $target';
+  }
+
+  @override
+  String linkSummaryFollowsUpInverse(Object target) {
+    return 'Esta tarea tiene como seguimiento $target';
+  }
+
+  @override
+  String linkSummaryFollowsUpPrimary(Object target) {
+    return 'Esta tarea da seguimiento a $target';
+  }
+
+  @override
+  String get linkSummaryNewTaskBasic =>
+      'Esta tarea se relaciona con la nueva tarea';
+
+  @override
+  String get linkSummaryNewTaskBlocksInverse =>
+      'La nueva tarea bloquea esta tarea';
+
+  @override
+  String get linkSummaryNewTaskBlocksPrimary =>
+      'Esta tarea bloquea la nueva tarea';
+
+  @override
+  String get linkSummaryNewTaskDuplicatesInverse =>
+      'La nueva tarea duplica esta tarea';
+
+  @override
+  String get linkSummaryNewTaskDuplicatesPrimary =>
+      'Esta tarea duplica la nueva tarea';
+
+  @override
+  String get linkSummaryNewTaskFixesInverse =>
+      'La nueva tarea corrige esta tarea';
+
+  @override
+  String get linkSummaryNewTaskFixesPrimary =>
+      'Esta tarea corrige la nueva tarea';
+
+  @override
+  String get linkSummaryNewTaskFollowsUpInverse =>
+      'La nueva tarea da seguimiento a esta tarea';
+
+  @override
+  String get linkSummaryNewTaskFollowsUpPrimary =>
+      'Esta tarea da seguimiento a la nueva tarea';
+
+  @override
+  String get linkSummaryNewTaskSupersedesInverse =>
+      'La nueva tarea sustituye a esta tarea';
+
+  @override
+  String get linkSummaryNewTaskSupersedesPrimary =>
+      'Esta tarea sustituye a la nueva tarea';
+
+  @override
+  String linkSummarySupersedesInverse(Object target) {
+    return 'Esta tarea está sustituida por $target';
+  }
+
+  @override
+  String linkSummarySupersedesPrimary(Object target) {
+    return 'Esta tarea sustituye a $target';
   }
 
   @override

@@ -827,6 +827,163 @@ class AppLocalizationsIt extends AppLocalizations {
       'Articolo originale non disponibile';
 
   @override
+  String agentSummaryAddItem(Object title) {
+    return 'Aggiungi: \"$title\"';
+  }
+
+  @override
+  String agentSummaryArchiveItem(Object title) {
+    return 'Archivia: \"$title\"';
+  }
+
+  @override
+  String agentSummaryCheckItem(Object title) {
+    return 'Segna: \"$title\"';
+  }
+
+  @override
+  String agentSummaryCreateFollowUp(Object title) {
+    return 'Crea attività di follow-up: \"$title\"';
+  }
+
+  @override
+  String agentSummaryCreateFollowUpRelated(Object title, Object relation) {
+    return 'Crea attività di follow-up: \"$title\" — $relation';
+  }
+
+  @override
+  String agentSummaryCreateTask(Object title) {
+    return 'Crea attività: $title';
+  }
+
+  @override
+  String agentSummaryFollowUpTask(Object title) {
+    return 'Attività di follow-up: $title';
+  }
+
+  @override
+  String agentSummaryMigrateItem(Object title) {
+    return 'Sposta nell’attività di follow-up: \"$title\"';
+  }
+
+  @override
+  String get agentSummaryRecommendNextSteps => 'Consiglia i passi successivi';
+
+  @override
+  String agentSummaryRecommendNextStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Consiglia $count passi successivi',
+      one: 'Consiglia 1 passo successivo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentSummaryRestoreItem(Object title) {
+    return 'Ripristina: \"$title\"';
+  }
+
+  @override
+  String agentSummaryReviseTimeEntryText(Object summary) {
+    return 'Rivedi il testo della voce di tempo: \"$summary\"';
+  }
+
+  @override
+  String agentSummarySetDueDate(Object date) {
+    return 'Imposta la scadenza al $date';
+  }
+
+  @override
+  String agentSummarySetEstimate(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Imposta la stima su $minutes minuti',
+      one: 'Imposta la stima su 1 minuto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentSummarySetLanguage(Object language) {
+    return 'Imposta la lingua su \"$language\"';
+  }
+
+  @override
+  String agentSummarySetPriority(Object priority) {
+    return 'Imposta la priorità su $priority';
+  }
+
+  @override
+  String agentSummarySetStatus(Object status) {
+    return 'Imposta lo stato su $status';
+  }
+
+  @override
+  String agentSummarySetTitle(Object title) {
+    return 'Imposta il titolo su \"$title\"';
+  }
+
+  @override
+  String get agentSummarySuggestFollowUpTask =>
+      'Proponi un’attività di follow-up';
+
+  @override
+  String agentSummaryTimeEntry(Object range, Object summary) {
+    return 'Voce di tempo $range: \"$summary\"';
+  }
+
+  @override
+  String agentSummaryTimeRangeBetween(Object start, Object end) {
+    return '$start–$end';
+  }
+
+  @override
+  String agentSummaryTimeRangeFrom(Object start) {
+    return 'dalle $start';
+  }
+
+  @override
+  String agentSummaryTimeRangeUntil(Object end) {
+    return 'fino alle $end';
+  }
+
+  @override
+  String agentSummaryUncheckItem(Object title) {
+    return 'Deseleziona: \"$title\"';
+  }
+
+  @override
+  String agentSummaryUpdateItem(Object title) {
+    return 'Modifica: \"$title\"';
+  }
+
+  @override
+  String agentSummaryUpdateProjectStatus(Object status) {
+    return 'Imposta lo stato del progetto su $status';
+  }
+
+  @override
+  String agentSummaryUpdateRunningTimer(Object summary) {
+    return 'Modifica il testo del timer in corso: \"$summary\"';
+  }
+
+  @override
+  String get agentSummaryUpdateTimeEntry => 'Aggiorna la voce di tempo';
+
+  @override
+  String agentSummaryUpdateTimeEntryRange(Object range) {
+    return 'Aggiorna la voce di tempo $range';
+  }
+
+  @override
+  String agentSummaryUpdateTimeEntryRangeText(Object range, Object summary) {
+    return 'Aggiorna la voce di tempo $range: \"$summary\"';
+  }
+
+  @override
   String get agentTabActivity => 'Attività';
 
   @override
@@ -6799,6 +6956,105 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String linkPickerCreateTaskSemanticLabel(String title) {
     return 'Create task: $title';
+  }
+
+  @override
+  String linkSummaryBasic(Object target) {
+    return 'Questa attività è collegata a $target';
+  }
+
+  @override
+  String linkSummaryBlocksInverse(Object target) {
+    return 'Questa attività è bloccata da $target';
+  }
+
+  @override
+  String linkSummaryBlocksPrimary(Object target) {
+    return 'Questa attività blocca $target';
+  }
+
+  @override
+  String linkSummaryDuplicatesInverse(Object target) {
+    return 'Questa attività è duplicata da $target';
+  }
+
+  @override
+  String linkSummaryDuplicatesPrimary(Object target) {
+    return 'Questa attività duplica $target';
+  }
+
+  @override
+  String linkSummaryFixesInverse(Object target) {
+    return 'Questa attività è risolta da $target';
+  }
+
+  @override
+  String linkSummaryFixesPrimary(Object target) {
+    return 'Questa attività risolve $target';
+  }
+
+  @override
+  String linkSummaryFollowsUpInverse(Object target) {
+    return 'Questa attività ha come follow-up $target';
+  }
+
+  @override
+  String linkSummaryFollowsUpPrimary(Object target) {
+    return 'Questa attività dà seguito a $target';
+  }
+
+  @override
+  String get linkSummaryNewTaskBasic =>
+      'Questa attività è collegata alla nuova attività';
+
+  @override
+  String get linkSummaryNewTaskBlocksInverse =>
+      'La nuova attività blocca questa attività';
+
+  @override
+  String get linkSummaryNewTaskBlocksPrimary =>
+      'Questa attività blocca la nuova attività';
+
+  @override
+  String get linkSummaryNewTaskDuplicatesInverse =>
+      'La nuova attività duplica questa attività';
+
+  @override
+  String get linkSummaryNewTaskDuplicatesPrimary =>
+      'Questa attività duplica la nuova attività';
+
+  @override
+  String get linkSummaryNewTaskFixesInverse =>
+      'La nuova attività risolve questa attività';
+
+  @override
+  String get linkSummaryNewTaskFixesPrimary =>
+      'Questa attività risolve la nuova attività';
+
+  @override
+  String get linkSummaryNewTaskFollowsUpInverse =>
+      'La nuova attività dà seguito a questa attività';
+
+  @override
+  String get linkSummaryNewTaskFollowsUpPrimary =>
+      'Questa attività dà seguito alla nuova attività';
+
+  @override
+  String get linkSummaryNewTaskSupersedesInverse =>
+      'La nuova attività sostituisce questa attività';
+
+  @override
+  String get linkSummaryNewTaskSupersedesPrimary =>
+      'Questa attività sostituisce la nuova attività';
+
+  @override
+  String linkSummarySupersedesInverse(Object target) {
+    return 'Questa attività è sostituita da $target';
+  }
+
+  @override
+  String linkSummarySupersedesPrimary(Object target) {
+    return 'Questa attività sostituisce $target';
   }
 
   @override

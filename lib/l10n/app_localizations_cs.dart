@@ -820,6 +820,165 @@ class AppLocalizationsCs extends AppLocalizations {
       'Původní záznam není k dispozici';
 
   @override
+  String agentSummaryAddItem(Object title) {
+    return 'Přidat: „$title“';
+  }
+
+  @override
+  String agentSummaryArchiveItem(Object title) {
+    return 'Archivovat: „$title“';
+  }
+
+  @override
+  String agentSummaryCheckItem(Object title) {
+    return 'Odškrtnout: „$title“';
+  }
+
+  @override
+  String agentSummaryCreateFollowUp(Object title) {
+    return 'Vytvořit navazující úkol: „$title“';
+  }
+
+  @override
+  String agentSummaryCreateFollowUpRelated(Object title, Object relation) {
+    return 'Vytvořit navazující úkol: „$title“ — $relation';
+  }
+
+  @override
+  String agentSummaryCreateTask(Object title) {
+    return 'Vytvořit úkol: $title';
+  }
+
+  @override
+  String agentSummaryFollowUpTask(Object title) {
+    return 'Navazující úkol: $title';
+  }
+
+  @override
+  String agentSummaryMigrateItem(Object title) {
+    return 'Přesunout do navazujícího úkolu: „$title“';
+  }
+
+  @override
+  String get agentSummaryRecommendNextSteps => 'Doporučit další kroky';
+
+  @override
+  String agentSummaryRecommendNextStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Doporučit $count dalších kroků',
+      few: 'Doporučit $count další kroky',
+      one: 'Doporučit 1 další krok',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentSummaryRestoreItem(Object title) {
+    return 'Obnovit: „$title“';
+  }
+
+  @override
+  String agentSummaryReviseTimeEntryText(Object summary) {
+    return 'Přepsat text časového záznamu: „$summary“';
+  }
+
+  @override
+  String agentSummarySetDueDate(Object date) {
+    return 'Nastavit termín na $date';
+  }
+
+  @override
+  String agentSummarySetEstimate(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Nastavit odhad na $minutes minut',
+      many: 'Nastavit odhad na $minutes minut',
+      few: 'Nastavit odhad na $minutes minuty',
+      one: 'Nastavit odhad na 1 minutu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentSummarySetLanguage(Object language) {
+    return 'Nastavit jazyk na „$language“';
+  }
+
+  @override
+  String agentSummarySetPriority(Object priority) {
+    return 'Nastavit prioritu na $priority';
+  }
+
+  @override
+  String agentSummarySetStatus(Object status) {
+    return 'Nastavit stav na $status';
+  }
+
+  @override
+  String agentSummarySetTitle(Object title) {
+    return 'Nastavit název na „$title“';
+  }
+
+  @override
+  String get agentSummarySuggestFollowUpTask => 'Navrhnout navazující úkol';
+
+  @override
+  String agentSummaryTimeEntry(Object range, Object summary) {
+    return 'Časový záznam $range: „$summary“';
+  }
+
+  @override
+  String agentSummaryTimeRangeBetween(Object start, Object end) {
+    return '$start–$end';
+  }
+
+  @override
+  String agentSummaryTimeRangeFrom(Object start) {
+    return 'od $start';
+  }
+
+  @override
+  String agentSummaryTimeRangeUntil(Object end) {
+    return 'do $end';
+  }
+
+  @override
+  String agentSummaryUncheckItem(Object title) {
+    return 'Zrušit odškrtnutí: „$title“';
+  }
+
+  @override
+  String agentSummaryUpdateItem(Object title) {
+    return 'Změnit: „$title“';
+  }
+
+  @override
+  String agentSummaryUpdateProjectStatus(Object status) {
+    return 'Nastavit stav projektu na $status';
+  }
+
+  @override
+  String agentSummaryUpdateRunningTimer(Object summary) {
+    return 'Změnit text běžícího časovače: „$summary“';
+  }
+
+  @override
+  String get agentSummaryUpdateTimeEntry => 'Upravit časový záznam';
+
+  @override
+  String agentSummaryUpdateTimeEntryRange(Object range) {
+    return 'Upravit časový záznam $range';
+  }
+
+  @override
+  String agentSummaryUpdateTimeEntryRangeText(Object range, Object summary) {
+    return 'Upravit časový záznam $range: „$summary“';
+  }
+
+  @override
   String get agentTabActivity => 'Aktivita';
 
   @override
@@ -6794,6 +6953,100 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String linkPickerCreateTaskSemanticLabel(String title) {
     return 'Vytvořit úkol: $title';
+  }
+
+  @override
+  String linkSummaryBasic(Object target) {
+    return 'Tento úkol souvisí s $target';
+  }
+
+  @override
+  String linkSummaryBlocksInverse(Object target) {
+    return 'Tento úkol je blokován úkolem $target';
+  }
+
+  @override
+  String linkSummaryBlocksPrimary(Object target) {
+    return 'Tento úkol blokuje $target';
+  }
+
+  @override
+  String linkSummaryDuplicatesInverse(Object target) {
+    return 'Tento úkol je duplikován úkolem $target';
+  }
+
+  @override
+  String linkSummaryDuplicatesPrimary(Object target) {
+    return 'Tento úkol duplikuje $target';
+  }
+
+  @override
+  String linkSummaryFixesInverse(Object target) {
+    return 'Tento úkol je řešen úkolem $target';
+  }
+
+  @override
+  String linkSummaryFixesPrimary(Object target) {
+    return 'Tento úkol řeší $target';
+  }
+
+  @override
+  String linkSummaryFollowsUpInverse(Object target) {
+    return 'Tento úkol má navazující úkol $target';
+  }
+
+  @override
+  String linkSummaryFollowsUpPrimary(Object target) {
+    return 'Tento úkol navazuje na $target';
+  }
+
+  @override
+  String get linkSummaryNewTaskBasic => 'Tento úkol souvisí s novým úkolem';
+
+  @override
+  String get linkSummaryNewTaskBlocksInverse => 'Nový úkol blokuje tento úkol';
+
+  @override
+  String get linkSummaryNewTaskBlocksPrimary => 'Tento úkol blokuje nový úkol';
+
+  @override
+  String get linkSummaryNewTaskDuplicatesInverse =>
+      'Nový úkol duplikuje tento úkol';
+
+  @override
+  String get linkSummaryNewTaskDuplicatesPrimary =>
+      'Tento úkol duplikuje nový úkol';
+
+  @override
+  String get linkSummaryNewTaskFixesInverse => 'Nový úkol řeší tento úkol';
+
+  @override
+  String get linkSummaryNewTaskFixesPrimary => 'Tento úkol řeší nový úkol';
+
+  @override
+  String get linkSummaryNewTaskFollowsUpInverse =>
+      'Nový úkol navazuje na tento úkol';
+
+  @override
+  String get linkSummaryNewTaskFollowsUpPrimary =>
+      'Tento úkol navazuje na nový úkol';
+
+  @override
+  String get linkSummaryNewTaskSupersedesInverse =>
+      'Nový úkol nahrazuje tento úkol';
+
+  @override
+  String get linkSummaryNewTaskSupersedesPrimary =>
+      'Tento úkol nahrazuje nový úkol';
+
+  @override
+  String linkSummarySupersedesInverse(Object target) {
+    return 'Tento úkol je nahrazen úkolem $target';
+  }
+
+  @override
+  String linkSummarySupersedesPrimary(Object target) {
+    return 'Tento úkol nahrazuje $target';
   }
 
   @override
