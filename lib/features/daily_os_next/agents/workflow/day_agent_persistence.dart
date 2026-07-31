@@ -9,10 +9,11 @@ extension DayAgentPersistence on DayAgentWorkflow {
     required String runKey,
     required String userMessage,
     required DateTime now,
+    required String payloadId,
+    required String messageId,
     WakeMemoryView? memoryView,
   }) async {
     try {
-      final payloadId = workflowUuid.v4();
       // ADR 0020 v2 prompt records: when the read flipped, the `<day_log>`
       // section is a pure function of the synced event log — store the payload
       // WITHOUT the whole section plus the reconstruction marker. The day log
@@ -52,7 +53,7 @@ extension DayAgentPersistence on DayAgentWorkflow {
       );
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessage(
-          id: workflowUuid.v4(),
+          id: messageId,
           agentId: agentId,
           threadId: threadId,
           kind: AgentMessageKind.user,

@@ -101,6 +101,20 @@ void main() {
         'userCommitment',
         'carryOver',
       ]);
+      final budgetProperties =
+          (properties['capacityBudget'] as Map<String, dynamic>)['properties']
+              as Map<String, dynamic>;
+      final availableMinutes =
+          budgetProperties['availableMinutes'] as Map<String, dynamic>;
+      expect(availableMinutes['minimum'], 0);
+      expect(availableMinutes['maximum'], 1440);
+      expect(
+        availableMinutes['description'],
+        allOf(
+          contains('Total plannable minutes'),
+          contains('before subtracting alreadyScheduledMinutes'),
+        ),
+      );
     });
 
     test(
@@ -218,6 +232,10 @@ void main() {
         properties,
         isNot(contains('capacityMinutes')),
         reason: 'Capacity is workflow configuration, not model authority.',
+      );
+      expect(
+        (properties['blocks'] as Map<String, dynamic>)['description'],
+        allOf(contains('closed'), contains('baseline'), contains('unchanged')),
       );
       expect(blockSchema['additionalProperties'], isFalse);
       expect(

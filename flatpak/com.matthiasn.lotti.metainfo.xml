@@ -39,6 +39,7 @@
   <releases>
     <release version="0.9.1073" date="2026-07-29">
       <description>
+        <p>Fixed: planning after your working day has ended now finishes instead of retrying an impossible answer. Daily OS was told to add no blocks once the planning window closed, but its required final step rejected an empty plan. It can now save an explicit empty draft, keep any existing blocks intact, and surface selected work that no longer fits instead of looping until the request fails.</p>
         <p>Fixed: Daily OS plans stay inside your configured working hours. On an overloaded day, the planner could keep the total duration under your capacity by leaving a gap and then scheduling the final task after your working day ended. Plans outside the configured window are now rejected and retried, so work must be shortened or omitted explicitly instead of quietly overrunning.</p>
         <p>Changed: the Matrix Stats page reads as one page again. Its headings had been set by hand and disagreed with each other — "Sent messages" shouted while "Top KPIs" was left at whatever size it inherited — so the page looked like three unrelated panels stacked together. Every group heading now sits at the same level, the counter tiles share one rhythm, and the numbers on them line up with the figures on Backfill sync.</p>
         <p>Fixed: the sync diagnostics panel is translated. Its heading, its refresh button and its "Last ignored" list stayed English on every device, whatever language the rest of the app was set to.</p>

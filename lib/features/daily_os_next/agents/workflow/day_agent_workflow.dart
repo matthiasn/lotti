@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -40,7 +41,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart'
     show
         advertisedPlanningStart,
-        planningWindowClosed,
+        draftPlanningWindowClosed,
         remainingWorkingMinutes,
         scheduledMinutesFor;
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
@@ -61,6 +62,13 @@ part 'day_agent_context_builder.dart';
 part 'day_agent_persistence.dart';
 part 'day_agent_tool_handlers.dart';
 part 'day_agent_prompt_builder.dart';
+
+typedef _TimeSensitiveDayAgentContext = ({
+  Map<String, Object?>? digestContext,
+  DateTime planningSnapshotAt,
+  List<Map<String, Object?>>? recentWeeksContext,
+  WeekContext? weekContext,
+});
 
 /// Assembles context and runs one Daily OS day-agent wake.
 class DayAgentWorkflow {
@@ -389,31 +397,31 @@ class DayAgentWorkflow {
     );
     final attentionPlanning = await _attentionPlanningContext(dayDate);
     final directive = await _directiveContext(resolvedDayId);
-    final digestContext = await _digestContext(
-      agentId: agentId,
-      wakeContext: wakeContext,
-      dayDate: dayDate,
-      now: now,
-      preloadedTodayDirective: directive,
-    );
-    final recentWeeksContext = await _recentWeeksContext(
-      agentId: agentId,
-      wakeContext: wakeContext,
-      now: now,
-    );
-    final knowledge = await _knowledgeContext(
-      agentIdentity: agentIdentity,
-      touchedScopes: _touchedScopes(
-        attentionPlanning: attentionPlanning,
-        draftingContext: draftingContext,
-        refineContext: refineContext,
-      ),
-      now: now,
-    );
-    final weekContext = isDayTokenWake
-        ? await _weekContext(planDate: dayDate, now: now)
-        : null;
     final dayAudioEntries = await _dayAudioEntries(resolvedDayId);
+    final activeKnowledge = await _activeKnowledge();
+    final touchedScopes = _touchedScopes(
+      attentionPlanning: attentionPlanning,
+      draftingContext: draftingContext,
+      refineContext: refineContext,
+    );
+
+    var timeSensitiveContext = await _loadTimeSensitiveContext(
+      agentId: agentId,
+      wakeContext: wakeContext,
+      planDate: dayDate,
+      isDayTokenWake: isDayTokenWake,
+      directive: directive,
+      refineContext: refineContext,
+    );
+    var planningSnapshotAt = timeSensitiveContext.planningSnapshotAt;
+    var digestContext = timeSensitiveContext.digestContext;
+    var recentWeeksContext = timeSensitiveContext.recentWeeksContext;
+    var weekContext = timeSensitiveContext.weekContext;
+    var knowledge = _knowledgeContext(
+      active: activeKnowledge,
+      touchedScopes: touchedScopes,
+      now: planningSnapshotAt,
+    );
     final requiresCaptureParse = _requiresCaptureParse(
       wakeContext: wakeContext,
       captureContext: captureContext,
@@ -436,10 +444,10 @@ class DayAgentWorkflow {
       wakeContext: wakeContext,
       captureContext: captureContext,
     );
-    final userMessage = _buildUserMessage(
+    String buildUserMessage() => _buildUserMessage(
       dayId: resolvedDayId,
       planDate: dayDate,
-      now: now,
+      now: planningSnapshotAt,
       triggerTokens: triggerTokens,
       observations: recentObs,
       observationPayloads: observationPayloads,
@@ -456,11 +464,18 @@ class DayAgentWorkflow {
       compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
     );
 
+    var userMessage = buildUserMessage();
+
     final conversationId = conversationRepository.createConversation(
       systemMessage: systemPrompt,
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
 
+    // Reuse the same logical entities if a slow pre-inference write forces the
+    // prompt to be rebuilt. The synced log then retains only the final prompt
+    // snapshot instead of recording a stale prompt followed by its replacement.
+    final userMessagePayloadId = workflowUuid.v4();
+    final userMessageId = workflowUuid.v4();
     await _persistUserMessage(
       agentId: agentId,
       threadId: threadId,
@@ -468,31 +483,12 @@ class DayAgentWorkflow {
       userMessage: userMessage,
       now: now,
       memoryView: memoryView,
+      payloadId: userMessagePayloadId,
+      messageId: userMessageId,
     );
 
     DayAgentTimeoutInferenceRepository? inferenceRepo;
     try {
-      final strategy = DayAgentStrategy(
-        syncService: syncService,
-        agentId: agentId,
-        threadId: threadId,
-        runKey: runKey,
-        domainLogger: domainLogger,
-        terminalToolNames: {
-          if (requiresCaptureParse) DayAgentToolNames.parseCaptureToItems,
-          if (requiresDraftDayPlan) DayAgentToolNames.draftDayPlan,
-        },
-        executeToolHandler: (toolName, args, manager) => _executeToolHandler(
-          agentId: agentId,
-          threadId: threadId,
-          runKey: runKey,
-          dayId: resolvedDayId,
-          processingJobId: wakeContext.processingJobId,
-          toolName: toolName,
-          args: args,
-        ),
-      );
-
       final cloudInferenceRepo = CloudInferenceWrapper(
         cloudRepository: cloudInferenceRepository,
         geminiThinkingMode: resolvedProfile.thinkingModel?.geminiThinkingMode,
@@ -518,6 +514,94 @@ class DayAgentWorkflow {
           soulVersionId: templateCtx.soulVersion?.id,
         );
       }
+
+      // Persisting the prompt record and wake-template provenance are the last
+      // awaits before inference. If either crosses an advertised five-minute,
+      // working-hours, or local-day boundary, rebuild all time-sensitive
+      // sections and overwrite the same durable prompt record. Re-check after
+      // that write too; the closed projection makes the loop converge.
+      while (true) {
+        final preInferenceAt = clock.now();
+        final snapshotStayedCurrent =
+            _timeSensitiveContextKey(
+              planDate: dayDate,
+              now: planningSnapshotAt,
+              refineContext: refineContext,
+            ) ==
+            _timeSensitiveContextKey(
+              planDate: dayDate,
+              now: preInferenceAt,
+              refineContext: refineContext,
+            );
+        if (snapshotStayedCurrent) break;
+
+        timeSensitiveContext = await _loadTimeSensitiveContext(
+          agentId: agentId,
+          wakeContext: wakeContext,
+          planDate: dayDate,
+          isDayTokenWake: isDayTokenWake,
+          directive: directive,
+          refineContext: refineContext,
+          initialSnapshotAt: preInferenceAt,
+        );
+        planningSnapshotAt = timeSensitiveContext.planningSnapshotAt;
+        digestContext = timeSensitiveContext.digestContext;
+        recentWeeksContext = timeSensitiveContext.recentWeeksContext;
+        weekContext = timeSensitiveContext.weekContext;
+        knowledge = _knowledgeContext(
+          active: activeKnowledge,
+          touchedScopes: touchedScopes,
+          now: planningSnapshotAt,
+        );
+        userMessage = buildUserMessage();
+        await _persistUserMessage(
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          userMessage: userMessage,
+          now: now,
+          memoryView: memoryView,
+          payloadId: userMessagePayloadId,
+          messageId: userMessageId,
+        );
+      }
+
+      final closedDraftRequiresAttention =
+          requiresDraftDayPlan &&
+          draftPlanningWindowClosed(
+            planDate: dayDate,
+            now: planningSnapshotAt,
+            capacityMinutes: config.capacityMinutes,
+            workingHoursStart: config.workingHoursStart,
+            workingHoursEnd: config.workingHoursEnd,
+          ) &&
+          _closedDraftOmitsTrustedWork(
+            draftingContext: draftingContext,
+            directive: directive,
+          );
+      final strategy = DayAgentStrategy(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: threadId,
+        runKey: runKey,
+        domainLogger: domainLogger,
+        terminalToolNames: {
+          if (requiresCaptureParse) DayAgentToolNames.parseCaptureToItems,
+          if (requiresDraftDayPlan) DayAgentToolNames.draftDayPlan,
+        },
+        requiresAttentionBeforeClosedDraft: closedDraftRequiresAttention,
+        executeToolHandler: (toolName, args, manager) => _executeToolHandler(
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          dayId: resolvedDayId,
+          processingJobId: wakeContext.processingJobId,
+          planningSnapshotAt: planningSnapshotAt,
+          planningBaselinePlan: draftingContext?.baselinePlan,
+          toolName: toolName,
+          args: args,
+        ),
+      );
 
       final tools = _buildToolDefinitions(
         agentId: agentId,

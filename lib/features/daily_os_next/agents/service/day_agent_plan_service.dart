@@ -88,6 +88,8 @@ class DayAgentPlanService {
     required String toolName,
     required Map<String, dynamic> args,
     DayAgentConfig planningConfig = const DayAgentConfig(),
+    DateTime? planningSnapshotAt,
+    DayPlanEntity? planningBaselinePlan,
   }) => _dispatcher.executeTool(
     agentId: agentId,
     threadId: threadId,
@@ -95,6 +97,8 @@ class DayAgentPlanService {
     toolName: toolName,
     args: args,
     planningConfig: planningConfig,
+    planningSnapshotAt: planningSnapshotAt,
+    planningBaselinePlan: planningBaselinePlan,
   );
 
   /// Fetch the persisted draft plan for one day.
@@ -302,6 +306,8 @@ class DayAgentPlanService {
     String workingHoursEnd = '17:00',
     String? dayLabel,
     String? runKey,
+    DateTime? planningSnapshotAt,
+    DayPlanEntity? planningBaselinePlan,
   }) => _writer.persistDraftPlan(
     agentId: agentId,
     dayId: dayId,
@@ -315,6 +321,8 @@ class DayAgentPlanService {
     workingHoursEnd: workingHoursEnd,
     dayLabel: dayLabel,
     runKey: runKey,
+    planningSnapshotAt: planningSnapshotAt,
+    planningBaselinePlan: planningBaselinePlan,
   );
 
   /// Build transient learning cards from recently drafted day plans.

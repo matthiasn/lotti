@@ -285,6 +285,10 @@ const dayAgentTools = <AgentToolDefinition>[
         'dayLabel': {'type': 'string'},
         'blocks': {
           'type': 'array',
+          'description':
+              'The complete resulting plan. When planning_window is closed, '
+              'use [] for an empty baseline or repeat every baseline block '
+              'unchanged; never add or remove a block.',
           'items': {
             'type': 'object',
             'properties': {
@@ -594,7 +598,15 @@ const dayAgentTools = <AgentToolDefinition>[
         'capacityBudget': {
           'type': 'object',
           'properties': {
-            'availableMinutes': {'type': 'integer'},
+            'availableMinutes': {
+              'type': 'integer',
+              'minimum': 0,
+              'maximum': 1440,
+              'description':
+                  'Total plannable minutes for the day before subtracting '
+                  'alreadyScheduledMinutes. Use 0 when the planning window '
+                  'is closed.',
+            },
             'alreadyScheduledMinutes': {'type': 'integer'},
             'energyBands': {
               'type': 'array',

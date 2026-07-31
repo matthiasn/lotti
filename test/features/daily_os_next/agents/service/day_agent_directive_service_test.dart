@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart'
@@ -58,13 +59,16 @@ void main() {
   Future<DayAgentDirectToolResult> executeIssue(
     Map<String, dynamic> args, {
     String agentId = dailyOsPlannerAgentId,
+    DateTime? at,
+    DayAgentConfig planningConfig = const DayAgentConfig(),
   }) {
     return withClock(
-      Clock.fixed(now),
+      Clock.fixed(at ?? now),
       () => service.executeTool(
         agentId: agentId,
         toolName: DayAgentToolNames.issueDayDirective,
         args: args,
+        planningConfig: planningConfig,
       ),
     );
   }
@@ -263,10 +267,44 @@ void main() {
     });
 
     group('capacity budget validation', () {
+      test(
+        'accepts and persists zero available minutes for a closed target day',
+        () async {
+          final result = await executeIssue(
+            {
+              'dayId': dayId,
+              'capacityBudget': {'availableMinutes': 0},
+            },
+            at: DateTime(2026, 7, 23, 18),
+          );
+
+          expect(result.success, isTrue, reason: result.output);
+          final directive = upserted.single as DayDirectiveEntity;
+          expect(directive.capacityBudget?.availableMinutes, 0);
+        },
+      );
+
+      test(
+        'rejects zero available minutes while the target day is open',
+        () async {
+          final result = await executeIssue({
+            'dayId': dayId,
+            'capacityBudget': {'availableMinutes': 0},
+          });
+
+          expect(result.success, isFalse);
+          expect(
+            result.output,
+            allOf(contains('zero'), contains('target'), contains('closed')),
+          );
+          expect(upserted, isEmpty);
+        },
+      );
+
       test('rejects missing or out-of-range availableMinutes', () async {
         for (final budget in [
           <String, dynamic>{},
-          {'availableMinutes': 0},
+          {'availableMinutes': -1},
           {'availableMinutes': 2000},
         ]) {
           final result = await executeIssue({

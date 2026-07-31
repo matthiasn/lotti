@@ -69,6 +69,11 @@ const dayAgentDraftTerminalRule = '''
   any unavoidable status first, then emit the full plan through
   `draft_day_plan`. A successful draft completes the wake without a separate
   summary turn.
+- When `<planning_window>` is closed, the final artifact is still required.
+  If `drafting.baselinePlan` has no baseline blocks, raise any unavoidable
+  omission status first, then call `draft_day_plan` with `blocks: []`. If it
+  has blocks, repeat every baseline block unchanged. Never erase a non-empty
+  baseline merely because no new work fits.
 ''';
 
 /// System-prompt assembly, tool gating, forced capture/plan steps and tool

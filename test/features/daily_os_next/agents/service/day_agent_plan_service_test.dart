@@ -1264,6 +1264,43 @@ void main() {
       },
     );
 
+    test(
+      'executeTool validates a draft against the planning snapshot advertised '
+      'before inference',
+      () async {
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 16, 55, 1)),
+          () => createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.draftDayPlan,
+            planningSnapshotAt: DateTime(2026, 5, 25, 16, 52),
+            args: {
+              'dayId': _dayId,
+              'dayDate': DateTime(2026, 5, 25).toIso8601String(),
+              'blocks': [
+                _aiBlock(
+                  start: DateTime(2026, 5, 25, 16, 55),
+                  end: DateTime(2026, 5, 25, 17),
+                ),
+              ],
+            },
+          ),
+        );
+
+        expect(result.success, isTrue);
+        expect(
+          (agentEntities['day_agent_plan:$_dayId']! as DayPlanEntity)
+              .data
+              .plannedBlocks
+              .single
+              .startTime,
+          DateTime(2026, 5, 25, 16, 55),
+        );
+      },
+    );
+
     test('executeTool rejects blank decidedTaskIds entries', () async {
       final result = await createService().executeTool(
         agentId: _agentId,

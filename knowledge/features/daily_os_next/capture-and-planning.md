@@ -11,15 +11,15 @@ sources:
   - id: services
     resource: ../../../lib/features/daily_os_next/agents/service
     title: Capture and plan services
-    last_modified: 2026-07-30
+    last_modified: 2026-07-31
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Day-agent prompt builder
-    last_modified: 2026-07-29
+    last_modified: 2026-07-31
   - id: workflow
     resource: ../../../lib/features/daily_os_next/agents/workflow
     title: Day-agent workflow and terminal-tool strategy
-    last_modified: 2026-07-29
+    last_modified: 2026-07-31
   - id: processing-runtime
     resource: ../../../lib/features/daily_os_next/services/day_processing_runtime.dart
     title: Durable processing runtime
@@ -192,16 +192,20 @@ and a concurrent tombstone is never revived.
 
 **Planning into the past is refused, whatever the block's type.** For today's
 plan, `draft_day_plan` rejects any block it would be *planning* — state `drafted`
-or `committed` — whose start precedes `clock.now()` **at the moment the tool
-executes**.
+or `committed` — whose start precedes the wake's planning snapshot. The
+workflow captures that instant before building the prompt and carries the same
+value through tool dispatch; direct service callers without a wake snapshot use
+the live clock. The capture happens after memory, database, dependency, and
+other context awaits, immediately before prompt rendering; using the wake-entry
+clock could advertise a slot that expired while context was loading.
 
-That last clause is load-bearing, and getting it wrong was measurable. The
-threshold moves between rendering the prompt and enforcing it, because the model
-thinks in between — 13s to 152s in the eval. So a plan whose first block starts
-at the instant the prompt advertised is *always* rejected: every sampled
-`lateStart` cell across both models started the day at 15:00 when the prompt read
-`15:00:00.005877`, and all 6/6 lost by under six milliseconds. Complying would
-have meant predicting inference latency.
+The shared snapshot is load-bearing, and the earlier execution-time clock was
+measurably wrong. The threshold moved between rendering the prompt and enforcing
+it because the model thought in between — 13s to 152s in the eval. A plan whose
+first block started at the instant the prompt advertised was therefore rejected:
+every sampled `lateStart` cell across both models started the day at 15:00 when
+the prompt read `15:00:00.005877`, and all 6/6 lost by under six milliseconds.
+Complying would have meant predicting inference latency.
 
 The prompt therefore carries a top-level `<planning_window>` section —
 `advertisedPlanningStart`, the first five-minute boundary at least three minutes
@@ -209,22 +213,68 @@ out — rather than the raw instant. It is **top-level on purpose**: the
 constraint belongs to the day, not to a wake mode. `draft_day_plan` is always
 exposed and a scheduled `planning_day` wake builds neither a drafting nor a
 refine context, so nesting it under either left exactly those wakes deriving the
-threshold themselves. The guard is unchanged and unweakened; only what the model
-is *told to aim at* moved.
+threshold themselves. Persistence validates against the same pre-inference
+snapshot that produced this advertised start. Recomputing the padded boundary
+after the model responds can otherwise turn a final advertised 16:55–17:00 slot
+into a closed window at 16:55, even though the slot itself is still legal.
+Time-sensitive prompt inputs are built from that snapshot too: durable
+knowledge staleness, digest periods, recent-week rollups, week context,
+`<current_local_time>`, and `<planning_window>` must not disagree when an
+earlier database or dependency await crosses a time boundary. Because those
+context reads can themselves be slow, the workflow compares the day/window
+projection again after they finish and rebuilds them from the fresh instant
+when the projection changed. It performs the same check immediately before
+inference, after persisting the user-message record and wake-template
+provenance. If either write crosses a boundary, the workflow rebuilds the
+time-sensitive sections and overwrites the same logical prompt entities, so
+the model, persisted prompt, and writer all share the refreshed snapshot.
 
 Late enough in the day, walking forward for that headroom runs past midnight,
 and a block outside the plan day is rejected just as firmly — advertising 00:05
 tomorrow would steer the model into the same rejection from the other end. So
 the window **closes**: `<planning_window>` carries `closed` instead, and the
-rules say to leave the day alone rather than add to it. The three states are
-deliberately distinct, because collapsing any two misleads:
+rules say to add no new blocks. A past target day is closed as well, which keeps
+a durable retry after midnight from treating yesterday as a pristine future
+day. A drafting wake still has to finish with a durable plan artifact: with an
+empty baseline it first raises any required omission status, then persists
+`draft_day_plan` with `blocks: []`; with a non-empty baseline it repeats every
+existing block unchanged. When trusted drafting decisions or binding directive
+commitments are not represented by the only legal artifact — including newly
+selected work missing from a non-empty baseline — the strategy requires a
+successful `attentionNeeded` status earlier in the same wake; model-authored
+`decidedTaskIds` cannot waive that gate. Task-backed decisions are matched by
+task ID; standalone capture items and directive commitments use their stable
+IDs/titles on semantic token boundaries in active block prose, with directive
+task evidence also recognized. A short title such as `Plan` therefore does not
+count as represented merely because a retained reason says `Planning`.
+The writer
+rejects additions, removals, or edits against a non-empty baseline, so "closed"
+cannot erase or rewrite work already on the day. A valid repeat is a true
+no-op over the stored payload: labels, energy bands, budgets, pinned tasks, and
+blocks are retained verbatim, even if a referenced task was deleted or moved
+categories while inference ran; only the wake provenance and write timestamp
+advance. The workflow also carries the exact baseline serialized into the
+prompt through tool dispatch. The model's echo is validated against that
+snapshot, including the section-tag neutralization applied during rendering,
+while the accepted no-op still retains the original unsanitized stored payload.
+This comparison decodes the historical stored shape rather than the current
+block-creation contract, so a legacy block with a nullable title or AI reason
+can still be repeated exactly without making those nulls valid for new blocks.
+The writer re-reads the live plan inside the same transaction as the
+no-op write, so an edit arriving during finalization wins too; a concurrent
+deletion is reported as stale instead of being resurrected. The three states
+are deliberately distinct, because collapsing any two misleads:
 
 | `<planning_window>` | Meaning |
 |---|---|
 | `{"earliestStart": …, "availableMinutes": …}` | today, still plannable — start here, and this is how much is left |
-| `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add nothing |
+| `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add no block; a fresh draft may persist an empty terminal artifact |
 | `+ {"capacityMinutes": …, "scheduledMinutes": …}` | added on a refine wake — judge your *net* change against these, alongside whichever row above applies |
 | `{"availableMinutes": …}` | neither `earliestStart` nor `closed` — the day has not begun, so no part of it is past |
+
+Open drafts also require unique block IDs. Historical plans that already
+contain duplicate IDs remain preservable in a closed-window no-op by comparing
+the full block multiset, but no new draft can create another ambiguous plan.
 
 `availableMinutes` is absent from the `closed` row deliberately, and absent
 everywhere when the working hours cannot be parsed.
@@ -305,11 +355,22 @@ recompute for the same reason. A drafting baseline is replaced wholesale, so the
 whole-day budget is correct there.
 
 A day with **no working minutes left** reports `closed` rather than a start
-paired with a budget of zero. Those are the same instruction, and the pair left
-a fresh draft no coherent move: the rules forbid running past working hours,
-and there is no time left inside them. (`closed` still collides with the
-mandatory `draft_day_plan` call on a drafting wake — a pre-existing conflict
-tracked in lotti3-ddp, not introduced here.)
+paired with a budget of zero. Those are the same scheduling instruction, and
+the pair would invite the model to reconcile redundant signals. The
+coordinator's separate `DayCapacityBudget.availableMinutes` is the total
+plannable budget before `alreadyScheduledMinutes` is subtracted. It accepts zero
+only once the target day's own window closes: zero is then the honest ledger
+value and lets the planner agent issue a directive that the day agent can
+receive before reporting omissions. Rejecting zero for an open or future target
+prevents a digest from issuing a directive that permits no work while the
+writer still requires a non-empty open-window plan.
+
+Closed does not skip the drafting wake. That wake may still need to create an
+approved task and must still raise a typed status for selected work that no
+longer fits. Its coherent terminal result is therefore an empty persisted plan,
+not an absent plan and not a forced retry. Empty plans remain invalid while the
+window is open. After the window closes they are valid only over an empty
+baseline; a non-empty baseline must be preserved block-for-block.
 
 The rules pair it with what to do when the work does not fit: decide visibly —
 leave work out and name it, or place a task for less than its estimate and say

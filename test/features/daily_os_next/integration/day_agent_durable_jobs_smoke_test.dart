@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -48,33 +49,41 @@ void main() {
   final dayDate = DateTime(2030, 1, 15);
   final dayId = dayAgentIdForDate(dayDate);
 
+  DayAgentPipelineHarness createHarness({
+    required DateTime at,
+    required ScriptedConversationRepository conversations,
+  }) => DayAgentPipelineHarness.create(
+    now: at,
+    conversationRepository: conversations,
+    cloudInferenceRepository: MockCloudInferenceRepository(),
+    profile: testInferenceProfile(
+      id: 'profile-day',
+      thinkingModelId: 'models/day',
+    ),
+    model: testAiModel(
+      id: 'model-day',
+      providerModelId: 'models/day',
+      inferenceProviderId: 'provider-day',
+    ),
+    provider: testInferenceProvider(
+      id: 'provider-day',
+      apiKey: 'provider-key',
+    ),
+    dependencyResolver: EvalFixtureDependencyResolver(const {}),
+    config: const DayAgentConfig(
+      capacityMinutes: 300,
+      workingHoursEnd: '18:00',
+    ),
+  );
+
   late ScriptedConversationRepository conversationRepository;
   late DayAgentPipelineHarness harness;
 
   setUp(() {
     conversationRepository = ScriptedConversationRepository();
-    harness = DayAgentPipelineHarness.create(
-      now: now,
-      conversationRepository: conversationRepository,
-      cloudInferenceRepository: MockCloudInferenceRepository(),
-      profile: testInferenceProfile(
-        id: 'profile-day',
-        thinkingModelId: 'models/day',
-      ),
-      model: testAiModel(
-        id: 'model-day',
-        providerModelId: 'models/day',
-        inferenceProviderId: 'provider-day',
-      ),
-      provider: testInferenceProvider(
-        id: 'provider-day',
-        apiKey: 'provider-key',
-      ),
-      dependencyResolver: EvalFixtureDependencyResolver(const {}),
-      config: const DayAgentConfig(
-        capacityMinutes: 300,
-        workingHoursEnd: '18:00',
-      ),
+    harness = createHarness(
+      at: now,
+      conversations: conversationRepository,
     );
     addTearDown(() => harness.dispose());
   });
@@ -657,6 +666,130 @@ void main() {
             'Two planner digests, one parse, one rejected draft, and one '
             'corrected draft should cover the full bidirectional protocol.',
       );
+    },
+  );
+
+  test(
+    'closed-window draft persists an empty artifact and escalates every '
+    'selected task through the real planner/day-agent protocol',
+    () async {
+      final lateNow = dayDate.add(const Duration(hours: 19));
+      await withClock(Clock.fixed(lateNow), () async {
+        final lateConversations = ScriptedConversationRepository();
+        final lateHarness = createHarness(
+          at: lateNow,
+          conversations: lateConversations,
+        );
+        addTearDown(lateHarness.dispose);
+        seedScenarioCorpus(
+          journalDb: lateHarness.journalDb,
+          scenario: overcommittedRestOfDayScenario,
+          planDate: dayDate,
+          journalRepository: lateHarness.journalRepository,
+        );
+
+        final coordinator = await lateHarness.dayAgentService
+            .getOrCreatePlannerAgent();
+        lateConversations.script([
+          scriptedToolCall(
+            id: 'closed-window-directive',
+            name: DayAgentToolNames.issueDayDirective,
+            args: {
+              'dayId': dayId,
+              'commitments': [
+                {
+                  'id': 'must-board-deck',
+                  'source': 'userCommitment',
+                  'title': 'Prepare the board deck',
+                  'minutes': 90,
+                },
+              ],
+              'capacityBudget': {'availableMinutes': 0},
+              'attentionNotes': [
+                'The configured working day is over; carry work explicitly.',
+              ],
+            },
+          ),
+        ]);
+        await runPlannerDigest(
+          harness: lateHarness,
+          coordinator: coordinator,
+          dayId: dayId,
+        );
+
+        lateConversations.script([
+          scriptedToolCall(
+            id: 'closed-window-status',
+            name: DayAgentToolNames.raiseDayStatus,
+            args: {
+              'dayId': dayId,
+              'status': 'attentionNeeded',
+              'reasons': ['overCommitted'],
+              'note':
+                  'Prepare the board deck, Write the release notes, Clear the '
+                  'support inbox, Interview two candidates, and Take an '
+                  'afternoon walk cannot be scheduled because the working day '
+                  'has ended.',
+            },
+          ),
+          scriptedToolCall(
+            id: 'closed-window-draft',
+            name: DayAgentToolNames.draftDayPlan,
+            args: {
+              'dayId': dayId,
+              'decidedTaskIds': overcommittedRestOfDayScenario.decidedTaskIds,
+              'blocks': <Object?>[],
+            },
+          ),
+        ]);
+        final draft = await lateHarness.realDayAgent.draftDayPlan(
+          captureId: const CaptureId(''),
+          decidedTaskIds: overcommittedRestOfDayScenario.decidedTaskIds,
+          dayDate: dayDate,
+        );
+
+        expect(draft.blocks, isEmpty);
+        expect(draft.scheduledMinutes, 0);
+        final draftJob = await lateHarness.outbox.getById(
+          DayProcessingOutboxRepository.draftJobId(dayId),
+        );
+        expect(draftJob?.status, DayProcessingJobStatus.succeeded);
+        expect(lateConversations.pendingTurns, 0);
+        expect(
+          lateConversations.userMessages.last,
+          allOf(
+            contains('"closed": true'),
+            contains('must-board-deck'),
+            contains('task-interviews'),
+            contains('task-afternoon-walk'),
+          ),
+        );
+
+        final events = await lateHarness.agentRepository
+            .getDayStatusEventsSince(DateTime(2020));
+        expect(events, hasLength(1));
+        expect(events.single.status.name, 'attentionNeeded');
+        expect(
+          events.single.reasons.map((reason) => reason.name),
+          contains('overCommitted'),
+        );
+        for (final title in [
+          'Prepare the board deck',
+          'Write the release notes',
+          'Clear the support inbox',
+          'Interview two candidates',
+          'Take an afternoon walk',
+        ]) {
+          expect(events.single.note, contains(title));
+        }
+        expect(
+          lateConversations.sendCount,
+          2,
+          reason:
+              'One planner digest and one day-agent draft should complete the '
+              'closed-window protocol without a forced retry.',
+        );
+      });
     },
   );
 

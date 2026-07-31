@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
@@ -91,10 +92,15 @@ class DayAgentDirectiveService {
     String? wakeDayId,
     String? runKey,
     String? processingJobId,
+    DayAgentConfig planningConfig = const DayAgentConfig(),
   }) async {
     try {
       final data = switch (toolName) {
-        DayAgentToolNames.issueDayDirective => await _issueTool(agentId, args),
+        DayAgentToolNames.issueDayDirective => await _issueTool(
+          agentId,
+          args,
+          planningConfig,
+        ),
         DayAgentToolNames.raiseDayStatus => await _raiseTool(
           agentId,
           args,
@@ -133,6 +139,7 @@ class DayAgentDirectiveService {
   Future<Map<String, Object?>> _issueTool(
     String agentId,
     Map<String, dynamic> args,
+    DayAgentConfig planningConfig,
   ) async {
     // Directives flow downward only (ADR 0032 §2): the coordinator owns the
     // cross-day ledger a directive distills. A per-day agent pushes back via
@@ -155,6 +162,7 @@ class DayAgentDirectiveService {
     final capacityBudget = _parseCapacityBudget(
       args['capacityBudget'],
       planDate,
+      planningConfig,
     );
     final carryOver = _parseCarryOver(args['carryOver']);
     final constraints = _boundedNotes(args['constraints'], 'constraints');
@@ -417,7 +425,11 @@ class DayAgentDirectiveService {
     );
   }
 
-  DayCapacityBudget? _parseCapacityBudget(Object? raw, DateTime planDate) {
+  DayCapacityBudget? _parseCapacityBudget(
+    Object? raw,
+    DateTime planDate,
+    DayAgentConfig planningConfig,
+  ) {
     if (raw == null) return null;
     if (raw is! Map) {
       throw const DayAgentDirectiveException(
@@ -427,10 +439,23 @@ class DayAgentDirectiveService {
     final data = raw.cast<String, dynamic>();
     final availableMinutes = optionalIntArg(data['availableMinutes']);
     if (availableMinutes == null ||
-        availableMinutes <= 0 ||
+        availableMinutes < 0 ||
         availableMinutes > 24 * 60) {
       throw const DayAgentDirectiveException(
-        'capacityBudget.availableMinutes must be between 1 and 1440',
+        'capacityBudget.availableMinutes must be between 0 and 1440',
+      );
+    }
+    if (availableMinutes == 0 &&
+        !draftPlanningWindowClosed(
+          planDate: planDate,
+          now: clock.now(),
+          capacityMinutes: planningConfig.capacityMinutes,
+          workingHoursStart: planningConfig.workingHoursStart,
+          workingHoursEnd: planningConfig.workingHoursEnd,
+        )) {
+      throw const DayAgentDirectiveException(
+        'capacityBudget.availableMinutes may be zero only when the target '
+        "day's planning window is closed",
       );
     }
     final alreadyScheduled = optionalIntArg(data['alreadyScheduledMinutes']);

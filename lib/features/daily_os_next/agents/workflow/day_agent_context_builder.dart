@@ -3,6 +3,62 @@ part of 'day_agent_workflow.dart';
 /// Pure context-assembly helpers of [DayAgentWorkflow]: user-message
 /// construction and the capture/drafting/refine context builders.
 extension DayAgentContextBuilder on DayAgentWorkflow {
+  Future<_TimeSensitiveDayAgentContext> _loadTimeSensitiveContext({
+    required String agentId,
+    required DailyOsPlannerWakeContext wakeContext,
+    required DateTime planDate,
+    required bool isDayTokenWake,
+    required DayDirectiveEntity? directive,
+    required RefineContext? refineContext,
+    DateTime? initialSnapshotAt,
+  }) async {
+    // Time-sensitive context reads can themselves cross a planning boundary.
+    // Build from one snapshot, then compare the pure day/window projection
+    // after every await. If it changed, rebuild from the fresh instant before
+    // rendering. The projection becomes permanently stable once the target
+    // window is closed, so this converges without an arbitrary retry cap.
+    var contextSnapshotAt = initialSnapshotAt ?? clock.now();
+    while (true) {
+      final digestContext = await _digestContext(
+        agentId: agentId,
+        wakeContext: wakeContext,
+        dayDate: planDate,
+        now: contextSnapshotAt,
+        preloadedTodayDirective: directive,
+      );
+      final recentWeeksContext = await _recentWeeksContext(
+        agentId: agentId,
+        wakeContext: wakeContext,
+        now: contextSnapshotAt,
+      );
+      final weekContext = isDayTokenWake
+          ? await _weekContext(planDate: planDate, now: contextSnapshotAt)
+          : null;
+
+      final planningSnapshotAt = clock.now();
+      final contextStayedCurrent =
+          _timeSensitiveContextKey(
+            planDate: planDate,
+            now: contextSnapshotAt,
+            refineContext: refineContext,
+          ) ==
+          _timeSensitiveContextKey(
+            planDate: planDate,
+            now: planningSnapshotAt,
+            refineContext: refineContext,
+          );
+      if (contextStayedCurrent) {
+        return (
+          digestContext: digestContext,
+          planningSnapshotAt: planningSnapshotAt,
+          recentWeeksContext: recentWeeksContext,
+          weekContext: weekContext,
+        );
+      }
+      contextSnapshotAt = planningSnapshotAt;
+    }
+  }
+
   String _buildUserMessage({
     required String dayId,
     required DateTime planDate,
@@ -207,39 +263,147 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     }
   }
 
-  /// Loads the coordinator's durable knowledge and renders the two-tier
-  /// prompt blocks (ADR 0022 Decisions 9–10): the always-on hook index plus
-  /// the scope-filtered full statements for the scopes this wake actually
-  /// touches (`global` always; [touchedScopes] for `category:`/`project:`).
-  /// Returns empty blocks (and the caller omits the field) when no knowledge
-  /// or no service is configured.
+  /// Loads the coordinator's durable knowledge without applying wall-clock
+  /// staleness yet.
   ///
   /// Knowledge is always read under [dailyOsPlannerAgentId], not the waking
   /// agent: durable learning lives with the coordinator (ADR 0032 §4,
   /// "coordinator-published"), so per-day agents see the same knowledge the
   /// monolith would. For coordinator wakes the two ids coincide.
-  Future<KnowledgeContext> _knowledgeContext({
-    required AgentIdentityEntity agentIdentity,
-    required Set<String> touchedScopes,
-    required DateTime now,
-  }) async {
+  Future<List<PlannerKnowledgeEntity>> _activeKnowledge() async {
     final service = knowledgeService;
-    if (service == null) return const KnowledgeContext.empty();
+    if (service == null) return const [];
     try {
-      final active = await service.activeFor(dailyOsPlannerAgentId);
-      if (active.isEmpty) return const KnowledgeContext.empty();
-      return KnowledgeContext(
-        hookIndex: renderKnowledgeHookIndex(active),
-        statements: renderKnowledgeStatements(active, touchedScopes, now: now),
-      );
+      return await service.activeFor(dailyOsPlannerAgentId);
     } catch (e, s) {
       _logError(
         'failed to load durable planner knowledge',
         error: e,
         stackTrace: s,
       );
-      return const KnowledgeContext.empty();
+      return const [];
     }
+  }
+
+  /// Renders the two-tier knowledge prompt blocks against the final planning
+  /// snapshot, after every asynchronous context read has completed.
+  KnowledgeContext _knowledgeContext({
+    required List<PlannerKnowledgeEntity> active,
+    required Set<String> touchedScopes,
+    required DateTime now,
+  }) {
+    if (active.isEmpty) return const KnowledgeContext.empty();
+    return KnowledgeContext(
+      hookIndex: renderKnowledgeHookIndex(active),
+      statements: renderKnowledgeStatements(active, touchedScopes, now: now),
+    );
+  }
+
+  /// The time-sensitive prompt context only needs rebuilding when an await
+  /// crosses a boundary that changes day classification or the advertised
+  /// planning window. Encoding the pure prompt projection keeps this check in
+  /// lockstep with what the model actually sees.
+  String _timeSensitiveContextKey({
+    required DateTime planDate,
+    required DateTime now,
+    required RefineContext? refineContext,
+  }) => jsonEncode({
+    'localDay': localDay(now).toIso8601String(),
+    'planningWindow': _planningWindowJson(
+      planDate: planDate,
+      now: now,
+      refineBaseline: refineContext?.baselinePlan,
+    ),
+  });
+
+  /// Whether the exact baseline echo that a closed window permits would omit
+  /// trusted work selected after that baseline was written.
+  ///
+  /// Task-backed decisions use their stable task id. Standalone capture items
+  /// and directive commitments have no dedicated block foreign key, so their
+  /// current contract is the same one used by the eval: the baseline's active
+  /// block prose must name the item/commitment. Directive evidence refs also
+  /// count when they point at a task already represented by a block.
+  bool _closedDraftOmitsTrustedWork({
+    required DraftingContext? draftingContext,
+    required DayDirectiveEntity? directive,
+  }) {
+    final activeBlocks =
+        draftingContext?.baselinePlan?.data.plannedBlocks
+            .where((block) => block.state != PlannedBlockState.dropped)
+            .toList() ??
+        const [];
+    final representedTaskIds = {
+      for (final block in activeBlocks)
+        if (block.taskId != null) block.taskId!,
+    };
+    final planTokens = _semanticTokens(
+      [
+        for (final block in activeBlocks)
+          [
+            block.id,
+            block.title,
+            block.reason,
+            block.note,
+          ].whereType<String>().join(' '),
+      ].join(' '),
+    );
+
+    bool named(String id, String title) {
+      return _containsSemanticPhrase(planTokens, id) ||
+          _containsSemanticPhrase(planTokens, title);
+    }
+
+    final omitsTask =
+        draftingContext?.decidedTasks.any(
+          (task) => !representedTaskIds.contains(task.id),
+        ) ??
+        false;
+    final omitsCaptureItem =
+        draftingContext?.decidedCaptureItems.any((item) {
+          final matchedTaskId = item.matchedTaskId;
+          return !((matchedTaskId != null &&
+                  representedTaskIds.contains(matchedTaskId)) ||
+              named(item.id, item.title));
+        }) ??
+        false;
+    final omitsCommitment =
+        directive?.commitments.any((commitment) {
+          final representedByTask =
+              representedTaskIds.contains(commitment.id) ||
+              commitment.evidenceRefs.any(representedTaskIds.contains);
+          return !(representedByTask || named(commitment.id, commitment.title));
+        }) ??
+        false;
+    return omitsTask || omitsCaptureItem || omitsCommitment;
+  }
+
+  List<String> _semanticTokens(String value) => collapseToSingleLine(value)
+      .toLowerCase()
+      .split(RegExp(r'[^\p{L}\p{N}]+', unicode: true))
+      .where((token) => token.isNotEmpty)
+      .toList();
+
+  bool _containsSemanticPhrase(List<String> proseTokens, String phrase) {
+    final phraseTokens = _semanticTokens(phrase);
+    if (phraseTokens.isEmpty || phraseTokens.length > proseTokens.length) {
+      return false;
+    }
+    for (
+      var start = 0;
+      start <= proseTokens.length - phraseTokens.length;
+      start++
+    ) {
+      var matches = true;
+      for (var offset = 0; offset < phraseTokens.length; offset++) {
+        if (proseTokens[start + offset] != phraseTokens[offset]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) return true;
+    }
+    return false;
   }
 
   /// The category/project scopes the current wake actually touches (ADR 0022
@@ -702,6 +866,18 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
               refineBaseline.data.plannedBlocks,
             ),
           };
+    final windowClosed = draftPlanningWindowClosed(
+      planDate: planDate,
+      now: now,
+      capacityMinutes: config.capacityMinutes,
+      workingHoursStart: config.workingHoursStart,
+      workingHoursEnd: config.workingHoursEnd,
+    );
+    // Working-hours exhaustion and the end-of-day five-minute boundary are
+    // one model-facing state. The same predicate gates whether the plan writer
+    // accepts an empty fresh draft, so the prompt and persistence contract
+    // cannot contradict each other.
+    if (windowClosed) return {'closed': true, ...refineBudget};
     final available = remainingWorkingMinutes(
       planDate: planDate,
       now: now,
@@ -709,12 +885,6 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       workingHoursStart: config.workingHoursStart,
       workingHoursEnd: config.workingHoursEnd,
     );
-    // Zero working minutes is the same instruction as a closed window, so it
-    // says so rather than pairing a start with a budget of nothing. Emitting
-    // `earliestStart: 18:05` beside `availableMinutes: 0` gave a fresh draft no
-    // coherent move: the rules forbid running past working hours, and there is
-    // no time left inside them.
-    if (available == 0) return {'closed': true, ...refineBudget};
     // The clock bounds hold for refine too — `proposePlanDiff` enforces the
     // same past-start guard — so the temporal fields are *added to* the refine
     // budget rather than replacing it. Returning capacity and occupancy alone
@@ -728,9 +898,6 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     final earliest = advertisedPlanningStart(planDate: planDate, now: now);
     if (earliest != null) {
       return {'earliestStart': earliest.toIso8601String(), ...budget};
-    }
-    if (planningWindowClosed(planDate: planDate, now: now)) {
-      return {'closed': true, ...refineBudget};
     }
     return budget;
   }

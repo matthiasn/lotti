@@ -657,6 +657,44 @@ void main() {
     });
   });
 
+  group('draftPlanningWindowClosed', () {
+    final planDate = DateTime(2026, 7, 26);
+
+    bool isClosed({
+      required DateTime now,
+      String start = '09:00',
+      String end = '17:00',
+    }) => draftPlanningWindowClosed(
+      planDate: planDate,
+      now: now,
+      capacityMinutes: 480,
+      workingHoursStart: start,
+      workingHoursEnd: end,
+    );
+
+    test('closes after working hours and near the end of the plan day', () {
+      expect(isClosed(now: DateTime(2026, 7, 26, 18)), isTrue);
+      expect(
+        isClosed(
+          now: DateTime(2026, 7, 26, 23, 58),
+          start: 'morning',
+          end: 'five-ish',
+        ),
+        isTrue,
+        reason: 'the calendar-day boundary still closes malformed hours',
+      );
+    });
+
+    test('does not close a usable or future planning window', () {
+      expect(isClosed(now: DateTime(2026, 7, 26, 15)), isFalse);
+      expect(isClosed(now: DateTime(2026, 7, 25, 18)), isFalse);
+    });
+
+    test('closes a target day after a retry crosses local midnight', () {
+      expect(isClosed(now: DateTime(2026, 7, 27, 0, 1)), isTrue);
+    });
+  });
+
   group('validateDraftWorkingHours', () {
     PlannedBlock block({
       required DateTime start,

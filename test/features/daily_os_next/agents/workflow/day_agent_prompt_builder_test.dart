@@ -138,4 +138,17 @@ void main() {
       ),
     );
   });
+
+  test('a closed drafting window has one explicit artifact contract', () {
+    final normalized = dayAgentDraftTerminalRule.replaceAll(
+      RegExp(r'\s+'),
+      ' ',
+    );
+
+    expect(normalized, contains('When `<planning_window>` is closed'));
+    expect(normalized, contains('no baseline blocks'));
+    expect(normalized, contains('`blocks: []`'));
+    expect(normalized, contains('repeat every baseline block unchanged'));
+    expect(normalized, contains('Never erase a non-empty baseline'));
+  });
 }
