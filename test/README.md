@@ -582,22 +582,28 @@ tap that changes chart data, or captures show mid-lerp frames.
 ### Automated manual screenshot catalog
 
 Permanent manual media is a stricter use of the committed per-feature
-harnesses. The source test stays in `lotti`, but every generated image is
-written to the sibling `lotti-docs` repository. Never add generated manual
-PNGs or WebPs to this application repository.
+harnesses. The source test stays in `lotti`; every generated image is staged
+under the gitignored `build/manual_capture/` and `build/manual_media/`
+directories and published from CI to the Cloudflare R2 bucket. Never add
+generated manual PNGs or WebPs to this application repository.
 
 Run the current catalog from the repository root:
 
 ```bash
-make manual_screenshots
+make manual_screenshots                          # every registered locale
+make manual_screenshots_shard MANUAL_LOCALE=de   # just one, as CI does
 ```
+
+Prefer the single-locale form while iterating: the full catalog is eleven
+locales at roughly twelve minutes each, which is why CI fans the locales out
+across parallel jobs rather than looping.
 
 The case contract lives in `docs-site/metadata/screenshot-cases.json`. Each
 case must name a deterministic source test and provide all four inputs:
 mobile-light, mobile-dark, desktop-light, and desktop-dark. The build converts
 those PNGs to canonical WebP paths under
-`../lotti-docs/manual/screenshots/<version>/<case-id>/` and writes a manifest
-with dimensions, byte sizes, SHA-256 checksums, source test, and Lotti commit.
+`build/manual_media/<version>/<case-id>/` and writes a manifest with
+dimensions, byte sizes, SHA-256 checksums, source test, and Lotti commit.
 
 The Flutter source test must still make meaningful UI assertions before it
 captures. The media manifest validates the artifact contract; it does not

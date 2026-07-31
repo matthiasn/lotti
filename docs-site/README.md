@@ -107,12 +107,23 @@ directory (`build/manual_capture/`), converts them to canonical WebP paths,
 and writes a checksum/dimension manifest under
 `build/manual_media/development/`.
 
-CI runs this same full pipeline on every manual-relevant push to `main`,
-nightly at 02:23 UTC, and on demand. Main-branch captures sync the materialized
-catalog to the R2 bucket (uploading `manifest.json` last, so readers never
-resolve cases whose media has not landed); pull requests only validate the
-site and never publish generated media. The site resolves media from the
-bucket's public URL; override it at build time with `MANUAL_MEDIA_BASE_URL`.
+CI runs the same pipeline on every manual-relevant push to `main`, nightly at
+02:23 UTC, and on demand — but **one job per locale**, because a locale takes
+about twelve minutes and the whole catalog does not fit in a single job. Each
+shard runs the two targets the loop above is made of:
+
+```bash
+make manual_screenshots_shard MANUAL_LOCALE=de   # capture + convert one locale
+make manual_screenshots_manifest                 # manifest over the merged tree
+```
+
+A following job merges every locale's slice, writes the manifest across all of
+them, and validates the complete matrix before publishing — so an incomplete
+capture cannot reach the bucket. Main-branch runs then sync the materialized
+catalog to R2 (uploading `manifest.json` last, so readers never resolve cases
+whose media has not landed); pull requests only validate the site and never
+publish generated media. The site resolves media from the bucket's public URL;
+override it at build time with `MANUAL_MEDIA_BASE_URL`.
 
 When only a new or changed case needs publishing, pass its IDs to the manifest
 builder so the existing catalog remains untouched. For example:

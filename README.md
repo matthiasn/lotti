@@ -23,8 +23,8 @@ I have tracked around 11,000 hours of my own work in it since 2022.
      point at the `development` channel and update when the manual regenerates;
      if a case id is ever renamed, these links need renaming with it. -->
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/tasks/workspace/desktop-dark.webp">
-  <img alt="The task workspace: a filtered task list beside an open task with its cover art, status, labels, and AI summary" src="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/tasks/workspace/desktop-light.webp">
+  <source media="(prefers-color-scheme: dark)" srcset="https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/manual/screenshots/development/tasks/workspace/desktop-dark.webp">
+  <img alt="The task workspace: a filtered task list beside an open task with its cover art, status, labels, and AI summary" src="https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/manual/screenshots/development/tasks/workspace/desktop-light.webp">
 </picture>
 
 [Read the manual](https://matthiasn.github.io/lotti/manual/development/) ·
@@ -51,8 +51,8 @@ storage layout rather than by careful prompting — see
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/tasks/agent-suggestions/mobile-dark.webp">
-    <img alt="A task agent's report with two proposed changes, each with a dismiss and a confirm control, plus Confirm all and the automatic-updates toggle" src="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/tasks/agent-suggestions/mobile-light.webp" width="380">
+    <source media="(prefers-color-scheme: dark)" srcset="https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/manual/screenshots/development/tasks/agent-suggestions/mobile-dark.webp">
+    <img alt="A task agent's report with two proposed changes, each with a dismiss and a confirm control, plus Confirm all and the automatic-updates toggle" src="https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/manual/screenshots/development/tasks/agent-suggestions/mobile-light.webp" width="380">
   </picture>
 </p>
 
@@ -69,8 +69,8 @@ Melious. Local inference is not measured at all, because the cost moves onto
 your own hardware and grid.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/ai/usage/desktop-dark.webp">
-  <img alt="Usage &amp; Impact: cost, energy, CO2e, tokens and requests for the month, with cost broken down per day and per category" src="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/ai/usage/desktop-light.webp">
+  <source media="(prefers-color-scheme: dark)" srcset="https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/manual/screenshots/development/ai/usage/desktop-dark.webp">
+  <img alt="Usage &amp; Impact: cost, energy, CO2e, tokens and requests for the month, with cost broken down per day and per category" src="https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/manual/screenshots/development/ai/usage/desktop-light.webp">
 </picture>
 
 ---
@@ -112,8 +112,8 @@ your own hardware and grid.
 - **Time analysis** over categories, habits, and measurements.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/time-analysis/overview/desktop-dark.webp">
-  <img alt="Time Analysis: total, focused and other hours for the month, time per day stacked by category, and a per-category table with share and daily average" src="https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots/development/time-analysis/overview/desktop-light.webp">
+  <source media="(prefers-color-scheme: dark)" srcset="https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/manual/screenshots/development/time-analysis/overview/desktop-dark.webp">
+  <img alt="Time Analysis: total, focused and other hours for the month, time per day stacked by category, and a per-category table with share and daily average" src="https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/manual/screenshots/development/time-analysis/overview/desktop-light.webp">
 </picture>
 
 - **Categories and labels** to make the boundaries that your decisions

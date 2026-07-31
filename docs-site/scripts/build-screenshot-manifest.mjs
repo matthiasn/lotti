@@ -29,8 +29,12 @@ const outputRoot = resolve(
   String(options['output-root'] ?? '../build/manual_media'),
 );
 const outputDirectory = resolve(outputRoot, version);
+// Overridable so the shard/merge contract can be exercised against a small
+// synthetic registry instead of the real 134-case matrix.
 const registry = await readJson(
-  resolve(siteDirectory, 'metadata/screenshot-cases.json'),
+  resolve(
+    String(options.registry ?? resolve(siteDirectory, 'metadata/screenshot-cases.json')),
+  ),
 );
 
 validateManualVersion(version);
