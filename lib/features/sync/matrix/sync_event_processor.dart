@@ -92,6 +92,22 @@ Map<String, dynamic> _decodeSyncEventPayload(String raw) {
 Map<String, dynamic> decodeSyncEventPayloadForTesting(String raw) =>
     _decodeSyncEventPayload(raw);
 
+/// Internal classification signal for a sync payload that was found but can
+/// never succeed on retry (malformed JSON, invalid path, or a missing required
+/// body). The message is deliberately bounded and contains no payload data.
+///
+/// [SyncEventProcessor.prepare] converts this to `null`, which
+/// `QueueApplyAdapter` maps to a permanent skip. Retriable [IOException]s
+/// remain separate and continue to propagate to the queue retry path.
+class UnrecoverableSyncPayloadException implements Exception {
+  const UnrecoverableSyncPayloadException(this.payloadType);
+
+  final String payloadType;
+
+  @override
+  String toString() => 'Unrecoverable sync payload type=$payloadType';
+}
+
 /// Decodes timeline events from Matrix and persists them locally.
 class SyncEventProcessor {
   SyncEventProcessor({
@@ -266,9 +282,10 @@ class SyncEventProcessor {
   /// SQLite writer lock short-lived during [apply].
   ///
   /// Returns `null` when the envelope cannot be decoded into a [SyncMessage]
-  /// (malformed payload, unknown enum). Throws [FileSystemException] for
-  /// retriable attachment failures (not-yet-available, stale-but-not-
-  /// superseded) so the pipeline can schedule a retry.
+  /// (malformed payload, unknown enum) or a file-backed agent payload is
+  /// permanently unresolvable. Throws [FileSystemException] for retriable
+  /// attachment failures (not-yet-available, stale-but-not-superseded) so the
+  /// pipeline can schedule a retry.
   Future<PreparedSyncEvent?> prepare({required Event event}) async {
     try {
       final raw = event.text;
@@ -324,6 +341,13 @@ class SyncEventProcessor {
       // `await` so exceptions from prepare flow through the `catch` below
       // (Dart does not hook `catch` onto a returned future without it).
       return await _prepareForMessage(event: event, syncMessage: syncMessage);
+    } on UnrecoverableSyncPayloadException catch (error) {
+      _trace(
+        'skipping unrecoverable sync payload: $error '
+        'eventId=${event.eventId}',
+        subDomain: 'processor.skipUnrecoverable',
+      );
+      return null;
     } catch (error, stackTrace) {
       if (error is! FileSystemException) {
         _loggingService.error(

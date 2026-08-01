@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0]
 ### Fixed
+- **Weekly planning history from earlier builds opens and syncs again.** Some
+  saved weekly rollups omitted their start-of-week date, making otherwise valid
+  planning history unreadable. Lotti now restores the date from the rollup's
+  canonical Monday key; malformed remote records are classified as terminal
+  skips instead of being counted as successfully applied sync work.
 - **Deleting an entry no longer traps an otherwise healthy sync batch in
   retries.** Bundled sends mistook a soft-deleted entry for a missing database
   row, retried every valid sibling with it, and eventually left the whole batch

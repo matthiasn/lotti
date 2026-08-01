@@ -2672,6 +2672,37 @@ void main() {
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       });
 
+      test('file-backed irreparable week rollup is a permanent skip', () async {
+        final entity = AgentDomainEntity.weekRollup(
+          id: 'week_rollup:2026-05-18',
+          agentId: 'daily_os_planner',
+          weekStart: DateTime(2026, 5, 18),
+          createdAt: DateTime(2026, 5, 24),
+          updatedAt: DateTime(2026, 5, 24, 12),
+          vectorClock: const VectorClock({'remote-host': 3}),
+        );
+        final legacyJson =
+            jsonDecode(jsonEncode(entity.toJson())) as Map<String, dynamic>
+              ..remove('weekStart')
+              ..['id'] = 'week_rollup:2026-05-17';
+        const relativePath = '/agent_entities/invalid-rollup.json';
+        final file = File(
+          path.join(tempDir.path, stripLeadingSlashes(relativePath)),
+        );
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(legacyJson));
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        final prepared = await processor.prepare(event: event);
+
+        expect(prepared, isNull);
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      });
+
       test(
         'derives the agent payload sandbox from the injected loader',
         () async {
