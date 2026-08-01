@@ -71,10 +71,11 @@ flowchart LR
   back to the owning task.
 - The production `OllamaEmbeddingRepository` is shared. The first request for
   an unobserved base URL exclusively reserves the initial availability probe;
-  concurrent callers are suppressed before they can start their own retry
-  loops. After three transport failures confirm an outage, the endpoint enters
-  a five-minute cooldown. Calls during that interval fail before network I/O
-  and carry a cumulative suppressed-request count.
+  concurrent callers join that probe instead of starting their own retry loops.
+  If the probe succeeds, they proceed normally; if three transport failures
+  confirm an outage, they wake into a five-minute cooldown. Calls during that
+  interval fail before network I/O and carry a cumulative suppressed-request
+  count.
 - Any HTTP response confirms reachability and moves the endpoint to `Available`,
   where requests may run concurrently. Every allowed request captures the
   endpoint generation at its start. An HTTP response advances that generation,
@@ -82,12 +83,12 @@ flowchart LR
   generation is still current. A failure completing after a newer successful
   response therefore cannot hide recovery by reopening the circuit.
 - The first call after the cooldown exclusively reserves the recovery probe;
-  concurrent callers remain suppressed until it finishes. Availability is
-  reserved before the invocation wrapper begins AI attribution, so a suppressed
-  embedding creates neither a provider consumption event nor a failed
-  attribution projection. Notification and manual backfill loops stop when the
-  initial transport budget is exhausted or a known cooldown suppresses the
-  call, instead of emitting one stack trace per remaining item.
+  concurrent callers join it until reachability is known. Availability is
+  reserved before the invocation wrapper begins AI attribution, so a
+  cooldown-suppressed embedding creates neither a provider consumption event nor
+  a failed attribution projection. Notification and manual backfill loops stop
+  when the initial transport budget is exhausted or a known cooldown suppresses
+  the call, instead of emitting one stack trace per remaining item.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
   maps it to the active locale; the suppression count and retry timestamp stay
   in diagnostic logs. A failed optional embedding never rolls back the
@@ -96,7 +97,7 @@ flowchart LR
 ```mermaid
 stateDiagram-v2
   [*] --> InitialProbe
-  InitialProbe --> InitialProbe: concurrent calls suppressed
+  InitialProbe --> InitialProbe: concurrent calls wait
   InitialProbe --> Available: HTTP response received
   InitialProbe --> CoolingDown: transport retries exhausted
   Available --> Available: HTTP response advances generation
@@ -104,7 +105,7 @@ stateDiagram-v2
   Available --> CoolingDown: current-generation retries exhausted
   CoolingDown --> CoolingDown: calls suppressed and counted
   CoolingDown --> RecoveryProbe: five minutes elapsed
-  RecoveryProbe --> RecoveryProbe: concurrent calls suppressed
+  RecoveryProbe --> RecoveryProbe: concurrent calls wait
   RecoveryProbe --> Available: HTTP response received
   RecoveryProbe --> CoolingDown: transport retries exhausted
 ```

@@ -822,7 +822,6 @@ void main() {
 
     test('clearError sets error to null', () {
       const original = EmbeddingBackfillState(
-        error: 'old error',
         errorCode: EmbeddingBackfillErrorCode.ollamaUnavailable,
       );
       final cleared = original.copyWith(clearError: true);

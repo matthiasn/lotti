@@ -4198,10 +4198,12 @@ not describe task configuration or tool activity as progress.
           verify(
             () => mockDomainLogger.error(
               LogDomain.agentWorkflow,
-              isA<OllamaEmbeddingCooldownException>().having(
-                (error) => error.suppressedRequestCount,
-                'suppressed request count',
-                8,
+              any(
+                that: isA<OllamaEmbeddingCooldownException>().having(
+                  (error) => error.suppressedRequestCount,
+                  'suppressed request count',
+                  8,
+                ),
               ),
               message:
                   'optional agent report embedding paused; '

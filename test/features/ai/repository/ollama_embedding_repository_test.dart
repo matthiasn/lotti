@@ -70,7 +70,7 @@ void main() {
       });
 
       test(
-        'reserves availability before invoking the provider wrapper',
+        'waits behind the reserved probe before invoking the provider wrapper',
         () async {
           var wrapperStarted = false;
           var providerCallCount = 0;
@@ -93,29 +93,24 @@ void main() {
             baseUrl: baseUrl,
             invocationWrapper: (invoke) async {
               wrapperStarted = true;
-              await expectLater(
-                () => repository.embed(
-                  input: 'concurrent request before provider invocation',
-                  baseUrl: baseUrl,
-                ),
-                throwsA(
-                  isA<OllamaEmbeddingCooldownException>().having(
-                    (error) => error.suppressedRequestCount,
-                    'suppressed request count',
-                    1,
-                  ),
-                ),
+              final concurrentRequest = repository.embed(
+                input: 'concurrent request before provider invocation',
+                baseUrl: baseUrl,
               );
               expect(providerCallCount, 0);
               final embedding = await invoke();
-              expect(providerCallCount, 1);
+              await expectLater(
+                concurrentRequest,
+                completion(hasLength(kEmbeddingDimensions)),
+              );
+              expect(providerCallCount, 2);
               return embedding;
             },
           );
 
           expect(wrapperStarted, isTrue);
           expect(result, hasLength(kEmbeddingDimensions));
-          expect(providerCallCount, 1);
+          expect(providerCallCount, 2);
         },
       );
 
@@ -689,7 +684,7 @@ void main() {
         },
       );
 
-      test('only one concurrent caller owns the initial probe', () async {
+      test('a concurrent caller joins a healthy initial probe', () async {
         var callCount = 0;
         final firstRequestStarted = Completer<void>();
         final firstResponse = Completer<http.Response>();
@@ -719,42 +714,86 @@ void main() {
         );
         await firstRequestStarted.future;
 
-        try {
-          await expectLater(
-            () => repository.embed(
-              input: 'concurrent request',
-              baseUrl: baseUrl,
-            ),
-            throwsA(isA<OllamaEmbeddingCooldownException>()),
-          );
-          expect(
-            callCount,
-            1,
-            reason: 'the concurrent caller must not start its own retry loop',
-          );
-        } finally {
-          if (!firstResponse.isCompleted) {
-            firstResponse.complete(
-              http.Response(
-                makeEmbeddingResponse(kEmbeddingDimensions),
-                200,
-              ),
-            );
-          }
-        }
+        final concurrentRequest = repository.embed(
+          input: 'concurrent request',
+          baseUrl: baseUrl,
+        );
+        expect(
+          callCount,
+          1,
+          reason: 'the concurrent caller must join the initial probe',
+        );
+        firstResponse.complete(
+          http.Response(
+            makeEmbeddingResponse(kEmbeddingDimensions),
+            200,
+          ),
+        );
 
         await expectLater(
           initialProbe,
           completion(hasLength(kEmbeddingDimensions)),
         );
-        final normalRequest = await repository.embed(
-          input: 'normal request',
-          baseUrl: baseUrl,
+        await expectLater(
+          concurrentRequest,
+          completion(hasLength(kEmbeddingDimensions)),
         );
 
-        expect(normalRequest, hasLength(kEmbeddingDimensions));
         expect(callCount, 2);
       });
+
+      test(
+        'callers waiting on a failed initial probe are suppressed',
+        () async {
+          var callCount = 0;
+          final firstRequestStarted = Completer<void>();
+          final firstResponse = Completer<http.Response>();
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) {
+            callCount++;
+            if (callCount == 1) {
+              firstRequestStarted.complete();
+              return firstResponse.future;
+            }
+            throw const SocketException('Connection refused');
+          });
+
+          final initialProbe = repository.embed(
+            input: 'initial probe',
+            baseUrl: baseUrl,
+          );
+          await firstRequestStarted.future;
+          final waitingRequest = repository.embed(
+            input: 'waiting request',
+            baseUrl: baseUrl,
+          );
+
+          firstResponse.completeError(
+            const SocketException('Connection refused'),
+          );
+
+          await expectLater(
+            initialProbe,
+            throwsA(isA<OllamaEmbeddingUnavailableException>()),
+          );
+          await expectLater(
+            waitingRequest,
+            throwsA(
+              isA<OllamaEmbeddingCooldownException>().having(
+                (error) => error.suppressedRequestCount,
+                'suppressed request count',
+                1,
+              ),
+            ),
+          );
+          expect(callCount, 3);
+        },
+      );
 
       test('a stale concurrent failure cannot hide a newer success', () async {
         var callCount = 0;
@@ -835,7 +874,7 @@ void main() {
         expect(callCount, 6);
       });
 
-      test('only one concurrent caller owns the recovery probe', () async {
+      test('a concurrent caller joins a healthy recovery probe', () async {
         var now = DateTime.utc(2026, 8, 1, 12);
         var callCount = 0;
         final probeStarted = Completer<void>();
@@ -855,7 +894,12 @@ void main() {
             probeStarted.complete();
             return probeResponse.future;
           }
-          throw StateError('a second recovery probe reached the network');
+          return Future.value(
+            http.Response(
+              makeEmbeddingResponse(kEmbeddingDimensions),
+              200,
+            ),
+          );
         });
 
         await withClock(Clock(() => now), () async {
@@ -870,20 +914,9 @@ void main() {
             baseUrl: baseUrl,
           );
           await probeStarted.future;
-          now = now.add(OllamaEmbeddingRepository.availabilityCooldown);
-
-          await expectLater(
-            () => repository.embed(
-              input: 'concurrent request',
-              baseUrl: baseUrl,
-            ),
-            throwsA(
-              isA<OllamaEmbeddingCooldownException>().having(
-                (error) => error.retryAt,
-                'reserved probe window',
-                now,
-              ),
-            ),
+          final concurrentRequest = repository.embed(
+            input: 'concurrent request',
+            baseUrl: baseUrl,
           );
           expect(callCount, 4);
 
@@ -897,6 +930,11 @@ void main() {
             recoveryProbe,
             completion(hasLength(kEmbeddingDimensions)),
           );
+          await expectLater(
+            concurrentRequest,
+            completion(hasLength(kEmbeddingDimensions)),
+          );
+          expect(callCount, 5);
         });
       });
 

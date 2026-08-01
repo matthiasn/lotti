@@ -7082,7 +7082,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get maintenanceGenerateEmbeddingsOllamaUnavailable =>
-      'Ollama är inte tillgänglig. Försök generera embeddings igen om några minuter.';
+      'Ollama är inte tillgängligt. Försök generera embeddings igen om några minuter.';
 
   @override
   String maintenanceGenerateEmbeddingsProgress(

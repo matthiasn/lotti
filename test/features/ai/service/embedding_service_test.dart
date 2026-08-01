@@ -870,6 +870,54 @@ void main() {
       });
     });
 
+    test('stops the current batch when Ollama becomes unavailable', () {
+      fakeAsync((async) {
+        const entityId2 = 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee';
+        final entry1 = JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        );
+        final entry2 = JournalEntry(
+          meta: _meta(id: entityId2),
+          entryText: const EntryText(
+            plainText: 'Another long enough text for embedding generation.',
+          ),
+        );
+        stubEntity(entry1);
+        when(
+          () => mockJournalDb.journalEntityById(entityId2),
+        ).thenAnswer((_) async => entry2);
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenThrow(
+          const OllamaEmbeddingUnavailableException(
+            'Ollama transport retries exhausted',
+          ),
+        );
+
+        service.start();
+        sendAndProcess(
+          async,
+          {_entityId, entityId2, textEntryNotification},
+        );
+
+        verify(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).called(1);
+        verifyNever(() => mockJournalDb.journalEntityById(entityId2));
+
+        stopInZone(async);
+      });
+    });
+
     test('generates embedding for a task', () {
       fakeAsync((async) {
         final task = Task(

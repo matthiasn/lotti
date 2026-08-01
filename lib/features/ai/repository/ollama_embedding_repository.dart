@@ -60,7 +60,7 @@ class OllamaEmbeddingRepository {
       throw ArgumentError('OllamaEmbeddingRepository.embed(): input is empty');
     }
 
-    final availabilityAttempt = _reserveAvailabilityAttempt(baseUrl);
+    final availabilityAttempt = await _reserveAvailabilityAttempt(baseUrl);
     var providerInvocationStarted = false;
 
     Future<Float32List> invokeProvider() async {
@@ -137,55 +137,71 @@ class OllamaEmbeddingRepository {
     }
   }
 
-  _OllamaAvailabilityAttempt _reserveAvailabilityAttempt(String baseUrl) {
-    final now = clock.now();
-    final existing = _availabilityBackoff[baseUrl];
-    if (existing == null) {
-      final initial = _OllamaAvailabilityBackoff(
-        phase: _OllamaAvailabilityPhase.probing,
-        retryAt: now.add(availabilityCooldown),
-      );
-      _availabilityBackoff[baseUrl] = initial;
-      return _OllamaAvailabilityAttempt(
-        baseUrl: baseUrl,
-        generation: initial.generation,
-      );
-    }
+  Future<_OllamaAvailabilityAttempt> _reserveAvailabilityAttempt(
+    String baseUrl,
+  ) async {
+    while (true) {
+      final now = clock.now();
+      final existing = _availabilityBackoff[baseUrl];
+      if (existing == null) {
+        final initial = _OllamaAvailabilityBackoff(
+          phase: _OllamaAvailabilityPhase.probing,
+          retryAt: now.add(availabilityCooldown),
+          activeProbe: Completer<void>(),
+        );
+        _availabilityBackoff[baseUrl] = initial;
+        return _OllamaAvailabilityAttempt(
+          baseUrl: baseUrl,
+          generation: initial.generation,
+        );
+      }
 
-    if (existing.phase == _OllamaAvailabilityPhase.available) {
-      return _OllamaAvailabilityAttempt(
-        baseUrl: baseUrl,
-        generation: existing.generation,
-      );
-    }
+      if (existing.phase == _OllamaAvailabilityPhase.available) {
+        return _OllamaAvailabilityAttempt(
+          baseUrl: baseUrl,
+          generation: existing.generation,
+        );
+      }
 
-    if (existing.phase == _OllamaAvailabilityPhase.coolingDown &&
-        !now.isBefore(existing.retryAt)) {
-      existing
-        ..phase = _OllamaAvailabilityPhase.probing
-        ..retryAt = now.add(availabilityCooldown);
-      return _OllamaAvailabilityAttempt(
-        baseUrl: baseUrl,
-        generation: existing.generation,
-      );
-    }
+      if (existing.phase == _OllamaAvailabilityPhase.probing) {
+        final activeProbe = existing.activeProbe;
+        if (activeProbe == null) {
+          throw StateError(
+            'Ollama availability probe has no completion signal.',
+          );
+        }
+        await activeProbe.future;
+        continue;
+      }
 
-    existing.suppressedRequestCount++;
-    final exception = OllamaEmbeddingCooldownException(
-      retryAt: existing.retryAt,
-      suppressedRequestCount: existing.suppressedRequestCount,
-    );
-    if (exception.shouldLogSummary) {
-      developer.log(
-        'Ollama embedding availability cooldown suppressed '
-        '${exception.suppressedRequestCount} request'
-        '${exception.suppressedRequestCount == 1 ? '' : 's'}; '
-        'next probe is allowed at '
-        '${existing.retryAt.toUtc().toIso8601String()}',
-        name: 'OllamaEmbeddingRepository',
+      if (!now.isBefore(existing.retryAt)) {
+        existing
+          ..phase = _OllamaAvailabilityPhase.probing
+          ..retryAt = now.add(availabilityCooldown)
+          ..activeProbe = Completer<void>();
+        return _OllamaAvailabilityAttempt(
+          baseUrl: baseUrl,
+          generation: existing.generation,
+        );
+      }
+
+      existing.suppressedRequestCount++;
+      final exception = OllamaEmbeddingCooldownException(
+        retryAt: existing.retryAt,
+        suppressedRequestCount: existing.suppressedRequestCount,
       );
+      if (exception.shouldLogSummary) {
+        developer.log(
+          'Ollama embedding availability cooldown suppressed '
+          '${exception.suppressedRequestCount} request'
+          '${exception.suppressedRequestCount == 1 ? '' : 's'}; '
+          'next probe is allowed at '
+          '${existing.retryAt.toUtc().toIso8601String()}',
+          name: 'OllamaEmbeddingRepository',
+        );
+      }
+      throw exception;
     }
-    throw exception;
   }
 
   void _openAvailabilityCooldown(_OllamaAvailabilityAttempt attempt) {
@@ -197,6 +213,7 @@ class OllamaEmbeddingRepository {
       ..retryAt = clock.now().add(availabilityCooldown)
       ..outageConfirmed = true
       ..generation = current.generation + 1;
+    _completeAvailabilityProbe(current);
   }
 
   void _releaseAvailabilityProbe(_OllamaAvailabilityAttempt attempt) {
@@ -211,6 +228,7 @@ class OllamaEmbeddingRepository {
       ..phase = _OllamaAvailabilityPhase.coolingDown
       ..retryAt = clock.now()
       ..generation = current.generation + 1;
+    _completeAvailabilityProbe(current);
   }
 
   void _markAvailable(_OllamaAvailabilityAttempt attempt) {
@@ -226,6 +244,7 @@ class OllamaEmbeddingRepository {
       ..suppressedRequestCount = 0
       ..outageConfirmed = false
       ..generation = current.generation + 1;
+    _completeAvailabilityProbe(current);
 
     if (!shouldLogRecovery) return;
 
@@ -235,6 +254,14 @@ class OllamaEmbeddingRepository {
       '${suppressedRequestCount == 1 ? '' : 's'}',
       name: 'OllamaEmbeddingRepository',
     );
+  }
+
+  void _completeAvailabilityProbe(_OllamaAvailabilityBackoff backoff) {
+    final activeProbe = backoff.activeProbe;
+    backoff.activeProbe = null;
+    if (activeProbe != null && !activeProbe.isCompleted) {
+      activeProbe.complete();
+    }
   }
 
   /// Parses the Ollama `/api/embed` JSON response into a [Float32List].
@@ -320,6 +347,7 @@ class OllamaEmbeddingRepository {
 
   /// Closes the underlying HTTP client.
   void close() {
+    _availabilityBackoff.values.forEach(_completeAvailabilityProbe);
     _availabilityBackoff.clear();
     _httpClient.close();
   }
@@ -384,6 +412,7 @@ class _OllamaAvailabilityBackoff {
   _OllamaAvailabilityBackoff({
     required this.phase,
     required this.retryAt,
+    this.activeProbe,
   });
 
   _OllamaAvailabilityPhase phase;
@@ -391,4 +420,5 @@ class _OllamaAvailabilityBackoff {
   int suppressedRequestCount = 0;
   int generation = 0;
   bool outageConfirmed = false;
+  Completer<void>? activeProbe;
 }
