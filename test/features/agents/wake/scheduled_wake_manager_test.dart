@@ -638,6 +638,327 @@ void main() {
       });
     });
 
+    group('one-device lease for a shared record (lotti3-hkb.11)', () {
+      const digestWorkspace = 'coordinator:digest';
+      final now = DateTime(2026, 5, 20, 6);
+
+      ScheduledWakeEntity leased({
+        String? leaseHostId,
+        DateTime? leaseUntil,
+        DateTime? updatedAt,
+      }) {
+        return AgentDomainEntity.scheduledWake(
+              id: 'scheduled_wake:planner:coordinator:digest',
+              agentId: 'daily_os_planner',
+              scheduledAt: now,
+              status: ScheduledWakeStatus.pending,
+              reason: 'digest',
+              updatedAt: updatedAt ?? now,
+              vectorClock: null,
+              triggerTokens: const ['digest:dayplan-2026-05-20'],
+              workspaceKey: digestWorkspace,
+              leaseHostId: leaseHostId,
+              leaseUntil: leaseUntil,
+            )
+            as ScheduledWakeEntity;
+      }
+
+      ScheduledWakeManager managerFor(
+        ScheduledWakeEntity record, {
+        String hostId = 'host-a',
+      }) {
+        when(
+          () => repository.getDueScheduledAgentStates(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getDueScheduledWakeRecords(any()),
+        ).thenAnswer((_) async => [record]);
+        when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+        return ScheduledWakeManager(
+          repository: repository,
+          orchestrator: orchestrator,
+          syncService: syncService,
+          checkInterval: const Duration(minutes: 1),
+          requiresLease: (r) => r.workspaceKey == digestWorkspace,
+          localHostId: () async => hostId,
+        )..start();
+      }
+
+      void expectNoWake() {
+        verifyNever(
+          () => orchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+            workspaceKey: any(named: 'workspaceKey'),
+          ),
+        );
+      }
+
+      test('an unclaimed record is claimed, not fired', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final manager = managerFor(leased());
+            async.flushMicrotasks();
+
+            // Claiming and firing in one pass would be the bug: the claim has
+            // to converge through sync before anyone can know it won.
+            expectNoWake();
+            final claimed =
+                verify(
+                      () => syncService.upsertEntity(captureAny()),
+                    ).captured.single
+                    as ScheduledWakeEntity;
+            expect(claimed.leaseHostId, 'host-a');
+            expect(claimed.leaseUntil, now.add(const Duration(minutes: 30)));
+            expect(claimed.status, ScheduledWakeStatus.pending);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('a claim confirmed after the settle fires exactly once', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {
+            final manager = managerFor(
+              leased(
+                leaseHostId: 'host-a',
+                leaseUntil: now.add(const Duration(minutes: 30)),
+                updatedAt: now,
+              ),
+            );
+            async.flushMicrotasks();
+
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: 'daily_os_planner',
+                reason: 'digest',
+                triggerTokens: {'digest:dayplan-2026-05-20'},
+                workspaceKey: digestWorkspace,
+              ),
+            ).called(1);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('the claimant waits out the settle before firing', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now.add(const Duration(minutes: 1))), () {
+            final manager = managerFor(
+              leased(
+                leaseHostId: 'host-a',
+                leaseUntil: now.add(const Duration(minutes: 30)),
+                updatedAt: now,
+              ),
+            );
+            async.flushMicrotasks();
+
+            expectNoWake();
+            manager.stop();
+          });
+        });
+      });
+
+      test('a device whose claim lost the race skips the window', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {
+            // host-b's crossing claim is what survived on the shared register.
+            final manager = managerFor(
+              leased(
+                leaseHostId: 'host-b',
+                leaseUntil: now.add(const Duration(minutes: 30)),
+                updatedAt: now,
+              ),
+            );
+            async.flushMicrotasks();
+
+            expectNoWake();
+            verifyNever(() => syncService.upsertEntity(any()));
+            manager.stop();
+          });
+        });
+      });
+
+      test('a lapsed claim is taken over rather than lost', () {
+        fakeAsync((async) {
+          // host-b claimed, then went offline without consuming the record.
+          withClock(Clock.fixed(now.add(const Duration(hours: 1))), () {
+            final manager = managerFor(
+              leased(
+                leaseHostId: 'host-b',
+                leaseUntil: now.add(const Duration(minutes: 30)),
+                updatedAt: now,
+              ),
+            );
+            async.flushMicrotasks();
+
+            final claimed =
+                verify(
+                      () => syncService.upsertEntity(captureAny()),
+                    ).captured.single
+                    as ScheduledWakeEntity;
+            expect(
+              claimed.leaseHostId,
+              'host-a',
+              reason:
+                  'Without takeover a device that claims and disappears would '
+                  'drop that digest window forever.',
+            );
+            manager.stop();
+          });
+        });
+      });
+
+      test('three devices sharing one record produce exactly one wake', () {
+        fakeAsync((async) {
+          // One synced last-write-wins register, three devices reading and
+          // writing it. Nothing here coordinates them: the register's own
+          // convergence is the election.
+          var shared = leased();
+          var wakes = 0;
+
+          ScheduledWakeManager device(String hostId) {
+            final repo = MockAgentRepository();
+            final orch = MockWakeOrchestrator();
+            final sync = MockAgentSyncService();
+            when(
+              () => repo.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => []);
+            when(() => repo.getDueScheduledWakeRecords(any())).thenAnswer(
+              (_) async => shared.status == ScheduledWakeStatus.pending
+                  ? [shared]
+                  : <ScheduledWakeEntity>[],
+            );
+            when(() => sync.upsertEntity(any())).thenAnswer((invocation) async {
+              final incoming =
+                  invocation.positionalArguments.single as ScheduledWakeEntity;
+              // Last write wins, exactly as the sync layer resolves it.
+              if (!incoming.updatedAt.isBefore(shared.updatedAt)) {
+                shared = incoming;
+              }
+            });
+            when(
+              () => orch.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+                triggerTokens: any(named: 'triggerTokens'),
+                workspaceKey: any(named: 'workspaceKey'),
+              ),
+            ).thenAnswer((_) {
+              wakes++;
+              return 'run-key';
+            });
+            return ScheduledWakeManager(
+              repository: repo,
+              orchestrator: orch,
+              syncService: sync,
+              checkInterval: const Duration(minutes: 1),
+              requiresLease: (r) => r.workspaceKey == digestWorkspace,
+              localHostId: () async => hostId,
+            );
+          }
+
+          final devices = [
+            for (final host in ['host-a', 'host-b', 'host-c']) device(host),
+          ];
+
+          // Every device sees the record become due in the same window.
+          withClock(Clock.fixed(now), () {
+            for (final manager in devices) {
+              manager.start();
+              async.flushMicrotasks();
+            }
+          });
+          expect(
+            wakes,
+            0,
+            reason: 'Claiming is not firing; the settle has not elapsed.',
+          );
+
+          // After the settle, only the device whose claim survived proceeds.
+          withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {
+            for (final manager in devices) {
+              manager
+                ..stop()
+                ..start();
+              async.flushMicrotasks();
+            }
+          });
+
+          expect(
+            wakes,
+            1,
+            reason:
+                'Three devices, one digest window, one inference billed — the '
+                'whole point of the lease.',
+          );
+          expect(shared.status, ScheduledWakeStatus.consumed);
+          for (final manager in devices) {
+            manager.stop();
+          }
+        });
+      });
+
+      test('an unleased record still fires immediately', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final manager = managerFor(
+              leased().copyWith(workspaceKey: 'day:dayplan-2026-05-20'),
+            );
+            async.flushMicrotasks();
+
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+                triggerTokens: any(named: 'triggerTokens'),
+                workspaceKey: any(named: 'workspaceKey'),
+              ),
+            ).called(1);
+            manager.stop();
+          });
+        });
+      });
+
+      test('a device with no sync host fires rather than stalling', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => []);
+            when(
+              () => repository.getDueScheduledWakeRecords(any()),
+            ).thenAnswer((_) async => [leased()]);
+            when(
+              () => syncService.upsertEntity(any()),
+            ).thenAnswer((_) async {});
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              requiresLease: (r) => r.workspaceKey == digestWorkspace,
+              localHostId: () async => null,
+            )..start();
+            async.flushMicrotasks();
+
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+                triggerTokens: any(named: 'triggerTokens'),
+                workspaceKey: any(named: 'workspaceKey'),
+              ),
+            ).called(1);
+            manager.stop();
+          });
+        });
+      });
+    });
+
     group('persisted scheduled-wake records (ADR 0022)', () {
       const dayId = 'dayplan-2024-03-15';
       final now = DateTime(2024, 3, 15, 10, 30);

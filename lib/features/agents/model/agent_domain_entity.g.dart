@@ -319,6 +319,10 @@ ScheduledWakeEntity _$ScheduledWakeEntityFromJson(Map<String, dynamic> json) =>
       consumedAt: json['consumedAt'] == null
           ? null
           : DateTime.parse(json['consumedAt'] as String),
+      leaseHostId: json['leaseHostId'] as String?,
+      leaseUntil: json['leaseUntil'] == null
+          ? null
+          : DateTime.parse(json['leaseUntil'] as String),
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -338,6 +342,8 @@ Map<String, dynamic> _$ScheduledWakeEntityToJson(
   'triggerTokens': instance.triggerTokens,
   'workspaceKey': instance.workspaceKey,
   'consumedAt': instance.consumedAt?.toIso8601String(),
+  'leaseHostId': instance.leaseHostId,
+  'leaseUntil': instance.leaseUntil?.toIso8601String(),
   'deletedAt': instance.deletedAt?.toIso8601String(),
   'runtimeType': instance.$type,
 };

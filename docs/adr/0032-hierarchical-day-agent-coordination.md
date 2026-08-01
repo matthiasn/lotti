@@ -546,6 +546,35 @@ Decision section in place.
   while attaching to a queued/running one — which is what makes
   `retryCapture` restart-safe without a separate retry API.
 
+## Amendment: which device runs the digest (2026-08-01)
+
+The original decision specified the digest's *cadence* but never said which
+device performs it. That gap had a cost: the record is one synced entity with a
+deterministic id, so every device saw the same pending wake come due and every
+device ran the same inference — N devices, N charges, one result. It is a spend
+and battery problem rather than a correctness one, since the digest's writes are
+registers recomputed from source, but it recurs every window forever.
+
+**Decision.** A scheduled-wake record whose work is *shared* rather than
+device-local carries a lease, and the coordinator digest is the only such record
+today. A device that finds it due writes `leaseHostId` and `leaseUntil` into the
+record, waits a settle period, re-reads it, and proceeds only if the surviving
+claim is still its own.
+
+The election needs no coordinator because the record is already a last-write-wins
+register: concurrent claims converge to exactly one surviving host, and the
+settle is what gives that convergence time to happen before anyone acts on it.
+The lease expires, so a device that claims and then crashes or goes offline
+delays the window rather than dropping it — any device may take over past
+`leaseUntil`, and the existing cold-start bootstrap re-arms a record whose
+claimant died mid-digest.
+
+Deliberately not chosen: a deterministic election over the set of known device
+ids. It needs no writes and no settle, but it requires every device to agree on
+the candidate set at the moment of firing, and a transient disagreement produces
+exactly the double-fire being fixed. Letting the register decide keeps the answer
+in the one place all devices already converge on.
+
 ## Related
 
 - ADR 0022 (long-lived planner — amended by this ADR)

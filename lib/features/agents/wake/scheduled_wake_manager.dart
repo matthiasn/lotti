@@ -25,6 +25,10 @@ class ScheduledWakeManager {
     this.checkInterval = const Duration(hours: 1),
     this.domainLogger,
     this.onPersistedStateChanged,
+    this.requiresLease,
+    this.localHostId,
+    this.leaseSettle = const Duration(minutes: 3),
+    this.leaseDuration = const Duration(minutes: 30),
   });
 
   final AgentRepository _repository;
@@ -35,7 +39,36 @@ class ScheduledWakeManager {
 
   final Duration checkInterval;
 
+  /// Whether a due record's work must run on exactly one device.
+  ///
+  /// Most scheduled wakes are device-local and every device firing its own is
+  /// correct. A few are not: the coordinator's morning digest is one shared
+  /// record whose work produces the same output whichever device runs it, so N
+  /// devices firing it means N inferences billed for one result.
+  final bool Function(ScheduledWakeEntity record)? requiresLease;
+
+  /// This device's sync host id — the claimant identity written into a lease.
+  ///
+  /// Leasing is skipped when this is absent, which keeps every existing caller
+  /// on the unleased path. It is also skipped when the lookup yields null: a
+  /// device with no sync host has no peers to race, so firing is correct and
+  /// blocking would mean never running the digest at all.
+  final Future<String?> Function()? localHostId;
+
+  /// How long a claimant waits before confirming its claim.
+  ///
+  /// The wait is what makes the election work: the record is a last-write-wins
+  /// register, so concurrent claims converge to one surviving host, and a
+  /// claimant only proceeds if the survivor is still itself. It must exceed
+  /// normal sync propagation; a few minutes at 06:00 costs nobody anything.
+  final Duration leaseSettle;
+
+  /// How long a claim stands before any device may take it over. Must exceed
+  /// [leaseSettle], or a claim would lapse before it could be confirmed.
+  final Duration leaseDuration;
+
   Timer? _timer;
+  Timer? _settleTimer;
   bool _isChecking = false;
 
   /// Start periodic checking. Also immediately checks for missed wakes.
@@ -54,6 +87,8 @@ class ScheduledWakeManager {
   void stop() {
     _timer?.cancel();
     _timer = null;
+    _settleTimer?.cancel();
+    _settleTimer = null;
     _log('stopped');
   }
 
@@ -132,6 +167,7 @@ class ScheduledWakeManager {
     var enqueued = 0;
     for (final record in dueRecords) {
       try {
+        if (!await _holdsLease(record, now)) continue;
         _orchestrator.enqueueManualWake(
           agentId: record.agentId,
           reason: record.reason,
@@ -157,6 +193,68 @@ class ScheduledWakeManager {
       }
     }
     return enqueued;
+  }
+
+  /// Whether this device may fire [record] now.
+  ///
+  /// Always true for the ordinary device-local records. For a leased record it
+  /// runs one round of claim–settle–confirm:
+  ///
+  /// ```mermaid
+  /// stateDiagram-v2
+  ///   [*] --> Unclaimed: record due
+  ///   Unclaimed --> Claimed: write leaseHostId = me
+  ///   Claimed --> Claimed: settle not elapsed — wait
+  ///   Claimed --> Fires: survivor is me after the settle
+  ///   Claimed --> Skips: survivor is another host
+  ///   Claimed --> Unclaimed: leaseUntil passed — claimant went away
+  ///   Fires --> [*]: record consumed, every device stops
+  /// ```
+  ///
+  /// The claim is a write to one synced last-write-wins register, so crossing
+  /// claims converge to a single surviving host — that convergence is the
+  /// election, and no separate coordinator is needed. Confirming after
+  /// [leaseSettle] rather than immediately is what gives that convergence time
+  /// to happen. A lease that lapses without the record being consumed is a
+  /// claimant that crashed or went offline, and any device may take over, so a
+  /// window is delayed rather than lost.
+  Future<bool> _holdsLease(ScheduledWakeEntity record, DateTime now) async {
+    final needsLease = requiresLease?.call(record) ?? false;
+    final hostIdOf = localHostId;
+    if (!needsLease || hostIdOf == null) return true;
+
+    final hostId = await hostIdOf();
+    if (hostId == null) return true;
+    final until = record.leaseUntil;
+    final held = until != null && until.isAfter(now);
+
+    if (held && record.leaseHostId != hostId) {
+      _log(
+        'digest lease held elsewhere for '
+        '${DomainLogger.sanitizeId(record.id)}',
+      );
+      return false;
+    }
+    if (held && record.leaseHostId == hostId) {
+      // The claim's own write stamped updatedAt, so it doubles as "when this
+      // claim was made" — and a peer's later crossing claim moves it forward,
+      // which correctly restarts the settle for both sides.
+      if (now.difference(record.updatedAt) < leaseSettle) return false;
+      return true;
+    }
+
+    await _syncService.upsertEntity(
+      record.copyWith(
+        leaseHostId: hostId,
+        leaseUntil: now.add(leaseDuration),
+        updatedAt: now,
+      ),
+    );
+    // The periodic tick is hourly; without this the confirm would wait for it
+    // and a 06:00 digest could land at 07:00.
+    _settleTimer?.cancel();
+    _settleTimer = Timer(leaseSettle, () => unawaited(_checkAndEnqueue()));
+    return false;
   }
 
   /// Whether [agentId]'s identity is live (lifecycle `active`). A missing,

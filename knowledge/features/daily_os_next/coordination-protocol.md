@@ -104,6 +104,40 @@ tomorrow's digest record. `DayAgentService.restoreSubscriptions` bootstraps the
 first record, and recovers a missed re-arm, whenever the coordinator identity is
 active.
 
+## One device per window, elected by the register itself
+
+The digest record is one synced entity with a deterministic id, so **every**
+device saw it come due and every device ran the inference — N devices, N charges,
+one result. The writes converge (week rollups are registers recomputed from
+source), so this was spend and battery rather than correctness, but it recurred
+every window forever.
+
+`ScheduledWakeManager` leases any record its `requiresLease` predicate marks as
+shared work; the coordinator digest is the only one today. The cycle is
+claim → settle → confirm:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Unclaimed: record due
+  Unclaimed --> Claimed: write leaseHostId = me, leaseUntil = now + 30m
+  Claimed --> Claimed: settle not elapsed — wait
+  Claimed --> Fires: after 3m, the surviving claim is still mine
+  Claimed --> Skips: after 3m, another host survived
+  Claimed --> Unclaimed: leaseUntil passed — claimant went away
+  Fires --> [*]: status flips to consumed, every device stops
+```
+
+**No coordinator is needed because the record is already a last-write-wins
+register.** Concurrent claims converge to exactly one surviving host — that
+convergence *is* the election — and the settle is what gives it time to happen
+before anyone acts on it. A crossing claim moves `updatedAt` forward, which
+restarts the settle for both sides, so the winner is unambiguous.
+
+The lease expires. A device that claims and then crashes or goes offline delays
+the window rather than dropping it: past `leaseUntil` any device takes over, and
+a claimant that died mid-digest is recovered by the cold-start bootstrap. A
+device with no sync host fires unleased — it has no peers to race.
+
 ## A digest anchors to the day it runs on, not the day it was scheduled for
 
 The record's `digest:<dayId>` token is minted when the *next* digest is armed, so
