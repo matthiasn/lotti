@@ -363,6 +363,15 @@ store as a whole, which a single inbound row cannot be judged against. An
 observation that arrives after the start-up sweep and is inside the age horizon
 is therefore materialized, and the count is re-imposed on the next start.
 
+**A payload syncs as an entity in its own right**, so a peer replaying an
+expired observation delivers the message and its payload as two separate sync
+messages. The guard drops the expired message; the payload carries no timestamp
+relationship the receiver can evaluate and lands on its own — and the sweep
+would never find it again, because it reaches payloads through their owning
+message's `contentEntryId`. A separate pass therefore collects payloads past the
+observation horizon that no message owns. A *recent* orphan is left alone:
+sync routinely delivers a payload before its message.
+
 **The outbox's JSON sidecars are not reclaimed.** Every synced entity is also
 written to `/agent_entities/<id>.json`, and nothing in the app has ever deleted
 those — not retention, not `hardDeleteAgent`, not a tombstone. Retention bounds
@@ -374,6 +383,12 @@ device than another. For observational data that is invisible, and it converges
 as time passes.
 
 ## Bounded, and safe to interrupt
+
+Deletes are chunked below SQLite's 999-parameter cap. A full batch is already
+two ids per observation, and the link predicate binds its list twice, so an
+unchunked statement would throw, roll back the transaction, and leave every
+start-up retrying the same batch — retention that never progresses, which is
+worse than none.
 
 The sweep rides the once-per-start agent init — last, and **not awaited**, so
 housekeeping never sits between the user and a ready app. Each type is capped at

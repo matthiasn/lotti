@@ -698,6 +698,17 @@ class AgentRepository {
     maxBatches: maxBatches,
   );
 
+  /// Deletes message payloads older than [cutoff] that no message owns.
+  Future<int> pruneOrphanedPayloadsBefore(
+    DateTime cutoff, {
+    required int batchSize,
+    required int maxBatches,
+  }) => _retention.pruneOrphanedPayloadsBefore(
+    cutoff,
+    batchSize: batchSize,
+    maxBatches: maxBatches,
+  );
+
   /// Deletes day-status events created before [cutoff].
   Future<int> pruneDayStatusEventsBefore(
     DateTime cutoff, {

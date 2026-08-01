@@ -21,6 +21,44 @@ class AgentRepoRetention {
 
   final AgentDatabase _db;
 
+  /// Deletes message payloads older than [cutoff] that no message owns.
+  ///
+  /// A payload syncs as an entity in its own right, so a peer replaying an
+  /// expired observation delivers the payload and the message as separate
+  /// messages. The ingest guard drops the expired *message*, and the payload —
+  /// which carries no timestamp relationship to any message the receiver can
+  /// see — is materialized on its own. Nothing would ever collect it again,
+  /// because the sweep finds payloads through their owning message's
+  /// `contentEntryId`.
+  ///
+  /// Bounded by the same age as observations and by ownership, so a payload
+  /// belonging to a live message of any kind is never touched.
+  Future<int> pruneOrphanedPayloadsBefore(
+    DateTime cutoff, {
+    required int batchSize,
+    required int maxBatches,
+  }) => _batched(
+    maxBatches: maxBatches,
+    run: () => _db.customUpdate(
+      'DELETE FROM agent_entities WHERE id IN ( '
+      'SELECT p.id FROM agent_entities AS p '
+      'WHERE p.type = ?1 AND p.created_at < ?2 '
+      'AND NOT EXISTS ('
+      '  SELECT 1 FROM agent_entities AS m '
+      '  WHERE m.type = ?3 '
+      '  AND json_extract(m.serialized, ?4) = p.id '
+      ') LIMIT ?5)',
+      variables: [
+        const Variable<String>('agentMessagePayload'),
+        Variable<DateTime>(cutoff),
+        const Variable<String>(AgentEntityTypes.agentMessage),
+        const Variable<String>(r'$.contentEntryId'),
+        Variable<int>(batchSize),
+      ],
+      updateKind: UpdateKind.delete,
+    ),
+  );
+
   /// Deletes day-status events created before [cutoff].
   Future<int> pruneDayStatusEventsBefore(
     DateTime cutoff, {
@@ -116,27 +154,52 @@ class AgentRepoRetention {
     }),
   );
 
+  /// Host-parameter budget per statement.
+  ///
+  /// SQLite's default cap is 999. A full batch of observations is already two
+  /// ids each (message + payload), and the link predicate binds its list
+  /// twice — so an unchunked statement can reach ~2,000 parameters, throw, and
+  /// roll back the whole transaction. Every start-up would then retry the same
+  /// batch and retention would never make progress, which is worse than not
+  /// sweeping at all.
+  static const _maxVariablesPerStatement = 400;
+
   /// Removes every link with a pruned entity at either end.
   Future<void> _deleteLinksTouching(List<String> ids) async {
-    if (ids.isEmpty) return;
-    final placeholders = List.filled(ids.length, '?').join(',');
-    await _db.customUpdate(
-      'DELETE FROM agent_links '
-      'WHERE from_id IN ($placeholders) OR to_id IN ($placeholders)',
-      variables: [
-        for (final id in [...ids, ...ids]) Variable<String>(id),
-      ],
-      updateKind: UpdateKind.delete,
-    );
+    // Halved again because this predicate binds its chunk twice.
+    for (final chunk in _chunked(ids, _maxVariablesPerStatement ~/ 2)) {
+      final placeholders = List.filled(chunk.length, '?').join(',');
+      await _db.customUpdate(
+        'DELETE FROM agent_links '
+        'WHERE from_id IN ($placeholders) OR to_id IN ($placeholders)',
+        variables: [
+          for (final id in [...chunk, ...chunk]) Variable<String>(id),
+        ],
+        updateKind: UpdateKind.delete,
+      );
+    }
   }
 
-  Future<int> _deleteByIds(List<String> ids) {
-    final placeholders = List.filled(ids.length, '?').join(',');
-    return _db.customUpdate(
-      'DELETE FROM agent_entities WHERE id IN ($placeholders)',
-      variables: [for (final id in ids) Variable<String>(id)],
-      updateKind: UpdateKind.delete,
-    );
+  Future<int> _deleteByIds(List<String> ids) async {
+    var deleted = 0;
+    for (final chunk in _chunked(ids, _maxVariablesPerStatement)) {
+      final placeholders = List.filled(chunk.length, '?').join(',');
+      deleted += await _db.customUpdate(
+        'DELETE FROM agent_entities WHERE id IN ($placeholders)',
+        variables: [for (final id in chunk) Variable<String>(id)],
+        updateKind: UpdateKind.delete,
+      );
+    }
+    return deleted;
+  }
+
+  static Iterable<List<String>> _chunked(List<String> ids, int size) sync* {
+    for (var start = 0; start < ids.length; start += size) {
+      yield ids.sublist(
+        start,
+        start + size > ids.length ? ids.length : start + size,
+      );
+    }
   }
 
   /// Runs [run] until it stops removing rows or [maxBatches] is reached.

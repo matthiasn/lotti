@@ -7,17 +7,20 @@ import 'package:lotti/services/domain_logging.dart';
 class AgentRetentionResult {
   const AgentRetentionResult({
     this.observations = 0,
+    this.orphanedPayloads = 0,
     this.dayStatusEvents = 0,
   });
 
   final int observations;
+  final int orphanedPayloads;
   final int dayStatusEvents;
 
-  int get total => observations + dayStatusEvents;
+  int get total => observations + orphanedPayloads + dayStatusEvents;
 
   @override
   String toString() =>
-      'observations=$observations dayStatusEvents=$dayStatusEvents';
+      'observations=$observations orphanedPayloads=$orphanedPayloads '
+      'dayStatusEvents=$dayStatusEvents';
 }
 
 /// Forgets the derived rows the agent store no longer needs.
@@ -62,6 +65,18 @@ class AgentRetentionService {
       );
       result = AgentRetentionResult(observations: observations);
 
+      // After the observation sweep, so a payload whose message this pass just
+      // removed is already unowned and collected in the same run.
+      final orphanedPayloads = await repository.pruneOrphanedPayloadsBefore(
+        now.subtract(policy.observations),
+        batchSize: policy.batchSize,
+        maxBatches: policy.maxBatchesPerSweep,
+      );
+      result = AgentRetentionResult(
+        observations: observations,
+        orphanedPayloads: orphanedPayloads,
+      );
+
       final dayStatusEvents = await repository.pruneDayStatusEventsBefore(
         now.subtract(policy.dayStatusEvents),
         batchSize: policy.batchSize,
@@ -69,6 +84,7 @@ class AgentRetentionService {
       );
       result = AgentRetentionResult(
         observations: observations,
+        orphanedPayloads: orphanedPayloads,
         dayStatusEvents: dayStatusEvents,
       );
     } catch (e, s) {

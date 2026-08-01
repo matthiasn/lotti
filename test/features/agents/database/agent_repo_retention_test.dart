@@ -301,6 +301,69 @@ void main() {
     });
   });
 
+  group('pruneOrphanedPayloadsBefore', () {
+    test('collects a payload no message owns', () async {
+      // A peer replaying an expired observation delivers the payload and the
+      // message as separate sync entities. The ingest guard drops the expired
+      // message; the payload arrives on its own and nothing would ever find
+      // it again, because the sweep reaches payloads through their owning
+      // message's contentEntryId.
+      await core.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: 'orphan',
+          agentId: 'coordinator',
+          createdAt: now.subtract(const Duration(days: 200)),
+          vectorClock: null,
+          content: const {'text': 'replayed by a returning peer'},
+        ),
+      );
+      await writeObservation(
+        agentId: 'coordinator',
+        id: 'owned',
+        createdAt: now.subtract(const Duration(days: 200)),
+      );
+
+      final pruned = await retention.pruneOrphanedPayloadsBefore(
+        now.subtract(const Duration(days: 120)),
+        batchSize: 10,
+        maxBatches: 5,
+      );
+
+      expect(pruned, 1);
+      expect(
+        await idsOfType('agentMessagePayload'),
+        ['payload-owned'],
+        reason: 'An owned payload is never touched, whatever its age.',
+      );
+    });
+
+    test('leaves a recent orphan alone', () async {
+      await core.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: 'in-flight',
+          agentId: 'coordinator',
+          createdAt: now.subtract(const Duration(days: 1)),
+          vectorClock: null,
+          content: const {'text': 'message still on its way'},
+        ),
+      );
+
+      await retention.pruneOrphanedPayloadsBefore(
+        now.subtract(const Duration(days: 120)),
+        batchSize: 10,
+        maxBatches: 5,
+      );
+
+      expect(
+        await idsOfType('agentMessagePayload'),
+        ['in-flight'],
+        reason:
+            'Sync delivers a payload before its message, so a fresh orphan is '
+            'ordinary in-flight state rather than residue.',
+      );
+    });
+  });
+
   group('pruneDayStatusEventsBefore', () {
     test('deletes only events older than the cutoff', () async {
       for (final (id, age) in [('old', 200), ('edge', 91), ('recent', 5)]) {

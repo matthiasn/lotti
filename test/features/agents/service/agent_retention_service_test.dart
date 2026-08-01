@@ -41,6 +41,13 @@ void main() {
       ),
     ).thenAnswer((_) async => 0);
     when(
+      () => repository.pruneOrphanedPayloadsBefore(
+        any(),
+        batchSize: any(named: 'batchSize'),
+        maxBatches: any(named: 'maxBatches'),
+      ),
+    ).thenAnswer((_) async => 0);
+    when(
       () => repository.pruneDayStatusEventsBefore(
         any(),
         batchSize: any(named: 'batchSize'),
@@ -61,6 +68,13 @@ void main() {
       () => repository.pruneObservations(
         keepPerAgent: policy.observationsPerAgent,
         cutoff: now.subtract(policy.observations),
+        batchSize: policy.batchSize,
+        maxBatches: policy.maxBatchesPerSweep,
+      ),
+    ).called(1);
+    verify(
+      () => repository.pruneOrphanedPayloadsBefore(
+        now.subtract(policy.observations),
         batchSize: policy.batchSize,
         maxBatches: policy.maxBatchesPerSweep,
       ),
