@@ -24,10 +24,26 @@ sources:
     resource: ../../../lib/features/agents/model/agent_constants.dart
     title: AgentLinkTypes
     last_modified: 2026-07-24
+  - id: entity-model
+    resource: ../../../lib/features/agents/model/agent_domain_entity.dart
+    title: AgentDomainEntity
+    last_modified: 2026-08-01
+  - id: db-conversions
+    resource: ../../../lib/features/agents/database/agent_db_conversions.dart
+    title: AgentDbConversions
+    last_modified: 2026-08-01
   - id: sync-service
     resource: ../../../lib/features/agents/sync/agent_sync_service.dart
     title: AgentSyncService
     last_modified: 2026-06-13
+  - id: sync-processor
+    resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
+    title: SyncEventProcessor
+    last_modified: 2026-08-01
+  - id: queue-adapter
+    resource: ../../../lib/features/sync/queue/queue_apply_adapter.dart
+    title: QueueApplyAdapter
+    last_modified: 2026-08-01
   - id: adr-0007
     resource: ../../../docs/adr/0007-token-usage-wake-run-log-storage.md
     title: ADR 0007 — Token usage and wake run log storage
@@ -212,6 +228,15 @@ attaches the sync event processor when one is registered.
 Concurrent agent state converges without user involvement — see
 [vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md) for the
 G-counter merge that keeps concurrent wake counters from being lost.
+
+Legacy `WeekRollupEntity` JSON can omit `weekStart`. The shared
+`AgentDomainEntity.fromJson` read boundary repairs it only when the entity id is
+an exact `week_rollup:YYYY-MM-DD` key whose date is a real Monday. This covers
+both persisted rows and inline or file-backed sync payloads without mutating the
+decoded input map. An absent field paired with any other id throws a bounded
+`FormatException`; `SyncEventProcessor.prepare` treats that payload as
+unrecoverable, and `QueueApplyAdapter` returns a `permanentSkip` instead of
+spending the retry budget on deterministic poison data.
 
 | Scope | Contents |
 |-------|----------|

@@ -655,6 +655,31 @@ void main() {
       expect(companion.updatedAt, Value(updatedAt));
     });
 
+    test('weekRollup row repairs a legacy missing weekStart', () {
+      final entity = makeTestWeekRollup(
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
+      final legacyJson =
+          jsonDecode(jsonEncode(entity.toJson())) as Map<String, dynamic>
+            ..remove('weekStart');
+      final row = AgentEntity(
+        id: entity.id,
+        agentId: entity.agentId,
+        type: AgentEntityTypes.weekRollup,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: jsonEncode(legacyJson),
+        schemaVersion: 1,
+      );
+
+      final decoded = AgentDbConversions.fromEntityRow(row);
+
+      expect(decoded, isA<WeekRollupEntity>());
+      expect((decoded as WeekRollupEntity).weekStart, DateTime(2026, 5, 18));
+      expect(decoded.id, 'week_rollup:2026-05-18');
+    });
+
     test('daySummary writes type/subtype and roundtrips through a row', () {
       final entity = AgentDomainEntity.daySummary(
         id: 'day_agent_summary:dayplan-2026-06-08',

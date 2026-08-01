@@ -219,6 +219,87 @@ void main() {
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
 
+    test('repairs a legacy week rollup before applying inbound sync', () async {
+      final entity = AgentDomainEntity.weekRollup(
+        id: 'week_rollup:2026-05-18',
+        agentId: 'daily_os_planner',
+        weekStart: DateTime(2026, 5, 18),
+        plannedMinutesByCategory: const {'cat-work': 480},
+        recordedMinutesByCategory: const {'cat-work': 310},
+        daysWithPlans: 5,
+        createdAt: DateTime(2026, 5, 24),
+        updatedAt: DateTime(2026, 5, 24, 12),
+        vectorClock: const VectorClock({'remote-host': 3}),
+      );
+      final envelope =
+          jsonDecode(
+                jsonEncode(
+                  SyncMessage.agentEntity(
+                    agentEntity: entity,
+                    status: SyncEntryStatus.update,
+                  ).toJson(),
+                ),
+              )
+              as Map<String, dynamic>;
+      (envelope['agentEntity'] as Map<String, dynamic>).remove('weekStart');
+      when(() => event.text).thenReturn(
+        base64.encode(utf8.encode(jsonEncode(envelope))),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      final applied =
+          verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
+              as WeekRollupEntity;
+      expect(applied, entity);
+      expect(applied.weekStart, DateTime(2026, 5, 18));
+    });
+
+    test('skips an irreparable legacy week rollup during prepare', () async {
+      final entity = AgentDomainEntity.weekRollup(
+        id: 'week_rollup:2026-05-18',
+        agentId: 'daily_os_planner',
+        weekStart: DateTime(2026, 5, 18),
+        createdAt: DateTime(2026, 5, 24),
+        updatedAt: DateTime(2026, 5, 24, 12),
+        vectorClock: const VectorClock({'remote-host': 3}),
+      );
+      final envelope =
+          jsonDecode(
+                jsonEncode(
+                  SyncMessage.agentEntity(
+                    agentEntity: entity,
+                    status: SyncEntryStatus.update,
+                  ).toJson(),
+                ),
+              )
+              as Map<String, dynamic>;
+      final nested = (envelope['agentEntity'] as Map<String, dynamic>)
+        ..remove('weekStart')
+        ..['id'] = 'week_rollup:2026-05-17';
+      expect(nested['weekStart'], isNull);
+      when(() => event.text).thenReturn(
+        base64.encode(utf8.encode(jsonEncode(envelope))),
+      );
+
+      final prepared = await processor.prepare(event: event);
+
+      expect(prepared, isNull);
+      verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      verify(
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: allOf(
+              contains('Legacy weekRollup is missing weekStart'),
+              isNot(contains('2026-05-17')),
+            ),
+          ),
+          subDomain: 'processor.skipUnrecoverable',
+        ),
+      ).called(1);
+    });
+
     test('applying a remote agent state keeps local scheduling fields '
         '(device-local, not synced)', () async {
       // Incoming causally dominates local, so it is applied — but the local
