@@ -142,10 +142,12 @@ because the native listing carries `displayName`, `description`,
 `inputTokenLimit`/`outputTokenLimit`, `supportedGenerationMethods` and a
 `thinking` flag that the compatible surface flattens away.
 
-The repository rewrites the saved base URL to the native host/path, authenticates
-with the `x-goog-api-key` **header** so the key never appears in the request URL,
-rejects a host-less base URL up front, follows `nextPageToken` pagination (capped
-at `maxCatalogPages`), skips and logs malformed rows instead of failing the whole
+The catalog and native generation paths rewrite the saved base URL to the native
+host/path and authenticate with the `x-goog-api-key` **header** so the key never
+appears in a request URL. Streaming, non-streaming fallback, multi-turn, and image
+generation diagnostics log only the endpoint host and path. The catalog rejects
+a host-less base URL up front, follows `nextPageToken` pagination (capped at
+`maxCatalogPages`), skips and logs malformed rows instead of failing the whole
 fetch, and drops rows not advertising `generateContent`.
 
 Ids in the curated `geminiModels` list are returned verbatim; unknown ids are

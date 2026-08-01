@@ -157,7 +157,7 @@ void main() {
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'key',
+        apiKey: 'sentinel-secret-key',
         name: 'Gemini',
         createdAt: DateTime(2024),
         inferenceProviderType: InferenceProviderType.gemini,
@@ -191,6 +191,12 @@ void main() {
       expect(toolsDelta.toolCalls!.length, 2);
       expect(toolsDelta.toolCalls![0].id, 'tool_turn0_0');
       expect(toolsDelta.toolCalls![1].id, 'tool_turn0_1');
+      expect(client.requests, hasLength(2));
+      for (final request in client.requests) {
+        expect(request.url.queryParameters, isEmpty);
+        expect(request.url.toString(), isNot(contains(provider.apiKey)));
+        expect(request.headers['x-goog-api-key'], provider.apiKey);
+      }
     });
 
     test('maps functionCall to tool call chunk', () async {
@@ -1299,50 +1305,93 @@ void main() {
       expect(sysFirstPart['text'], 'You are helpful.');
     });
 
-    test('includes API key in URL query parameter', () async {
-      http.BaseRequest? capturedRequest;
-      final client = _RequestCapturingClient(
-        onRequest: (req) => capturedRequest = req,
-        response: jsonEncode({
-          'candidates': [
-            {
-              'content': {
-                'role': 'model',
-                'parts': [
-                  {'text': 'Hi'},
-                ],
+    test(
+      'authenticates streaming via header without exposing the key',
+      () async {
+        const sentinelApiKey = 'sentinel-secret-key';
+        http.BaseRequest? capturedRequest;
+        final client = _RequestCapturingClient(
+          onRequest: (req) => capturedRequest = req,
+          response: jsonEncode({
+            'candidates': [
+              {
+                'content': {
+                  'role': 'model',
+                  'parts': [
+                    {'text': 'Hi'},
+                  ],
+                },
               },
-            },
-          ],
-        }),
-      );
+            ],
+          }),
+        );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'my-secret-api-key',
-        name: 'Gemini',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
+        final repo = GeminiInferenceRepository(httpClient: client);
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: sentinelApiKey,
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
 
-      await repo
-          .generateText(
-            prompt: 'Hi',
-            model: 'gemini-2.5-flash',
-            temperature: 0.5,
-            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
-            provider: provider,
-          )
-          .toList();
+        await repo
+            .generateText(
+              prompt: 'Hi',
+              model: 'gemini-2.5-flash',
+              temperature: 0.5,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
+              provider: provider,
+            )
+            .toList();
 
-      expect(capturedRequest, isNotNull);
-      expect(
-        capturedRequest!.url.queryParameters['key'],
-        'my-secret-api-key',
-      );
-    });
+        expect(capturedRequest, isNotNull);
+        expect(capturedRequest!.url.queryParameters, isEmpty);
+        expect(
+          capturedRequest!.url.toString(),
+          isNot(contains(sentinelApiKey)),
+        );
+        expect(capturedRequest!.headers['x-goog-api-key'], sentinelApiKey);
+      },
+    );
+
+    test(
+      'network exceptions cannot echo the API key through the URI',
+      () async {
+        const sentinelApiKey = 'sentinel-secret-key';
+        final repo = GeminiInferenceRepository(
+          httpClient: _UriEchoingFailureClient(),
+        );
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: sentinelApiKey,
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        await expectLater(
+          repo
+              .generateText(
+                prompt: 'Hi',
+                model: 'gemini-2.5-flash',
+                temperature: 0.5,
+                thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
+                provider: provider,
+              )
+              .toList(),
+          throwsA(
+            isA<http.ClientException>().having(
+              (error) => error.toString(),
+              'message',
+              isNot(contains(sentinelApiKey)),
+            ),
+          ),
+        );
+      },
+    );
 
     test('constructs correct streaming endpoint URL', () async {
       http.BaseRequest? capturedRequest;
@@ -3084,5 +3133,13 @@ class _AlwaysTimeoutClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     onRequest?.call();
     throw TimeoutException('Simulated timeout', const Duration(seconds: 30));
+  }
+}
+
+/// Simulates a transport failure whose diagnostic includes the request URI.
+class _UriEchoingFailureClient extends http.BaseClient {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    throw http.ClientException('network unavailable', request.url);
   }
 }

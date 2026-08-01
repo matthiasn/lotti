@@ -9,6 +9,8 @@ import 'package:openai_dart/openai_dart.dart';
 ///
 /// Central responsibilities:
 /// - Construct streaming and non-streaming URIs while preserving scheme/host/port.
+/// - Build authenticated request headers without putting credentials in URIs.
+/// - Produce endpoint descriptions that are safe for diagnostics.
 /// - Build request bodies including system instructions, thinking config and tools.
 /// - Strip SSE `data:` prefixes and JSON array framing from mixed-format streams.
 class GeminiUtils {
@@ -18,15 +20,13 @@ class GeminiUtils {
   ///
   /// - Normalizes model IDs to `models/<id>`.
   /// - Ignores any existing path in `baseUrl` but preserves scheme/host/port.
-  /// - Appends `?key=<apiKey>` as required by Gemini.
+  /// - Omits authentication from the URI; callers use [buildRequestHeaders].
   static Uri buildStreamGenerateContentUri({
     required String baseUrl,
     required String model,
-    required String apiKey,
   }) => _buildGeminiUri(
     baseUrl: baseUrl,
     model: model,
-    apiKey: apiKey,
     endpoint: 'streamGenerateContent',
   );
 
@@ -34,13 +34,34 @@ class GeminiUtils {
   static Uri buildGenerateContentUri({
     required String baseUrl,
     required String model,
-    required String apiKey,
   }) => _buildGeminiUri(
     baseUrl: baseUrl,
     model: model,
-    apiKey: apiKey,
     endpoint: 'generateContent',
   );
+
+  /// Builds headers shared by native Gemini generation requests.
+  ///
+  /// Authentication deliberately uses `x-goog-api-key` instead of a query
+  /// parameter so URLs echoed by HTTP clients, proxies, or error logs cannot
+  /// expose the credential.
+  static Map<String, String> buildRequestHeaders({
+    required String apiKey,
+    required String accept,
+  }) => {
+    'Content-Type': 'application/json',
+    'Accept': accept,
+    'x-goog-api-key': apiKey,
+  };
+
+  /// Returns a safe diagnostic representation containing host and path only.
+  ///
+  /// User information and query parameters are excluded because either can
+  /// contain credentials even when current request builders do not add them.
+  static String redactedEndpoint(Uri uri) {
+    final host = uri.host.isEmpty ? '<local>' : uri.host;
+    return '$host${uri.path}';
+  }
 
   /// Builds the native `/v1beta/models` catalog URI from a provider base URL.
   ///
@@ -79,7 +100,6 @@ class GeminiUtils {
   static Uri _buildGeminiUri({
     required String baseUrl,
     required String model,
-    required String apiKey,
     required String endpoint,
   }) {
     final parsed = Uri.parse(baseUrl);
@@ -96,10 +116,7 @@ class GeminiUtils {
         ? trimmed
         : 'models/$trimmed';
     final path = '/v1beta/$modelPath:$endpoint';
-    return root.replace(
-      path: path,
-      queryParameters: <String, String>{'key': apiKey},
-    );
+    return root.replace(path: path);
   }
 
   /// Builds a Gemini request body including thinking config and function tools.

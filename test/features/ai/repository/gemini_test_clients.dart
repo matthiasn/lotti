@@ -33,9 +33,11 @@ class RoutingFakeClient extends http.BaseClient {
 
   final List<String> streamLines;
   final String fallbackBody;
+  final List<http.BaseRequest> requests = [];
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    requests.add(request);
     final path = request.url.path;
     if (path.endsWith(':streamGenerateContent')) {
       final data = streamLines.map((l) => utf8.encode('$l\n') as List<int>);

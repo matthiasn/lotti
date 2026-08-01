@@ -116,7 +116,6 @@ void main() {
       final uri = GeminiUtils.buildStreamGenerateContentUri(
         baseUrl: 'http://localhost:8080/openai/v1beta',
         model: 'gemini-2.0-pro-exp-02-05',
-        apiKey: 'abc',
       );
       expect(uri.scheme, 'http');
       expect(uri.host, 'localhost');
@@ -125,20 +124,37 @@ void main() {
         uri.path,
         '/v1beta/models/gemini-2.0-pro-exp-02-05:streamGenerateContent',
       );
-      expect(uri.queryParameters['key'], 'abc');
+      expect(uri.queryParameters, isEmpty);
     });
 
     test('non-stream URI handles models/ prefix and trailing slash', () {
       final uri = GeminiUtils.buildGenerateContentUri(
         baseUrl: 'https://generativelanguage.googleapis.com',
         model: 'models/gemini-2.0-flash/ ',
-        apiKey: 'xyz',
       );
       expect(
         uri.path,
         '/v1beta/models/gemini-2.0-flash:generateContent',
       );
-      expect(uri.queryParameters['key'], 'xyz');
+      expect(uri.queryParameters, isEmpty);
+    });
+
+    test('redacted endpoint strips userinfo and query secrets', () {
+      const sentinelApiKey = 'sentinel-secret-key';
+      final uri = Uri.parse(
+        'https://user:password@example.com/v1beta/models/gemini-pro:'
+        'generateContent?key=$sentinelApiKey&trace=verbose',
+      );
+
+      final endpoint = GeminiUtils.redactedEndpoint(uri);
+
+      expect(
+        endpoint,
+        'example.com/v1beta/models/gemini-pro:generateContent',
+      );
+      expect(endpoint, isNot(contains(sentinelApiKey)));
+      expect(endpoint, isNot(contains('password')));
+      expect(endpoint, isNot(contains('trace')));
     });
   });
 
@@ -1421,12 +1437,10 @@ void main() {
               final streamUri = GeminiUtils.buildStreamGenerateContentUri(
                 baseUrl: base,
                 model: model,
-                apiKey: 'k',
               );
               final plainUri = GeminiUtils.buildGenerateContentUri(
                 baseUrl: base,
                 model: model,
-                apiKey: 'k',
               );
 
               for (final (uri, endpoint) in [
@@ -1442,7 +1456,7 @@ void main() {
                 );
                 expect(uri.path, isNot(contains('models/models/')));
                 expect(uri.path, isNot(endsWith('/')));
-                expect(uri.queryParameters['key'], 'k');
+                expect(uri.queryParameters, isEmpty);
               }
             },
           );
@@ -1454,7 +1468,6 @@ void main() {
       final uri = GeminiUtils.buildGenerateContentUri(
         baseUrl: '//example.com',
         model: 'gemini-pro',
-        apiKey: 'k',
       );
       expect(uri.scheme, 'https');
       expect(uri.host, 'example.com');
