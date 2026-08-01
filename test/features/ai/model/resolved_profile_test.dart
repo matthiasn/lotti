@@ -272,29 +272,6 @@ void main() {
       tags: 'glados',
     );
 
-    test('fromProfile captures ids, provider type, and runtime settings', () {
-      final model = AiTestDataFactory.createTestModel(
-        id: 'model-config',
-        providerModelId: 'wire-id',
-      );
-      final provider = testInferenceProvider(id: 'provider-config');
-      final fingerprint = InferenceRouteFingerprint.fromProfile(
-        ResolvedProfile(
-          thinkingModelId: 'wire-id',
-          thinkingProvider: provider,
-          thinkingModel: model,
-        ),
-      );
-
-      expect(fingerprint.modelConfigId, 'model-config');
-      expect(fingerprint.providerModelId, 'wire-id');
-      expect(fingerprint.providerConfigId, 'provider-config');
-      expect(fingerprint.providerType, InferenceProviderType.gemini);
-      expect(fingerprint.runtimeSettings, {
-        'geminiThinkingMode': model.geminiThinkingMode.name,
-      });
-    });
-
     test('different route fields and runtime settings break equality', () {
       const base = InferenceRouteFingerprint(
         modelConfigId: 'model',

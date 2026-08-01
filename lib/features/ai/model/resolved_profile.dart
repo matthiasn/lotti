@@ -189,19 +189,6 @@ class InferenceRouteFingerprint {
     this.providerConfigId,
   });
 
-  factory InferenceRouteFingerprint.fromProfile(ResolvedProfile profile) {
-    return InferenceRouteFingerprint(
-      modelConfigId: profile.thinkingModel?.id,
-      providerModelId: profile.thinkingModelId,
-      providerConfigId: profile.thinkingProvider.id,
-      providerType: profile.thinkingProvider.inferenceProviderType,
-      runtimeSettings: <String, Object?>{
-        if (profile.thinkingModel != null)
-          'geminiThinkingMode': profile.thinkingModel!.geminiThinkingMode.name,
-      },
-    );
-  }
-
   final String? modelConfigId;
   final String providerModelId;
   final String? providerConfigId;
