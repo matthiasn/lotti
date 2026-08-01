@@ -5,7 +5,7 @@ description: The persisted agent runtime — five agent kinds, their startup wir
 resource: ../../../lib/features/agents
 tags: [agents, runtime, wake, ai]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T16:18:08Z }
 stale_after: 2026-10-12
 sources:
   - id: agents-src
@@ -91,7 +91,7 @@ flowchart TD
   Init --> Activity["ProjectActivityMonitor.start()"]
   Init --> Seed["Seed templates, profiles, souls<br/>(skills are built-in code, not seeded)"]
   Init --> Restore["Bulk-restore subscriptions and deferred wakes"]
-  Restore -->|snapshot failure| Abort["Stop restoration pass<br/>one agentRuntime diagnostic"]
+  Restore -->|service snapshot failure| Abort["Fail initialization for retry<br/>one agentRuntime diagnostic"]
   Init --> Sync["Wire SyncEventProcessor (if registered in GetIt)"]
 ```
 
@@ -106,14 +106,23 @@ writes a new `nextWakeAt` when follow-up work is still queued, so the wake
 surfaces show pending work rather than a cooldown with nothing left to run.
 
 The startup coordinator invokes task, day and project restoration in parallel.
-Before any per-agent runtime work, task and project services bulk-load their
-states and typed links, while the day service bulk-loads its states after
-discarding identities with no valid day context. Event restoration follows the
-same bulk state-and-link boundary when invoked. A failed snapshot propagates
-before any service enters its agent loop; the coordinator records one
-`agentRuntime` error for the aborted pass. Failures in in-memory subscription or
-wake registration after a successful snapshot remain isolated to the affected
-agent, because the database is no longer being queried inside that loop.
+Each service bulk-loads its own inputs before entering its own per-agent loop:
+task and project services load states and typed links, while the day service
+loads states after discarding identities with no valid day context. Event
+restoration follows the same per-service bulk boundary when invoked. There is no
+cross-service snapshot barrier, so one service may already have restored agents
+when another service's preload fails. The coordinator records one
+`agentRuntime` error and rethrows, keeping initialization failed and eligible
+for retry instead of treating partial restoration as success. Re-running the
+pass is safe because runtime subscription registration is idempotent. Failures
+in in-memory subscription or wake registration after a successful service
+snapshot remain isolated to the affected agent, because the database is no
+longer queried inside that loop.
+
+Remote `agent_project` links are reconciled live as well as at startup. The
+sync processor installs or removes the direct-project subscription when the
+link changes and also queries existing links when a project-agent identity
+arrives, so either sync ordering closes the snapshot-to-live-update gap.
 
 **Skills are not seeded.** They live as code in
 `lib/features/ai/skills/built_in_skills.dart` and are read from

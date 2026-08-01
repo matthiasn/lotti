@@ -634,7 +634,7 @@ void main() {
       },
     );
 
-    test('logs one error when runtime restoration aborts', () async {
+    test('logs once and keeps aborted runtime restoration failed', () async {
       final domainLogger = MockDomainLogger();
       when(
         () => domainLogger.error(
@@ -654,7 +654,10 @@ void main() {
         testDomainLogger: domainLogger,
       );
 
-      await bench.initAndSubscribe(container);
+      await expectLater(
+        bench.initAndSubscribe(container),
+        throwsA(isA<StateError>()),
+      );
 
       verify(
         () => domainLogger.error(

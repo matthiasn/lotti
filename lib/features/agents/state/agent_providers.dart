@@ -507,9 +507,10 @@ Future<void> agentInitialization(Ref ref) async {
   await ref.read(soulDocumentServiceProvider).seedDefaults();
   // Backfill skill assignments on existing default profiles.
   await profileSeeder.upgradeExisting();
-  // Each service bulk-loads its database inputs before entering an agent loop.
-  // A terminal preload failure therefore escapes here and produces one startup
-  // diagnostic instead of one full error per persisted agent.
+  // Each service bulk-loads its database inputs before entering its own agent
+  // loop. A preload failure therefore produces one startup diagnostic instead
+  // of one full error per persisted agent, then remains a provider failure so
+  // Riverpod refresh/retry can rerun the idempotent restoration pass.
   try {
     await Future.wait([
       taskAgentService.restoreSubscriptions(),
@@ -525,5 +526,6 @@ Future<void> agentInitialization(Ref ref) async {
           message: 'agent runtime restoration aborted',
           stackTrace: stackTrace,
         );
+    rethrow;
   }
 }

@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Agent startup no longer floods diagnostic storage when its database has
   already shut down.** Runtime restoration now bulk-loads the required state
-  and links, then stops the pass with one diagnostic if that snapshot fails
-  instead of querying and logging once for every persisted agent.
+  and links, then aborts the pass with one diagnostic if that snapshot fails
+  instead of querying and logging once for every persisted agent. Incomplete
+  restoration remains failed and retryable rather than silently succeeding.
 - **A repeated interface failure no longer fills diagnostic storage with
   thousands of identical stack traces.** Lotti keeps the first complete
   framework error and then records bounded, counted summaries for repeats,
