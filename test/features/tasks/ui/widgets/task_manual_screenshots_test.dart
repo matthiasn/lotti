@@ -95,6 +95,14 @@ const _manualTaskAgentStateId = 'state-habitat-watcher';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 final String _manualTaskAgentName = _t('Habitat Watcher', 'Habitatwächter');
+
+/// The proposed checklist item's title, shared by the fixture that supplies it
+/// and the assertion that looks for it — the rendered row wraps this in
+/// locale-specific quotation marks, so neither side may spell out the result.
+final String _manualTaskAgentAddItemTitle = _t(
+  'Run zero-gravity sardine feeder test',
+  'Schwerelos-Futterautomaten testen',
+);
 final String _manualTaskAgentTldr = _t(
   'All 37 emperor penguins are accounted for. Habitat pressure held at '
       '101.3 kPa overnight; the remaining launch risk is the zero-gravity '
@@ -271,12 +279,7 @@ List<PendingSuggestion> _manualTaskAgentSuggestions() {
     items: [
       ChangeItem(
         toolName: 'add_checklist_item',
-        args: {
-          'title': _t(
-            'Run zero-gravity sardine feeder test',
-            'Schwerelos-Futterautomaten testen',
-          ),
-        },
+        args: {'title': _manualTaskAgentAddItemTitle},
         humanSummary: _t(
           'Add: "Run zero-gravity sardine feeder test"',
           'Hinzufügen: "Schwerelos-Futterautomaten testen"',
@@ -717,17 +720,21 @@ void main() {
           findsOneWidget,
         );
         expect(find.text(messages.changeSetPendingCount(2)), findsOneWidget);
+        // Both proposal rows are composed from the tool's arguments at render
+        // time now, so the persisted English summaries on the fixture are no
+        // longer what a reader sees.
+        //
+        // Match the item's title alone. The row drops the leading kind label
+        // its chip already shows and re-adds it as `Add · `, so the localized
+        // template never appears whole; and the quotation marks around the
+        // title are locale-specific („…“ in German and Czech), which is what
+        // made the previous ASCII-quoted literal an English-only assertion.
         expect(
-          find.textContaining(
-            _t(
-              '"Run zero-gravity sardine feeder test"',
-              '"Schwerelos-Futterautomaten testen"',
-            ),
-          ),
+          find.textContaining(_manualTaskAgentAddItemTitle),
           findsOneWidget,
         );
         expect(
-          find.textContaining(_t('45m → 1h 15m', '45 Min. → 1 Std. 15 Min.')),
+          find.textContaining(messages.agentSummarySetEstimate(75)),
           findsOneWidget,
         );
         expect(find.text(messages.changeSetConfirmAll), findsOneWidget);
