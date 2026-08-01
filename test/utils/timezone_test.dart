@@ -133,6 +133,43 @@ void main() {
       );
     });
 
+    test(
+      'resolves the real macOS layout, where /etc is itself a symlink',
+      () async {
+        // On macOS /etc -> /private/etc, so resolveSymbolicLinks() returns
+        // /private/var/db/timezone/zoneinfo/Europe/Berlin — the zoneinfo
+        // segment is not at the start of the path. This is the actual shape on
+        // the machine that produced the "CEST" crash, so it is the case worth
+        // pinning rather than assuming.
+        final zoneFile = File(
+          '${tempDir.path}/private/var/db/timezone/zoneinfo/Europe/Berlin',
+        );
+        await zoneFile.parent.create(recursive: true);
+        await zoneFile.writeAsString('TZif');
+
+        // /etc -> /private/etc, then /etc/localtime -> the zoneinfo file.
+        final privateEtc = Directory('${tempDir.path}/private/etc');
+        await privateEtc.create(recursive: true);
+        await Link('${tempDir.path}/etc').create(privateEtc.path);
+        final localtime = Link('${tempDir.path}/etc/localtime');
+        await localtime.create(zoneFile.path);
+
+        final tz = await getLocalTimezone(
+          linuxTimezoneFilePath: '${tempDir.path}/absent',
+          localtimeLinkPath: localtime.path,
+          overrideIsTestEnv: false,
+        );
+
+        expect(
+          tz,
+          'Europe/Berlin',
+          reason:
+              'the zoneinfo segment is mid-path once /etc is resolved, so '
+              'anchoring the match at the start would miss it',
+        );
+      },
+    );
+
     test('reads the IANA name from a Linux-style zoneinfo link', () async {
       final linkPath = await makeLocaltimeLink(
         zoneinfoPrefix: '/usr/share/zoneinfo/',
