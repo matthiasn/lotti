@@ -484,7 +484,7 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Glados property for the defensive string-arg reader (via debug seam).
+  // Glados property exercising readStringArg directly.
   // ---------------------------------------------------------------------------
   group('readStringArg — properties', () {
     glados.Glados(

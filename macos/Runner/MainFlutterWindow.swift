@@ -9,8 +9,6 @@ class MainFlutterWindow: NSWindow {
         self.contentViewController = flutterViewController
         self.setFrame(windowFrame, display: true)
         
-        let registrar = flutterViewController.registrar(forPlugin: "AudioConverter")
-        AudioConverter.register(with: registrar)
         let fileActionsRegistrar = flutterViewController.registrar(forPlugin: "FileActions")
         FileActions.register(with: fileActionsRegistrar)
         let mlxAudioRegistrar = flutterViewController.registrar(forPlugin: "MlxAudio")

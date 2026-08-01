@@ -1,13 +1,9 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
-import 'package:lotti/features/ai/database/real_objectbox_ops.dart'; // coverage:ignore-line
-import 'package:lotti/objectbox.g.dart'; // coverage:ignore-line
-import 'package:path/path.dart' as p;
 
 /// Sidecar directory name for the ObjectBox embedding store.
 const kObjectBoxEmbeddingsDirectoryName = 'objectbox_embeddings';
@@ -23,32 +19,10 @@ const kMacOsObjectBoxApplicationGroup = 'SS586VG7L7.lottiobx';
 class ObjectBoxEmbeddingStore implements EmbeddingStore {
   /// Creates an [ObjectBoxEmbeddingStore] backed by the given [ObjectBoxOps].
   ///
-  /// Prefer the [open] factory for production use. This constructor is visible
-  /// for testing with a mock [ObjectBoxOps].
+  /// The caller owns construction and lifecycle of the backing [ObjectBoxOps].
   ObjectBoxEmbeddingStore(this._ops);
 
   final ObjectBoxOps _ops;
-
-  /// Opens a production ObjectBox store at [documentsPath].
-  // coverage:ignore-start
-  static Future<ObjectBoxEmbeddingStore> open({
-    required String documentsPath,
-  }) async {
-    final directoryPath = p.join(
-      documentsPath,
-      kObjectBoxEmbeddingsDirectoryName,
-    );
-    await Directory(directoryPath).create(recursive: true);
-
-    final store = await openStore(
-      directory: directoryPath,
-      macosApplicationGroup: Platform.isMacOS
-          ? kMacOsObjectBoxApplicationGroup
-          : null,
-    );
-    return ObjectBoxEmbeddingStore(RealObjectBoxOps(store));
-  }
-  // coverage:ignore-end
 
   @override
   int get count => _ops.count();
@@ -183,9 +157,7 @@ class ObjectBoxEmbeddingStore implements EmbeddingStore {
             entityId: hit.object.entityId,
             distance: hit.score,
             entityType: hit.object.entityType,
-            chunkIndex: hit.object.chunkIndex,
             taskId: hit.object.taskId,
-            subtype: hit.object.subtype,
           ),
         )
         .toList(growable: false);

@@ -199,16 +199,6 @@ const List<KnownModel> mlxAudioModels = [
         'Efficient NVIDIA Parakeet ASR checkpoint converted for MLX. Useful as '
         'a smaller local transcription baseline against Voxtral and Qwen3-ASR.',
   ),
-  KnownModel(
-    providerModelId: mlxAudioDefaultTtsModelId,
-    name: 'Qwen3 TTS 0.6B Base (MLX 8-bit)',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.audio],
-    isReasoningModel: false,
-    description:
-        'On-device text-to-speech model for reading AI summaries locally via '
-        'MLX Audio Swift.',
-  ),
 ];
 
 /// oMLX models served through the local OpenAI-compatible API.

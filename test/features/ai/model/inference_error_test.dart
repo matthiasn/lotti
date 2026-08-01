@@ -9,19 +9,15 @@ void main() {
   group('InferenceError', () {
     test('creates instance with all parameters', () {
       final originalError = Exception('Original error');
-      final stackTrace = StackTrace.current;
-
       final error = InferenceError(
         message: 'Test error message',
         type: InferenceErrorType.networkConnection,
         originalError: originalError,
-        stackTrace: stackTrace,
       );
 
       expect(error.message, 'Test error message');
       expect(error.type, InferenceErrorType.networkConnection);
       expect(error.originalError, originalError);
-      expect(error.stackTrace, stackTrace);
     });
 
     test('creates instance with required parameters only', () {
@@ -33,7 +29,6 @@ void main() {
       expect(error.message, 'Test error message');
       expect(error.type, InferenceErrorType.timeout);
       expect(error.originalError, isNull);
-      expect(error.stackTrace, isNull);
     });
 
     test('toString returns message', () {

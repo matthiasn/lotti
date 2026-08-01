@@ -14,41 +14,13 @@ typedef AudioPathConverter =
     });
 typedef AudioScratchFileDeleter = void Function(File file);
 
-/// Dart-side wrapper for native WAV/M4A audio conversion.
+/// Dart-side wrapper for M4A-to-WAV audio conversion.
 ///
-/// WAV-to-M4A remains on Lotti's Apple platform channel. M4A-to-WAV delegates
-/// to `audio_decoder`, which uses AVFoundation, Android MediaCodec, Windows
-/// Media Foundation, and Linux GStreamer without bundling FFmpeg.
+/// On Linux, conversion calls the native `convertM4aToWav` method channel.
+/// Other supported platforms delegate to `audio_decoder` without bundling
+/// FFmpeg.
 class AudioConverterChannel {
   static const _channel = MethodChannel('com.matthiasn.lotti/audio_converter');
-
-  /// Converts a WAV file at [inputPath] to M4A at [outputPath].
-  ///
-  /// Returns `true` on success, `false` if conversion is unsupported on this
-  /// platform or if the native conversion fails. Callers should keep the
-  /// original WAV as a fallback when this returns `false`.
-  static Future<bool> convertWavToM4a({
-    required String inputPath,
-    required String outputPath,
-  }) async {
-    try {
-      final result = await _channel.invokeMethod<bool>('convertWavToM4a', {
-        'inputPath': inputPath,
-        'outputPath': outputPath,
-      });
-      return result ?? false;
-    } on MissingPluginException {
-      // Platform has no native implementation — fall back to WAV
-      return false;
-    } on PlatformException catch (e) {
-      getIt<DomainLogger>().log(
-        LogDomain.speech,
-        'Native audio conversion failed: $e',
-        subDomain: 'convertWavToM4a',
-      );
-      return false;
-    }
-  }
 
   /// Converts an M4A file at [inputPath] to PCM WAV at [outputPath].
   ///

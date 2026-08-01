@@ -1839,15 +1839,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisis un modèle de génération de prompts';
 
   @override
-  String get aiProviderAlibabaDescription =>
-      'La famille de modèles Qwen d\'Alibaba Cloud via l\'API DashScope';
-
-  @override
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
-
-  @override
-  String get aiProviderAnthropicDescription =>
-      'La famille d\'assistants Claude d\'Anthropic';
 
   @override
   String get aiProviderAnthropicName => 'Anthropic Claude';
@@ -2092,68 +2084,31 @@ class AppLocalizationsFr extends AppLocalizations {
       'S’exécute intégré au processus de l’app Apple. Aucun serveur local ni URL de base n’est nécessaire.';
 
   @override
-  String get aiProviderGeminiDescription => 'Modèles Gemini de Google';
-
-  @override
   String get aiProviderGeminiName => 'Google Gemini';
-
-  @override
-  String get aiProviderGenericOpenAiDescription =>
-      'API compatible avec le format OpenAI';
 
   @override
   String get aiProviderGenericOpenAiName => 'Compatible OpenAI';
 
   @override
-  String get aiProviderMeliousDescription =>
-      'Inférence hébergée en Europe avec catalogue dynamique, routage, audio et images';
-
-  @override
   String get aiProviderMeliousName => 'Melious.ai';
-
-  @override
-  String get aiProviderMistralDescription =>
-      'API cloud de Mistral AI avec transcription audio native';
 
   @override
   String get aiProviderMistralName => 'Mistral';
 
   @override
-  String get aiProviderMlxAudioDescription =>
-      'Modèles MLX Audio intégrés pour STT et TTS locaux sur Apple Silicon';
-
-  @override
   String get aiProviderMlxAudioName => 'MLX Audio (local)';
-
-  @override
-  String get aiProviderNebiusAiStudioDescription =>
-      'Modèles de Nebius AI Studio';
 
   @override
   String get aiProviderNebiusAiStudioName => 'Nebius AI Studio';
 
   @override
-  String get aiProviderOllamaDescription =>
-      'Exécuter l\'inférence localement avec Ollama';
-
-  @override
   String get aiProviderOllamaName => 'Ollama';
-
-  @override
-  String get aiProviderOmlxDescription =>
-      'Inférence oMLX locale compatible OpenAI pour les modèles MLX';
 
   @override
   String get aiProviderOmlxName => 'oMLX (local)';
 
   @override
-  String get aiProviderOpenAiDescription => 'Modèles GPT d\'OpenAI';
-
-  @override
   String get aiProviderOpenAiName => 'OpenAI';
-
-  @override
-  String get aiProviderOpenRouterDescription => 'Modèles d\'OpenRouter';
 
   @override
   String get aiProviderOpenRouterName => 'OpenRouter';
@@ -2191,15 +2146,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderUnknownName => 'Fournisseur d\'IA';
 
   @override
-  String get aiProviderVoxtralDescription =>
-      'Transcription Voxtral locale (jusqu\'à 30 min d\'audio, 13 langues)';
-
-  @override
   String get aiProviderVoxtralName => 'Voxtral (local)';
-
-  @override
-  String get aiProviderWhisperDescription =>
-      'Transcription Whisper locale avec API compatible OpenAI';
 
   @override
   String get aiProviderWhisperName => 'Whisper (local)';
@@ -2226,25 +2173,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiResponseShowMore => 'Voir plus';
-
-  @override
-  String get aiResponseTypeAudioTranscription => 'Transcription audio';
-
-  @override
-  String get aiResponseTypeChecklistUpdates =>
-      'Mises à jour de la liste de contrôle';
-
-  @override
-  String get aiResponseTypeImageAnalysis => 'Analyse d\'image';
-
-  @override
-  String get aiResponseTypeImagePromptGeneration => 'Prompt d\'image';
-
-  @override
-  String get aiResponseTypePromptGeneration => 'Prompt généré';
-
-  @override
-  String get aiResponseTypeTaskSummary => 'Résumé de tâche';
 
   @override
   String get aiRunningActivityOpenProgress =>

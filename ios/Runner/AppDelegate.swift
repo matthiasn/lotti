@@ -11,11 +11,6 @@ import Flutter
             UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
         }
         
-        let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-
-        if let audioConverterRegistrar = self.registrar(forPlugin: "AudioConverter") {
-            AudioConverter.register(with: audioConverterRegistrar)
-        }
         GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }

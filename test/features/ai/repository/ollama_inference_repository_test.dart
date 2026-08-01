@@ -506,51 +506,6 @@ void main() {
       });
     });
 
-    group('warmUpModel', () {
-      test('should send warm-up request successfully', () async {
-        // Arrange
-        const modelName = 'llama2';
-        const baseUrl = 'http://localhost:11434';
-
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer((_) async => http.Response('{"response":"Hello"}', 200));
-
-        // Act
-        await repository.warmUpModel(modelName, baseUrl);
-
-        // Assert
-        verify(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).called(1);
-      });
-
-      test('should not throw on warm-up failure', () async {
-        // Arrange
-        const modelName = 'llama2';
-        const baseUrl = 'http://localhost:11434';
-
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenThrow(Exception('Network error'));
-
-        // Act & Assert (should not throw)
-        await repository.warmUpModel(modelName, baseUrl);
-      });
-    });
-
     group('OllamaPullProgress', () {
       test('should have correct status and progress', () {
         const progress = OllamaPullProgress(
@@ -3068,44 +3023,6 @@ void main() {
             ),
           ),
         );
-      },
-    );
-  });
-
-  group('warmUpModel – non-200 response path (lines 818-823)', () {
-    late OllamaInferenceRepository repo;
-    late MockHttpClient mockClient;
-
-    setUp(() {
-      mockClient = MockHttpClient();
-      repo = OllamaInferenceRepository(httpClient: mockClient);
-    });
-
-    test(
-      'logs warning and does not throw on non-200 warm-up response',
-      () async {
-        // Lines 818-823: response.statusCode != httpStatusOk → log + return.
-        when(
-          () => mockClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer((_) async => http.Response('Service Unavailable', 503));
-
-        // Must complete without throwing.
-        await expectLater(
-          repo.warmUpModel('llava', 'http://localhost:11434'),
-          completes,
-        );
-
-        verify(
-          () => mockClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).called(1);
       },
     );
   });

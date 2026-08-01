@@ -126,7 +126,6 @@ class MistralInferenceRepository {
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw MistralInferenceException(
           _extractErrorMessage(response.body, response.statusCode),
-          statusCode: response.statusCode,
         );
       }
 
@@ -158,20 +157,17 @@ class MistralInferenceRepository {
       return models;
     } on MistralInferenceException {
       rethrow;
-    } on TimeoutException catch (e) {
+    } on TimeoutException {
       throw MistralInferenceException(
         'Mistral model list request timed out',
-        originalError: e,
       );
-    } on FormatException catch (e) {
+    } on FormatException {
       throw MistralInferenceException(
         'Mistral model list response was not valid JSON',
-        originalError: e,
       );
     } on Exception catch (e) {
       throw MistralInferenceException(
         'Failed to fetch Mistral models: $e',
-        originalError: e,
       );
     }
   }
@@ -393,11 +389,10 @@ class MistralInferenceRepository {
       final normalizedEndpoint = endpointPath.replaceAll(RegExp('^/+'), '');
 
       return baseUri.replace(path: '$basePath/$normalizedEndpoint');
-    } on FormatException catch (e) {
+    } on FormatException {
       // Never echo the raw base URL — it may carry userinfo/query secrets.
       throw MistralInferenceException(
         'Invalid Mistral base URL',
-        originalError: e,
       );
     }
   }
@@ -699,7 +694,6 @@ class MistralInferenceRepository {
         );
         throw MistralInferenceException(
           'Mistral API error (HTTP ${streamedResponse.statusCode})',
-          statusCode: streamedResponse.statusCode,
         );
       }
 
@@ -761,7 +755,6 @@ class MistralInferenceRepository {
                 );
                 throw MistralInferenceException(
                   'Too many parse errors ($parseErrorCount) during streaming',
-                  originalError: e,
                 );
               }
               // Continue processing other chunks
@@ -780,7 +773,6 @@ class MistralInferenceRepository {
       _logException(e, subDomain: 'unexpected', stackTrace: stackTrace);
       throw MistralInferenceException(
         'Failed to generate text: $e',
-        originalError: e,
       );
     }
   }
@@ -983,15 +975,9 @@ final Map<String, KnownModel> _knownMistralModels = {
 
 /// Exception thrown when Mistral operations fail.
 class MistralInferenceException implements Exception {
-  MistralInferenceException(
-    this.message, {
-    this.statusCode,
-    this.originalError,
-  });
+  MistralInferenceException(this.message);
 
   final String message;
-  final int? statusCode;
-  final Object? originalError;
 
   @override
   String toString() => 'MistralInferenceException: $message';

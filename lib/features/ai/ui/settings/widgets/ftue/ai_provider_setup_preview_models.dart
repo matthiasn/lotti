@@ -25,8 +25,7 @@ class AiProviderSetupPreviewResult {
 /// Bundles the FTUE preset's `KnownModel` list with the seeded profile
 /// name and the test-category name so the modal can ship one widget tree
 /// for every provider type. `models` may be empty (Ollama) — the caller
-/// is expected to short-circuit and skip the modal in that case via
-/// `AiProviderSetupPreviewModal.skipsPreviewFor(...)`.
+/// short-circuits and skips the modal when the resolved preset has no models.
 @immutable
 class AiProviderSetupPreviewPreset {
   const AiProviderSetupPreviewPreset({

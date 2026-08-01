@@ -60,6 +60,7 @@ class _TestBench {
   late final CloudInferenceRepository repository;
 
   void dispose() {
+    repository.close();
     mockHttpClient?.close();
     container.dispose();
   }

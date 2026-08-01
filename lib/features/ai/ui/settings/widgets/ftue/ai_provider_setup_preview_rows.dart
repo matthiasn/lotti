@@ -442,8 +442,7 @@ AiProviderSetupPreviewPreset? anthropicPreset() {
 /// list. Non-nullable — Ollama has no canonical lookup to fail.
 AiProviderSetupPreviewPreset ollamaPreset() {
   // Ollama serves locally-pulled models. No preset model list — the
-  // caller short-circuits via `skipsPreviewFor` and goes straight to
-  // the result modal.
+  // preview entry point goes straight to the result modal.
   return const AiProviderSetupPreviewPreset(
     providerName: 'Ollama',
     profileName: 'Local (Ollama)',

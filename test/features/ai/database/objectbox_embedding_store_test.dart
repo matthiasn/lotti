@@ -329,9 +329,7 @@ void main() {
         expect(results.first.entityId, 'hit-1');
         expect(results.first.distance, 0.95);
         expect(results.first.entityType, 'journalEntry');
-        expect(results.first.chunkIndex, 2);
         expect(results.first.taskId, 'task-1');
-        expect(results.first.subtype, 'report');
       });
 
       test('returns empty list when k <= 0', () {

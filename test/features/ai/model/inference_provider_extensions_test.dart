@@ -109,51 +109,6 @@ void main() {
       });
     });
 
-    group('description', () {
-      testWidgets('returns localized description for alibaba', (
-        WidgetTester tester,
-      ) async {
-        late String desc;
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            Builder(
-              builder: (context) {
-                desc = InferenceProviderType.alibaba.description(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-        expect(desc, isNotEmpty);
-        expect(desc, contains('Qwen'));
-      });
-
-      testWidgets('returns localized description for all provider types', (
-        WidgetTester tester,
-      ) async {
-        final descriptions = <InferenceProviderType, String>{};
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            Builder(
-              builder: (context) {
-                for (final type in InferenceProviderType.values) {
-                  descriptions[type] = type.description(context);
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-        for (final entry in descriptions.entries) {
-          expect(
-            entry.value,
-            isNotEmpty,
-            reason: '${entry.key} should have a non-empty description',
-          );
-        }
-      });
-    });
-
     group('requiresDataUriForAudio', () {
       test('returns true only for alibaba', () {
         expect(

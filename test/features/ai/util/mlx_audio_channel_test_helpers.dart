@@ -64,8 +64,6 @@ class GeneratedDownloadProgressScenario {
     return (normalized * 100).clamp(0, 100).floor();
   }
 
-  bool get expectedHasMeasuredProgress => expectedNormalizedProgress != null;
-
   @override
   String toString() {
     return 'GeneratedDownloadProgressScenario('

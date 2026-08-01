@@ -3186,23 +3186,11 @@ abstract class AppLocalizations {
   /// **'Pick a prompt generation model'**
   String get aiPromptGenerationPickerTitle;
 
-  /// No description provided for @aiProviderAlibabaDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Alibaba Cloud\'s Qwen family of models via DashScope API'**
-  String get aiProviderAlibabaDescription;
-
   /// No description provided for @aiProviderAlibabaName.
   ///
   /// In en, this message translates to:
   /// **'Alibaba Cloud (Qwen)'**
   String get aiProviderAlibabaName;
-
-  /// No description provided for @aiProviderAnthropicDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Anthropic\'s Claude family of AI assistants'**
-  String get aiProviderAnthropicDescription;
 
   /// No description provided for @aiProviderAnthropicName.
   ///
@@ -3552,23 +3540,11 @@ abstract class AppLocalizations {
   /// **'Runs embedded in the Apple app process. No local server or Base URL is required.'**
   String get aiProviderEmbeddedRuntimeHint;
 
-  /// No description provided for @aiProviderGeminiDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Google\'s Gemini AI models'**
-  String get aiProviderGeminiDescription;
-
   /// No description provided for @aiProviderGeminiName.
   ///
   /// In en, this message translates to:
   /// **'Google Gemini'**
   String get aiProviderGeminiName;
-
-  /// No description provided for @aiProviderGenericOpenAiDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'API compatible with OpenAI format'**
-  String get aiProviderGenericOpenAiDescription;
 
   /// No description provided for @aiProviderGenericOpenAiName.
   ///
@@ -3576,23 +3552,11 @@ abstract class AppLocalizations {
   /// **'OpenAI Compatible'**
   String get aiProviderGenericOpenAiName;
 
-  /// No description provided for @aiProviderMeliousDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'European-hosted inference with a dynamic model catalog, routing, audio, and images'**
-  String get aiProviderMeliousDescription;
-
   /// No description provided for @aiProviderMeliousName.
   ///
   /// In en, this message translates to:
   /// **'Melious.ai'**
   String get aiProviderMeliousName;
-
-  /// No description provided for @aiProviderMistralDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Mistral AI cloud API with native audio transcription'**
-  String get aiProviderMistralDescription;
 
   /// No description provided for @aiProviderMistralName.
   ///
@@ -3600,23 +3564,11 @@ abstract class AppLocalizations {
   /// **'Mistral'**
   String get aiProviderMistralName;
 
-  /// No description provided for @aiProviderMlxAudioDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Embedded MLX Audio models for local STT and TTS on Apple Silicon'**
-  String get aiProviderMlxAudioDescription;
-
   /// No description provided for @aiProviderMlxAudioName.
   ///
   /// In en, this message translates to:
   /// **'MLX Audio (local)'**
   String get aiProviderMlxAudioName;
-
-  /// No description provided for @aiProviderNebiusAiStudioDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Nebius AI Studio\'s models'**
-  String get aiProviderNebiusAiStudioDescription;
 
   /// No description provided for @aiProviderNebiusAiStudioName.
   ///
@@ -3624,23 +3576,11 @@ abstract class AppLocalizations {
   /// **'Nebius AI Studio'**
   String get aiProviderNebiusAiStudioName;
 
-  /// No description provided for @aiProviderOllamaDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Run inference locally with Ollama'**
-  String get aiProviderOllamaDescription;
-
   /// No description provided for @aiProviderOllamaName.
   ///
   /// In en, this message translates to:
   /// **'Ollama'**
   String get aiProviderOllamaName;
-
-  /// No description provided for @aiProviderOmlxDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Local OpenAI-compatible oMLX inference for MLX models'**
-  String get aiProviderOmlxDescription;
 
   /// No description provided for @aiProviderOmlxName.
   ///
@@ -3648,23 +3588,11 @@ abstract class AppLocalizations {
   /// **'oMLX (local)'**
   String get aiProviderOmlxName;
 
-  /// No description provided for @aiProviderOpenAiDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenAI\'s GPT models'**
-  String get aiProviderOpenAiDescription;
-
   /// No description provided for @aiProviderOpenAiName.
   ///
   /// In en, this message translates to:
   /// **'OpenAI'**
   String get aiProviderOpenAiName;
-
-  /// No description provided for @aiProviderOpenRouterDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenRouter\'s models'**
-  String get aiProviderOpenRouterDescription;
 
   /// No description provided for @aiProviderOpenRouterName.
   ///
@@ -3726,23 +3654,11 @@ abstract class AppLocalizations {
   /// **'AI provider'**
   String get aiProviderUnknownName;
 
-  /// No description provided for @aiProviderVoxtralDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Local Voxtral transcription (up to 30 min audio, 13 languages)'**
-  String get aiProviderVoxtralDescription;
-
   /// No description provided for @aiProviderVoxtralName.
   ///
   /// In en, this message translates to:
   /// **'Voxtral (local)'**
   String get aiProviderVoxtralName;
-
-  /// No description provided for @aiProviderWhisperDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Local Whisper transcription with OpenAI-compatible API'**
-  String get aiProviderWhisperDescription;
 
   /// No description provided for @aiProviderWhisperName.
   ///
@@ -3791,42 +3707,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show more'**
   String get aiResponseShowMore;
-
-  /// No description provided for @aiResponseTypeAudioTranscription.
-  ///
-  /// In en, this message translates to:
-  /// **'Audio Transcription'**
-  String get aiResponseTypeAudioTranscription;
-
-  /// No description provided for @aiResponseTypeChecklistUpdates.
-  ///
-  /// In en, this message translates to:
-  /// **'Checklist Updates'**
-  String get aiResponseTypeChecklistUpdates;
-
-  /// No description provided for @aiResponseTypeImageAnalysis.
-  ///
-  /// In en, this message translates to:
-  /// **'Image Analysis'**
-  String get aiResponseTypeImageAnalysis;
-
-  /// No description provided for @aiResponseTypeImagePromptGeneration.
-  ///
-  /// In en, this message translates to:
-  /// **'Image Prompt'**
-  String get aiResponseTypeImagePromptGeneration;
-
-  /// No description provided for @aiResponseTypePromptGeneration.
-  ///
-  /// In en, this message translates to:
-  /// **'Generated Prompt'**
-  String get aiResponseTypePromptGeneration;
-
-  /// No description provided for @aiResponseTypeTaskSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'Task Summary'**
-  String get aiResponseTypeTaskSummary;
 
   /// No description provided for @aiRunningActivityOpenProgress.
   ///

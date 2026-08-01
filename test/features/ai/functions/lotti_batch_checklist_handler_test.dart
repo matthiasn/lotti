@@ -781,7 +781,6 @@ void main() {
 
         // Assert
         expect(count, 0);
-        expect(handler.successfulItems, isEmpty);
         verifyNever(() => mockJournalDb.journalEntityById(any()));
       });
 
@@ -969,7 +968,6 @@ void main() {
 
         // Assert: error is swallowed, no items recorded.
         expect(count, 0);
-        expect(handler.successfulItems, isEmpty);
         expect(handler.failedItems, isEmpty);
         verifyNever(
           () => mockAutoChecklistService.autoCreateChecklist(

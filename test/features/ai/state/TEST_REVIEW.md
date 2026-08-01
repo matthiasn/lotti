@@ -29,7 +29,7 @@
 | `test/…/profile_automation_providers_test.dart` | 297 | — | First 3 tests are constructor smoke-tests (isA<> only) |
 | `test/…/reference_image_selection_controller_test.dart` | 766 | — | Clean; good Glados test |
 | `test/…/linked_entity_inference_test.dart` | 710 | — | Inline `MockUnifiedAiInferenceRepository` duplicates one in `unified_ai_controller_test.dart`; manual GetIt boilerplate |
-| `test/…/consts_test.dart` | 192 | — | Some permutation tests (icon/localizedName per-value) could be parameterized |
+| `test/…/consts_test.dart` | 107 | — | Enum icon permutations are table-driven |
 | `test/…/settings/ai_config_by_type_controller_test.dart` | 361 | — | Clean; good Glados test |
 | `test/…/settings/inference_model_form_controller_test.dart` | 726 | — | Clean; good Glados test |
 | `test/…/settings/inference_model_form_controller_dirty_state_test.dart` | 308 | — | Splits tests for same source file — violates one-file-per-source rule |
@@ -75,7 +75,7 @@
 
 - [x] **[MED]** `test/features/ai/state/unified_ai_controller_test.dart` — Lines 300–422: the test `'successfully runs inference and updates state'` wraps an already-async scenario inside `fakeAsync` and then drives `async.elapse(Duration(milliseconds: 10))` twice to match two `Future<void>.delayed(const Duration(milliseconds: 10))` calls embedded in the mock answer (lines 354, 356). The `Duration(milliseconds: 10)` delays inside the mock answer are real async delays placed inside `fakeAsync` — this is the pattern described in test/README.md under "Replacing Duration.zero Yields". They should be replaced with synchronous callbacks, or the mock answer should complete immediately so the `elapse` calls are unnecessary. **RESOLVED:** (stale) the mock answer now fires its callbacks synchronously and the test drives a single `flushMicrotasks()` — no embedded delays or `elapse` calls remain.
 
-- [x] **[MED]** `test/features/ai/state/consts_test.dart` — Lines 79–104: `icon` test and lines 45–77 `localizedName` test both iterate all 7 enum values with separate `expect` lines, giving 7 copy-paste expect calls per test. These can be parameterized using a `final cases = <AiResponseType, IconData>{...}` map iterated in a loop, reducing each test body to ~5 lines. **RESOLVED:** done — one `expectedByType` table drives the icon test and the context-based `localizedName` loop, with a completeness guard that the table covers every enum value (the redundant direct-l10n string test was folded away).
+- [x] **[MED]** `test/features/ai/state/consts_test.dart` — the icon test repeated one assertion per enum value. **RESOLVED:** one `expectedIcons` table drives the icon test with a completeness guard. The unused `localizedName` production API and its test-only coverage were removed.
 
 - [x] **[LOW]** `test/features/ai/state/unified_ai_controller_test.dart` — `FakeEntryControllerNull` (lines 41–43) is defined inline. If this pattern is needed in other test files it should be added to central fakes; if unique to this file it should remain but be documented.
   **RESOLVED:** (stale) the HIGH-pass split already removed `FakeEntryControllerNull` from this file — no such class is defined here anymore. The only remnant was a dangling `/// Entry controller that returns null (entity not found).` doc comment with no class beneath it, which has now been deleted.

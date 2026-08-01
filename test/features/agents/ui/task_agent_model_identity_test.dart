@@ -136,7 +136,6 @@ void main() {
     final broken = TaskAgentModelIdentityViewData.fromResolution(
       setup: const ResolvedAgentSetup(
         status: AgentSetupResolutionStatus.broken,
-        brokenSelectionId: 'missing-model',
       ),
       reportProvenance: null,
       hasReport: false,

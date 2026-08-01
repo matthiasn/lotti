@@ -203,6 +203,4 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
   /// Model warm-up. Thin delegator to [OllamaApiClient.warmUpModel]
   /// (mockable class member).
-  Future<void> warmUpModel(String modelName, String baseUrl) =>
-      _api.warmUpModel(modelName, baseUrl);
 }

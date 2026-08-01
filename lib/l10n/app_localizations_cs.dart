@@ -1826,15 +1826,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber model pro generování promptů';
 
   @override
-  String get aiProviderAlibabaDescription =>
-      'Rodina modelů Qwen od Alibaba Cloud přes DashScope API';
-
-  @override
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
-
-  @override
-  String get aiProviderAnthropicDescription =>
-      'Rodina AI asistentů Claude od Anthropic';
 
   @override
   String get aiProviderAnthropicName => 'Anthropic Claude';
@@ -2084,67 +2076,31 @@ class AppLocalizationsCs extends AppLocalizations {
       'Běží přímo v procesu aplikace Apple. Není potřeba lokální server ani základní URL.';
 
   @override
-  String get aiProviderGeminiDescription => 'Google Gemini AI modely';
-
-  @override
   String get aiProviderGeminiName => 'Google Gemini';
-
-  @override
-  String get aiProviderGenericOpenAiDescription =>
-      'API kompatibilní s formátem OpenAI';
 
   @override
   String get aiProviderGenericOpenAiName => 'Kompatibilní s OpenAI';
 
   @override
-  String get aiProviderMeliousDescription =>
-      'Inference hostovaná v Evropě s dynamickým katalogem modelů, směrováním, zvukem a obrázky';
-
-  @override
   String get aiProviderMeliousName => 'Melious.ai';
-
-  @override
-  String get aiProviderMistralDescription =>
-      'Mistral AI cloudové API s nativním přepisem zvuku';
 
   @override
   String get aiProviderMistralName => 'Mistral';
 
   @override
-  String get aiProviderMlxAudioDescription =>
-      'Vestavěné modely MLX Audio pro lokální STT a TTS na Apple Silicon';
-
-  @override
   String get aiProviderMlxAudioName => 'MLX Audio (lokálně)';
-
-  @override
-  String get aiProviderNebiusAiStudioDescription => 'Modely Nebius AI Studia';
 
   @override
   String get aiProviderNebiusAiStudioName => 'Nebius AI Studio';
 
   @override
-  String get aiProviderOllamaDescription =>
-      'Spouštějte inferenci lokálně s Ollama';
-
-  @override
   String get aiProviderOllamaName => 'Ollama';
-
-  @override
-  String get aiProviderOmlxDescription =>
-      'Lokální inference oMLX kompatibilní s OpenAI pro modely MLX';
 
   @override
   String get aiProviderOmlxName => 'oMLX (lokálně)';
 
   @override
-  String get aiProviderOpenAiDescription => 'GPT modely od OpenAI';
-
-  @override
   String get aiProviderOpenAiName => 'OpenAI';
-
-  @override
-  String get aiProviderOpenRouterDescription => 'Modely OpenRouter';
 
   @override
   String get aiProviderOpenRouterName => 'OpenRouter';
@@ -2181,15 +2137,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderUnknownName => 'AI poskytovatel';
 
   @override
-  String get aiProviderVoxtralDescription =>
-      'Lokální přepis Voxtral (až 30 min zvuku, 13 jazyků)';
-
-  @override
   String get aiProviderVoxtralName => 'Voxtral (lokální)';
-
-  @override
-  String get aiProviderWhisperDescription =>
-      'Lokální přepisování s Whisper a kompatibilní API OpenAI';
 
   @override
   String get aiProviderWhisperName => 'Whisper (lokální)';
@@ -2216,25 +2164,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiResponseShowMore => 'Zobrazit více';
-
-  @override
-  String get aiResponseTypeAudioTranscription => 'Přepis zvuku';
-
-  @override
-  String get aiResponseTypeChecklistUpdates =>
-      'Aktualizace kontrolního seznamu';
-
-  @override
-  String get aiResponseTypeImageAnalysis => 'Analýza obrázku';
-
-  @override
-  String get aiResponseTypeImagePromptGeneration => 'Prompt pro obrázek';
-
-  @override
-  String get aiResponseTypePromptGeneration => 'Vygenerovaný prompt';
-
-  @override
-  String get aiResponseTypeTaskSummary => 'Shrnutí úkolu';
 
   @override
   String get aiRunningActivityOpenProgress => 'Zobrazit průběh AI';

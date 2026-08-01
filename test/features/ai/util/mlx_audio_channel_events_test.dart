@@ -74,7 +74,6 @@ void main() {
 
       expect(progress.normalizedProgress, isNull);
       expect(progress.percentComplete, isNull);
-      expect(progress.hasMeasuredProgress, isFalse);
     });
 
     test('reports zero percent when total bytes are known', () {
@@ -88,7 +87,6 @@ void main() {
 
       expect(progress.normalizedProgress, 0);
       expect(progress.percentComplete, 0);
-      expect(progress.hasMeasuredProgress, isTrue);
     });
 
     test('falls back to byte counts when native fraction is stale', () {
@@ -102,7 +100,6 @@ void main() {
 
       expect(progress.normalizedProgress, closeTo(0.146, 0.001));
       expect(progress.percentComplete, 14);
-      expect(progress.hasMeasuredProgress, isTrue);
     });
 
     test('reports tiny measured byte progress without hiding it', () {
@@ -116,7 +113,6 @@ void main() {
 
       expect(progress.normalizedProgress, 0.004);
       expect(progress.percentComplete, 0);
-      expect(progress.hasMeasuredProgress, isTrue);
     });
 
     test('reports measured progress above one percent', () {
@@ -130,7 +126,6 @@ void main() {
 
       expect(progress.normalizedProgress, 0.024);
       expect(progress.percentComplete, 2);
-      expect(progress.hasMeasuredProgress, isTrue);
     });
 
     test('uses native fraction when available', () {
@@ -144,7 +139,6 @@ void main() {
 
       expect(progress.normalizedProgress, 0.424);
       expect(progress.percentComplete, 42);
-      expect(progress.hasMeasuredProgress, isTrue);
     });
 
     test('derives progress from byte counts when fraction is missing', () {
@@ -157,7 +151,6 @@ void main() {
 
       expect(progress.normalizedProgress, 0.25);
       expect(progress.percentComplete, 25);
-      expect(progress.hasMeasuredProgress, isTrue);
     });
 
     test('reports installed models as complete', () {
@@ -168,7 +161,6 @@ void main() {
 
       expect(progress.normalizedProgress, 1);
       expect(progress.percentComplete, 100);
-      expect(progress.hasMeasuredProgress, isTrue);
     });
 
     test('ignores non-finite native progress fractions', () {
@@ -181,7 +173,6 @@ void main() {
 
         expect(progress.normalizedProgress, isNull);
         expect(progress.percentComplete, isNull);
-        expect(progress.hasMeasuredProgress, isFalse);
       }
     });
 
@@ -208,11 +199,6 @@ void main() {
         expect(
           progress.percentComplete,
           scenario.expectedPercentComplete,
-          reason: '$scenario',
-        );
-        expect(
-          progress.hasMeasuredProgress,
-          scenario.expectedHasMeasuredProgress,
           reason: '$scenario',
         );
       },

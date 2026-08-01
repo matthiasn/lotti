@@ -73,7 +73,6 @@ class ActiveInferenceController extends Notifier<ActiveInferenceData?> {
 
   final ({String entityId, AiResponseType aiResponseType}) _providerArgs;
   String get entityId => _providerArgs.entityId;
-  AiResponseType get aiResponseType => _providerArgs.aiResponseType;
 
   // Track current data to dispose in onDispose without accessing state
   ActiveInferenceData? _currentData;

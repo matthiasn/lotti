@@ -1,4 +1,3 @@
-import AVFoundation
 import Darwin
 import Foundation
 import FlutterMacOS
@@ -14,9 +13,6 @@ import MLXAudioCore
 #endif
 #if arch(arm64) && canImport(MLXAudioSTT)
 import MLXAudioSTT
-#endif
-#if arch(arm64) && canImport(MLXAudioTTS)
-import MLXAudioTTS
 #endif
 #if arch(arm64) && canImport(MLXAudioVAD)
 import MLXAudioVAD
@@ -283,7 +279,6 @@ final class MlxAudio: NSObject {
     private let downloadEvents = MlxAudioEventStreamHandler()
     private let realtimeEvents = MlxAudioEventStreamHandler()
     private let stateQueue = DispatchQueue(label: "com.matthiasn.lotti.mlx_audio.state")
-    private var audioPlayer: AVAudioPlayer?
     private var latestDownloadPayloadByModel: [String: [String: Any]] = [:]
     private var lastLoggedDownloadPercentByModel: [String: Int] = [:]
     #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT)
@@ -385,24 +380,6 @@ final class MlxAudio: NSObject {
                 enableSpeakerDiarization: args["enableSpeakerDiarization"] as? Bool ?? false,
                 result: result
             )
-
-        case "speakText":
-            guard let modelId = args["modelId"] as? String,
-                  let text = args["text"] as? String
-            else {
-                result(invalidArguments("Missing modelId or text"))
-                return
-            }
-            speakText(
-                text: text,
-                modelId: modelId,
-                language: args["language"] as? String,
-                result: result
-            )
-
-        case "stopSpeaking":
-            stopAudioPlayer()
-            result(nil)
 
         case "startRealtimeTranscription":
             guard let modelId = args["modelId"] as? String else {
@@ -624,68 +601,6 @@ final class MlxAudio: NSObject {
                 result(flutterResult)
             }
         )
-    }
-
-    private func speakText(
-        text: String,
-        modelId: String,
-        language: String?,
-        result: @escaping FlutterResult
-    ) {
-        #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT) && canImport(MLXAudioTTS)
-        Task {
-            do {
-                try await withMlxInferenceResources(stage: "tts", modelId: modelId) {
-                    let model = try await TTS.loadModel(modelRepo: modelId)
-                    let audio = try await model.generate(
-                        text: text,
-                        voice: nil,
-                        refAudio: nil,
-                        refText: nil,
-                        language: language ?? "English"
-                    )
-                    let outputURL = FileManager.default.temporaryDirectory
-                        .appendingPathComponent("mlx-audio-tts-\(UUID().uuidString).wav")
-                    try AudioUtils.writeWavFile(
-                        samples: audio.asArray(Float.self),
-                        sampleRate: Double(model.sampleRate),
-                        fileURL: outputURL
-                    )
-                    defer {
-                        try? FileManager.default.removeItem(at: outputURL)
-                    }
-                    let wavData = try Data(contentsOf: outputURL)
-                    try playAudio(data: wavData)
-                }
-                result(nil)
-            } catch {
-                result(FlutterError(
-                    code: "TTS_FAILED",
-                    message: error.localizedDescription,
-                    details: "\(error)"
-                ))
-            }
-        }
-        #else
-        result(unsupportedError())
-        #endif
-    }
-
-    private func playAudio(data: Data) throws {
-        let player = try AVAudioPlayer(data: data)
-        player.prepareToPlay()
-        stateQueue.sync {
-            audioPlayer?.stop()
-            audioPlayer = player
-        }
-        player.play()
-    }
-
-    private func stopAudioPlayer() {
-        stateQueue.sync {
-            audioPlayer?.stop()
-            audioPlayer = nil
-        }
     }
 
     private func startRealtimeTranscription(

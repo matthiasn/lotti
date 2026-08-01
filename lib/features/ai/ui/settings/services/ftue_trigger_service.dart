@@ -107,12 +107,4 @@ class FtueTriggerService extends AsyncNotifier<void> {
         .where((p) => p.inferenceProviderType == providerType)
         .length;
   }
-
-  /// Checks if this would be the first provider of a specific type.
-  ///
-  /// Unlike [shouldTriggerFtue], this checks BEFORE a provider is created.
-  Future<bool> isFirstProviderOfType(InferenceProviderType providerType) async {
-    final count = await getProviderCountByType(providerType);
-    return count == 0;
-  }
 }

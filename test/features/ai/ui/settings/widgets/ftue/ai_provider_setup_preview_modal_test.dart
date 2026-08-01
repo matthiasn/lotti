@@ -131,43 +131,6 @@ void main() {
     });
   });
 
-  group('AiProviderSetupPreviewModal.skipsPreviewFor', () {
-    test('skips the preview for Ollama (no model preset)', () {
-      expect(
-        AiProviderSetupPreviewModal.skipsPreviewFor(
-          InferenceProviderType.ollama,
-        ),
-        isTrue,
-      );
-    });
-
-    test('does not skip the preview for any cloud provider with a preset', () {
-      for (final type in const [
-        InferenceProviderType.gemini,
-        InferenceProviderType.openAi,
-        InferenceProviderType.melious,
-        InferenceProviderType.mistral,
-        InferenceProviderType.alibaba,
-        InferenceProviderType.anthropic,
-      ]) {
-        expect(
-          AiProviderSetupPreviewModal.skipsPreviewFor(type),
-          isFalse,
-          reason: '$type should NOT skip the preview',
-        );
-      }
-    });
-
-    test('skips the preview for unknown provider types (no preset)', () {
-      expect(
-        AiProviderSetupPreviewModal.skipsPreviewFor(
-          InferenceProviderType.openRouter,
-        ),
-        isTrue,
-      );
-    });
-  });
-
   group('AiProviderSetupPreviewModal.show', () {
     testWidgets(
       'treats preset models under a usable synced provider as already '

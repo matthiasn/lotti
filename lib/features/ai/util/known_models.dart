@@ -121,7 +121,6 @@ const mlxAudioQwenAsr17B4BitModelId = 'mlx-community/Qwen3-ASR-1.7B-4bit';
 const mlxAudioQwenAsr17B8BitModelId = 'mlx-community/Qwen3-ASR-1.7B-8bit';
 const String mlxAudioRecommendedSttModelId = mlxAudioQwenAsr17B8BitModelId;
 const mlxAudioParakeetModelId = 'mlx-community/parakeet-tdt-0.6b-v3';
-const mlxAudioDefaultTtsModelId = 'mlx-community/Qwen3-TTS-12Hz-0.6B-Base-8bit';
 
 /// Canonical Melious.ai model identifiers used by the curated default setup.
 ///

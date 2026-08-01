@@ -10,7 +10,7 @@ import 'package:lotti/utils/platform.dart' as platform;
 ///
 /// The channel is intentionally small and data-oriented: Flutter owns the
 /// provider/model configuration and progress UI, while Swift owns MLX model
-/// loading, Hugging Face downloads, AVFoundation decoding, and audio playback.
+/// loading, Hugging Face downloads, and AVFoundation decoding.
 /// The native bridge ships only on macOS — iOS, Android, Linux, and Windows
 /// do not register the plugin, and every method short-circuits to an
 /// `unsupported` result so callers never see a [MissingPluginException]. On
@@ -151,34 +151,6 @@ class MlxAudioChannel {
     return MlxAudioTranscriptionResult.fromMap(result ?? const {});
   }
 
-  /// Synthesizes [text] to speech with the TTS [modelId] and plays it natively.
-  /// Throws on unsupported platforms.
-  Future<void> speakText({
-    required String text,
-    required String modelId,
-    String? language,
-  }) async {
-    if (!_isPlatformSupported) {
-      throw _unsupportedPlatformException();
-    }
-    await _methodChannel.invokeMethod<void>(
-      'speakText',
-      {
-        'text': text,
-        'modelId': modelId,
-        'language': language,
-      },
-    );
-  }
-
-  /// Stops any in-progress speech playback. No-op on unsupported platforms.
-  Future<void> stopSpeaking() async {
-    if (!_isPlatformSupported) {
-      return;
-    }
-    await _methodChannel.invokeMethod<void>('stopSpeaking');
-  }
-
   void _logPlatformException(String method, PlatformException error) {
     try {
       getIt<DomainLogger>().log(
@@ -234,9 +206,6 @@ class MlxAudioModelDownloadProgress {
   final int? completedUnitCount;
   final int? totalUnitCount;
   final String? message;
-
-  bool get hasMeasuredProgress =>
-      normalizedProgress != null || status == MlxAudioModelStatus.installed;
 
   double? get normalizedProgress {
     if (status == MlxAudioModelStatus.installed) {
