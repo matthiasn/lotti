@@ -842,8 +842,53 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = AgentUnknownEntity;
 
+  /// Decodes an agent entity and applies bounded read-side compatibility
+  /// repairs before the generated decoder enforces the current schema.
+  ///
+  /// Early `weekRollup` rows omitted `weekStart` even though their canonical
+  /// id already contained the same Monday. Derive that one field without
+  /// mutating the caller's map. A malformed id is not guessed or echoed in the
+  /// diagnostic: sync can classify the fixed [FormatException] as permanent
+  /// and avoid retrying a poison payload.
   factory AgentDomainEntity.fromJson(Map<String, dynamic> json) =>
-      _$AgentDomainEntityFromJson(json);
+      _$AgentDomainEntityFromJson(_repairLegacyWeekRollup(json));
+}
+
+final _canonicalWeekRollupId = RegExp(
+  r'^week_rollup:(\d{4})-(\d{2})-(\d{2})$',
+);
+
+const _invalidLegacyWeekRollupMessage =
+    'Legacy weekRollup is missing weekStart and its id is not a canonical '
+    'Monday';
+
+Map<String, dynamic> _repairLegacyWeekRollup(Map<String, dynamic> json) {
+  if (json['runtimeType'] != 'weekRollup' || json['weekStart'] != null) {
+    return json;
+  }
+
+  final id = json['id'];
+  final match = id is String ? _canonicalWeekRollupId.firstMatch(id) : null;
+  if (match == null) {
+    throw const FormatException(_invalidLegacyWeekRollupMessage);
+  }
+
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  final weekStart = DateTime(year, month, day);
+  final isExactDate =
+      weekStart.year == year &&
+      weekStart.month == month &&
+      weekStart.day == day;
+  if (!isExactDate || weekStart.weekday != DateTime.monday) {
+    throw const FormatException(_invalidLegacyWeekRollupMessage);
+  }
+
+  return <String, dynamic>{
+    ...json,
+    'weekStart': weekStart.toIso8601String(),
+  };
 }
 
 extension AgentStateReportFreshness on AgentStateEntity {

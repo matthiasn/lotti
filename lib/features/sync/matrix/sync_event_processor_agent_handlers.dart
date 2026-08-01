@@ -47,10 +47,11 @@ extension _AgentHandlers on SyncEventProcessor {
   /// ensures we always get the version that matches this text event.
   ///
   /// Path-validation errors from [resolveJsonCandidateFile] (e.g. path
-  /// traversal) are permanent — logged and skipped. File-read
-  /// [FileSystemException]s are rethrown so the pipeline retries (attachment
-  /// may not have arrived yet). Other exceptions (corrupt JSON, parse errors)
-  /// are logged and return null to skip permanently.
+  /// traversal) are permanent — logged and surfaced as
+  /// [UnrecoverableSyncPayloadException]. File-read [FileSystemException]s are
+  /// rethrown so the pipeline retries (attachment may not have arrived yet).
+  /// Other exceptions (corrupt JSON, parse errors) are logged and receive the
+  /// same permanent classification.
   Future<T?> _resolveAgentPayload<T>({
     required T? inline,
     required String? jsonPath,
@@ -64,7 +65,7 @@ extension _AgentHandlers on SyncEventProcessor {
         '$typeName.skipped no payload and no jsonPath',
         subDomain: 'processor.resolve',
       );
-      return null;
+      throw UnrecoverableSyncPayloadException(typeName);
     }
     // Validate path first — throws FileSystemException for path traversal.
     // This is a permanent error (malformed jsonPath), so catch and skip.
@@ -78,7 +79,7 @@ extension _AgentHandlers on SyncEventProcessor {
         stackTrace: st,
         subDomain: 'resolve.$typeName.invalidPath',
       );
-      return null;
+      throw UnrecoverableSyncPayloadException(typeName);
     }
 
     // Fetch from the AttachmentIndex descriptor first to avoid reading
@@ -100,7 +101,7 @@ extension _AgentHandlers on SyncEventProcessor {
           stackTrace: st,
           subDomain: 'resolve.$typeName.parseFetched',
         );
-        return null;
+        throw UnrecoverableSyncPayloadException(typeName);
       }
     }
 
@@ -119,7 +120,7 @@ extension _AgentHandlers on SyncEventProcessor {
         stackTrace: st,
         subDomain: 'resolve.$typeName',
       );
-      return null;
+      throw UnrecoverableSyncPayloadException(typeName);
     }
   }
 

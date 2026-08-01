@@ -925,6 +925,66 @@ void main() {
         expect(roundtripped.daysWithPlans, 0);
       });
 
+      test('WeekRollupEntity repairs a missing weekStart from its id', () {
+        final original = AgentDomainEntity.weekRollup(
+          id: 'week_rollup:2026-05-18',
+          agentId: 'daily_os_planner',
+          weekStart: DateTime(2026, 5, 18),
+          plannedMinutesByCategory: const {'cat-work': 480},
+          recordedMinutesByCategory: const {'cat-work': 310},
+          daysWithPlans: 5,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+        final legacyJson =
+            jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>
+              ..remove('weekStart');
+
+        final decoded = AgentDomainEntity.fromJson(legacyJson);
+
+        expect(decoded, equals(original));
+        expect(legacyJson, isNot(contains('weekStart')));
+      });
+
+      test(
+        'WeekRollupEntity rejects a missing weekStart with an invalid id',
+        () {
+          final original = AgentDomainEntity.weekRollup(
+            id: 'week_rollup:2026-05-18',
+            agentId: 'daily_os_planner',
+            weekStart: DateTime(2026, 5, 18),
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            vectorClock: vectorClock,
+          );
+          final legacyJson =
+              jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>
+                ..remove('weekStart')
+                ..['id'] =
+                    'week_rollup:not-a-date:'
+                    '${List.filled(100, 'private-data').join()}';
+
+          expect(
+            () => AgentDomainEntity.fromJson(legacyJson),
+            throwsA(
+              isA<FormatException>()
+                  .having(
+                    (error) => error.message,
+                    'message',
+                    'Legacy weekRollup is missing weekStart and its id is not '
+                        'a canonical Monday',
+                  )
+                  .having(
+                    (error) => error.toString().length,
+                    'bounded diagnostic length',
+                    lessThan(150),
+                  ),
+            ),
+          );
+        },
+      );
+
       test('AttentionRequestEntity roundtrips bounded bid fields', () {
         final original = AgentDomainEntity.attentionRequest(
           id: 'attention-request-001',

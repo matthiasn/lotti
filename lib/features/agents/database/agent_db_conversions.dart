@@ -108,6 +108,8 @@ class AgentDbConversions {
   /// - `AgentStateEntity` counters: legacy scalar `wakeCounter` /
   ///   `totalSessionsCompleted` / `weeklyReviewCount` seeded into their per-host
   ///   `*ByHost` G-counter maps (see [_migrateGCounters]).
+  /// - `WeekRollupEntity.weekStart`: derived by [AgentDomainEntity.fromJson]
+  ///   from a canonical legacy row id when the field is absent.
   static AgentDomainEntity fromEntityRow(AgentEntity row) =>
       fromSerialized(row.serialized);
 
