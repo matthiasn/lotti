@@ -26,7 +26,9 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
     // backfilling every host during migration would put the long CTE on the
     // first launch's critical path. Lazily compute a host once, persist it,
     // and keep subsequent hot-path reads to a primary-key lookup.
-    return _rebuildSequenceWatermarkForHost(hostId);
+    // Pure backfill: this path runs only because no watermark row exists, so
+    // it must not overwrite one a concurrent writer created meanwhile.
+    return _rebuildSequenceWatermarkForHost(hostId, onlyIfAbsent: true);
   }
 
   Future<int?> _readSequenceWatermark(String hostId) async {
@@ -38,17 +40,28 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
     return row?.read<int>('last_counter');
   }
 
+  /// Persists [lastCounter] for [hostId].
+  ///
+  /// [onlyIfAbsent] makes the write a pure backfill: if a row already exists it
+  /// is left alone. The lazy rebuild path needs that. It runs only when the
+  /// watermark was missing, and both of its reads may be served by a read-pool
+  /// isolate from a snapshot taken before a concurrent sequence-write
+  /// transaction committed. Without this guard its unconditional upsert could
+  /// land *after* that transaction and overwrite a newer watermark with the
+  /// stale value it computed — e.g. persist 0 over a freshly resolved 1, after
+  /// which gap detection re-requests counters already in hand.
   Future<void> _writeSequenceWatermark({
     required String hostId,
     required int lastCounter,
+    bool onlyIfAbsent = false,
   }) async {
     await customUpdate(
       'INSERT INTO sync_sequence_watermarks '
       '(host_id, last_counter, updated_at) '
       'VALUES (?, ?, ?) '
-      'ON CONFLICT(host_id) DO UPDATE SET '
-      'last_counter = excluded.last_counter, '
-      'updated_at = excluded.updated_at',
+      '${onlyIfAbsent ? 'ON CONFLICT(host_id) DO NOTHING' : 'ON CONFLICT(host_id) DO UPDATE SET '
+                'last_counter = excluded.last_counter, '
+                'updated_at = excluded.updated_at'}',
       variables: [
         Variable.withString(hostId),
         Variable.withInt(lastCounter),
@@ -58,7 +71,20 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
     );
   }
 
-  Future<int?> _rebuildSequenceWatermarkForHost(String hostId) async {
+  /// Recomputes the contiguous resolved prefix for [hostId] from the log.
+  ///
+  /// Two callers with opposite needs:
+  ///
+  /// - [getLastCounterForHost] uses [onlyIfAbsent] — it runs only when no
+  ///   watermark row exists, so it is a backfill and must not clobber a row a
+  ///   concurrent writer created in the meantime.
+  /// - [_refreshSequenceWatermark] runs it *because* a previously resolved row
+  ///   was reopened, which legitimately **lowers** the watermark, so it must
+  ///   overwrite.
+  Future<int?> _rebuildSequenceWatermarkForHost(
+    String hostId, {
+    bool onlyIfAbsent = false,
+  }) async {
     // One-time compatibility path for existing rows that predate the
     // persisted watermark. Normal operation advances from the stored value
     // with [_advanceSequenceWatermarkForHost] instead of re-running this CTE.
@@ -94,13 +120,19 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
     ).getSingle();
 
     final watermark = row.readNullable<int>('last_counter');
-    if (watermark != null) {
-      await _writeSequenceWatermark(
-        hostId: hostId,
-        lastCounter: watermark,
-      );
-    }
-    return watermark;
+    if (watermark == null) return null;
+
+    await _writeSequenceWatermark(
+      onlyIfAbsent: onlyIfAbsent,
+      hostId: hostId,
+      lastCounter: watermark,
+    );
+    if (!onlyIfAbsent) return watermark;
+    // Read back rather than returning the computed value: if a concurrent
+    // sequence write persisted a watermark while this rebuild was running, the
+    // backfill above deliberately left it alone, and that stored value is the
+    // fresher of the two. The read is a primary-key lookup.
+    return await _readSequenceWatermark(hostId) ?? watermark;
   }
 
   Future<void> _refreshSequenceWatermarkAfterMutation(

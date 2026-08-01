@@ -5,7 +5,7 @@ description: The eleven Drift/SQLite databases, how connections are opened and m
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T20:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-01T16:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: notifications
@@ -50,8 +50,8 @@ migration work has to cover both, and embeddings are a third store again (below)
 | Database | File | Schema | Owns |
 |----------|------|--------|------|
 | `JournalDb` | `db.sqlite` | 45 | Journal entities, tasks, links, tags, config flags — the primary store |
-| `SyncDatabase` | `sync.sqlite` | 27 | Outbox, sequence log, host activity, inbound event queue, queue markers |
-| `AgentDatabase` | `agent.sqlite` | 17 | Agent state, reports, observations, change proposals, wake history |
+| `SyncDatabase` | `sync.sqlite` | 28 | Outbox, sequence log, host activity, inbound event queue, queue markers |
+| `AgentDatabase` | `agent.sqlite` | 18 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
 | `ConsumptionDatabase` | `ai_consumption.sqlite` | 2 | AI token usage and the interaction ledger |
 | `SettingsDb` | `settings.sqlite` | 1 | Key/value app settings, sync watermarks, saved filters |

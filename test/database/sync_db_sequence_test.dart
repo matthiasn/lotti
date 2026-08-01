@@ -294,6 +294,59 @@ void main() {
     });
 
     test(
+      'the lazy watermark backfill never overwrites a concurrent write',
+      () async {
+        final database = db!;
+        const hostId = 'host-backfill-race';
+
+        // Simulates the interleaving the read pool makes reachable: the lazy
+        // rebuild reads an empty watermark table and computes a value, and a
+        // sequence write persists a newer watermark before the rebuild's own
+        // write lands. The backfill must not clobber it.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(1),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(DateTime(2024, 1, 2)),
+            updatedAt: Value(DateTime(2024, 1, 2)),
+          ),
+        );
+        expect(await database.getLastCounterForHost(hostId), 1);
+
+        // Drop the row so the next read takes the lazy-rebuild path, then
+        // stand in for the concurrent writer by persisting a newer value.
+        await database.customStatement(
+          'DELETE FROM sync_sequence_watermarks WHERE host_id = ?',
+          [hostId],
+        );
+        await database.customStatement(
+          'INSERT INTO sync_sequence_watermarks (host_id, last_counter, '
+          'updated_at) VALUES (?, 5, 0)',
+          [hostId],
+        );
+
+        expect(
+          await database.getLastCounterForHost(hostId),
+          5,
+          reason: 'the backfill must yield to the newer persisted watermark',
+        );
+        final stored = await database
+            .customSelect(
+              'SELECT last_counter FROM sync_sequence_watermarks '
+              'WHERE host_id = ?',
+              variables: [Variable.withString(hostId)],
+            )
+            .getSingle();
+        expect(
+          stored.read<int>('last_counter'),
+          5,
+          reason: 'and must not have overwritten it with its stale 1',
+        );
+      },
+    );
+
+    test(
       'getLastCounterForHost lowers the persisted watermark when a '
       'previously resolved row is reopened',
       () async {

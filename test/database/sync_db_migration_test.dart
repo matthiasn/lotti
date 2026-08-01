@@ -1709,14 +1709,27 @@ void main() {
           await releaseWriter.future;
         });
 
+        // Release the writer no matter how this test exits. Without the pool
+        // the read below never completes, and a parked transaction would then
+        // block `db.close()` in tearDown and hang the whole shard instead of
+        // failing this one test.
+        addTearDown(() async {
+          if (!releaseWriter.isCompleted) releaseWriter.complete();
+          await writing;
+        });
+
         await writerHoldsLock.future;
 
-        // No timeout/delay: either this future completes while the writer is
-        // still parked, or the test fails on the expect below.
+        // Bounded: with a pool the read is served by a read isolate and
+        // completes immediately; without one it queues behind the parked
+        // transaction and this resolves to the sentinel, failing the expect.
         final readWhileBlocked = db.outbox.count().getSingle();
         final settled = await Future.any<Object?>([
           readWhileBlocked,
-          releaseWriter.future.then((_) => #writerReleasedFirst),
+          Future<Object?>.delayed(
+            const Duration(seconds: 5),
+            () => #readQueuedBehindWriter,
+          ),
         ]);
 
         expect(
