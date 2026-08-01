@@ -685,6 +685,10 @@ void main() {
         );
         expect(
           repository.notificationIdForTaskSuggestion('task-1'),
+          '78bbe9c1-bf78-5350-a95e-dfa887718e20',
+        );
+        expect(
+          repository.notificationIdForTaskSuggestion('task-1'),
           isNot(repository.notificationIdForTaskSuggestion('task-2')),
         );
         // UUID v5 in 8-4-4-4-12 form, version nibble = 5.

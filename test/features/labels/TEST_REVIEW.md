@@ -11,7 +11,7 @@
 
 | File | Lines | Has test? | Top issue |
 |---|---|---|---|
-| `lib/features/labels/repository/labels_repository.dart` | 490 | Yes (split across 4 files, 1150+440+305+141 = 2036 lines) | **[HIGH]** One-test-file-per-source-file violated: 4 separate test files for one impl |
+| `lib/features/labels/repository/labels_repository.dart` | 450 | Yes (split across 4 files, 1858 lines total) | **[HIGH]** One-test-file-per-source-file violated: 4 separate test files for one impl |
 | `lib/features/labels/services/label_assignment_processor.dart` | 277 | Yes (split across 6 files, ~1000 lines total) | **[HIGH]** One-test-file-per-source-file massively violated: 6 test files |
 | `lib/features/labels/services/label_validator.dart` | 117 | Yes (482) | **[MED]** Good Glados coverage already; 482-line test is borderline |
 | `lib/features/labels/state/label_editor_controller.dart` | 295 | Yes (447) | **[MED]** Inline `_MockLabelsRepository` should use central `MockLabelsRepository` |
@@ -67,7 +67,7 @@
 - [x] **[HIGH]** `test/features/labels/ui/label_details_page_test.dart` is 802 lines with 15 test cases each repeating a ~15-line setup block (`ProviderContainer`, `addTearDown(container.dispose)`, `tester.pumpWidget(UncontrolledProviderScope(container: container, child: makeTestableWidget2(...)))`). Extract a file-level `_pumpPage(tester, {ProviderContainer? container, LabelEditorState? state})` helper to eliminate the boilerplate. **RESOLVED:** shared `pumpPage(tester, {overrides, child})` helper builds the kept-alive container, pumps, and drains the first frames; all 15 setup blocks now route through it.
 
 - [x] **[MED]** `lib/features/labels/repository/labels_repository.dart` mixed stream-watching, definition CRUD, assignment writes, and normalization helpers. The normalization logic was pure and could move to a `labels_normalization.dart` util, making it independently testable.
-  **RESOLVED (adapted):** the pure normalization logic moved to `lib/features/labels/utils/labels_normalization.dart` as `normalizeLabelCategoryIds(ids, {lookupCategory})` (the repository method is now a thin delegator injecting the cache lookup), making it independently testable. The full four-way split was not pursued — at 490 lines the file is under the split threshold and the stream/CRUD/util methods all share the same five injected collaborators.
+  **RESOLVED (adapted):** the pure normalization logic moved to `lib/features/labels/utils/labels_normalization.dart` as `normalizeLabelCategoryIds(ids, {lookupCategory})` (the repository method is now a thin delegator injecting the cache lookup), making it independently testable. The full four-way split was not pursued — at 450 lines the file is under the split threshold and the stream/CRUD/util methods all share the same five injected collaborators.
 
 ---
 
@@ -135,10 +135,10 @@
 
 ## Summary
 
-- **1 oversized impl file**: `labels_repository.dart` (490 lines — normalization logic extractable).
+- **0 oversized impl files**: `labels_repository.dart` is 450 lines, with normalization already extracted.
 - **4 oversized / fragmented test groupings**: `label_assignment_processor` spread across 6 files (total ~1000 lines); `label_details_page_test.dart` (802 lines); duplicate `labels_list_page_test` pair (688 lines combined); duplicate `label_editor_sheet_test` pair (523 lines combined).
 - **6 one-test-file-per-source-file violations**: processor (×6 files), `labels_list_page` (×2 files), `label_editor_sheet` (×2 files). Additionally the two stray processor tests sit outside the `services/` subdirectory.
 - **4 inline `_MockLabelsRepository` definitions** that should import from `test/mocks/mocks.dart`; additionally 4 inline mocks in `race_condition_labels_persistence_test.dart`.
-- **1 genuine Glados candidate**: `_normalizeCategoryIds` in the repository (dedup/sort/filter on arbitrary ID sets); `label_tool_parsing` already has good Glados coverage.
+- **0 unresolved Glados candidates**: normalization and confidence parsing now have dedicated property coverage.
 - **3 speed wins**: Consolidate 6 processor test files (eliminates 5 redundant getIt cycles); replace 21 `pumpAndSettle` in `label_details_page_test` with targeted `pump()`; merge duplicate `labels_list_page` test files (eliminates 14 redundant pumpAndSettle calls).
 - **Biggest opportunity**: Consolidating the 6 `label_assignment_processor` test files into one canonical `test/features/labels/services/label_assignment_processor_test.dart`, cleaning up the 4 inline mock duplications, and extracting a `_pumpPage` helper in `label_details_page_test` — together these would reduce the labels test footprint by ~500 lines of boilerplate and measurably improve shard run time.
