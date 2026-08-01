@@ -73,6 +73,183 @@ void main() {
         .insert(AgentDbConversions.toEntityCompanion(entity));
   }
 
+  group('getProposalLedgerRowsForAgentAndTask (single round trip)', () {
+    // The ledger used to issue three concurrent task-scoped queries. They are
+    // now one UNION ALL with a per-row `bucket` marker, so these tests pin the
+    // properties that collapsing could silently break: correct bucketing, and
+    // independent per-arm limits.
+
+    test('returns all three buckets from one query', () async {
+      await insertChangeSet(
+        id: 'cs-open',
+        agentId: 'agent-1',
+        taskId: 'task-1',
+      );
+      await insertChangeSet(
+        id: 'cs-done',
+        agentId: 'agent-1',
+        taskId: 'task-1',
+        status: ChangeSetStatus.resolved,
+      );
+      await insertDecision(
+        id: 'cd-1',
+        agentId: 'agent-1',
+        taskId: 'task-1',
+        changeSetId: 'cs-done',
+      );
+
+      final rows = await db
+          .getProposalLedgerRowsForAgentAndTask(
+            agentId: 'agent-1',
+            taskId: 'task-1',
+            changeSetLimit: 200,
+            decisionLimit: 50,
+          )
+          .get();
+
+      final idsByBucket = <String, Set<String>>{};
+      for (final row in rows) {
+        idsByBucket
+            .putIfAbsent(
+              row.read<String>(AgentDatabase.ledgerBucketColumn),
+              () => <String>{},
+            )
+            .add(row.read<String>('id'));
+      }
+
+      expect(
+        idsByBucket[AgentDatabase.ledgerBucketPending],
+        {'cs-open'},
+        reason:
+            'the pending arm filters on subtype, so the resolved set is out',
+      );
+      expect(
+        idsByBucket[AgentDatabase.ledgerBucketRecent],
+        {'cs-open', 'cs-done'},
+        reason: 'the recent arm is unfiltered change-set history',
+      );
+      expect(idsByBucket[AgentDatabase.ledgerBucketDecision], {'cd-1'});
+    });
+
+    test('scopes to the requested agent and task', () async {
+      await insertChangeSet(id: 'mine', agentId: 'agent-1', taskId: 'task-1');
+      await insertChangeSet(
+        id: 'other-task',
+        agentId: 'agent-1',
+        taskId: 't-2',
+      );
+      await insertChangeSet(
+        id: 'other-agent',
+        agentId: 'agent-2',
+        taskId: 'task-1',
+      );
+
+      final rows = await db
+          .getProposalLedgerRowsForAgentAndTask(
+            agentId: 'agent-1',
+            taskId: 'task-1',
+            changeSetLimit: 200,
+            decisionLimit: 50,
+          )
+          .get();
+
+      expect(rows.map((r) => r.read<String>('id')).toSet(), {'mine'});
+    });
+
+    test('applies the change-set and decision limits independently', () async {
+      for (var i = 0; i < 4; i++) {
+        await insertChangeSet(
+          id: 'cs-$i',
+          agentId: 'agent-1',
+          taskId: 'task-1',
+          status: ChangeSetStatus.resolved,
+        );
+        await insertDecision(
+          id: 'cd-$i',
+          agentId: 'agent-1',
+          taskId: 'task-1',
+          changeSetId: 'cs-$i',
+        );
+      }
+
+      final rows = await db
+          .getProposalLedgerRowsForAgentAndTask(
+            agentId: 'agent-1',
+            taskId: 'task-1',
+            changeSetLimit: 3,
+            decisionLimit: 1,
+          )
+          .get();
+
+      final counts = <String, int>{};
+      for (final row in rows) {
+        final bucket = row.read<String>(AgentDatabase.ledgerBucketColumn);
+        counts[bucket] = (counts[bucket] ?? 0) + 1;
+      }
+
+      expect(
+        counts[AgentDatabase.ledgerBucketRecent],
+        3,
+        reason: 'the change-set arm honours changeSetLimit',
+      );
+      expect(
+        counts[AgentDatabase.ledgerBucketDecision],
+        1,
+        reason:
+            'the decision arm honours its own, smaller decisionLimit — a '
+            'single shared LIMIT across the union would break this',
+      );
+    });
+
+    test(
+      'a long-lived open set survives a recent-history cap that would bury it',
+      () async {
+        // The reason the pending arm exists at all: the recent arm is
+        // newest-first and capped, so an old-but-still-open set must still
+        // reach the ledger through its own arm.
+        await insertChangeSet(
+          id: 'cs-old-open',
+          agentId: 'agent-1',
+          taskId: 'task-1',
+        );
+        for (var i = 0; i < 3; i++) {
+          await insertChangeSet(
+            id: 'cs-newer-$i',
+            agentId: 'agent-1',
+            taskId: 'task-1',
+            status: ChangeSetStatus.resolved,
+            clock: 10 + i,
+          );
+        }
+
+        final rows = await db
+            .getProposalLedgerRowsForAgentAndTask(
+              agentId: 'agent-1',
+              taskId: 'task-1',
+              changeSetLimit: 2,
+              decisionLimit: 50,
+            )
+            .get();
+
+        final pendingIds = rows
+            .where(
+              (r) =>
+                  r.read<String>(AgentDatabase.ledgerBucketColumn) ==
+                  AgentDatabase.ledgerBucketPending,
+            )
+            .map((r) => r.read<String>('id'))
+            .toSet();
+
+        expect(
+          pendingIds,
+          contains('cs-old-open'),
+          reason:
+              'the dedicated pending arm is what keeps the open set visible',
+        );
+      },
+    );
+  });
+
   test('empty ledger when the agent has no change sets', () async {
     final result = await ledger.getProposalLedger('agent-1', taskId: 'task-1');
     expect(result.open, isEmpty);
