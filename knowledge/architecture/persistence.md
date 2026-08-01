@@ -8,6 +8,10 @@ status: stable
 generated: { by: claude-code/opus-5, at: 2026-08-01T15:45:00Z }
 stale_after: 2027-01-11
 sources:
+  - id: sync-db
+    resource: ../../lib/database/sync_db.dart
+    title: SyncDatabase
+    last_modified: 2026-07-27
   - id: agent-db
     resource: ../../lib/features/agents/database/agent_database.dart
     title: AgentDatabase
@@ -15,15 +19,15 @@ sources:
   - id: notifications-db
     resource: ../../lib/database/notifications_db.dart
     title: NotificationsDb
-    last_modified: 2026-08-01
+    last_modified: 2026-05-17
   - id: consumption-db
     resource: ../../lib/features/ai_consumption/database/consumption_database.dart
     title: ConsumptionDatabase
-    last_modified: 2026-08-01
+    last_modified: 2026-07-21
   - id: day-processing-db
     resource: ../../lib/features/daily_os_next/database/day_processing_db.dart
     title: DayProcessingDb
-    last_modified: 2026-08-01
+    last_modified: 2026-07-25
   - id: notifications
     resource: ../../lib/services/db_notification.dart
     title: UpdateNotifications token vocabulary
