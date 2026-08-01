@@ -258,9 +258,14 @@ G-counter merge that keeps concurrent wake counters from being lost.
 
 Legacy `WeekRollupEntity` JSON can omit `weekStart`. The shared
 `AgentDomainEntity.fromJson` read boundary repairs it only when the entity id is
-an exact `week_rollup:YYYY-MM-DD` key whose date is a real Monday. This covers
-both persisted rows and inline or file-backed sync payloads without mutating the
-decoded input map. An absent field paired with any other id throws a bounded
+an exact `week_rollup:YYYY-MM-DD` or `week_rollup_v2:YYYY-MM-DD` key whose date
+is a real Monday, and derives a **UTC-typed** value from those components —
+resolving them in the reader's zone would make the repaired field
+reader-relative, which is the divergence the canonical rules exist to end. Both
+generations are accepted even though only the legacy one can reach the repair
+in practice, because an unrecognized generation would be rejected as poison
+rather than repaired. This covers both persisted rows and inline or file-backed
+sync payloads without mutating the decoded input map. An absent field paired with any other id throws a bounded
 `FormatException`; `SyncEventProcessor.prepare` treats that payload as
 unrecoverable, and `QueueApplyAdapter` returns a `permanentSkip` instead of
 spending the retry budget on deterministic poison data.

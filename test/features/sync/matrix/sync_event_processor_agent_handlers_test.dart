@@ -224,7 +224,7 @@ void main() {
       final entity = AgentDomainEntity.weekRollup(
         id: 'week_rollup:2026-05-18',
         agentId: 'daily_os_planner',
-        weekStart: DateTime(2026, 5, 18),
+        weekStart: DateTime.utc(2026, 5, 18),
         plannedMinutesByCategory: const {'cat-work': 480},
         recordedMinutesByCategory: const {'cat-work': 310},
         daysWithPlans: 5,
@@ -253,7 +253,13 @@ void main() {
           verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
               as WeekRollupEntity;
       expect(applied, entity);
-      expect(applied.weekStart, DateTime(2026, 5, 18));
+      expect(
+        applied.weekStart,
+        DateTime.utc(2026, 5, 18),
+        reason:
+            'The id is a zone-free calendar key, so the repaired value is '
+            'read from its components rather than resolved in the reader zone.',
+      );
     });
 
     test('skips an irreparable legacy week rollup during prepare', () async {

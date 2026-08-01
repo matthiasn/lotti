@@ -1,5 +1,5 @@
 /// Pure aggregation and rendering for the weekly rollup registers
-/// (`week_rollup:<yyyy-MM-dd>`, ADR 0032 digest pooling).
+/// (`week_rollup_v2:<yyyy-MM-dd>`, ADR 0032 digest pooling).
 ///
 /// A rollup is a deterministic pooled summary of one complete calendar week —
 /// planned minutes per category, recorded minutes per category, and how many
@@ -10,6 +10,7 @@ library;
 
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 
@@ -45,7 +46,14 @@ computeWeekRollupAggregates({
     plannedDayIds.add(plan.dayId);
     for (final block in plan.data.plannedBlocks) {
       if (block.state == PlannedBlockState.dropped) continue;
-      final minutes = block.endTime.difference(block.startTime).inMinutes;
+      // Same reasoning as recorded time: a block's endpoints are zone-less, so
+      // subtracting the parsed instants makes a DST-crossing block 60 minutes
+      // on one reader and 120 on another, while the register is stamped
+      // canonical either way.
+      final minutes = canonicalWallClockDuration(
+        block.startTime,
+        block.endTime,
+      ).inMinutes;
       // A blank block category coincides with [uncategorizedRollupKey] and
       // buckets there by construction.
       planned.update(
@@ -85,9 +93,10 @@ List<Map<String, Object?>>? renderRecentWeeksJson({
   return [
     for (final rollup in ordered)
       {
-        'weekStart': localDay(
-          rollup.weekStart,
-        ).toIso8601String().substring(0, 10),
+        // Formatted from the key's own components. Converting first would
+        // render the zone-free Monday as the preceding Sunday anywhere west
+        // of UTC — a wrong week label on otherwise correct totals.
+        'weekStart': isoCalendarDate(rollup.weekStart),
         'daysWithPlans': rollup.daysWithPlans,
         if (rollup.plannedMinutesByCategory.isNotEmpty)
           'plannedMinutes': _byDisplayName(

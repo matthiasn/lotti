@@ -199,6 +199,7 @@ class DayAgentWeekContextService {
   Future<List<RecordedSpan>> _recordedSpansInRange({
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    bool canonicalDurations = false,
   }) async {
     final entries = await journalDb.sortedCalendarEntries(
       rangeStart: rangeStart,
@@ -223,7 +224,13 @@ class DayAgentWeekContextService {
         RecordedSpan(
           categoryId: pair.categoryId,
           start: pair.start,
-          duration: pair.duration,
+          // Canonical only for the synced rollup. The rendered week context is
+          // read on one device and shown beside a timeline that uses elapsed
+          // time, so switching it too would make a DST-crossing entry read as
+          // 120 minutes there and 60 in the timeline lane.
+          duration: canonicalDurations
+              ? canonicalRecordedDuration(pair.entry.meta)
+              : pair.duration,
           taskId: pair.taskId,
         ),
     ];
@@ -238,7 +245,7 @@ class DayAgentWeekContextService {
 
   /// Recomputes and persists the weekly rollup registers the digest renders
   /// (ADR 0032 digest pooling): the last [recentWeekRollupCount] complete
-  /// calendar weeks, coordinator-owned, keyed `week_rollup:<Monday>`.
+  /// calendar weeks, coordinator-owned, keyed `week_rollup_v2:<Monday>`.
   ///
   /// EVERY week is recomputed from source on every call — this is what makes
   /// the "plain LWW converges because every device recomputes" claim true:
@@ -262,19 +269,42 @@ class DayAgentWeekContextService {
       // deliberately deleted rollup on the next digest.
       final existingById = await agentRepository
           .getEntitiesByIdsIncludingDeleted({
-            for (final weekStart in weekStarts) weekRollupEntityId(weekStart),
+            for (final weekStart in weekStarts) ...[
+              weekRollupEntityId(weekStart),
+              // The previous generation is read for its tombstone only. A week
+              // the user deliberately deleted under v1 must not come back to
+              // life because the id generation changed underneath it.
+              legacyWeekRollupEntityId(weekStart),
+            ],
           });
       final aggregatesByWeek = await _computeAggregatesForWeeks(weekStarts);
       for (final weekStart in weekStarts) {
         final id = weekRollupEntityId(weekStart);
         final existing = existingById[id];
+        final legacy = existingById[legacyWeekRollupEntityId(weekStart)];
         if (existing is WeekRollupEntity && existing.deletedAt != null) {
+          continue;
+        }
+        if (legacy is WeekRollupEntity && legacy.deletedAt != null) {
+          // A peer that had not yet received the v1 tombstone can create and
+          // sync a live v2 row before it arrives. Skipping recomputation
+          // would leave that row live and rendered, so the deletion is
+          // carried onto v2 rather than merely honoured for creation.
+          if (existing is WeekRollupEntity && existing.deletedAt == null) {
+            await syncService.upsertEntity(
+              existing.copyWith(deletedAt: legacy.deletedAt, updatedAt: now),
+            );
+          }
           continue;
         }
         final prior = existing is WeekRollupEntity ? existing : null;
         final aggregates = aggregatesByWeek[weekStart]!;
         const equality = DeepCollectionEquality();
+        // A legacy register is rewritten even when its numbers happen to
+        // match, so the stamp — not a coincidence — is what says the value is
+        // canonical.
         if (prior != null &&
+            prior.bucketingRule == recordedLocalBucketingRule &&
             prior.daysWithPlans == aggregates.daysWithPlans &&
             equality.equals(
               prior.plannedMinutesByCategory,
@@ -291,6 +321,11 @@ class DayAgentWeekContextService {
                 plannedMinutesByCategory: aggregates.plannedMinutesByCategory,
                 recordedMinutesByCategory: aggregates.recordedMinutesByCategory,
                 daysWithPlans: aggregates.daysWithPlans,
+                bucketingRule: recordedLocalBucketingRule,
+                // Legacy registers stored a device-local midnight here; the
+                // canonical key is zone-free, so migrate the field too rather
+                // than leaving two spellings of the same Monday in the store.
+                weekStart: weekStart,
                 updatedAt: now,
               )
             : AgentDomainEntity.weekRollup(
@@ -303,6 +338,7 @@ class DayAgentWeekContextService {
                 plannedMinutesByCategory: aggregates.plannedMinutesByCategory,
                 recordedMinutesByCategory: aggregates.recordedMinutesByCategory,
                 daysWithPlans: aggregates.daysWithPlans,
+                bucketingRule: recordedLocalBucketingRule,
               );
         await syncService.upsertEntity(entity);
       }
@@ -328,7 +364,15 @@ class DayAgentWeekContextService {
       });
       return <WeekRollupEntity>[
         for (final entity in byId.values)
-          if (entity is WeekRollupEntity && entity.deletedAt == null) entity,
+          // Canonical rows only. ensureWeekRollups is fail-soft, so a refresh
+          // that threw part-way leaves legacy registers live beside migrated
+          // ones; rendering both would feed the digest two bucketing rules in
+          // one section without saying so. Omitting the unmigrated weeks makes
+          // a failed migration visible as absence instead of as a wrong trend.
+          if (entity is WeekRollupEntity &&
+              entity.deletedAt == null &&
+              entity.bucketingRule == recordedLocalBucketingRule)
+            entity,
       ]..sort((a, b) => b.weekStart.compareTo(a.weekStart));
     } catch (e, s) {
       domainLogger.error(
@@ -354,10 +398,15 @@ class DayAgentWeekContextService {
   /// Mondays of the last [recentWeekRollupCount] COMPLETE weeks (strictly
   /// before the week containing [now]), newest first.
   List<DateTime> _recentCompleteWeekStarts(DateTime now) {
-    final currentWeekStart = weekStartFor(now);
+    // WHICH weeks to compute follows the reading device's calendar — the user
+    // asking for "recent weeks" means recent to them. WHAT each week contains
+    // does not (see [_computeAggregatesForWeeks]): the keys are canonical, so
+    // two devices that disagree about the current week near a Monday boundary
+    // still agree on every week they both compute.
+    final currentWeekStart = canonicalWeekStart(localDay(now));
     return [
       for (var back = 1; back <= recentWeekRollupCount; back++)
-        DateTime(
+        DateTime.utc(
           currentWeekStart.year,
           currentWeekStart.month,
           currentWeekStart.day - 7 * back,
@@ -385,7 +434,7 @@ class DayAgentWeekContextService {
     final weekByPlanId = <String, DateTime>{};
     for (final weekStart in weekStarts) {
       for (var offset = 0; offset < DateTime.daysPerWeek; offset++) {
-        final day = DateTime(
+        final day = DateTime.utc(
           weekStart.year,
           weekStart.month,
           weekStart.day + offset,
@@ -408,17 +457,27 @@ class DayAgentWeekContextService {
 
     final oldest = weekStarts.last;
     final newest = weekStarts.first;
+    // The fetch is an instant range while the buckets are zone-free calendar
+    // readings. For the ordinary local-typed timestamp the two agree — the
+    // stored instant is exactly those components in this device's zone — but a
+    // UTC-typed `dateFrom` (imported data) can sit up to 14 hours off it.
+    // Widen by a day at each end so no span belonging to a covered week is
+    // missed; the bucketing below discards whatever falls outside.
     final spans = await _recordedSpansInRange(
-      rangeStart: oldest,
+      canonicalDurations: true,
+      rangeStart: DateTime(oldest.year, oldest.month, oldest.day - 1),
       rangeEnd: DateTime(
         newest.year,
         newest.month,
-        newest.day + DateTime.daysPerWeek,
+        newest.day + DateTime.daysPerWeek + 1,
       ),
     );
+    final coveredWeeks = weekStarts.toSet();
     final spansByWeek = <DateTime, List<RecordedSpan>>{};
     for (final span in spans) {
-      spansByWeek.putIfAbsent(weekStartFor(span.start), () => []).add(span);
+      final week = canonicalWeekStart(recordedWallClock(span.start));
+      if (!coveredWeeks.contains(week)) continue;
+      spansByWeek.putIfAbsent(week, () => []).add(span);
     }
 
     return {

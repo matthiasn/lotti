@@ -58,6 +58,17 @@ lib/features/daily_os_next/
 The shared day-plan aggregate lives in `lib/classes/day_plan.dart` and is extended
 here rather than duplicated.
 
+## The week a recording belongs to
+
+Weekly totals bucket each recorded entry by the wall clock of the device that
+recorded it, so an hour worked at 9am in Tokyo counts to that Tokyo Monday on
+every device the user owns — rather than shifting with whichever device happens
+to be doing the summing.
+
+The mechanism, the convergence argument it rests on, and how older registers are
+migrated are in
+[the coordination protocol concept](../../../knowledge/features/daily_os_next/coordination-protocol.md).
+
 ## Performance envelope
 
 Daily OS carries deterministic offline regression gates and live model

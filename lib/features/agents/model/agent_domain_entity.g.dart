@@ -736,6 +736,7 @@ WeekRollupEntity _$WeekRollupEntityFromJson(Map<String, dynamic> json) =>
           ) ??
           const <String, int>{},
       daysWithPlans: (json['daysWithPlans'] as num?)?.toInt() ?? 0,
+      bucketingRule: json['bucketingRule'] as String?,
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -753,6 +754,7 @@ Map<String, dynamic> _$WeekRollupEntityToJson(WeekRollupEntity instance) =>
       'plannedMinutesByCategory': instance.plannedMinutesByCategory,
       'recordedMinutesByCategory': instance.recordedMinutesByCategory,
       'daysWithPlans': instance.daysWithPlans,
+      'bucketingRule': instance.bucketingRule,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };

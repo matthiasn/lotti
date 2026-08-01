@@ -446,7 +446,7 @@ class DayAgentWakeBenchmark {
         ),
       );
       if (offset % 7 == 0) {
-        final weekStart = weekStartFor(day);
+        final weekStart = canonicalWeekStart(day);
         entities.add(
           AgentDomainEntity.weekRollup(
             id: weekRollupEntityId(weekStart),

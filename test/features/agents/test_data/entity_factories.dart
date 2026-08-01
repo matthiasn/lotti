@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -368,10 +369,11 @@ WeekRollupEntity makeTestWeekRollup({
   DateTime? updatedAt,
   VectorClock? vectorClock,
   DateTime? deletedAt,
+  String? bucketingRule = recordedLocalBucketingRule,
 }) {
-  final start = weekStart ?? DateTime(2026, 5, 18);
+  final start = weekStart ?? DateTime.utc(2026, 5, 18);
   return AgentDomainEntity.weekRollup(
-        id: id ?? 'week_rollup:2026-05-18',
+        id: id ?? 'week_rollup_v2:2026-05-18',
         agentId: agentId,
         weekStart: start,
         plannedMinutesByCategory: plannedMinutesByCategory,
@@ -381,6 +383,7 @@ WeekRollupEntity makeTestWeekRollup({
         updatedAt: updatedAt ?? kAgentTestDate,
         vectorClock: vectorClock,
         deletedAt: deletedAt,
+        bucketingRule: bucketingRule,
       )
       as WeekRollupEntity;
 }

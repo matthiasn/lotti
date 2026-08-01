@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.1]
 ### Fixed
+- **Weekly totals stop changing on their own.** Daily OS pools each past week's
+  planned and recorded minutes into a shared summary the morning briefing reads.
+  Recorded time was bucketed into weeks using the calendar of whichever device
+  was doing the summing, so a laptop and a phone in different timezones — or one
+  device carried across them — computed different totals for the same finished
+  week and kept overwriting each other's answer. Recorded time is now bucketed by
+  the clock of the device that recorded it: an hour worked at 9am in Tokyo counts
+  to that Tokyo week everywhere. Past weeks are re-summed under the new rule as
+  they come back into range.
 - **The morning briefing plans the day you came back on, not the day you
   left.** Daily OS arms its next morning digest ahead of time, tagged with the
   day it was meant to run. If the device was asleep, offline, or the app simply

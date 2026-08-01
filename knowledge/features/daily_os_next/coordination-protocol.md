@@ -166,7 +166,7 @@ would then skip them forever.
 # Weekly rollups
 
 A digest wake first refreshes `WeekRollupEntity` registers
-(`week_rollup:<Monday>`, coordinator-owned) for the **last 4 complete weeks**:
+(`week_rollup_v2:<Monday>`, coordinator-owned) for the **last 4 complete weeks**:
 planned minutes per category (dropped blocks excluded), recorded minutes per
 category (empty-string key = uncategorized), and days-with-plans.
 
@@ -182,6 +182,93 @@ state writes nothing), and tombstones are never resurrected.
 The rollups render as `<recent_weeks>` (names resolved, newest first), so the
 digest can spot month-scale pacing trends without re-reading a month of raw
 entities.
+
+## Bucketing is canonical, or LWW does not converge
+
+"Recomputed from source on every digest" only self-heals when every device
+computes the *same* value from that source. Device-local bucketing broke that:
+`weekStartFor(span.start)` resolved through the reading device's zone, so a
+laptop and a phone in different zones produced different totals for the same
+past week and flapped the register between them forever — a convergence bug
+wearing the costume of a bucketing bug.
+
+Two rules make the computation a property of the data rather than of the reader:
+
+**The fix rests on how `dateFrom` crosses the wire.** It is a local-typed
+timestamp serialized with `toIso8601String()`, which emits **no zone suffix**,
+and the receiver parses it back as local. Its *components* are therefore the
+recording device's wall clock on every device that holds the entry — while the
+instant it denotes is reader-relative, because each device resolves those
+components in its own zone. Reading the components is what makes the answer a
+property of the data; converting first (`toUtc()`, `toLocal()`) turns it back
+into a reader-relative instant, which was the bug.
+
+| Input | Canonical rule |
+|-------|----------------|
+| Recorded minutes | `recordedWallClock(span.start)` — `dateFrom`'s calendar components, read as-is |
+| Planned minutes | already stable: keyed by date-only `dayplan-<date>` ids, never by an instant |
+| Week key | `canonicalWeekStart` reads calendar **components** and returns a UTC-typed midnight; `weekRollupEntityId` hashes those, never a converted instant |
+| Week label | `isoCalendarDate` formats those components; a converting read renders the canonical Monday as the preceding Sunday west of UTC |
+| Recorded length | `canonicalRecordedDuration` subtracts the two ends' components. `dateTo - dateFrom` on the parsed values is reader-relative for the same reason the bucket was, so a DST-crossing interval is 60 minutes in one zone and 120 in another — and both would be stamped canonical |
+| Planned length | `canonicalWallClockDuration` over the block's `startTime`/`endTime`, which are zone-less for the same reason |
+
+**Canonical durations are confined to the rollup.** The rendered week context is
+read on one device, beside a timeline lane that uses elapsed time, so switching
+it too would make a DST-crossing entry read as 120 minutes in `<recent_days>`
+and 60 in the timeline.
+
+`Metadata.utcOffset` is deliberately **not** consulted. It records the offset at
+*creation*, not at `dateFrom`, so a backfilled or cross-DST entry carries an
+offset that does not apply to its own timestamp — and it is absent on older
+entries, which would put them on a different rule from everything else. The
+components need neither.
+
+The spanning read still widens a day at each end: for the ordinary local-typed
+timestamp the stored instant and the components agree, but a UTC-typed
+`dateFrom` (imported data) can sit up to 14 hours off the reader-local range.
+Bucketing discards whatever falls outside.
+
+**Which weeks** to compute still follows the reading device's calendar — "recent"
+means recent to the user. Two devices straddling a Monday boundary may therefore
+compute different *sets*, but never different *values*, so nothing flaps.
+
+```mermaid
+stateDiagram-v2
+  state "v1 week_rollup:<Monday>" as V1
+  state "v2 week_rollup_v2:<Monday>" as V2
+  [*] --> V1: written by a build before the canonical rule
+  [*] --> V2: written by this build, stamped recordedLocal
+  V1 --> V1: never rewritten — inert, and never read again
+  V1 --> V2: tombstone only, carried onto the new generation
+  V2 --> V2: recompute (write skipped when unchanged and stamped)
+```
+
+The generations are **separate rows**, not one row migrated in place: nothing
+rewrites a v1 register. A week gets a fresh v2 register computed from source,
+and the v1 row is consulted only for its tombstone.
+
+**The register id carries a generation: `week_rollup_v2:<Monday>`.** During a
+staggered upgrade a device still on the previous build recomputes the *old* id
+with the old reader-local rule and writes it back unstamped; had both
+generations shared an id, the two builds would have overwritten each other for
+as long as the rollout lasted — the exact loop this change exists to end.
+Old-generation rows are inert with one exception: their **tombstones** are
+still read, and carried forward. A week the user deliberately deleted must not come back to life
+because the id generation changed underneath it, so `ensureWeekRollups` checks
+the v1 id's tombstone before creating a v2 register — and, when a peer that had
+not yet received that tombstone already created a live v2 row, applies the
+deletion to it rather than merely skipping the recompute.
+
+`WeekRollupEntity.bucketingRule` records which rule produced a register:
+`recordedLocal` for canonical, null for legacy. The steady-state
+skip-when-unchanged check requires the stamp as well as matching numbers —
+matching numbers on a legacy register are a coincidence, not evidence.
+
+`recentWeekRollups` renders **canonical registers only**. `ensureWeekRollups` is
+fail-soft, so a refresh that threw part-way can leave legacy registers live
+beside migrated ones; rendering both would feed the digest two bucketing rules
+in one section without saying so. A failed migration therefore shows up as an
+absent week rather than as a wrong trend.
 
 # The other two upward channels
 

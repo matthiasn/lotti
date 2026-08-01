@@ -379,7 +379,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
   /// Deterministic weekly rollup register (ADR 0032 digest pooling).
   ///
-  /// Keyed `week_rollup:<ISO Monday date>` and coordinator-owned: a pure
+  /// Keyed `week_rollup_v2:<ISO Monday date>` and coordinator-owned: a pure
   /// aggregation over one calendar week's day plans (planned minutes per
   /// category, days that had a plan) and recorded time entries (recorded
   /// minutes per category). Recomputed from source data — never accumulated
@@ -396,6 +396,17 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     @Default(<String, int>{}) Map<String, int> plannedMinutesByCategory,
     @Default(<String, int>{}) Map<String, int> recordedMinutesByCategory,
     @Default(0) int daysWithPlans,
+
+    /// Which rule bucketed `recordedMinutesByCategory` into this week.
+    ///
+    /// `recordedLocal` means each span was bucketed by the wall clock of the
+    /// device that recorded it, which every device derives identically. Null
+    /// marks a **legacy** register bucketed in the reading device's own zone,
+    /// where two devices in different zones computed different totals for the
+    /// same week and flapped this register between them. Legacy registers are
+    /// rewritten the next time their week falls inside the recompute window;
+    /// older ones keep their legacy values and stay flagged by this null.
+    String? bucketingRule,
     DateTime? deletedAt,
   }) = WeekRollupEntity;
 
@@ -854,8 +865,12 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
       _$AgentDomainEntityFromJson(_repairLegacyWeekRollup(json));
 }
 
+// Both register generations. The `_v2` ids this build writes always carry
+// `weekStart`, so they never reach the repair — but a generation the pattern
+// does not know would be rejected as a poison payload rather than repaired,
+// which is a worse failure than being redundant here.
 final _canonicalWeekRollupId = RegExp(
-  r'^week_rollup:(\d{4})-(\d{2})-(\d{2})$',
+  r'^week_rollup(?:_v2)?:(\d{4})-(\d{2})-(\d{2})$',
 );
 
 const _invalidLegacyWeekRollupMessage =
@@ -876,7 +891,10 @@ Map<String, dynamic> _repairLegacyWeekRollup(Map<String, dynamic> json) {
   final year = int.parse(match.group(1)!);
   final month = int.parse(match.group(2)!);
   final day = int.parse(match.group(3)!);
-  final weekStart = DateTime(year, month, day);
+  // UTC-typed: the id is a zone-free calendar key, so resolving it in the
+  // reader's zone would make the derived weekStart reader-relative — the
+  // divergence week rollups were made canonical to end.
+  final weekStart = DateTime.utc(year, month, day);
   final isExactDate =
       weekStart.year == year &&
       weekStart.month == month &&
