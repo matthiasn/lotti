@@ -1,0 +1,92 @@
+# Verify that the manual screenshot harness still runs, before a change lands.
+#
+# The publishing lane (manual.yml) captures all eleven locales nightly. That
+# is the right cadence for refreshing media, but it means a UI change that
+# breaks the harness is only discovered the following night — three such
+# regressions landed in two days. This job runs the same capture on a pull
+# request, for one locale, and publishes nothing.
+name: Manual capture check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      # The harnesses render real production widgets, so app code is the main
+      # way this breaks — and the reason it must be watched here. Both recent
+      # regressions were lib/ changes that triggered no manual workflow at all.
+      - 'lib/**'
+      - 'test/features/**/*_screenshots_test.dart'
+      - 'test/features/daily_os_next/screenshot_harness.dart'
+      - 'test/test_utils/screenshot_harness.dart'
+      - 'test/helpers/manual_demo_world.dart'
+      - 'test/helpers/manual_screenshot_locale.dart'
+      - 'test/helpers/manual_screenshot_*_text.dart'
+      - 'test/pages/create/create_measurement_dialog_screenshots_test.dart'
+      - 'docs-site/metadata/screenshot-cases.json'
+      - 'Makefile'
+      - 'pubspec.yaml'
+      - '.github/workflows/manual-capture-check.yml'
+
+# Superseded commits stop capturing immediately: this is a slow check and a
+# pull request under active work would otherwise stack up runners.
+concurrency:
+  group: manual-capture-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    name: Capture screenshots (${{ vars.MANUAL_CHECK_LOCALE || 'de' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout Lotti
+        uses: actions/checkout@v5
+
+      - name: Read the pinned Flutter version
+        uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: flutter-version
+        with:
+          path: .fvmrc
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.flutter-version.outputs.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install FVM
+        run: dart pub global activate fvm
+
+      - name: Install Flutter dependencies
+        run: fvm flutter pub get --enforce-lockfile
+
+      # One locale, and by default not the authoring one. English is the
+      # weakest choice available: every other locale falls back to it, so a
+      # rendering that only breaks once a translation is involved passes there.
+      # That is not hypothetical — the add-item proposal row broke in German
+      # and Czech (which quote with „…“) while English stayed green.
+      #
+      # Only the capture runs. WebP conversion and the manifest need node and
+      # prove nothing about the harness, and nothing here is published.
+      - name: Capture the registered screenshots
+        env:
+          MANUAL_CHECK_LOCALE: ${{ vars.MANUAL_CHECK_LOCALE || 'de' }}
+        run: >-
+          make manual_screenshots_locale
+          MANUAL_LOCALE="${MANUAL_CHECK_LOCALE}"
+          MANUAL_CAPTURE_DIR="${{ runner.temp }}/manual-capture-check"
+
+      # The captured frames are the evidence for why a case failed, and they
+      # are gone with the runner otherwise.
+      - name: Upload what was captured before the failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-capture-check-${{ github.run_id }}
+          path: ${{ runner.temp }}/manual-capture-check
+          if-no-files-found: ignore
+          retention-days: 3

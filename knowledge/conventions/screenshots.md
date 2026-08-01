@@ -72,8 +72,15 @@ full catalog does not fit in a single job's timeout — nightly and on dispatch
 only, four at a time, because eleven runners per merge is more than a catalog
 that rarely changes is worth. **A UI change therefore ships before its manual
 media does**; dispatch the workflow when a screenshot needs to be current
-sooner. Run a single locale the same way CI does when iterating on one
-language:
+sooner.
+
+Whether the harness still *runs* is checked earlier and separately:
+`manual-capture-check.yml` captures one locale on any pull request touching
+`lib/`, a harness, or a registered screenshot test. It publishes nothing — it
+exists because these suites are opt-in and no other lane executes them, so
+without it a UI change can only be found to have broken the catalog the
+following night. Run a single locale the same way CI does when iterating on
+one language:
 
 ```bash
 make manual_screenshots_shard MANUAL_LOCALE=de

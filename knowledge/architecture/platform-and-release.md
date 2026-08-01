@@ -94,6 +94,15 @@ Genuinely path-filtered, both on pushes *and* pull requests to `main`:
 `python-tools-ci.yml` (the Python tools) and `manual.yml` (docs-site) — the latter
 also runs on a nightly cron (`23 2 * * *`) and on manual dispatch.
 
+`manual-capture-check.yml` is pull-request-only and exists because the two
+cadences above leave a gap: the harnesses render real production widgets, so
+app code is what usually breaks them, but `manual.yml` does not watch `lib/`
+and no longer captures on push at all. It runs the same capture for **one**
+locale and publishes nothing. The locale defaults to German rather than the
+authoring locale, because every other locale falls back to English — a
+rendering that only breaks once a translation is involved stays green there.
+Override with the `MANUAL_CHECK_LOCALE` repository variable.
+
 `manual.yml` is also the manual's **publishing** lane, built around a
 Cloudflare R2 bucket rather than git or Pages alone. Screenshots publish to
 `manual/screenshots/<version>/` and each version's built site to
