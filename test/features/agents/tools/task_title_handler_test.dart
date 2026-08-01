@@ -114,11 +114,8 @@ void main() {
 
           expect(result.success, isTrue);
           expect(result.didWrite, isTrue);
-          expect(result.wasNoOp, isFalse);
           expect(result.message, contains('New Title'));
-          expect(result.requestedTitle, equals('New Title'));
-          expect(result.updatedTask, isNotNull);
-          expect(result.updatedTask!.data.title, equals('New Title'));
+          expect(handler.task.data.title, equals('New Title'));
           expect(result.error, isNull);
 
           verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
@@ -138,8 +135,7 @@ void main() {
         final result = await handler.handle('  Trimmed Title  ');
 
         expect(result.success, isTrue);
-        expect(result.requestedTitle, equals('Trimmed Title'));
-        expect(result.updatedTask!.data.title, equals('Trimmed Title'));
+        expect(handler.task.data.title, equals('Trimmed Title'));
       });
 
       test('rejects empty title and returns error without writing', () async {
@@ -154,7 +150,7 @@ void main() {
         expect(result.didWrite, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('empty'));
-        expect(result.updatedTask, isNull);
+        expect(handler.task, same(task));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
@@ -184,10 +180,8 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isFalse);
-        expect(result.wasNoOp, isTrue);
         expect(result.message, contains('already'));
-        expect(result.updatedTask, isNotNull);
-        expect(result.requestedTitle, equals('Original Title'));
+        expect(handler.task.data.title, equals('Original Title'));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
@@ -208,7 +202,8 @@ void main() {
         expect(result.didWrite, isFalse);
         expect(result.error, contains('DB write failed'));
         expect(result.message, contains('Failed'));
-        expect(result.requestedTitle, equals('New Title'));
+        expect(handler.task, same(task));
+        expect(handler.task.data.title, equals('Original Title'));
       });
 
       test('returns error when repository returns false', () async {
@@ -226,8 +221,8 @@ void main() {
         expect(result.success, isFalse);
         expect(result.didWrite, isFalse);
         expect(result.error, contains('repository returned false'));
-        expect(result.requestedTitle, equals('New Title'));
         // Local task should NOT be updated on failure.
+        expect(handler.task, same(task));
         expect(handler.task.data.title, equals('Original Title'));
       });
 
@@ -338,8 +333,6 @@ void main() {
             expect(result.success, isFalse, reason: '$scenario');
             expect(result.didWrite, isFalse, reason: '$scenario');
             expect(result.error, contains('empty'), reason: '$scenario');
-            expect(result.requestedTitle, isNull, reason: '$scenario');
-            expect(result.updatedTask, isNull, reason: '$scenario');
             expect(handler.task, initialTask, reason: '$scenario');
             expect(callbackTask, isNull, reason: '$scenario');
             verifyNever(() => repo.updateJournalEntity(any()));
@@ -348,12 +341,8 @@ void main() {
 
           expect(result.success, isTrue, reason: '$scenario');
           expect(result.error, isNull, reason: '$scenario');
-          expect(result.requestedTitle, scenario.trimmedRequest);
-
           if (scenario.isNoOp) {
             expect(result.didWrite, isFalse, reason: '$scenario');
-            expect(result.wasNoOp, isTrue, reason: '$scenario');
-            expect(result.updatedTask, initialTask, reason: '$scenario');
             expect(handler.task, initialTask, reason: '$scenario');
             expect(callbackTask, isNull, reason: '$scenario');
             verifyNever(() => repo.updateJournalEntity(any()));
@@ -362,21 +351,19 @@ void main() {
 
           expect(scenario.shouldWrite, isTrue, reason: '$scenario');
           expect(result.didWrite, isTrue, reason: '$scenario');
-          expect(result.wasNoOp, isFalse, reason: '$scenario');
           expect(
-            result.updatedTask!.data.title,
+            handler.task.data.title,
             scenario.trimmedRequest,
             reason: '$scenario',
           );
-          expect(handler.task, result.updatedTask, reason: '$scenario');
-          expect(callbackTask, result.updatedTask, reason: '$scenario');
+          expect(callbackTask, handler.task, reason: '$scenario');
 
           final captured =
               verify(
                     () => repo.updateJournalEntity(captureAny()),
                   ).captured.single
                   as Task;
-          expect(captured, result.updatedTask, reason: '$scenario');
+          expect(captured, handler.task, reason: '$scenario');
         },
         tags: 'glados',
       );
@@ -384,11 +371,9 @@ void main() {
 
     group('fromHandlerResult conversion', () {
       test('maps successful write result with entityId', () {
-        final titleResult = TaskTitleResult(
+        const titleResult = TaskTitleResult(
           success: true,
           message: 'Title updated to "Foo".',
-          updatedTask: task,
-          requestedTitle: 'Foo',
           didWrite: true,
         );
 
@@ -407,11 +392,9 @@ void main() {
       });
 
       test('maps no-op result without entityId', () {
-        final titleResult = TaskTitleResult(
+        const titleResult = TaskTitleResult(
           success: true,
           message: 'Title is already "Foo". No change needed.',
-          updatedTask: task,
-          requestedTitle: 'Foo',
         );
 
         final toolResult = ToolExecutionResult.fromHandlerResult(
@@ -443,33 +426,6 @@ void main() {
         expect(toolResult.success, isFalse);
         expect(toolResult.errorMessage, contains('empty'));
         expect(toolResult.mutatedEntityId, isNull);
-      });
-    });
-
-    group('TaskTitleResult', () {
-      test('wasNoOp is true when success=true and didWrite=false', () {
-        const result = TaskTitleResult(
-          success: true,
-          message: 'no-op',
-        );
-        expect(result.wasNoOp, isTrue);
-      });
-
-      test('wasNoOp is false when didWrite=true', () {
-        const result = TaskTitleResult(
-          success: true,
-          message: 'wrote',
-          didWrite: true,
-        );
-        expect(result.wasNoOp, isFalse);
-      });
-
-      test('wasNoOp is false when success=false', () {
-        const result = TaskTitleResult(
-          success: false,
-          message: 'error',
-        );
-        expect(result.wasNoOp, isFalse);
       });
     });
   });

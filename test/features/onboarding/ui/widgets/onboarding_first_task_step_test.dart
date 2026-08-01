@@ -47,8 +47,6 @@ void main() {
       OnboardingCaptureResult(
         task: MockTask(id: taskId),
         title: 'Car & health errands',
-        checklistItems: const ['Call the dentist', 'Book the car service'],
-        isRealAha: true,
       );
 
   void stubStructuring(OnboardingCaptureResult result) {
@@ -344,8 +342,6 @@ void main() {
       const OnboardingCaptureResult(
         task: null,
         title: '',
-        checklistItems: [],
-        isRealAha: false,
       ),
     );
     var dones = 0;

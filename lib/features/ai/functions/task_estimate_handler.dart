@@ -40,15 +40,11 @@ int? parseMinutes(dynamic value) {
 
 /// Result of processing an estimate update tool call.
 ///
-/// Contains detailed information about the outcome for testing and logging.
+/// Reports whether processing succeeded and whether it changed persisted data.
 class TaskEstimateResult {
   const TaskEstimateResult({
     required this.success,
     required this.message,
-    this.updatedTask,
-    this.requestedMinutes,
-    this.reason,
-    this.confidence,
     this.error,
     this.didWrite = false,
   });
@@ -59,29 +55,11 @@ class TaskEstimateResult {
   /// Human-readable message describing the outcome.
   final String message;
 
-  /// The updated task if successful, null otherwise.
-  final Task? updatedTask;
-
-  /// The minutes value requested by the AI.
-  final int? requestedMinutes;
-
-  /// The AI's explanation for why this estimate was detected.
-  final String? reason;
-
-  /// The AI's confidence level ('high', 'medium', 'low').
-  final String? confidence;
-
   /// Error message if the operation failed.
   final String? error;
 
   /// Whether a database write actually occurred.
   final bool didWrite;
-
-  /// Whether the update was skipped (not an error, just not applied).
-  bool get wasSkipped => !success && error == null;
-
-  /// Whether this was a no-op (success without DB write).
-  bool get wasNoOp => success && !didWrite;
 }
 
 /// Handler for updating task time estimates via AI function calls.
@@ -112,7 +90,7 @@ class TaskEstimateResult {
 ///
 /// final result = await handler.processToolCall(toolCall, manager);
 /// if (result.success) {
-///   print('Estimate set to ${result.requestedMinutes} minutes');
+///   print('Estimate is now ${handler.task.data.estimate}');
 /// }
 /// ```
 ///
@@ -120,7 +98,7 @@ class TaskEstimateResult {
 ///
 /// The handler is designed for easy unit testing:
 /// - Constructor injection of all dependencies
-/// - Pure result object with detailed outcome information
+/// - Small result object describing success, errors, and writes
 /// - Optional [ConversationManager] for response handling
 ///
 /// See also:
@@ -166,7 +144,7 @@ class TaskEstimateHandler {
   /// - [manager]: Optional conversation manager for sending tool responses
   ///   back to the AI. If null, responses are not sent (useful for testing).
   ///
-  /// Returns a [TaskEstimateResult] with detailed outcome information.
+  /// Returns a [TaskEstimateResult] describing the outcome.
   ///
   /// The method handles these cases:
   /// 1. **Invalid JSON**: Returns error result
@@ -204,9 +182,6 @@ class TaskEstimateHandler {
         return TaskEstimateResult(
           success: false,
           message: message,
-          requestedMinutes: rawMinutes is int ? rawMinutes : null,
-          reason: reason,
-          confidence: confidence,
           error: message,
         );
       }
@@ -224,9 +199,6 @@ class TaskEstimateHandler {
         return TaskEstimateResult(
           success: true,
           message: message,
-          requestedMinutes: minutes,
-          reason: reason,
-          confidence: confidence,
         );
       }
 
@@ -246,12 +218,9 @@ class TaskEstimateHandler {
               'Failed to update estimate: repository returned false.';
           developer.log(message, name: 'TaskEstimateHandler');
           _sendResponse(call.id, message, manager);
-          return TaskEstimateResult(
+          return const TaskEstimateResult(
             success: false,
             message: message,
-            requestedMinutes: minutes,
-            reason: reason,
-            confidence: confidence,
             error: message,
           );
         }
@@ -270,10 +239,6 @@ class TaskEstimateHandler {
         return TaskEstimateResult(
           success: true,
           message: message,
-          updatedTask: updatedTask,
-          requestedMinutes: minutes,
-          reason: reason,
-          confidence: confidence,
           didWrite: true,
         );
       } catch (e, s) {
@@ -289,9 +254,6 @@ class TaskEstimateHandler {
         return TaskEstimateResult(
           success: false,
           message: message,
-          requestedMinutes: minutes,
-          reason: reason,
-          confidence: confidence,
           error: e.toString(),
         );
       }

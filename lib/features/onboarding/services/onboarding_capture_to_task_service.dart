@@ -23,29 +23,17 @@ const _uuid = Uuid();
 
 /// Outcome of turning a captured transcript into a task.
 ///
-/// [isRealAha] distinguishes the structured win (title + checklist from the
-/// LLM) from the title-only [OnboardingStructuringFailure] soft landing, so the
-/// UI can reserve the celebration for the real thing. [task] is null only when
-/// persistence itself failed or there was nothing to title.
+/// [task] is null only when persistence itself failed or there was nothing to
+/// title.
 @immutable
 class OnboardingCaptureResult {
   const OnboardingCaptureResult({
     required this.task,
     required this.title,
-    required this.checklistItems,
-    required this.isRealAha,
-    this.failure,
   });
 
   final Task? task;
   final String title;
-  final List<String> checklistItems;
-  final bool isRealAha;
-
-  /// The structuring failure that forced the soft landing, if any.
-  final OnboardingStructuringFailure? failure;
-
-  bool get created => task != null;
 }
 
 /// Orchestrates the onboarding aha: structure a transcript into `{title,
@@ -136,8 +124,6 @@ class OnboardingCaptureToTaskService {
       return OnboardingCaptureResult(
         task: null,
         title: structured.title,
-        checklistItems: structured.checklistItems,
-        isRealAha: false,
       );
     }
 
@@ -148,8 +134,6 @@ class OnboardingCaptureToTaskService {
     return OnboardingCaptureResult(
       task: task,
       title: structured.title,
-      checklistItems: structured.checklistItems,
-      isRealAha: true,
     );
   }
 
@@ -172,12 +156,9 @@ class OnboardingCaptureToTaskService {
     if (title.isEmpty) {
       // Nothing intelligible to title (e.g. an empty transcript) — never make a
       // blank artifact.
-      return OnboardingCaptureResult(
+      return const OnboardingCaptureResult(
         task: null,
         title: '',
-        checklistItems: const [],
-        isRealAha: false,
-        failure: failure,
       );
     }
 
@@ -196,9 +177,6 @@ class OnboardingCaptureToTaskService {
     return OnboardingCaptureResult(
       task: task,
       title: title,
-      checklistItems: const [],
-      isRealAha: false,
-      failure: failure,
     );
   }
 

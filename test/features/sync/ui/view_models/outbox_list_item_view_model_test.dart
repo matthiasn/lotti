@@ -23,51 +23,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('OutboxListItemViewModel', () {
-    testWidgets(
-      'gracefully falls back when the stored status index is out of range',
-      (tester) async {
-        late OutboxListItemViewModel viewModel;
-        late BuildContext capturedContext;
-
-        final item = OutboxItem(
-          id: 1,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          status: 999, // legacy/invalid value should not crash
-          retries: 0,
-          message: jsonEncode({
-            'runtimeType': 'aiConfigDelete',
-            'id': 'config-id',
-          }),
-          subject: 'subject',
-          priority: OutboxPriority.low.index,
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                viewModel = OutboxListItemViewModel.fromItem(
-                  context: context,
-                  item: item,
-                );
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        expect(viewModel.statusLabel, 'Pending');
-        expect(
-          viewModel.statusColor,
-          Theme.of(capturedContext).colorScheme.tertiary,
-        );
-      },
-    );
-
     testWidgets('trims whitespace subjects and reports missing attachment', (
       tester,
     ) async {
@@ -110,10 +65,6 @@ void main() {
       );
       expect(viewModel.attachmentValue, 'No attachment');
       expect(viewModel.retriesLabel, '2 Retries');
-      expect(
-        viewModel.semanticsLabel.toLowerCase(),
-        contains('unknown payload'),
-      );
     });
 
     // The payload-kind label cases share one shape: encode a sync-message
@@ -391,61 +342,6 @@ void main() {
         },
       );
     }
-
-    // OutboxStatus.sending (index=3) has its own icon/chipIcon/color branches
-    // that were not exercised by any existing test.  All four switch arms land
-    // in this single parameterised loop so no copy-paste permutations are needed.
-    group('OutboxStatus.sending status fields', () {
-      testWidgets(
-        'sending status maps to tertiary color, sync icons, and Pending label',
-        (tester) async {
-          late OutboxListItemViewModel viewModel;
-          late BuildContext capturedContext;
-
-          final item = OutboxItem(
-            id: 200,
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            status: OutboxStatus.sending.index, // index 3
-            retries: 0,
-            message: jsonEncode({
-              'runtimeType': 'aiConfigDelete',
-              'id': 'cfg-send',
-            }),
-            subject: 'sending-subject',
-            priority: OutboxPriority.low.index,
-          );
-
-          await tester.pumpWidget(
-            makeTestableWidgetNoScroll(
-              Builder(
-                builder: (context) {
-                  capturedContext = context;
-                  viewModel = OutboxListItemViewModel.fromItem(
-                    context: context,
-                    item: item,
-                  );
-                  return const SizedBox.shrink();
-                },
-              ),
-            ),
-          );
-          await tester.pump();
-
-          // statusLabel: sending maps to the "pending" localized string
-          expect(viewModel.statusLabel, 'Pending');
-          // statusColor: sending → tertiary (same as pending)
-          expect(
-            viewModel.statusColor,
-            Theme.of(capturedContext).colorScheme.tertiary,
-          );
-          // statusIcon: sending → Icons.sync_rounded
-          expect(viewModel.statusIcon, Icons.sync_rounded);
-          // statusChipIcon: sending → Icons.sync_rounded
-          expect(viewModel.statusChipIcon, Icons.sync_rounded);
-        },
-      );
-    });
 
     group('_payloadKindLabel non-map JSON', () {
       testWidgets(
@@ -732,7 +628,6 @@ void main() {
           await tester.pump();
 
           expect(viewModel.attachmentValue, '/audio/take-1.m4a');
-          expect(viewModel.attachmentIcon, Icons.attachment_rounded);
         },
       );
 

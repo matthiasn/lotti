@@ -6,7 +6,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
@@ -155,7 +154,6 @@ void main() {
     required ProjectDetailState detailState,
     ProjectHealthMetrics? healthMetrics,
     AgentDomainEntity? agent,
-    List<ProjectRecommendationEntity> recommendations = const [],
     AgentDomainEntity? reportEntity,
     AgentDomainEntity? agentState,
     MockAgentRepository? agentRepository,
@@ -173,9 +171,6 @@ void main() {
         ),
         projectAgentProvider(projectId).overrideWith(
           (ref) async => agent,
-        ),
-        projectRecommendationsProvider(projectId).overrideWith(
-          (ref) async => recommendations,
         ),
         if (agent != null) ...[
           agentReportProvider(
@@ -232,12 +227,6 @@ void main() {
         healthMetrics: makeTestProjectHealthMetrics(
           confidence: 0.75,
         ),
-        recommendations: [
-          makeTestProjectRecommendation(
-            projectId: projectId,
-            title: 'Review deployment plan',
-          ),
-        ],
       );
 
       final result = await container.read(
@@ -250,8 +239,6 @@ void main() {
       expect(result.totalTaskCount, 2);
       expect(result.completedTaskCount, 1);
       expect(result.blockedTaskCount, 0);
-      expect(result.recommendations, ['Review deployment plan']);
-      expect(result.reviewSessions, isEmpty);
       expect(result.reportUpdatedAt, project.meta.updatedAt);
     });
 
@@ -1041,62 +1028,6 @@ void main() {
         verifyNever(
           () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
         );
-      });
-    });
-
-    group('recommendations', () {
-      test('maps recommendation titles', () async {
-        final project = makeTestProject(
-          id: projectId,
-          categoryId: categoryId,
-        );
-        final recs = [
-          makeTestProjectRecommendation(
-            id: 'pr-1',
-            projectId: projectId,
-            title: 'First recommendation',
-          ),
-          makeTestProjectRecommendation(
-            id: 'pr-2',
-            projectId: projectId,
-            title: 'Second recommendation',
-          ),
-        ];
-
-        final container = createContainer(
-          detailState: makeDetailState(
-            project: project,
-          ),
-          recommendations: recs,
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        expect(result!.recommendations, [
-          'First recommendation',
-          'Second recommendation',
-        ]);
-      });
-
-      test('returns empty list when no recommendations', () async {
-        final project = makeTestProject(
-          id: projectId,
-          categoryId: categoryId,
-        );
-
-        final container = createContainer(
-          detailState: makeDetailState(
-            project: project,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        expect(result!.recommendations, isEmpty);
       });
     });
 

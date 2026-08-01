@@ -186,14 +186,8 @@ void main() {
         providerName: 'gemini',
       );
 
-      expect(result.isRealAha, isTrue);
-      expect(result.created, isTrue);
+      expect(result.task != null, isTrue);
       expect(result.title, 'Call the dentist');
-      // The structured checklist rides back on the result (the UI still knows
-      // what was extracted), even though it is now proposed rather than
-      // committed.
-      expect(result.checklistItems, ['Find number', 'Book slot']);
-
       // The created task carries the structured title and lands already in
       // progress (the user spoke it into being and is dropped onto it).
       final data = capturedTaskData();
@@ -239,8 +233,7 @@ void main() {
         categoryId: categoryId,
       );
 
-      expect(result.isRealAha, isFalse);
-      expect(result.created, isFalse);
+      expect(result.task != null, isFalse);
       verify(
         () => metrics.recordEvent(
           OnboardingEventName.structuringFailed,
@@ -274,7 +267,7 @@ void main() {
         audioId: 'audio-1',
       );
 
-      expect(result.created, isTrue);
+      expect(result.task != null, isTrue);
       verify(
         () => persistence.createLink(fromId: 'task-1', toId: 'audio-1'),
       ).called(1);
@@ -299,7 +292,7 @@ void main() {
         audioId: 'audio-2',
       );
 
-      expect(result.created, isTrue);
+      expect(result.task != null, isTrue);
       verify(
         () => persistence.createLink(fromId: 'floor-1', toId: 'audio-2'),
       ).called(1);
@@ -356,7 +349,7 @@ void main() {
           categoryId: categoryId,
         );
 
-        expect(result.created, isTrue);
+        expect(result.task != null, isTrue);
         expect(result.title, 'Defaulted');
       },
     );
@@ -380,8 +373,7 @@ void main() {
       );
 
       // The link is best-effort: its failure never costs the user the task.
-      expect(result.created, isTrue);
-      expect(result.isRealAha, isTrue);
+      expect(result.task != null, isTrue);
     });
   });
 
@@ -411,7 +403,7 @@ void main() {
           categoryId: categoryId,
         );
 
-        expect(result.created, isTrue);
+        expect(result.task != null, isTrue);
         // The task inherits the category's default profile, mirroring the
         // normal creation path in create_entry.dart.
         expect(capturedTaskData().profileId, 'profile-melious-001');
@@ -535,7 +527,7 @@ void main() {
         categoryId: categoryId,
       );
 
-      expect(result.created, isTrue);
+      expect(result.task != null, isTrue);
       // An agent is still assigned, but there is nothing to propose.
       verify(
         () => taskAgentService.createTaskAgent(
@@ -570,8 +562,7 @@ void main() {
 
       // Seeding is best-effort: its failure never costs the user the task or the
       // aha — the agent's own wake will still populate the checklist.
-      expect(result.created, isTrue);
-      expect(result.isRealAha, isTrue);
+      expect(result.task != null, isTrue);
     });
 
     test(
@@ -618,7 +609,7 @@ void main() {
         categoryId: categoryId,
       );
 
-      expect(result.created, isTrue);
+      expect(result.task != null, isTrue);
       verify(
         () => taskAgentService.createTaskAgent(
           taskId: 'floor-1',
@@ -646,7 +637,7 @@ void main() {
           categoryId: categoryId,
         );
 
-        expect(result.created, isTrue);
+        expect(result.task != null, isTrue);
         verifyNever(
           () => taskAgentService.createTaskAgent(
             taskId: any(named: 'taskId'),
@@ -682,8 +673,7 @@ void main() {
 
       // Agent creation is best-effort: its failure never costs the user the
       // task or the aha.
-      expect(result.created, isTrue);
-      expect(result.isRealAha, isTrue);
+      expect(result.task != null, isTrue);
     });
 
     test(
@@ -706,7 +696,7 @@ void main() {
           categoryId: categoryId,
         );
 
-        expect(result.created, isTrue);
+        expect(result.task != null, isTrue);
         expect(capturedTaskData().profileId, isNull);
         verifyNever(
           () => taskAgentService.createTaskAgent(
@@ -732,9 +722,7 @@ void main() {
         providerName: 'mistral',
       );
 
-      expect(result.isRealAha, isFalse);
-      expect(result.created, isTrue);
-      expect(result.failure, OnboardingStructuringFailure.parseError);
+      expect(result.task != null, isTrue);
       // Floor title is the first sentence only.
       expect(result.title, 'Buy oat milk on the way home');
       expect(capturedTaskData().title, 'Buy oat milk on the way home');
@@ -776,7 +764,7 @@ void main() {
         categoryId: categoryId,
       );
 
-      expect(result.created, isFalse);
+      expect(result.task != null, isFalse);
       expect(result.title, isEmpty);
       verify(
         () => metrics.recordEvent(
@@ -811,7 +799,7 @@ void main() {
           categoryId: categoryId,
         );
 
-        expect(result.created, isFalse);
+        expect(result.task != null, isFalse);
         expect(result.title, 'do the thing');
         verifyNever(
           () => metrics.recordEvent(
@@ -895,7 +883,6 @@ void main() {
 
       // Proves the provider wired the structuring service, persistence, and
       // metrics repo together.
-      expect(result.isRealAha, isTrue);
       expect(result.title, 'Wired');
       verify(
         () => wiredMetrics.recordEvent(

@@ -150,11 +150,9 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.wasNoOp, isFalse);
         expect(result.message, contains('de'));
         expect(result.message, contains('German'));
-        expect(result.updatedTask, isNotNull);
-        expect(result.updatedTask!.data.languageCode, 'de');
+        expect(handler.task.data.languageCode, 'de');
         expect(result.error, isNull);
 
         verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
@@ -174,7 +172,7 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.updatedTask!.data.languageCode, 'en');
+        expect(handler.task.data.languageCode, 'en');
       });
 
       test('rejects empty language code', () async {
@@ -227,7 +225,6 @@ void main() {
 
           expect(result.success, isTrue);
           expect(result.didWrite, isFalse);
-          expect(result.wasNoOp, isTrue);
           expect(result.message, contains('already'));
 
           verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -255,8 +252,8 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.updatedTask!.data.languageCode, 'de');
-        expect(result.updatedTask!.data.languageSource, ChangeSource.agent);
+        expect(handler.task.data.languageCode, 'de');
+        expect(handler.task.data.languageSource, ChangeSource.agent);
       });
 
       test('returns error when repository returns false', () async {
@@ -327,7 +324,6 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isFalse);
-        expect(result.wasNoOp, isTrue);
         expect(result.message, contains('manually set by user'));
         expect(result.message, contains('de'));
 
@@ -353,7 +349,6 @@ void main() {
 
           expect(result.success, isTrue);
           expect(result.didWrite, isFalse);
-          expect(result.wasNoOp, isTrue);
           expect(result.message, contains('already'));
 
           verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -374,7 +369,7 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.updatedTask!.data.languageSource, ChangeSource.agent);
+        expect(handler.task.data.languageSource, ChangeSource.agent);
       });
 
       test('does not update local task field when write fails', () async {
@@ -421,7 +416,6 @@ void main() {
           if (scenario.isEmptyRequest || scenario.isUnsupported) {
             expect(result.success, isFalse, reason: '$scenario');
             expect(result.didWrite, isFalse, reason: '$scenario');
-            expect(result.updatedTask, isNull, reason: '$scenario');
             expect(
               result.error,
               scenario.isEmptyRequest
@@ -439,8 +433,6 @@ void main() {
 
           if (scenario.isNoOp || scenario.userBlocksWrite) {
             expect(result.didWrite, isFalse, reason: '$scenario');
-            expect(result.wasNoOp, isTrue, reason: '$scenario');
-            expect(result.updatedTask, initialTask, reason: '$scenario');
             expect(handler.task, initialTask, reason: '$scenario');
             verifyNever(() => repo.updateJournalEntity(any()));
             return;
@@ -448,25 +440,22 @@ void main() {
 
           expect(scenario.shouldWrite, isTrue, reason: '$scenario');
           expect(result.didWrite, isTrue, reason: '$scenario');
-          expect(result.wasNoOp, isFalse, reason: '$scenario');
           expect(
-            result.updatedTask!.data.languageCode,
+            handler.task.data.languageCode,
             scenario.normalizedRequest,
             reason: '$scenario',
           );
           expect(
-            result.updatedTask!.data.languageSource,
+            handler.task.data.languageSource,
             ChangeSource.agent,
             reason: '$scenario',
           );
-          expect(handler.task, result.updatedTask, reason: '$scenario');
-
           final captured =
               verify(
                     () => repo.updateJournalEntity(captureAny()),
                   ).captured.single
                   as Task;
-          expect(captured, result.updatedTask, reason: '$scenario');
+          expect(captured, handler.task, reason: '$scenario');
         },
         tags: 'glados',
       );
@@ -474,10 +463,9 @@ void main() {
 
     group('fromHandlerResult conversion', () {
       test('maps successful write with entityId', () {
-        final langResult = TaskLanguageResult(
+        const langResult = TaskLanguageResult(
           success: true,
           message: 'Task language set to "en" (English).',
-          updatedTask: task,
           didWrite: true,
         );
 
@@ -496,10 +484,9 @@ void main() {
       });
 
       test('maps no-op result without entityId', () {
-        final langResult = TaskLanguageResult(
+        const langResult = TaskLanguageResult(
           success: true,
           message: 'Language is already "en". No change needed.',
-          updatedTask: task,
         );
 
         final toolResult = ToolExecutionResult.fromHandlerResult(
@@ -531,33 +518,6 @@ void main() {
         expect(toolResult.success, isFalse);
         expect(toolResult.errorMessage, contains('xx'));
         expect(toolResult.mutatedEntityId, isNull);
-      });
-    });
-
-    group('TaskLanguageResult', () {
-      test('wasNoOp is true when success=true and didWrite=false', () {
-        const result = TaskLanguageResult(
-          success: true,
-          message: 'no-op',
-        );
-        expect(result.wasNoOp, isTrue);
-      });
-
-      test('wasNoOp is false when didWrite=true', () {
-        const result = TaskLanguageResult(
-          success: true,
-          message: 'wrote',
-          didWrite: true,
-        );
-        expect(result.wasNoOp, isFalse);
-      });
-
-      test('wasNoOp is false when success=false', () {
-        const result = TaskLanguageResult(
-          success: false,
-          message: 'error',
-        );
-        expect(result.wasNoOp, isFalse);
       });
     });
   });

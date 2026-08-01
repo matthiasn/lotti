@@ -250,12 +250,10 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.wasNoOp, isFalse);
         expect(result.message, contains('IN PROGRESS'));
         expect(result.message, contains('OPEN'));
-        expect(result.updatedTask, isNotNull);
         expect(
-          result.updatedTask!.data.status.toDbString,
+          handler.task.data.status.toDbString,
           'IN PROGRESS',
         );
         expect(result.error, isNull);
@@ -277,7 +275,7 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.updatedTask!.data.status.toDbString, 'GROOMED');
+        expect(handler.task.data.status.toDbString, 'GROOMED');
       });
 
       test('transitions to BLOCKED with reason', () async {
@@ -297,9 +295,9 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.updatedTask!.data.status.toDbString, 'BLOCKED');
+        expect(handler.task.data.status.toDbString, 'BLOCKED');
         expect(
-          (result.updatedTask!.data.status as TaskBlocked).reason,
+          (handler.task.data.status as TaskBlocked).reason,
           'Waiting for API access',
         );
 
@@ -333,9 +331,9 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.updatedTask!.data.status.toDbString, 'ON HOLD');
+        expect(handler.task.data.status.toDbString, 'ON HOLD');
         expect(
-          (result.updatedTask!.data.status as TaskOnHold).reason,
+          (handler.task.data.status as TaskOnHold).reason,
           'Deprioritized until Q3',
         );
       });
@@ -364,7 +362,7 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.updatedTask!.data.status.toDbString, 'OPEN');
+        expect(handler.task.data.status.toDbString, 'OPEN');
       });
 
       test('normalizes case for status string', () async {
@@ -381,7 +379,7 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.updatedTask!.data.status.toDbString, 'IN PROGRESS');
+        expect(handler.task.data.status.toDbString, 'IN PROGRESS');
       });
 
       test('rejects DONE status (user-only)', () async {
@@ -482,7 +480,6 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isFalse);
-        expect(result.wasNoOp, isTrue);
         expect(result.message, contains('already'));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -502,9 +499,9 @@ void main() {
 
         expect(result.success, isTrue);
         // Original had 1 entry, now should have 2.
-        expect(result.updatedTask!.data.statusHistory, hasLength(2));
+        expect(handler.task.data.statusHistory, hasLength(2));
         expect(
-          result.updatedTask!.data.statusHistory.last.toDbString,
+          handler.task.data.statusHistory.last.toDbString,
           'IN PROGRESS',
         );
       });
@@ -524,7 +521,7 @@ void main() {
           final result = await handler.handle('GROOMED');
 
           expect(result.success, isTrue);
-          expect(result.updatedTask!.data.status.createdAt, fixedTime);
+          expect(handler.task.data.status.createdAt, fixedTime);
         });
       });
 
@@ -630,29 +627,25 @@ void main() {
 
           if (scenario.shouldNoOp) {
             expect(result.didWrite, isFalse, reason: '$scenario');
-            expect(result.wasNoOp, isTrue, reason: '$scenario');
-            expect(result.updatedTask, initialTask, reason: '$scenario');
+            expect(handler.task, initialTask, reason: '$scenario');
             verifyNever(() => repo.updateJournalEntity(any()));
             return;
           }
 
           expect(scenario.shouldWrite, isTrue, reason: '$scenario');
           expect(result.didWrite, isTrue, reason: '$scenario');
-          expect(result.wasNoOp, isFalse, reason: '$scenario');
           expect(
-            result.updatedTask!.data.status.toDbString,
+            handler.task.data.status.toDbString,
             scenario.targetStatus,
             reason: '$scenario',
           );
           expect(
-            result.updatedTask!.data.statusHistory.map((s) => s.toDbString),
+            handler.task.data.statusHistory.map((s) => s.toDbString),
             [scenario.currentStatus, scenario.targetStatus],
             reason: '$scenario',
           );
-          expect(handler.task, result.updatedTask, reason: '$scenario');
-
           if (scenario.requiresReason) {
-            final status = result.updatedTask!.data.status;
+            final status = handler.task.data.status;
             final actualReason = switch (status) {
               TaskBlocked(:final reason) => reason,
               TaskOnHold(:final reason) => reason,
@@ -666,7 +659,7 @@ void main() {
                     () => repo.updateJournalEntity(captureAny()),
                   ).captured.single
                   as Task;
-          expect(captured, result.updatedTask, reason: '$scenario');
+          expect(captured, handler.task, reason: '$scenario');
         },
         tags: 'glados',
       );
@@ -687,7 +680,6 @@ void main() {
 
           expect(result.success, isFalse, reason: '$scenario');
           expect(result.didWrite, isFalse, reason: '$scenario');
-          expect(result.updatedTask, isNull, reason: '$scenario');
           expect(handler.task, task, reason: '$scenario');
           expect(
             result.error,
@@ -702,10 +694,9 @@ void main() {
 
     group('fromHandlerResult conversion', () {
       test('maps successful write with entityId', () {
-        final statusResult = TaskStatusResult(
+        const statusResult = TaskStatusResult(
           success: true,
           message: 'Task status changed from "OPEN" to "IN PROGRESS".',
-          updatedTask: task,
           didWrite: true,
         );
 
@@ -724,10 +715,9 @@ void main() {
       });
 
       test('maps no-op result without entityId', () {
-        final statusResult = TaskStatusResult(
+        const statusResult = TaskStatusResult(
           success: true,
           message: 'Task is already "OPEN". No change needed.',
-          updatedTask: task,
         );
 
         final toolResult = ToolExecutionResult.fromHandlerResult(
@@ -759,33 +749,6 @@ void main() {
         expect(toolResult.success, isFalse);
         expect(toolResult.errorMessage, contains('DONE'));
         expect(toolResult.mutatedEntityId, isNull);
-      });
-    });
-
-    group('TaskStatusResult', () {
-      test('wasNoOp is true when success=true and didWrite=false', () {
-        const result = TaskStatusResult(
-          success: true,
-          message: 'no-op',
-        );
-        expect(result.wasNoOp, isTrue);
-      });
-
-      test('wasNoOp is false when didWrite=true', () {
-        const result = TaskStatusResult(
-          success: true,
-          message: 'wrote',
-          didWrite: true,
-        );
-        expect(result.wasNoOp, isFalse);
-      });
-
-      test('wasNoOp is false when success=false', () {
-        const result = TaskStatusResult(
-          success: false,
-          message: 'error',
-        );
-        expect(result.wasNoOp, isFalse);
       });
     });
 

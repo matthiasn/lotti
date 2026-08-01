@@ -10,17 +10,14 @@ class TaskLanguageResult {
   const TaskLanguageResult({
     required this.success,
     required this.message,
-    this.updatedTask,
     this.error,
     this.didWrite = false,
   });
 
   final bool success;
   final String message;
-  final Task? updatedTask;
   final String? error;
   final bool didWrite;
-  bool get wasNoOp => success && !didWrite;
 }
 
 /// Handler for setting the language of a task.
@@ -87,7 +84,6 @@ class TaskLanguageHandler {
       return TaskLanguageResult(
         success: true,
         message: message,
-        updatedTask: task,
       );
     }
 
@@ -104,7 +100,6 @@ class TaskLanguageHandler {
       return TaskLanguageResult(
         success: true,
         message: message,
-        updatedTask: task,
       );
     }
 
@@ -139,7 +134,6 @@ class TaskLanguageHandler {
       return TaskLanguageResult(
         success: true,
         message: message,
-        updatedTask: updatedTask,
         didWrite: true,
       );
     } catch (e, s) {

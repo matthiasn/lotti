@@ -7,7 +7,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.openCommandPalette,
       category: AppCommandCategory.general,
-      context: AppCommandContext.global,
       bindings: [
         AppShortcutBinding.primaryKey(LogicalKeyboardKey.keyK),
       ],
@@ -16,7 +15,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.openShortcutHelp,
       category: AppCommandCategory.general,
-      context: AppCommandContext.global,
       bindings: [
         AppShortcutBinding.primaryCharacter('?'),
         AppShortcutBinding.allKey(LogicalKeyboardKey.f1),
@@ -26,7 +24,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.createTextEntry,
       category: AppCommandCategory.creation,
-      context: AppCommandContext.global,
       bindings: [
         AppShortcutBinding.primaryKey(LogicalKeyboardKey.keyN),
       ],
@@ -35,7 +32,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.createTask,
       category: AppCommandCategory.creation,
-      context: AppCommandContext.global,
       bindings: [
         AppShortcutBinding.primaryKey(LogicalKeyboardKey.keyT),
       ],
@@ -44,7 +40,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.captureScreenshot,
       category: AppCommandCategory.creation,
-      context: AppCommandContext.global,
       bindings: [
         AppShortcutBinding.primaryKey(
           LogicalKeyboardKey.keyS,
@@ -57,7 +52,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.zoomIn,
       category: AppCommandCategory.view,
-      context: AppCommandContext.global,
       bindings: [
         AppShortcutBinding.primaryCharacter('+', includeRepeats: true),
         AppShortcutBinding.primaryKey(
@@ -71,7 +65,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.zoomOut,
       category: AppCommandCategory.view,
-      context: AppCommandContext.global,
       bindings: [
         AppShortcutBinding.primaryCharacter('-', includeRepeats: true),
         AppShortcutBinding.primaryKey(
@@ -85,7 +78,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.resetZoom,
       category: AppCommandCategory.view,
-      context: AppCommandContext.global,
       bindings: [
         AppShortcutBinding.primaryKey(LogicalKeyboardKey.digit0),
       ],
@@ -94,7 +86,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.save,
       category: AppCommandCategory.editing,
-      context: AppCommandContext.editor,
       bindings: [
         AppShortcutBinding.primaryKey(LogicalKeyboardKey.keyS),
       ],
@@ -103,7 +94,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.refresh,
       category: AppCommandCategory.view,
-      context: AppCommandContext.currentSurface,
       bindings: [
         AppShortcutBinding.primaryKey(LogicalKeyboardKey.keyR),
       ],
@@ -112,7 +102,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.focusSearch,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.currentSurface,
       bindings: [
         AppShortcutBinding.primaryKey(LogicalKeyboardKey.keyF),
       ],
@@ -121,7 +110,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.createInContext,
       category: AppCommandCategory.creation,
-      context: AppCommandContext.currentSurface,
       bindings: [
         AppShortcutBinding.primaryKey(
           LogicalKeyboardKey.keyN,
@@ -133,14 +121,12 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.nextFocusRegion,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.global,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.f6)],
       paletteVisibility: AppCommandPaletteVisibility.hidden,
     ),
     AppCommandDefinition(
       id: AppCommandId.previousFocusRegion,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.global,
       bindings: [
         AppShortcutBinding.allKey(LogicalKeyboardKey.f6, shift: true),
       ],
@@ -153,56 +139,48 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.navigateTasks,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.navigation,
       bindings: [AppShortcutBinding.primaryKey(LogicalKeyboardKey.digit1)],
       paletteVisibility: AppCommandPaletteVisibility.global,
     ),
     AppCommandDefinition(
       id: AppCommandId.navigateDailyOs,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.navigation,
       bindings: [AppShortcutBinding.primaryKey(LogicalKeyboardKey.digit2)],
       paletteVisibility: AppCommandPaletteVisibility.global,
     ),
     AppCommandDefinition(
       id: AppCommandId.navigateProjects,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.navigation,
       bindings: [AppShortcutBinding.primaryKey(LogicalKeyboardKey.digit3)],
       paletteVisibility: AppCommandPaletteVisibility.global,
     ),
     AppCommandDefinition(
       id: AppCommandId.navigateHabits,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.navigation,
       bindings: [AppShortcutBinding.primaryKey(LogicalKeyboardKey.digit4)],
       paletteVisibility: AppCommandPaletteVisibility.global,
     ),
     AppCommandDefinition(
       id: AppCommandId.navigateDashboards,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.navigation,
       bindings: [AppShortcutBinding.primaryKey(LogicalKeyboardKey.digit5)],
       paletteVisibility: AppCommandPaletteVisibility.global,
     ),
     AppCommandDefinition(
       id: AppCommandId.navigateJournal,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.navigation,
       bindings: [AppShortcutBinding.primaryKey(LogicalKeyboardKey.digit6)],
       paletteVisibility: AppCommandPaletteVisibility.global,
     ),
     AppCommandDefinition(
       id: AppCommandId.navigateEvents,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.navigation,
       bindings: [AppShortcutBinding.primaryKey(LogicalKeyboardKey.digit7)],
       paletteVisibility: AppCommandPaletteVisibility.global,
     ),
     AppCommandDefinition(
       id: AppCommandId.navigateSettings,
       category: AppCommandCategory.navigation,
-      context: AppCommandContext.navigation,
       bindings: [AppShortcutBinding.primaryKey(LogicalKeyboardKey.digit8)],
       paletteVisibility: AppCommandPaletteVisibility.global,
     ),
@@ -212,36 +190,30 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.activate,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.list,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.enter)],
       paletteVisibility: AppCommandPaletteVisibility.hidden,
     ),
     AppCommandDefinition(
       id: AppCommandId.toggle,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.list,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.space)],
       paletteVisibility: AppCommandPaletteVisibility.hidden,
     ),
     AppCommandDefinition(
       id: AppCommandId.rename,
       category: AppCommandCategory.editing,
-      context: AppCommandContext.list,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.f2)],
       paletteVisibility: AppCommandPaletteVisibility.activeContext,
     ),
     AppCommandDefinition(
       id: AppCommandId.delete,
       category: AppCommandCategory.editing,
-      context: AppCommandContext.list,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.delete)],
       paletteVisibility: AppCommandPaletteVisibility.activeContext,
-      destructive: true,
     ),
     AppCommandDefinition(
       id: AppCommandId.moveUp,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.list,
       bindings: [
         AppShortcutBinding.allKey(
           LogicalKeyboardKey.arrowUp,
@@ -255,7 +227,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.moveDown,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.list,
       bindings: [
         AppShortcutBinding.allKey(
           LogicalKeyboardKey.arrowDown,
@@ -269,14 +240,12 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.cancel,
       category: AppCommandCategory.general,
-      context: AppCommandContext.modal,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.escape)],
       paletteVisibility: AppCommandPaletteVisibility.hidden,
     ),
     AppCommandDefinition(
       id: AppCommandId.selectPrevious,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.list,
       bindings: [
         AppShortcutBinding.allKey(
           LogicalKeyboardKey.arrowUp,
@@ -289,7 +258,6 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.selectNext,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.list,
       bindings: [
         AppShortcutBinding.allKey(
           LogicalKeyboardKey.arrowDown,
@@ -302,42 +270,36 @@ abstract final class AppCommandCatalog {
     AppCommandDefinition(
       id: AppCommandId.selectFirst,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.list,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.home)],
       paletteVisibility: AppCommandPaletteVisibility.hidden,
     ),
     AppCommandDefinition(
       id: AppCommandId.selectLast,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.list,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.end)],
       paletteVisibility: AppCommandPaletteVisibility.hidden,
     ),
     AppCommandDefinition(
       id: AppCommandId.pageUp,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.list,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.pageUp)],
       paletteVisibility: AppCommandPaletteVisibility.hidden,
     ),
     AppCommandDefinition(
       id: AppCommandId.pageDown,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.list,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.pageDown)],
       paletteVisibility: AppCommandPaletteVisibility.hidden,
     ),
     AppCommandDefinition(
       id: AppCommandId.expand,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.tree,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.arrowRight)],
       paletteVisibility: AppCommandPaletteVisibility.hidden,
     ),
     AppCommandDefinition(
       id: AppCommandId.collapse,
       category: AppCommandCategory.listsAndControls,
-      context: AppCommandContext.tree,
       bindings: [AppShortcutBinding.allKey(LogicalKeyboardKey.arrowLeft)],
       paletteVisibility: AppCommandPaletteVisibility.hidden,
     ),
@@ -363,36 +325,5 @@ abstract final class AppCommandCatalog {
       }
     }
     return result;
-  }
-
-  /// Finds duplicate bindings in a set of commands that may be active at once.
-  static List<AppCommandBindingConflict> conflictsFor({
-    required TargetPlatform platform,
-    required Iterable<AppCommandId> commandIds,
-    Map<AppCommandId, AppCommandDefinition> definitionOverrides = const {},
-  }) {
-    final seen = <Object, AppCommandId>{};
-    final conflicts = <AppCommandBindingConflict>[];
-    for (final id in commandIds) {
-      final commandDefinition = definitionOverrides[id] ?? definition(id);
-      for (final binding in commandDefinition.bindings) {
-        final activator = binding.resolve(platform);
-        if (activator == null) continue;
-        final equivalenceKey = binding.equivalenceKey(platform);
-        final existing = seen[equivalenceKey];
-        if (existing == null) {
-          seen[equivalenceKey] = id;
-        } else if (existing != id) {
-          conflicts.add(
-            AppCommandBindingConflict(
-              activator: activator,
-              first: existing,
-              second: id,
-            ),
-          );
-        }
-      }
-    }
-    return conflicts;
   }
 }

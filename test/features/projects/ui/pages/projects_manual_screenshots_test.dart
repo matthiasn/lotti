@@ -266,16 +266,6 @@ void main() {
               'Passagierliste.',
         ),
         reportUpdatedAt: manualDemoNow.subtract(const Duration(hours: 2)),
-        recommendations: [
-          _t(
-            'Recalibrate the zero-gravity fish feeder.',
-            'Schwerelos-Futterautomaten neu kalibrieren.',
-          ),
-          _t(
-            'Confirm the interplanetary sardine cargo pods.',
-            'Interplanetare Sardinen-Frachtkapseln bestätigen.',
-          ),
-        ],
         highlightedTaskSummaries: [
           makeTestTaskSummary(
             task: world.orbitalHabitatTask,

@@ -302,11 +302,7 @@ void main() {
           final result = await handler.processToolCall(toolCall, mockManager);
 
           expect(result.success, isTrue);
-          expect(result.requestedPriority, TaskPriority.p1High);
-          expect(result.reason, 'User said high priority');
-          expect(result.confidence, 'high');
-          expect(result.updatedTask, isNotNull);
-          expect(result.updatedTask!.data.priority, TaskPriority.p1High);
+          expect(handler.task.data.priority, TaskPriority.p1High);
           expect(result.error, isNull);
 
           expect(capturedTask, isNotNull);
@@ -342,8 +338,7 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedPriority, TaskPriority.p0Urgent);
-        expect(result.updatedTask!.data.priority, TaskPriority.p0Urgent);
+        expect(handler.task.data.priority, TaskPriority.p0Urgent);
 
         verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
       });
@@ -368,8 +363,7 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedPriority, TaskPriority.p3Low);
-        expect(result.updatedTask!.data.priority, TaskPriority.p3Low);
+        expect(handler.task.data.priority, TaskPriority.p3Low);
 
         verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
       });
@@ -413,7 +407,7 @@ void main() {
           final result = await handler.processToolCall(toolCall);
 
           expect(result.success, isTrue);
-          expect(result.requestedPriority, TaskPriority.p1High);
+          expect(handler.task.data.priority, TaskPriority.p1High);
           verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
           // Manager methods should not be called
           verifyNever(
@@ -441,7 +435,7 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedPriority, TaskPriority.p1High);
+        expect(handler.task.data.priority, TaskPriority.p1High);
       });
     });
 
@@ -462,8 +456,8 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.wasNoOp, isTrue);
-        expect(result.requestedPriority, TaskPriority.p0Urgent);
+        expect(result.didWrite, isFalse);
+        expect(handler.task.data.priority, TaskPriority.p0Urgent);
         expect(result.message, contains('No change needed'));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -508,8 +502,7 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.requestedPriority, TaskPriority.p1High);
-        expect(result.updatedTask!.data.priority, TaskPriority.p1High);
+        expect(handler.task.data.priority, TaskPriority.p1High);
 
         verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
       });
@@ -531,7 +524,7 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.updatedTask!.data.priority, TaskPriority.p0Urgent);
+        expect(handler.task.data.priority, TaskPriority.p0Urgent);
 
         verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
       });
@@ -557,10 +550,10 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('must be P0, P1, P2, or P3'));
-        expect(result.requestedPriority, isNull);
+        expect(handler.task, same(task));
+        expect(handler.task.data.priority, TaskPriority.p2Medium);
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
@@ -577,7 +570,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('must be P0, P1, P2, or P3'));
         expect(result.error, contains('P4'));
@@ -597,7 +589,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('urgent'));
 
@@ -616,7 +607,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -646,7 +636,6 @@ void main() {
 
           // Should fail validation (1 != "P1") but not throw
           expect(result.success, isFalse);
-          expect(result.wasSkipped, isFalse);
           expect(result.error, isNotNull);
           expect(result.error, contains('must be P0, P1, P2, or P3'));
 
@@ -682,8 +671,6 @@ void main() {
 
           // Should succeed - non-string values are converted via toString()
           expect(result.success, isTrue);
-          expect(result.reason, '123');
-          expect(result.confidence, 'true');
 
           verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
         },
@@ -708,7 +695,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -738,11 +724,9 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('Database connection lost'));
-        expect(result.requestedPriority, TaskPriority.p1High);
-        expect(result.updatedTask, isNull);
+        expect(handler.task, same(task));
 
         verify(
           () => mockManager.addToolResponse(
@@ -822,7 +806,6 @@ void main() {
         if (scenario.isInvalid) {
           expect(result.success, isFalse, reason: '$scenario');
           expect(result.didWrite, isFalse, reason: '$scenario');
-          expect(result.requestedPriority, isNull, reason: '$scenario');
           expect(result.error, contains('must be P0'), reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
@@ -830,15 +813,9 @@ void main() {
           return;
         }
 
-        expect(result.requestedPriority, scenario.parsedPriority);
-        expect(result.reason, 'Generated reason ${scenario.seed}');
-        expect(result.confidence, scenario.seed.isEven ? 'high' : 'medium');
-
         if (scenario.isNoOp) {
           expect(result.success, isTrue, reason: '$scenario');
           expect(result.didWrite, isFalse, reason: '$scenario');
-          expect(result.wasNoOp, isTrue, reason: '$scenario');
-          expect(result.updatedTask, initialTask, reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
           verifyNever(() => repo.updateJournalEntity(any()));
@@ -861,7 +838,6 @@ void main() {
           expect(result.success, isFalse, reason: '$scenario');
           expect(result.didWrite, isFalse, reason: '$scenario');
           expect(result.error, contains('repository returned false'));
-          expect(result.updatedTask, isNull, reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
           return;
@@ -869,45 +845,11 @@ void main() {
 
         expect(result.success, isTrue, reason: '$scenario');
         expect(result.didWrite, isTrue, reason: '$scenario');
-        expect(result.wasNoOp, isFalse, reason: '$scenario');
-        expect(result.updatedTask, captured, reason: '$scenario');
         expect(handler.task, captured, reason: '$scenario');
         expect(callbackTask, captured, reason: '$scenario');
       },
       tags: 'glados',
     );
-
-    group('TaskPriorityResult', () {
-      test('wasSkipped returns true for non-error failures', () {
-        const result = TaskPriorityResult(
-          success: false,
-          message: 'Already set',
-          requestedPriority: TaskPriority.p1High,
-        );
-
-        expect(result.wasSkipped, isTrue);
-      });
-
-      test('wasSkipped returns false when error is present', () {
-        const result = TaskPriorityResult(
-          success: false,
-          message: 'Invalid input',
-          error: 'priority must be P0, P1, P2, or P3',
-        );
-
-        expect(result.wasSkipped, isFalse);
-      });
-
-      test('wasSkipped returns false when success is true', () {
-        const result = TaskPriorityResult(
-          success: true,
-          message: 'Updated',
-          requestedPriority: TaskPriority.p1High,
-        );
-
-        expect(result.wasSkipped, isFalse);
-      });
-    });
 
     group('edge cases', () {
       test(
@@ -951,7 +893,7 @@ void main() {
           final result = await handler.processToolCall(toolCall, mockManager);
 
           expect(result.success, isTrue);
-          final updated = result.updatedTask!;
+          final updated = handler.task;
           expect(updated.data.title, 'Important Task');
           expect(updated.data.status.id, 'status-2');
           expect(updated.data.due, DateTime(2024, 1, 25));
@@ -977,7 +919,7 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedPriority, TaskPriority.p1High);
+        expect(handler.task.data.priority, TaskPriority.p1High);
       });
 
       test(
@@ -997,8 +939,8 @@ void main() {
 
           // Should succeed but NOT call updateJournalEntity (optimization)
           expect(result.success, isTrue);
-          expect(result.requestedPriority, TaskPriority.p2Medium);
-          expect(result.updatedTask!.data.priority, TaskPriority.p2Medium);
+          expect(handler.task.data.priority, TaskPriority.p2Medium);
+          expect(result.didWrite, isFalse);
           expect(result.message, contains('No change needed'));
 
           // Verify no DB write occurred
@@ -1024,7 +966,7 @@ void main() {
 
           expect(result.success, isTrue, reason: 'Failed for $priorityStr');
           expect(
-            result.requestedPriority,
+            handler.task.data.priority,
             TaskPriorityHandler.parsePriority(priorityStr),
             reason: 'Failed for $priorityStr',
           );
@@ -1032,41 +974,8 @@ void main() {
       });
     });
 
-    group('confidence and reason handling', () {
-      // One loop over the three confidence levels — the scenario shape is
-      // identical, only the (priority, confidence, reason) triple varies.
-      const confidenceCases = <(String, String, String)>[
-        ('P0', 'high', 'User explicitly said P0'),
-        ('P1', 'medium', 'User implied importance'),
-        ('P3', 'low', 'Uncertain about priority level'),
-      ];
-
-      for (final (priority, confidence, reason) in confidenceCases) {
-        test('captures $confidence confidence with its reason', () async {
-          final task = createTask();
-          final toolCall = createPriorityToolCall(
-            priority: priority,
-            confidence: confidence,
-            reason: reason,
-          );
-
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
-
-          final handler = TaskPriorityHandler(
-            task: task,
-            journalRepository: mockJournalRepo,
-          );
-
-          final result = await handler.processToolCall(toolCall, mockManager);
-
-          expect(result.confidence, confidence);
-          expect(result.reason, reason);
-        });
-      }
-
-      test('should work without optional fields', () async {
+    group('optional metadata', () {
+      test('accepts a priority without optional metadata', () async {
         final task = createTask();
         // Only required field: priority
         const toolCall = ChatCompletionMessageToolCall(
@@ -1090,8 +999,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.confidence, isNull);
-        expect(result.reason, isNull);
       });
     });
   });

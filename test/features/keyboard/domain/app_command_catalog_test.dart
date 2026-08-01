@@ -13,67 +13,24 @@ void main() {
       expect(ids, hasLength(AppCommandId.values.length));
     });
 
-    test('global bindings are conflict-free on every desktop platform', () {
-      final globalIds = AppCommandCatalog.definitions
-          .where(
-            (item) =>
-                item.context == AppCommandContext.global ||
-                item.context == AppCommandContext.navigation,
-          )
-          .map((item) => item.id);
-
+    test('default bindings are conflict-free on every desktop platform', () {
       for (final platform in const [
         TargetPlatform.macOS,
         TargetPlatform.windows,
         TargetPlatform.linux,
       ]) {
+        final resolvedBindings = AppCommandCatalog.definitions
+            .expand((definition) => definition.bindings)
+            .map((binding) => binding.resolve(platform))
+            .nonNulls
+            .toList();
         expect(
-          AppCommandCatalog.conflictsFor(
-            platform: platform,
-            commandIds: globalIds,
-          ),
-          isEmpty,
+          resolvedBindings.toSet(),
+          hasLength(resolvedBindings.length),
           reason:
-              '$platform must not dispatch one chord to two global commands',
+              '$platform must not dispatch one chord to two default commands',
         );
       }
-    });
-
-    test('reports both owners when supplied definitions conflict', () {
-      const binding = AppShortcutBinding.primaryKey(LogicalKeyboardKey.keyK);
-      const first = AppCommandDefinition(
-        id: AppCommandId.openCommandPalette,
-        category: AppCommandCategory.general,
-        context: AppCommandContext.global,
-        bindings: [binding],
-        paletteVisibility: AppCommandPaletteVisibility.hidden,
-      );
-      const second = AppCommandDefinition(
-        id: AppCommandId.openShortcutHelp,
-        category: AppCommandCategory.general,
-        context: AppCommandContext.global,
-        bindings: [binding],
-        paletteVisibility: AppCommandPaletteVisibility.global,
-      );
-
-      final conflicts = AppCommandCatalog.conflictsFor(
-        platform: TargetPlatform.windows,
-        commandIds: const [
-          AppCommandId.openCommandPalette,
-          AppCommandId.openShortcutHelp,
-        ],
-        definitionOverrides: const {
-          AppCommandId.openCommandPalette: first,
-          AppCommandId.openShortcutHelp: second,
-        },
-      );
-
-      expect(conflicts, hasLength(1));
-      expect(conflicts.single.first, first.id);
-      expect(conflicts.single.second, second.id);
-      final activator = conflicts.single.activator as SingleActivator;
-      expect(activator.trigger, LogicalKeyboardKey.keyK);
-      expect(activator.control, isTrue);
     });
 
     test('navigation digits have a stable semantic mapping', () {
@@ -126,10 +83,9 @@ void main() {
       );
     });
 
-    test('delete remains destructive and palette-visible only in context', () {
+    test('delete remains palette-visible only in context', () {
       final definition = AppCommandCatalog.definition(AppCommandId.delete);
 
-      expect(definition.destructive, isTrue);
       expect(
         definition.paletteVisibility,
         AppCommandPaletteVisibility.activeContext,
