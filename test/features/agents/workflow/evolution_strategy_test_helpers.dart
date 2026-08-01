@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 /// conversation manager — previously duplicated by three groups' setUps.
 ({GenUiBridge bridge, EvolutionStrategy strategy, ConversationManager manager})
 buildGenUiBench({
-  required String conversationId,
   EvolutionStrategy Function(GenUiBridge bridge)? strategyBuilder,
 }) {
   final catalog = buildEvolutionCatalog();

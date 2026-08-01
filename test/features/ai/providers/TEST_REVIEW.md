@@ -10,7 +10,7 @@
 
 | File | Lines | Has test? | Top issue |
 |---|---|---|---|
-| `lib/features/ai/providers/gemini_inference_repository_provider.dart` | 11 | No | Untested; thin provider wrapper |
+| `lib/features/ai/providers/gemini_inference_repository_provider.dart` | 11 | Yes (`gemini_inference_repository_provider_test.dart`, 84 lines) | Provider type and overridden HTTP client wiring covered |
 | `lib/features/ai/providers/ollama_inference_repository_provider.dart` | 24 | Yes (`ollama_inference_repository_provider_test.dart`, 87 lines) | Good; both `httpClientProvider` and `ollamaInferenceRepositoryProvider` tested |
 
 ---
@@ -33,18 +33,13 @@
 
 ## Generative (Glados) testing opportunities
 
-- [x] **[LOW]** All three files are thin Riverpod providers with no pure logic. Glados does not apply here.
+- [x] **[LOW]** Both remaining files are thin Riverpod providers with no pure logic. Glados does not apply here.
   **RESOLVED:** Confirmed: `geminiInferenceRepositoryProvider` and `ollamaInferenceRepositoryProvider` only wire `httpClientProvider` into repository constructors. There is no pure function over a non-trivial input domain to property-test. Non-actionable observation, no change.
 
 ---
 
 ## Coverage / missing-behavior gaps
 
-  - Initial state is `false`.
-  - `toggle()` changes state to `true`, then back to `false`.
-  - Setting `includeThoughts = true` changes state.
-  - `get includeThoughts` reflects current state.
-  No test file exists for this file despite it being a non-generated (the `.g.dart` codegen wrapper is generated, but the logic file is hand-written).
 - [x] **[HIGH]** `lib/features/ai/providers/gemini_inference_repository_provider.dart` (11 lines) — `geminiInferenceRepositoryProvider` is a one-liner `Provider` that wires `httpClientProvider` to `GeminiInferenceRepository`. The pattern is identical to `ollamaInferenceRepositoryProvider`. Following the `ollama` test pattern, a test should verify: (a) it returns a `GeminiInferenceRepository` instance, and (b) it uses the `httpClientProvider` override (inject `MockHttpClient`, confirm the repository holds a reference to it via a real method call). **RESOLVED:** new `gemini_inference_repository_provider_test.dart` follows the ollama pattern — asserts the provider returns a `GeminiInferenceRepository` and proves the overridden `httpClientProvider` client is wired through by driving `generateImage` against a 403-stubbed mock and capturing the request URI.
 - [x] **[LOW]** `test/features/ai/providers/ollama_inference_repository_provider_test.dart` — `httpClientProvider` is tested for `'returns a real http.Client and closes it on dispose'` (line 15–29). The test confirms disposal does not throw but does not confirm the client was actually closed (the underlying `http.Client.close()` method sets an internal flag). This is acceptable since the underlying `http.Client` does not expose an `isClosed` property.
   **RESOLVED:** Verified at `ollama_inference_repository_provider_test.dart:15–29`. The provider returns a real `package:http` `Client`, which exposes no public `isClosed`/closed-state accessor, so asserting on actual close-state would require mocking the very client the test means to construct. The test still asserts the meaningful guarantees this provider owns: it returns an `http.Client`, memoizes it (`identical`), and disposing the container runs `ref.onDispose(client.close)` without throwing. Non-actionable observation, no change.

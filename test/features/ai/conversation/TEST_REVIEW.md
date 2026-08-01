@@ -9,19 +9,18 @@
 
 | File | Lines | Has test? | Top issue |
 |------|-------|-----------|-----------|
-| `lib/features/ai/conversation/conversation_manager.dart` | — | Yes | History, turn limits, error state, and signatures have direct and generated coverage |
-| `lib/features/ai/conversation/conversation_repository.dart` | 417 | Yes (1812 ln) | **Heavily oversized test** — 1812 lines vs 417; ~18 copy-paste `when` stubs; inline mocks |
-| `lib/features/ai/conversation/conversation_repository.g.dart` | 284 | (generated) | Do not edit |
+| `lib/features/ai/conversation/conversation_manager.dart` | 203 | Yes (1019 ln) | History, turn limits, error state, and signatures have direct and generated coverage |
+| `lib/features/ai/conversation/conversation_repository.dart` | 556 | Yes (2478 ln) | Large behavioral suite; shared stubs keep provider and strategy cases centralized |
 
 ---
 
 ## File size / split opportunities
 
-- [x] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` at **1812 lines** is the single most oversized test file in the entire scope. The core issue is copy-paste: every one of the ~18 `sendMessage` sub-tests re-declares the identical 8-argument `when(() => mockOllamaRepo.generateTextWithMessages(...))` stub (lines 157–168, 211–222, 274–285, 325–336, 399–410, 503–514, 588–599, 670–681, 711–722, 816–827, 914–925, 984–995, 1082–1093, 1218–1229, 1317–1328, 1401–1412, 1489–1500, 1551–1562, 1657–1668, 1696–1707). Extracting a `_stubGenerateText(mock, {Stream? stream})` helper would reduce the file by at least 300 lines. **RESOLVED:** shared `_stubGenerateText(mock)` helper replaces all 19 copies of the 8-argument stub.
+- [x] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` previously repeated the same 8-argument inference stub across 19 `sendMessage` scenarios. **RESOLVED:** shared `_stubGenerateText(mock)` setup now owns the common mock call shape; the 2478-line suite remains large because it covers provider, tool-call, attribution, and strategy behavior.
 
-- [x] **[HIGH]** `test/features/ai/conversation/conversation_manager_test.dart` at **1126 lines** vs a 351-line impl. The two Glados properties at the bottom (lines 902–1074) are excellent and correctly-tagged. The first ~800 lines of static tests contain several near-duplicate assistant-message scenarios (lines 537–656) that test orthogonal flag combinations without using a loop or parameterized helper. A `_assertAssistantMessage(manager, {content, toolCalls, expectedEvent})` helper would reduce this section by ~100 lines. **RESOLVED:** the four assistant-message scenarios are now one parameterized loop over (description, content, toolCalls, expected event) cases.
+- [x] **[HIGH]** `test/features/ai/conversation/conversation_manager_test.dart` previously repeated several assistant-message scenarios for orthogonal content and tool-call combinations. **RESOLVED:** the scenarios now share one parameterized table over description, content, tool calls, and expected stored state; the suite also retains two correctly tagged Glados properties for lifecycle and history invariants.
 
-- [x] **[MED]** `lib/features/ai/conversation/conversation_repository.dart` at 417 lines is within limits, but the `sendMessage` method body is 280 lines (lines 90–382) with deeply nested tool-call accumulation logic. The Gemini-style detection block (lines 188–219) and the standard OpenAI accumulation loop (lines 220–289) are natural extraction candidates into private helpers (`_handleGeminiToolCalls`, `_handleOpenAiToolCallChunks`), which would also make their unit tests cheaper to write.
+- [x] **[MED]** `sendMessage` previously embedded deeply nested Gemini-style and OpenAI tool-call accumulation logic. The blocks were natural extraction candidates that would also make their unit tests cheaper to write.
   **RESOLVED:** done — the Gemini block and the OpenAI accumulation loop are now `@visibleForTesting` statics on `ConversationRepository` (`isGeminiStyleToolCallDelta`, `appendGeminiToolCalls`, `accumulateOpenAiToolCallChunks`), with `sendMessage` reduced to a dispatch over them; the dead `// DEBUG` no-op loop was deleted. Each helper now has direct unit tests (detection edges, turn-scoped id synthesis, by-id and by-index stitching).
 
 ---
@@ -41,8 +40,7 @@
 - [x] **[MED]** `test/features/ai/conversation/conversation_repository_test.dart` lines 706–811 (tool call accumulation tests) assert only `expect(manager!.messages.length, 2)` after the accumulation. This proves the conversation was created and a response recorded, but does **not** verify the accumulated argument string. Because `ChatCompletionMessage` is a sealed class the serialized tool call cannot be directly inspected via the message object — however the test could add the assistant message to a local `ConversationManager` directly and then call `getMessagesForRequest()` and verify the tool call JSON via `toJson()`. The current assertion is essentially a smoke test.
   **RESOLVED:** done — both accumulation tests now assert the recorded assistant message's payload via `message.toJson()`: `tool_calls[0].function.arguments == '{"arg": "value"}'` and the UTF-8 test asserts `'{"emoji": "😀"}'` reassembled intact; the extracted helpers additionally get direct argument-string unit tests.
 
-- [x] **[MED]** `test/features/ai/conversation/conversation_repository_test.dart` lines 1750–1810 (`'Provider tests'` group) contains `'conversationEvents provider handles non-existent conversation'` (line 1760), which uses `await completer.future.timeout(const Duration(milliseconds: 50), ...)` — a real wall-clock wait inside a unit test. This is a fake-time policy violation. The error is emitted synchronously by `Stream.error(...)`, so `expectLater(stream, emitsError(contains('not found')))` is a direct replacement.
-  **RESOLVED:** done — the wall-clock `completer.future.timeout(50ms)` is gone: the test keeps the autoDispose provider alive via `container.listen`, flushes with `pumpEventQueue()`, and asserts the provider's `AsyncError` state contains 'not found'. (A `provider.future`-based variant was tried first but the StreamProvider future never resolves from a pre-data error — it reports 'disposed during loading' instead.)
+- [x] **[MED]** `test/features/ai/conversation/conversation_repository_test.dart` previously used a real 50 ms timeout to test an event-stream provider. **RESOLVED:** the unused event stream and its provider were removed; errors are now retained synchronously in `ConversationManager.lastError`, with direct state assertions.
 
 - [x] **[MED]** `test/features/ai/conversation/conversation_manager_test.dart` lines 452–462: the `'export'` group contains a single test `'should handle max turns'` that adds 10 user messages and asserts `canContinue() == true`. The group name `'export'` is misleading (there is no export concept in `ConversationManager`), and the assertion only checks that `canContinue()` returns `true` at 10/20 turns — it never verifies the `false` case, which is already tested separately in `'canContinue respects maxTurns'`. Consider removing the `'export'` group entirely as its content is redundant.
   **RESOLVED:** done — the misleading 'export' group was removed; its single test only re-asserted `canContinue() == true` at 10/20 turns, which 'canContinue respects maxTurns' already covers including the false case.
@@ -93,8 +91,7 @@
 - [x] **[MED]** `lib/features/ai/conversation/conversation_manager.dart` — `initialize()` clears `_thoughtSignatures` (line 47). The test at line 686 verifies messages are cleared but does **not** verify signatures are cleared. Add an assertion to the `'initialize clears existing messages'` test that checks `manager.thoughtSignatures.isEmpty` after re-initialization.
   **RESOLVED:** done — the initialize test now also seeds a thought signature via `addAssistantMessage(signatures: …)` and asserts `manager.thoughtSignatures` is empty after re-initialization (renamed to 'initialize clears existing messages and thought signatures').
 
-- [x] **[LOW]** `lib/features/ai/conversation/conversation_repository.dart` — `conversationEvents` provider (lines 391–405) returns `Stream.error(...)` when the conversation is not found. This is tested by the problematic real-timeout test at lines 1760–1789. The test itself should be refactored (see Test quality section) but the behavior is covered.
-  **RESOLVED (assessed, no change):** confirmed. The behavior is now covered by the refactored deterministic test `'conversationEvents provider handles non-existent conversation'` (the real-timeout was already removed under the MED items): it keeps the autoDispose provider alive via `container.listen`, flushes with `pumpEventQueue()`, and asserts `state.hasError` with `state.error.toString()` containing `'not found'`. No further change needed.
+- [x] **[LOW]** The repository previously exposed an event-stream provider solely to relay manager state and a not-found error. **RESOLVED:** the unused provider was removed. Callers read conversation state from the manager, and repository tests cover the not-found argument error and retained error state directly.
 
 ---
 
@@ -112,9 +109,8 @@
 
 ## Summary
 
-- **0 oversized impl** files (conversation_repository.dart at 417 lines is within range; conversation_manager.dart at 351 is fine).
-- **2 oversized test** files: `conversation_repository_test.dart` (1812 lines, worst in scope) and `conversation_manager_test.dart` (1126 lines) — both driven by repeated mock stubs and copy-paste test bodies.
-- **4 weak tests** identified: smoke-only tool-accumulation assertions (messages.length == 2 only), misleading `'export'` group with redundant assertion, fragile enum-ordinal test, and real-timeout provider test.
-- **1 Glados candidate**: `_stripThinkBlocks` pure string function — property that no output contains think tags.
-- **2 speed wins**: replace explicit `StreamController` boilerplate with `Stream.fromIterable` in sendMessage tests; fix real-timeout at line 1781.
-- **Biggest opportunity**: the repeated 8-argument `when` stub appears 18+ times — extracting `_stubGenerateText(repo)` is the single change that would most improve readability, cut ~300 lines, and eliminate all copy-paste-related maintenance risk in this file.
+- **0 oversized implementation files:** `conversation_manager.dart` is 203 lines and `conversation_repository.dart` is 556 lines.
+- **2 large test files:** `conversation_manager_test.dart` is 1019 lines and `conversation_repository_test.dart` is 2478 lines, reflecting broad state, provider, tool-call, attribution, and strategy coverage.
+- Previously weak assertions now verify stored message payloads, enum behavior, accumulated tool arguments, and retained error state.
+- `stripThinkBlocks` and manager lifecycle/history invariants have correctly tagged Glados coverage.
+- Shared inference stubs and finite streams remove repeated mock setup and wall-clock waits.

@@ -28,7 +28,7 @@ class ConversationManager {
 
   List<ChatCompletionMessage> get messages => List.unmodifiable(_messages);
 
-  /// Most recent inference error emitted for this conversation, if any.
+  /// Most recent inference error recorded for this conversation, if any.
   String? get lastError => _lastError;
 
   /// Clears the previous request's error before a new request begins.

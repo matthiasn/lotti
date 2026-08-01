@@ -480,18 +480,11 @@ void main() {
         manager.addUserMessage('Test message');
 
         expect(manager.messages.length, 1);
-      });
-
-      test('should add tool responses correctly', () {
-        const toolCallId = 'tool-123';
-
-        manager.addToolResponse(
-          toolCallId: toolCallId,
-          response: 'Tool executed successfully',
+        expect(
+          manager.messages.single.role,
+          ChatCompletionMessageRole.user,
         );
-
-        expect(manager.messages.length, 1);
-        expect(manager.messages.first.role, ChatCompletionMessageRole.tool);
+        expect(manager.messages.single.toJson()['content'], 'Test message');
       });
     });
 

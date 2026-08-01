@@ -218,8 +218,8 @@ class ConversationRepository extends Notifier<void> {
   /// if no usage data was reported by the inference provider.
   ///
   /// Set [rethrowInferenceErrors] for orchestration that owns retry/failure
-  /// state. Interactive callers keep the default behavior, which emits the
-  /// error through the conversation manager and ends the conversation.
+  /// state. Interactive callers keep the default behavior, which stores the
+  /// error in [ConversationManager.lastError] and ends the conversation.
   Future<InferenceUsage?> sendMessage({
     required String conversationId,
     required String message,
@@ -427,7 +427,7 @@ class ConversationRepository extends Notifier<void> {
           if (turnUsage != null) {
             accumulated = accumulated.merge(turnUsage);
           }
-          _emitTurnError(manager, e, stackTrace);
+          _storeTurnError(manager, e, stackTrace);
           if (rethrowInferenceErrors) {
             throw _RethrownInferenceError(e, stackTrace);
           }
@@ -508,7 +508,7 @@ class ConversationRepository extends Notifier<void> {
         if (e is _RethrownInferenceError) {
           Error.throwWithStackTrace(e.error, e.stackTrace);
         }
-        _emitTurnError(manager, e, stackTrace);
+        _storeTurnError(manager, e, stackTrace);
         shouldContinue = false;
       }
     }
@@ -527,7 +527,7 @@ class ConversationRepository extends Notifier<void> {
     return accumulated.hasData ? accumulated : null;
   }
 
-  void _emitTurnError(
+  void _storeTurnError(
     ConversationManager manager,
     Object error,
     StackTrace stackTrace,

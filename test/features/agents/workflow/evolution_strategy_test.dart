@@ -396,7 +396,7 @@ void main() {
     late ConversationManager bridgeManager;
 
     setUp(() {
-      final bench = buildGenUiBench(conversationId: 'test-auto');
+      final bench = buildGenUiBench();
       bridge = bench.bridge;
       strategyWithBridge = bench.strategy;
       bridgeManager = bench.manager;

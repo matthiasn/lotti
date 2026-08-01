@@ -40,7 +40,7 @@ void main() {
     late ConversationManager bridgeManager;
 
     setUp(() {
-      final bench = buildGenUiBench(conversationId: 'test-bridge');
+      final bench = buildGenUiBench();
       bridge = bench.bridge;
       strategyWithBridge = bench.strategy;
       bridgeManager = bench.manager;
@@ -409,7 +409,6 @@ void main() {
 
     setUp(() {
       final bench = buildGenUiBench(
-        conversationId: 'test-soul-auto',
         strategyBuilder: (bridge) => EvolutionStrategy(
           genUiBridge: bridge,
           currentVoiceDirective: 'Old voice.',
