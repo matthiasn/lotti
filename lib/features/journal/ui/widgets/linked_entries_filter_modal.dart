@@ -34,13 +34,11 @@ Future<void> showLinkedEntriesFilterModal({
               .order =
           value.sortOrder;
       container
-              .read(includeHiddenControllerProvider(entryId).notifier)
-              .includeHidden =
-          value.includeHidden;
+          .read(includeHiddenControllerProvider(entryId).notifier)
+          .setIncludeHidden(value: value.includeHidden);
       container
-              .read(showFlaggedOnlyControllerProvider(entryId).notifier)
-              .showFlaggedOnly =
-          value.showFlaggedOnly;
+          .read(showFlaggedOnlyControllerProvider(entryId).notifier)
+          .setShowFlaggedOnly(value: value.showFlaggedOnly);
     },
     modalDecorator: (child) => _DraftLifetime(draft: draft, child: child),
     padding: EdgeInsets.fromLTRB(

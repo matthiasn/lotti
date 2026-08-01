@@ -388,28 +388,4 @@ class JournalQueryRunner {
   // ---------------------------------------------------------------
   // Sorting
   // ---------------------------------------------------------------
-
-  /// Sorts tasks by due date (soonest first, tasks without due dates at end).
-  /// Preserves creation date order for tasks with the same due date or no
-  /// due date.
-  static List<JournalEntity> sortByDueDate(List<JournalEntity> entities) {
-    return List<JournalEntity>.from(entities)..sort((a, b) {
-      final dueA = a is Task ? a.data.due : null;
-      final dueB = b is Task ? b.data.due : null;
-
-      final aHasDue = dueA != null;
-      final bHasDue = dueB != null;
-
-      if (aHasDue && bHasDue) {
-        final comparison = dueA.compareTo(dueB);
-        if (comparison != 0) return comparison;
-      } else if (aHasDue) {
-        return -1;
-      } else if (bHasDue) {
-        return 1;
-      }
-
-      return b.meta.dateFrom.compareTo(a.meta.dateFrom);
-    });
-  }
 }

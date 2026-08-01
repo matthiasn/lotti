@@ -63,7 +63,8 @@
 
 ## Generative (Glados) testing opportunities
 
-- [x] **[MED]** `lib/features/journal/repository/journal_repository.dart:324–336` — `_hasChange(EntryLink existing, EntryLink incoming) -> bool` is **pure logic** mapping six nullable-bool/DateTime fields to a single boolean. `journal_repository_collapsed_test.dart` exhaustively hand-tests each field in isolation (8 concrete cases), but a Glados property can sweep the full space: for any `EntryLink` pair where all six compared fields are identical, `_hasChange` must return `false`; for any pair where at least one field differs, it must return `true`. This is a genuine algebraic invariant (reflexivity when identical, asymmetry on any change). The function has no I/O. **RESOLVED:** Done — added a `debugHasChange` seam and a Glados property (numRuns 120) over hidden/collapsed/deletedAt variants asserting: reflexivity on structurally identical links, null<->false equivalence for hidden/collapsed, each of the six compared fields flips the verdict when mutated, and non-compared fields (id, updatedAt, vectorClock) never count as change.
+- [x] **[MED]** `_hasChange` is pure comparison logic inside `updateLink`.
+  **RESOLVED (updated):** The production-only `debugHasChange` seam and its duplicate property test were removed. The meaningful unchanged, changed-field, retype, vector-clock, notification, and outbox contracts remain covered through `updateLink` itself.
 
   ```dart
   // Sketch:

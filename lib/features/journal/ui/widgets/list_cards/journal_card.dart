@@ -46,7 +46,6 @@ import 'package:lotti/widgets/cards/index.dart';
 class ModernJournalCard extends StatelessWidget {
   const ModernJournalCard({
     required this.item,
-    this.maxHeight = 120,
     this.showLinkedDuration = false,
     this.removeHorizontalMargin = false,
     this.selected = false,
@@ -54,7 +53,6 @@ class ModernJournalCard extends StatelessWidget {
   });
 
   final JournalEntity item;
-  final double maxHeight;
   final bool showLinkedDuration;
   final bool removeHorizontalMargin;
 

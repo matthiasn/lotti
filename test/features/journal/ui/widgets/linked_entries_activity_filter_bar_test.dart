@@ -238,13 +238,11 @@ void main() {
     final element = tester.element(find.byType(LinkedEntriesActivityFilterBar));
     final container = ProviderScope.containerOf(element);
     container
-            .read(includeHiddenControllerProvider(entryId).notifier)
-            .includeHidden =
-        true;
+        .read(includeHiddenControllerProvider(entryId).notifier)
+        .setIncludeHidden(value: true);
     container
-            .read(showFlaggedOnlyControllerProvider(entryId).notifier)
-            .showFlaggedOnly =
-        true;
+        .read(showFlaggedOnlyControllerProvider(entryId).notifier)
+        .setShowFlaggedOnly(value: true);
     await tester.pump();
 
     final messages = await AppLocalizations.delegate.load(const Locale('en'));

@@ -1925,14 +1925,11 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        final result = await notifier.updateTaskStatus(
+        await notifier.updateTaskStatus(
           'BLOCKED',
           blockerTaskId: 'blocker-id',
           blockerTaskTitle: 'Fix the outage',
         );
-
-        expect(result.statusUpdated, isTrue);
-        expect(result.blockerLinked, isTrue);
 
         final captured =
             verify(
@@ -1958,8 +1955,7 @@ void main() {
     );
 
     test(
-      'blockerLinked reflects a false return from createLink without '
-      'affecting statusUpdated (cycle guard rejection is independent)',
+      'a rejected blocker link does not roll back the status update',
       () async {
         final container = makeProviderContainer();
         final entryId = testTask.meta.id;
@@ -1982,14 +1978,25 @@ void main() {
           ),
         ).thenAnswer((_) async => false);
 
-        final result = await notifier.updateTaskStatus(
+        await notifier.updateTaskStatus(
           'BLOCKED',
           blockerTaskId: 'blocker-id',
           blockerTaskTitle: 'Would create a cycle',
         );
 
-        expect(result.statusUpdated, isTrue);
-        expect(result.blockerLinked, isFalse);
+        verify(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: entryId,
+            taskData: any(named: 'taskData'),
+          ),
+        ).called(1);
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'blocker-id',
+            toId: entryId,
+            linkType: EntryLinkType.blocks,
+          ),
+        ).called(1);
       },
     );
 
@@ -2012,20 +2019,25 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        final result = await notifier.updateTaskStatus(
+        await notifier.updateTaskStatus(
           testTask.data.status.toDbString,
           blockerTaskId: 'blocker-id',
           blockerTaskTitle: 'Another blocker',
         );
 
-        expect(result.statusUpdated, isFalse);
-        expect(result.blockerLinked, isTrue);
         verifyNever(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
             taskData: any(named: 'taskData'),
           ),
         );
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'blocker-id',
+            toId: entryId,
+            linkType: EntryLinkType.blocks,
+          ),
+        ).called(1);
       },
     );
 
@@ -2047,10 +2059,14 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        final result = await notifier.updateTaskStatus('DONE');
+        await notifier.updateTaskStatus('DONE');
 
-        expect(result.statusUpdated, isTrue);
-        expect(result.blockerLinked, isFalse);
+        verify(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: entryId,
+            taskData: any(named: 'taskData'),
+          ),
+        ).called(1);
         verifyNever(
           () => mockPersistenceLogic.createLink(
             fromId: any(named: 'fromId'),

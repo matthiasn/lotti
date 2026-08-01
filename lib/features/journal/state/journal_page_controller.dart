@@ -409,35 +409,6 @@ class JournalPageController extends Notifier<JournalPageState>
     _isVisible = isVisible;
   }
 
-  /// Test-only entry point that lets tests drive the visibility edge
-  /// without standing up a full NavService stream. Equivalent to a
-  /// nav-index emission whose value resolves to `isVisible`.
-  /// Test-only seam for [_getNextPageKey] — the pure page-key computation
-  /// over a [PagingState] (plus the one-shot post-filter offset).
-  @visibleForTesting
-  int? debugGetNextPageKey(
-    PagingState<int, JournalEntity> pagingState, {
-    bool consumePostFilterOffset = true,
-  }) => _getNextPageKey(
-    pagingState,
-    consumePostFilterOffset: consumePostFilterOffset,
-  );
-
-  /// Test-only seam to read/seed the one-shot post-filter raw offset.
-  @visibleForTesting
-  int? get debugPostFilterNextRawOffset => _postFilterNextRawOffset;
-
-  @visibleForTesting
-  set debugPostFilterNextRawOffset(int? value) =>
-      _postFilterNextRawOffset = value;
-
-  @visibleForTesting
-  void debugSetVisibility({required bool isVisible}) {
-    _handleNavIndex(
-      isVisible ? _myTabIndex(getIt<NavService>()) : -1,
-    );
-  }
-
   Future<List<JournalEntity>> _fetchPage(int pageKey) async {
     try {
       final items = await _runQuery(pageKey);
@@ -530,11 +501,6 @@ class JournalPageController extends Notifier<JournalPageState>
     );
   }
 
-  /// Test-only seam for [_requiresSequentialRetainedRefresh].
-  @visibleForTesting
-  bool get debugRequiresSequentialRetainedRefresh =>
-      _requiresSequentialRetainedRefresh;
-
   bool get _requiresSequentialRetainedRefresh =>
       _showTasks &&
       (_agentAssignmentFilter != AgentAssignmentFilter.all ||
@@ -544,16 +510,6 @@ class JournalPageController extends Notifier<JournalPageState>
     if (!_showTasks) return;
     _lastIds = items.map((entity) => entity.meta.id).toSet();
   }
-
-  // Getters for testing
-  bool get isVisible => _isVisible;
-  Set<String> get selectedEntryTypesInternal => _selectedEntryTypes;
-  Set<DisplayFilter> get filtersInternal => _filters;
-  bool get enableEvents => _enableEvents;
-  bool get enableHabits => _enableHabits;
-  bool get enableDashboards => _enableDashboards;
-  bool get enableVectorSearchInternal => _enableVectorSearch;
-  SearchMode get searchModeInternal => _searchMode;
 
   // ---------------------------------------------------------------
   // Filter mutation + persistence

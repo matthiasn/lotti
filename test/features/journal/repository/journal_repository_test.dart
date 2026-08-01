@@ -3,7 +3,6 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -2656,123 +2655,6 @@ void main() {
           }),
         ).called(1);
       });
-    });
-
-    group('debugHasChange (pure comparator properties)', () {
-      EntryLink buildLink({
-        String id = 'link-id',
-        String fromId = 'from-id',
-        String toId = 'to-id',
-        DateTime? createdAt,
-        DateTime? updatedAt,
-        DateTime? deletedAt,
-        bool? hidden,
-        bool? collapsed,
-      }) => EntryLink.basic(
-        id: id,
-        fromId: fromId,
-        toId: toId,
-        createdAt: createdAt ?? DateTime(2023),
-        updatedAt: updatedAt ?? DateTime(2023),
-        vectorClock: null,
-        hidden: hidden,
-        collapsed: collapsed,
-      ).copyWith(deletedAt: deletedAt);
-
-      glados.Glados(
-        glados.IntAnys(glados.any).intInRange(0, 36),
-        glados.ExploreConfig(numRuns: 120),
-      ).test(
-        'identical-by-compared-fields pairs are no-change; any compared-field '
-        'mutation is a change; non-compared fields never count',
-        (seed) {
-          final hidden = const [null, false, true][seed % 3];
-          final collapsed = const [null, false, true][(seed ~/ 3) % 3];
-          final deletedAt = (seed ~/ 9).isEven ? null : DateTime(2024);
-          final base = buildLink(
-            hidden: hidden,
-            collapsed: collapsed,
-            deletedAt: deletedAt,
-          );
-          final reason = 'seed=$seed';
-
-          // Reflexivity: a structurally identical link is no change.
-          expect(
-            collapsedRepository.debugHasChange(
-              base,
-              buildLink(
-                hidden: hidden,
-                collapsed: collapsed,
-                deletedAt: deletedAt,
-              ),
-            ),
-            isFalse,
-            reason: reason,
-          );
-
-          // null and false are equivalent for hidden/collapsed.
-          if (hidden != true) {
-            expect(
-              collapsedRepository.debugHasChange(
-                base,
-                buildLink(
-                  hidden: hidden == null ? false : null,
-                  collapsed: collapsed,
-                  deletedAt: deletedAt,
-                ),
-              ),
-              isFalse,
-              reason: '$reason hidden null<->false',
-            );
-          }
-
-          // Every compared-field mutation flips the verdict.
-          final mutations = <String, EntryLink>{
-            'fromId': base.copyWith(fromId: 'other-from'),
-            'toId': base.copyWith(toId: 'other-to'),
-            'createdAt': base.copyWith(createdAt: DateTime(2025)),
-            'deletedAt': base.copyWith(
-              deletedAt: deletedAt == null ? DateTime(2025) : null,
-            ),
-            'hidden': base.copyWith(hidden: hidden != true),
-            'collapsed': base.copyWith(collapsed: collapsed != true),
-            'type': EntryLink.blocks(
-              id: base.id,
-              fromId: base.fromId,
-              toId: base.toId,
-              createdAt: base.createdAt,
-              updatedAt: base.updatedAt,
-              vectorClock: base.vectorClock,
-              hidden: base.hidden,
-              collapsed: base.collapsed,
-              deletedAt: base.deletedAt,
-            ),
-          };
-          for (final MapEntry(key: field, value: mutated)
-              in mutations.entries) {
-            expect(
-              collapsedRepository.debugHasChange(base, mutated),
-              isTrue,
-              reason: '$reason mutated=$field',
-            );
-          }
-
-          // Non-compared fields (id, updatedAt, vectorClock) never count.
-          expect(
-            collapsedRepository.debugHasChange(
-              base,
-              base.copyWith(
-                id: 'different-id',
-                updatedAt: DateTime(2030),
-                vectorClock: const VectorClock({'host': 9}),
-              ),
-            ),
-            isFalse,
-            reason: '$reason non-compared fields',
-          );
-        },
-        tags: 'glados',
-      );
     });
 
     group('_hasChange via updateLink', () {

@@ -11,11 +11,11 @@ sources:
   - id: page-controller
     resource: ../../../lib/features/journal/state/journal_page_controller.dart
     title: JournalPageController
-    last_modified: 2026-07-20
+    last_modified: 2026-08-01
   - id: linked
     resource: ../../../lib/features/journal/state/linked_entries_controller.dart
     title: LinkedEntriesController
-    last_modified: 2026-06-26
+    last_modified: 2026-08-01
   - id: db-queries
     resource: ../../../lib/database/database_task_queries.dart
     title: Task query paths
@@ -86,9 +86,8 @@ A small implementation detail with a large bug-prevention payoff.
   `LIMIT`/`OFFSET`.
 
 Because the ordering happens in the database against the indexed column,
-**results are globally stable across page boundaries**. The static in-memory
-`JournalQueryRunner.sortByDueDate` helper still exists but is exercised only by
-tests, not by the live query path.
+**results are globally stable across page boundaries**. There is no separate
+in-memory due-date comparator to drift from the live query path.
 
 # Linked entries, focus and highlighting
 
@@ -114,6 +113,8 @@ Runtime details that matter:
 - The Filter & Sort modal can narrow the outgoing list to **flagged entries only**
   (`meta.flag == EntryFlag.import`). The check runs **per row** against the
   watched entry, so flagging or unflagging updates the filtered list reactively.
+- Linked AI responses stay collapsed under their source entry; the generic
+  outgoing list does not expose a second, unused visibility toggle for them.
 - **Outgoing links are ordered by the linked entity's editable `dateFrom`, not by
   link creation time**, with a user-selectable direction via
   `LinkedEntriesSortController`. Links whose target has not resolved yet fall back

@@ -192,51 +192,6 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // entryTypesChanged flag
-  // ---------------------------------------------------------------------------
-
-  group('applyJournalConfigFlags — entryTypesChanged', () {
-    test('entryTypesChanged is false when types remain the same', () {
-      final allTypes = computeAllowedEntryTypes(
-        events: true,
-        habits: true,
-        dashboards: true,
-      ).toSet();
-
-      final result = _apply(
-        flags: _flags(events: true, habits: true, dashboards: true),
-        enableEvents: true,
-        enableHabits: true,
-        enableDashboards: true,
-        selectedEntryTypes: allTypes,
-      );
-
-      expect(result.entryTypesChanged, isFalse);
-    });
-
-    test(
-      'entryTypesChanged is true when a type is removed by the new flags',
-      () {
-        final allTypes = computeAllowedEntryTypes(
-          events: true,
-          habits: true,
-          dashboards: true,
-        ).toSet();
-
-        final result = _apply(
-          flags: _flags(events: false),
-          enableEvents: true,
-          enableHabits: true,
-          enableDashboards: true,
-          selectedEntryTypes: allTypes,
-        );
-
-        expect(result.entryTypesChanged, isTrue);
-      },
-    );
-  });
-
-  // ---------------------------------------------------------------------------
   // projects filtering
   // ---------------------------------------------------------------------------
 
@@ -438,14 +393,6 @@ void main() {
                 oldAllowed.containsAll(selectedEntryTypes))) {
           expect(result.selectedEntryTypes, newAllowed, reason: reason);
         }
-
-        // entryTypesChanged mirrors actual set difference.
-        expect(
-          result.entryTypesChanged,
-          !(result.selectedEntryTypes.containsAll(selectedEntryTypes) &&
-              selectedEntryTypes.containsAll(result.selectedEntryTypes)),
-          reason: reason,
-        );
 
         // Vector mode never survives a disabled vector-search flag.
         if (!flags.vectorSearch) {

@@ -54,7 +54,7 @@ _Date: 2026-06-02_
   split seam that maps to a discrete behaviour area. Recommended split:
   - `entry_controller_crud_test.dart` — load/save/delete/toggle (lines ~350–800)
   - `entry_controller_task_test.dart` — all `Task`-specific methods (lines ~800–2 000)
-  - `entry_controller_focus_test.dart` — all `focusNodeListener` / `taskTitleFocusNodeListener`
+  - `entry_controller_focus_test.dart` — all `focusNodeListener` cases
     `testWidgets` cases (lines ~2 650–2 930)
   - `entry_controller_io_test.dart` — `copyImage`, `setLanguage`, real-I/O setUp at lines ~2 930–3 034
 
@@ -179,11 +179,8 @@ _Date: 2026-06-02_
   `filtersInternal returns internal filters set` (line 525) assert `isNotEmpty` and
   `contains(...)` without checking the actual set contents. The assertion for the first case
   does not verify the expected initial set of entry types.
-  **RESOLVED:** Both tests strengthened. `selectedEntryTypesInternal` now asserts the getter
-  equals the full default `entryTypes.toSet()` (no config-flag event has narrowed it) and that
-  it matches `state.selectedEntryTypes`. `filtersInternal` now asserts the empty initial value,
-  then sets two filters and asserts the getter equals exactly that set and mirrors
-  `state.filters` — `equals(...)` instead of the previous `isNotEmpty`/`contains`.
+  **RESOLVED:** The production-only getters were removed. The tests now make the same exact-set
+  assertions through the controller's published `JournalPageState`.
 
 - [x] **[LOW]** `test/features/journal/state/entry_controller_test.dart` — **focusNodeListener
   comment-heavy test**: Lines 2 680–2 748 contain 35+ comment lines explaining why the test
@@ -202,8 +199,9 @@ _Date: 2026-06-02_
 
 ## Generative (Glados) testing opportunities
 
-No Glados tests currently exist anywhere in `test/features/journal/state/`. The following are
-genuine candidates with algebraic invariants over pure logic:
+The following opportunities were identified during the original review. Later unused-code
+cleanup removed production-only seams where the runtime behavior already has public-path
+coverage.
 
 - [x] **[HIGH]** `lib/features/journal/state/journal_query_runner.dart` —
   `JournalQueryRunner.sortByDueDate` (lines 393–414): This is a pure, deterministic comparator
@@ -215,18 +213,20 @@ genuine candidates with algebraic invariants over pure logic:
   5. **Among tasks without due dates, `dateFrom` is non-increasing**.
   A `Glados2` test over `(List<Task> withDue, List<Task> withoutDue)` would cover far more edge
   cases than the five hand-written examples currently in `journal_query_runner_test.dart`.
+  **SUPERSEDED:** The in-memory helper and its helper-only tests were removed; production
+  due-date ordering is implemented and tested through the SQL query path.
 
 - [x] **[MED]** `lib/features/journal/state/journal_page_controller.dart` —
   `_getNextPageKey` (lines 192–221): Pure computation over `PagingState`. The invariant is:
   - Returns `0` when there are no loaded keys.
   - Returns `null` when the last page is smaller than `pageSize`.
   - Returns the correct raw offset when `_postFilterNextRawOffset` is set.
-  A Glados property over `(loadedKeys: List<int>, pageSizes: List<int>, postFilterOffset: int?)` **RESOLVED:** Done (adapted) — added `debugGetNextPageKey` + `debugPostFilterNextRawOffset` seams and an exhaustive branch-matrix test (empty state, hasNextPage=false, short last page, full-page key advance over one and two pages, post-filter offset wins + consumed-once + peek-without-consume). The branch space is small and finite, so full enumeration beats sampling.
+  A Glados property over `(loadedKeys: List<int>, pageSizes: List<int>, postFilterOffset: int?)` **SUPERSEDED:** The production-only debug seams and tests were removed. Pagination remains covered through the public paging controller behavior.
   would surface off-by-one errors and boundary cases in the multi-branch logic.
 
 - [x] **[MED]** `lib/features/journal/state/journal_page_subscriptions.dart` —
   `JournalPageSubscriptions.applyJournalConfigFlags` (lines 89–158): A pure static method with
-  complex multi-field output. Its invariants include: **RESOLVED:** Done — added a Glados property (numRuns 160) over a 12-bit cross-product (new flags x old enables x showTasks x explicit-selection x search mode x project selection) x 3 entry-selection kinds, asserting: verbatim flag propagation, selection always a subset of the new allowed set, empty/full selections snap to the new allowed set, `entryTypesChanged` mirrors actual set difference, vector mode never survives a disabled flag, project selection never survives a disabled flag, and `shouldRefresh` fires exactly for a mode change or cleared projects (isDesktop pinned).
+  complex multi-field output. Its invariants include: **RESOLVED:** A Glados property covers flag propagation, selection as a subset of the new allowed set, empty/full selection snapping, vector-mode fallback, project clearing, and the `shouldRefresh` contract. The unused `entryTypesChanged` result field was later removed.
   - `shouldRefresh` is true iff the search mode, project IDs, or entry-type-allowed set
     actually changed.
   - `selectedEntryTypes` is always a subset of the newly-allowed types.
@@ -289,7 +289,7 @@ genuine candidates with algebraic invariants over pure logic:
 
 - [x] **[MED]** `lib/features/journal/state/journal_page_controller.dart` — **`_requiresSequentialRetainedRefresh`
   getter** (lines 799–803): The property governs whether retained refresh runs sequentially or
-  in parallel. It is not directly tested; only the end-to-end refresh behaviour is. A unit test **RESOLVED:** Done — added `debugRequiresSequentialRetainedRefresh` seam + a matrix test: showTasks=false always parallel; showTasks=true parallel with no filters; agent filter -> sequential; projects selected -> sequential; cleared -> parallel again.
+  in parallel. It is not directly tested; only the end-to-end refresh behaviour is. A unit test **SUPERSEDED:** The debug getter and its implementation-detail matrix test were removed; retained refresh remains covered end to end through public filter and refresh behavior.
   that verifies its value for each combination of `_agentAssignmentFilter` and
   `_selectedProjectIds.isNotEmpty` would add clarity.
 
@@ -378,8 +378,7 @@ genuine candidates with algebraic invariants over pure logic:
   `setUpAll` GetIt boilerplate in entry_controller_test, inline mock class definitions in two
   files, comment-heavy smoke tests for `focusNodeListener`, getter-only smoke tests in the
   main controller test.
-- **3 genuine Glados candidates**: `sortByDueDate` (pure comparator invariants), `_getNextPageKey`
-  (pagination key arithmetic), and `applyJournalConfigFlags` (pure state-transition logic).
+- **1 retained Glados candidate**: `applyJournalConfigFlags` (pure state-transition logic).
 - **6 speed wins**: real filesystem I/O in `copyImage` setUp (risk of contamination), global
   `setUpAll` GetIt registration without per-group teardown (cross-shard contamination risk),
   300+ repeated `async.elapse(50ms)` pairs, real AgentDatabase open/close per test, and

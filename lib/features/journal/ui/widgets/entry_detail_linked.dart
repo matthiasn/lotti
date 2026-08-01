@@ -41,9 +41,6 @@ class LinkedEntriesWidget extends ConsumerWidget {
   ) {
     final orderedLinks = ref.watch(sortedLinkedEntriesProvider(item.id));
 
-    final includeAiEntries = ref.watch(
-      includeAiEntriesControllerProvider(item.id),
-    );
     final activeKinds = ref.watch(
       linkedEntriesActivityFilterControllerProvider(item.id),
     );
@@ -82,7 +79,6 @@ class LinkedEntriesWidget extends ConsumerWidget {
                 itemId: toId,
                 linkedFrom: item,
                 link: link,
-                showAiEntry: includeAiEntries,
                 hideTaskEntries: hideTaskEntries,
                 isHighlighted: highlightedEntryId == toId,
                 isActiveTimer: activeTimerEntryId == toId,
@@ -103,7 +99,6 @@ class LinkedEntriesWidget extends ConsumerWidget {
 class _FilteredEntryDetails extends ConsumerWidget {
   const _FilteredEntryDetails({
     required this.itemId,
-    required this.showAiEntry,
     required this.activeKinds,
     required this.showFlaggedOnly,
     super.key,
@@ -115,7 +110,6 @@ class _FilteredEntryDetails extends ConsumerWidget {
   });
 
   final String itemId;
-  final bool showAiEntry;
   final bool hideTaskEntries;
   final bool isHighlighted;
   final bool isActiveTimer;
@@ -140,7 +134,7 @@ class _FilteredEntryDetails extends ConsumerWidget {
       itemId: itemId,
       linkedFrom: linkedFrom,
       link: link,
-      showAiEntry: showAiEntry,
+      showAiEntry: false,
       hideTaskEntries: hideTaskEntries,
       isHighlighted: isHighlighted,
       isActiveTimer: isActiveTimer,
