@@ -3619,6 +3619,22 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acțiunea nu s-a finalizat. Înregistrarea dvs. este în continuare în siguranță — încercați din nou.';
 
   @override
+  String get dailyOsNextActivityAgentJobDraft =>
+      'Crearea planului dumneavoastră pentru zi nu s-a finalizat.';
+
+  @override
+  String get dailyOsNextActivityAgentJobParse =>
+      'Citirea notei dumneavoastră nu s-a finalizat.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRefine =>
+      'Actualizarea planului dumneavoastră pentru zi nu s-a finalizat.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRetryHint =>
+      'Nu s-a pierdut nimic. Încercați din nou când doriți.';
+
+  @override
   String get dailyOsNextActivityDaySummary => 'Rezumatul zilei';
 
   @override
@@ -3646,6 +3662,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Necesită atenție';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup => 'Deschideți configurarea IA';
 
   @override
   String get dailyOsNextActivityOpenSetup =>

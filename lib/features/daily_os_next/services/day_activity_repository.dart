@@ -8,7 +8,28 @@ import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:path/path.dart' as path;
 
-enum DayActivityEntryKind { recording, checkIn, plan, summary }
+enum DayActivityEntryKind { recording, checkIn, plan, summary, agentJob }
+
+/// Agent-job statuses that earn an Activity row.
+///
+/// These are the states where the day is waiting on work that will not
+/// progress on its own: a deterministic failure, a missing prerequisite the
+/// user must supply, or an attempt parked until the network returns. `queued`
+/// and `running` are in-flight and already visible through the plan surface's
+/// own progress affordance, so surfacing them here would be noise.
+const Set<DayProcessingJobStatus> stalledAgentJobStatuses = {
+  DayProcessingJobStatus.failed,
+  DayProcessingJobStatus.waitingForUser,
+  DayProcessingJobStatus.waitingForNetwork,
+};
+
+/// The agent job kinds Activity can surface (everything but transcription,
+/// which joins to its recording card instead).
+const Set<DayProcessingJobKind> agentJobKinds = {
+  DayProcessingJobKind.parseCapture,
+  DayProcessingJobKind.draftPlan,
+  DayProcessingJobKind.refinePlan,
+};
 
 /// One coalesced, local-first row in a day's Activity timeline.
 @immutable
@@ -82,15 +103,24 @@ class DayActivityRepository {
           context.activityEntryId: audio,
     };
 
-    // Only transcription jobs join to a recording card by activityEntryId;
-    // agent jobs (parseCapture/draftPlan/refinePlan, ADR 0032 phase 1) carry
-    // no activityEntryId and are not surfaced by this repository yet. Both
-    // filters are pushed into the day-scoped query (ADR 0044) so Activity's
-    // cost tracks this day rather than every job ever recorded.
+    // Only transcription jobs join to a recording card by activityEntryId.
+    // Agent jobs (parseCapture/draftPlan/refinePlan, ADR 0032 phase 1) carry
+    // none, so they cannot join to a card and are projected as rows of their
+    // own below, keyed by the job id — which the outbox already derives
+    // deterministically per day (`draft_<dayId>`) or per capture
+    // (`parse_<captureId>`), so a row is stable across retries rather than
+    // accumulating one card per attempt.
+    //
+    // Both filters are pushed into the day-scoped query (ADR 0044) so
+    // Activity's cost tracks this day rather than every job ever recorded.
     final jobs = await outbox.getForDay(
       dayId,
       kinds: const {DayProcessingJobKind.transcribeAudio},
     );
+    final stalledAgentJobs = [
+      for (final job in await outbox.getForDay(dayId, kinds: agentJobKinds))
+        if (stalledAgentJobStatuses.contains(job.status)) job,
+    ];
     final jobsByActivity = <String, DayProcessingJob>{
       for (final job in jobs) ?job.activityEntryId: job,
     };
@@ -165,6 +195,17 @@ class DayActivityRepository {
               createdAt: plan.createdAt,
               activityEntryId: plan.id,
               plan: plan,
+            ),
+          for (final job in stalledAgentJobs)
+            DayActivityEntry(
+              id: job.id,
+              kind: DayActivityEntryKind.agentJob,
+              activityEntryId: job.id,
+              // The moment the work stalled, not the moment it was first
+              // requested: the row belongs where the failure happened in the
+              // day's narrative, and it moves forward with each new attempt.
+              createdAt: job.updatedAt,
+              processingJob: job,
             ),
           for (final summary in summaries.where(
             (summary) => summary.deletedAt == null && summary.dayId == dayId,

@@ -66,6 +66,36 @@ everything are bounded: `DayActivityRepository.getForDay(dayId, kinds: …)`,
 `DayProcessingRuntime.getSchedulable()`. Claim cost tracks outstanding work
 rather than install age.
 
+# What Activity shows, and how agent jobs join
+
+The Activity timeline is a projection over three sources — journal recordings,
+outbox jobs, and agent captures — and its join key is the **activity entry id**.
+Only `transcribeAudio` carries one, so it is the only kind that joins *to* a
+card.
+
+Agent jobs (`parseCapture` / `draftPlan` / `refinePlan`) carry no activity entry
+id by design: the recording they came from is not what they are about. They are
+projected as **rows of their own, keyed by the durable job id** — which the
+outbox already derives deterministically (`draft_<dayId>`, `parse_<captureId>`),
+so a retried job updates one row rather than accumulating a card per attempt.
+
+**Only stalled agent jobs earn a row.** `queued` and `running` are in flight and
+already visible through the plan surface's progress affordance; surfacing them
+here would be noise. The three states that do not progress on their own do earn
+one, because otherwise the failure is silent in the app even though it raised a
+notification:
+
+| Status | Why it earns a row |
+|--------|--------------------|
+| `failed` | Deterministic — it will not retry itself |
+| `waitingForUser` | Needs a prerequisite only the user can supply (e.g. a configured model) |
+| `waitingForNetwork` | Parked until connectivity returns |
+
+The row is placed at `updatedAt` — where the failure happened in the day's
+narrative, moving forward with each attempt — and retries through the existing
+`retryNow`, which re-queues the job and clears its error state. Retrying
+therefore removes the row: the work is in flight again.
+
 # Claiming
 
 **Order is tiered.** All agent job kinds share one serial drain lane, so without

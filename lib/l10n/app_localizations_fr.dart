@@ -3612,6 +3612,22 @@ class AppLocalizationsFr extends AppLocalizations {
       'L’action n’a pas abouti. Ton enregistrement est toujours en sécurité — réessaie.';
 
   @override
+  String get dailyOsNextActivityAgentJobDraft =>
+      'La création de ton plan de journée n’est pas allée au bout.';
+
+  @override
+  String get dailyOsNextActivityAgentJobParse =>
+      'L’analyse de ton point d’étape n’est pas allée au bout.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRefine =>
+      'La mise à jour de ton plan de journée n’est pas allée au bout.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRetryHint =>
+      'Rien n’est perdu. Réessaie quand tu veux.';
+
+  @override
   String get dailyOsNextActivityDaySummary => 'Résumé de la journée';
 
   @override
@@ -3639,6 +3655,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'À vérifier';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup => 'Ouvrir la configuration IA';
 
   @override
   String get dailyOsNextActivityOpenSetup => 'Configurer la transcription';

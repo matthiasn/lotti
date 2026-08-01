@@ -3608,6 +3608,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'La acción no terminó. Tu grabación sigue a salvo; inténtalo de nuevo.';
 
   @override
+  String get dailyOsNextActivityAgentJobDraft =>
+      'La creación de tu plan del día no llegó a terminar.';
+
+  @override
+  String get dailyOsNextActivityAgentJobParse =>
+      'La lectura de tu registro no llegó a terminar.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRefine =>
+      'La actualización de tu plan del día no llegó a terminar.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRetryHint =>
+      'No se perdió nada. Inténtalo de nuevo cuando quieras.';
+
+  @override
   String get dailyOsNextActivityDaySummary => 'Resumen del día';
 
   @override
@@ -3635,6 +3651,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Requiere atención';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup => 'Abrir la configuración de IA';
 
   @override
   String get dailyOsNextActivityOpenSetup =>

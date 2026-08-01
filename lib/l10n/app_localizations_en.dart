@@ -3548,6 +3548,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'That action didn\'t finish. Your recording is still safe—try again.';
 
   @override
+  String get dailyOsNextActivityAgentJobDraft =>
+      'Drafting your day plan didn\'t finish.';
+
+  @override
+  String get dailyOsNextActivityAgentJobParse =>
+      'Reading your check-in didn\'t finish.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRefine =>
+      'Updating your day plan didn\'t finish.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRetryHint =>
+      'Nothing was lost. Retry when you\'re ready.';
+
+  @override
   String get dailyOsNextActivityDaySummary => 'Day summary';
 
   @override
@@ -3573,6 +3589,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Needs attention';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup => 'Open AI setup';
 
   @override
   String get dailyOsNextActivityOpenSetup => 'Open transcription setup';
@@ -11416,6 +11435,25 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get customColor => 'Custom Colour';
+
+  @override
+  String get dailyOsNextActivityAgentJobDraft =>
+      'Drafting your day plan didn\'t finish.';
+
+  @override
+  String get dailyOsNextActivityAgentJobParse =>
+      'Reading your check-in didn\'t finish.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRefine =>
+      'Updating your day plan didn\'t finish.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRetryHint =>
+      'Nothing was lost. Retry when you\'re ready.';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup => 'Open AI setup';
 
   @override
   String get dashboardActiveLabel => 'Active';

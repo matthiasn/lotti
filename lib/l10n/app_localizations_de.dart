@@ -3590,6 +3590,22 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Aktion wurde nicht abgeschlossen. Deine Aufnahme ist weiterhin sicher — versuch es erneut.';
 
   @override
+  String get dailyOsNextActivityAgentJobDraft =>
+      'Der Entwurf deines Tagesplans wurde nicht fertig.';
+
+  @override
+  String get dailyOsNextActivityAgentJobParse =>
+      'Das Auswerten deines Check-ins wurde nicht fertig.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRefine =>
+      'Die Aktualisierung deines Tagesplans wurde nicht fertig.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRetryHint =>
+      'Es ist nichts verloren gegangen. Versuch es erneut, wenn du so weit bist.';
+
+  @override
   String get dailyOsNextActivityDaySummary => 'Tageszusammenfassung';
 
   @override
@@ -3615,6 +3631,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Prüfung nötig';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup => 'KI-Einrichtung öffnen';
 
   @override
   String get dailyOsNextActivityOpenSetup => 'Transkription einrichten';

@@ -3613,6 +3613,22 @@ class AppLocalizationsCs extends AppLocalizations {
       'Akci se nepodařilo dokončit. Nahrávka je pořád v bezpečí — zkus to znovu.';
 
   @override
+  String get dailyOsNextActivityAgentJobDraft =>
+      'Návrh tvého denního plánu se nedokončil.';
+
+  @override
+  String get dailyOsNextActivityAgentJobParse =>
+      'Zpracování tvého zápisu se nedokončilo.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRefine =>
+      'Aktualizace tvého denního plánu se nedokončila.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRetryHint =>
+      'Nic se neztratilo. Zkus to znovu, až budeš chtít.';
+
+  @override
   String get dailyOsNextActivityDaySummary => 'Shrnutí dne';
 
   @override
@@ -3639,6 +3655,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Vyžaduje pozornost';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup => 'Otevřít nastavení AI';
 
   @override
   String get dailyOsNextActivityOpenSetup => 'Otevřít nastavení přepisu';

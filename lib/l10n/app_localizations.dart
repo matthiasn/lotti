@@ -6005,6 +6005,30 @@ abstract class AppLocalizations {
   /// **'That action didn\'t finish. Your recording is still safe—try again.'**
   String get dailyOsNextActivityActionFailed;
 
+  /// Activity row title for a stalled day-plan drafting job.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafting your day plan didn\'t finish.'**
+  String get dailyOsNextActivityAgentJobDraft;
+
+  /// Activity row title for a stalled capture-parsing job.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading your check-in didn\'t finish.'**
+  String get dailyOsNextActivityAgentJobParse;
+
+  /// Activity row title for a stalled day-plan refine job.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating your day plan didn\'t finish.'**
+  String get dailyOsNextActivityAgentJobRefine;
+
+  /// Reassurance shown under a stalled agent job in the Activity timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was lost. Retry when you\'re ready.'**
+  String get dailyOsNextActivityAgentJobRetryHint;
+
   /// No description provided for @dailyOsNextActivityDaySummary.
   ///
   /// In en, this message translates to:
@@ -6052,6 +6076,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs attention'**
   String get dailyOsNextActivityNeedsAttention;
+
+  /// Button on a stalled agent job that opens AI settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open AI setup'**
+  String get dailyOsNextActivityOpenAiSetup;
 
   /// No description provided for @dailyOsNextActivityOpenSetup.
   ///

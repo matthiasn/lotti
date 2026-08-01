@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -365,5 +366,119 @@ void main() {
       entries.map((entry) => entry.activityEntryId),
       ['still-pending'],
     );
+  });
+
+  group('stalled agent jobs', () {
+    setUp(() {
+      when(() => journalDb.getDayAudioEntries(dayId)).thenAnswer(
+        (_) async => const <JournalAudio>[],
+      );
+    });
+
+    Future<DayProcessingJob> failDraft({
+      DayProcessingFailureClass failureClass =
+          DayProcessingFailureClass.deterministic,
+      String error = 'the model returned no plan',
+    }) async {
+      await outbox.enqueueDraftPlan(
+        dayId: dayId,
+        // ignore: avoid_redundant_argument_values
+        payload: const DraftPlanPayload(decidedTaskIds: []),
+      );
+      final claim = await outbox.claimNext();
+      return outbox.markFailure(
+        jobId: claim!.job.id,
+        claimToken: claim.token,
+        failureClass: failureClass,
+        error: error,
+      );
+    }
+
+    test(
+      'a failed draft earns its own row, keyed by the durable job id',
+      () async {
+        final failed = await failDraft();
+
+        final entries = await repository.load(dayId: dayId);
+
+        final row = entries.single;
+        expect(row.kind, DayActivityEntryKind.agentJob);
+        expect(
+          row.id,
+          'draft_$dayId',
+          reason:
+              'Agent jobs carry no activityEntryId; the deterministic job id is '
+              'the join key, so retries update one row instead of adding cards.',
+        );
+        expect(row.processingJob?.status, DayProcessingJobStatus.failed);
+        expect(
+          row.processingJob?.lastError,
+          'the model returned no plan',
+          reason: 'The card explains what failed from the durable record.',
+        );
+        expect(
+          row.createdAt.isAtSameMomentAs(failed.updatedAt),
+          isTrue,
+          reason: 'The row sits where the failure happened in the day.',
+        );
+      },
+    );
+
+    test('a retried job stops earning a row', () async {
+      await failDraft();
+
+      await outbox.retryNow('draft_$dayId');
+
+      expect(
+        await repository.load(dayId: dayId),
+        isEmpty,
+        reason:
+            'retryNow re-queues the job; in-flight work belongs to the plan '
+            "surface's progress affordance, not to a failure card.",
+      );
+    });
+
+    test(
+      'an offline draft surfaces as waiting rather than silently parked',
+      () async {
+        await failDraft(failureClass: DayProcessingFailureClass.network);
+
+        final row = (await repository.load(dayId: dayId)).single;
+
+        expect(
+          row.processingJob?.status,
+          DayProcessingJobStatus.waitingForNetwork,
+        );
+      },
+    );
+
+    test('a succeeded agent job leaves no trace in Activity', () async {
+      await outbox.enqueueParseCapture(dayId: dayId, captureId: 'capture-1');
+      final claim = await outbox.claimNext();
+      await outbox.markSucceeded(
+        jobId: claim!.job.id,
+        claimToken: claim.token,
+      );
+
+      expect(await repository.load(dayId: dayId), isEmpty);
+    });
+
+    test('agent rows interleave with the rest of the day by time', () async {
+      await failDraft();
+      final summary = makeTestDaySummary(
+        dayId: dayId,
+        agentId: 'daily_os_planner',
+        text: 'a note from earlier',
+        createdAt: capturedAt.subtract(const Duration(hours: 1)),
+      );
+
+      final entries = await repository.load(dayId: dayId, summaries: [summary]);
+
+      expect(
+        entries.map((e) => e.kind),
+        [DayActivityEntryKind.summary, DayActivityEntryKind.agentJob],
+        reason: 'One chronological narrative, not a separate failures list.',
+      );
+    });
   });
 }

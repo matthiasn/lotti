@@ -244,8 +244,11 @@ class _ActivityCard extends StatelessWidget {
                   DayActivityEntryKind.summary => Icons.summarize_rounded,
                   DayActivityEntryKind.checkIn => Icons.notes_rounded,
                   DayActivityEntryKind.recording => Icons.mic_none_rounded,
+                  DayActivityEntryKind.agentJob => Icons.error_outline_rounded,
                 },
-                color: tokens.colors.interactive.enabled,
+                color: entry.kind == DayActivityEntryKind.agentJob
+                    ? tokens.colors.text.lowEmphasis
+                    : tokens.colors.interactive.enabled,
               ),
               SizedBox(width: tokens.spacing.step3),
               Expanded(
@@ -265,24 +268,20 @@ class _ActivityCard extends StatelessWidget {
           if (!editorShowsText) ...[
             SizedBox(height: tokens.spacing.step3),
             Text(
-              entry.plan?.data.dayLabel ??
-                  entry.summary?.text ??
-                  (entry.kind == DayActivityEntryKind.plan
-                      ? context.messages.dailyOsNextActivityPlanAvailable
-                      : entry.processingJob?.lastFailureClass ==
-                            DayProcessingFailureClass.missingAsset
-                      ? context.messages.dailyOsNextActivityMissingAudio
-                      : entry.processingJob?.lastFailureClass ==
-                            DayProcessingFailureClass.setupRequired
-                      ? context.messages.dailyOsNextActivitySetupRequired
-                      : transcript ??
-                            context
-                                .messages
-                                .dailyOsNextActivityTranscriptPending),
+              _body(context, entry, transcript),
               style: tokens.typography.styles.body.bodyMedium.copyWith(
                 color: transcript == null
                     ? tokens.colors.text.lowEmphasis
                     : tokens.colors.text.highEmphasis,
+              ),
+            ),
+          ],
+          if (entry.kind == DayActivityEntryKind.agentJob) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              context.messages.dailyOsNextActivityAgentJobRetryHint,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.lowEmphasis,
               ),
             ),
           ],
@@ -331,7 +330,11 @@ class _ActivityCard extends StatelessWidget {
                 if (entry.processingJob?.lastFailureClass ==
                     DayProcessingFailureClass.setupRequired)
                   DesignSystemButton(
-                    label: context.messages.dailyOsNextActivityOpenSetup,
+                    // Both routes land on AI settings; only the transcription
+                    // wording would be wrong on a planning job.
+                    label: entry.kind == DayActivityEntryKind.agentJob
+                        ? context.messages.dailyOsNextActivityOpenAiSetup
+                        : context.messages.dailyOsNextActivityOpenSetup,
                     onPressed: () => nav_service.beamToNamed('/settings/ai'),
                     variant: DesignSystemButtonVariant.secondary,
                     leadingIcon: Icons.settings_rounded,
@@ -359,6 +362,40 @@ class _ActivityCard extends StatelessWidget {
     );
   }
 
+  /// The card's main line: the entity's own wording when it has one, else an
+  /// explanation of what this row is waiting on, in the user's language.
+  String _body(
+    BuildContext context,
+    DayActivityEntry entry,
+    String? transcript,
+  ) {
+    final dayLabel = entry.plan?.data.dayLabel;
+    if (dayLabel != null) return dayLabel;
+    final summary = entry.summary?.text;
+    if (summary != null) return summary;
+    if (entry.kind == DayActivityEntryKind.agentJob) {
+      // Named by what the user asked for, not by the job kind's identifier —
+      // "refinePlan failed" is a log line, not an explanation.
+      return switch (entry.processingJob?.kind) {
+        DayProcessingJobKind.draftPlan =>
+          context.messages.dailyOsNextActivityAgentJobDraft,
+        DayProcessingJobKind.refinePlan =>
+          context.messages.dailyOsNextActivityAgentJobRefine,
+        _ => context.messages.dailyOsNextActivityAgentJobParse,
+      };
+    }
+    if (entry.kind == DayActivityEntryKind.plan) {
+      return context.messages.dailyOsNextActivityPlanAvailable;
+    }
+    return switch (entry.processingJob?.lastFailureClass) {
+      DayProcessingFailureClass.missingAsset =>
+        context.messages.dailyOsNextActivityMissingAudio,
+      DayProcessingFailureClass.setupRequired =>
+        context.messages.dailyOsNextActivitySetupRequired,
+      _ => transcript ?? context.messages.dailyOsNextActivityTranscriptPending,
+    };
+  }
+
   bool _canRetry(DayActivityEntry entry) {
     // Queued jobs sit under exponential backoff; the user must always be
     // able to force the next attempt instead of waiting it out.
@@ -380,6 +417,16 @@ class _ActivityCard extends StatelessWidget {
     }
     if (entry.isSubmitted) {
       return context.messages.dailyOsNextActivitySubmitted;
+    }
+    // An agent row exists only because its work stalled, so it never reports
+    // the "Saved" resting state a recording falls back to.
+    if (entry.kind == DayActivityEntryKind.agentJob &&
+        entry.processingJob?.status ==
+            DayProcessingJobStatus.waitingForNetwork) {
+      return context.messages.dailyOsNextActivityWaitingForNetwork;
+    }
+    if (entry.kind == DayActivityEntryKind.agentJob) {
+      return context.messages.dailyOsNextActivityNeedsAttention;
     }
     return switch (entry.processingJob?.status) {
       DayProcessingJobStatus.running =>
