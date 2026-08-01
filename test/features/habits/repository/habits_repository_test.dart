@@ -12,6 +12,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../habit_completion_record_fixtures.dart';
 
 void main() {
   late MockJournalDb mockJournalDb;
@@ -158,19 +159,25 @@ void main() {
         );
 
         when(
-          () => mockJournalDb.getHabitCompletionsInRange(
+          () => mockJournalDb.getHabitCompletionRecordsInRange(
             rangeStart: rangeStart,
           ),
-        ).thenAnswer((_) async => [testCompletion]);
+        ).thenAnswer(
+          (_) async => habitCompletionRecordsFrom([testCompletion]),
+        );
 
         final result = await repository.getHabitCompletionsInRange(
           rangeStart: rangeStart,
         );
 
         expect(result, hasLength(1));
-        expect(result.first, isA<HabitCompletionEntry>());
+        expect(result.first.habitId, testCompletion.data.habitId);
+        expect(
+          result.first.completionType,
+          testCompletion.data.completionType,
+        );
         verify(
-          () => mockJournalDb.getHabitCompletionsInRange(
+          () => mockJournalDb.getHabitCompletionRecordsInRange(
             rangeStart: rangeStart,
           ),
         ).called(1);
@@ -180,7 +187,7 @@ void main() {
         final rangeStart = DateTime(2025);
 
         when(
-          () => mockJournalDb.getHabitCompletionsInRange(
+          () => mockJournalDb.getHabitCompletionRecordsInRange(
             rangeStart: rangeStart,
           ),
         ).thenAnswer((_) async => []);

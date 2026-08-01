@@ -31,21 +31,32 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
     return latestHabitCompletionsByDay(res.map(fromDbEntity));
   }
 
-  /// Returns habit completions from [rangeStart] to now.
+  /// Latest habit completion per habit/day since [rangeStart], projected to
+  /// the three fields consumers actually read.
   ///
-  /// The SQL ranks writes by the same last-write-wins contract as
-  /// [latestHabitCompletionsByDay] and returns only the winning row per
-  /// habit/day. This keeps the heatmap path from materialising every historic
-  /// habit write when only one row per day can affect the result.
-  Future<List<JournalEntity>> getHabitCompletionsInRange({
+  /// Returns one winning row per habit/day under a last-write-wins contract,
+  /// without ever putting the `serialized` payload on the wire.
+  ///
+  /// That payload is the cost. The 2026-06/07 slow-query logs put the
+  /// full-entity version at 636 ms average, while the SQL measures ~29 ms on a
+  /// comparable 10,000-row / 1,460-result data set. The difference is ~20
+  /// columns per row, including the fat JSON blob, crossing the isolate port —
+  /// which the interceptor measures, because it wraps the executor on the
+  /// calling side. Decoding those blobs into `JournalEntity` then costs the
+  /// *calling* isolate more work on top, outside the measurement.
+  ///
+  /// See `docs/perf/2026-08-01_slow-queries-investigation.md`.
+  Future<List<HabitCompletionRecord>> getHabitCompletionRecordsInRange({
     required DateTime rangeStart,
   }) async {
     final rows = await customSelect(
       r'''
-        SELECT *
+        SELECT habit_id, date_from, completion_type
         FROM (
           SELECT
-            journal.*,
+            json_extract(serialized, '$.data.habitId') AS habit_id,
+            journal.date_from AS date_from,
+            json_extract(serialized, '$.data.completionType') AS completion_type,
             ROW_NUMBER() OVER (
               PARTITION BY
                 json_extract(serialized, '$.data.habitId'),
@@ -66,14 +77,36 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
             AND deleted = FALSE
         )
         WHERE rn = 1
-        ORDER BY date_from ASC,
-          json_extract(serialized, '$.data.habitId') ASC
+        ORDER BY date_from ASC, habit_id ASC
       ''',
       variables: [Variable<DateTime>(rangeStart)],
       readsFrom: {journal, configFlags},
     ).get();
 
-    return rows.map((row) => fromDbEntity(journal.map(row.data))).toList();
+    return rows
+        .map(
+          (row) => HabitCompletionRecord(
+            habitId: row.read<String>('habit_id'),
+            dateFrom: row.read<DateTime>('date_from'),
+            completionType: _habitCompletionTypeFromDb(
+              row.readNullable<String>('completion_type'),
+            ),
+          ),
+        )
+        .toList();
+  }
+
+  /// Maps the serialized enum name back to [HabitCompletionType].
+  ///
+  /// An unknown value decodes to `null` rather than throwing: a newer peer can
+  /// sync a completion type this build does not know, and the consumers all
+  /// treat `null` as "counts as success", which is the safe reading.
+  static HabitCompletionType? _habitCompletionTypeFromDb(String? value) {
+    if (value == null) return null;
+    for (final type in HabitCompletionType.values) {
+      if (type.name == value) return type;
+    }
+    return null;
   }
 
   Future<DayPlanEntry?> getDayPlanById(String id) async {

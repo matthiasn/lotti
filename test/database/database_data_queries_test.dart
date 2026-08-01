@@ -348,7 +348,7 @@ void main() {
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
           );
-          final inRange = await db!.getHabitCompletionsInRange(
+          final inRange = await db!.getHabitCompletionRecordsInRange(
             rangeStart: rangeStart,
           );
 
@@ -359,17 +359,17 @@ void main() {
             HabitCompletionType.fail,
           );
 
+          // The record read carries no entity id, so the winning row is
+          // identified by the fields it does project — which is exactly what
+          // the consumers use.
           expect(inRange, hasLength(1));
-          expect(inRange.single.meta.id, 'habit-complete-newer-fail');
-          expect(
-            (inRange.single as HabitCompletionEntry).data.completionType,
-            HabitCompletionType.fail,
-          );
+          expect(inRange.single.habitId, habitId);
+          expect(inRange.single.completionType, HabitCompletionType.fail);
         },
       );
 
       test(
-        'getHabitCompletionsInRange preserves write-recency tie breakers',
+        'getHabitCompletionRecordsInRange preserves write-recency tie breakers',
         () async {
           final habitId = habitFlossing.id;
           final day = DateTime(2024, 4, 16, 21);
@@ -410,15 +410,46 @@ void main() {
           await db!.updateJournalEntity(earlierCreatedAt);
           await db!.updateJournalEntity(laterCreatedAt);
 
-          final result = await db!.getHabitCompletionsInRange(
+          final result = await db!.getHabitCompletionRecordsInRange(
             rangeStart: DateTime(2024, 4),
           );
 
           expect(result, hasLength(1));
-          expect(result.single.meta.id, 'habit-created-later');
+          expect(result.single.habitId, habitId);
+          expect(result.single.completionType, HabitCompletionType.fail);
+        },
+      );
+
+      test(
+        'getHabitCompletionRecordsInRange decodes an unknown completion type '
+        'as null rather than throwing',
+        () async {
+          // Forward compatibility: a newer peer can sync a completion type this
+          // build does not know. The consumers all treat null as "counts as
+          // success", so decoding to null is the safe reading — throwing would
+          // take out the whole heatmap for one unrecognised row.
+          const serialized =
+              '{"data":{"habitId":"habit-future",'
+              '"completionType":"teleported"},'
+              '"meta":{"id":"future-type"}}';
+          await db!.customStatement(
+            'INSERT INTO journal (id, created_at, updated_at, date_from, '
+            'date_to, type, subtype, serialized, deleted, starred, private, '
+            'task, flag) VALUES (?1, 1713000000, 1713000000, 1713000000, '
+            '1713000000, ?2, ?3, ?4, 0, 0, 0, 0, 0)',
+            ['future-type', 'HabitCompletionEntry', '', serialized],
+          );
+
+          final result = await db!.getHabitCompletionRecordsInRange(
+            rangeStart: DateTime(2024),
+          );
+
+          final future = result.where((r) => r.habitId == 'habit-future');
+          expect(future, hasLength(1));
           expect(
-            (result.single as HabitCompletionEntry).data.completionType,
-            HabitCompletionType.fail,
+            future.single.completionType,
+            isNull,
+            reason: 'an unrecognised type must decode to null, not throw',
           );
         },
       );

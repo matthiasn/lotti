@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../habit_completion_record_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -177,7 +178,7 @@ void main() {
         () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer((_) async => completions);
+      ).thenAnswer((_) async => habitCompletionRecordsFrom(completions));
 
       final controller = container.read(habitsControllerProvider.notifier);
       await pumpEventQueue();
@@ -212,7 +213,7 @@ void main() {
         () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer((_) async => completions);
+      ).thenAnswer((_) async => habitCompletionRecordsFrom(completions));
 
       final controller = container.read(habitsControllerProvider.notifier);
       await pumpEventQueue();
@@ -309,7 +310,7 @@ void main() {
         () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer((_) async => completions);
+      ).thenAnswer((_) async => habitCompletionRecordsFrom(completions));
 
       final controller = container.read(habitsControllerProvider.notifier);
       await pumpEventQueue();

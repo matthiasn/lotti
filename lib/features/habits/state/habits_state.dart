@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:clock/clock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -36,7 +36,7 @@ abstract class HabitsState with _$HabitsState {
     required List<HabitDefinition> openNow,
     required List<HabitDefinition> pendingLater,
     required List<HabitDefinition> completed,
-    required List<JournalEntity> habitCompletions,
+    required List<HabitCompletionRecord> habitCompletions,
     required Set<String> completedToday,
     required Set<String> successfulToday,
     required Set<String> selectedCategoryIds,

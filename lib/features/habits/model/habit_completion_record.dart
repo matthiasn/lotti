@@ -1,0 +1,56 @@
+import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+
+/// The three fields every habit-completion consumer actually reads.
+///
+/// The habits controller and the heatmap both used to take
+/// `List<JournalEntity>` and then touch only `data.habitId`,
+/// `data.completionType` and `meta.dateFrom` — never the body, never the
+/// vector clock, never anything else on the entity.
+///
+/// Carrying the whole entity was the expensive part. The 2026-06/07 slow-query
+/// logs put `getHabitCompletionsInRange` at **636 ms average** over 14 days,
+/// but the SQL itself measures ~29 ms on a comparable 10,000-row / 1,460-result
+/// data set. The gap is the ~20 columns per row — including a fat `serialized`
+/// JSON payload — crossing the isolate port, which the slow-query interceptor
+/// measures because it wraps the executor on the calling side.
+///
+/// Projecting to these three fields in SQL removes that payload from the wire
+/// entirely. See `docs/perf/2026-08-01_slow-queries-investigation.md`.
+@immutable
+class HabitCompletionRecord {
+  const HabitCompletionRecord({
+    required this.habitId,
+    required this.dateFrom,
+    this.completionType,
+  });
+
+  /// `json_extract(serialized, '$.data.habitId')`.
+  final String habitId;
+
+  /// The completion's `date_from`, which is the day it counts towards.
+  final DateTime dateFrom;
+
+  /// `json_extract(serialized, '$.data.completionType')`.
+  ///
+  /// Null is meaningful rather than missing data: entries written before the
+  /// field existed count as successes, and the consumers already treat
+  /// `null` that way.
+  final HabitCompletionType? completionType;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HabitCompletionRecord &&
+          other.habitId == habitId &&
+          other.dateFrom == dateFrom &&
+          other.completionType == completionType;
+
+  @override
+  int get hashCode => Object.hash(habitId, dateFrom, completionType);
+
+  @override
+  String toString() =>
+      'HabitCompletionRecord(habitId: $habitId, dateFrom: $dateFrom, '
+      'completionType: $completionType)';
+}

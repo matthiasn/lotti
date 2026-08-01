@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -61,7 +61,7 @@ class HeatmapDay extends Equatable {
 /// `{HabitCompletionType.success, HabitCompletionType.skip}` — that would match
 /// the card's `completedToday` notion but is deliberately not done here.
 List<HeatmapDay> buildHeatmapDays({
-  required List<JournalEntity> completions,
+  required List<HabitCompletionRecord> completions,
   required List<HabitDefinition> habitDefinitions,
   required String rangeStartYmd,
   required String rangeEndYmd,
@@ -79,16 +79,13 @@ List<HeatmapDay> buildHeatmapDays({
   final recordedByDay = <String, Set<String>>{};
 
   for (final item in completions) {
-    if (item is! HabitCompletionEntry) {
-      continue;
-    }
-    final habitId = item.data.habitId;
+    final habitId = item.habitId;
     if (!allowedHabitIds.contains(habitId)) {
       continue;
     }
-    final day = item.meta.dateFrom.ymd;
+    final day = item.dateFrom.ymd;
     recordedByDay.putIfAbsent(day, () => <String>{}).add(habitId);
-    if (item.data.completionType == HabitCompletionType.success) {
+    if (item.completionType == HabitCompletionType.success) {
       successByDay.putIfAbsent(day, () => <String>{}).add(habitId);
     }
   }
@@ -163,25 +160,22 @@ int _weekdayRowIndex(String ymd, int firstDayOfWeekIndex) {
 /// so it isn't capped by the tab's short fetch window. Streaks are per habit,
 /// independent of the category filter.
 Map<String, int> currentStreaksByHabit({
-  required List<JournalEntity> completions,
+  required List<HabitCompletionRecord> completions,
   required List<HabitDefinition> habitDefinitions,
   required String todayYmd,
 }) {
   final ids = habitDefinitions.map((h) => h.id).toSet();
   final keptByHabit = <String, Set<String>>{};
   for (final item in completions) {
-    if (item is! HabitCompletionEntry) {
-      continue;
-    }
-    final id = item.data.habitId;
+    final id = item.habitId;
     if (!ids.contains(id)) {
       continue;
     }
-    final type = item.data.completionType;
+    final type = item.completionType;
     if (type == HabitCompletionType.success ||
         type == HabitCompletionType.skip ||
         type == null) {
-      keptByHabit.putIfAbsent(id, () => <String>{}).add(item.meta.dateFrom.ymd);
+      keptByHabit.putIfAbsent(id, () => <String>{}).add(item.dateFrom.ymd);
     }
   }
 
