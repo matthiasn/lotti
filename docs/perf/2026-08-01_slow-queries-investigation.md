@@ -49,7 +49,7 @@ almost everything.
 
 ## Ranking correction — the naive #1 is already fixed
 
-Aggregating over all 47 days puts `habitCompletionsInRange` (`database.drift:897`) at
+Aggregating over all 47 days puts `habitCompletionsInRange` at
 #1 with 1,458 s. That is an artefact:
 
 - Its **last execution was 2026-07-05**. It was superseded by the deduplicating
@@ -57,7 +57,7 @@ Aggregating over all 47 days puts `habitCompletionsInRange` (`database.drift:897
   (`lib/database/database_data_queries.dart:40`, landed in d36221b06, 2026-06-06).
 - 1,356 s of its 1,458 s comes from **two** outlier events (see "Mode C" below).
 - The drift query now has **no callers** and only generates dead code at
-  `database.g.dart:6986`. It should be deleted, not optimised.
+  `database.g.dart:6986`. **Deleted in #3723** — it was never worth optimising.
 
 Everything below is therefore ranked over **2026-07-19 → 2026-08-01**, which reflects
 the code as it actually stands.
@@ -132,7 +132,7 @@ maxima at ~5,069 ms across shapes 3, 5, 7 and 8.
 Entries 7 and 8 are the clearest proof: `queue_markers WHERE room_id = ?` is a
 single-row lookup on a unique index averaging **2.8 s**. No plan change can fix that.
 
-### Mode C — two isolated multi-minute stalls (probably not the database)
+### Mode C — two isolated multi-minute stalls (real, but not contention)
 
 | Duration | Window | Query |
 |---:|---|---|
@@ -141,12 +141,25 @@ single-row lookup on a unique index averaging **2.8 s**. No plan change can fix 
 
 Both had **zero overlapping writes** and near-zero overlapping queries (3 and 16
 logged statements respectively across a 7–15 minute span). That rules out lock
-contention. Consistent with host suspend or isolate starvation.
+contention: if the database were held, the queue would be full of waiters, as it
+visibly is in the sync convoys.
 
-These two events contribute 1,356 s and should be excluded from prioritisation. To
-settle it permanently, the interceptor could record wall-clock elapsed alongside the
-monotonic `Stopwatch`: a large divergence proves host suspend, agreement proves a real
-stall.
+**These were nevertheless real elapsed time, not host suspend.** An earlier
+version of this document guessed suspend. That is ruled out by the measurement
+itself: the durations come from `Stopwatch`, which is monotonic, and on a
+suspended host the monotonic clock does not advance — it could not have recorded
+909 seconds that the process spent asleep. So the process really was stuck for
+15 minutes of running time.
+
+Comparing wall clock against the monotonic timer therefore **cannot** identify
+these events, which is why that approach was built and then abandoned (#3724,
+closed unmerged). The open question is what blocked the database isolate for
+that long with nothing else queued behind it — isolate starvation, a blocking
+call on the DB isolate, or platform-level throttling. Answering it needs
+app-lifecycle and platform evidence, not clock comparison.
+
+These two events contribute 1,356 s and still distort any all-window ranking;
+exclude them when aggregating, but do not treat them as explained.
 
 ## What the April remedies achieved
 
@@ -182,9 +195,12 @@ barely present in April — now dominates.
    long enough to produce 25 s convoys.
 9. **Speed up the habit heatmap query** (entry 10) — 636 ms avg with
    `USE TEMP B-TREE FOR ORDER BY` on 54 of 78 super-slow captures.
-10. **Delete the dead `habitCompletionsInRange` drift query** (`database.drift:897`).
-11. **Add wall-clock/monotonic divergence detection** to the interceptor to classify
-    mode C permanently.
+10. ~~**Delete the dead `habitCompletionsInRange` drift query.**~~ Done in #3723;
+    the query and its generated output are gone.
+11. ~~**Add wall-clock/monotonic divergence detection**~~ — attempted in #3724
+    and **abandoned**. It cannot work: the outlier durations were themselves
+    measured by the monotonic `Stopwatch`, so the monotonic clock advanced
+    throughout and the wall-vs-monotonic skew is ~0. See Mode C.
 
 ## Code map
 
@@ -192,7 +208,6 @@ barely present in April — now dominates.
 - `lib/database/common.dart:116-185` — `openDbConnection`, interceptor installation, `readPool`
 - `lib/database/slow_query_logging.dart:24` — super-slow threshold
 - `lib/database/slow_query_logging.dart:234` — the `Stopwatch` whose semantics this doc turns on
-- `lib/database/database.drift:897` — dead `habitCompletionsInRange`
 - `lib/database/database_data_queries.dart:40` — live habit heatmap query
 - `lib/features/agents/database/agent_repo_core.dart:88` — by-id read (N+1)
 - `lib/features/agents/database/agent_repo_core.dart:162` — `latestEntitiesByAgentIds`
