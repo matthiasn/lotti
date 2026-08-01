@@ -4570,14 +4570,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(agentEntities.mapFromRow);
   }
 
-  Selectable<AgentEntity> getAgentEntityById(String id) {
-    return customSelect(
-      'SELECT * FROM agent_entities WHERE id = ?1 AND deleted_at IS NULL',
-      variables: [Variable<String>(id)],
-      readsFrom: {agentEntities},
-    ).asyncMap(agentEntities.mapFromRow);
-  }
-
   Selectable<String?> getAgentEntityVectorClockById(String id) {
     return customSelect(
       'SELECT json_extract(serialized, \'\$.vectorClock\') AS vector_clock FROM agent_entities WHERE id = ?1 AND deleted_at IS NULL',

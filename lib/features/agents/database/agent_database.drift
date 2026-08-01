@@ -211,7 +211,6 @@ getAgentEntitiesByTypeAndSubtype: SELECT * FROM agent_entities WHERE agent_id = 
 -- (type, created_at) — ascending so the digest renders oldest-first.
 getDayStatusEventsSince: SELECT * FROM agent_entities WHERE type = 'day_status_event' AND deleted_at IS NULL AND created_at > :since ORDER BY created_at ASC LIMIT :limit;
 
-getAgentEntityById: SELECT * FROM agent_entities WHERE id = :id AND deleted_at IS NULL;
 
 -- Narrow projection used by the sync attachment ingestor's
 -- VC-dominance check. SELECT * of this row was costing ~36ms avg
