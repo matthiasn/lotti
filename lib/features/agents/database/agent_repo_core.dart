@@ -194,7 +194,10 @@ class AgentRepoCore {
     List<Variable<Object>> outerVariables = const [],
   }) async {
     final result = <AgentDomainEntity>[];
-    for (final chunk in sqliteInClauseChunks(agentIds)) {
+    // Every chunk binds its own ids plus the type, the optional subtype, and
+    // whatever `outerPredicate` needs — all against one 999-variable budget.
+    final reserved = 1 + (subtype == null ? 0 : 1) + outerVariables.length;
+    for (final chunk in sqliteInClauseChunks(agentIds, reserve: reserved)) {
       final placeholders = List.filled(chunk.length, '?').join(', ');
       final subtypePredicate = subtype == null ? '' : 'AND subtype = ? ';
       final rows = await _db

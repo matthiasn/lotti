@@ -275,6 +275,28 @@ void main() {
       );
     });
 
+    test('spans multiple id chunks and still resolves inclusions', () async {
+      // The agent-id list is chunked (900 per statement) while
+      // alsoIncludeAgentIds is bound into every chunk. This exercises the
+      // multi-chunk path end to end: results must be merged across chunks and
+      // the inclusion list must apply in each one.
+      await putState('a-wake', 'st-a', nextWakeAt: testDate);
+      await putState('a-workspace', 'st-b');
+
+      final manyIds = [for (var i = 0; i < 1500; i++) 'filler-$i'];
+
+      final states = await core.getAgentStatesWithPendingWakes(
+        ['a-wake', 'a-workspace', ...manyIds],
+        alsoIncludeAgentIds: ['a-workspace'],
+      );
+
+      expect(
+        states.keys.toSet(),
+        {'a-wake', 'a-workspace'},
+        reason: 'merged across chunks, inclusion honoured, fillers excluded',
+      );
+    });
+
     test('omitting alsoIncludeAgentIds leaves valid SQL', () async {
       // The `OR agent_id IN (...)` clause is appended only when ids are given;
       // the default path must not emit a dangling `IN ()`.

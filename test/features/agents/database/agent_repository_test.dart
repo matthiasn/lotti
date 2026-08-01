@@ -554,6 +554,52 @@ void main() {
         },
       );
 
+      test(
+        'reserve shrinks the chunk so extra bindings fit in the same statement',
+        () {
+          // Callers that bind variables beyond one-per-element (a type, a
+          // subtype, a second IN list) reserve them, so the statement stays as
+          // wide as the chunk size implies rather than chunk + extras.
+          final ids = [for (var i = 0; i < 2000; i++) 'id-$i'];
+
+          for (final reserve in [0, 1, 300, 899]) {
+            final chunks = AgentRepository.debugSqliteInClauseChunks(
+              ids,
+              reserve: reserve,
+            ).toList();
+
+            for (final chunk in chunks) {
+              expect(
+                chunk.length + reserve,
+                lessThanOrEqualTo(900),
+                reason: 'chunk + reserve must stay within the chunk budget',
+              );
+            }
+            expect(
+              chunks.expand((c) => c).toSet(),
+              ids.toSet(),
+              reason: 'reserving must not drop ids',
+            );
+          }
+        },
+      );
+
+      test(
+        'an oversized reserve still yields progress, never an empty chunk',
+        () {
+          // Guards the clamp: without it a reserve >= the chunk size would
+          // produce zero-length chunks and loop forever.
+          final chunks = AgentRepository.debugSqliteInClauseChunks(
+            ['a', 'b', 'c'],
+            reserve: 5000,
+          ).toList();
+
+          expect(chunks, hasLength(3));
+          expect(chunks.every((c) => c.length == 1), isTrue);
+          expect(chunks.expand((c) => c).toSet(), {'a', 'b', 'c'});
+        },
+      );
+
       // `_sqliteInClauseChunks` is the pure dedup-and-chunk iterator behind
       // every batched IN-list query; the example test above only exercises the
       // 1 800-id case. This property locks down the invariants across the whole

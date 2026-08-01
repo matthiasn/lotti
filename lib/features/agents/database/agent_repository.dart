@@ -106,8 +106,10 @@ class AgentRepository {
 
   /// Test-only seam for `sqliteInClauseChunks`.
   @visibleForTesting
-  static Iterable<List<T>> debugSqliteInClauseChunks<T>(Iterable<T> values) =>
-      sqliteInClauseChunks(values);
+  static Iterable<List<T>> debugSqliteInClauseChunks<T>(
+    Iterable<T> values, {
+    int reserve = 0,
+  }) => sqliteInClauseChunks(values, reserve: reserve);
 
   // ── Core: entity CRUD + shared batched reads ───────────────────────────────
 

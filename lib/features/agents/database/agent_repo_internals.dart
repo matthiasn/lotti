@@ -22,23 +22,41 @@ bool affectsStandingAgreementProjection(AgentDomainEntity entity) {
   return entity is StandingAgreementEntity;
 }
 
-/// SQLite's default `SQLITE_MAX_VARIABLE_NUMBER` is 999; we chunk batched
-/// `IN (...)` queries below this to stay safe across builds.
+/// Chunk size for batched `IN (...)` queries.
+///
+/// `SQLITE_MAX_VARIABLE_NUMBER` was 999 before SQLite 3.32 and is 32766 after
+/// it — the bundled library is 3.45, so the real cap is the higher one and 900
+/// is far below it. The conservative chunk stays because it also bounds result
+/// size and statement-cache churn, and because the ceiling is a build-time
+/// option we do not control on every platform.
 const int sqliteInClauseChunkSize = 900;
 
 /// Dedup-and-chunk iterator that guards every batched `IN (...)` query against
 /// SQLite's host-variable cap. Deduplicates first so callers never emit a
 /// chunk larger than [sqliteInClauseChunkSize].
-Iterable<List<T>> sqliteInClauseChunks<T>(Iterable<T> values) sync* {
+///
+/// [reserve] is the number of host variables the caller binds *in addition* to
+/// one per chunk element — a type discriminator, a subtype, a second `IN` list
+/// in the same statement. The chunk shrinks to make room for them, because the
+/// cap applies to the whole statement rather than to one `IN` list, and so does
+/// [sqliteInClauseChunkSize]'s intent: a caller binding a large extra list
+/// would otherwise silently produce statements far wider than the chunk size
+/// implies.
+Iterable<List<T>> sqliteInClauseChunks<T>(
+  Iterable<T> values, {
+  int reserve = 0,
+}) sync* {
   final valueList = values.toSet().toList(growable: false);
-  for (
-    var start = 0;
-    start < valueList.length;
-    start += sqliteInClauseChunkSize
-  ) {
-    final end = start + sqliteInClauseChunkSize > valueList.length
+  // Always leave room for at least one element per chunk, otherwise a caller
+  // reserving more than the chunk size would loop forever.
+  final chunkSize = (sqliteInClauseChunkSize - reserve).clamp(
+    1,
+    sqliteInClauseChunkSize,
+  );
+  for (var start = 0; start < valueList.length; start += chunkSize) {
+    final end = start + chunkSize > valueList.length
         ? valueList.length
-        : start + sqliteInClauseChunkSize;
+        : start + chunkSize;
     yield valueList.sublist(start, end);
   }
 }
