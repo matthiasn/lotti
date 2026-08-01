@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart'
@@ -42,34 +43,42 @@ class AgentProposalLedger {
     int changeSetFetchLimit = 200,
     int resolvedLimit = 50,
   }) async {
-    // Three independent task-scoped reads — run in parallel to keep
-    // wall-clock bounded on cold sqlite access. The dedicated pending query is
+    // Three logically independent task-scoped reads, fetched in ONE round trip
+    // as a UNION ALL with a per-row bucket marker. They remain three separate
+    // arms because they are not interchangeable: the dedicated pending arm is
     // what guarantees an old-but-still-open consolidated change set is never
-    // dropped by the recent-history cap: `getChangeSetsForAgentAndTask` is
-    // newest-first and would otherwise bury a long-lived open set past
+    // dropped by the recent-history cap, since the recent arm is newest-first
+    // and would otherwise bury a long-lived open set past
     // `changeSetFetchLimit` once enough resolved history accumulates.
-    final results = await Future.wait([
-      _db
-          .getPendingChangeSetsForAgentAndTask(
-            agentId,
-            taskId,
-            changeSetFetchLimit,
-          )
-          .get(),
-      _db
-          .getChangeSetsForAgentAndTask(agentId, taskId, changeSetFetchLimit)
-          .get(),
-      _db
-          .getRecentDecisionsForAgentAndTask(
-            agentId,
-            taskId,
-            resolvedLimit,
-          )
-          .get(),
-    ]);
-    final pendingRows = results[0];
-    final recentRows = results[1];
-    final decisionRows = results[2];
+    //
+    // Previously these were three concurrent queries. Each was correctly
+    // indexed and sat at the ~22 ms isolate round-trip floor, so the cost was
+    // the round-trip count, not the plans — the slow-query logs caught the trio
+    // as back-to-back runs of 3 and 6 at a 0.4 ms median gap. See
+    // `docs/perf/2026-08-01_slow-queries-investigation.md`.
+    final ledgerRows = await _db
+        .getProposalLedgerRowsForAgentAndTask(
+          agentId: agentId,
+          taskId: taskId,
+          changeSetLimit: changeSetFetchLimit,
+          decisionLimit: resolvedLimit,
+        )
+        .get();
+
+    final pendingRows = <AgentEntity>[];
+    final recentRows = <AgentEntity>[];
+    final decisionRows = <AgentEntity>[];
+    for (final row in ledgerRows) {
+      final entity = await _db.agentEntities.mapFromRow(row);
+      switch (row.read<String>(AgentDatabase.ledgerBucketColumn)) {
+        case AgentDatabase.ledgerBucketPending:
+          pendingRows.add(entity);
+        case AgentDatabase.ledgerBucketRecent:
+          recentRows.add(entity);
+        case AgentDatabase.ledgerBucketDecision:
+          decisionRows.add(entity);
+      }
+    }
 
     final rawPendingSets = pendingRows
         .map(AgentDbConversions.fromEntityRow)

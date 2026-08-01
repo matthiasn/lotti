@@ -5,16 +5,20 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T17:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-01T12:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: db
     resource: ../../../lib/features/agents/database/agent_database.dart
     title: AgentDatabase
-    last_modified: 2026-07-25
+    last_modified: 2026-08-01
   - id: coalescer
     resource: ../../../lib/features/agents/database/agent_entity_by_id_coalescer.dart
     title: AgentEntityByIdCoalescer
+    last_modified: 2026-08-01
+  - id: ledger
+    resource: ../../../lib/features/agents/database/agent_proposal_ledger.dart
+    title: AgentProposalLedger
     last_modified: 2026-08-01
   - id: constants
     resource: ../../../lib/features/agents/model/agent_constants.dart
@@ -148,6 +152,31 @@ statement's executor from `Zone.current`, so a batch that merged calls from
 inside a transaction with calls from outside would run on the wrong executor
 and break read-your-writes — `upsertEntity` reads entities back by id inside
 its own transaction.
+
+# The proposal ledger is one compound read
+
+`AgentProposalLedger.getProposalLedger` needs three task-scoped row sets:
+pending change sets, recent change-set history, and recent item decisions.
+They are fetched as **one** `UNION ALL` carrying a per-row `bucket` marker,
+not as three queries, and the caller splits the result back apart by bucket.
+
+The three arms are deliberately not merged into a single predicate:
+
+- Each keeps **its own `LIMIT`** — the decision arm's cap is smaller than the
+  change-set arms'. One shared limit across the union would silently change
+  what the ledger sees.
+- The dedicated **pending arm** is what stops a long-lived open change set
+  from being buried: the recent arm is newest-first and capped, so once enough
+  resolved history accumulates an old-but-still-open set would fall off the
+  end of it.
+
+The compound carries an explicit
+`ORDER BY bucket, created_at DESC, id DESC`. Each arm's inner `ORDER BY`
+decides only which rows survive that arm's `LIMIT`; the order of the *compound*
+result is otherwise unspecified. The consumers are first-wins
+(`decisionByKey.putIfAbsent`, and the duplicate-proposal collapse in
+`unifiedSuggestionList`), so an unordered compound could let an older
+retry/audit decision override the newest one.
 
 Latest-per-agent batch reads are backed by active-row indexes that include the
 `(created_at DESC, id DESC)` ranking order for both type-only and

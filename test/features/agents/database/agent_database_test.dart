@@ -2,13 +2,19 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:drift/drift.dart' show Variable;
+import 'package:drift/drift.dart' show QueryRow, Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart' show SqliteException, sqlite3;
+
+import '../test_data/change_set_factories.dart';
 
 void main() {
   late Directory testDirectory;
@@ -23,6 +29,319 @@ void main() {
     if (testDirectory.existsSync()) {
       testDirectory.deleteSync(recursive: true);
     }
+  });
+
+  group('getProposalLedgerRowsForAgentAndTask', () {
+    // Mirror tests for the compound ledger read that AgentDatabase owns. The
+    // ledger's own assembly behaviour is covered in
+    // agent_proposal_ledger_test.dart; what lives here is the query contract:
+    // bucket routing, scoping, per-arm limits and ordering.
+    late AgentDatabase db;
+    final testDate = DateTime(2026, 3, 15);
+
+    setUp(() {
+      db = AgentDatabase(inMemoryDatabase: true, background: false);
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    Future<void> insertChangeSet({
+      required String id,
+      required String agentId,
+      required String taskId,
+      ChangeSetStatus status = ChangeSetStatus.pending,
+      List<ChangeItem>? items,
+      DateTime? createdAt,
+    }) async {
+      final entity = makeTestChangeSet(
+        id: id,
+        agentId: agentId,
+        taskId: taskId,
+        status: status,
+        items: items,
+        createdAt: createdAt ?? testDate,
+        vectorClock: const VectorClock({'node-1': 1}),
+      );
+      await db
+          .into(db.agentEntities)
+          .insert(AgentDbConversions.toEntityCompanion(entity));
+    }
+
+    Future<void> insertDecision({
+      required String id,
+      required String agentId,
+      required String taskId,
+      required String changeSetId,
+      int itemIndex = 0,
+      ChangeDecisionVerdict verdict = ChangeDecisionVerdict.confirmed,
+      DateTime? createdAt,
+    }) async {
+      final entity = makeTestChangeDecision(
+        id: id,
+        agentId: agentId,
+        changeSetId: changeSetId,
+        itemIndex: itemIndex,
+        verdict: verdict,
+        taskId: taskId,
+        createdAt: createdAt ?? testDate,
+        vectorClock: const VectorClock({'node-1': 100}),
+      );
+      await db
+          .into(db.agentEntities)
+          .insert(AgentDbConversions.toEntityCompanion(entity));
+    }
+
+    // The ledger used to issue three concurrent task-scoped queries. They are
+    // now one UNION ALL with a per-row `bucket` marker, so these tests pin the
+    // properties that collapsing could silently break: correct bucketing, and
+    // independent per-arm limits.
+
+    test('returns all three buckets from one query', () async {
+      await insertChangeSet(
+        id: 'cs-open',
+        agentId: 'agent-1',
+        taskId: 'task-1',
+      );
+      await insertChangeSet(
+        id: 'cs-done',
+        agentId: 'agent-1',
+        taskId: 'task-1',
+        status: ChangeSetStatus.resolved,
+      );
+      await insertDecision(
+        id: 'cd-1',
+        agentId: 'agent-1',
+        taskId: 'task-1',
+        changeSetId: 'cs-done',
+      );
+
+      final rows = await db
+          .getProposalLedgerRowsForAgentAndTask(
+            agentId: 'agent-1',
+            taskId: 'task-1',
+            changeSetLimit: 200,
+            decisionLimit: 50,
+          )
+          .get();
+
+      final idsByBucket = <String, Set<String>>{};
+      for (final row in rows) {
+        idsByBucket
+            .putIfAbsent(
+              row.read<String>(AgentDatabase.ledgerBucketColumn),
+              () => <String>{},
+            )
+            .add(row.read<String>('id'));
+      }
+
+      expect(
+        idsByBucket[AgentDatabase.ledgerBucketPending],
+        {'cs-open'},
+        reason:
+            'the pending arm filters on subtype, so the resolved set is out',
+      );
+      expect(
+        idsByBucket[AgentDatabase.ledgerBucketRecent],
+        {'cs-open', 'cs-done'},
+        reason: 'the recent arm is unfiltered change-set history',
+      );
+      expect(idsByBucket[AgentDatabase.ledgerBucketDecision], {'cd-1'});
+    });
+
+    test('every bucket comes back newest-first', () async {
+      // Rows are inserted OLDEST-FIRST with genuinely distinct created_at
+      // values, so a compound result that preserved insertion order would fail
+      // this. (An earlier version of this test varied only the vector clock,
+      // leaving every created_at identical — it could not fail, and did not.)
+      //
+      // It matters because the consumers are first-wins
+      // (decisionByKey.putIfAbsent, and the duplicate-proposal collapse), so an
+      // unordered compound lets an older retry/audit decision win.
+      for (var i = 0; i < 3; i++) {
+        await insertChangeSet(
+          id: 'cs-$i',
+          agentId: 'agent-1',
+          taskId: 'task-1',
+          createdAt: DateTime(2026, 3, 10 + i),
+        );
+        await insertDecision(
+          id: 'cd-$i',
+          agentId: 'agent-1',
+          taskId: 'task-1',
+          changeSetId: 'cs-0',
+          createdAt: DateTime(2026, 3, 20 + i),
+        );
+      }
+
+      final rows = await db
+          .getProposalLedgerRowsForAgentAndTask(
+            agentId: 'agent-1',
+            taskId: 'task-1',
+            changeSetLimit: 200,
+            decisionLimit: 50,
+          )
+          .get();
+
+      final byBucket = <String, List<DateTime>>{};
+      for (final row in rows) {
+        byBucket
+            .putIfAbsent(
+              row.read<String>(AgentDatabase.ledgerBucketColumn),
+              () => <DateTime>[],
+            )
+            .add(row.read<DateTime>('created_at'));
+      }
+
+      expect(byBucket.keys, hasLength(3), reason: 'all three buckets present');
+      for (final entry in byBucket.entries) {
+        expect(
+          entry.value.toSet(),
+          hasLength(greaterThan(1)),
+          reason:
+              'bucket "${entry.key}" must contain distinct timestamps, '
+              'or the ordering assertion below proves nothing',
+        );
+        final sortedDesc = [...entry.value]..sort((a, b) => b.compareTo(a));
+        expect(
+          entry.value,
+          sortedDesc,
+          reason: 'bucket "${entry.key}" must be newest-first',
+        );
+      }
+    });
+
+    test('scopes to the requested agent and task', () async {
+      await insertChangeSet(id: 'mine', agentId: 'agent-1', taskId: 'task-1');
+      await insertChangeSet(
+        id: 'other-task',
+        agentId: 'agent-1',
+        taskId: 't-2',
+      );
+      await insertChangeSet(
+        id: 'other-agent',
+        agentId: 'agent-2',
+        taskId: 'task-1',
+      );
+
+      final rows = await db
+          .getProposalLedgerRowsForAgentAndTask(
+            agentId: 'agent-1',
+            taskId: 'task-1',
+            changeSetLimit: 200,
+            decisionLimit: 50,
+          )
+          .get();
+
+      expect(rows.map((r) => r.read<String>('id')).toSet(), {'mine'});
+    });
+
+    test('applies the change-set and decision limits independently', () async {
+      for (var i = 0; i < 4; i++) {
+        await insertChangeSet(
+          id: 'cs-$i',
+          agentId: 'agent-1',
+          taskId: 'task-1',
+          status: ChangeSetStatus.resolved,
+        );
+        await insertDecision(
+          id: 'cd-$i',
+          agentId: 'agent-1',
+          taskId: 'task-1',
+          changeSetId: 'cs-$i',
+        );
+      }
+
+      final rows = await db
+          .getProposalLedgerRowsForAgentAndTask(
+            agentId: 'agent-1',
+            taskId: 'task-1',
+            changeSetLimit: 3,
+            decisionLimit: 1,
+          )
+          .get();
+
+      final counts = <String, int>{};
+      for (final row in rows) {
+        final bucket = row.read<String>(AgentDatabase.ledgerBucketColumn);
+        counts[bucket] = (counts[bucket] ?? 0) + 1;
+      }
+
+      expect(
+        counts[AgentDatabase.ledgerBucketRecent],
+        3,
+        reason: 'the change-set arm honours changeSetLimit',
+      );
+      expect(
+        counts[AgentDatabase.ledgerBucketDecision],
+        1,
+        reason:
+            'the decision arm honours its own, smaller decisionLimit — a '
+            'single shared LIMIT across the union would break this',
+      );
+    });
+
+    test(
+      'a long-lived open set survives a recent-history cap that would bury it',
+      () async {
+        // The reason the pending arm exists: the recent arm is newest-first and
+        // capped, so with changeSetLimit: 2 the two NEWER resolved sets fill it
+        // completely and the older open set never appears there. Only the
+        // dedicated pending arm surfaces it.
+        //
+        // The timestamps must genuinely differ for this to mean anything —
+        // an earlier version varied only the vector clock and so never
+        // established which rows the cap would drop.
+        await insertChangeSet(
+          id: 'cs-old-open',
+          agentId: 'agent-1',
+          taskId: 'task-1',
+          createdAt: DateTime(2026, 3, 2),
+        );
+        for (var i = 0; i < 3; i++) {
+          await insertChangeSet(
+            id: 'cs-newer-$i',
+            agentId: 'agent-1',
+            taskId: 'task-1',
+            status: ChangeSetStatus.resolved,
+            createdAt: DateTime(2026, 3, 10 + i),
+          );
+        }
+
+        final rows = await db
+            .getProposalLedgerRowsForAgentAndTask(
+              agentId: 'agent-1',
+              taskId: 'task-1',
+              changeSetLimit: 2,
+              decisionLimit: 50,
+            )
+            .get();
+
+        String bucketOf(QueryRow r) =>
+            r.read<String>(AgentDatabase.ledgerBucketColumn);
+
+        final recentIds = rows
+            .where((r) => bucketOf(r) == AgentDatabase.ledgerBucketRecent)
+            .map((r) => r.read<String>('id'))
+            .toSet();
+        final pendingIds = rows
+            .where((r) => bucketOf(r) == AgentDatabase.ledgerBucketPending)
+            .map((r) => r.read<String>('id'))
+            .toSet();
+
+        expect(
+          recentIds,
+          isNot(contains('cs-old-open')),
+          reason: 'the cap must genuinely bury the open set in the recent arm',
+        );
+        expect(
+          pendingIds,
+          contains('cs-old-open'),
+          reason: 'the dedicated pending arm is what keeps it visible',
+        );
+      },
+    );
   });
 
   group('AgentDatabase migration', () {

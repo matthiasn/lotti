@@ -542,17 +542,6 @@ class AgentDatabase extends _$AgentDatabase {
     ).asyncMap(agentEntities.mapFromRow);
   }
 
-  Selectable<AgentEntity> getChangeSetsForAgentAndTask(
-    String agentId,
-    String taskId,
-    int limit,
-  ) => _agentEntitiesByTask(
-    agentId: agentId,
-    entityType: 'changeSet',
-    taskId: taskId,
-    limit: limit,
-  );
-
   Selectable<AgentEntity> getPendingChangeSetsForAgentAndTask(
     String agentId,
     String taskId,
@@ -565,16 +554,92 @@ class AgentDatabase extends _$AgentDatabase {
     extraPredicate: "AND subtype IN ('pending', 'partiallyResolved')",
   );
 
-  Selectable<AgentEntity> getRecentDecisionsForAgentAndTask(
-    String agentId,
-    String taskId,
-    int limit,
-  ) => _agentEntitiesByTask(
-    agentId: agentId,
-    entityType: 'changeDecision',
-    taskId: taskId,
-    limit: limit,
-  );
+  /// The three task-scoped reads `AgentProposalLedger.getProposalLedger` needs,
+  /// fetched in **one** round trip instead of three concurrent ones.
+  ///
+  /// Each arm keeps its own predicate, ordering and limit — they are not
+  /// interchangeable (see the rationale on `getProposalLedger`: the dedicated
+  /// pending arm is what stops a long-lived open change set from being buried
+  /// past the newest-first history cap). A `bucket` marker column carries each
+  /// row's origin so the caller can split the result back into the same three
+  /// lists it used to await separately.
+  ///
+  /// Motivation: the 2026-06/07 slow-query logs show this trio firing as
+  /// back-to-back runs of 3 (483 occurrences in 14 days) and 6, at a median
+  /// inter-arrival gap of 0.4 ms — 4,127 calls totalling 90 s. Each is a
+  /// correctly indexed read sitting at the ~22 ms isolate round-trip floor, so
+  /// the win is removing two of the three round trips, not touching the plans.
+  /// See `docs/perf/2026-08-01_slow-queries-investigation.md`.
+  Selectable<QueryRow> getProposalLedgerRowsForAgentAndTask({
+    required String agentId,
+    required String taskId,
+    required int changeSetLimit,
+    required int decisionLimit,
+  }) {
+    // Positional placeholders are reused across all three arms (SQLite binds
+    // ?1..?4 once each regardless of how often they appear), so the variables
+    // list stays four entries rather than twelve.
+    String arm(
+      String bucket,
+      String entityType, {
+      String extraPredicate = '',
+    }) =>
+        '''
+        SELECT *, '$bucket' AS $ledgerBucketColumn FROM (
+          SELECT *
+          FROM agent_entities
+            INDEXED BY idx_agent_entities_active_agent_type_task_created_id
+          WHERE agent_id = ?1
+            AND type = '$entityType'
+            AND json_valid(serialized)
+            AND $_taskIdJsonExpression = ?2
+            AND deleted_at IS NULL
+            $extraPredicate
+          ORDER BY created_at DESC
+          LIMIT ${entityType == 'changeDecision' ? '?4' : '?3'}
+        )''';
+
+    // The inner ORDER BY of each arm decides which rows survive that arm's
+    // LIMIT, but says nothing about the order of the compound result — SQLite
+    // may emit the arms' rows in any legal order. The consumers are first-wins
+    // (`decisionByKey.putIfAbsent`, and the duplicate-proposal collapse in
+    // `unifiedSuggestionList`), so an unordered compound could let an older
+    // retry/audit decision override the newest one. Order the compound result
+    // explicitly to keep every bucket newest-first.
+    final compound =
+        '${[
+          arm(
+            _ledgerBucketPending,
+            'changeSet',
+            extraPredicate: "AND subtype IN ('pending', 'partiallyResolved')",
+          ),
+          arm(_ledgerBucketRecent, 'changeSet'),
+          arm(_ledgerBucketDecision, 'changeDecision'),
+        ].join('\n        UNION ALL\n')}\n'
+        '        ORDER BY $ledgerBucketColumn ASC, created_at DESC, id DESC';
+
+    return customSelect(
+      compound,
+      variables: [
+        Variable<String>(agentId),
+        Variable<String>(taskId),
+        Variable<int>(changeSetLimit),
+        Variable<int>(decisionLimit),
+      ],
+      readsFrom: {agentEntities},
+    );
+  }
+
+  /// Bucket markers emitted by [getProposalLedgerRowsForAgentAndTask].
+  static const String _ledgerBucketPending = 'pending';
+  static const String _ledgerBucketRecent = 'recent';
+  static const String _ledgerBucketDecision = 'decision';
+
+  /// Column name carrying the bucket marker.
+  static const String ledgerBucketColumn = 'bucket';
+  static const String ledgerBucketPending = _ledgerBucketPending;
+  static const String ledgerBucketRecent = _ledgerBucketRecent;
+  static const String ledgerBucketDecision = _ledgerBucketDecision;
 
   Selectable<AgentEntity> _agentEntitiesByTask({
     required String agentId,
