@@ -107,15 +107,7 @@ class AgentRepoRetention {
   static const _maxVariablesPerStatement = 400;
 
   Future<void> _deleteByIds(List<String> ids) async {
-    for (
-      var start = 0;
-      start < ids.length;
-      start += _maxVariablesPerStatement
-    ) {
-      final end = start + _maxVariablesPerStatement > ids.length
-          ? ids.length
-          : start + _maxVariablesPerStatement;
-      final chunk = ids.sublist(start, end);
+    for (final chunk in chunkForStatement(ids, _maxVariablesPerStatement)) {
       final placeholders = List.filled(chunk.length, '?').join(',');
       await _db.customUpdate(
         'DELETE FROM agent_entities WHERE id IN ($placeholders)',

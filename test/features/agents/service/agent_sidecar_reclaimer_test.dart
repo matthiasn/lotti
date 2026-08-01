@@ -81,6 +81,27 @@ void main() {
     );
   });
 
+  test('an unreadable file is logged, not thrown', () {
+    final file = writeSidecar(relativeAgentEntityPath('entity-1'));
+    // Read-only parent: the file is visible but cannot be unlinked. The
+    // caller has already committed its database work, so this must not
+    // propagate.
+    final parent = file.parent;
+    Process.runSync('chmod', ['a-w', parent.path]);
+    addTearDown(() => Process.runSync('chmod', ['u+w', parent.path]));
+
+    expect(reclaimer.reclaim(entityIds: ['entity-1']), 0);
+    verify(
+      () => domainLogger.error(
+        any(),
+        any(),
+        message: any(named: 'message'),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).called(1);
+  });
+
   test('no documents directory disables reclamation rather than failing', () {
     final headless = AgentSidecarReclaimer(
       documentsDirectory: null,

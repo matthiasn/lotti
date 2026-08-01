@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -2159,6 +2160,43 @@ void main() {
       final service = container.read(agentTemplateServiceProvider);
       expect(service, isA<AgentTemplateService>());
       expect(service.repository, same(mockRepo));
+    });
+  });
+
+  group('agentSidecarReclaimerProvider', () {
+    test('uses the registered documents directory when there is one', () {
+      final dir = Directory.systemTemp.createTempSync('reclaimer-provider-');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
+      getIt.registerSingleton<Directory>(dir);
+      addTearDown(() => getIt.unregister<Directory>());
+
+      final container = ProviderContainer(
+        overrides: [domainLoggerProvider.overrideWithValue(MockDomainLogger())],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(agentSidecarReclaimerProvider).documentsDirectory,
+        same(dir),
+      );
+    });
+
+    test('falls back to no directory rather than throwing', () {
+      // Headless and test contexts have no documents directory; reclamation
+      // is skipped there instead of failing the delete or sweep that asked
+      // for it.
+      if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
+
+      final container = ProviderContainer(
+        overrides: [domainLoggerProvider.overrideWithValue(MockDomainLogger())],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(agentSidecarReclaimerProvider).documentsDirectory,
+        isNull,
+      );
     });
   });
 
