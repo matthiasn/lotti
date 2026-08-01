@@ -58,10 +58,9 @@ void main() {
     test(
       'every InferenceProviderType has a deterministic mapping outcome',
       () {
-        // Exhaustiveness: every enum value either maps to a capability or
-        // returns null. The switch in nodeCapabilityFromProviderType is
-        // pattern-exhaustive; calling it across the whole enum proves that
-        // intention by surfacing any future omission as a thrown switch.
+        // Exercise every generated enum value. The exhaustive switch in
+        // nodeCapabilityFromProviderType provides compile-time coverage when
+        // a new provider type is added.
         InferenceProviderType.values.forEach(nodeCapabilityFromProviderType);
       },
     );
@@ -70,16 +69,13 @@ void main() {
       glados.any.inferenceProviderType,
       glados.ExploreConfig(numRuns: 80),
     ).test(
-      'round-trips or returns null for every generated provider type',
+      'maps every generated provider type to its expected capability or null',
       (
         providerType,
       ) {
-        // Property: for every InferenceProviderType, the mapping returns a
-        // capability exactly for the five local provider types.
-        //
-        // Future-proofs against a new enum value that doesn't have a switch
-        // case in nodeCapabilityFromProviderType — the test would surface it
-        // here instead of letting the mapping silently fall through.
+        // Compare every provider type with its explicit expected mapping. The
+        // exhaustive switch provides compile-time coverage for new enum
+        // values; this expectation verifies the intended capability result.
         final capability = nodeCapabilityFromProviderType(providerType);
         const expected = {
           InferenceProviderType.mlxAudio: NodeCapability.mlxAudio,
