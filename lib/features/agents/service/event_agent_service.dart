@@ -228,7 +228,9 @@ class EventAgentService {
   ///
   /// Re-registers the direct-edit subscription for each active event agent,
   /// rehydrates any persisted throttle deadline, and mirrors the persisted
-  /// `awaitingContent` flag back into the orchestrator.
+  /// `awaitingContent` flag back into the orchestrator. States and
+  /// `agent_event` links are loaded in bulk before the per-agent loop so a
+  /// database failure aborts this restoration pass once.
   Future<void> restoreSubscriptions() async {
     domainLogger?.log(
       LogDomain.agentRuntime,
@@ -242,18 +244,22 @@ class EventAgentService {
     final eventAgents = activeAgents
         .where((agent) => agent.kind == _agentKind)
         .toList(growable: false);
-    final statesByAgentId = await _loadStatesForRestore(eventAgents);
+    final agentIds = [for (final agent in eventAgents) agent.agentId];
+    final statesByAgentId = eventAgents.isEmpty
+        ? const <String, AgentStateEntity>{}
+        : await repository.getAgentStatesByAgentIds(agentIds);
+    final linksByAgentId = eventAgents.isEmpty
+        ? const <String, List<AgentLink>>{}
+        : await repository.getLinksFromMultiple(
+            agentIds,
+            type: AgentLinkTypes.agentEvent,
+          );
 
     var count = 0;
     for (final agent in eventAgents) {
       try {
-        final links = await repository.getLinksFrom(
-          agent.agentId,
-          type: AgentLinkTypes.agentEvent,
-        );
-        final state = statesByAgentId == null
-            ? await repository.getAgentState(agent.agentId)
-            : statesByAgentId[agent.agentId];
+        final links = linksByAgentId[agent.agentId] ?? const <AgentLink>[];
+        final state = statesByAgentId[agent.agentId];
         _hydrateThrottleDeadlineFromState(agent.agentId, state);
         orchestrator.setAwaitingContent(
           agent.agentId,
@@ -316,19 +322,6 @@ class EventAgentService {
     final deadline = state?.nextWakeAt;
     if (deadline != null) {
       orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);
-    }
-  }
-
-  Future<Map<String, AgentStateEntity>?> _loadStatesForRestore(
-    List<AgentIdentityEntity> agents,
-  ) async {
-    if (agents.isEmpty) return const {};
-    try {
-      return await repository.getAgentStatesByAgentIds([
-        for (final agent in agents) agent.agentId,
-      ]);
-    } catch (_) {
-      return null;
     }
   }
 }

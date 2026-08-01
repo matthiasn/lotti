@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:collection';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show AppExitResponse;
 
+import 'package:clock/clock.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,6 +53,12 @@ Future<AppExitResponse> _handleAppExitRequested() async {
 
 /// Test seam for the desktop exit callback.
 Future<AppExitResponse> handleAppExitRequested() => _handleAppExitRequested();
+
+/// Emits any counted framework-error summaries that are still waiting for
+/// their timer when orderly shutdown begins.
+void flushPendingFrameworkErrorSummaries() {
+  _frameworkErrorLimiter.flushPendingSummaries();
+}
 
 Future<void> main() async {
   // Raise the file descriptor soft limit before anything opens an FD. On
@@ -116,7 +126,13 @@ Future<void> main() async {
         ..registerSingleton<SecureStorage>(SecureStorage())
         ..registerSingleton<Directory>(docDir)
         ..registerSingleton<SettingsDb>(SettingsDb())
-        ..registerSingleton<WindowService>(WindowService());
+        ..registerSingleton<WindowService>(
+          WindowService(
+            beforeLogFlush: () async {
+              flushPendingFrameworkErrorSummaries();
+            },
+          ),
+        );
 
       await getIt<WindowService>().restore();
       tz.initializeTimeZones();
@@ -151,17 +167,267 @@ Future<void> main() async {
 }
 
 /// Global framework error handler: presents the error on the console exactly
-/// like Flutter's default handler (so `flutter run` output stays complete),
-/// then persists a durable log entry for post-hoc diagnosis.
+/// like Flutter's default handler and persists its full stack once per stable
+/// fingerprint. Identical repeats are suppressed, with stack-free counted
+/// summaries emitted every 100 observations or after at most one minute. This
+/// preserves the diagnostic while preventing a rebuild loop from writing
+/// thousands of copies of the same stack trace.
 @visibleForTesting
 void handleFlutterFrameworkError(FlutterErrorDetails details) {
-  FlutterError.presentError(details);
+  final diagnostics = _renderFrameworkErrorDiagnostics(details);
+  final report = _frameworkErrorLimiter.observe(details, diagnostics);
+  switch (report.kind) {
+    case _FrameworkErrorReportKind.full:
+      FlutterError.presentError(
+        details.copyWith(
+          informationCollector: () => <DiagnosticsNode>[
+            for (final diagnostic in diagnostics) ErrorDescription(diagnostic),
+          ],
+        ),
+      );
+      final logger = getIt<DomainLogger>();
+      if (diagnostics.isEmpty) {
+        logger.error(
+          LogDomain.general,
+          details.exception,
+          stackTrace: details.stack,
+          subDomain: details.library,
+        );
+      } else {
+        logger.errorWithDiagnostics(
+          LogDomain.general,
+          details.exception,
+          stackTrace: details.stack,
+          subDomain: details.library,
+          diagnostics: 'Collected diagnostics:\n${diagnostics.join('\n')}',
+        );
+      }
+    case _FrameworkErrorReportKind.summary:
+      _emitFrameworkErrorSummary(report, details.library);
+    case _FrameworkErrorReportKind.suppressed:
+      return;
+  }
+}
+
+List<String> _renderFrameworkErrorDiagnostics(FlutterErrorDetails details) {
+  try {
+    return <String>[
+      ...?details.informationCollector?.call().map(
+        (node) => node.toStringDeep(),
+      ),
+    ];
+  } catch (_) {
+    // Rendering optional diagnostics must never mask the framework error.
+    return const <String>[];
+  }
+}
+
+void _emitFrameworkErrorSummary(_FrameworkErrorReport report, String? library) {
+  final summary =
+      'Repeated Flutter framework error '
+      'fingerprint=${report.fingerprint} '
+      'errorType=${report.errorType} '
+      'observed=${report.observed} '
+      'suppressed=${report.observed} total=${report.total}';
+  debugPrint(summary);
   getIt<DomainLogger>().error(
     LogDomain.general,
-    details.exception,
-    stackTrace: details.stack,
-    subDomain: details.library,
+    const _RepeatedFlutterFrameworkError(),
+    subDomain: library,
+    message: summary,
   );
+}
+
+const _defaultFrameworkErrorSummaryEvery = 100;
+const _defaultFrameworkErrorSummaryInterval = Duration(minutes: 1);
+const _frameworkErrorFingerprintCapacity = 256;
+
+var _frameworkErrorLimiter = _FrameworkErrorLimiter();
+
+/// Resets process-global framework error sampling with deterministic thresholds.
+///
+/// Production never calls this; tests use it to isolate cases, keep timers off
+/// by default, and opt into virtual-time scheduling for the interval drain.
+@visibleForTesting
+void resetFrameworkErrorSuppressionForTesting({
+  int summaryEvery = _defaultFrameworkErrorSummaryEvery,
+  Duration summaryInterval = _defaultFrameworkErrorSummaryInterval,
+  bool scheduleIntervalSummaries = false,
+}) {
+  _frameworkErrorLimiter.dispose();
+  _frameworkErrorLimiter = _FrameworkErrorLimiter(
+    summaryEvery: summaryEvery,
+    summaryInterval: summaryInterval,
+    scheduleIntervalSummaries: scheduleIntervalSummaries,
+  );
+}
+
+enum _FrameworkErrorReportKind { full, summary, suppressed }
+
+class _FrameworkErrorReport {
+  const _FrameworkErrorReport({
+    required this.kind,
+    required this.fingerprint,
+    required this.errorType,
+    required this.observed,
+    required this.total,
+  });
+
+  final _FrameworkErrorReportKind kind;
+  final String fingerprint;
+  final String errorType;
+  final int observed;
+  final int total;
+}
+
+class _FrameworkErrorState {
+  _FrameworkErrorState(
+    this.lastReportedAt, {
+    required this.fingerprint,
+    required this.errorType,
+    required this.library,
+  });
+
+  final String fingerprint;
+  final String errorType;
+  final String? library;
+  DateTime lastReportedAt;
+  int total = 0;
+  int pending = 0;
+  Timer? summaryTimer;
+}
+
+class _FrameworkErrorLimiter {
+  _FrameworkErrorLimiter({
+    this.summaryEvery = _defaultFrameworkErrorSummaryEvery,
+    this.summaryInterval = _defaultFrameworkErrorSummaryInterval,
+    this.scheduleIntervalSummaries = true,
+  }) : assert(summaryEvery > 0, 'summaryEvery must be positive'),
+       assert(
+         summaryInterval > Duration.zero,
+         'summaryInterval must be positive',
+       );
+
+  final int summaryEvery;
+  final Duration summaryInterval;
+  final bool scheduleIntervalSummaries;
+  final LinkedHashMap<String, _FrameworkErrorState> _states =
+      LinkedHashMap<String, _FrameworkErrorState>();
+
+  _FrameworkErrorReport observe(
+    FlutterErrorDetails details,
+    List<String> diagnostics,
+  ) {
+    final now = clock.now();
+    final fingerprint = _fingerprint(details, diagnostics);
+    final errorType = details.exception.runtimeType.toString();
+    final library = details.library;
+    final state =
+        _states.remove(fingerprint) ??
+        _FrameworkErrorState(
+          now,
+          fingerprint: fingerprint,
+          errorType: errorType,
+          library: library,
+        );
+    _states[fingerprint] = state;
+    while (_states.length > _frameworkErrorFingerprintCapacity) {
+      _states.remove(_states.keys.first)?.summaryTimer?.cancel();
+    }
+
+    state.total++;
+    if (state.total == 1) {
+      return _FrameworkErrorReport(
+        kind: _FrameworkErrorReportKind.full,
+        fingerprint: fingerprint,
+        errorType: errorType,
+        observed: 1,
+        total: 1,
+      );
+    }
+
+    state.pending++;
+    final elapsed = now.difference(state.lastReportedAt);
+    if (state.pending >= summaryEvery || elapsed >= summaryInterval) {
+      return _takePendingSummary(state, now);
+    }
+
+    if (scheduleIntervalSummaries && state.summaryTimer == null) {
+      state.summaryTimer = Timer(summaryInterval - elapsed, () {
+        _emitFrameworkErrorSummary(
+          _takePendingSummary(state, clock.now()),
+          state.library,
+        );
+      });
+    }
+
+    return _FrameworkErrorReport(
+      kind: _FrameworkErrorReportKind.suppressed,
+      fingerprint: fingerprint,
+      errorType: errorType,
+      observed: state.pending,
+      total: state.total,
+    );
+  }
+
+  _FrameworkErrorReport _takePendingSummary(
+    _FrameworkErrorState state,
+    DateTime reportedAt,
+  ) {
+    final observed = state.pending;
+    state
+      ..summaryTimer?.cancel()
+      ..summaryTimer = null
+      ..pending = 0
+      ..lastReportedAt = reportedAt;
+    return _FrameworkErrorReport(
+      kind: _FrameworkErrorReportKind.summary,
+      fingerprint: state.fingerprint,
+      errorType: state.errorType,
+      observed: observed,
+      total: state.total,
+    );
+  }
+
+  void flushPendingSummaries() {
+    final now = clock.now();
+    for (final state in _states.values) {
+      if (state.pending == 0) continue;
+      _emitFrameworkErrorSummary(
+        _takePendingSummary(state, now),
+        state.library,
+      );
+    }
+  }
+
+  String _fingerprint(
+    FlutterErrorDetails details,
+    List<String> diagnostics,
+  ) {
+    final signature = jsonEncode(<String>[
+      details.exception.runtimeType.toString(),
+      details.exceptionAsString(),
+      details.library ?? '',
+      details.context?.toDescription() ?? '',
+      details.stack?.toString() ?? '',
+      ...diagnostics,
+    ]);
+    return sha256.convert(utf8.encode(signature)).toString().substring(0, 16);
+  }
+
+  void dispose() {
+    for (final state in _states.values) {
+      state.summaryTimer?.cancel();
+    }
+    _states.clear();
+  }
+}
+
+class _RepeatedFlutterFrameworkError {
+  const _RepeatedFlutterFrameworkError();
+
+  @override
+  String toString() => 'Repeated Flutter framework error';
 }
 
 /// Uncaught-zone error handler: always echoes to the console, then records a

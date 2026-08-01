@@ -5,7 +5,7 @@ description: Twenty-four opt-in logging domains, where their lines land, and why
 resource: ../../lib/services/logging_domains.dart
 tags: [architecture, logging, diagnostics, observability]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T16:29:35Z }
 stale_after: 2027-01-11
 sources:
   - id: log-domains
@@ -19,7 +19,15 @@ sources:
   - id: domain-logging
     resource: ../../lib/services/domain_logging.dart
     title: DomainLogger
-    last_modified: 2026-05-31
+    last_modified: 2026-08-01
+  - id: framework-errors
+    resource: ../../lib/main.dart
+    title: Flutter framework error handler
+    last_modified: 2026-08-01
+  - id: shutdown
+    resource: ../../lib/services/window_service.dart
+    title: Ordered shutdown and final log flush
+    last_modified: 2026-08-01
 ---
 
 # A closed set of domains
@@ -95,6 +103,20 @@ device, not opening a screen.
 **Errors are always logged**, whether or not their domain is enabled. A user who
 has everything toggled off still produces a diagnosable record when something
 breaks; only the chatty success path is silenced.
+
+The global Flutter framework hook bounds one special amplification case before
+it reaches that always-on path. A SHA-256 fingerprint covers the exception type
+and text, library, context, stack and rendered `informationCollector`
+diagnostics. The first observation keeps Flutter's full console presentation,
+durable stack, and collected widget/render-object diagnostics; identical
+repeats emit only a counted, stack-free summary every 100 observations. A timer
+flushes any smaller pending burst after at most one minute even when the error
+stops recurring. Orderly shutdown drains pending counts before the final log
+flush, so a short burst is not lost when the app closes inside that minute.
+Distinct fingerprints remain independent, and an LRU cap of 256 signatures
+bounds the in-memory sampler itself. This preserves both the diagnostic context
+and evidence of a rebuild loop without allowing one framework exception to
+generate an unbounded error file.
 
 **`sync` is the one domain that routes to its own file.** It is off by default
 and far noisier than everything else — a catch-up can produce thousands of lines

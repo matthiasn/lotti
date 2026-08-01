@@ -242,19 +242,22 @@ void main() {
           (_) async => [taskAgent, strayDayAgent, planner, perDayAgent],
         );
         when(
-          () => repository.getAgentState(dailyOsPlannerAgentId),
+          () => repository.getAgentStatesByAgentIds([
+            dailyOsPlannerAgentId,
+            perDayId,
+          ]),
         ).thenAnswer(
-          (_) async =>
-              state(stateAgentId: dailyOsPlannerAgentId, nextWakeAt: dueAt),
-        );
-        when(
-          () => repository.getAgentState(perDayId),
-        ).thenAnswer(
-          (_) async => state(
-            id: 'state-$perDayId',
-            stateAgentId: perDayId,
-            nextWakeAt: perDayDueAt,
-          ),
+          (_) async => {
+            dailyOsPlannerAgentId: state(
+              stateAgentId: dailyOsPlannerAgentId,
+              nextWakeAt: dueAt,
+            ),
+            perDayId: state(
+              id: 'state-$perDayId',
+              stateAgentId: perDayId,
+              nextWakeAt: perDayDueAt,
+            ),
+          },
         );
 
         await service.restoreSubscriptions();
@@ -271,8 +274,7 @@ void main() {
             dueAt: perDayDueAt,
           ),
         ).called(1);
-        verifyNever(() => repository.getAgentState('task-agent'));
-        verifyNever(() => repository.getAgentState('stray-day-agent'));
+        verifyNever(() => repository.getAgentState(any()));
       },
     );
 
@@ -361,34 +363,38 @@ void main() {
     });
 
     test(
-      'restoreSubscriptions logs and does not propagate a planner hydrate '
-      'failure',
+      'restoreSubscriptions aborts before per-agent work when preload fails',
       () async {
         final planner = identity(id: dailyOsPlannerAgentId);
         when(
           () => agentService.listAgents(lifecycle: AgentLifecycle.active),
         ).thenAnswer((_) async => [planner]);
         when(
-          () => repository.getAgentState(dailyOsPlannerAgentId),
-        ).thenThrow(StateError('state read failed'));
+          () => repository.getAgentStatesByAgentIds([
+            dailyOsPlannerAgentId,
+          ]),
+        ).thenThrow(StateError('database connection closed'));
 
-        // Must complete normally despite the failing state read.
-        await service.restoreSubscriptions();
+        await expectLater(
+          service.restoreSubscriptions(),
+          throwsA(isA<StateError>()),
+        );
 
-        final errorMessage =
-            verify(
-                  () => domainLogger.error(
-                    any(),
-                    any(),
-                    message: captureAny(named: 'message'),
-                    stackTrace: any(named: 'stackTrace'),
-                    subDomain: any(named: 'subDomain'),
-                  ),
-                ).captured.single
-                as String;
-        expect(
-          errorMessage,
-          contains('failed to restore day-agent runtime state'),
+        verifyNever(() => repository.getAgentState(any()));
+        verifyNever(
+          () => orchestrator.restorePendingWake(
+            agentId: any(named: 'agentId'),
+            dueAt: any(named: 'dueAt'),
+          ),
+        );
+        verifyNever(
+          () => domainLogger.error(
+            any(),
+            any(),
+            message: any(named: 'message'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
         );
       },
     );
@@ -416,8 +422,10 @@ void main() {
           () => agentService.listAgents(lifecycle: AgentLifecycle.active),
         ).thenAnswer((_) async => [planner]);
         when(
-          () => repository.getAgentState(dailyOsPlannerAgentId),
-        ).thenAnswer((_) async => null);
+          () => repository.getAgentStatesByAgentIds([
+            dailyOsPlannerAgentId,
+          ]),
+        ).thenAnswer((_) async => const {});
         when(
           () => repository.getEntity(digestRecordId),
         ).thenAnswer((_) async => existingRecord);
@@ -491,8 +499,10 @@ void main() {
             () => agentService.listAgents(lifecycle: AgentLifecycle.active),
           ).thenAnswer((_) async => [planner]);
           when(
-            () => repository.getAgentState(dailyOsPlannerAgentId),
-          ).thenAnswer((_) async => null);
+            () => repository.getAgentStatesByAgentIds([
+              dailyOsPlannerAgentId,
+            ]),
+          ).thenAnswer((_) async => const {});
           when(
             () => repository.getEntity(digestRecordId),
           ).thenThrow(StateError('record store unavailable'));
@@ -519,8 +529,10 @@ void main() {
           (_) async => [identity(id: perDayAgentId(dayId))],
         );
         when(
-          () => repository.getAgentState(any()),
-        ).thenAnswer((_) async => null);
+          () => repository.getAgentStatesByAgentIds([
+            perDayAgentId(dayId),
+          ]),
+        ).thenAnswer((_) async => const {});
 
         await withClock(Clock.fixed(now), service.restoreSubscriptions);
 

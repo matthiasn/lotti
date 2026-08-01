@@ -81,7 +81,7 @@ void main() {
 
         expect(client.path, endsWith(':streamGenerateContent'));
         expect(client.url!.queryParameters, isEmpty);
-        expect(client.url.toString(), isNot(contains(_provider().apiKey)));
+        expect(client.url!.toString(), isNot(contains(_provider().apiKey)));
         expect(client.headers!['x-goog-api-key'], _provider().apiKey);
         expect(
           events.map((e) => e.choices?.first.delta?.content).join(),

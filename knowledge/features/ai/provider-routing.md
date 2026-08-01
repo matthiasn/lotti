@@ -5,7 +5,7 @@ description: The routing table behind CloudInferenceRepository, per-provider cat
 resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
 tags: [ai, providers, routing, audio, gemini, mlx]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T16:29:35Z }
 stale_after: 2026-10-19
 sources:
   - id: router
@@ -142,11 +142,12 @@ because the native listing carries `displayName`, `description`,
 `inputTokenLimit`/`outputTokenLimit`, `supportedGenerationMethods` and a
 `thinking` flag that the compatible surface flattens away.
 
-The catalog and native generation paths rewrite the saved base URL to the native
-host/path and authenticate with the `x-goog-api-key` **header** so the key never
-appears in a request URL. Streaming, non-streaming fallback, multi-turn, and image
-generation diagnostics log only the endpoint host and path. The catalog rejects
-a host-less base URL up front, follows `nextPageToken` pagination (capped at
+The catalog and native generation paths preserve the configured scheme, host,
+and port while replacing only the path with the native Gemini endpoint. They
+authenticate with the `x-goog-api-key` **header** so the key never appears in a
+request URL. Streaming, non-streaming fallback, multi-turn, and image generation
+diagnostics log only the endpoint host and path. The catalog rejects a host-less
+base URL up front, follows `nextPageToken` pagination (capped at
 `maxCatalogPages`), skips and logs malformed rows instead of failing the whole
 fetch, and drops rows not advertising `generateContent`.
 

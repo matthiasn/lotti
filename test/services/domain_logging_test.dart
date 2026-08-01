@@ -322,15 +322,16 @@ void main() {
 
     test('combines message and full error for the full error log', () {
       final exception = Exception('boom');
-      logger.error(
+      logger.errorWithDiagnostics(
         LogDomain.agentRuntime,
         exception,
         message: 'wake failed',
+        diagnostics: 'widget: SettingsPage',
       );
 
       verify(
         () => mockLoggingService.captureException(
-          'wake failed: Exception: boom',
+          'wake failed: Exception: boom\nwidget: SettingsPage',
           domain: 'agentRuntime',
         ),
       ).called(1);
@@ -472,12 +473,13 @@ void main() {
       expect(content, contains('fake_frame'));
     });
 
-    test('error writes PII-safe line to error-safe log file', () {
+    test('error keeps diagnostics out of the PII-safe log file', () {
       final exception = Exception('secret user content');
-      logger.error(
+      logger.errorWithDiagnostics(
         LogDomain.agentRuntime,
         exception,
         message: 'load failed',
+        diagnostics: 'widget: private journal title',
       );
 
       final safeFile = findLogFile('error-safe-');
@@ -492,6 +494,14 @@ void main() {
       expect(content, contains('load failed'));
       expect(content, contains('errorType='));
       expect(content, isNot(contains('secret user content')));
+      expect(content, isNot(contains('private journal title')));
+
+      final domainFile = findLogFile('agentRuntime-');
+      expect(domainFile, isNotNull);
+      expect(
+        domainFile!.readAsStringSync(),
+        contains('widget: private journal title'),
+      );
     });
 
     test('error for sync domain skips domain log file but writes safe log', () {

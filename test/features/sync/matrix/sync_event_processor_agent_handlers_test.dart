@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -2310,6 +2311,102 @@ void main() {
       });
 
       test(
+        'restores existing project link when project_agent identity arrives',
+        () async {
+          final entity = AgentDomainEntity.agent(
+            id: 'project-agent-1',
+            agentId: 'project-agent-1',
+            kind: 'project_agent',
+            displayName: 'Project Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          final projectLink = AgentLink.agentProject(
+            id: 'project-link-1',
+            fromId: 'project-agent-1',
+            toId: 'project-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          when(
+            () => mockAgentRepo.getLinksFrom(
+              'project-agent-1',
+              type: 'agent_project',
+            ),
+          ).thenAnswer((_) async => [projectLink]);
+          final message = SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(
+            () => mockOrchestrator.addSubscription(
+              any(
+                that: isA<AgentSubscription>()
+                    .having(
+                      (subscription) => subscription.id,
+                      'id',
+                      'project-agent-1_project_direct_project-42',
+                    )
+                    .having(
+                      (subscription) => subscription.matchEntityIds,
+                      'matchEntityIds',
+                      {projectEntityUpdateNotification('project-42')},
+                    ),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'removes subscriptions for dormant project_agent identity',
+        () async {
+          final entity = AgentDomainEntity.agent(
+            id: 'project-agent-dormant',
+            agentId: 'project-agent-dormant',
+            kind: 'project_agent',
+            displayName: 'Dormant Project Agent',
+            lifecycle: AgentLifecycle.dormant,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          final message = SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(
+            () => mockOrchestrator.removeSubscriptions('project-agent-dormant'),
+          ).called(1);
+          verifyNever(
+            () => mockAgentRepo.getLinksFrom(
+              any(),
+              type: 'agent_project',
+            ),
+          );
+        },
+      );
+
+      test(
         'retains observation for active task_agent with automation off',
         () async {
           final entity = AgentDomainEntity.agent(
@@ -2541,6 +2638,133 @@ void main() {
           await processor.process(event: event, journalDb: journalDb);
 
           verify(() => mockAgentRepo.upsertLink(link)).called(1);
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+        },
+      );
+
+      test(
+        'agent_project link for active project_agent restores subscription',
+        () async {
+          final activeAgent = AgentDomainEntity.agent(
+            id: 'project-agent-1',
+            agentId: 'project-agent-1',
+            kind: 'project_agent',
+            displayName: 'Project Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          when(
+            () => mockAgentRepo.getEntity('project-agent-1'),
+          ).thenAnswer((_) async => activeAgent);
+          final link = AgentLink.agentProject(
+            id: 'project-link-1',
+            fromId: 'project-agent-1',
+            toId: 'project-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          final message = SyncMessage.agentLink(
+            agentLink: link,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(
+            () => mockOrchestrator.addSubscription(
+              any(
+                that: isA<AgentSubscription>()
+                    .having(
+                      (subscription) => subscription.id,
+                      'id',
+                      'project-agent-1_project_direct_project-42',
+                    )
+                    .having(
+                      (subscription) => subscription.matchEntityIds,
+                      'matchEntityIds',
+                      {projectEntityUpdateNotification('project-42')},
+                    ),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'agent_project link for dormant project_agent stays unsubscribed',
+        () async {
+          final dormantAgent = AgentDomainEntity.agent(
+            id: 'project-agent-1',
+            agentId: 'project-agent-1',
+            kind: 'project_agent',
+            displayName: 'Dormant Project Agent',
+            lifecycle: AgentLifecycle.dormant,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          when(
+            () => mockAgentRepo.getEntity('project-agent-1'),
+          ).thenAnswer((_) async => dormantAgent);
+          final link = AgentLink.agentProject(
+            id: 'project-link-1',
+            fromId: 'project-agent-1',
+            toId: 'project-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          final message = SyncMessage.agentLink(
+            agentLink: link,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(() => mockAgentRepo.getEntity('project-agent-1')).called(1);
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+        },
+      );
+
+      test(
+        'soft-deleted agent_project link removes the direct subscription',
+        () async {
+          final link = AgentLink.agentProject(
+            id: 'project-link-deleted',
+            fromId: 'project-agent-1',
+            toId: 'project-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 16),
+            vectorClock: null,
+            deletedAt: DateTime(2024, 3, 16),
+          );
+          final message = SyncMessage.agentLink(
+            agentLink: link,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(
+            () => mockOrchestrator.removeSubscription(
+              'project-agent-1_project_direct_project-42',
+            ),
+          ).called(1);
+          verifyNever(() => mockAgentRepo.getEntity(any()));
           verifyNever(() => mockOrchestrator.addSubscription(any()));
         },
       );

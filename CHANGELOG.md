@@ -6,11 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0]
 ### Fixed
+- **Agent startup no longer floods diagnostic storage when its database has
+  already shut down.** Runtime restoration now bulk-loads the required state
+  and links, then aborts the pass with one diagnostic if that snapshot fails
+  instead of querying and logging once for every persisted agent. Incomplete
+  restoration remains failed and retryable rather than silently succeeding.
+- **A repeated interface failure no longer fills diagnostic storage with
+  thousands of identical stack traces.** Lotti keeps the first complete
+  framework error and then records bounded, counted summaries for repeats,
+  including short bursts that stop. Errors from different call sites or widget
+  contexts still retain their own full diagnostics.
 - **Weekly planning history from earlier builds opens and syncs again.** Some
   saved weekly rollups omitted their start-of-week date, making otherwise valid
   planning history unreadable. Lotti now restores the date from the rollup's
-  canonical Monday key; malformed remote records are classified as terminal
-  skips instead of being counted as successfully applied sync work.
+  canonical Monday key; irreparable remote records are ignored without blocking
+  later sync.
 - **Deleting an entry no longer traps an otherwise healthy sync batch in
   retries.** Bundled sends mistook a soft-deleted entry for a missing database
   row, retried every valid sibling with it, and eventually left the whole batch

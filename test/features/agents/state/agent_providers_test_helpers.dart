@@ -139,7 +139,7 @@ class InitProviderBench {
   }
 
   /// Creates a [ProviderContainer] with all mocks wired in.
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({DomainLogger? testDomainLogger}) {
     final container = ProviderContainer(
       overrides: [
         agentServiceProvider.overrideWithValue(mockService),
@@ -167,6 +167,8 @@ class InitProviderBench {
         projectActivityMonitorProvider.overrideWithValue(
           mockProjectActivityMonitor,
         ),
+        if (testDomainLogger != null)
+          domainLoggerProvider.overrideWithValue(testDomainLogger),
       ],
     );
     addTearDown(container.dispose);
