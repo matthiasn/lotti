@@ -109,9 +109,7 @@ includeHiddenControllerProvider = NotifierProvider.autoDispose
     );
 
 class IncludeHiddenController extends Notifier<bool> {
-  IncludeHiddenController([this.id = '']);
-
-  final String id;
+  IncludeHiddenController([String _ = '']);
 
   @override
   bool build() {
@@ -121,36 +119,6 @@ class IncludeHiddenController extends Notifier<bool> {
   set includeHidden(bool value) {
     state = value;
   }
-
-  bool get includeHidden => state;
-}
-
-/// Per-entry toggle controlling whether [AiResponseEntry] entries are shown in
-/// the linked-entries list (passed through to the entry detail widget as
-/// `showAiEntry`). Defaults to off so AI responses stay collapsed under their
-/// source entry unless the user opts in.
-final NotifierProviderFamily<IncludeAiEntriesController, bool, String>
-includeAiEntriesControllerProvider = NotifierProvider.autoDispose
-    .family<IncludeAiEntriesController, bool, String>(
-      IncludeAiEntriesController.new,
-      name: 'includeAiEntriesControllerProvider',
-    );
-
-class IncludeAiEntriesController extends Notifier<bool> {
-  IncludeAiEntriesController([this.id = '']);
-
-  final String id;
-
-  @override
-  bool build() {
-    return false;
-  }
-
-  set includeAiEntries(bool value) {
-    state = value;
-  }
-
-  bool get includeAiEntries => state;
 }
 
 /// Per-entry toggle that narrows the linked entries list to flagged
@@ -165,9 +133,7 @@ showFlaggedOnlyControllerProvider = NotifierProvider.autoDispose
     );
 
 class ShowFlaggedOnlyController extends Notifier<bool> {
-  ShowFlaggedOnlyController([this.id = '']);
-
-  final String id;
+  ShowFlaggedOnlyController([String _ = '']);
 
   @override
   bool build() {
@@ -177,8 +143,6 @@ class ShowFlaggedOnlyController extends Notifier<bool> {
   set showFlaggedOnly(bool value) {
     state = value;
   }
-
-  bool get showFlaggedOnly => state;
 }
 
 /// Per-entry toggle state for the activity filter pills shown above the
@@ -201,9 +165,7 @@ linkedEntriesActivityFilterControllerProvider = NotifierProvider.autoDispose
 
 class LinkedEntriesActivityFilterController
     extends Notifier<Set<LinkedEntryActivityFilter>> {
-  LinkedEntriesActivityFilterController([this.id = '']);
-
-  final String id;
+  LinkedEntriesActivityFilterController([String _ = '']);
 
   @override
   Set<LinkedEntryActivityFilter> build() {
@@ -234,9 +196,7 @@ linkedEntriesSortControllerProvider = NotifierProvider.autoDispose
     );
 
 class LinkedEntriesSortController extends Notifier<LinkedEntriesSortOrder> {
-  LinkedEntriesSortController([this.id = '']);
-
-  final String id;
+  LinkedEntriesSortController([String _ = '']);
 
   @override
   LinkedEntriesSortOrder build() {

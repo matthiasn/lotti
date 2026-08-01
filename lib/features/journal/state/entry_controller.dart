@@ -43,18 +43,6 @@ import 'package:super_clipboard/super_clipboard.dart';
 @visibleForTesting
 Duration stopRecordingDelay = const Duration(milliseconds: 100);
 
-/// Outcome of `EntryController.updateTaskStatus`'s two independent writes —
-/// see that method's doc comment for why they're decoupled.
-class TaskStatusUpdateResult {
-  const TaskStatusUpdateResult({
-    required this.statusUpdated,
-    required this.blockerLinked,
-  });
-
-  final bool statusUpdated;
-  final bool blockerLinked;
-}
-
 /// The detail-side controller for a single journal entry, keyed by entry id.
 ///
 /// Owns the entry's load/draft/save lifecycle (the two-state `EntryState`
@@ -92,8 +80,6 @@ class EntryController extends AsyncNotifier<EntryState?> {
   final formKey = GlobalKey<FormBuilderState>();
 
   final FocusNode focusNode = FocusNode();
-  final FocusNode taskTitleFocusNode = FocusNode();
-  final FocusNode eventTitleFocusNode = FocusNode();
   bool animationCompleted = false;
 
   bool _dirty = false;
@@ -342,14 +328,12 @@ class EntryController extends AsyncNotifier<EntryState?> {
   /// already Blocked and the user just wants to add another blocker), and a
   /// rejected blocker link (the cycle guard firing) never prevents the
   /// status from being set.
-  Future<TaskStatusUpdateResult> updateTaskStatus(
+  Future<void> updateTaskStatus(
     String? status, {
     String? blockerTaskId,
     String? blockerTaskTitle,
   }) async {
     final task = state.value?.entry;
-    var statusUpdated = false;
-
     if (task is Task &&
         status != null &&
         status != task.data.status.toDbString) {
@@ -375,22 +359,15 @@ class EntryController extends AsyncNotifier<EntryState?> {
       );
 
       await HapticFeedback.heavyImpact();
-      statusUpdated = true;
     }
 
-    var blockerLinked = false;
     if (task is Task && blockerTaskId != null && blockerTaskId != id) {
-      blockerLinked = await _persistenceLogic.createLink(
+      await _persistenceLogic.createLink(
         fromId: blockerTaskId,
         toId: id,
         linkType: EntryLinkType.blocks,
       );
     }
-
-    return TaskStatusUpdateResult(
-      statusUpdated: statusUpdated,
-      blockerLinked: blockerLinked,
-    );
   }
 
   Future<void> updateTaskPriority(String code) async {

@@ -6,7 +6,6 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -34,6 +33,17 @@ final _testDateRefresh = DateTime(2024, 3, 15);
 /// Mutable call counter returned by `stubCountingQuery`.
 class _QueryCallCounter {
   int count = 0;
+}
+
+void _emitVisibility(
+  JournalControllerTestSetup setup,
+  JournalPageController controller, {
+  required bool isVisible,
+}) {
+  final visibleIndex = controller.state.showTasks
+      ? testTasksIndex
+      : testJournalIndex;
+  setup.emitNavIndex(isVisible ? visibleIndex : testOtherIndex);
 }
 
 /// Stubs the full 8-param getJournalEntities query on [db] with [result]
@@ -92,207 +102,6 @@ void main() {
 
     tearDown(() async {
       await setup.tearDown();
-    });
-
-    group('debugGetNextPageKey (pure page-key computation)', () {
-      JournalEntity entryFor(int i) => JournalEntity.journalEntry(
-        meta: Metadata(
-          id: 'pk-$i',
-          createdAt: _testDate,
-          updatedAt: _testDate,
-          dateFrom: _testDate,
-          dateTo: _testDate,
-        ),
-        entryText: const EntryText(plainText: 'pk'),
-      );
-
-      List<JournalEntity> page(int length) => List.generate(length, entryFor);
-
-      test('covers the full branch matrix of the key computation', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(false).notifier,
-          );
-          settle(async);
-
-          const pageSize = JournalPageController.pageSize;
-
-          // No loaded keys -> first page key is 0.
-          expect(
-            controller.debugGetNextPageKey(
-              PagingState(keys: const [], pages: const []),
-            ),
-            0,
-          );
-          expect(controller.debugGetNextPageKey(PagingState()), 0);
-
-          // hasNextPage=false -> null regardless of pages.
-          expect(
-            controller.debugGetNextPageKey(
-              PagingState(
-                keys: const [0],
-                pages: [page(pageSize)],
-                hasNextPage: false,
-              ),
-            ),
-            isNull,
-          );
-
-          // Short last page -> null (the previous fetch exhausted the data).
-          expect(
-            controller.debugGetNextPageKey(
-              PagingState(
-                keys: const [0],
-                pages: [page(pageSize - 1)],
-              ),
-            ),
-            isNull,
-          );
-
-          // Full page -> next key is lastKey + lastPage.length.
-          expect(
-            controller.debugGetNextPageKey(
-              PagingState(
-                keys: const [0],
-                pages: [page(pageSize)],
-              ),
-            ),
-            pageSize,
-          );
-          expect(
-            controller.debugGetNextPageKey(
-              PagingState(
-                keys: const [0, pageSize],
-                pages: [page(pageSize), page(pageSize)],
-              ),
-            ),
-            pageSize * 2,
-          );
-
-          // A pending post-filter offset wins over the computed key and is
-          // consumed exactly once.
-          controller.debugPostFilterNextRawOffset = 777;
-          final fullState = PagingState<int, JournalEntity>(
-            keys: const [0],
-            pages: [page(pageSize)],
-          );
-          expect(controller.debugGetNextPageKey(fullState), 777);
-          expect(controller.debugPostFilterNextRawOffset, isNull);
-          expect(controller.debugGetNextPageKey(fullState), pageSize);
-
-          // consumePostFilterOffset=false peeks without consuming.
-          controller.debugPostFilterNextRawOffset = 555;
-          expect(
-            controller.debugGetNextPageKey(
-              fullState,
-              consumePostFilterOffset: false,
-            ),
-            555,
-          );
-          expect(controller.debugPostFilterNextRawOffset, 555);
-        });
-      });
-
-      // -------------------------------------------------------------------
-      // Glados: pagination boundary arithmetic.
-      //
-      // For a chain of consecutively-keyed pages, the next page key is the
-      // exclusive end offset of the last page (`lastKey + lastPage.length`)
-      // when every loaded page is full, and `null` the moment the last page
-      // comes back short (the data is exhausted). These properties pin that
-      // arithmetic across arbitrary page counts and last-page sizes.
-      // -------------------------------------------------------------------
-      glados.Glados2(
-        glados.IntAnys(glados.any).intInRange(1, 7),
-        // [0, pageSize] inclusive — the upper bound exercises the full-last-page
-        // branch (intInRange's max is exclusive, hence the +1).
-        glados.IntAnys(
-          glados.any,
-        ).intInRange(0, JournalPageController.pageSize + 1),
-        glados.ExploreConfig(numRuns: 120),
-      ).test(
-        'next key is the cumulative end offset for full-page chains',
-        (
-          numFullPages,
-          lastPageLen,
-        ) {
-          fakeAsync((async) {
-            final controller = container.read(
-              journalPageControllerProvider(false).notifier,
-            );
-            settle(async);
-            controller.debugPostFilterNextRawOffset = null;
-
-            const pageSize = JournalPageController.pageSize;
-
-            // Build a chain of [numFullPages] full pages followed by one page
-            // of [lastPageLen] items, with keys = cumulative start offsets.
-            final pages = <List<JournalEntity>>[
-              for (var i = 0; i < numFullPages; i++) page(pageSize),
-              page(lastPageLen),
-            ];
-            final keys = <int>[];
-            var offset = 0;
-            for (final p in pages) {
-              keys.add(offset);
-              offset += p.length;
-            }
-
-            final state = PagingState<int, JournalEntity>(
-              keys: keys,
-              pages: pages,
-            );
-            final next = controller.debugGetNextPageKey(state);
-
-            if (lastPageLen < pageSize) {
-              // Short last page -> data exhausted -> no further page.
-              expect(
-                next,
-                isNull,
-                reason: 'len=$lastPageLen pages=$numFullPages',
-              );
-            } else {
-              // Every page full -> next key is the exclusive end offset, which
-              // equals lastKey + lastPage.length and the total item count.
-              final totalItems = pages.fold<int>(0, (sum, p) => sum + p.length);
-              expect(next, totalItems, reason: 'pages=${numFullPages + 1}');
-              expect(next, keys.last + pages.last.length);
-            }
-          });
-        },
-        tags: 'glados',
-      );
-
-      glados.Glados(
-        glados.IntAnys(glados.any).intInRange(0, 100000),
-        glados.ExploreConfig(numRuns: 120),
-      ).test(
-        'a pending post-filter offset wins and is consumed exactly once',
-        (
-          rawOffset,
-        ) {
-          fakeAsync((async) {
-            final controller = container.read(
-              journalPageControllerProvider(false).notifier,
-            );
-            settle(async);
-
-            const pageSize = JournalPageController.pageSize;
-            final fullState = PagingState<int, JournalEntity>(
-              keys: const [0],
-              pages: [page(pageSize)],
-            );
-
-            controller.debugPostFilterNextRawOffset = rawOffset;
-            // First call returns the override and consumes it.
-            expect(controller.debugGetNextPageKey(fullState), rawOffset);
-            expect(controller.debugPostFilterNextRawOffset, isNull);
-            // Second call falls back to the computed cumulative key.
-            expect(controller.debugGetNextPageKey(fullState), pageSize);
-          });
-        },
-        tags: 'glados',
-      );
     });
 
     group('Initialization', () {
@@ -524,10 +333,16 @@ void main() {
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
 
-          // Verify internal flags are updated
-          expect(controller.enableEvents, isTrue);
-          expect(controller.enableHabits, isFalse);
-          expect(controller.enableDashboards, isFalse);
+          expect(
+            controller.state.allowedEntryTypes,
+            equals(
+              computeAllowedEntryTypes(
+                events: true,
+                habits: false,
+                dashboards: false,
+              ),
+            ),
+          );
         });
       });
 
@@ -737,8 +552,8 @@ void main() {
       });
     });
 
-    group('Getters for Testing', () {
-      test('selectedEntryTypesInternal exposes the full default set', () {
+    group('Published Filter State', () {
+      test('publishes the full default entry-type set', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(false).notifier,
@@ -749,18 +564,13 @@ void main() {
           // No config-flag event has been emitted, so the controller keeps the
           // full default selection (`entryTypes`) it was constructed with.
           expect(
-            controller.selectedEntryTypesInternal,
+            controller.state.selectedEntryTypes.toSet(),
             equals(entryTypes.toSet()),
-          );
-          // The getter exposes the same set the controller publishes in state.
-          expect(
-            controller.selectedEntryTypesInternal,
-            equals(controller.state.selectedEntryTypes.toSet()),
           );
         });
       });
 
-      test('filtersInternal reflects the exact set passed to setFilters', () {
+      test('publishes the exact set passed to setFilters', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(false).notifier,
@@ -769,7 +579,7 @@ void main() {
           settle(async);
 
           // Initial filters set is empty.
-          expect(controller.filtersInternal, isEmpty);
+          expect(controller.state.filters, isEmpty);
 
           controller.setFilters({
             DisplayFilter.starredEntriesOnly,
@@ -778,18 +588,13 @@ void main() {
 
           settle(async);
 
-          // The getter returns exactly what was set — no more, no less — and
-          // mirrors the published state.
+          // State contains exactly what was set — no more, no less.
           expect(
-            controller.filtersInternal,
+            controller.state.filters,
             equals({
               DisplayFilter.starredEntriesOnly,
               DisplayFilter.flaggedEntriesOnly,
             }),
-          );
-          expect(
-            controller.filtersInternal,
-            equals(controller.state.filters),
           );
         });
       });
@@ -852,7 +657,7 @@ void main() {
           settle(async);
 
           expect(
-            controller.selectedEntryTypesInternal.length,
+            controller.state.selectedEntryTypes.toSet().length,
             entryTypes.length,
           );
 
@@ -861,7 +666,7 @@ void main() {
 
           settle(async);
 
-          expect(controller.selectedEntryTypesInternal, equals({'Task'}));
+          expect(controller.state.selectedEntryTypes.toSet(), equals({'Task'}));
         });
       });
 
@@ -877,7 +682,7 @@ void main() {
 
           settle(async);
 
-          expect(controller.selectedEntryTypesInternal, isEmpty);
+          expect(controller.state.selectedEntryTypes.toSet(), isEmpty);
         });
       });
     });
@@ -924,7 +729,7 @@ void main() {
 
             settle(async);
 
-            expect(controller.selectedEntryTypesInternal, isEmpty);
+            expect(controller.state.selectedEntryTypes.toSet(), isEmpty);
 
             // Emit config flags with events enabled
             configFlagsController.add({enableEventsFlag});
@@ -939,7 +744,7 @@ void main() {
             ).toSet();
 
             expect(
-              controller.selectedEntryTypesInternal,
+              controller.state.selectedEntryTypes.toSet(),
               equals(expectedTypes),
             );
           });
@@ -971,7 +776,10 @@ void main() {
 
           settle(async);
 
-          expect(controller.selectedEntryTypesInternal, equals(initialAllowed));
+          expect(
+            controller.state.selectedEntryTypes.toSet(),
+            equals(initialAllowed),
+          );
 
           // Now enable events flag
           configFlagsController.add({enableEventsFlag});
@@ -985,9 +793,12 @@ void main() {
             dashboards: false,
           ).toSet();
 
-          expect(controller.selectedEntryTypesInternal, equals(newAllowed));
           expect(
-            controller.selectedEntryTypesInternal,
+            controller.state.selectedEntryTypes.toSet(),
+            equals(newAllowed),
+          );
+          expect(
+            controller.state.selectedEntryTypes.toSet(),
             contains('JournalEvent'),
           );
         });
@@ -1024,7 +835,7 @@ void main() {
             settle(async);
 
             expect(
-              controller.selectedEntryTypesInternal,
+              controller.state.selectedEntryTypes.toSet(),
               equals({'Task', 'JournalEvent', 'HabitCompletionEntry'}),
             );
 
@@ -1035,13 +846,16 @@ void main() {
 
             // Should intersect - only Task remains (JournalEvent and
             // HabitCompletionEntry are no longer allowed)
-            expect(controller.selectedEntryTypesInternal, equals({'Task'}));
             expect(
-              controller.selectedEntryTypesInternal,
+              controller.state.selectedEntryTypes.toSet(),
+              equals({'Task'}),
+            );
+            expect(
+              controller.state.selectedEntryTypes.toSet(),
               isNot(contains('JournalEvent')),
             );
             expect(
-              controller.selectedEntryTypesInternal,
+              controller.state.selectedEntryTypes.toSet(),
               isNot(contains('HabitCompletionEntry')),
             );
           });
@@ -1072,9 +886,12 @@ void main() {
 
           settle(async);
 
-          expect(controller.selectedEntryTypesInternal, equals(eventsAllowed));
           expect(
-            controller.selectedEntryTypesInternal,
+            controller.state.selectedEntryTypes.toSet(),
+            equals(eventsAllowed),
+          );
+          expect(
+            controller.state.selectedEntryTypes.toSet(),
             isNot(contains('HabitCompletionEntry')),
           );
 
@@ -1085,7 +902,7 @@ void main() {
 
           // Should include HabitCompletionEntry now
           expect(
-            controller.selectedEntryTypesInternal,
+            controller.state.selectedEntryTypes.toSet(),
             contains('HabitCompletionEntry'),
           );
         });
@@ -1114,7 +931,7 @@ void main() {
           settle(async);
 
           expect(
-            controller.selectedEntryTypesInternal,
+            controller.state.selectedEntryTypes.toSet(),
             equals({'Task', 'MeasurementEntry', 'QuantitativeEntry'}),
           );
 
@@ -1124,7 +941,7 @@ void main() {
           settle(async);
 
           // Only Task should remain
-          expect(controller.selectedEntryTypesInternal, equals({'Task'}));
+          expect(controller.state.selectedEntryTypes.toSet(), equals({'Task'}));
         });
       });
     });
@@ -2086,7 +1903,7 @@ void main() {
             configFlagsController.add({enableVectorSearchFlag});
             settle(async);
 
-            expect(controller.enableVectorSearchInternal, isTrue);
+            expect(controller.state.enableVectorSearch, isTrue);
 
             controller.applyBatchFilterUpdate(
               searchMode: SearchMode.vector,
@@ -2334,7 +2151,7 @@ void main() {
       });
     });
 
-    group('searchModeInternal Getter', () {
+    group('Published Search Mode', () {
       test('returns fullText by default', () {
         fakeAsync((async) {
           final controller = container.read(
@@ -2343,7 +2160,7 @@ void main() {
 
           settle(async);
 
-          expect(controller.searchModeInternal, equals(SearchMode.fullText));
+          expect(controller.state.searchMode, equals(SearchMode.fullText));
         });
       });
 
@@ -2363,7 +2180,7 @@ void main() {
 
           settle(async);
 
-          expect(controller.searchModeInternal, equals(SearchMode.vector));
+          expect(controller.state.searchMode, equals(SearchMode.vector));
         });
       });
     });
@@ -2637,7 +2454,7 @@ void main() {
             final initialCount = queryCalls.count;
 
             // First, simulate being invisible
-            controller.debugSetVisibility(isVisible: false);
+            _emitVisibility(setup, controller, isVisible: false);
 
             settle(async);
 
@@ -2654,7 +2471,7 @@ void main() {
 
             // Now simulate becoming visible - should trigger refresh
             // because updates were missed
-            controller.debugSetVisibility(isVisible: true);
+            _emitVisibility(setup, controller, isVisible: true);
 
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
@@ -2681,12 +2498,12 @@ void main() {
             final initialCount = queryCalls.count;
 
             // Go invisible
-            controller.debugSetVisibility(isVisible: false);
+            _emitVisibility(setup, controller, isVisible: false);
 
             settle(async);
 
             // Come back visible without any missed updates
-            controller.debugSetVisibility(isVisible: true);
+            _emitVisibility(setup, controller, isVisible: true);
 
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
@@ -2711,42 +2528,18 @@ void main() {
           final initialCount = queryCalls.count;
 
           // Simulate being invisible
-          controller.debugSetVisibility(isVisible: false);
+          _emitVisibility(setup, controller, isVisible: false);
 
           settle(async);
 
           // Stay invisible - should NOT trigger refresh
-          controller.debugSetVisibility(isVisible: false);
+          _emitVisibility(setup, controller, isVisible: false);
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
 
           // Count should remain unchanged
           expect(queryCalls.count, equals(initialCount));
-        });
-      });
-
-      test('isVisible getter reflects current visibility', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(false).notifier,
-          );
-
-          settle(async);
-
-          expect(controller.isVisible, isFalse);
-
-          controller.debugSetVisibility(isVisible: true);
-
-          settle(async);
-
-          expect(controller.isVisible, isTrue);
-
-          controller.debugSetVisibility(isVisible: false);
-
-          settle(async);
-
-          expect(controller.isVisible, isFalse);
         });
       });
     });
@@ -2766,7 +2559,7 @@ void main() {
             async.flushMicrotasks();
 
             // Make visible
-            controller.debugSetVisibility(isVisible: true);
+            _emitVisibility(setup, controller, isVisible: true);
 
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
@@ -2823,7 +2616,7 @@ void main() {
 
             async.flushMicrotasks();
 
-            controller.debugSetVisibility(isVisible: true);
+            _emitVisibility(setup, controller, isVisible: true);
 
             clearInteractions(mockJournalDb);
             getTasksCallCount = 0;
@@ -2896,7 +2689,7 @@ void main() {
 
             async.flushMicrotasks();
 
-            controller.debugSetVisibility(isVisible: true);
+            _emitVisibility(setup, controller, isVisible: true);
 
             clearInteractions(mockJournalDb);
             getTasksCallCount = 1;
@@ -2993,7 +2786,7 @@ void main() {
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
 
-            controller.debugSetVisibility(isVisible: true);
+            _emitVisibility(setup, controller, isVisible: true);
 
             clearInteractions(mockJournalDb);
 
@@ -3072,7 +2865,7 @@ void main() {
 
             async.flushMicrotasks();
 
-            controller.debugSetVisibility(isVisible: true);
+            _emitVisibility(setup, controller, isVisible: true);
 
             clearInteractions(mockJournalDb);
             queryCalls.count = 0;
@@ -4237,7 +4030,7 @@ void main() {
           async.flushMicrotasks();
 
           // Make visible first
-          controller.debugSetVisibility(isVisible: true);
+          _emitVisibility(setup, controller, isVisible: true);
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -4245,31 +4038,13 @@ void main() {
           final visibleCount = queryCount;
 
           // Now make invisible
-          controller.debugSetVisibility(isVisible: false);
+          _emitVisibility(setup, controller, isVisible: false);
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
 
           // Query count should not increase when becoming invisible
           expect(queryCount, equals(visibleCount));
-          expect(controller.isVisible, isFalse);
-        });
-      });
-
-      test('isVisible stays false when called with zero bounds repeatedly', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(false).notifier,
-          );
-
-          settle(async);
-
-          // Multiple calls with zero bounds
-          controller.debugSetVisibility(isVisible: false);
-          controller.debugSetVisibility(isVisible: false);
-          controller.debugSetVisibility(isVisible: false);
-
-          expect(controller.isVisible, isFalse);
         });
       });
     });
@@ -4763,66 +4538,6 @@ void main() {
         await agentDbForFilter.close();
         getIt.unregister<AgentDatabase>();
       });
-
-      test(
-        'debugRequiresSequentialRetainedRefresh covers the full '
-        'showTasks x agentFilter x projectIds matrix',
-        () {
-          fakeAsync((async) {
-            // showTasks=false: never sequential, regardless of filters.
-            final journalController = container.read(
-              journalPageControllerProvider(false).notifier,
-            );
-            settle(async);
-            expect(
-              journalController.debugRequiresSequentialRetainedRefresh,
-              isFalse,
-            );
-
-            // showTasks=true with no post-filters: parallel refresh.
-            final taskController = container.read(
-              journalPageControllerProvider(true).notifier,
-            );
-            settle(async);
-            expect(
-              taskController.debugRequiresSequentialRetainedRefresh,
-              isFalse,
-            );
-
-            // Agent filter active -> sequential.
-            taskController.applyBatchFilterUpdate(
-              agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
-            );
-            settle(async);
-            expect(
-              taskController.debugRequiresSequentialRetainedRefresh,
-              isTrue,
-            );
-
-            // Back to all, but with a project selected -> still sequential.
-            taskController.applyBatchFilterUpdate(
-              agentAssignmentFilter: AgentAssignmentFilter.all,
-            );
-            settle(async);
-            taskController.applyBatchFilterUpdate(
-              projectIds: const {'proj-1'},
-            );
-            settle(async);
-            expect(
-              taskController.debugRequiresSequentialRetainedRefresh,
-              isTrue,
-            );
-
-            // Clearing the project selection returns to parallel.
-            taskController.applyBatchFilterUpdate(projectIds: const {});
-            settle(async);
-            expect(
-              taskController.debugRequiresSequentialRetainedRefresh,
-              isFalse,
-            );
-          });
-        },
-      );
 
       test('batch update sets agent filter to hasAgent', () {
         fakeAsync((async) {

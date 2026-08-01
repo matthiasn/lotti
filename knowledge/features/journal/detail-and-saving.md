@@ -11,7 +11,7 @@ sources:
   - id: controller
     resource: ../../../lib/features/journal/state/entry_controller.dart
     title: EntryController
-    last_modified: 2026-07-24
+    last_modified: 2026-08-01
   - id: datetime
     resource: ../../../lib/features/journal/ui/widgets/entry_details/entry_datetime_range.dart
     title: EntryDateTimeRange

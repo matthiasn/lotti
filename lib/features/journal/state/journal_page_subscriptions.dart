@@ -141,8 +141,6 @@ class JournalPageSubscriptions {
       newEntryTypes = selectedEntryTypes.intersection(newAllowed);
     }
 
-    final entryTypesChanged = !setEquals(selectedEntryTypes, newEntryTypes);
-
     return ConfigFlagResult(
       enableEvents: flags.events,
       enableHabits: flags.habits,
@@ -153,7 +151,6 @@ class JournalPageSubscriptions {
       selectedEntryTypes: newEntryTypes,
       selectedProjectIds: newProjectIds,
       shouldRefresh: shouldRefresh,
-      entryTypesChanged: entryTypesChanged,
     );
   }
 }
@@ -170,7 +167,6 @@ class ConfigFlagResult {
     required this.selectedEntryTypes,
     required this.selectedProjectIds,
     required this.shouldRefresh,
-    required this.entryTypesChanged,
   });
 
   final bool enableEvents;
@@ -182,5 +178,4 @@ class ConfigFlagResult {
   final Set<String> selectedEntryTypes;
   final Set<String> selectedProjectIds;
   final bool shouldRefresh;
-  final bool entryTypesChanged;
 }

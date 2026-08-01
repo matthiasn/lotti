@@ -344,51 +344,14 @@ void main() {
       );
 
       // Initial state should be false
-      expect(controller.includeHidden, isFalse);
+      expect(container.read(includeHiddenControllerProvider(testId)), isFalse);
 
       // Update the value
       controller.includeHidden = true;
 
       // Assert
-      expect(controller.includeHidden, isTrue);
       expect(
         container.read(includeHiddenControllerProvider(testId)),
-        isTrue,
-      );
-    });
-  });
-
-  group('IncludeAiEntriesController', () {
-    const testId = 'test-entry-id';
-
-    test('initializes with default value of false', () {
-      // Act
-      final container = ProviderContainer();
-      final result = container.read(
-        includeAiEntriesControllerProvider(testId),
-      );
-
-      // Assert
-      expect(result, isFalse);
-    });
-
-    test('can update value', () {
-      // Act
-      final container = ProviderContainer();
-      final controller = container.read(
-        includeAiEntriesControllerProvider(testId).notifier,
-      );
-
-      // Initial state should be false
-      expect(controller.includeAiEntries, isFalse);
-
-      // Update the value
-      controller.includeAiEntries = true;
-
-      // Assert
-      expect(controller.includeAiEntries, isTrue);
-      expect(
-        container.read(includeAiEntriesControllerProvider(testId)),
         isTrue,
       );
     });
@@ -418,13 +381,15 @@ void main() {
       );
 
       // Initial state should be false
-      expect(controller.showFlaggedOnly, isFalse);
+      expect(
+        container.read(showFlaggedOnlyControllerProvider(testId)),
+        isFalse,
+      );
 
       // Update the value
       controller.showFlaggedOnly = true;
 
       // Assert
-      expect(controller.showFlaggedOnly, isTrue);
       expect(
         container.read(showFlaggedOnlyControllerProvider(testId)),
         isTrue,

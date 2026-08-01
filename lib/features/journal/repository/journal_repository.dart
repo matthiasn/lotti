@@ -304,8 +304,8 @@ class JournalRepository {
     return null;
   }
 
-  /// Upserts an entry link, but only when a meaningful field actually changed
-  /// (see [debugHasChange]) — an unchanged link returns false on a fast path
+  /// Upserts an entry link, but only when a meaningful field actually changed;
+  /// an unchanged link returns false on a fast path
   /// without reserving a vector clock.
   ///
   /// A real change runs inside a vector-clock scope so the bump, the local
@@ -360,13 +360,6 @@ class JournalRepository {
       commitWhen: (ok) => ok,
     );
   }
-
-  /// Test-only seam for [_hasChange] — the pure link comparator over the six
-  /// mutable fields plus the union variant's type name, so a retype is a
-  /// change even when every other field is identical.
-  @visibleForTesting
-  bool debugHasChange(EntryLink existing, EntryLink incoming) =>
-      _hasChange(existing, incoming);
 
   bool _hasChange(EntryLink existing, EntryLink incoming) {
     final existingHidden = existing.hidden ?? false;
