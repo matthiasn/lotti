@@ -240,13 +240,23 @@ class DayAgentWorkflow {
           // as failed. Re-arming unbounded in that case would overwrite the
           // committed next-day record with today's slot and digest the day
           // twice, so the store is asked rather than the result.
+          final committed = await _digestCommitted(
+            agentId: agentId,
+            runKey: runKey,
+          );
           await _scheduleNextCoordinatorDigest(
             agentId: agentId,
             now: now,
-            completedDay: await _committedDigestDay(
-              agentId: agentId,
-              runKey: runKey,
-            ),
+            // The day the wake DIGESTED, taken from its own token rather than
+            // from when the milestone happened to be written. An early wake
+            // holding a future-day token commits a re-arm for the day after
+            // that, and reading the milestone's date instead would pull the
+            // anchor back to the run day and overwrite it.
+            completedDay: committed
+                ? dateFromDayId(
+                    resolvePlannerWakeDay(effectiveTokens).dayId ?? '',
+                  )
+                : null,
           );
         } catch (scheduleError, stackTrace) {
           _logError(
@@ -801,14 +811,13 @@ class DayAgentWorkflow {
     }
   }
 
-  /// The day this wake durably digested, read back from the log, or null when
-  /// no `dailyWakeCompleted` milestone for [runKey] committed.
+  /// Whether this wake's `dailyWakeCompleted` milestone durably committed.
   ///
   /// Read rather than remembered: a flag set beside the append would be wrong
   /// whenever the transaction rolled back, which is the case where today's
-  /// retry must survive. Fail-soft — an unreadable log falls back to "nothing
-  /// completed", which keeps the retry rather than suppressing it.
-  Future<DateTime?> _committedDigestDay({
+  /// retry must survive. Fail-soft — an unreadable log answers "no", which
+  /// keeps the retry rather than suppressing it.
+  Future<bool> _digestCommitted({
     required String agentId,
     required String runKey,
   }) async {
@@ -821,13 +830,13 @@ class DayAgentWorkflow {
       for (final message in milestones) {
         if (message.metadata.milestone == AgentMilestone.dailyWakeCompleted &&
             message.metadata.runKey == runKey) {
-          return localDay(message.createdAt);
+          return true;
         }
       }
     } catch (e, s) {
       _logError('failed to read digest completion', error: e, stackTrace: s);
     }
-    return null;
+    return false;
   }
 
   /// Schedules the coordinator's next morning digest after either success or
