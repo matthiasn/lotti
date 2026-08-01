@@ -52,16 +52,6 @@ extension NotificationEntityFields on NotificationEntity {
 
   String get id => meta.id;
 
-  String get title => switch (this) {
-    TaskSuggestionNotification(:final title) => title,
-    TaskOverdueNotification(:final title) => title,
-  };
-
-  String get body => switch (this) {
-    TaskSuggestionNotification(:final body) => body,
-    TaskOverdueNotification(:final body) => body,
-  };
-
   String get type => switch (this) {
     TaskSuggestionNotification() => 'taskSuggestion',
     TaskOverdueNotification() => 'taskOverdue',

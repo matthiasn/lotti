@@ -360,7 +360,8 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
           ],
         );
         // The only span lies outside the window → cold start.
-        expect(ctx.isEmpty, isTrue);
+        expect(ctx.recentDays, isNull);
+        expect(ctx.weekAhead, isNull);
       });
 
       test('legacy agreed/needsReview statuses render as draft plan', () {
@@ -932,11 +933,10 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
   });
 
   group('buildWeekContext — section omission', () {
-    test('cold start renders nothing (isEmpty)', () {
+    test('cold start renders neither section', () {
       final ctx = _build();
       expect(ctx.recentDays, isNull);
       expect(ctx.weekAhead, isNull);
-      expect(ctx.isEmpty, isTrue);
     });
 
     test('sections are omitted independently', () {
@@ -951,7 +951,6 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
       );
       expect(withHistoryOnly.recentDays, isNotNull);
       expect(withHistoryOnly.weekAhead, isNull);
-      expect(withHistoryOnly.isEmpty, isFalse);
 
       final withDeadlineOnly = _build(
         claims: [

@@ -31,10 +31,6 @@ class DueDateStatus {
   /// Null if no due date was provided.
   final int? daysUntilDue;
 
-  /// Whether this status requires urgent styling (overdue or due today).
-  bool get isUrgent =>
-      urgency == DueDateUrgency.overdue || urgency == DueDateUrgency.dueToday;
-
   /// Returns the appropriate color for this status, or null for normal.
   Color? get urgentColor {
     switch (urgency) {

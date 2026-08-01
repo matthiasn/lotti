@@ -244,7 +244,8 @@ void main() {
 
       // Nothing usable survives the filters → cold start.
       expect(ctx, isNotNull);
-      expect(ctx!.isEmpty, isTrue);
+      expect(ctx!.recentDays, isNull);
+      expect(ctx.weekAhead, isNull);
     });
 
     test(

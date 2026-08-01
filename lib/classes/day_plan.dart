@@ -161,9 +161,6 @@ abstract class PlannedBlock with _$PlannedBlock {
 /// Extension for duration calculation on PlannedBlock.
 extension PlannedBlockX on PlannedBlock {
   Duration get duration => endTime.difference(startTime);
-
-  /// Whether the day-agent must provide a non-empty reason for this block.
-  bool get requiresReason => type == PlannedBlockType.ai;
 }
 
 /// A reference to a task pinned to a specific category for the day.
@@ -190,8 +187,7 @@ abstract class PinnedTaskRef with _$PinnedTaskRef {
 /// Data payload for a day plan entity.
 ///
 /// Contains all plan information including planned blocks and pinned task
-/// references. Time budgets are derived from the sum of block durations
-/// per category.
+/// references.
 @freezed
 abstract class DayPlanData with _$DayPlanData {
   const factory DayPlanData({
@@ -221,20 +217,6 @@ abstract class DayPlanData with _$DayPlanData {
       _$DayPlanDataFromJson(json);
 }
 
-/// Derived time budget for a category, computed from planned blocks.
-@immutable
-class DerivedTimeBudget {
-  const DerivedTimeBudget({
-    required this.categoryId,
-    required this.plannedDuration,
-    required this.blocks,
-  });
-
-  final String categoryId;
-  final Duration plannedDuration;
-  final List<PlannedBlock> blocks;
-}
-
 /// Extension methods for DayPlanData.
 extension DayPlanDataX on DayPlanData {
   /// Get all unique category IDs that have planned blocks.
@@ -245,45 +227,4 @@ extension DayPlanDataX on DayPlanData {
   List<PlannedBlock> blocksForCategory(String categoryId) =>
       plannedBlocks.where((block) => block.categoryId == categoryId).toList()
         ..sort((a, b) => a.startTime.compareTo(b.startTime));
-
-  /// Get derived time budgets for all categories with blocks.
-  List<DerivedTimeBudget> get derivedBudgets {
-    final budgets = <DerivedTimeBudget>[];
-    for (final categoryId in categoryIds) {
-      final blocks = blocksForCategory(categoryId);
-      final duration = blocks.fold(
-        Duration.zero,
-        (total, block) => total + block.duration,
-      );
-      budgets.add(
-        DerivedTimeBudget(
-          categoryId: categoryId,
-          plannedDuration: duration,
-          blocks: blocks,
-        ),
-      );
-    }
-    // Sort by earliest block start time
-    budgets.sort((a, b) {
-      if (a.blocks.isEmpty) return 1;
-      if (b.blocks.isEmpty) return -1;
-      return a.blocks.first.startTime.compareTo(b.blocks.first.startTime);
-    });
-    return budgets;
-  }
-
-  /// Total planned duration across all blocks.
-  Duration get totalPlannedDuration => plannedBlocks.fold(
-    Duration.zero,
-    (total, block) => total + block.duration,
-  );
-
-  /// Whether this plan has been agreed to.
-  bool get isAgreed => status is DayPlanStatusAgreed;
-
-  /// Whether this plan needs review.
-  bool get needsReview => status is DayPlanStatusNeedsReview;
-
-  /// Whether this plan is still a draft.
-  bool get isDraft => status is DayPlanStatusDraft;
 }

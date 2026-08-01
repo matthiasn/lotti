@@ -72,9 +72,6 @@ class WeekContext {
   /// Body of `<week_ahead>`, or null when there are no future plans and no
   /// deadlines in the window.
   final String? weekAhead;
-
-  /// Whether both sections are absent.
-  bool get isEmpty => recentDays == null && weekAhead == null;
 }
 
 /// Builds the week context. Pure: depends only on its arguments.

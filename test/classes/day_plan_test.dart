@@ -204,7 +204,6 @@ void main() {
         expect(decoded.title, 'Prep demo');
         expect(decoded.type, PlannedBlockType.manual);
         expect(decoded.state, PlannedBlockState.committed);
-        expect(decoded.requiresReason, isFalse);
       });
 
       test('defaults legacy blocks to AI draft metadata', () {
@@ -218,25 +217,6 @@ void main() {
         expect(block.type, PlannedBlockType.ai);
         expect(block.state, PlannedBlockState.drafted);
         expect(block.reason, isNull);
-        expect(block.requiresReason, isTrue);
-      });
-
-      test('only AI blocks require a reason', () {
-        for (final type in PlannedBlockType.values) {
-          final block = PlannedBlock(
-            id: 'block-${type.name}',
-            categoryId: 'category-work',
-            startTime: DateTime(2026, 1, 14, 9),
-            endTime: DateTime(2026, 1, 14, 12),
-            type: type,
-          );
-
-          expect(
-            block.requiresReason,
-            type == PlannedBlockType.ai,
-            reason: type.name,
-          );
-        }
       });
     });
 
@@ -267,44 +247,6 @@ void main() {
     });
 
     group('DayPlanData', () {
-      // The status getters dispatch on the sealed variant — the committed
-      // terminal state must report false on all three (no isCommitted getter
-      // exists; consumers match on the variant directly).
-      for (final (status, expectDraft, expectAgreed, expectReview) in [
-        (const DayPlanStatus.draft(), true, false, false),
-        (
-          DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 14, 8)),
-          false,
-          true,
-          false,
-        ),
-        (
-          DayPlanStatus.needsReview(
-            reason: DayPlanReviewReason.newDueTask,
-            triggeredAt: DateTime(2026, 1, 14, 10),
-          ),
-          false,
-          false,
-          true,
-        ),
-        (
-          DayPlanStatus.committed(committedAt: DateTime(2026, 1, 14, 9)),
-          false,
-          false,
-          false,
-        ),
-      ]) {
-        test('status getters dispatch correctly for ${status.runtimeType}', () {
-          final data = DayPlanData(
-            planDate: DateTime(2026, 1, 14),
-            status: status,
-          );
-          expect(data.isDraft, expectDraft);
-          expect(data.isAgreed, expectAgreed);
-          expect(data.needsReview, expectReview);
-        });
-      }
-
       test('can be serialized and deserialized with all fields', () {
         final data = DayPlanData(
           planDate: DateTime(2026, 1, 14),
@@ -356,38 +298,6 @@ void main() {
         expect(data.pinnedTasks, isEmpty);
       });
 
-      test('totalPlannedDuration calculates correctly from blocks', () {
-        final data = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          plannedBlocks: [
-            PlannedBlock(
-              id: 'block-1',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 1, 14, 9),
-              endTime: DateTime(2026, 1, 14, 11), // 2 hours
-            ),
-            PlannedBlock(
-              id: 'block-2',
-              categoryId: 'cat-2',
-              startTime: DateTime(2026, 1, 14, 13),
-              endTime: DateTime(2026, 1, 14, 14), // 1 hour
-            ),
-            PlannedBlock(
-              id: 'block-3',
-              categoryId: 'cat-3',
-              startTime: DateTime(2026, 1, 14, 15),
-              endTime: DateTime(2026, 1, 14, 15, 30), // 30 min
-            ),
-          ],
-        );
-
-        expect(
-          data.totalPlannedDuration,
-          equals(const Duration(hours: 3, minutes: 30)),
-        );
-      });
-
       test('blocksForCategory returns sorted blocks', () {
         final data = DayPlanData(
           planDate: DateTime(2026, 1, 14),
@@ -418,74 +328,6 @@ void main() {
         expect(blocks.length, equals(2));
         expect(blocks[0].id, equals('block-1'));
         expect(blocks[1].id, equals('block-2'));
-      });
-
-      test('derivedBudgets aggregates blocks by category', () {
-        final data = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          plannedBlocks: [
-            PlannedBlock(
-              id: 'block-1',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 1, 14, 9),
-              endTime: DateTime(2026, 1, 14, 11), // 2 hours
-            ),
-            PlannedBlock(
-              id: 'block-2',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 1, 14, 14),
-              endTime: DateTime(2026, 1, 14, 15), // 1 hour
-            ),
-            PlannedBlock(
-              id: 'block-3',
-              categoryId: 'cat-2',
-              startTime: DateTime(2026, 1, 14, 12),
-              endTime: DateTime(2026, 1, 14, 13), // 1 hour
-            ),
-          ],
-        );
-
-        final budgets = data.derivedBudgets;
-        expect(budgets.length, equals(2));
-
-        // Should be sorted by earliest block start time
-        final cat1Budget = budgets.firstWhere((b) => b.categoryId == 'cat-1');
-        expect(cat1Budget.plannedDuration, equals(const Duration(hours: 3)));
-        expect(cat1Budget.blocks.length, equals(2));
-
-        final cat2Budget = budgets.firstWhere((b) => b.categoryId == 'cat-2');
-        expect(cat2Budget.plannedDuration, equals(const Duration(hours: 1)));
-        expect(cat2Budget.blocks.length, equals(1));
-      });
-
-      test('status helper methods work correctly', () {
-        final draft = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-        );
-        expect(draft.isDraft, isTrue);
-        expect(draft.isAgreed, isFalse);
-        expect(draft.needsReview, isFalse);
-
-        final agreed = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 14)),
-        );
-        expect(agreed.isDraft, isFalse);
-        expect(agreed.isAgreed, isTrue);
-        expect(agreed.needsReview, isFalse);
-
-        final review = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: DayPlanStatus.needsReview(
-            triggeredAt: DateTime(2026, 1, 14),
-            reason: DayPlanReviewReason.newDueTask,
-          ),
-        );
-        expect(review.isDraft, isFalse);
-        expect(review.isAgreed, isFalse);
-        expect(review.needsReview, isTrue);
       });
 
       test('categoryIds returns all unique categories', () {
@@ -520,7 +362,7 @@ void main() {
       glados.Glados<_GeneratedDayPlanBlocks>(
         glados.any.dayPlanBlocks,
         glados.ExploreConfig(numRuns: 140),
-      ).test('derived duration and grouping invariants hold', (generated) {
+      ).test('category grouping invariants hold', (generated) {
         final blocks = generated.toBlocks();
         final data = DayPlanData(
           planDate: DateTime(2026, 5, 25),
@@ -531,13 +373,7 @@ void main() {
         final expectedCategories = {
           for (final block in blocks) block.categoryId,
         };
-        final expectedTotal = blocks.fold(
-          Duration.zero,
-          (total, block) => total + block.duration,
-        );
-
         expect(data.categoryIds, expectedCategories, reason: '$generated');
-        expect(data.totalPlannedDuration, expectedTotal, reason: '$generated');
 
         for (final categoryId in expectedCategories) {
           final categoryBlocks = data.blocksForCategory(categoryId);
@@ -564,31 +400,6 @@ void main() {
               reason: '$generated',
             );
           }
-        }
-
-        final budgets = data.derivedBudgets;
-        expect(budgets.length, expectedCategories.length, reason: '$generated');
-        for (final budget in budgets) {
-          final expectedDuration = blocks
-              .where((block) => block.categoryId == budget.categoryId)
-              .fold(
-                Duration.zero,
-                (total, block) => total + block.duration,
-              );
-          expect(
-            budget.plannedDuration,
-            expectedDuration,
-            reason: '$generated',
-          );
-        }
-        for (var i = 1; i < budgets.length; i++) {
-          expect(
-            budgets[i].blocks.first.startTime.isBefore(
-              budgets[i - 1].blocks.first.startTime,
-            ),
-            isFalse,
-            reason: '$generated',
-          );
         }
       }, tags: 'glados');
 

@@ -5,7 +5,7 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-07-26T21:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T20:31:24Z }
 stale_after: 2026-10-12
 sources:
   - id: workflow
@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/agents/service/change_set_confirmation_service.dart
     title: ChangeSetConfirmationService
     last_modified: 2026-06-13
+  - id: directed-relation
+    resource: ../../../lib/features/tasks/model/directed_relation.dart
+    title: DirectedRelation
+    last_modified: 2026-08-01
   - id: adr-0004
     resource: ../../../docs/adr/0004-task-agent-tool-execution-policy.md
     title: ADR 0004 — Task agent tool execution policy
@@ -376,9 +380,9 @@ Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatche
 task and an existing task; `create_follow_up_task` accepts the same optional
 `relation` so a spoken "this task is blocked by a new task X" creates X and
 the canonical `blocks` edge in one confirmable proposal. The `relation` values
-are `DirectedRelation.wireNames`
-(`lib/features/tasks/model/directed_relation.dart`) — eleven directed phrases
-read with the current task as subject; inverse phrases swap `fromId`/`toId`
+are the eleven `DirectedRelation.wireName` values exposed by
+`relationshipDirectedOptions` (`lib/features/tasks/model/directed_relation.dart`),
+read with the current task as subject. Inverse phrases swap `fromId`/`toId`
 before persisting, so the stored direction always matches the picker's (see
 [typed relationships](../tasks/relationships.md)).
 

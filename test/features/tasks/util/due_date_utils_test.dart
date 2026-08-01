@@ -61,8 +61,6 @@ class _GeneratedDueDateScenario {
     return DueDateUrgency.normal;
   }
 
-  bool get expectedUrgent => dayOffset <= 0;
-
   @override
   String toString() {
     return '_GeneratedDueDateScenario('
@@ -109,9 +107,6 @@ void main() {
         referenceDate: referenceDate,
       );
 
-      // isUrgent / urgentColor of the none() result are asserted directly by
-      // the 'none factory' test in the DueDateStatus group; here we only check
-      // the integration behaviour of routing a null dueDate to none().
       expect(status.urgency, DueDateUrgency.normal);
       expect(status.daysUntilDue, isNull);
     });
@@ -126,7 +121,6 @@ void main() {
 
       expect(status.urgency, DueDateUrgency.overdue);
       expect(status.daysUntilDue, -2);
-      expect(status.isUrgent, isTrue);
       expect(status.urgentColor, taskStatusRed);
     });
 
@@ -140,7 +134,6 @@ void main() {
 
       expect(status.urgency, DueDateUrgency.dueToday);
       expect(status.daysUntilDue, 0);
-      expect(status.isUrgent, isTrue);
       expect(status.urgentColor, taskStatusOrange);
     });
 
@@ -154,7 +147,6 @@ void main() {
 
       expect(status.urgency, DueDateUrgency.normal);
       expect(status.daysUntilDue, 5);
-      expect(status.isUrgent, isFalse);
       expect(status.urgentColor, isNull);
     });
 
@@ -204,40 +196,12 @@ void main() {
 
         expect(status.urgency, scenario.expectedUrgency, reason: '$scenario');
         expect(status.daysUntilDue, scenario.dayOffset, reason: '$scenario');
-        expect(status.isUrgent, scenario.expectedUrgent, reason: '$scenario');
       },
       tags: 'glados',
     );
   });
 
   group('DueDateStatus', () {
-    test('isUrgent is true for overdue', () {
-      const status = DueDateStatus(
-        urgency: DueDateUrgency.overdue,
-        daysUntilDue: -5,
-      );
-
-      expect(status.isUrgent, isTrue);
-    });
-
-    test('isUrgent is true for dueToday', () {
-      const status = DueDateStatus(
-        urgency: DueDateUrgency.dueToday,
-        daysUntilDue: 0,
-      );
-
-      expect(status.isUrgent, isTrue);
-    });
-
-    test('isUrgent is false for normal', () {
-      const status = DueDateStatus(
-        urgency: DueDateUrgency.normal,
-        daysUntilDue: 5,
-      );
-
-      expect(status.isUrgent, isFalse);
-    });
-
     test('urgentColor returns red for overdue', () {
       const status = DueDateStatus(
         urgency: DueDateUrgency.overdue,
@@ -265,12 +229,11 @@ void main() {
       expect(status.urgentColor, isNull);
     });
 
-    test('none factory creates non-urgent status with null daysUntilDue', () {
+    test('none factory creates normal status with null daysUntilDue', () {
       const status = DueDateStatus.none();
 
       expect(status.urgency, DueDateUrgency.normal);
       expect(status.daysUntilDue, isNull);
-      expect(status.isUrgent, isFalse);
       expect(status.urgentColor, isNull);
     });
   });

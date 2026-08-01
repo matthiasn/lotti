@@ -25,9 +25,6 @@ class TtsVoice {
   /// affect synthesis, which is driven entirely by the voice-style JSON.
   final TtsVoiceGender gender;
 
-  /// Asset file name for this voice's style JSON.
-  String get assetFileName => '$id.json';
-
   @override
   bool operator ==(Object other) =>
       other is TtsVoice && other.id == id && other.gender == gender;

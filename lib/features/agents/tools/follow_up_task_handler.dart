@@ -24,7 +24,7 @@ import 'package:uuid/uuid.dart';
 ///
 /// Without a `relation` argument that link is a plain `BasicLink` from
 /// source to new task (the historic behavior). With a `relation` — one of
-/// the directed wire phrases from `DirectedRelation.wireNames`, read with
+/// the directed wire phrases from `DirectedRelation.wireName`, read with
 /// the SOURCE task as subject ("this task is_blocked_by the new task") —
 /// the single edge is typed, and inverse phrases swap `fromId`/`toId` so
 /// the canonical stored direction matches the UI's (ADR 0042).
