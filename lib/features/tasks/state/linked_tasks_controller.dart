@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 
 part 'linked_tasks_controller.freezed.dart';
 
@@ -37,24 +35,4 @@ class LinkedTasksController extends Notifier<LinkedTasksState> {
   void toggleManageMode() {
     state = state.copyWith(manageMode: !state.manageMode);
   }
-}
-
-/// Provider that resolves outgoing entry links to Task entities.
-///
-/// This is used by LinkedTasksWidget to get resolved Task objects
-/// instead of EntryLinks, avoiding the need to watch individual
-/// entryControllerProviders in the widget tree.
-///
-/// Returns `List<JournalEntity>` (all Tasks) - caller should cast with `whereType<Task>()`.
-final ProviderFamily<List<JournalEntity>, String> outgoingLinkedTasksProvider =
-    Provider.autoDispose.family<List<JournalEntity>, String>(
-      outgoingLinkedTasks,
-      name: 'outgoingLinkedTasksProvider',
-    );
-List<JournalEntity> outgoingLinkedTasks(
-  Ref ref,
-  String taskId,
-) {
-  final entities = ref.watch(resolvedOutgoingLinkedEntriesProvider(taskId));
-  return entities.whereType<Task>().toList();
 }

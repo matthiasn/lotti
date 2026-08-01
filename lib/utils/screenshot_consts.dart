@@ -21,9 +21,6 @@ const String screenshotDateFormat = 'yyyy-MM-dd';
 const int screenshotDelaySeconds = 1;
 const int screenshotProcessTimeoutSeconds = 30;
 
-// Domain constants for logging
-const String screenshotDomain = 'SCREENSHOT';
-
 // Linux screenshot tools (in order of preference)
 const String spectacleTool = 'spectacle';
 const String gnomeScreenshotTool = 'gnome-screenshot';

@@ -94,18 +94,3 @@ double? parseHealthConfidence(Object? value) {
   }
   return parsed;
 }
-
-/// Compares health bands for list sorting while keeping missing health last.
-int compareProjectHealthBands(
-  ProjectHealthBand? left,
-  ProjectHealthBand? right, {
-  bool worstFirst = true,
-}) {
-  if (left == null || right == null) {
-    if (left == null && right == null) return 0;
-    return left == null ? 1 : -1;
-  }
-
-  final order = left.severityRank.compareTo(right.severityRank);
-  return worstFirst ? order : -order;
-}

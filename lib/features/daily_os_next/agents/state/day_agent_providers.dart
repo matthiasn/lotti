@@ -6,7 +6,6 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
@@ -139,49 +138,6 @@ Future<AgentDomainEntity?> dayAgent(
   ref.watch(agentUpdateStreamProvider(dayId));
   final service = ref.watch(dayAgentServiceProvider);
   return service.getDayAgentForDate(date);
-}
-
-/// Stream-refreshed parsed items for one capture.
-final FutureProviderFamily<List<AgentDomainEntity>, String>
-parsedItemsForCaptureProvider = FutureProvider.autoDispose
-    .family<List<AgentDomainEntity>, String>(
-      parsedItemsForCapture,
-      name: 'parsedItemsForCaptureProvider',
-    );
-Future<List<AgentDomainEntity>> parsedItemsForCapture(
-  Ref ref,
-  String captureId,
-) async {
-  final service = ref.watch(dayAgentCaptureServiceProvider);
-  final capture = await service.getCapture(captureId);
-  if (capture != null) {
-    ref.watch(agentUpdateStreamProvider(capture.agentId));
-  }
-  return service.parsedItemsForCapture(captureId);
-}
-
-/// Pending reconcile decisions for date.
-final FutureProviderFamily<List<DayAgentPendingItem>, DateTime>
-pendingDecisionsForDateProvider = FutureProvider.autoDispose
-    .family<List<DayAgentPendingItem>, DateTime>(
-      pendingDecisionsForDate,
-      name: 'pendingDecisionsForDateProvider',
-    );
-Future<List<DayAgentPendingItem>> pendingDecisionsForDate(
-  Ref ref,
-  DateTime date,
-) async {
-  final dayId = dayAgentIdForDate(date);
-  final dayAgentService = ref.watch(dayAgentServiceProvider);
-  final captureService = ref.watch(dayAgentCaptureServiceProvider);
-  ref.watch(agentUpdateStreamProvider(dayId));
-
-  final agent = await dayAgentService.getDayAgentForDate(date);
-  if (agent == null) return const [];
-  return captureService.surfacePendingDecisions(
-    agentId: agent.agentId,
-    dayId: dayId,
-  );
 }
 
 /// Currently drafted day plan for date, if any.

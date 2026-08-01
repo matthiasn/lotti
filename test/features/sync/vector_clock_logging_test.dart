@@ -13,12 +13,6 @@ void main() {
     loggingService = MockDomainLogger();
   });
 
-  group('vectorClockLogDomain', () {
-    test('has expected value', () {
-      expect(vectorClockLogDomain, 'VECTOR_CLOCK');
-    });
-  });
-
   group('logVectorClockAssignment', () {
     test('logs action with minimal parameters', () {
       logVectorClockAssignment(

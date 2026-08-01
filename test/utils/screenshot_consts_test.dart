@@ -37,12 +37,6 @@ void main() {
       });
     });
 
-    group('Domain Constants', () {
-      test('should have correct screenshot domain', () {
-        expect(screenshotDomain, equals('SCREENSHOT'));
-      });
-    });
-
     group('Linux Screenshot Tools', () {
       test('should have all expected Linux tools', () {
         expect(linuxScreenshotTools, contains(spectacleTool));

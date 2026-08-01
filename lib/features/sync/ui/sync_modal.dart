@@ -8,9 +8,7 @@ import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-class SyncModal extends ConsumerWidget {
-  const SyncModal({super.key});
-
+abstract final class SyncModal {
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
     // Settings only. Agent entities and links are journal-side data and are
@@ -275,10 +273,5 @@ class SyncModal extends ConsumerWidget {
       case SyncStep.complete:
         return context.messages.syncStepComplete;
     }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return const SizedBox.shrink();
   }
 }

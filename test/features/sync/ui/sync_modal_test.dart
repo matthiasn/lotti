@@ -478,37 +478,6 @@ void main() {
   });
 
   group('SyncModal · progress view', () {
-    testWidgets(
-      'SyncModal widget itself renders nothing (build returns SizedBox.shrink)',
-      (tester) async {
-        // Even mid-sync, the SyncModal *widget* paints nothing — all UI lives
-        // in the modal route opened by SyncModal.show, not in build().
-        final testController = TestSyncController(
-          const SyncState(isSyncing: true, progress: 50),
-        );
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              syncControllerProvider.overrideWith(() => testController),
-            ],
-            child: MaterialApp(
-              theme: resolveTestTheme(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Builder(
-                builder: (context) => const SyncModal(),
-              ),
-            ),
-          ),
-        );
-
-        expect(find.text('50%'), findsNothing);
-        expect(find.byType(LinearProgressIndicator), findsNothing);
-        expect(find.byIcon(Icons.check_circle_outline), findsNothing);
-      },
-    );
-
     testWidgets('progress view reflects controller updates and Done resets', (
       tester,
     ) async {

@@ -7,7 +7,6 @@ import 'package:lotti/features/agents/database/agent_database.dart'
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
-import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -44,25 +43,6 @@ Future<AgentDomainEntity?> pendingRitualReview(
     return newest;
   }
   return null;
-}
-
-/// Extracts classified feedback for a template's review window.
-///
-/// Uses the feedback extraction service to scan the default 7-day window.
-final FutureProviderFamily<ClassifiedFeedback?, String> ritualFeedbackProvider =
-    FutureProvider.autoDispose.family<ClassifiedFeedback?, String>(
-      ritualFeedback,
-      name: 'ritualFeedbackProvider',
-    );
-Future<ClassifiedFeedback?> ritualFeedback(
-  Ref ref,
-  String templateId,
-) async {
-  ref.watch(agentUpdateStreamProvider(templateId));
-  final service = ref.watch(feedbackExtractionServiceProvider);
-  final now = clock.now();
-  final since = now.subtract(const Duration(days: 7));
-  return service.extract(templateId: templateId, since: since, until: now);
 }
 
 /// Set of template IDs with pending rituals.

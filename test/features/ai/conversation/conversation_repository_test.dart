@@ -2508,55 +2508,5 @@ void main() {
         tags: 'glados',
       );
     });
-
-    group('Provider tests', () {
-      test('conversationEvents provider returns stream', () {
-        final id = repository.createConversation();
-        repository.getConversation(id)!;
-
-        final stream = container.read(conversationEventsProvider(id));
-        // The provider should return a stream
-        expect(stream, isNotNull);
-      });
-
-      test(
-        'conversationEvents provider handles non-existent conversation',
-        () async {
-          // Listen to the provider which will emit AsyncValue states
-          final streamProvider = conversationEventsProvider('non-existent');
-
-          // Keep the autoDispose provider alive, flush the event queue so
-          // the Stream.error delivery lands, then assert the error state —
-          // deterministic, no wall-clock timeout.
-          final subscription = container.listen(streamProvider, (_, _) {});
-          await pumpEventQueue();
-
-          final state = container.read(streamProvider);
-          expect(state.hasError, isTrue);
-          expect(state.error.toString(), contains('not found'));
-          subscription.close();
-        },
-      );
-
-      test('conversationMessages provider returns messages', () {
-        final id = repository.createConversation(
-          systemMessage: 'System message',
-        );
-
-        repository.getConversation(id)!.addUserMessage('User message');
-
-        final messages = container.read(conversationMessagesProvider(id));
-        expect(messages.length, 2);
-        expect(messages[0].role, ChatCompletionMessageRole.system);
-        expect(messages[1].role, ChatCompletionMessageRole.user);
-      });
-
-      test('conversationMessages provider returns empty for non-existent', () {
-        final messages = container.read(
-          conversationMessagesProvider('non-existent'),
-        );
-        expect(messages, isEmpty);
-      });
-    });
   });
 }

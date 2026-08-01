@@ -203,12 +203,6 @@ void main() {
   });
 
   group('AiSettingsTab', () {
-    test('has correct display names', () {
-      expect(AiSettingsTab.providers.displayName, 'Providers');
-      expect(AiSettingsTab.models.displayName, 'Models');
-      expect(AiSettingsTab.profiles.displayName, 'Profiles');
-    });
-
     test('contains expected tab values', () {
       expect(AiSettingsTab.values, hasLength(3));
       expect(AiSettingsTab.values, contains(AiSettingsTab.providers));

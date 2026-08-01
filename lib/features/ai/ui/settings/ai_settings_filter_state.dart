@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
 part 'ai_settings_filter_state.freezed.dart';
 
@@ -36,19 +34,7 @@ abstract class AiSettingsFilterState with _$AiSettingsFilterState {
 enum AiSettingsTab {
   providers,
   models,
-  profiles;
-
-  /// Human-readable display name for the tab
-  String get displayName {
-    switch (this) {
-      case AiSettingsTab.providers:
-        return 'Providers';
-      case AiSettingsTab.models:
-        return 'Models';
-      case AiSettingsTab.profiles:
-        return 'Profiles';
-    }
-  }
+  profiles,
 }
 
 /// Extension to add filtering capabilities to AiSettingsFilterState
@@ -85,21 +71,6 @@ extension AiSettingsFilterStateX on AiSettingsFilterState {
         return this;
       case AiSettingsTab.models:
         return resetModelFilters();
-    }
-  }
-}
-
-/// Extension to add localized display names for AiSettingsTab
-extension AiSettingsTabX on AiSettingsTab {
-  /// Returns the localized display name for the tab
-  String getLocalizedDisplayName(BuildContext context) {
-    switch (this) {
-      case AiSettingsTab.providers:
-        return context.messages.aiSettingsTabProviders;
-      case AiSettingsTab.models:
-        return context.messages.aiSettingsTabModels;
-      case AiSettingsTab.profiles:
-        return context.messages.aiSettingsTabProfiles;
     }
   }
 }
