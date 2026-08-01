@@ -241,21 +241,3 @@ Future<List<AgentDomainEntity>> evolutionSessions(
   final service = ref.watch(agentTemplateServiceProvider);
   return service.getEvolutionSessions(templateId);
 }
-
-/// Fetch evolution notes for a template, newest-first.
-///
-/// Each element is an [EvolutionNoteEntity].
-final FutureProviderFamily<List<AgentDomainEntity>, String>
-evolutionNotesProvider = FutureProvider.autoDispose
-    .family<List<AgentDomainEntity>, String>(
-      evolutionNotes,
-      name: 'evolutionNotesProvider',
-    );
-Future<List<AgentDomainEntity>> evolutionNotes(
-  Ref ref,
-  String templateId,
-) async {
-  ref.watch(agentUpdateStreamProvider(templateId));
-  final service = ref.watch(agentTemplateServiceProvider);
-  return service.getRecentEvolutionNotes(templateId);
-}

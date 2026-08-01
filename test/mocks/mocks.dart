@@ -84,9 +84,6 @@ import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
-import 'package:lotti/features/ai_chat/models/chat_session.dart';
-import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
-import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
@@ -1168,10 +1165,6 @@ class MockLabelsRepository extends Mock implements LabelsRepository {}
 
 class MockAiInputRepository extends Mock implements AiInputRepository {}
 
-class MockChatRepository extends Mock implements ChatRepository {}
-
-class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
-
 class MockTaskSummaryResolver extends Mock implements TaskSummaryResolver {}
 
 class MockHabitsRepository extends Mock implements HabitsRepository {}
@@ -1296,8 +1289,6 @@ class FakeAiConfigInferenceProvider extends Fake
 
 class FakeCreateChatCompletionRequest extends Fake
     implements CreateChatCompletionRequest {}
-
-class FakeChatSession extends Fake implements ChatSession {}
 
 class FakeChecklistData extends Fake implements ChecklistData {}
 

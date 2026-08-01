@@ -1,9 +1,7 @@
-/// Lifecycle of the voice recorder driving the chat input mic.
+/// Lifecycle of the shared voice recorder used by AI-assisted input surfaces.
 ///
-/// `recording` is the batch path (record to file, then transcribe on stop);
-/// `realtimeRecording` is the streaming WebSocket path; `processing` covers
-/// post-stop transcription for the batch path. Drives which input affordance
-/// `InputArea` renders.
+/// `recording` captures audio to a file; `processing` covers post-stop batch
+/// transcription.
 enum ChatRecorderStatus { idle, recording, processing }
 
 /// Classifies a recorder failure so the UI can map it to a localized message
@@ -17,7 +15,7 @@ enum ChatRecorderErrorType {
   concurrentOperation,
 }
 
-/// Immutable snapshot of the chat voice recorder for the UI.
+/// Immutable snapshot of the shared voice recorder for the UI.
 ///
 /// Carries the [status], the rolling dBFS [amplitudeHistory] for the waveform,
 /// and at most one of [transcript] (finished, awaiting consumption) /

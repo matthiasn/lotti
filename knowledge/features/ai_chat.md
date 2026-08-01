@@ -1,103 +1,106 @@
 ---
 type: Feature Module
-title: AI chat
-description: A session-scoped Q&A surface over task history, deliberately narrow — one retrieval tool, in-memory sessions, and streaming that keeps tool calls off the critical path.
+title: AI chat support primitives
+description: Shared batch-transcription, recorder-state, waveform, and reasoning-disclosure infrastructure used by AI-assisted surfaces.
 resource: ../../lib/features/ai_chat
-tags: [ai-chat, chat, streaming, tools]
+tags: [ai-chat, transcription, recording, reasoning]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T03:30:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T13:30:00Z }
 stale_after: 2027-02-22
 sources:
   - id: src
     resource: ../../lib/features/ai_chat
-    title: AI chat feature source
-    last_modified: 2026-07-26
+    title: AI chat support source
+    last_modified: 2026-08-01
 ---
 
-AI chat is Lotti's interactive question-and-answer surface **over task history**.
-It is not the agent runtime and not the provider stack — it sits above
-[`ai`](ai/) and below the chat UI.
+The `ai_chat` module is a support boundary, not a standalone chat feature. Its
+remaining production consumers are AI-assisted surfaces that need voice input
+or a reasoning disclosure. Session storage, task-summary retrieval, model
+selection, and the old top-level chat UI are not part of the runtime.
 
-It owns session and message state, explicit per-session model selection,
-streaming assistant output including tool-calling turns, the task-summary
-retrieval tool, and batch transcription for chat input.
+# Ownership
 
-It does **not** own provider configuration and routing policy, agent wake cycles
-or memory, or durable long-term chat persistence.
+The module owns four related primitives:
 
-# Sessions are in memory
+- `AudioTranscriptionService` selects an audio-capable configured model, streams
+  transcript chunks, and coordinates AI-consumption attribution.
+- `ChatRecorderController` records into an app-scoped temporary directory,
+  samples amplitude, calls the transcription service after stop, and cleans up
+  recorder and file resources.
+- `ChatAmplitudeHistory` and `WaveformBars` maintain and render bounded waveform
+  history.
+- `thinking_parser.dart` and `ThinkingDisclosure` split hidden reasoning from
+  visible text and render it behind an explicit disclosure.
 
-Two controllers with different jobs: `ChatSessionsController` manages the session
-list, creation, deletion and switching; `ChatSessionController` manages **one**
-active conversation — streaming flags, selected model, visible messages, errors.
+Provider configuration and inference routing remain owned by [`ai`](ai/).
+Agent conversations, evolution state, and wake memory remain owned by
+[`agents`](agents/). Daily OS owns its processing jobs and merely calls the
+transcription service.
 
-`ChatRepository` underneath stores `_sessions` and `_messages` **in memory only**.
-That means recent sessions survive only for the app lifetime, there is no
-database-backed transcript history yet, and deleting or switching a session is
-cheap because there is no persistence layer to migrate.
+# Batch recording lifecycle
 
-# A turn
+`ChatRecorderState` exposes `idle`, `recording`, and `processing`. A monotonically
+increasing operation id prevents callbacks from a cancelled or superseded
+recording from overwriting a newer state.
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> recording: start succeeds
+  recording --> processing: stopAndTranscribe
+  recording --> idle: cancel or recording failure
+  processing --> idle: transcript completed
+  processing --> idle: transcription failed or cancelled
+```
+
+The controller records to a temporary `.m4a` file. Amplitude callbacks update a
+bounded history only while their captured operation id is current. Stop moves
+the state to `processing`, streams transcription chunks, publishes the finished
+transcript, and returns to `idle`. Cancel increments the operation id before
+cleanup, making outstanding callbacks harmless.
+
+# Transcription flow
 
 ```mermaid
 sequenceDiagram
-  participant User as "User"
-  participant UI as "ChatSessionController"
-  participant Repo as "ChatRepository"
-  participant Proc as "ChatMessageProcessor"
-  participant Tool as "TaskSummaryRepository"
-  participant Cloud as "CloudInferenceRepository"
+  participant Surface as AI-assisted surface
+  participant Recorder as ChatRecorderController
+  participant Service as AudioTranscriptionService
+  participant Config as AiConfigRepository
+  participant Provider as Inference provider
+  participant Usage as AiInteractionCapture
 
-  User->>UI: send message
-  UI->>UI: require explicit model selection
-  UI->>Repo: sendMessage(message, history, modelId, categoryId)
-  Repo->>Proc: resolve model + provider config
-  Repo->>Proc: convert history + build prompt
-  Repo->>Cloud: generate(...)
-  Cloud-->>UI: stream visible content deltas
-  Cloud-->>Repo: stream tool call deltas
-  Repo->>Proc: accumulate tool calls
-
-  alt tool calls present
-    Proc->>Tool: fetch task summaries for requested range
-    Tool-->>Proc: structured task summary payload
-    Proc->>Cloud: generate final answer with tool results
-    Cloud-->>UI: stream final answer deltas
-  end
-
-  UI->>UI: finalize assistant messages
-  UI->>Repo: save updated session in memory
+  Surface->>Recorder: start
+  Surface->>Recorder: stopAndTranscribe
+  Recorder->>Service: transcribeStream(temp file)
+  Service->>Config: resolve audio-capable model and provider
+  Service->>Usage: begin attributed interaction
+  Service->>Provider: submit audio
+  Provider-->>Service: transcript chunks
+  Service-->>Recorder: transcript chunks
+  Service->>Usage: complete or fail interaction
+  Recorder-->>Surface: finished transcript or typed error
 ```
 
-**Model selection is explicit per session** — the chat refuses to guess.
+An explicit transcription target bypasses discovery. Otherwise the service
+loads configured models and providers, excludes realtime-only models from the
+batch path, and selects a compatible audio model. Provider failures retain an
+evidence state so attribution is terminalized exactly once even when publication
+outcome is uncertain.
 
-**Tool calls are accumulated while visible content is already streaming.** That
-keeps the UI responsive even when the model is still building a tool request
-behind the curtain.
+# Reasoning rendering
 
-# One built-in tool
+Callers accumulate streamed assistant text and pass it through
+`thinking_parser.dart`. Visible text and thinking segments stay separate;
+`ThinkingDisclosure` renders reasoning collapsed by default. The evolution UI
+uses these primitives directly, so they remain independent from any chat-session
+repository or screen.
 
-The feature is deliberately narrow: **it does not expose the whole app as an
-unbounded tool playground.** The assistant's structured retrieval tool is
-`get_task_summaries`.
+# Important invariants
 
-```mermaid
-flowchart TD
-  ToolCall["get_task_summaries"] --> Work["Find work entries in date range"]
-  Work --> Filter["Filter by duration and category"]
-  Filter --> Links["Resolve linked tasks"]
-  Links --> Tasks["Load tasks in bulk"]
-  Tasks --> Summaries["Batch agent reports, then legacy fallback"]
-  Summaries --> ToolResult["Return tool payload to model"]
-```
-
-`TaskSummaryRepository` finds relevant work entries in range, filters for
-meaningful spans, resolves linked task relationships, **loads tasks in bulk**,
-**resolves agent reports for all tasks in one batch**, and builds fallback
-summaries where none exist.
-
-That batching is why the feature feels smarter than a plain chat wrapper — it is
-not handing the model a giant pile of journal text and wishing it luck.
-
-`ChatSessionController` also does not treat the provider stream as one text blob:
-it segments visible content, reasoning and tool activity so the UI can render
-them distinctly.
+- Temporary recording files and directories are deleted on cancellation,
+  completion, failure, and provider disposal.
+- Stale async callbacks never update a newer recording operation.
+- Batch transcription never selects a realtime-only model.
+- Reasoning text is not mixed into the visible assistant answer.

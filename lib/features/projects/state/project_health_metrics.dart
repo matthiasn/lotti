@@ -11,17 +11,6 @@ enum ProjectHealthBand {
   blocked,
 }
 
-extension ProjectHealthBandSeverity on ProjectHealthBand {
-  /// Lower values represent worse health for dashboard sorting.
-  int get severityRank => switch (this) {
-    ProjectHealthBand.blocked => 0,
-    ProjectHealthBand.atRisk => 1,
-    ProjectHealthBand.watch => 2,
-    ProjectHealthBand.surviving => 3,
-    ProjectHealthBand.onTrack => 4,
-  };
-}
-
 /// The user-facing health summary parsed from a project-agent report: the
 /// [band], a free-text [rationale], and an optional model [confidence] in
 /// `[0, 1]`.
