@@ -496,6 +496,62 @@ void main() {
         },
       );
 
+      test(
+        'getHabitCompletionRecordsInRange skips rows with no habit id or '
+        'recorded timestamp instead of throwing',
+        () async {
+          // Both projected fields come from json_extract, so a malformed
+          // payload yields NULL rather than failing the query. Reading those
+          // as non-null would throw and take out every habit's history for one
+          // bad row.
+          Future<void> insertRaw(String id, String serialized) {
+            return db!.customStatement(
+              'INSERT INTO journal (id, created_at, updated_at, date_from, '
+              'date_to, type, subtype, serialized, deleted, starred, private, '
+              'task, flag) VALUES (?1, 1713470000, 1713470000, 1713480000, '
+              '1713480000, ?2, ?3, ?4, 0, 0, 0, 0, 0)',
+              [id, 'HabitCompletionEntry', '', serialized],
+            );
+          }
+
+          await insertRaw(
+            'no-habit-id',
+            '{"data":{"completionType":"success"},'
+                '"meta":{"id":"no-habit-id","dateFrom":"2024-04-18T10:00:00.000"}}',
+          );
+          await insertRaw(
+            'no-date',
+            '{"data":{"habitId":"habit-nodate","completionType":"success"},'
+                '"meta":{"id":"no-date"}}',
+          );
+          await insertRaw(
+            'bad-date',
+            '{"data":{"habitId":"habit-baddate","completionType":"success"},'
+                '"meta":{"id":"bad-date","dateFrom":"not-a-timestamp"}}',
+          );
+          await insertRaw(
+            'good',
+            '{"data":{"habitId":"habit-good","completionType":"success"},'
+                '"meta":{"id":"good","dateFrom":"2024-04-18T11:00:00.000"}}',
+          );
+
+          final result = await db!.getHabitCompletionRecordsInRange(
+            rangeStart: DateTime(2024),
+          );
+
+          expect(
+            result.map((r) => r.habitId),
+            contains('habit-good'),
+            reason: 'the well-formed row must still come back',
+          );
+          expect(
+            result.map((r) => r.habitId),
+            isNot(anyElement(anyOf('habit-nodate', 'habit-baddate'))),
+            reason: 'rows with no usable day are skipped, not surfaced',
+          );
+        },
+      );
+
       test('getQuantitativeByType filters correctly', () async {
         final weightEntry = buildQuantitativeEntry(
           id: 'weight-1',

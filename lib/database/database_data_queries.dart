@@ -97,17 +97,29 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
       readsFrom: {journal, configFlags},
     ).get();
 
-    return rows
-        .map(
-          (row) => HabitCompletionRecord(
-            habitId: row.read<String>('habit_id'),
-            dateFrom: DateTime.parse(row.read<String>('recorded_at')),
-            completionType: _habitCompletionTypeFromDb(
-              row.readNullable<String>('completion_type'),
-            ),
+    // Both projected fields come from `json_extract`, so a row whose payload is
+    // missing `data.habitId` or `meta.dateFrom` yields NULL rather than
+    // failing the query. Such a row cannot be placed on the heatmap at all, so
+    // it is skipped — same principle as an unrecognised completion type: one
+    // malformed row must not take out every habit's history.
+    final records = <HabitCompletionRecord>[];
+    for (final row in rows) {
+      final habitId = row.readNullable<String>('habit_id');
+      final recordedAt = row.readNullable<String>('recorded_at');
+      if (habitId == null || recordedAt == null) continue;
+      final dateFrom = DateTime.tryParse(recordedAt);
+      if (dateFrom == null) continue;
+      records.add(
+        HabitCompletionRecord(
+          habitId: habitId,
+          dateFrom: dateFrom,
+          completionType: _habitCompletionTypeFromDb(
+            row.readNullable<String>('completion_type'),
           ),
-        )
-        .toList();
+        ),
+      );
+    }
+    return records;
   }
 
   /// Maps the serialized enum name back to [HabitCompletionType].
