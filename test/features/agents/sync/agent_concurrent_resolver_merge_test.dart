@@ -82,53 +82,90 @@ void main() {
       });
     });
 
-    group('scheduled wake — future reschedule beats past consume', () {
-      final earlier = DateTime(2026, 5, 25, 9);
-      final later = DateTime(2026, 5, 25, 18);
+    group(
+      'scheduled wake — later target wins, then consumption is terminal',
+      () {
+        final earlier = DateTime(2026, 5, 25, 9);
+        final later = DateTime(2026, 5, 25, 18);
 
-      test('a pending re-arm to a later instant beats a consume of an earlier '
-          'one, both directions', () {
-        final rearm = wake(
-          scheduledAt: later,
-          status: ScheduledWakeStatus.pending,
-        );
-        final consumed = wake(
-          scheduledAt: earlier,
-          status: ScheduledWakeStatus.consumed,
-        );
-        expect(
-          resolveConcurrentAgentEntityOverride(
-            local: rearm,
-            incoming: consumed,
-          ),
-          ConcurrentWinner.local,
-        );
-        expect(
-          resolveConcurrentAgentEntityOverride(
-            local: consumed,
-            incoming: rearm,
-          ),
-          ConcurrentWinner.incoming,
-        );
-      });
-
-      test('a same-instant conflict defers to LWW so a fired wake is never '
-          'resurrected (null → no double-fire)', () {
-        expect(
-          resolveConcurrentAgentEntityOverride(
-            local: wake(
-              scheduledAt: earlier,
+        test(
+          'a pending re-arm to a later instant beats a consume of an earlier '
+          'one, both directions',
+          () {
+            final rearm = wake(
+              scheduledAt: later,
               status: ScheduledWakeStatus.pending,
-            ),
-            incoming: wake(
+            );
+            final consumed = wake(
               scheduledAt: earlier,
               status: ScheduledWakeStatus.consumed,
-            ),
-          ),
-          isNull,
+            );
+            expect(
+              resolveConcurrentAgentEntityOverride(
+                local: rearm,
+                incoming: consumed,
+              ),
+              ConcurrentWinner.local,
+            );
+            expect(
+              resolveConcurrentAgentEntityOverride(
+                local: consumed,
+                incoming: rearm,
+              ),
+              ConcurrentWinner.incoming,
+            );
+          },
         );
-      });
-    });
+
+        test('consumption is terminal for one instant, both directions', () {
+          // Deferring to LWW here was the bug this replaces: a peer that saw the
+          // winning lease but missed the later `consumed` write can take over
+          // past leaseUntil and stamp a fresh pending claim, whose younger
+          // updatedAt would then defeat the completion — and it would bill a
+          // second briefing for a window it already knew had finished.
+          final pending = wake(
+            scheduledAt: earlier,
+            status: ScheduledWakeStatus.pending,
+          );
+          final consumed = wake(
+            scheduledAt: earlier,
+            status: ScheduledWakeStatus.consumed,
+          );
+          expect(
+            resolveConcurrentAgentEntityOverride(
+              local: pending,
+              incoming: consumed,
+            ),
+            ConcurrentWinner.incoming,
+          );
+          expect(
+            resolveConcurrentAgentEntityOverride(
+              local: consumed,
+              incoming: pending,
+            ),
+            ConcurrentWinner.local,
+            reason: 'Both replicas must pick the consumed version to converge.',
+          );
+        });
+
+        test('two same-status wakes at one instant still defer to LWW', () {
+          expect(
+            resolveConcurrentAgentEntityOverride(
+              local: wake(
+                scheduledAt: earlier,
+                status: ScheduledWakeStatus.pending,
+              ),
+              incoming: wake(
+                scheduledAt: earlier,
+                status: ScheduledWakeStatus.pending,
+                id: 'w2',
+              ),
+            ),
+            isNull,
+          );
+        });
+      },
+    );
 
     test('defers to LWW for entity types without a monotonic rule', () {
       final state =
@@ -199,10 +236,11 @@ void main() {
       glados.IntAnys(glados.any).intInRange(0, 8),
       glados.ExploreConfig(numRuns: 120),
     ).test(
-      'scheduled wake: the later scheduledAt wins, convergent; equal defers',
+      'scheduled wake: later scheduledAt wins, then consumed wins, convergent',
       (h1, h2) {
         final base = DateTime(2026, 5, 25);
-        // Status differs deliberately — the rule keys on scheduledAt only.
+        // Status differs deliberately: scheduledAt decides first, and status
+        // only breaks a tie between the same instant.
         final a = wake(
           scheduledAt: base.add(Duration(hours: h1)),
           status: ScheduledWakeStatus.pending,
@@ -227,7 +265,9 @@ void main() {
         if (h1 != h2) {
           expect(w1?.id, (h1 > h2 ? a : b).id); // later instant wins
         } else {
-          expect(w1, isNull); // same instant → defer to LWW (no double-fire)
+          // Same instant: `b` is the consumed one, and consumption is terminal
+          // for a window — a late takeover claim must not revive it.
+          expect(w1?.id, b.id);
         }
       },
       tags: 'glados',

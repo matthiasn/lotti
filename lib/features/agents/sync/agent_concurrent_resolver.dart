@@ -92,8 +92,20 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
   }
   if (local is ScheduledWakeEntity && incoming is ScheduledWakeEntity) {
     final byTarget = local.scheduledAt.compareTo(incoming.scheduledAt);
-    if (byTarget == 0) return null;
-    return byTarget > 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+    if (byTarget != 0) {
+      return byTarget > 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+    }
+    // Consumption is terminal for a wake window. Without this, a peer that saw
+    // the winning lease but missed the later `consumed` write could take over
+    // past `leaseUntil` and write a fresh pending claim; generic updatedAt LWW
+    // would then let that younger claim defeat the completion, and the peer
+    // would bill a second briefing for a window it already knew was finished.
+    // Re-arming the *next* window carries a later scheduledAt, so it is
+    // decided above and never reaches here.
+    final localConsumed = local.status == ScheduledWakeStatus.consumed;
+    final incomingConsumed = incoming.status == ScheduledWakeStatus.consumed;
+    if (localConsumed == incomingConsumed) return null;
+    return localConsumed ? ConcurrentWinner.local : ConcurrentWinner.incoming;
   }
   if (local is DaySummaryEntity && incoming is DaySummaryEntity) {
     final byCreated = local.createdAt.compareTo(incoming.createdAt);
