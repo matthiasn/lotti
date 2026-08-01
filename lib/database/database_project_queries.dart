@@ -3,7 +3,6 @@ part of 'database.dart';
 typedef ProjectTaskRollupCounts = ({
   int totalTaskCount,
   int completedTaskCount,
-  int blockedTaskCount,
 });
 
 /// Project query surface for [JournalDb]: project lists, task↔project
@@ -175,8 +174,7 @@ mixin _JournalDbProjectQueries
         SELECT
           project_id,
           COUNT(*) AS total_count,
-          SUM(CASE WHEN task_status = 'DONE' THEN 1 ELSE 0 END) AS completed_count,
-          SUM(CASE WHEN task_status = 'BLOCKED' THEN 1 ELSE 0 END) AS blocked_count
+          SUM(CASE WHEN task_status = 'DONE' THEN 1 ELSE 0 END) AS completed_count
         FROM journal
         WHERE project_id IN ($projectPlaceholders)
           AND deleted = FALSE
@@ -197,7 +195,6 @@ mixin _JournalDbProjectQueries
         row.read<String>('project_id'): (
           totalTaskCount: row.read<int>('total_count'),
           completedTaskCount: row.read<int>('completed_count'),
-          blockedTaskCount: row.read<int>('blocked_count'),
         ),
     };
   }

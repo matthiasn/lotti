@@ -2,12 +2,15 @@
 
 ## Scope
 
-This document describes the sync system as it exists in the codebase on
-2026-03-12.
+This document began as a code-and-log investigation on 2026-03-12. Its
+executive diagrams, file map, and core flows were refreshed against the queue
+pipeline on 2026-08-01; sections that describe the retired live-scan pipeline
+are marked historical.
 
 It is not a target architecture document. It is a map of the current system,
 the recent fix history, and the code-backed failure surfaces that are relevant
-to the current investigation.
+to the investigation. The durable current receive-path map is
+[Sync receive path](../../knowledge/features/sync/receive-path.md).
 
 The user request behind this document is specific:
 
@@ -34,16 +37,18 @@ flowchart TD
   A["Local state change"] --> B["OutboxService"]
   B --> C["MatrixMessageSender"]
   C --> D["Matrix room"]
-  D --> E["MatrixStreamConsumer"]
-  E --> F["MatrixStreamProcessor"]
+  D --> E["QueuePipelineCoordinator"]
+  E --> F["Live producer + BridgeCoordinator"]
   F --> G["AttachmentIngestor + AttachmentIndex"]
-  F --> H["SyncEventProcessor"]
-  H --> I["JournalDb / AgentRepository"]
-  H --> J["SyncSequenceLogService"]
-  J --> K["BackfillRequestService"]
-  K --> D
-  D --> L["BackfillResponseHandler"]
-  L --> J
+  F --> H["InboundQueue"]
+  H --> I["InboundWorker + QueueApplyAdapter"]
+  I --> J["SyncEventProcessor"]
+  J --> K["JournalDb / AgentRepository"]
+  J --> L["SyncSequenceLogService"]
+  L --> M["BackfillRequestService"]
+  M --> D
+  D --> N["BackfillResponseHandler"]
+  N --> L
 ```
 
 The important property is that sync is not just "send message, apply message".
@@ -122,8 +127,10 @@ Since the first draft of this document, two targeted fixes have landed:
 
 - exact backfill hits are now validated before resend, instead of trusting any
   `(hostId, counter) -> payloadId` row blindly
-- marker-missing catch-up now returns a bounded tail with explicit logging,
-  instead of replaying the entire visible snapshot
+- the historical snapshot collector first replaced marker-missing full-snapshot
+  replay with a bounded tail, then the queue migration removed that collector;
+  current catch-up uses anchored forward or timestamp-bounded backward
+  pagination into the durable inbound queue
 
 The log evidence below is still useful because it explains why those changes
 were necessary. The remaining open question is whether the agent
@@ -154,9 +161,9 @@ The relevant code path is straightforward:
 - the same method then scheduled download work immediately afterward
 - `AttachmentIngestor._saveAttachment()` explicitly skipped existing-file
   dedupe for agent payload paths
-- `MatrixStreamProcessor` only remembered `5000` recently seen event IDs for
-  first-pass duplicate suppression, while catch-up can replay windows up to
-  `10000`
+- at the time of this capture, `MatrixStreamProcessor` remembered only `5000`
+  recently seen event IDs for first-pass duplicate suppression, while the
+  retired catch-up path could replay windows up to `10000`
 
 That meant repeated replay waves could re-run the same attachment event's
 observe/download/write path even when nothing new had arrived.
@@ -180,12 +187,14 @@ That change is specifically about sink routing, not about reducing event
 volume. The remaining work on signal coalescing and replay overlap is still
 separate.
 
-## 2026-03-12 Signal Summary Diagnostics
+## Historical 2026-03-12 Signal Summary Diagnostics
 
-The next receiver-side diagnostics pass changed how scheduler signals are
-observed.
+The next receiver-side diagnostics pass changed how the retired live-scan
+scheduler signals were observed.
 
-These are hard facts from the current code:
+These were facts about that pipeline at the time of the capture. They remain
+useful as log-history context but do not describe the current queue receive
+path:
 
 - the receiver still has two overlapping signal sources:
   `MatrixStreamSignalBinder` listens to the client stream and also attaches
@@ -211,9 +220,9 @@ These are hard facts from the current code:
   deferred reasons, coalesced count, trailing-scan scheduling, and the latest
   signal-to-scan latency sample
 
-This is a diagnostics restructuring, not a scheduler rewrite. The point is to
-preserve cause-and-effect data while removing hundreds of thousands of
-individual callback log lines from the hot path.
+This was a diagnostics restructuring, not a scheduler rewrite. Its purpose was
+to preserve cause-and-effect data while removing hundreds of thousands of
+individual callback log lines from the former hot path.
 
 ## 2026-03-12 Backfill Request Follow-up
 
@@ -297,15 +306,17 @@ The replay batches are not small:
 - lines `91964..144090`: `20508`
 - lines `144091..end`: `7357`
 
-That is large enough to overflow the current `5000`-event in-memory dedupe in
-the stream processor.
+That was large enough to overflow the then-current `5000`-event in-memory
+dedupe in the stream processor. The queue pipeline now deduplicates durably on
+the inbound queue's unique `event_id`.
 
 ## File Map
 
 | Area | Files | Role |
 | --- | --- | --- |
 | Send path | `outbox/outbox_service.dart`, `matrix/matrix_message_sender.dart` | stage payloads, merge pending work, upload JSON and text events |
-| Receive path | `matrix/pipeline/matrix_stream_consumer.dart`, `matrix/pipeline/matrix_stream_processor.dart` | catch-up, live scan, retry, ordered processing |
+| Receive path | `queue/queue_pipeline_coordinator.dart`, `queue/bridge_coordinator.dart`, `queue/inbound_event_queue.dart`, `queue/inbound_worker.dart`, `queue/queue_apply_adapter.dart` | live ingestion, anchored catch-up, durable dedupe, retry, ordered processing |
+| Receive diagnostics | `matrix/pipeline/matrix_stream_consumer.dart`, `matrix/pipeline/matrix_stream_processor.dart` | startup signal binding, Matrix Stats metrics, and apply-outcome diagnostics; not event ingestion |
 | Attachment resolution | `matrix/pipeline/attachment_index.dart`, `matrix/pipeline/attachment_ingestor.dart` | remember latest attachment by path and fetch/save payloads |
 | Apply path | `matrix/sync_event_processor.dart` | decode messages, resolve payloads, upsert journal/agent state |
 | Gap tracking | `sequence/sync_sequence_log_service.dart` | detect gaps, mark covered counters, resolve hints |
@@ -349,24 +360,38 @@ That last point is a major difference between agent entities and agent links.
 
 ```mermaid
 flowchart TD
-  A["Matrix room events"] --> B["MatrixStreamConsumer"]
-  B --> C["Catch-up / live scan"]
-  C --> D["MatrixStreamProcessor"]
-  D --> E["AttachmentIngestor"]
-  E --> F["AttachmentIndex.record(relativePath -> latest event)"]
-  D --> G["SyncEventProcessor.process"]
-  G --> H["Resolve payload"]
-  H --> I["JournalDb / AgentRepository apply"]
-  I --> J["SyncSequenceLogService.recordReceivedEntry"]
+  A["Matrix room events"] --> B["QueuePipelineCoordinator"]
+  B --> C{"Producer"}
+  C -->|live| D["Ordered live subscription"]
+  C -->|catch-up| E["BridgeCoordinator anchored pagination"]
+  D --> F["Attachment-aware ingestion"]
+  E --> F
+  F --> G["InboundQueue: UNIQUE event_id"]
+  G --> H["Per-room InboundWorker"]
+  H --> I["QueueApplyAdapter prepare / apply"]
+  I --> J["SyncEventProcessor"]
+  J --> K["JournalDb / AgentRepository apply"]
+  K --> L["SyncSequenceLogService.recordReceivedEntry"]
 ```
 
 ### Relevant code
 
-`MatrixStreamConsumer` now treats client stream events mostly as signals and
-processes ordered slices through catch-up/live scan.
+`QueuePipelineCoordinator` subscribes to ordered live timeline events and owns
+the durable queue worker. `BridgeCoordinator` runs single-flight catch-up from
+the per-room marker: anchored forward pagination when the anchor is safe, or a
+timestamp-bounded backward walk when it is not. Both producers append through
+the same `InboundQueue`, whose unique `event_id` is the cross-producer dedupe
+boundary.
 
-`AttachmentIngestor.process()` records descriptors before the payload is
-applied.
+`InboundWorker` drains one row at a time through `QueueApplyAdapter`, which
+prepares file-backed payloads outside the writer transaction and applies them
+through `SyncEventProcessor` inside the appropriate transaction.
+
+`MatrixStreamConsumer` remains only as a startup-signal and metrics façade;
+`MatrixStreamProcessor` records apply diagnostics. Neither owns ingestion.
+
+`AttachmentIngestor.process()` records descriptors before companion payloads
+are applied.
 
 `AttachmentIndex` is intentionally simple:
 

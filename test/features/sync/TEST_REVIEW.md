@@ -111,6 +111,6 @@ This document also serves as the index for the sync feature's subdir-level test 
 | Subdir | Biggest finding |
 |---|---|
 | `gateway/` | 7 inline mocks + 2 `Future.delayed(Duration.zero)` violations in `matrix_sdk_gateway_test.dart` |
-| `model/` + `models/` | `sync_message_test.dart` approaching split threshold; 2 zero-assertion smoke tests in `sync_error_test.dart` |
+| `model/` + `models/` | `sync_message_test.dart` is approaching the split threshold |
 | `repository/` | `sync_maintenance_repository_test.dart` is **1269 lines** (must split); 5 missing error-path tests |
 | `services/` | `synced_audio_inference_dispatcher_test.dart` is **1011 lines** (must split); 1 real-network test risks CI flakiness |
