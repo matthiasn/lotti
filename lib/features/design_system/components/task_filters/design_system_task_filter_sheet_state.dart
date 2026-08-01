@@ -1,16 +1,5 @@
 import 'package:flutter/material.dart';
 
-List<T> _parseJsonList<T>(
-  dynamic jsonList,
-  T Function(Map<String, dynamic>) fromJson,
-) {
-  if (jsonList is! List) return const [];
-  return jsonList
-      .cast<Map<String, dynamic>>()
-      .map(fromJson)
-      .toList(growable: false);
-}
-
 enum DesignSystemTaskFilterSection {
   status,
   category,
@@ -33,7 +22,7 @@ enum DesignSystemTaskFilterGlyph {
 ///
 /// Identified by [id] and shown with [label]; an optional [glyph]
 /// ([DesignSystemTaskFilterGlyph], e.g. a priority badge) plus optional [icon]/
-/// [iconColor] decorate the chip. JSON-serializable for sheet persistence.
+/// [iconColor] decorate the chip.
 @immutable
 class DesignSystemTaskFilterOption {
   const DesignSystemTaskFilterOption({
@@ -43,16 +32,6 @@ class DesignSystemTaskFilterOption {
     this.icon,
     this.iconColor,
   });
-
-  factory DesignSystemTaskFilterOption.fromJson(Map<String, dynamic> json) {
-    return DesignSystemTaskFilterOption(
-      id: json['id'] as String,
-      label: json['label'] as String,
-      glyph: DesignSystemTaskFilterGlyph.values.byName(
-        json['glyph'] as String? ?? DesignSystemTaskFilterGlyph.none.name,
-      ),
-    );
-  }
 
   final String id;
   final String label;
@@ -76,7 +55,7 @@ class DesignSystemTaskFilterOption {
 ///
 /// Holds the field [label], its available [options], and the [selectedIds].
 /// Exposes [selectedOptions] and immutable update helpers ([copyWith],
-/// [removeSelection], [clear]); JSON-serializable for sheet persistence.
+/// [removeSelection], [clear]).
 @immutable
 class DesignSystemTaskFilterFieldState {
   const DesignSystemTaskFilterFieldState({
@@ -84,19 +63,6 @@ class DesignSystemTaskFilterFieldState {
     required this.options,
     this.selectedIds = const <String>{},
   });
-
-  factory DesignSystemTaskFilterFieldState.fromJson(Map<String, dynamic> json) {
-    return DesignSystemTaskFilterFieldState(
-      label: json['label'] as String,
-      options: (json['options'] as List<dynamic>)
-          .cast<Map<String, dynamic>>()
-          .map(DesignSystemTaskFilterOption.fromJson)
-          .toList(growable: false),
-      selectedIds: (json['selectedIds'] as List<dynamic>)
-          .cast<String>()
-          .toSet(),
-    );
-  }
 
   final String label;
   final List<DesignSystemTaskFilterOption> options;
@@ -151,14 +117,6 @@ class DesignSystemTaskFilterToggle {
     required this.value,
   });
 
-  factory DesignSystemTaskFilterToggle.fromJson(Map<String, dynamic> json) {
-    return DesignSystemTaskFilterToggle(
-      id: json['id'] as String,
-      label: json['label'] as String,
-      value: json['value'] as bool? ?? false,
-    );
-  }
-
   final String id;
   final String label;
   final bool value;
@@ -186,10 +144,10 @@ class DesignSystemTaskFilterToggle {
 /// with [allPriorityId] as the "no filter" sentinel), the optional status/
 /// category/label/project [DesignSystemTaskFilterFieldState]s, single-select
 /// agent-filter and search-mode sections, and boolean [toggles]. Section
-/// presence is derived via the `has…` getters, [appliedCount] reports the
+/// presence is derived from the option lists, [appliedCount] reports the
 /// active-filter total, and a family of immutable update methods
 /// ([selectSort], [togglePriority], [removeSelection], [clearAll], …) produce
-/// new states. JSON-serializable, with backward-compatible priority migration.
+/// new states.
 @immutable
 class DesignSystemTaskFilterState {
   DesignSystemTaskFilterState({
@@ -233,77 +191,6 @@ class DesignSystemTaskFilterState {
                  : <String>{selectedPriorityId}),
        );
 
-  factory DesignSystemTaskFilterState.fromJson(Map<String, dynamic> json) {
-    // Only honour the new-format `selectedPriorityIds` key when it is
-    // actually present on the payload. A *missing* key falls through to
-    // the legacy `selectedPriorityId` migration so old JSON doesn't lose
-    // its single-priority selection; a *present* key — even if empty or
-    // non-List — is treated as the authoritative new-format value and
-    // overrides any stale legacy `selectedPriorityId` still on the payload.
-    Set<String>? parsedPriorityIds;
-    if (json.containsKey('selectedPriorityIds')) {
-      final raw = json['selectedPriorityIds'];
-      parsedPriorityIds = raw is List<dynamic>
-          ? raw.cast<String>().toSet()
-          : const <String>{};
-    }
-
-    return DesignSystemTaskFilterState(
-      title: json['title'] as String,
-      clearAllLabel: json['clearAllLabel'] as String,
-      applyLabel: json['applyLabel'] as String,
-      sortLabel: json['sortLabel'] as String? ?? '',
-      sortOptions: _parseJsonList(
-        json['sortOptions'],
-        DesignSystemTaskFilterOption.fromJson,
-      ),
-      selectedSortId: json['selectedSortId'] as String? ?? '',
-      statusField: switch (json['statusField']) {
-        final Map<String, dynamic> value =>
-          DesignSystemTaskFilterFieldState.fromJson(value),
-        _ => null,
-      },
-      priorityLabel: json['priorityLabel'] as String? ?? '',
-      priorityOptions: _parseJsonList(
-        json['priorityOptions'],
-        DesignSystemTaskFilterOption.fromJson,
-      ),
-      selectedPriorityIds: parsedPriorityIds,
-      selectedPriorityId: json['selectedPriorityId'] as String?,
-      categoryField: switch (json['categoryField']) {
-        final Map<String, dynamic> value =>
-          DesignSystemTaskFilterFieldState.fromJson(value),
-        _ => null,
-      },
-      labelField: switch (json['labelField']) {
-        final Map<String, dynamic> value =>
-          DesignSystemTaskFilterFieldState.fromJson(value),
-        _ => null,
-      },
-      projectField: switch (json['projectField']) {
-        final Map<String, dynamic> value =>
-          DesignSystemTaskFilterFieldState.fromJson(value),
-        _ => null,
-      },
-      agentFilterLabel: json['agentFilterLabel'] as String? ?? '',
-      agentFilterOptions: _parseJsonList(
-        json['agentFilterOptions'],
-        DesignSystemTaskFilterOption.fromJson,
-      ),
-      selectedAgentFilterId: json['selectedAgentFilterId'] as String? ?? '',
-      searchModeLabel: json['searchModeLabel'] as String? ?? '',
-      searchModeOptions: _parseJsonList(
-        json['searchModeOptions'],
-        DesignSystemTaskFilterOption.fromJson,
-      ),
-      selectedSearchModeId: json['selectedSearchModeId'] as String? ?? '',
-      toggles: _parseJsonList(
-        json['toggles'],
-        DesignSystemTaskFilterToggle.fromJson,
-      ),
-    );
-  }
-
   static const allPriorityId = 'all';
 
   final String title;
@@ -341,11 +228,7 @@ class DesignSystemTaskFilterState {
   final List<DesignSystemTaskFilterToggle> toggles;
 
   bool get hasSortSection => sortOptions.isNotEmpty;
-  bool get hasStatusField => statusField != null;
   bool get hasPrioritySection => priorityOptions.isNotEmpty;
-  bool get hasCategoryField => categoryField != null;
-  bool get hasLabelField => labelField != null;
-  bool get hasProjectField => projectField != null;
   bool get hasAgentFilter => agentFilterOptions.isNotEmpty;
   bool get hasSearchMode => searchModeOptions.isNotEmpty;
 
@@ -442,25 +325,6 @@ class DesignSystemTaskFilterState {
       next.add(priorityId);
     }
     return copyWith(selectedPriorityIds: next);
-  }
-
-  /// Legacy single-select variant kept for callers that still pass an
-  /// explicit id. Use [togglePriority] for new code.
-  ///
-  /// Unlike [togglePriority], this *replaces* the selection rather than
-  /// toggling: calling it with `allPriorityId` (or an empty id) clears the
-  /// selection, and any other id becomes the sole selected priority.
-  DesignSystemTaskFilterState selectPriority(String priorityId) {
-    if (!hasPrioritySection) return this;
-    if (priorityId == allPriorityId || priorityId.isEmpty) {
-      if (selectedPriorityIds.isEmpty) return this;
-      return copyWith(selectedPriorityIds: const <String>{});
-    }
-    if (selectedPriorityIds.length == 1 &&
-        selectedPriorityIds.contains(priorityId)) {
-      return this;
-    }
-    return copyWith(selectedPriorityIds: <String>{priorityId});
   }
 
   DesignSystemTaskFilterState selectAgentFilter(String agentFilterId) {

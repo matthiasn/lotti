@@ -8,23 +8,18 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   group('DesignSystemTaskFilterOption', () {
-    test('serializes and deserializes glyph values', () {
+    test('serializes glyph values', () {
       const option = DesignSystemTaskFilterOption(
         id: 'p1',
         label: 'P1',
         glyph: DesignSystemTaskFilterGlyph.priorityP1,
       );
 
-      final roundTrip = DesignSystemTaskFilterOption.fromJson(option.toJson());
-      final defaultGlyphOption = DesignSystemTaskFilterOption.fromJson(const {
-        'id': 'all',
-        'label': 'All',
+      expect(option.toJson(), {
+        'id': 'p1',
+        'label': 'P1',
+        'glyph': 'priorityP1',
       });
-
-      expect(roundTrip.id, option.id);
-      expect(roundTrip.label, option.label);
-      expect(roundTrip.glyph, DesignSystemTaskFilterGlyph.priorityP1);
-      expect(defaultGlyphOption.glyph, DesignSystemTaskFilterGlyph.none);
     });
   });
 
@@ -51,20 +46,10 @@ void main() {
         final removed = fieldState.removeSelection('ai-coding');
         final copied = removed.copyWith(label: 'Updated labels');
         final cleared = removed.clear();
-        final roundTrip = DesignSystemTaskFilterFieldState.fromJson(
-          fieldState.toJson(),
-        );
-
         expect(removed.selectedIds, {'agents'});
         expect(copied.label, 'Updated labels');
         expect(cleared.selectedIds, isEmpty);
         expect(cleared.clear(), same(cleared));
-        expect(roundTrip.label, fieldState.label);
-        expect(
-          roundTrip.options.map((option) => option.id),
-          ['ai-coding', 'agents', 'ux'],
-        );
-        expect(roundTrip.selectedIds, {'ai-coding', 'agents'});
       },
     );
   });
@@ -94,28 +79,22 @@ void main() {
       expect(keptOff.value, isFalse);
       expect(flipped.value, isTrue);
 
-      // Round trip preserves all fields.
-      final roundTrip = DesignSystemTaskFilterToggle.fromJson(
-        toggleOn.toJson(),
-      );
-      expect(roundTrip.id, 'showDate');
-      expect(roundTrip.label, 'Show date');
-      expect(roundTrip.value, isTrue);
+      expect(toggleOn.toJson(), {
+        'id': 'showDate',
+        'label': 'Show date',
+        'value': true,
+      });
     });
   });
 
   group('DesignSystemTaskFilterState', () {
-    test('round trips through json and updates each selection bucket', () {
+    test('updates each selection bucket', () {
       final state = _buildState();
 
-      final roundTrip = DesignSystemTaskFilterState.fromJson(state.toJson());
       final copied = state.copyWith(
         title: 'Updated title',
       );
       final sorted = state.selectSort('priority');
-      final prioritized = state.selectPriority(
-        DesignSystemTaskFilterState.allPriorityId,
-      );
       final statusRemoved = state.removeSelection(
         DesignSystemTaskFilterSection.status,
         'open',
@@ -129,18 +108,6 @@ void main() {
         'ai-coding',
       );
 
-      expect(roundTrip.selectedSortId, state.selectedSortId);
-      expect(roundTrip.selectedPriorityIds, state.selectedPriorityIds);
-      expect(roundTrip.selectedPriorityId, state.selectedPriorityId);
-      expect(
-        roundTrip.statusField!.selectedIds,
-        state.statusField!.selectedIds,
-      );
-      expect(
-        roundTrip.categoryField!.selectedIds,
-        state.categoryField!.selectedIds,
-      );
-      expect(roundTrip.labelField!.selectedIds, state.labelField!.selectedIds);
       expect(state.selectSort('due-date'), same(state));
       // Priority is multi-select: toggling an already-selected id removes
       // it from the set, and tapping `allPriorityId` clears the set.
@@ -151,12 +118,6 @@ void main() {
       );
       expect(copied.title, 'Updated title');
       expect(sorted.selectedSortId, 'priority');
-      expect(
-        prioritized.selectedPriorityId,
-        DesignSystemTaskFilterState.allPriorityId,
-      );
-      expect(prioritized.selectedPriorityIds, isEmpty);
-      expect(prioritized.appliedCount, 6);
       expect(statusRemoved.statusField!.selectedIds, {'in-progress'});
       expect(categoryRemoved.categoryField!.selectedIds, {'study'});
       expect(labelRemoved.labelField!.selectedIds, {'agents'});
@@ -249,136 +210,6 @@ void main() {
       });
     });
 
-    group('selectPriority (single-select replacement semantics)', () {
-      DesignSystemTaskFilterState seed({Set<String>? selected}) {
-        return DesignSystemTaskFilterState(
-          title: 't',
-          clearAllLabel: 'c',
-          applyLabel: 'a',
-          priorityOptions: const [
-            DesignSystemTaskFilterOption(
-              id: DesignSystemTaskFilterState.allPriorityId,
-              label: 'All',
-            ),
-            DesignSystemTaskFilterOption(id: 'p0', label: 'P0'),
-            DesignSystemTaskFilterOption(id: 'p2', label: 'P2'),
-          ],
-          selectedPriorityIds: selected,
-        );
-      }
-
-      test('returns the same state when no priority section is configured', () {
-        final state = DesignSystemTaskFilterState(
-          title: 't',
-          clearAllLabel: 'c',
-          applyLabel: 'a',
-        );
-        expect(state.selectPriority('p0'), same(state));
-      });
-
-      test(
-        'replaces the selection with a one-element set regardless of '
-        'previous size',
-        () {
-          final from0 = seed().selectPriority('p2');
-          expect(from0.selectedPriorityIds, equals({'p2'}));
-
-          final from1 = seed(selected: {'p0'}).selectPriority('p2');
-          expect(from1.selectedPriorityIds, equals({'p2'}));
-
-          final fromMany = seed(selected: {'p0', 'p2'}).selectPriority('p2');
-          expect(fromMany.selectedPriorityIds, equals({'p2'}));
-        },
-      );
-
-      test(
-        'allPriorityId and empty-string clear the selection; no-op when '
-        'already empty',
-        () {
-          // No change when already empty — returns identical instance.
-          final empty = seed();
-          expect(
-            empty.selectPriority(DesignSystemTaskFilterState.allPriorityId),
-            same(empty),
-          );
-
-          final cleared = seed(selected: {'p0'}).selectPriority(
-            DesignSystemTaskFilterState.allPriorityId,
-          );
-          expect(cleared.selectedPriorityIds, isEmpty);
-
-          final clearedByEmpty = seed(selected: {'p0'}).selectPriority('');
-          expect(clearedByEmpty.selectedPriorityIds, isEmpty);
-        },
-      );
-
-      test('idempotent when the same single id is already selected', () {
-        final base = seed(selected: {'p0'});
-        expect(base.selectPriority('p0'), same(base));
-      });
-    });
-
-    group(
-      'fromJson priority migration prefers the new key when present, '
-      'falls back to legacy when absent',
-      () {
-        Map<String, dynamic> basePayload() => <String, dynamic>{
-          'title': 't',
-          'clearAllLabel': 'c',
-          'applyLabel': 'a',
-          'priorityOptions': <Map<String, dynamic>>[
-            {
-              'id': DesignSystemTaskFilterState.allPriorityId,
-              'label': 'All',
-            },
-            {'id': 'p0', 'label': 'P0'},
-            {'id': 'p2', 'label': 'P2'},
-          ],
-        };
-
-        test(
-          'absent selectedPriorityIds + legacy selectedPriorityId migrates to '
-          'a one-element set',
-          () {
-            final payload = basePayload()..['selectedPriorityId'] = 'p2';
-            final state = DesignSystemTaskFilterState.fromJson(payload);
-            expect(state.selectedPriorityIds, equals({'p2'}));
-          },
-        );
-
-        test(
-          'present empty selectedPriorityIds overrides any stale '
-          'selectedPriorityId still on the payload',
-          () {
-            final payload = basePayload()
-              ..['selectedPriorityIds'] = <dynamic>[]
-              ..['selectedPriorityId'] = 'p2';
-            final state = DesignSystemTaskFilterState.fromJson(payload);
-            expect(state.selectedPriorityIds, isEmpty);
-          },
-        );
-
-        test(
-          'present non-List selectedPriorityIds (e.g. null) yields an empty '
-          'set — new-format key wins even when malformed',
-          () {
-            final payload = basePayload()
-              ..['selectedPriorityIds'] = null
-              ..['selectedPriorityId'] = 'p2';
-            final state = DesignSystemTaskFilterState.fromJson(payload);
-            expect(state.selectedPriorityIds, isEmpty);
-          },
-        );
-
-        test('present non-empty list is honoured verbatim', () {
-          final payload = basePayload()
-            ..['selectedPriorityIds'] = <dynamic>['p0', 'p2'];
-          final state = DesignSystemTaskFilterState.fromJson(payload);
-          expect(state.selectedPriorityIds, equals({'p0', 'p2'}));
-        });
-      },
-    );
-
     test('derives applied count and clears selected filters', () {
       final state = _buildState();
 
@@ -424,7 +255,6 @@ void main() {
 
         expect(state.hasSortSection, isFalse);
         expect(state.hasPrioritySection, isFalse);
-        expect(state.hasLabelField, isFalse);
         expect(state.appliedCount, 2);
 
         final cleared = state.clearAll();

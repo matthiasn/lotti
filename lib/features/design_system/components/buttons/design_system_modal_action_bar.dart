@@ -188,14 +188,12 @@ class _FlowPlan {
   const _FlowPlan({
     required this.availableWidth,
     required this.secondaryIntrinsic,
-    required this.primaryIntrinsic,
     required this.gap,
     required this.wraps,
   });
 
   final double availableWidth;
   final double secondaryIntrinsic;
-  final double primaryIntrinsic;
 
   /// The gutter, or zero when there is no secondary group to separate.
   final double gap;
@@ -300,7 +298,6 @@ class _RenderActionFlow extends RenderBox
     return _FlowPlan(
       availableWidth: availableWidth,
       secondaryIntrinsic: secondaryIntrinsic,
-      primaryIntrinsic: primaryIntrinsic,
       gap: gap,
       // Wrapping means "the groups take separate rows", so it needs two groups.
       // A lone primary that cannot fit is bounded to the available width, not

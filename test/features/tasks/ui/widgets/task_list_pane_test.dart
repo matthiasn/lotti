@@ -233,7 +233,11 @@ void main() {
           DesignSystemTaskFilterOption(id: 'p2', label: 'P2'),
           DesignSystemTaskFilterOption(id: 'p3', label: 'P3'),
         ],
-      ).selectPriority(priorityId);
+        selectedPriorityIds:
+            priorityId == DesignSystemTaskFilterState.allPriorityId
+            ? const {}
+            : {priorityId},
+      );
       return TaskListDetailState(
         data: TaskListData(
           categories: const [],

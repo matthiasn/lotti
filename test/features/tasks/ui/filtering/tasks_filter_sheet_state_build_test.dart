@@ -150,7 +150,7 @@ void main() {
       expect(state.appliedCount, 0);
     });
 
-    test('round-trips new fields through JSON', () {
+    test('serializes new fields to JSON', () {
       final state = DesignSystemTaskFilterState(
         title: 'T',
         clearAllLabel: 'C',
@@ -175,40 +175,34 @@ void main() {
         ],
       );
 
-      final roundTrip = DesignSystemTaskFilterState.fromJson(state.toJson());
+      final json = state.toJson();
+      final projectField = json['projectField']! as Map<String, dynamic>;
+      final toggles = json['toggles']! as List<Map<String, dynamic>>;
 
-      expect(roundTrip.hasProjectField, isTrue);
-      expect(roundTrip.projectField!.selectedIds, {'p1'});
-      expect(roundTrip.agentFilterLabel, 'Agent');
-      expect(roundTrip.selectedAgentFilterId, 'all');
-      expect(roundTrip.searchModeLabel, 'Search');
-      expect(roundTrip.selectedSearchModeId, 'fullText');
-      expect(roundTrip.toggles, hasLength(1));
-      expect(roundTrip.toggles[0].id, 'x');
-      expect(roundTrip.toggles[0].value, isTrue);
+      expect(projectField['selectedIds'], ['p1']);
+      expect(json['agentFilterLabel'], 'Agent');
+      expect(json['selectedAgentFilterId'], 'all');
+      expect(json['searchModeLabel'], 'Search');
+      expect(json['selectedSearchModeId'], 'fullText');
+      expect(toggles, [
+        {'id': 'x', 'label': 'X', 'value': true},
+      ]);
     });
   });
 
   group('DesignSystemTaskFilterToggle', () {
-    test('round-trips through JSON', () {
+    test('serializes to JSON', () {
       const toggle = DesignSystemTaskFilterToggle(
         id: 'show',
         label: 'Show it',
         value: true,
       );
 
-      final roundTrip = DesignSystemTaskFilterToggle.fromJson(toggle.toJson());
-      expect(roundTrip.id, 'show');
-      expect(roundTrip.label, 'Show it');
-      expect(roundTrip.value, isTrue);
-    });
-
-    test('defaults value to false when missing from JSON', () {
-      final toggle = DesignSystemTaskFilterToggle.fromJson(const {
-        'id': 'x',
-        'label': 'X',
+      expect(toggle.toJson(), const {
+        'id': 'show',
+        'label': 'Show it',
+        'value': true,
       });
-      expect(toggle.value, isFalse);
     });
 
     test('copyWith updates value', () {

@@ -106,9 +106,6 @@ enum DesignSystemFilterChoiceRole {
 
   /// An independently toggled choice, such as priority or entry type.
   multiSelect,
-
-  /// A compact command that opens another filter surface.
-  action,
 }
 
 /// Compact token-backed choice used by inline filter sections.

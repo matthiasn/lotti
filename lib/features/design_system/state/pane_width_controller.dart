@@ -383,18 +383,4 @@ class PaneWidthController extends Notifier<PaneWidths> {
       );
     }
   }
-
-  /// Resets all widths and the collapsed flag to their defaults, cancels any
-  /// pending debounced writes, and persists the defaults.
-  void resetToDefaults() {
-    _userAdjusted = true;
-    _sidebarDebounce?.cancel();
-    _listPaneDebounce?.cancel();
-    _journalListPaneDebounce?.cancel();
-    state = const PaneWidths();
-    _persistSidebarWidth();
-    _persistListPaneWidth();
-    _persistJournalListPaneWidth();
-    _persistCollapseFlag();
-  }
 }

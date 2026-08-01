@@ -19,7 +19,7 @@ sources:
   - id: theme
     resource: ../../../lib/features/design_system/theme
     title: Generated tokens, theme, access API
-    last_modified: 2026-07-29
+    last_modified: 2026-08-01
   - id: alpha-tokens
     resource: ../../../lib/features/design_system/theme/alpha_tokens.dart
     title: Hand-authored opacity tokens

@@ -11,8 +11,6 @@ class ResolvedCelebration {
   final CelebrationVariant primary;
   final CelebrationVariant? secondary;
 
-  bool get isCombined => secondary != null;
-
   @override
   bool operator ==(Object other) =>
       other is ResolvedCelebration &&
