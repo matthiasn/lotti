@@ -11,7 +11,7 @@ sources:
   - id: sequence
     resource: ../../../lib/features/sync/sequence
     title: SyncSequenceLogService
-    last_modified: 2026-07-13
+    last_modified: 2026-08-01
   - id: status
     resource: ../../../lib/database/sync_sequence_status.dart
     title: SyncSequenceStatus
@@ -19,7 +19,7 @@ sources:
   - id: backfill
     resource: ../../../lib/features/sync/backfill
     title: Backfill request and response services
-    last_modified: 2026-07-05
+    last_modified: 2026-08-01
 ---
 
 # The accounting layer
@@ -75,6 +75,15 @@ deliberately does **not** terminalize plain `reserved` rows: a crash may have
 left a real local payload behind before outbox logging ran, and burning it would
 destroy recoverable data.
 
+Local persistence records the exact `(host, counter, entry, payload type)`
+binding immediately after its data commit. The outbox records it again as a
+fallback for direct enqueue and re-sync paths. `SyncSequenceCache` remembers a
+successful binding for five minutes and makes the normal second call
+idempotent; a later call reaches the database again in case lifecycle state
+changed. Counted `sequence.recordSent.write` and
+`sequence.recordSent.duplicate` diagnostics preserve the ratio between useful
+writes and redundant attempts without logging every binding.
+
 # `burned` versus `unresolvable`
 
 Both mean "no payload will arrive here", and the split is deliberate.
@@ -115,6 +124,13 @@ index), so neither blocks progress.
 2-minute interval (`backfillRequestInterval`, up to `backfillMaxRequestCount`
 = 10 per batch), supports a manual full historical backfill, and can re-request
 entries previously requested but never resolved.
+
+Backfill observability deliberately distinguishes work from polling. Gap
+detections, ranges, filtered queued rows and sent-request counts are logged for
+every actionable event, including manual full-history backfill. The frequent
+`no actionable entries` and `no missing entries` outcomes are counted samples,
+so a no-op storm is still visible by its cumulative total without producing a
+line for every timer or drain nudge.
 
 # Responding
 

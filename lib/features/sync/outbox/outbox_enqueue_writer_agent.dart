@@ -194,28 +194,23 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
           );
         }
 
-        final coveredVcStrings = coveredClocks?.map((vc) => vc.vclock).toList();
-        _loggingService.log(
-          LogDomain.sync,
+        _logEnqueueSample(
           'enqueue MERGED type=$typeName id=$id '
-          'coveredClocks=${coveredClocks?.length ?? 0} '
-          'covered=$coveredVcStrings',
-          subDomain: 'enqueueMessage',
+          'coveredClocks=${coveredClocks?.length ?? 0}',
+          sampleKey: 'merge.$typeName',
         );
       } catch (e, st) {
-        _loggingService
-          ..error(
-            LogDomain.sync,
-            e,
-            stackTrace: st,
-            subDomain: 'enqueueMessage.agentMerge',
-          )
-          // Fallback: proceed without merging covered clocks
-          ..log(
-            LogDomain.sync,
-            'enqueue MERGED type=$typeName id=$id (no VC merge)',
-            subDomain: 'enqueueMessage',
-          );
+        _loggingService.error(
+          LogDomain.sync,
+          e,
+          stackTrace: st,
+          subDomain: 'enqueueMessage.agentMerge',
+        );
+        // Fallback: proceed without merging covered clocks.
+        _logEnqueueSample(
+          'enqueue MERGED type=$typeName id=$id (no VC merge)',
+          sampleKey: 'merge.$typeName.noVectorClock',
+        );
       }
 
       final mergedJson = json.encode(mergedMessage.toJson());
@@ -296,10 +291,9 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
         payloadSize: Value(outboxAgentSize),
       ),
     );
-    _loggingService.log(
-      LogDomain.sync,
+    _logEnqueueSample(
       'enqueue type=$typeName subject=$subject',
-      subDomain: 'enqueueMessage',
+      sampleKey: 'insert.$typeName',
     );
 
     // Record in sequence log for backfill support (self-healing sync)

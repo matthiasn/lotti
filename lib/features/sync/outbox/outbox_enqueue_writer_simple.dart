@@ -15,10 +15,9 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(subject: Value(subject)),
     );
-    _loggingService.log(
-      LogDomain.sync,
+    _logEnqueueSample(
       logMessage,
-      subDomain: 'enqueueMessage',
+      sampleKey: 'insert.simple',
     );
     return false;
   }
@@ -108,11 +107,10 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         ),
       );
       if (affectedRows > 0) {
-        _loggingService.log(
-          LogDomain.sync,
+        _logEnqueueSample(
           'enqueue MERGED type=SyncConfigFlag subject=$key '
           'status=${msg.status}',
-          subDomain: 'enqueueMessage',
+          sampleKey: 'merge.SyncConfigFlag',
         );
         unawaited(_enqueueNextSendRequest(delay: const Duration(seconds: 1)));
         return true;
@@ -125,11 +123,10 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         outboxEntryId: Value(key),
       ),
     );
-    _loggingService.log(
-      LogDomain.sync,
+    _logEnqueueSample(
       'enqueue type=SyncConfigFlag subject=$key '
       'status=${msg.status}',
-      subDomain: 'enqueueMessage',
+      sampleKey: 'insert.SyncConfigFlag',
     );
     return false;
   }
@@ -201,10 +198,9 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         payloadSize: Value(outboxSize),
       ),
     );
-    _loggingService.log(
-      LogDomain.sync,
+    _logEnqueueSample(
       'enqueue type=SyncNotification id=${msg.id} attachBytes=$fileLength',
-      subDomain: 'enqueueMessage',
+      sampleKey: 'insert.SyncNotification',
     );
 
     await recordNotificationSent(

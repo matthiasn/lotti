@@ -1,5 +1,7 @@
+import 'dart:collection';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/services/logging_domains.dart';
@@ -35,6 +37,10 @@ class DomainLogger {
   final LoggingService _loggingService;
   static final _dateFmt = DateFormat('yyyy-MM-dd');
 
+  static const int _sampleStateCapacity = 256;
+  final LinkedHashMap<String, _LogSampleState> _sampleStates =
+      LinkedHashMap<String, _LogSampleState>();
+
   /// File stem for the daily PII-safe error log.
   static const String errorSafeLogStem = 'error-safe';
 
@@ -68,6 +74,56 @@ class DomainLogger {
       level: level.name.toUpperCase(),
       subDomain: subDomain,
       message: message,
+    );
+  }
+
+  /// Logs a representative event immediately, then emits counted summaries
+  /// every [every] observations or when [maxInterval] has elapsed.
+  ///
+  /// This is intended for high-volume diagnostic paths where retaining every
+  /// record would obscure the signal. Emitted messages include `observed`,
+  /// `suppressed`, and cumulative `total` counters, so callers can still spot
+  /// amplification and compare operation categories. [sampleKey] must be a
+  /// bounded, non-user-derived category key; the logger retains at most 256
+  /// keys and evicts the least recently sampled key beyond that limit.
+  void logSampled(
+    LogDomain domain,
+    String message, {
+    required String sampleKey,
+    String? subDomain,
+    InsightLevel level = InsightLevel.info,
+    int every = 100,
+    Duration maxInterval = const Duration(minutes: 5),
+  }) {
+    if (!enabledDomains.contains(domain)) return;
+    assert(every > 0, 'every must be positive');
+    assert(maxInterval > Duration.zero, 'maxInterval must be positive');
+
+    final now = clock.now();
+    final stateKey = '${domain.wireName}:$sampleKey';
+    final state = _sampleStates.remove(stateKey) ?? _LogSampleState(now);
+    _sampleStates[stateKey] = state;
+    while (_sampleStates.length > _sampleStateCapacity) {
+      _sampleStates.remove(_sampleStates.keys.first);
+    }
+
+    state.total++;
+    state.pending++;
+    final elapsed = now.difference(state.lastEmittedAt);
+    final shouldEmit =
+        state.total == 1 || state.pending >= every || elapsed >= maxInterval;
+    if (!shouldEmit) return;
+
+    final observed = state.pending;
+    state
+      ..pending = 0
+      ..lastEmittedAt = now;
+    log(
+      domain,
+      '$message sampleKey=$sampleKey observed=$observed '
+      'suppressed=${observed - 1} total=${state.total}',
+      subDomain: subDomain,
+      level: level,
     );
   }
 
@@ -171,7 +227,7 @@ class DomainLogger {
     );
   }
 
-  String _now() => DateTime.now().toIso8601String();
+  String _now() => clock.now().toIso8601String();
 
   /// Best-effort synchronous append. File-sink errors are swallowed so logging
   /// never interferes with app flows. Skipped entirely in test environments.
@@ -212,4 +268,12 @@ class DomainLogger {
     if (id.length < 6) return '[id:$id]';
     return '[id:${id.substring(0, 6)}]';
   }
+}
+
+class _LogSampleState {
+  _LogSampleState(this.lastEmittedAt);
+
+  DateTime lastEmittedAt;
+  int pending = 0;
+  int total = 0;
 }

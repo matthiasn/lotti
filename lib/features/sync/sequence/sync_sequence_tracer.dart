@@ -33,6 +33,22 @@ class SyncSequenceTracer {
     );
   }
 
+  void traceSampled(
+    String message, {
+    required String sampleKey,
+    String? subDomain,
+    int every = 100,
+  }) {
+    final sub = subDomain ?? 'sequence';
+    (_domainLogger ?? _loggingService).logSampled(
+      LogDomain.sync,
+      message,
+      sampleKey: sampleKey,
+      subDomain: sub,
+      every: every,
+    );
+  }
+
   void error(
     Object error,
     StackTrace stackTrace, {

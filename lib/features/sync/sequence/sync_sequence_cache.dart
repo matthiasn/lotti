@@ -39,6 +39,13 @@ import 'package:lotti/database/sync_db.dart';
 /// entry_ids, routinely took 40–600 ms and dominated the image-paste freeze.
 /// LRU-bounded; entries are added on lookup and refreshed on `recordSentEntry`
 /// so the cached value cannot lag a concurrent write.
+///
+/// ## Recent sent-binding LRU
+/// Exact `(host, counter, entry, payload type)` bindings are remembered after
+/// a successful sequence-log write. Persistence records bindings immediately
+/// after its DB commit for crash safety, while the outbox records them again
+/// as a fallback for direct/resync enqueue paths. The exact-binding LRU makes
+/// that normal double-call idempotent without weakening either call site.
 class SyncSequenceCache {
   SyncSequenceCache(this._syncDatabase);
 
@@ -46,6 +53,13 @@ class SyncSequenceCache {
 
   /// LRU capacity for [_lastSentCounterByEntry].
   static const int lastSentCounterCacheCapacity = 2048;
+
+  /// LRU capacity for exact sent sequence bindings.
+  static const int sentBindingCacheCapacity = 4096;
+
+  /// Exact bindings only suppress the immediate persistence → outbox repeat.
+  /// Let later calls reach the DB again in case row status changed meanwhile.
+  static const sentBindingCacheTtl = Duration(minutes: 5);
 
   /// TTL applied to every per-host and the last-sent cache window.
   static const cacheTtl = Duration(minutes: 5);
@@ -60,6 +74,11 @@ class SyncSequenceCache {
 
   final LinkedHashMap<String, int?> _lastSentCounterByEntry =
       LinkedHashMap<String, int?>();
+  final LinkedHashMap<
+    ({String hostId, int counter, String entryId, int payloadType}),
+    DateTime
+  >
+  _sentBindings = LinkedHashMap();
 
   // Separate global TTL for the entry-keyed [_lastSentCounterByEntry] LRU. It
   // is keyed by `host::entryId` and is also size-bounded by
@@ -257,6 +276,64 @@ class SyncSequenceCache {
     }
   }
 
+  // ── Exact sent-binding LRU ────────────────────────────────────────────────
+
+  ({String hostId, int counter, String entryId, int payloadType}) _sentBinding({
+    required String hostId,
+    required int counter,
+    required String entryId,
+    required int payloadType,
+  }) => (
+    hostId: hostId,
+    counter: counter,
+    entryId: entryId,
+    payloadType: payloadType,
+  );
+
+  /// Returns whether this exact sequence binding was recently written, and
+  /// refreshes its LRU position when present.
+  bool containsSentBinding({
+    required String hostId,
+    required int counter,
+    required String entryId,
+    required int payloadType,
+  }) {
+    final binding = _sentBinding(
+      hostId: hostId,
+      counter: counter,
+      entryId: entryId,
+      payloadType: payloadType,
+    );
+    final recordedAt = _sentBindings.remove(binding);
+    if (recordedAt == null) return false;
+    if (clock.now().difference(recordedAt) > sentBindingCacheTtl) {
+      return false;
+    }
+    _sentBindings[binding] = recordedAt;
+    return true;
+  }
+
+  /// Remembers a successfully persisted exact sequence binding.
+  void rememberSentBinding({
+    required String hostId,
+    required int counter,
+    required String entryId,
+    required int payloadType,
+  }) {
+    final binding = _sentBinding(
+      hostId: hostId,
+      counter: counter,
+      entryId: entryId,
+      payloadType: payloadType,
+    );
+    _sentBindings
+      ..remove(binding)
+      ..[binding] = clock.now();
+    while (_sentBindings.length > sentBindingCacheCapacity) {
+      _sentBindings.remove(_sentBindings.keys.first);
+    }
+  }
+
   // ── Testing ───────────────────────────────────────────────────────────────
 
   /// Force-expire every cache. Surfaced through
@@ -274,6 +351,7 @@ class SyncSequenceCache {
     _materializedUpperBound.clear();
     _hostCacheExpiry.clear();
     _lastSentCounterByEntry.clear();
+    _sentBindings.clear();
     _lastSentCacheExpiry = null;
   }
 }

@@ -384,13 +384,16 @@ class MatrixPayloadSender {
     };
     final journalEntityById = journalEntityIds.isEmpty
         ? const <String, JournalEntity>{}
-        : await journalDb.journalEntityMapForIds(journalEntityIds);
+        : await journalDb.journalEntityMapForIdsIncludingDeleted(
+            journalEntityIds,
+          );
 
     final host = await vectorClockService?.getHost();
 
-    // Track journal-entity children whose DB row vanished between enqueue
-    // and dequeue (rare, but possible if the entity was deleted locally
-    // mid-flight). Silently dropping such children would let the bundle
+    // Track journal-entity children whose DB row was hard-purged between
+    // enqueue and dequeue. Soft-deleted rows are deliberately included above
+    // because their tombstones must sync. Silently dropping a hard-missing
+    // child would let the bundle
     // ack while one entity never reaches peers — permanent data loss.
     // Failing the whole bundle drops to the existing retry path; once the
     // row caps out it ends up in `error` status so an operator can

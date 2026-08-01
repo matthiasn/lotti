@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/logging_types.dart';
@@ -231,6 +232,70 @@ void main() {
           level: any(named: 'level'),
         ),
       );
+    });
+  });
+
+  group('DomainLogger.logSampled', () {
+    late MockLoggingService mockLoggingService;
+    late DomainLogger logger;
+    late DateTime now;
+
+    setUp(() {
+      mockLoggingService = MockLoggingService();
+      stubLoggingService(mockLoggingService);
+      logger = DomainLogger(loggingService: mockLoggingService)
+        ..enabledDomains.add(LogDomain.sync);
+      now = DateTime.utc(2026, 8);
+    });
+
+    test('emits the first event and a counted threshold summary', () {
+      withClock(Clock(() => now), () {
+        for (var i = 0; i < 4; i++) {
+          logger.logSampled(
+            LogDomain.sync,
+            'hot operation index=$i',
+            sampleKey: 'sync.hot.operation',
+            subDomain: 'hot',
+            every: 3,
+          );
+        }
+      });
+
+      final messages = verify(
+        () => mockLoggingService.captureEvent(
+          captureAny<Object>(),
+          domain: 'sync',
+          subDomain: 'hot',
+        ),
+      ).captured.cast<String>();
+      expect(messages, hasLength(2));
+      expect(messages.first, contains('observed=1 suppressed=0 total=1'));
+      expect(messages.last, contains('observed=3 suppressed=2 total=4'));
+    });
+
+    test('emits pending observations after the maximum interval', () {
+      withClock(Clock(() => now), () {
+        logger.logSampled(
+          LogDomain.sync,
+          'first',
+          sampleKey: 'sync.interval',
+        );
+        now = now.add(const Duration(minutes: 6));
+        logger.logSampled(
+          LogDomain.sync,
+          'next',
+          sampleKey: 'sync.interval',
+        );
+      });
+
+      final messages = verify(
+        () => mockLoggingService.captureEvent(
+          captureAny<Object>(),
+          domain: 'sync',
+        ),
+      ).captured.cast<String>();
+      expect(messages, hasLength(2));
+      expect(messages.last, contains('observed=1 suppressed=0 total=2'));
     });
   });
 

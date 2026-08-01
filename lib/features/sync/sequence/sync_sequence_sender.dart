@@ -42,6 +42,21 @@ class SyncSequenceSender {
       // Only record entries for our own host when sending
       if (hostId != myHost) continue;
 
+      if (_cache.containsSentBinding(
+        hostId: hostId,
+        counter: counter,
+        entryId: entryId,
+        payloadType: payloadType.index,
+      )) {
+        _tracer.traceSampled(
+          'duplicateSkipped type=$payloadType hostId=$hostId '
+          'counter=$counter entryId=$entryId',
+          sampleKey: 'sequence.recordSent.duplicate.${payloadType.name}',
+          subDomain: 'sequence.recordSent.duplicate',
+        );
+        continue;
+      }
+
       final now = DateTime.now();
       await _syncDatabase.recordSequenceEntry(
         SyncSequenceLogCompanion(
@@ -55,6 +70,12 @@ class SyncSequenceSender {
           updatedAt: Value(now),
         ),
       );
+      _cache.rememberSentBinding(
+        hostId: hostId,
+        counter: counter,
+        entryId: entryId,
+        payloadType: payloadType.index,
+      );
 
       // Keep the cache consistent with the write we just issued so a
       // subsequent `getLastSentVectorClockForEntry` does not race back to
@@ -65,8 +86,9 @@ class SyncSequenceSender {
         _cache.touchLastSentCache(cacheKey, counter);
       }
 
-      _tracer.trace(
+      _tracer.traceSampled(
         'recordSentEntry type=$payloadType hostId=$hostId counter=$counter entryId=$entryId',
+        sampleKey: 'sequence.recordSent.write.${payloadType.name}',
         subDomain: 'sequence.recordSent',
       );
     }

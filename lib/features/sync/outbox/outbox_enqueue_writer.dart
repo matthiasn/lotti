@@ -61,6 +61,19 @@ class OutboxEnqueueWriter {
   final Future<void> Function({Duration delay}) _enqueueNextSendRequest;
   final SyncSequenceLogService? _sequenceLogService;
 
+  void _logEnqueueSample(
+    String message, {
+    required String sampleKey,
+    String subDomain = 'enqueueMessage',
+  }) {
+    _loggingService.logSampled(
+      LogDomain.sync,
+      message,
+      sampleKey: 'outbox.$sampleKey',
+      subDomain: subDomain,
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Message preparation
   // ---------------------------------------------------------------------------
@@ -95,18 +108,18 @@ class OutboxEnqueueWriter {
         final capped = links.length > SyncTuning.maxEmbeddedEntryLinks
             ? links.sublist(links.length - SyncTuning.maxEmbeddedEntryLinks)
             : links;
-        _loggingService.log(
-          LogDomain.sync,
+        _logEnqueueSample(
           'enqueueMessage.attachedLinks id=${journalMsg.id} '
           'count=${links.length} embedded=${capped.length} '
           'from=$fromCount to=$toCount',
+          sampleKey: 'attachLinks.present',
           subDomain: 'enqueueMessage.attachLinks',
         );
         journalMsg = journalMsg.copyWith(entryLinks: capped);
       } else {
-        _loggingService.log(
-          LogDomain.sync,
+        _logEnqueueSample(
           'enqueueMessage.noLinks id=${journalMsg.id}',
+          sampleKey: 'attachLinks.none',
           subDomain: 'enqueueMessage.attachLinks',
         );
       }
@@ -423,16 +436,11 @@ class OutboxEnqueueWriter {
             );
           }
 
-          // Log covered clocks for debugging
-          final coveredVcStrings = coveredClocks
-              ?.map((vc) => vc.vclock)
-              .toList();
-          _loggingService.log(
-            LogDomain.sync,
+          _logEnqueueSample(
             'enqueue MERGED type=SyncJournalEntity id=${msg.id} '
-            'coveredClocks=${coveredClocks?.length ?? 0} covered=$coveredVcStrings '
+            'coveredClocks=${coveredClocks?.length ?? 0} '
             'latest=${latestVc?.vclock}',
-            subDomain: 'enqueueMessage',
+            sampleKey: 'merge.SyncJournalEntity',
           );
 
           // Still record in sequence log for the new counter
@@ -493,11 +501,10 @@ class OutboxEnqueueWriter {
         payloadSize: Value(outboxSize),
       ),
     );
-    _loggingService.log(
-      LogDomain.sync,
+    _logEnqueueSample(
       'enqueue type=SyncJournalEntity subject=${'$hostHash:$localCounter'} '
       'id=${msg.id} attachBytes=$fileLength embeddedLinks=$embeddedLinksCount',
-      subDomain: 'enqueueMessage',
+      sampleKey: 'insert.SyncJournalEntity',
     );
 
     // Record in sequence log for backfill support (self-healing sync)
@@ -660,17 +667,12 @@ class OutboxEnqueueWriter {
             );
           }
 
-          // Log covered clocks for debugging
-          final coveredVcStrings = coveredClocks
-              ?.map((vc) => vc.vclock)
-              .toList();
           final latestVcStr = msg.entryLink.vectorClock?.vclock;
-          _loggingService.log(
-            LogDomain.sync,
+          _logEnqueueSample(
             'enqueue MERGED type=SyncEntryLink id=$linkId '
-            'coveredClocks=${coveredClocks?.length ?? 0} covered=$coveredVcStrings '
+            'coveredClocks=${coveredClocks?.length ?? 0} '
             'latest=$latestVcStr',
-            subDomain: 'enqueueMessage',
+            sampleKey: 'merge.SyncEntryLink',
           );
 
           // Still record in sequence log for the new counter
@@ -727,11 +729,10 @@ class OutboxEnqueueWriter {
         payloadSize: Value(outboxLinkSize),
       ),
     );
-    _loggingService.log(
-      LogDomain.sync,
+    _logEnqueueSample(
       'enqueue type=SyncEntryLink subject=$subject '
       'from=${msg.entryLink.fromId} to=${msg.entryLink.toId}',
-      subDomain: 'enqueueMessage',
+      sampleKey: 'insert.SyncEntryLink',
     );
 
     // Record in sequence log for backfill support (self-healing sync)

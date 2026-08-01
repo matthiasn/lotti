@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0]
+### Fixed
+- **Deleting an entry no longer traps an otherwise healthy sync batch in
+  retries.** Bundled sends mistook a soft-deleted entry for a missing database
+  row, retried every valid sibling with it, and eventually left the whole batch
+  as failed. Deletion tombstones now travel in the bundle like every other
+  journal update.
+- **Detailed sync diagnostics stay useful without growing by tens of megabytes
+  a day.** Repetitive per-record bookkeeping is now represented by counted
+  samples, including separate totals for inserted versus merged outbox work and
+  sequence writes versus duplicate skips. Gap detections, actual backfill
+  requests, retries and errors remain complete so initial-sync and repair work
+  can still be investigated.
+
 ## [0.9.1074]
 ### Changed
 - **The task-list header gets out of the way while you read.** On a small
