@@ -7111,4 +7111,97 @@ void main() {
       ).called(1);
     });
   });
+
+  group('retention delegation', () {
+    // The collaborator's own behaviour is covered in
+    // agent_repo_retention_test.dart; what the facade adds is the wiring, so
+    // these go through the facade against a real database and assert rows
+    // actually left.
+    Future<void> writeObservation(String id, DateTime createdAt) async {
+      await repo.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: 'payload-$id',
+          agentId: 'coordinator',
+          createdAt: createdAt,
+          vectorClock: null,
+          content: const {'text': 'x'},
+        ),
+      );
+      await repo.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: id,
+          agentId: 'coordinator',
+          threadId: 'thread',
+          kind: AgentMessageKind.observation,
+          createdAt: createdAt,
+          vectorClock: null,
+          contentEntryId: 'payload-$id',
+          metadata: const AgentMessageMetadata(),
+        ),
+      );
+    }
+
+    test('pruneObservations reaches the store', () async {
+      await writeObservation('old', DateTime(2020));
+      await writeObservation('new', DateTime(2026, 6));
+
+      final pruned = await repo.pruneObservations(
+        keepPerAgent: 1,
+        cutoff: DateTime(2021),
+        batchSize: 10,
+        maxBatches: 5,
+      );
+
+      expect(pruned, 1);
+      expect(
+        await repo.getEntity('old'),
+        isNull,
+        reason: 'And its payload goes with it.',
+      );
+      expect(await repo.getEntity('payload-old'), isNull);
+      expect(await repo.getEntity('new'), isNotNull);
+    });
+
+    test('pruneOrphanedPayloadsBefore reaches the store', () async {
+      await repo.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: 'orphan',
+          agentId: 'coordinator',
+          createdAt: DateTime(2020),
+          vectorClock: null,
+          content: const {'text': 'x'},
+        ),
+      );
+
+      expect(
+        await repo.pruneOrphanedPayloadsBefore(
+          DateTime(2021),
+          batchSize: 10,
+          maxBatches: 5,
+        ),
+        1,
+      );
+      expect(await repo.getEntity('orphan'), isNull);
+    });
+
+    test('pruneDayStatusEventsBefore reaches the store', () async {
+      await repo.upsertEntity(
+        makeTestDayStatusEvent(
+          id: 'ancient',
+          raisedAt: DateTime(2020),
+          createdAt: DateTime(2020),
+        ),
+      );
+
+      expect(
+        await repo.pruneDayStatusEventsBefore(
+          DateTime(2021),
+          batchSize: 10,
+          maxBatches: 5,
+        ),
+        1,
+      );
+      expect(await repo.getEntity('ancient'), isNull);
+    });
+  });
 }
