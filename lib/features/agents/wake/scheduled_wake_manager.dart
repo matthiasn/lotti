@@ -236,17 +236,27 @@ class ScheduledWakeManager {
       return false;
     }
     if (held && record.leaseHostId == hostId) {
-      // The claim's own write stamped updatedAt, so it doubles as "when this
-      // claim was made" — and a peer's later crossing claim moves it forward,
-      // which correctly restarts the settle for both sides.
-      if (now.difference(record.updatedAt) < leaseSettle) return false;
+      // Claim time is derived from the deadline rather than read off
+      // updatedAt: `leaseUntil` is written in UTC and so means the same
+      // instant on every device, whereas updatedAt is serialized without an
+      // offset and a peer would re-read its components in its own zone. A
+      // peer's later crossing claim moves the deadline forward too, so this
+      // still restarts the settle for both sides.
+      final claimedAt = until.subtract(leaseDuration);
+      if (now.toUtc().difference(claimedAt) < leaseSettle) return false;
       return true;
     }
 
     await _syncService.upsertEntity(
       record.copyWith(
         leaseHostId: hostId,
-        leaseUntil: now.add(leaseDuration),
+        // UTC, deliberately. `toIso8601String()` on a local DateTime emits no
+        // offset, so a peer's `DateTime.parse` would read the same wall-clock
+        // components in its own zone: a west-to-east claim would look already
+        // expired and be taken over immediately — both devices firing, which
+        // is the duplicate this lease exists to prevent — while the reverse
+        // direction would stretch a 30-minute lease by hours.
+        leaseUntil: now.toUtc().add(leaseDuration),
         updatedAt: now,
       ),
     );

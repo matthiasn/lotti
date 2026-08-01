@@ -710,8 +710,45 @@ void main() {
                     ).captured.single
                     as ScheduledWakeEntity;
             expect(claimed.leaseHostId, 'host-a');
-            expect(claimed.leaseUntil, now.add(const Duration(minutes: 30)));
+            expect(
+              claimed.leaseUntil,
+              now.toUtc().add(const Duration(minutes: 30)),
+            );
             expect(claimed.status, ScheduledWakeStatus.pending);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('the deadline survives a peer in another timezone', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final manager = managerFor(leased());
+            async.flushMicrotasks();
+
+            final claimed =
+                verify(
+                      () => syncService.upsertEntity(captureAny()),
+                    ).captured.single
+                    as ScheduledWakeEntity;
+
+            // The entity crosses devices as JSON. `toIso8601String()` on a
+            // local DateTime emits no offset, so a peer would re-read the same
+            // wall-clock components in its own zone: a west-to-east claim would
+            // look already expired and be taken over at once — both devices
+            // firing, the very duplicate this lease prevents — while the other
+            // direction would stretch 30 minutes into hours.
+            final wire = claimed.leaseUntil!.toIso8601String();
+            expect(
+              wire,
+              endsWith('Z'),
+              reason: 'Only a UTC stamp names the same instant everywhere.',
+            );
+            expect(
+              DateTime.parse(wire).isAtSameMomentAs(claimed.leaseUntil!),
+              isTrue,
+            );
 
             manager.stop();
           });

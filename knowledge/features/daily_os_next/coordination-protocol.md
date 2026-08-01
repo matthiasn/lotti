@@ -16,6 +16,10 @@ sources:
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination
     last_modified: 2026-07-24
+  - id: adr-0048
+    resource: ../../../docs/adr/0048-one-device-runs-the-coordinator-digest.md
+    title: ADR 0048 — One device runs the coordinator digest
+    last_modified: 2026-08-01
   - id: adr-0019
     resource: ../../../docs/adr/0019-attention-negotiation-protocol.md
     title: ADR 0019 — Attention negotiation protocol
@@ -128,15 +132,29 @@ stateDiagram-v2
 ```
 
 **No coordinator is needed because the record is already a last-write-wins
-register.** Concurrent claims converge to exactly one surviving host — that
-convergence *is* the election — and the settle is what gives it time to happen
-before anyone acts on it. A crossing claim moves `updatedAt` forward, which
-restarts the settle for both sides, so the winner is unambiguous.
+register** (ADR 0048). Concurrent claims converge to exactly one surviving host
+— that convergence *is* the election — and the settle is what gives it time to
+happen before anyone acts on it. A crossing claim moves the deadline forward,
+which restarts the settle for both sides, so the winner is unambiguous.
+
+`leaseUntil` is stored in **UTC**, and the settle is measured from it (minus the
+lease duration) rather than from `updatedAt`. Entities cross devices as JSON, and
+`toIso8601String()` on a local `DateTime` writes no offset, so a peer would
+re-read the same wall-clock components in its own zone: a west-to-east claim
+would look already expired and be taken over at once — both devices firing, the
+duplicate the lease exists to prevent — while the reverse direction would stretch
+thirty minutes into hours.
 
 The lease expires. A device that claims and then crashes or goes offline delays
 the window rather than dropping it: past `leaseUntil` any device takes over, and
 a claimant that died mid-digest is recovered by the cold-start bootstrap. A
 device with no sync host fires unleased — it has no peers to race.
+
+**The lease bounds cost, not correctness.** Devices partitioned from sync while
+their model providers stay reachable can each hold a locally-consistent claim and
+both fire. That is redundant spend rather than a wrong answer — the digest's
+writes are registers recomputed from source — and closing the window entirely
+would need a consensus round this app has no coordinator for.
 
 ## A digest anchors to the day it runs on, not the day it was scheduled for
 
