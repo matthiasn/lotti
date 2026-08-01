@@ -925,11 +925,33 @@ void main() {
         expect(roundtripped.daysWithPlans, 0);
       });
 
+      test('the repair recognizes the v2 register generation too', () {
+        // v2 rows always carry weekStart, so they never reach the repair —
+        // but a generation the pattern did not know would be rejected as a
+        // poison payload rather than repaired, which is the worse failure.
+        final original = AgentDomainEntity.weekRollup(
+          id: 'week_rollup_v2:2026-05-18',
+          agentId: 'daily_os_planner',
+          weekStart: DateTime.utc(2026, 5, 18),
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+        final legacyJson =
+            jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>
+              ..remove('weekStart');
+
+        expect(AgentDomainEntity.fromJson(legacyJson), equals(original));
+      });
+
       test('WeekRollupEntity repairs a missing weekStart from its id', () {
         final original = AgentDomainEntity.weekRollup(
           id: 'week_rollup:2026-05-18',
           agentId: 'daily_os_planner',
-          weekStart: DateTime(2026, 5, 18),
+          // UTC-typed: the id is a zone-free calendar key, so resolving it in
+          // the reader's zone would make the repaired value reader-relative —
+          // the divergence week rollups are canonical to avoid.
+          weekStart: DateTime.utc(2026, 5, 18),
           plannedMinutesByCategory: const {'cat-work': 480},
           recordedMinutesByCategory: const {'cat-work': 310},
           daysWithPlans: 5,

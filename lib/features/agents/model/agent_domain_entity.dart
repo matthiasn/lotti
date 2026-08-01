@@ -865,8 +865,12 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
       _$AgentDomainEntityFromJson(_repairLegacyWeekRollup(json));
 }
 
+// Both register generations. The `_v2` ids this build writes always carry
+// `weekStart`, so they never reach the repair — but a generation the pattern
+// does not know would be rejected as a poison payload rather than repaired,
+// which is a worse failure than being redundant here.
 final _canonicalWeekRollupId = RegExp(
-  r'^week_rollup:(\d{4})-(\d{2})-(\d{2})$',
+  r'^week_rollup(?:_v2)?:(\d{4})-(\d{2})-(\d{2})$',
 );
 
 const _invalidLegacyWeekRollupMessage =
@@ -887,7 +891,10 @@ Map<String, dynamic> _repairLegacyWeekRollup(Map<String, dynamic> json) {
   final year = int.parse(match.group(1)!);
   final month = int.parse(match.group(2)!);
   final day = int.parse(match.group(3)!);
-  final weekStart = DateTime(year, month, day);
+  // UTC-typed: the id is a zone-free calendar key, so resolving it in the
+  // reader's zone would make the derived weekStart reader-relative — the
+  // divergence week rollups were made canonical to end.
+  final weekStart = DateTime.utc(year, month, day);
   final isExactDate =
       weekStart.year == year &&
       weekStart.month == month &&

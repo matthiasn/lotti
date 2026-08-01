@@ -656,7 +656,10 @@ void main() {
     });
 
     test('weekRollup row repairs a legacy missing weekStart', () {
+      // Deliberately the v1 id: this is the legacy shape the repair exists
+      // for. v2 rows always carry weekStart and never reach it.
       final entity = makeTestWeekRollup(
+        id: 'week_rollup:2026-05-18',
         createdAt: createdAt,
         updatedAt: updatedAt,
       );
@@ -676,7 +679,14 @@ void main() {
       final decoded = AgentDbConversions.fromEntityRow(row);
 
       expect(decoded, isA<WeekRollupEntity>());
-      expect((decoded as WeekRollupEntity).weekStart, DateTime(2026, 5, 18));
+      expect(
+        (decoded as WeekRollupEntity).weekStart,
+        DateTime.utc(2026, 5, 18),
+        reason:
+            'The id is a zone-free calendar key; resolving it in the reader '
+            'zone would make the repaired value reader-relative, which is the '
+            'divergence week rollups are canonical to avoid.',
+      );
       expect(decoded.id, 'week_rollup:2026-05-18');
     });
 
