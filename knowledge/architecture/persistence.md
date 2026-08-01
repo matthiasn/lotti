@@ -99,10 +99,14 @@ flowchart TD
 
   | Database | `readPool` |
   |----------|-----------:|
-  | `db.sqlite` | 4 |
-  | `agent.sqlite` | 2 |
-  | `sync.sqlite` | 2 |
-  | others | 0 |
+  | `db.sqlite` (`JournalDb`) | 4 |
+  | `agent.sqlite` (`AgentDatabase`) | 2 |
+  | `sync.sqlite` (`SyncDatabase`) | 2 |
+  | `notifications.sqlite` (`NotificationsDb`) | 2 |
+  | `ai_consumption.sqlite` (`ConsumptionDatabase`) | 1 |
+  | `day_processing.sqlite` (`DayProcessingDb`) | 1 |
+
+  Anything not listed takes `openDbConnection`'s default of 0.
 
   `sync.sqlite` ran at 0 until 2026-08. Being single-isolate is what produced
   its convoy signature: at `2026-07-01T19:29:48` nine queries that all *started*
