@@ -61,12 +61,9 @@ class DayPlanReadyNotifier {
       _notificationService ?? getIt<NotificationService>();
 
   /// Handles one attempt outcome from the outbox processor.
-<<<<<<< HEAD
   ///
   /// Not only terminal ones: `failed` is not terminal, and this is the
   /// listener that decides a failed plan job is worth reporting.
-=======
->>>>>>> 65f93ed71 (fix(agents): keep each day's last status event, drop the dead constants)
   ///
   /// Never throws: the hook is invoked fire-and-forget from the processor's
   /// completion path, so a delivery failure (service resolution, locale
