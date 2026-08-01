@@ -2,9 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
 import 'package:lotti/features/agents/service/agent_retention_policy.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../test_data/entity_factories.dart';
 
@@ -129,7 +128,7 @@ void main() {
     // pins what each existing one was decided to be, which is the part a
     // compiler cannot check.
     final t = DateTime(2026, 6);
-    const vc = null;
+    const VectorClock? vc = null;
     final expected = <AgentDomainEntity, AgentRetentionClass>{
       // Identity and live state.
       makeTestIdentity(): AgentRetentionClass.keptDerived,
