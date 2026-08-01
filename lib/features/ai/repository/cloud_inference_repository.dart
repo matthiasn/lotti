@@ -46,7 +46,7 @@ class CloudInferenceRepository {
     final mistralTranscriptionRepository = MistralTranscriptionRepository(
       httpClient: httpClient,
     );
-    final mistralOcrRepository = MistralOcrRepository(
+    _mistralOcrRepository = MistralOcrRepository(
       httpClient: httpClient,
     );
     final whisperRepository = WhisperInferenceRepository(
@@ -69,7 +69,7 @@ class CloudInferenceRepository {
       geminiRepository: geminiRepository,
       meliousRepository: meliousRepository,
       mistralRepository: mistralRepository,
-      mistralOcrRepository: mistralOcrRepository,
+      mistralOcrRepository: _mistralOcrRepository,
       helpers: helpers,
     );
 
@@ -92,6 +92,7 @@ class CloudInferenceRepository {
   final Ref ref;
   late final CloudInferenceGenerate _generate;
   late final CloudInferenceGenerateMore _generateMore;
+  late final MistralOcrRepository _mistralOcrRepository;
 
   Stream<CreateChatCompletionStreamResponse> generate(
     String prompt, {
@@ -242,7 +243,10 @@ class CloudInferenceRepository {
   );
 
   /// Closes HTTP clients held by sub-repositories that this instance owns.
-  void close() => _generateMore.close();
+  void close() {
+    _mistralOcrRepository.close();
+    _generateMore.close();
+  }
 }
 
 final Provider<CloudInferenceRepository> cloudInferenceRepositoryProvider =

@@ -23,7 +23,6 @@
 /* Begin PBXBuildFile section */
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
-		33CC10F30000AC000003C045 /* AudioConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F20000AC000003C045 /* AudioConverter.swift */; };
 		33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F22044A3C60003C045 /* Assets.xcassets */; };
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
@@ -32,9 +31,7 @@
 		5A4D00052D00000200000001 /* DeviceRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A4D00042D00000200000001 /* DeviceRegion.swift */; };
 		5A4D01012D00000200000001 /* MLXAudioCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01112D00000200000001 /* MLXAudioCore */; };
 		5A4D01022D00000200000001 /* MLXAudioSTT in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01122D00000200000001 /* MLXAudioSTT */; };
-		5A4D01032D00000200000001 /* MLXAudioTTS in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01132D00000200000001 /* MLXAudioTTS */; };
 		5A4D01042D00000200000001 /* MLXAudioVAD in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01142D00000200000001 /* MLXAudioVAD */; };
-		5A4D01052D00000200000001 /* MLXAudioG2P in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01152D00000200000001 /* MLXAudioG2P */; };
 		5A4D01062D00000200000001 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01162D00000200000001 /* MLX */; };
 		5A4D01072D00000200000001 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01172D00000200000001 /* HuggingFace */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
@@ -69,7 +66,6 @@
 		335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeneratedPluginRegistrant.swift; sourceTree = "<group>"; };
 		33CC10ED2044A3C60003C045 /* Lotti.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lotti.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		33CC10F02044A3C60003C045 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		33CC10F20000AC000003C045 /* AudioConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioConverter.swift; sourceTree = "<group>"; };
 		33CC10F22044A3C60003C045 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Runner/Assets.xcassets; sourceTree = "<group>"; };
 		33CC10F52044A3C60003C045 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		33CC10F72044A3C60003C045 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Runner/Info.plist; sourceTree = "<group>"; };
@@ -101,9 +97,7 @@
 				78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */,
 				5A4D01012D00000200000001 /* MLXAudioCore in Frameworks */,
 				5A4D01022D00000200000001 /* MLXAudioSTT in Frameworks */,
-				5A4D01032D00000200000001 /* MLXAudioTTS in Frameworks */,
 				5A4D01042D00000200000001 /* MLXAudioVAD in Frameworks */,
-				5A4D01052D00000200000001 /* MLXAudioG2P in Frameworks */,
 				5A4D01062D00000200000001 /* MLX in Frameworks */,
 				5A4D01072D00000200000001 /* HuggingFace in Frameworks */,
 				7E2335674AA28E31A7EEBE87 /* Pods_Runner.framework in Frameworks */,
@@ -171,7 +165,6 @@
 			children = (
 				AD4D50B4272DC22C00B0D18C /* RunnerDebug.entitlements */,
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
-				33CC10F20000AC000003C045 /* AudioConverter.swift */,
 				5A4D00022D00000200000001 /* FileActions.swift */,
 				5A4D00042D00000200000001 /* DeviceRegion.swift */,
 				5A4D00002D00000100000001 /* MlxAudio.swift */,
@@ -228,9 +221,7 @@
 				78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */,
 				5A4D01112D00000200000001 /* MLXAudioCore */,
 				5A4D01122D00000200000001 /* MLXAudioSTT */,
-				5A4D01132D00000200000001 /* MLXAudioTTS */,
 				5A4D01142D00000200000001 /* MLXAudioVAD */,
-				5A4D01152D00000200000001 /* MLXAudioG2P */,
 				5A4D01162D00000200000001 /* MLX */,
 				5A4D01172D00000200000001 /* HuggingFace */,
 			);
@@ -401,7 +392,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
-				33CC10F30000AC000003C045 /* AudioConverter.swift in Sources */,
 				5A4D00032D00000200000001 /* FileActions.swift in Sources */,
 				5A4D00052D00000200000001 /* DeviceRegion.swift in Sources */,
 				5A4D00012D00000100000001 /* MlxAudio.swift in Sources */,
@@ -789,20 +779,10 @@
 			package = 5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
 			productName = MLXAudioSTT;
 		};
-		5A4D01132D00000200000001 /* MLXAudioTTS */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
-			productName = MLXAudioTTS;
-		};
 		5A4D01142D00000200000001 /* MLXAudioVAD */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
 			productName = MLXAudioVAD;
-		};
-		5A4D01152D00000200000001 /* MLXAudioG2P */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
-			productName = MLXAudioG2P;
 		};
 		5A4D01162D00000200000001 /* MLX */ = {
 			isa = XCSwiftPackageProductDependency;

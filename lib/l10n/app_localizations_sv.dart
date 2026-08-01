@@ -1820,15 +1820,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiPromptGenerationPickerTitle => 'Välj en promptgenereringsmodell';
 
   @override
-  String get aiProviderAlibabaDescription =>
-      'Alibaba Clouds Qwen-familj av modeller via DashScope API';
-
-  @override
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
-
-  @override
-  String get aiProviderAnthropicDescription =>
-      'Anthropics Claude-familj av AI-assistenter';
 
   @override
   String get aiProviderAnthropicName => 'Anthropiske Claude';
@@ -2071,67 +2063,31 @@ class AppLocalizationsSv extends AppLocalizations {
       'Körs inbäddad i Apple-appens process. Ingen lokal server eller bas-URL krävs.';
 
   @override
-  String get aiProviderGeminiDescription => 'Googles Gemini AI-modeller';
-
-  @override
   String get aiProviderGeminiName => 'Googla Gemini';
-
-  @override
-  String get aiProviderGenericOpenAiDescription =>
-      'API kompatibelt med OpenAI-formatet';
 
   @override
   String get aiProviderGenericOpenAiName => 'OpenAI-kompatibel';
 
   @override
-  String get aiProviderMeliousDescription =>
-      'Europeiskt värd inferens med en dynamisk modellkatalog, routning, ljud och bilder';
-
-  @override
   String get aiProviderMeliousName => 'Melious.ai';
-
-  @override
-  String get aiProviderMistralDescription =>
-      'Mistral AI moln-API med inbyggd ljudtranskription';
 
   @override
   String get aiProviderMistralName => 'Mistral';
 
   @override
-  String get aiProviderMlxAudioDescription =>
-      'Inbyggda MLX Audio-modeller för lokal STT och TTS på Apple Silicon';
-
-  @override
   String get aiProviderMlxAudioName => 'MLX Audio (lokal)';
-
-  @override
-  String get aiProviderNebiusAiStudioDescription =>
-      'Nebius AI Studios modeller';
 
   @override
   String get aiProviderNebiusAiStudioName => 'Nebius AI Studio';
 
   @override
-  String get aiProviderOllamaDescription => 'Kör inferens lokalt med Ollama';
-
-  @override
   String get aiProviderOllamaName => 'Ollama';
-
-  @override
-  String get aiProviderOmlxDescription =>
-      'Lokal OpenAI-kompatibel oMLX-inferens för MLX-modeller';
 
   @override
   String get aiProviderOmlxName => 'oMLX (lokal)';
 
   @override
-  String get aiProviderOpenAiDescription => 'OpenAI:s GPT-modeller';
-
-  @override
   String get aiProviderOpenAiName => 'OpenAI';
-
-  @override
-  String get aiProviderOpenRouterDescription => 'OpenRouters modeller';
 
   @override
   String get aiProviderOpenRouterName => 'OpenRouter';
@@ -2167,15 +2123,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiProviderUnknownName => 'AI-leverantör';
 
   @override
-  String get aiProviderVoxtralDescription =>
-      'Lokal Voxtral transkription (upp till 30 min ljud, 13 språk)';
-
-  @override
   String get aiProviderVoxtralName => 'Voxtral (lokal)';
-
-  @override
-  String get aiProviderWhisperDescription =>
-      'Lokal Whisper-transkription med OpenAI-kompatibelt API';
 
   @override
   String get aiProviderWhisperName => 'Whisper (lokal)';
@@ -2202,24 +2150,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiResponseShowMore => 'Visa mer';
-
-  @override
-  String get aiResponseTypeAudioTranscription => 'Ljudtranskription';
-
-  @override
-  String get aiResponseTypeChecklistUpdates => 'Uppdateringar av checklistor';
-
-  @override
-  String get aiResponseTypeImageAnalysis => 'Bildanalys';
-
-  @override
-  String get aiResponseTypeImagePromptGeneration => 'Bildprompt';
-
-  @override
-  String get aiResponseTypePromptGeneration => 'Genererad prompt';
-
-  @override
-  String get aiResponseTypeTaskSummary => 'Uppgiftssammanfattning';
 
   @override
   String get aiRunningActivityOpenProgress => 'Visa AI-framsteg';

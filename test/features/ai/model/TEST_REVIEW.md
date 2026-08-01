@@ -59,7 +59,7 @@
 - [x] **[MED]** `lib/features/ai/model/inference_provider_form_state.dart` — `BaseUrl` validator (lines in impl) accepts empty or valid http/https URLs and rejects others. A Glados property over arbitrary strings would ensure no unexpected panics and that the invariants hold at scale.
   - **RESOLVED:** (stale) — `inference_provider_form_state_test.dart` already carries `_AnyBaseUrl` generators with Glados properties for valid http(s) URLs (accepted) and non-http inputs (rejected) at numRuns 120.
 - [x] **[LOW]** `lib/features/ai/model/inference_usage.dart` — already has an excellent Glados merge test (`numRuns: 180`) covering commutativity, totals, nullable fields, and `hasData`. No additional Glados coverage needed; unused JSON helpers were removed.
-  **RESOLVED:** Confirmed accurate — the test file carries private generator value classes and a Glados merge property at `numRuns: 180` that embeds the JSON round-trip. No additional Glados coverage needed; no change.
+  **RESOLVED:** The test file carries private generator value classes and a Glados merge property at `numRuns: 180` covering commutativity, totals, nullable fields, and `hasData`. No additional Glados coverage is needed.
 - [x] **[LOW]** `lib/features/ai/model/skill_assignment.dart` — tiny model; existing static round-trip tests are sufficient. Glados would add negligible value.
   **RESOLVED:** Confirmed — `skill_assignment_test.dart` already round-trips both `automate` states plus the legacy-without-`automate` default, equality, and `copyWith`. The model has two fields (a `String` id and a `bool`); a Glados property would only re-exercise these trivially. No change.
 

@@ -89,7 +89,8 @@ String _generatedMlxQwenAsrId(_GeneratedMlxQwenAsrIdShape shape) {
       'MLX-COMMUNITY/QWEN3-ASR-1.7B-8BIT',
     _GeneratedMlxQwenAsrIdShape.missingMlxPrefix => 'Qwen/Qwen3-ASR-1.7B',
     _GeneratedMlxQwenAsrIdShape.nonQwenMlx => mlxAudioParakeetModelId,
-    _GeneratedMlxQwenAsrIdShape.qwenTts => mlxAudioDefaultTtsModelId,
+    _GeneratedMlxQwenAsrIdShape.qwenTts =>
+      'mlx-community/Qwen3-TTS-12Hz-0.6B-Base-8bit',
   };
 }
 
@@ -695,7 +696,7 @@ void main() {
         expect(modelIds, contains(mlxAudioQwenAsr17B8BitModelId));
       });
 
-      test('speech-to-text predicate excludes the TTS model', () {
+      test('curated catalog contains only speech-to-text models', () {
         final aiModels = mlxAudioModels
             .map(
               (model) => model.toAiConfigModel(
@@ -712,7 +713,7 @@ void main() {
 
         expect(sttModelIds, contains(mlxAudioQwenAsr17B8BitModelId));
         expect(sttModelIds, contains(mlxAudioVoxtralRealtime4BitModelId));
-        expect(sttModelIds, isNot(contains(mlxAudioDefaultTtsModelId)));
+        expect(sttModelIds, hasLength(mlxAudioModels.length));
       });
 
       glados.Glados(

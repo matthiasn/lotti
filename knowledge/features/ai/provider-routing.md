@@ -332,15 +332,14 @@ flowchart LR
   Audio["generateWithAudio()"] --> Installed{"model installed?"}
   Installed -->|yes| Native
   Installed -->|no| Missing["not-installed error"]
-  Summary["Summary speak button (enable_ai_summary_tts)"] --> Native
 ```
 
 **The native bridge ships only on macOS.** The Swift file compiles without the
 MLX package and returns `unsupported` on Intel macOS; iOS, Android, Linux and
 Windows do not register the plugin at all. The Dart channel short-circuits every
 method when `Platform.isMacOS` is false: `getModelStatus` returns `unsupported`,
-mutation methods throw `PlatformException(code: 'UNSUPPORTED')`, `stopSpeaking`
-silently returns, and the event stream emits nothing.
+action methods throw `PlatformException(code: 'UNSUPPORTED')`, and the event
+stream emits nothing.
 
 Three other places are gated consistently: the FTUE provider picker hides the MLX
 Audio tile on non-macOS, `ProfileAutomationService._fallbackCandidateRank` demotes
@@ -356,7 +355,7 @@ acceptable accuracy on macOS triggered immediate OOM on iPhone hardware, so
 correspondingly smaller.
 
 The seeded catalog includes Voxtral Realtime, Qwen3-ASR 0.6B, Qwen3-ASR 1.7B
-4-bit and 8-bit, Parakeet and Qwen3-TTS. Setup asks which STT model to install
+4-bit and 8-bit, and Parakeet. Setup asks which STT model to install
 first, with **Qwen3-ASR 1.7B 8-bit preselected** because it is much faster than
 Voxtral Realtime in post-recording use.
 
@@ -375,9 +374,9 @@ single native EventChannel subscription and keeps the latest payload by model id
 That prevents overview rows from stealing the native stream from the modal, and
 lets a running download be reopened from the model row.
 
-AI-summary TTS is wired through the same channel on macOS, but the task-card
-button is hidden unless `enable_ai_summary_tts` is enabled — off by default while
-local TTS model quality is still being evaluated.
+AI-summary speech uses the independent on-device
+[Supertonic TTS pipeline](../tts.md); MLX Audio now owns transcription and model
+download lifecycle only.
 
 # Speech dictionaries
 

@@ -1839,15 +1839,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți un model pentru generarea prompturilor';
 
   @override
-  String get aiProviderAlibabaDescription =>
-      'Familia de modele Qwen de la Alibaba Cloud prin API-ul DashScope';
-
-  @override
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
-
-  @override
-  String get aiProviderAnthropicDescription =>
-      'Familia de asistenți AI Claude de la Anthropic';
 
   @override
   String get aiProviderAnthropicName => 'Anthropic Claude';
@@ -2096,66 +2088,31 @@ class AppLocalizationsRo extends AppLocalizations {
       'Rulează integrat în procesul aplicației Apple. Nu este necesar un server local sau un URL de bază.';
 
   @override
-  String get aiProviderGeminiDescription => 'Modele AI Gemini de la Google';
-
-  @override
   String get aiProviderGeminiName => 'Google Gemini';
-
-  @override
-  String get aiProviderGenericOpenAiDescription =>
-      'API compatibil cu formatul OpenAI';
 
   @override
   String get aiProviderGenericOpenAiName => 'Compatibil OpenAI';
 
   @override
-  String get aiProviderMeliousDescription =>
-      'Inferență găzduită în Europa cu catalog dinamic de modele, rutare, audio și imagini';
-
-  @override
   String get aiProviderMeliousName => 'Melious.ai';
-
-  @override
-  String get aiProviderMistralDescription =>
-      'API cloud Mistral AI cu transcriere audio nativă';
 
   @override
   String get aiProviderMistralName => 'Mistral';
 
   @override
-  String get aiProviderMlxAudioDescription =>
-      'Modele MLX Audio integrate pentru STT și TTS locale pe Apple Silicon';
-
-  @override
   String get aiProviderMlxAudioName => 'MLX Audio (local)';
-
-  @override
-  String get aiProviderNebiusAiStudioDescription => 'Modele Nebius AI Studio';
 
   @override
   String get aiProviderNebiusAiStudioName => 'Nebius AI Studio';
 
   @override
-  String get aiProviderOllamaDescription => 'Rulează inferența local cu Ollama';
-
-  @override
   String get aiProviderOllamaName => 'Ollama';
-
-  @override
-  String get aiProviderOmlxDescription =>
-      'Inferență locală oMLX compatibilă OpenAI pentru modele MLX';
 
   @override
   String get aiProviderOmlxName => 'oMLX (local)';
 
   @override
-  String get aiProviderOpenAiDescription => 'Modele GPT de la OpenAI';
-
-  @override
   String get aiProviderOpenAiName => 'OpenAI';
-
-  @override
-  String get aiProviderOpenRouterDescription => 'Modele OpenRouter';
 
   @override
   String get aiProviderOpenRouterName => 'OpenRouter';
@@ -2192,15 +2149,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderUnknownName => 'Furnizor AI';
 
   @override
-  String get aiProviderVoxtralDescription =>
-      'Transcriere Voxtral locală (până la 30 min audio, 13 limbi)';
-
-  @override
   String get aiProviderVoxtralName => 'Voxtral (local)';
-
-  @override
-  String get aiProviderWhisperDescription =>
-      'Transcriere Whisper locală cu API compatibil OpenAI';
 
   @override
   String get aiProviderWhisperName => 'Whisper (local)';
@@ -2227,25 +2176,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiResponseShowMore => 'Afișați mai mult';
-
-  @override
-  String get aiResponseTypeAudioTranscription => 'Transcriere audio';
-
-  @override
-  String get aiResponseTypeChecklistUpdates =>
-      'Actualizări listă de verificare';
-
-  @override
-  String get aiResponseTypeImageAnalysis => 'Analiză de imagine';
-
-  @override
-  String get aiResponseTypeImagePromptGeneration => 'Prompt Imagine';
-
-  @override
-  String get aiResponseTypePromptGeneration => 'Prompt generat';
-
-  @override
-  String get aiResponseTypeTaskSummary => 'Rezumat sarcină';
 
   @override
   String get aiRunningActivityOpenProgress => 'Afișați progresul AI';

@@ -16,8 +16,8 @@ typedef AudioScratchFileDeleter = void Function(File file);
 
 /// Dart-side wrapper for M4A-to-WAV audio conversion.
 ///
-/// Conversion delegates to `audio_decoder`, which uses AVFoundation, Android
-/// MediaCodec, Windows Media Foundation, and Linux GStreamer without bundling
+/// On Linux, conversion calls the native `convertM4aToWav` method channel.
+/// Other supported platforms delegate to `audio_decoder` without bundling
 /// FFmpeg.
 class AudioConverterChannel {
   static const _channel = MethodChannel('com.matthiasn.lotti/audio_converter');

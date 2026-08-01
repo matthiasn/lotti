@@ -10,7 +10,7 @@ import 'package:lotti/utils/platform.dart' as platform;
 ///
 /// The channel is intentionally small and data-oriented: Flutter owns the
 /// provider/model configuration and progress UI, while Swift owns MLX model
-/// loading, Hugging Face downloads, AVFoundation decoding, and audio playback.
+/// loading, Hugging Face downloads, and AVFoundation decoding.
 /// The native bridge ships only on macOS — iOS, Android, Linux, and Windows
 /// do not register the plugin, and every method short-circuits to an
 /// `unsupported` result so callers never see a [MissingPluginException]. On

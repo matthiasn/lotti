@@ -16,10 +16,18 @@ import 'package:uuid/uuid.dart';
 /// "Analyze Image" skill with an OCR model yields the extracted text appended
 /// to the image entry instead of a 400.
 class MistralOcrRepository {
-  MistralOcrRepository({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+  MistralOcrRepository({
+    http.Client? httpClient,
+    http.Client Function()? clientFactory,
+  }) : assert(
+         httpClient == null || clientFactory == null,
+         'Provide either httpClient or clientFactory, not both.',
+       ),
+       _httpClient = httpClient ?? (clientFactory ?? http.Client.new)(),
+       _shouldCloseClient = httpClient == null;
 
   final http.Client _httpClient;
+  final bool _shouldCloseClient;
 
   static const _providerName = 'MistralOcrRepository';
   static const _uuid = Uuid();
@@ -37,6 +45,15 @@ class MistralOcrRepository {
   /// provider.
   static bool isMistralOcrModel(String model) =>
       model.toLowerCase().contains('ocr');
+
+  /// Closes the HTTP client when this repository created it.
+  ///
+  /// Injected clients remain owned by their caller and are never closed here.
+  void close() {
+    if (_shouldCloseClient) {
+      _httpClient.close();
+    }
+  }
 
   /// Runs OCR over [images] (base64-encoded JPEG) and emits the combined
   /// Markdown as a single streamed chat-completion chunk.

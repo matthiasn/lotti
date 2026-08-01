@@ -1089,8 +1089,7 @@ data: [DONE]
           baseUrl: baseUrl,
         );
 
-        // Assert - rewrapped as a VoxtralInferenceException carrying the
-        // request-timeout status code and the original TimeoutException.
+        // Assert - rewrapped as a message-only VoxtralInferenceException.
         await expectLater(
           transcriptionStream.toList(),
           throwsA(
@@ -1136,8 +1135,7 @@ data: [DONE]
           baseUrl: baseUrl,
         );
 
-        // Assert - rewrapped with the generic invalid-format message and no
-        // status code, preserving the original FormatException.
+        // Assert - rewrapped with the generic invalid-format message only.
         await expectLater(
           transcriptionStream.toList(),
           throwsA(

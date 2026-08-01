@@ -138,7 +138,7 @@ The files below contain non-trivial pure logic with structured inputs that are c
 
 - **2 oversized implementation files**: `template_evolution_workflow.dart` (1437 lines) and `project_agent_workflow.dart` (1137 lines) both exceed the 1000-line target; each has a clear split seam.
 - **2 oversized test files**: `template_evolution_workflow_test.dart` (5527 lines, 104 tests) and `project_agent_workflow_test.dart` (3013 lines, 55 tests) are the most critical; both need decomposition.
-- **4 weak test spots** remain: `_createVersionIdempotent` recovery path, `getContinuationPrompt` non-null branch, `_buildMetaRitualSystemPrompt`/`_buildRitualSystemPrompt` `highPriorityProtocol` inclusion, and the `_resolveObservationPayloads` exception path are untested or undertested behavior branches.
-- **2 genuine Glados candidates** remain: `_parseProjectStatus` + `_isSameSemanticStatus` round-trips and `_writeSeedChangelog` date-boundary — both pure, non-I/O, with algebraic invariants that Glados would cover better than hand-rolled examples.
+- **1 weak test spot** remains: the `_createVersionIdempotent` recovery path is still untested.
+- **No genuine Glados candidates** remain; the project-status round-trip and `_writeSeedChangelog` entries are resolved above.
 - **3 speed wins**: `template_evolution_workflow_test.dart`'s duplicated inline setup (HIGH), `project_agent_workflow_test.dart`'s per-test `setUpTestGetIt` over-registration (MED), `project_agent_strategy_test.dart`'s per-test `verify` scan accumulation (MED).
 - **Biggest single opportunity**: Split `template_evolution_workflow_test.dart` (5527 lines) into three focused files — this alone would make the test suite navigable, reduce CI shard imbalance, and expose the duplicate mock setup that currently hides within an enormous file.
