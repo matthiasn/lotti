@@ -25,7 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   left the files behind, still readable, and disk use tracked everything ever
   synced rather than what you still had. Deleting an assistant — and the
   background tidying of old day-status records — now removes the matching files
-  as well.
+  as well, as far as the system allows: a file the app cannot reach at that
+  moment is left alone rather than failing the deletion.
 - **Weekly totals stop changing on their own.** Daily OS pools each past week's
   planned and recorded minutes into a shared summary the morning briefing reads.
   Recorded time was bucketed into weeks using the calendar of whichever device

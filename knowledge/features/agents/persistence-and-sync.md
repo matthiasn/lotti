@@ -377,14 +377,18 @@ remove rows for good now remove those files too: `hardDeleteAgent` returns the
 ids it deleted, and the retention sweep returns the ids it pruned.
 `AgentSidecarReclaimer` deletes exactly those, never sweeping the directory.
 
-**What a peer asking for a reclaimed payload gets is nothing, and that is
-correct.** `BackfillResponseHandler` already answers a payload it cannot produce
-by skipping, so a request for a reclaimed file is answered with silence and the
-requester's own backoff — no change to the sync contract. That holds because
-both callers only reclaim rows that are gone *everywhere*: a destroyed agent's
-lifecycle syncs to every device, and retention prunes by a rule every device
-applies to the same rows. Asking for one is asking for something no peer still
-has.
+**What a peer asking for a reclaimed payload gets is a terminal "deleted"
+response.** `BackfillResponseHandler._processAgentBackfillEntry` sends one when
+the payload cannot be loaded, so the requester stops asking instead of retrying
+against silence — no change to the sync contract. That is the right answer
+because both callers only reclaim rows that are intentionally gone: a destroyed
+agent's lifecycle syncs to every device, and retention prunes by a rule every
+device applies to the same rows.
+
+The propagation is asynchronous, though, and worth stating plainly:
+`hardDeleteAgent` is local-only, so a peer can still hold the old payload — or
+ask for it — until the lifecycle update reaches it. The deleted response is what
+makes that window terminate cleanly; it is not something reclamation prevents.
 
 Reclamation is best-effort. A file that is already absent is the normal case —
 the entity may never have synced — and neither a missing documents directory

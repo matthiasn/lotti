@@ -1,12 +1,14 @@
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/database/agent_repo_links.dart';
 import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/sync/vector_clock.dart';
 
+import '../test_data/entity_factories.dart';
 import '../test_data/link_factories.dart';
 import '../test_data/wake_factories.dart';
 
@@ -16,12 +18,14 @@ import '../test_data/wake_factories.dart';
 void main() {
   late AgentDatabase db;
   late AgentRepoLinks links;
+  late AgentRepoCore core;
 
   final testDate = DateTime(2026, 3, 15);
 
   setUp(() {
     db = AgentDatabase(inMemoryDatabase: true, background: false);
     links = AgentRepoLinks(db, null);
+    core = AgentRepoCore(db);
   });
 
   tearDown(() async {
@@ -243,6 +247,39 @@ void main() {
 
       expect(await links.getLinksFrom('agent-del'), isEmpty);
       expect(await links.getWakeRun('run-del'), isNull);
+    });
+
+    test('reports links between two of the agent-owned entities', () async {
+      // messagePrev joins two messages, so neither endpoint is the agent id.
+      // deleteAgentLinks removes those rows via the agent_entities subquery,
+      // so the reported ids must cover them too — otherwise the rows go and
+      // their sidecars are left on disk forever, unreferenced and unreachable.
+      for (final id in ['m-1', 'm-2']) {
+        await core.upsertEntity(
+          makeTestMessage(id: id, agentId: 'agent-del', createdAt: testDate),
+        );
+      }
+      await links.upsertLink(
+        model.AgentLink.messagePrev(
+          id: 'l-prev',
+          fromId: 'm-2',
+          toId: 'm-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: const VectorClock({'node-1': 1}),
+        ),
+      );
+
+      final removed = await links.hardDeleteAgent('agent-del');
+
+      expect(removed.linkIds, contains('l-prev'));
+      expect(
+        await links.getLinksFrom('m-2'),
+        isEmpty,
+        reason:
+            'The row is deleted either way; the question is whether the '
+            'caller is told, so it can reclaim the sidecar.',
+      );
     });
   });
 }

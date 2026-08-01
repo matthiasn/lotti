@@ -595,14 +595,22 @@ class AgentRepoLinks {
                 .get())
           row.read<String>('id'),
       ];
+      // Mirrors `deleteAgentLinks` exactly. A link between two of the agent's
+      // own entities — `messagePrev`, `messagePayload` — has neither endpoint
+      // equal to the agent id, so a narrower select would let those rows be
+      // deleted while their sidecars were never reported and so never
+      // reclaimed.
       final linkIds = [
         for (final row
             in await _db
                 .customSelect(
-                  'SELECT id FROM agent_links '
-                  'WHERE from_id = ?1 OR to_id = ?1',
+                  'SELECT id FROM agent_links WHERE from_id = ?1 OR to_id = ?1 '
+                  'OR from_id IN (SELECT id FROM agent_entities '
+                  'WHERE agent_id = ?1) '
+                  'OR to_id IN (SELECT id FROM agent_entities '
+                  'WHERE agent_id = ?1)',
                   variables: [Variable<String>(agentId)],
-                  readsFrom: {_db.agentLinks},
+                  readsFrom: {_db.agentLinks, _db.agentEntities},
                 )
                 .get())
           row.read<String>('id'),

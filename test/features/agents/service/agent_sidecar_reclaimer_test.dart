@@ -81,14 +81,12 @@ void main() {
     );
   });
 
-  test('an unreadable file is logged, not thrown', () {
-    final file = writeSidecar(relativeAgentEntityPath('entity-1'));
-    // Read-only parent: the file is visible but cannot be unlinked. The
-    // caller has already committed its database work, so this must not
-    // propagate.
-    final parent = file.parent;
-    Process.runSync('chmod', ['a-w', parent.path]);
-    addTearDown(() => Process.runSync('chmod', ['u+w', parent.path]));
+  test('a deletion failure is logged, not thrown', () {
+    // Forced through the seam rather than a chmod: the real failure modes are
+    // OS-specific, the suite runs a Windows shard, and an elevated POSIX user
+    // can delete a file its parent directory denies.
+    writeSidecar(relativeAgentEntityPath('entity-1'));
+    reclaimer.deleteSidecar = (_) => throw const FileSystemException('busy');
 
     expect(reclaimer.reclaim(entityIds: ['entity-1']), 0);
     verify(
@@ -100,6 +98,28 @@ void main() {
         subDomain: any(named: 'subDomain'),
       ),
     ).called(1);
+  });
+
+  test('an id that would escape the sidecar directory is refused', () {
+    // Ids arrive from sync payloads, so they are untrusted. Without the
+    // containment check this resolves to <docs>/agent_entities/../secret.json
+    // and deletes a file no database write ever accounted for.
+    final outside = File('${root.path}/secret.json')
+      ..writeAsStringSync('{"not":"a sidecar"}');
+
+    expect(reclaimer.reclaim(entityIds: ['../secret']), 0);
+
+    expect(
+      outside.existsSync(),
+      isTrue,
+      reason: 'Reclamation must never reach outside the sidecar directory.',
+    );
+  });
+
+  test('absolute and separator-bearing ids are refused too', () {
+    for (final id in ['/etc/passwd', 'a/b', r'a\\b', 'C:file']) {
+      expect(reclaimer.reclaim(entityIds: [id]), 0);
+    }
   });
 
   test('no documents directory disables reclamation rather than failing', () {

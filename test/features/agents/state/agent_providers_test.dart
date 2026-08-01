@@ -2164,12 +2164,28 @@ void main() {
   });
 
   group('agentSidecarReclaimerProvider', () {
+    // `Directory` is process-global in getIt, and CI runs many files in one
+    // isolate. Whatever a previous file registered is captured and put back,
+    // so these tests cannot make a later one order-dependent.
+    Directory? previousDirectory;
+
+    setUp(() {
+      previousDirectory = getIt.isRegistered<Directory>()
+          ? getIt<Directory>()
+          : null;
+      if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
+    });
+
+    tearDown(() {
+      if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
+      final previous = previousDirectory;
+      if (previous != null) getIt.registerSingleton<Directory>(previous);
+    });
+
     test('uses the registered documents directory when there is one', () {
       final dir = Directory.systemTemp.createTempSync('reclaimer-provider-');
       addTearDown(() => dir.deleteSync(recursive: true));
-      if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
       getIt.registerSingleton<Directory>(dir);
-      addTearDown(() => getIt.unregister<Directory>());
 
       final container = ProviderContainer(
         overrides: [domainLoggerProvider.overrideWithValue(MockDomainLogger())],
@@ -2185,9 +2201,7 @@ void main() {
     test('falls back to no directory rather than throwing', () {
       // Headless and test contexts have no documents directory; reclamation
       // is skipped there instead of failing the delete or sweep that asked
-      // for it.
-      if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
-
+      // for it. setUp has already cleared any registration.
       final container = ProviderContainer(
         overrides: [domainLoggerProvider.overrideWithValue(MockDomainLogger())],
       );
