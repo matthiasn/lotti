@@ -37,7 +37,7 @@ void main() {
     ).thenAnswer((_) async => <HabitDefinition>[]);
 
     when(
-      () => mockJournalDb.getHabitCompletionsInRange(
+      () => mockJournalDb.getHabitCompletionRecordsInRange(
         rangeStart: any(named: 'rangeStart'),
       ),
     ).thenAnswer((_) async => []);

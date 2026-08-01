@@ -81,7 +81,7 @@ void main() {
       mocks.journalDb.getAllHabitDefinitions,
     ).thenAnswer((_) async => <HabitDefinition>[]);
     when(
-      () => mocks.journalDb.getHabitCompletionsInRange(
+      () => mocks.journalDb.getHabitCompletionRecordsInRange(
         rangeStart: any(named: 'rangeStart'),
       ),
     ).thenAnswer((_) async => []);

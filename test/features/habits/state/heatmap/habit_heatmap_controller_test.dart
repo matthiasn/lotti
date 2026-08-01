@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../habit_completion_record_fixtures.dart';
 
 /// A [HabitsController] stand-in whose category filter can be driven from the
 /// test, so the heatmap's "recompute on filter change" path is exercisable.
@@ -100,7 +102,7 @@ void main() {
       () => mockRepository.getHabitCompletionsInRange(
         rangeStart: any(named: 'rangeStart'),
       ),
-    ).thenAnswer((_) async => <JournalEntity>[]);
+    ).thenAnswer((_) async => <HabitCompletionRecord>[]);
     when(
       () => mockRepository.updateStream,
     ).thenAnswer((_) => updateController.stream);
@@ -130,7 +132,9 @@ void main() {
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer(
-        (_) async => [completion(habitId: 'h1', date: DateTime(2026, 6, 16))],
+        (_) async => habitCompletionRecordsFrom([
+          completion(habitId: 'h1', date: DateTime(2026, 6, 16)),
+        ]),
       );
 
       final container = makeContainer();
@@ -258,7 +262,9 @@ void main() {
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer(
-        (_) async => [completion(habitId: 'h1', date: DateTime(2026, 6, 17))],
+        (_) async => habitCompletionRecordsFrom([
+          completion(habitId: 'h1', date: DateTime(2026, 6, 17)),
+        ]),
       );
 
       updateController.add({habitCompletionNotification});
@@ -325,9 +331,9 @@ void main() {
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer(
-        (_) async => [
+        (_) async => habitCompletionRecordsFrom([
           completion(habitId: 'h1', date: DateTime(2026, 6, 16)),
-        ],
+        ]),
       );
 
       final container = makeContainer();

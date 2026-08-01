@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../habit_completion_record_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -313,7 +314,7 @@ void main() {
         () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer((_) async => completions);
+      ).thenAnswer((_) async => habitCompletionRecordsFrom(completions));
 
       // Trigger initialization
       container.read(habitsControllerProvider);
@@ -354,7 +355,7 @@ void main() {
         () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer((_) async => completions);
+      ).thenAnswer((_) async => habitCompletionRecordsFrom(completions));
 
       container.read(habitsControllerProvider);
       await pumpEventQueue();
@@ -394,7 +395,11 @@ void main() {
           () => mockRepository.getHabitCompletionsInRange(
             rangeStart: any(named: 'rangeStart'),
           ),
-        ).thenAnswer((_) async => latestHabitCompletionsByDay(completions));
+        ).thenAnswer(
+          (_) async => habitCompletionRecordsFrom(
+            latestHabitCompletionsByDay(completions),
+          ),
+        );
 
         container.read(habitsControllerProvider);
         await pumpEventQueue();
@@ -432,7 +437,7 @@ void main() {
         () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer((_) async => completions);
+      ).thenAnswer((_) async => habitCompletionRecordsFrom(completions));
 
       container.read(habitsControllerProvider);
       await pumpEventQueue();

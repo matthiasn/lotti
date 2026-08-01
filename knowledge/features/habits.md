@@ -5,13 +5,13 @@ description: Two record streams reconciled into "what should the user see now" �
 resource: ../../lib/features/habits
 tags: [habits, derivation, streaks, heatmap]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T03:15:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-01T15:30:00Z }
 stale_after: 2027-02-22
 sources:
   - id: src
     resource: ../../lib/features/habits
     title: Habits feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-01
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
@@ -81,6 +81,35 @@ timestamp before deriving UI state.
 properties. It protects the tab maps, streak inputs, card strips, repository reads
 and direct `JournalDb` reads from **database row-order differences** when multiple
 writes share the same effective day.
+
+# Completions are read as a three-field projection
+
+Both the tab controller and the heatmap read completions through
+`JournalDb.getHabitCompletionRecordsInRange`, which returns
+`HabitCompletionRecord` — **`habitId`, `dateFrom`, `completionType`** — and not
+the `HabitCompletionEntry` entity.
+
+Those three fields are all any consumer ever touched. Carrying the whole entity
+was the cost: the read averaged **636 ms** in the 2026-06/07 slow-query logs
+while the SQL itself measures ~29 ms on a comparable 10,000-row / 1,460-result
+set. The gap is ~20 columns per row — including the fat `serialized` JSON blob —
+crossing the isolate port, which the interceptor measures because it wraps the
+executor on the calling side. Decoding those blobs into `JournalEntity` then
+costs the *calling* isolate more work again, outside that measurement.
+
+The ranking contract is unchanged: one winning row per habit/day, last write
+wins, ordered `updated_at DESC, created_at DESC, date_to DESC, id DESC`.
+
+An unrecognised `completionType` decodes to `null` rather than throwing, so one
+completion type synced from a newer peer cannot take out the whole heatmap.
+
+**`null` is not a synonym for success.** It is the value legacy entries already
+carry, and the consumers treat it as *recorded and streak-extending, but not a
+success*: it counts in `allByDay`, `habitSuccessDays` and the heatmap
+denominator, while staying out of `successfulByDay`, `successfulToday` and the
+heatmap's success numerator. So an unknown type closes the habit for that day
+without contributing to its success rate. That asymmetry predates the
+projection; it is how legacy `null`s have always behaved.
 
 # What the tab controller derives
 

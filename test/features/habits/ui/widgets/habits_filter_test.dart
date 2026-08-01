@@ -34,7 +34,7 @@ void main() {
     updateController = StreamController.broadcast();
 
     when(
-      () => mockJournalDb.getHabitCompletionsInRange(
+      () => mockJournalDb.getHabitCompletionRecordsInRange(
         rangeStart: any(named: 'rangeStart'),
       ),
     ).thenAnswer((_) async => []);

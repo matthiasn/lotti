@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
@@ -25,9 +26,10 @@ abstract class HabitsRepository {
   /// Fetches habit completions within a date range.
   ///
   /// [rangeStart] is the start of the date range (inclusive).
-  /// Returns the latest habit completion entry for each habit/day from
-  /// [rangeStart] to now.
-  Future<List<JournalEntity>> getHabitCompletionsInRange({
+  /// Returns the latest completion per habit/day from [rangeStart] to now,
+  /// projected to the fields consumers read — see [HabitCompletionRecord] for
+  /// why the full entity is not carried.
+  Future<List<HabitCompletionRecord>> getHabitCompletionsInRange({
     required DateTime rangeStart,
   });
 
@@ -92,9 +94,9 @@ class HabitsRepositoryImpl implements HabitsRepository {
   }
 
   @override
-  Future<List<JournalEntity>> getHabitCompletionsInRange({
+  Future<List<HabitCompletionRecord>> getHabitCompletionsInRange({
     required DateTime rangeStart,
-  }) => _journalDb.getHabitCompletionsInRange(rangeStart: rangeStart);
+  }) => _journalDb.getHabitCompletionRecordsInRange(rangeStart: rangeStart);
 
   @override
   Future<List<JournalEntity>> getHabitCompletionsByHabitId({

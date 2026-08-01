@@ -22,6 +22,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../habit_completion_record_fixtures.dart';
 import '../../test_utils.dart';
 
 /// Serves a fixed [HabitHeatmapData] so the page's heatmap card renders without
@@ -83,10 +84,12 @@ void main() {
       ).thenAnswer((_) async => []);
 
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockJournalDb.getHabitCompletionRecordsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer((_) async => [testHabitCompletionEntry]);
+      ).thenAnswer(
+        (_) async => habitCompletionRecordsFrom([testHabitCompletionEntry]),
+      );
     });
 
     tearDown(getIt.reset);

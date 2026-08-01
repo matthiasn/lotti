@@ -4,7 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/get_it.dart';
@@ -39,7 +39,7 @@ class HabitsController extends Notifier<HabitsState> {
 
   List<HabitDefinition> _habitDefinitions = [];
   Map<String, HabitDefinition> _habitDefinitionsMap = {};
-  List<JournalEntity> _habitCompletions = [];
+  List<HabitCompletionRecord> _habitCompletions = [];
 
   /// Tracks whether the habits tab was the active top-level tab on the
   /// previous nav-index emission. Used to detect the off→on edge that
@@ -139,15 +139,14 @@ class HabitsController extends Notifier<HabitsState> {
     }
 
     for (final item in _habitCompletions) {
-      final day = item.meta.dateFrom.ymd;
+      final day = item.dateFrom.ymd;
 
-      if (item is HabitCompletionEntry &&
-          _habitDefinitionsMap.containsKey(item.data.habitId)) {
-        final completionType = item.data.completionType;
-        final habitId = item.data.habitId;
+      if (_habitDefinitionsMap.containsKey(item.habitId)) {
+        final completionType = item.completionType;
+        final habitId = item.habitId;
 
         if (day == today) {
-          completedToday.add(item.data.habitId);
+          completedToday.add(habitId);
         }
 
         addId(allByDay, day, habitId);
@@ -158,7 +157,7 @@ class HabitsController extends Notifier<HabitsState> {
           removeId(failedByDay, day, habitId);
 
           if (day == today) {
-            successfulToday.add(item.data.habitId);
+            successfulToday.add(habitId);
           }
         }
 
@@ -168,7 +167,7 @@ class HabitsController extends Notifier<HabitsState> {
           removeId(failedByDay, day, habitId);
 
           if (day == today) {
-            successfulToday.add(item.data.habitId);
+            successfulToday.add(habitId);
           }
         }
 
@@ -206,15 +205,12 @@ class HabitsController extends Notifier<HabitsState> {
     final habitSuccessDays = <String, Set<String>>{};
 
     for (final item in _habitCompletions) {
-      if (item is HabitCompletionEntry &&
-          _habitDefinitionsMap.containsKey(item.data.habitId) &&
-          (item.data.completionType == HabitCompletionType.success ||
-              item.data.completionType == HabitCompletionType.skip ||
-              item.data.completionType == null)) {
-        final day = item.meta.dateFrom.ymd;
-        habitSuccessDays
-            .putIfAbsent(item.data.habitId, () => <String>{})
-            .add(day);
+      if (_habitDefinitionsMap.containsKey(item.habitId) &&
+          (item.completionType == HabitCompletionType.success ||
+              item.completionType == HabitCompletionType.skip ||
+              item.completionType == null)) {
+        final day = item.dateFrom.ymd;
+        habitSuccessDays.putIfAbsent(item.habitId, () => <String>{}).add(day);
       }
     }
 

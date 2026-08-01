@@ -170,7 +170,7 @@ void main() {
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
           );
-          final inRange = await db!.getHabitCompletionsInRange(
+          final inRange = await db!.getHabitCompletionRecordsInRange(
             rangeStart: rangeStart,
           );
 
@@ -181,17 +181,17 @@ void main() {
             HabitCompletionType.fail,
           );
 
+          // The record read carries no entity id, so the winning row is
+          // identified by the fields it does project — which is exactly what
+          // the consumers use.
           expect(inRange, hasLength(1));
-          expect(inRange.single.meta.id, 'habit-complete-newer-fail');
-          expect(
-            (inRange.single as HabitCompletionEntry).data.completionType,
-            HabitCompletionType.fail,
-          );
+          expect(inRange.single.habitId, habitId);
+          expect(inRange.single.completionType, HabitCompletionType.fail);
         },
       );
 
       test(
-        'getHabitCompletionsInRange preserves write-recency tie breakers',
+        'getHabitCompletionRecordsInRange preserves write-recency tie breakers',
         () async {
           final habitId = habitFlossing.id;
           final day = DateTime(2024, 4, 16, 21);
@@ -232,15 +232,144 @@ void main() {
           await db!.updateJournalEntity(earlierCreatedAt);
           await db!.updateJournalEntity(laterCreatedAt);
 
-          final result = await db!.getHabitCompletionsInRange(
+          final result = await db!.getHabitCompletionRecordsInRange(
             rangeStart: DateTime(2024, 4),
           );
 
           expect(result, hasLength(1));
-          expect(result.single.meta.id, 'habit-created-later');
+          expect(result.single.habitId, habitId);
+          expect(result.single.completionType, HabitCompletionType.fail);
+        },
+      );
+
+      test(
+        'getHabitCompletionRecordsInRange decodes an unknown completion type '
+        'as null rather than throwing',
+        () async {
+          // Forward compatibility: a newer peer can sync a completion type
+          // this build does not know. Decoding to null keeps it in the same
+          // bucket as a legacy entry — recorded and streak-extending, but not
+          // counted as a success — rather than throwing and taking out the
+          // whole heatmap for one unrecognised row.
+          const serialized =
+              '{"data":{"habitId":"habit-future",'
+              '"completionType":"teleported"},'
+              '"meta":{"id":"future-type",'
+              '"dateFrom":"2024-04-16T21:00:00.000"}}';
+          await db!.customStatement(
+            'INSERT INTO journal (id, created_at, updated_at, date_from, '
+            'date_to, type, subtype, serialized, deleted, starred, private, '
+            'task, flag) VALUES (?1, 1713000000, 1713000000, 1713000000, '
+            '1713000000, ?2, ?3, ?4, 0, 0, 0, 0, 0)',
+            ['future-type', 'HabitCompletionEntry', '', serialized],
+          );
+
+          final result = await db!.getHabitCompletionRecordsInRange(
+            rangeStart: DateTime(2024),
+          );
+
+          final future = result.where((r) => r.habitId == 'habit-future');
+          expect(future, hasLength(1));
           expect(
-            (result.single as HabitCompletionEntry).data.completionType,
-            HabitCompletionType.fail,
+            future.single.completionType,
+            isNull,
+            reason: 'an unrecognised type must decode to null, not throw',
+          );
+        },
+      );
+
+      test(
+        'getHabitCompletionRecordsInRange reports the recorded wall-clock day, '
+        'not the day the epoch column reconstructs to',
+        () async {
+          // `date_from` is stored as a Unix epoch and reconstructed in the
+          // reader's zone; `meta.dateFrom` is a naive local timestamp that
+          // keeps the wall clock it was recorded with. A completion entered at
+          // 23:30 in Berlin and read later in Auckland reconstructs from the
+          // column as 11:30 the NEXT day, which would move it between heatmap
+          // cells, "completed today" buckets and streak windows.
+          //
+          // Rather than switch the test process's timezone, the two are given
+          // deliberately different values: whichever one the projection reads
+          // is then unambiguous.
+          const serialized =
+              '{"data":{"habitId":"habit-tz","completionType":"success"},'
+              '"meta":{"id":"tz-row","dateFrom":"2024-04-18T23:30:00.000"}}';
+          await db!.customStatement(
+            'INSERT INTO journal (id, created_at, updated_at, date_from, '
+            'date_to, type, subtype, serialized, deleted, starred, private, '
+            'task, flag) VALUES (?1, 1713470000, 1713470000, 1713480000, '
+            '1713480000, ?2, ?3, ?4, 0, 0, 0, 0, 0)',
+            ['tz-row', 'HabitCompletionEntry', '', serialized],
+          );
+
+          final result = await db!.getHabitCompletionRecordsInRange(
+            rangeStart: DateTime(2024),
+          );
+          final row = result.singleWhere((r) => r.habitId == 'habit-tz');
+
+          expect(
+            row.dateFrom,
+            DateTime.parse('2024-04-18T23:30:00.000'),
+            reason:
+                'the projection must carry the recorded meta.dateFrom, '
+                'not the value the date_from epoch column reconstructs to',
+          );
+        },
+      );
+
+      test(
+        'getHabitCompletionRecordsInRange skips rows with no habit id or '
+        'recorded timestamp instead of throwing',
+        () async {
+          // Both projected fields come from json_extract, so a malformed
+          // payload yields NULL rather than failing the query. Reading those
+          // as non-null would throw and take out every habit's history for one
+          // bad row.
+          Future<void> insertRaw(String id, String serialized) {
+            return db!.customStatement(
+              'INSERT INTO journal (id, created_at, updated_at, date_from, '
+              'date_to, type, subtype, serialized, deleted, starred, private, '
+              'task, flag) VALUES (?1, 1713470000, 1713470000, 1713480000, '
+              '1713480000, ?2, ?3, ?4, 0, 0, 0, 0, 0)',
+              [id, 'HabitCompletionEntry', '', serialized],
+            );
+          }
+
+          await insertRaw(
+            'no-habit-id',
+            '{"data":{"completionType":"success"},'
+                '"meta":{"id":"no-habit-id","dateFrom":"2024-04-18T10:00:00.000"}}',
+          );
+          await insertRaw(
+            'no-date',
+            '{"data":{"habitId":"habit-nodate","completionType":"success"},'
+                '"meta":{"id":"no-date"}}',
+          );
+          await insertRaw(
+            'bad-date',
+            '{"data":{"habitId":"habit-baddate","completionType":"success"},'
+                '"meta":{"id":"bad-date","dateFrom":"not-a-timestamp"}}',
+          );
+          await insertRaw(
+            'good',
+            '{"data":{"habitId":"habit-good","completionType":"success"},'
+                '"meta":{"id":"good","dateFrom":"2024-04-18T11:00:00.000"}}',
+          );
+
+          final result = await db!.getHabitCompletionRecordsInRange(
+            rangeStart: DateTime(2024),
+          );
+
+          expect(
+            result.map((r) => r.habitId),
+            contains('habit-good'),
+            reason: 'the well-formed row must still come back',
+          );
+          expect(
+            result.map((r) => r.habitId),
+            isNot(anyElement(anyOf('habit-nodate', 'habit-baddate'))),
+            reason: 'rows with no usable day are skipped, not surfaced',
           );
         },
       );

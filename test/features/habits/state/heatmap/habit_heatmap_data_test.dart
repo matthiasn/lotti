@@ -6,6 +6,8 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/first_day_of_week.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+import '../../habit_completion_record_fixtures.dart';
+
 HabitDefinition _habit({
   required String id,
   String categoryId = 'cat-1',
@@ -100,7 +102,7 @@ void main() {
       String today = '2024-03-15',
     }) {
       return buildHeatmapDays(
-        completions: completions,
+        completions: habitCompletionRecordsFrom(completions),
         habitDefinitions: habits,
         rangeStartYmd: start,
         rangeEndYmd: end,
@@ -387,7 +389,7 @@ void main() {
 
     Map<String, int> streaks(List<JournalEntity> completions) =>
         currentStreaksByHabit(
-          completions: completions,
+          completions: habitCompletionRecordsFrom(completions),
           habitDefinitions: [habit],
           todayYmd: today,
         );
@@ -442,10 +444,10 @@ void main() {
 
     test('habits are independent and unknown ids are ignored', () {
       final result = currentStreaksByHabit(
-        completions: [
+        completions: habitCompletionRecordsFrom([
           _completion(habitId: 'h1', date: DateTime(2026, 6, 17)),
           _completion(habitId: 'other', date: DateTime(2026, 6, 17)),
-        ],
+        ]),
         habitDefinitions: [
           habit,
           _habit(id: 'h2', activeFrom: DateTime(2024)),

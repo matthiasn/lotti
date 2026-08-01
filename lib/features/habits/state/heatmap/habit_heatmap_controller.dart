@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_data.dart';
@@ -38,7 +38,7 @@ class HabitHeatmapController extends Notifier<HabitHeatmapData> {
 
   late HabitsRepository _repository;
   List<HabitDefinition> _habitDefinitions = [];
-  List<JournalEntity> _habitCompletions = [];
+  List<HabitCompletionRecord> _habitCompletions = [];
   Set<String> _selectedCategoryIds = const {};
 
   /// Monotonic guard so overlapping refreshes can't let an older fetch finish

@@ -53,8 +53,9 @@ Aggregating over all 47 days puts `habitCompletionsInRange` at
 #1 with 1,458 s. That is an artefact:
 
 - Its **last execution was 2026-07-05**. It was superseded by the deduplicating
-  `ROW_NUMBER` variant `getHabitCompletionsInRange`
-  (`lib/database/database_data_queries.dart:40`, landed in d36221b06, 2026-06-06).
+  `ROW_NUMBER` variant in `lib/database/database_data_queries.dart` (landed in
+  d36221b06, 2026-06-06; since renamed to `getHabitCompletionRecordsInRange`
+  when it was narrowed to a three-field projection).
 - 1,356 s of its 1,458 s comes from **two** outlier events (see "Mode C" below).
 - The drift query had **no callers** and generated a dead method alongside
   itself. Both were **deleted in #3723** — it was never worth optimising, and
@@ -239,7 +240,8 @@ barely present in April — now dominates.
 - `lib/database/common.dart:116-185` — `openDbConnection`, interceptor installation, `readPool`
 - `lib/database/slow_query_logging.dart:24` — super-slow threshold
 - `lib/database/slow_query_logging.dart:234` — the `Stopwatch` whose semantics this doc turns on
-- `lib/database/database_data_queries.dart:40` — live habit heatmap query
+- `lib/database/database_data_queries.dart` — live habit heatmap query
+  (`getHabitCompletionRecordsInRange`)
 - `lib/features/agents/database/agent_repo_core.dart:88` — by-id read (N+1)
 - `lib/features/agents/database/agent_repo_core.dart:162` — `latestEntitiesByAgentIds`
 - `lib/features/agents/database/agent_attention_projection.dart:430,524` — by-id reads (N+1)
