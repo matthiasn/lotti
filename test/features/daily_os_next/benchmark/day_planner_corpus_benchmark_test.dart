@@ -137,10 +137,11 @@ void main() {
       ]),
     );
     expect(result['days'], 2);
-    // Two days of the documented per-day shape: plan + 3 captures + 6 status
+    // Two days of the documented per-day shape — plan + 3 captures + 6 status
     // events + 4 observations (each a message and its payload) + 2 change
-    // sets.
-    expect(result['agentEntities'], 2 * (1 + 3 + 6 + 4 * 2 + 2));
+    // sets — plus the one completed-digest milestone the corpus seeds so
+    // retention's watermark floor does not suppress the whole sweep.
+    expect(result['agentEntities'], 2 * (1 + 3 + 6 + 4 * 2 + 2) + 1);
     expect(result['processingJobs'], 2 * 3);
   });
 

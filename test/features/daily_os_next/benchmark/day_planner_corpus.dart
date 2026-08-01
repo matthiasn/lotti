@@ -82,10 +82,28 @@ class DayPlannerCorpus {
 
   /// Seeds the whole corpus under the coordinator.
   ///
+  /// Includes one completed-digest milestone at [baseDay]: retention floors
+  /// its status-event cutoff at the digest watermark, so a corpus with no
+  /// completed digest legitimately prunes nothing and the growth gate would
+  /// measure that instead of the age bound. A real install has digested.
+  ///
   /// Under the coordinator specifically, because that is the agent that
   /// actually accumulates — a `day_agent:<dayId>` holds one day and goes cold,
   /// so seeding those would measure nothing.
   Future<void> seed() async {
+    await repository.upsertEntity(
+      AgentDomainEntity.agentMessage(
+        id: 'digest-watermark',
+        agentId: dailyOsPlannerAgentId,
+        threadId: 'thread-digest',
+        kind: AgentMessageKind.system,
+        createdAt: DateTime(baseDay.year, baseDay.month, baseDay.day, 6),
+        vectorClock: null,
+        metadata: const AgentMessageMetadata(
+          milestone: AgentMilestone.dailyWakeCompleted,
+        ),
+      ),
+    );
     for (var offset = 0; offset < days; offset++) {
       final day = dayAt(offset);
       final dayId = dayPlanId(day);
