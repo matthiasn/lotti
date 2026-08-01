@@ -570,7 +570,11 @@ void main() {
       final s = state();
       expect(s.processedCount, 1);
       expect(s.progress, 0.5);
-      expect(s.error, contains('availability cooldown'));
+      expect(s.error, isNull);
+      expect(
+        s.errorCode,
+        EmbeddingBackfillErrorCode.ollamaUnavailable,
+      );
       verify(
         () => mockEmbeddingRepo.embed(
           input: any(named: 'input'),
@@ -731,7 +735,7 @@ void main() {
         processedCount: 10,
         totalCount: 20,
         embeddedCount: 5,
-        error: 'some error',
+        errorCode: EmbeddingBackfillErrorCode.ollamaUnavailable,
       );
 
       final copied = original.copyWith();
@@ -741,7 +745,11 @@ void main() {
       expect(copied.processedCount, 10);
       expect(copied.totalCount, 20);
       expect(copied.embeddedCount, 5);
-      expect(copied.error, 'some error');
+      expect(copied.error, isNull);
+      expect(
+        copied.errorCode,
+        EmbeddingBackfillErrorCode.ollamaUnavailable,
+      );
     });
 
     test('updates specified fields', () {
@@ -753,7 +761,7 @@ void main() {
         processedCount: 15,
         totalCount: 20,
         embeddedCount: 10,
-        error: 'test error',
+        errorCode: EmbeddingBackfillErrorCode.ollamaUnavailable,
       );
 
       expect(updated.progress, 0.75);
@@ -761,13 +769,46 @@ void main() {
       expect(updated.processedCount, 15);
       expect(updated.totalCount, 20);
       expect(updated.embeddedCount, 10);
-      expect(updated.error, 'test error');
+      expect(updated.error, isNull);
+      expect(
+        updated.errorCode,
+        EmbeddingBackfillErrorCode.ollamaUnavailable,
+      );
     });
 
     test('clearError sets error to null', () {
-      const original = EmbeddingBackfillState(error: 'old error');
+      const original = EmbeddingBackfillState(
+        error: 'old error',
+        errorCode: EmbeddingBackfillErrorCode.ollamaUnavailable,
+      );
       final cleared = original.copyWith(clearError: true);
       expect(cleared.error, isNull);
+      expect(cleared.errorCode, isNull);
+    });
+
+    test('setting a raw error clears an existing typed error code', () {
+      const original = EmbeddingBackfillState(
+        errorCode: EmbeddingBackfillErrorCode.ollamaUnavailable,
+      );
+
+      final updated = original.copyWith(error: 'new error');
+
+      expect(updated.error, 'new error');
+      expect(updated.errorCode, isNull);
+    });
+
+    test('setting a typed error code clears an existing raw error', () {
+      const original = EmbeddingBackfillState(error: 'old error');
+
+      final updated = original.copyWith(
+        errorCode: EmbeddingBackfillErrorCode.ollamaUnavailable,
+      );
+
+      expect(updated.error, isNull);
+      expect(
+        updated.errorCode,
+        EmbeddingBackfillErrorCode.ollamaUnavailable,
+      );
     });
 
     test('clearError takes precedence over error parameter', () {

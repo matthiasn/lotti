@@ -3757,6 +3757,7 @@
   "maintenanceGenerateEmbeddingsConfirm": "YES, GENERATE",
   "maintenanceGenerateEmbeddingsDescription": "Generate embeddings for entries in selected categories",
   "maintenanceGenerateEmbeddingsMessage": "Select categories to generate embeddings for.",
+  "maintenanceGenerateEmbeddingsOllamaUnavailable": "Ollama is unavailable. Try generating embeddings again in a few minutes.",
   "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}",
   "@maintenanceGenerateEmbeddingsProgress": {
     "placeholders": {

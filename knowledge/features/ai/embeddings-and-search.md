@@ -32,6 +32,10 @@ sources:
     resource: ../../../lib/features/ai/state/embedding_backfill_controller.dart
     title: EmbeddingBackfillController
     last_modified: 2026-08-01
+  - id: embedding-backfill-modal
+    resource: ../../../lib/features/ai/ui/settings/embedding_backfill_modal.dart
+    title: Embedding backfill progress UI
+    last_modified: 2026-08-01
 ---
 
 The AI feature owns local embeddings and vector search — the one place where the
@@ -65,23 +69,38 @@ flowchart LR
   body.
 - Agent reports are stored with `taskId` metadata, so a search hit can resolve
   back to the owning task.
-- The production `OllamaEmbeddingRepository` is shared. After three transport
-  failures confirm that one base URL is unavailable, it opens a five-minute
-  cooldown for that URL. Calls during the cooldown fail before network I/O and
-  carry a cumulative suppressed-request count; the task-agent path does not
-  emit a full stack trace for every optional report.
+- The production `OllamaEmbeddingRepository` is shared. The first request for
+  an unobserved base URL exclusively reserves the initial availability probe;
+  concurrent callers are suppressed before they can start their own retry
+  loops. After three transport failures confirm an outage, the endpoint enters
+  a five-minute cooldown. Calls during that interval fail before network I/O
+  and carry a cumulative suppressed-request count.
+- Any HTTP response confirms reachability and moves the endpoint to `Available`,
+  where requests may run concurrently. Every allowed request captures the
+  endpoint generation at its start. An HTTP response advances that generation,
+  and an exhausted transport budget opens a cooldown only while its captured
+  generation is still current. A failure completing after a newer successful
+  response therefore cannot hide recovery by reopening the circuit.
 - The first call after the cooldown exclusively reserves the recovery probe;
-  concurrent callers remain suppressed until it finishes. Any HTTP response
-  proves the service is reachable and closes the circuit; another exhausted
-  transport retry budget opens a fresh cooldown. Notification and manual
-  backfill loops stop on a known cooldown instead of emitting one stack trace
-  per remaining item. A failed optional embedding never rolls back the
+  concurrent callers remain suppressed until it finishes. Availability is
+  reserved before the invocation wrapper begins AI attribution, so a suppressed
+  embedding creates neither a provider consumption event nor a failed
+  attribution projection. Notification and manual backfill loops stop on a
+  known cooldown instead of emitting one stack trace per remaining item.
+- Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
+  maps it to the active locale; the suppression count and retry timestamp stay
+  in diagnostic logs. A failed optional embedding never rolls back the
   already-persisted agent report or deletes its previous embedding.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Available
-  Available --> CoolingDown: transport retries exhausted
+  [*] --> InitialProbe
+  InitialProbe --> InitialProbe: concurrent calls suppressed
+  InitialProbe --> Available: HTTP response received
+  InitialProbe --> CoolingDown: transport retries exhausted
+  Available --> Available: HTTP response advances generation
+  Available --> Available: stale transport failure ignored
+  Available --> CoolingDown: current-generation retries exhausted
   CoolingDown --> CoolingDown: calls suppressed and counted
   CoolingDown --> RecoveryProbe: five minutes elapsed
   RecoveryProbe --> RecoveryProbe: concurrent calls suppressed
@@ -89,7 +108,8 @@ stateDiagram-v2
   RecoveryProbe --> CoolingDown: transport retries exhausted
 ```
 
-Embedding indexing participates in [work attribution](attribution.md): it begins
-before its first chunk, records one interaction per chunk with digests only and
-**no invented monetary cost**, and finalizes a typed `embeddingVector` output
-after the store replacement succeeds.
+Embedding indexing participates in [work attribution](attribution.md): endpoint
+availability is reserved first; allowed work then begins attribution before its
+first provider invocation, records one interaction per chunk with digests only
+and **no invented monetary cost**, and finalizes a typed `embeddingVector`
+output after the store replacement succeeds.

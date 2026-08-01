@@ -2930,6 +2930,7 @@
   "maintenanceGenerateEmbeddingsConfirm": "ANO, GENEROVAT",
   "maintenanceGenerateEmbeddingsDescription": "Generovat vektory pro záznamy ve vybraných kategoriích",
   "maintenanceGenerateEmbeddingsMessage": "Vyber kategorie pro generování vektorů.",
+  "maintenanceGenerateEmbeddingsOllamaUnavailable": "Ollama není dostupná. Zkus vektory vygenerovat znovu za několik minut.",
   "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} záznam ({embedded, plural, =1{1 vektor vložen} few{{embedded} vektory vloženy} other{{embedded} vektorů vloženo}})} few{{processed} / {total} záznamy ({embedded, plural, =1{1 vektor vložen} few{{embedded} vektory vloženy} other{{embedded} vektorů vloženo}})} other{{processed} / {total} záznamů ({embedded, plural, =1{1 vektor vložen} few{{embedded} vektory vloženy} other{{embedded} vektorů vloženo}})}}",
   "@maintenanceGenerateEmbeddingsProgress": {
     "placeholders": {

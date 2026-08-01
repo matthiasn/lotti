@@ -3302,6 +3302,7 @@
   "maintenanceGenerateEmbeddingsConfirm": "Ja, Generate.",
   "maintenanceGenerateEmbeddingsDescription": "Inbeddingen voor items in geselecteerde categorieën genereren",
   "maintenanceGenerateEmbeddingsMessage": "Selecteer categorieën om inbeddingen voor te genereren.",
+  "maintenanceGenerateEmbeddingsOllamaUnavailable": "Ollama is niet beschikbaar. Probeer over een paar minuten opnieuw inbeddingen te genereren.",
   "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} ' {total} vermelding ({embedded} ingesloten)} other{{processed} ' {total} vermeldingen ({embedded} ingesloten)}}",
   "@maintenanceGenerateEmbeddingsProgress": {
     "placeholders": {

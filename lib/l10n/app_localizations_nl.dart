@@ -7098,6 +7098,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Selecteer categorieën om inbeddingen voor te genereren.';
 
   @override
+  String get maintenanceGenerateEmbeddingsOllamaUnavailable =>
+      'Ollama is niet beschikbaar. Probeer over een paar minuten opnieuw inbeddingen te genereren.';
+
+  @override
   String maintenanceGenerateEmbeddingsProgress(
     int processed,
     int total,

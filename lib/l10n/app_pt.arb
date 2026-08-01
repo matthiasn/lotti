@@ -3302,6 +3302,7 @@
   "maintenanceGenerateEmbeddingsConfirm": "SIM, GERAR",
   "maintenanceGenerateEmbeddingsDescription": "Gere embeddings para entradas em categorias selecionadas",
   "maintenanceGenerateEmbeddingsMessage": "Selecione categorias para gerar incorporações.",
+  "maintenanceGenerateEmbeddingsOllamaUnavailable": "O Ollama não está disponível. Tenta gerar as incorporações novamente daqui a alguns minutos.",
   "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entrada ({embedded} incorporado)} other{{processed} / {total} entradas ({embedded} incorporado)}}",
   "@maintenanceGenerateEmbeddingsProgress": {
     "placeholders": {

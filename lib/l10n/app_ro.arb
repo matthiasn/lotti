@@ -2923,6 +2923,7 @@
   "maintenanceGenerateEmbeddingsConfirm": "DA, GENEREAZĂ",
   "maintenanceGenerateEmbeddingsDescription": "Generează încorporări pentru intrările din categoriile selectate",
   "maintenanceGenerateEmbeddingsMessage": "Selectați categoriile pentru a genera reprezentări vectoriale.",
+  "maintenanceGenerateEmbeddingsOllamaUnavailable": "Serviciul Ollama nu este disponibil. Încercați să generați din nou reprezentările vectoriale peste câteva minute.",
   "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} intrare ({embedded, plural, =1{1 încorporată} other{{embedded} încorporate}})} other{{processed} / {total} intrări ({embedded, plural, =1{1 încorporată} other{{embedded} încorporate}})}}",
   "@maintenanceGenerateEmbeddingsProgress": {
     "placeholders": {

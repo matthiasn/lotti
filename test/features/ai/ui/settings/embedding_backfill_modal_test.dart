@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
 import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -36,6 +37,7 @@ final _testCategory2 = CategoryDefinition(
 /// Pumps a scaffold with a button that triggers [EmbeddingBackfillModal.show].
 Widget _buildTestWidget({
   List<Override> overrides = const [],
+  Locale? locale,
 }) {
   return makeTestableWidgetWithScaffold(
     Builder(
@@ -47,6 +49,7 @@ Widget _buildTestWidget({
       },
     ),
     overrides: overrides,
+    locale: locale,
   );
 }
 
@@ -74,7 +77,10 @@ Future<void> _openModalSelectAndConfirm(WidgetTester tester) async {
   await tester.pump();
 
   // Tap confirm
-  await tester.tap(find.text('YES, GENERATE'));
+  final messages = AppLocalizations.of(
+    tester.element(find.byType(Scaffold).first),
+  )!;
+  await tester.tap(find.text(messages.maintenanceGenerateEmbeddingsConfirm));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
 }
@@ -261,6 +267,43 @@ void main() {
 
       // Verify no progress indicator in error state
       expect(find.byType(LinearProgressIndicator), findsNothing);
+    });
+
+    testWidgets('localizes the Ollama cooldown error in German', (
+      tester,
+    ) async {
+      const internalDiagnostic =
+          'Ollama embedding request suppressed during availability cooldown '
+          '(count=8, retryAt=2026-08-01T22:15:00.000Z)';
+      const errorState = EmbeddingBackfillState(
+        progress: 0.3,
+        errorCode: EmbeddingBackfillErrorCode.ollamaUnavailable,
+        processedCount: 3,
+        totalCount: 10,
+        embeddedCount: 1,
+      );
+
+      await tester.pumpWidget(
+        _buildTestWidget(
+          locale: const Locale('de'),
+          overrides: [
+            embeddingBackfillControllerProvider.overrideWith(
+              () => _FakeBackfillController(errorState),
+            ),
+          ],
+        ),
+      );
+
+      await _openModalSelectAndConfirm(tester);
+
+      expect(find.text(internalDiagnostic), findsNothing);
+      expect(
+        find.text(
+          'Ollama ist nicht verfügbar. Versuche in ein paar Minuten erneut, '
+          'Embeddings zu erzeugen.',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows complete state with check icon and 100%', (

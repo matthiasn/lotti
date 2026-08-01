@@ -7203,6 +7203,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Selectați categoriile pentru a genera reprezentări vectoriale.';
 
   @override
+  String get maintenanceGenerateEmbeddingsOllamaUnavailable =>
+      'Serviciul Ollama nu este disponibil. Încercați să generați din nou reprezentările vectoriale peste câteva minute.';
+
+  @override
   String maintenanceGenerateEmbeddingsProgress(
     int processed,
     int total,

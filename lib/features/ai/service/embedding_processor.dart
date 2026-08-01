@@ -210,49 +210,55 @@ class EmbeddingProcessor {
       id: entityId,
       subId: contentHash,
     );
-    final attributionSession = await capture?.beginSession(
-      workType: AiWorkType.embeddingIndexing,
-      trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
-      automationId: 'automation:embedding-indexer',
-      automationDisplayName: 'Embedding indexer',
-      intendedOutputs: [output],
-      taskId: taskId.isEmpty ? null : taskId,
-      categoryId: categoryId.isEmpty ? null : categoryId,
-    );
+    AiAttributionSession? attributionSession;
     var completionStarted = false;
 
     try {
       // Phase 1: Generate all embeddings (network calls that can fail).
       final generated = <Float32List>[];
       for (final chunk in chunks) {
-        Future<Float32List> invoke() => embeddingRepository.embed(
+        final invocationWrapper = capture == null
+            ? null
+            : (Future<Float32List> Function() invoke) async {
+                attributionSession ??= await capture.beginSession(
+                  workType: AiWorkType.embeddingIndexing,
+                  trigger: const AiTriggerSnapshot(
+                    type: AiTriggerType.automatic,
+                  ),
+                  automationId: 'automation:embedding-indexer',
+                  automationDisplayName: 'Embedding indexer',
+                  intendedOutputs: [output],
+                  taskId: taskId.isEmpty ? null : taskId,
+                  categoryId: categoryId.isEmpty ? null : categoryId,
+                );
+                return capture.captureUnary(
+                  workType: AiWorkType.embeddingIndexing,
+                  interactionKind: AiInteractionKind.embedding,
+                  responseType: AiConsumptionResponseType.embeddingIndexing,
+                  providerType: InferenceProviderType.ollama,
+                  modelId: ollamaEmbedDefaultModel,
+                  requestText: chunk,
+                  invoke: invoke,
+                  responseText: (value) =>
+                      sha256.convert(value.buffer.asUint8List()).toString(),
+                  interactionContext: AiCapturedContext(
+                    entryId: entityId,
+                  ),
+                  existingSession: attributionSession,
+                  terminalizeSuccess: false,
+                  terminalizeFailure: false,
+                  triggerType: AiTriggerType.automatic,
+                  automationId: 'automation:embedding-indexer',
+                  automationDisplayName: 'Embedding indexer',
+                  taskId: taskId.isEmpty ? null : taskId,
+                  categoryId: categoryId.isEmpty ? null : categoryId,
+                );
+              };
+        final embedding = await embeddingRepository.embed(
           input: chunk,
           baseUrl: baseUrl,
+          invocationWrapper: invocationWrapper,
         );
-        final embedding = capture == null
-            ? await invoke()
-            : await capture.captureUnary(
-                workType: AiWorkType.embeddingIndexing,
-                interactionKind: AiInteractionKind.embedding,
-                responseType: AiConsumptionResponseType.embeddingIndexing,
-                providerType: InferenceProviderType.ollama,
-                modelId: ollamaEmbedDefaultModel,
-                requestText: chunk,
-                invoke: invoke,
-                responseText: (value) =>
-                    sha256.convert(value.buffer.asUint8List()).toString(),
-                interactionContext: AiCapturedContext(
-                  entryId: entityId,
-                ),
-                existingSession: attributionSession,
-                terminalizeSuccess: false,
-                terminalizeFailure: false,
-                triggerType: AiTriggerType.automatic,
-                automationId: 'automation:embedding-indexer',
-                automationDisplayName: 'Embedding indexer',
-                taskId: taskId.isEmpty ? null : taskId,
-                categoryId: categoryId.isEmpty ? null : categoryId,
-              );
         generated.add(embedding);
       }
 
@@ -266,17 +272,19 @@ class EmbeddingProcessor {
         taskId: taskId,
         subtype: subtype,
       );
-      if (attributionSession != null) {
+      final completedSession = attributionSession;
+      if (completedSession != null) {
         completionStarted = true;
         await capture!.completeSession(
-          session: attributionSession,
+          session: completedSession,
           outputs: [output],
         );
       }
     } on Object catch (error) {
-      if (attributionSession != null && !completionStarted) {
+      final failedSession = attributionSession;
+      if (failedSession != null && !completionStarted) {
         await capture!.completeSession(
-          session: attributionSession,
+          session: failedSession,
           outputs: const [],
           status: AiWorkStatus.failed,
           errorCode: error.runtimeType.toString(),

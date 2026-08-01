@@ -2923,6 +2923,7 @@
   "maintenanceGenerateEmbeddingsConfirm": "JA, GENERIEREN",
   "maintenanceGenerateEmbeddingsDescription": "Embeddings für Einträge ausgewählter Kategorien generieren",
   "maintenanceGenerateEmbeddingsMessage": "Wähle Kategorien, um Embeddings zu generieren.",
+  "maintenanceGenerateEmbeddingsOllamaUnavailable": "Ollama ist nicht verfügbar. Versuche in ein paar Minuten erneut, Embeddings zu erzeugen.",
   "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} Eintrag ({embedded} eingebettet)} other{{processed} / {total} Einträge ({embedded} eingebettet)}}",
   "@maintenanceGenerateEmbeddingsProgress": {
     "placeholders": {

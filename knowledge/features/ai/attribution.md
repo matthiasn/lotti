@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner attribution sessions
     last_modified: 2026-07-24
+  - id: embedding-processor
+    resource: ../../../lib/features/ai/service/embedding_processor.dart
+    title: EmbeddingProcessor attribution boundary
+    last_modified: 2026-08-01
 ---
 
 # The boundary
@@ -65,7 +69,10 @@ instead of also duplicating the response into journal entry text.
 # Rules that keep the ledger honest
 
 - **No invented cost.** Embedding indexing records one interaction per chunk with
-  digests only and no monetary figure, because none is reported.
+  digests only and no monetary figure, because none is reported. Endpoint
+  availability is reserved before the attribution session begins; a cooldown
+  suppression that performs no provider call therefore creates no interaction
+  event or failed attribution projection.
 - **The carrier is authoritative.** For agent reports the local attribution
   projection is updated *after* the report write, never before.
 - **Carrier-less operations terminalize as partial.** Log-compaction inference is

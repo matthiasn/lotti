@@ -7169,6 +7169,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Selecciona categorías para generar embeddings.';
 
   @override
+  String get maintenanceGenerateEmbeddingsOllamaUnavailable =>
+      'Ollama no está disponible. Intenta generar los embeddings de nuevo dentro de unos minutos.';
+
+  @override
   String maintenanceGenerateEmbeddingsProgress(
     int processed,
     int total,

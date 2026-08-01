@@ -14,11 +14,15 @@ final embeddingBackfillControllerProvider =
       EmbeddingBackfillController.new,
     );
 
+/// Stable presentation codes for backfill failures that need localization.
+enum EmbeddingBackfillErrorCode { ollamaUnavailable }
+
 class EmbeddingBackfillState {
   const EmbeddingBackfillState({
     this.progress = 0,
     this.isRunning = false,
     this.error,
+    this.errorCode,
     this.processedCount = 0,
     this.totalCount = 0,
     this.embeddedCount = 0,
@@ -27,6 +31,7 @@ class EmbeddingBackfillState {
   final double progress;
   final bool isRunning;
   final String? error;
+  final EmbeddingBackfillErrorCode? errorCode;
   final int processedCount;
   final int totalCount;
   final int embeddedCount;
@@ -35,15 +40,29 @@ class EmbeddingBackfillState {
     double? progress,
     bool? isRunning,
     String? error,
+    EmbeddingBackfillErrorCode? errorCode,
     bool clearError = false,
     int? processedCount,
     int? totalCount,
     int? embeddedCount,
   }) {
+    assert(
+      error == null || errorCode == null,
+      'A backfill state cannot set both a raw error and a typed error code.',
+    );
     return EmbeddingBackfillState(
       progress: progress ?? this.progress,
       isRunning: isRunning ?? this.isRunning,
-      error: clearError ? null : error ?? this.error,
+      error: clearError
+          ? null
+          : errorCode != null
+          ? null
+          : error ?? this.error,
+      errorCode: clearError
+          ? null
+          : error != null
+          ? null
+          : errorCode ?? this.errorCode,
       processedCount: processedCount ?? this.processedCount,
       totalCount: totalCount ?? this.totalCount,
       embeddedCount: embeddedCount ?? this.embeddedCount,
@@ -197,7 +216,9 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
       '$operation paused during Ollama availability cooldown: $exception',
       name: 'EmbeddingBackfillController',
     );
-    state = state.copyWith(error: exception.toString());
+    state = state.copyWith(
+      errorCode: EmbeddingBackfillErrorCode.ollamaUnavailable,
+    );
   }
 
   /// Generates embeddings for all entries in the given [categoryIds].

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
@@ -361,6 +363,16 @@ Float32List _fakeEmbedding() => Float32List(kEmbeddingDimensions);
 
 String _hashOf(String text) => sha256.convert(utf8.encode(text)).toString();
 
+Future<Float32List> _runEmbeddingInvocation(
+  Invocation invocation,
+  Future<Float32List> Function() invoke,
+) {
+  final wrapper =
+      invocation.namedArguments[#invocationWrapper]
+          as OllamaEmbeddingInvocationWrapper?;
+  return wrapper == null ? invoke() : wrapper(invoke);
+}
+
 // ---------------------------------------------------------------------------
 // Stub helpers
 // ---------------------------------------------------------------------------
@@ -394,8 +406,14 @@ void _stubEmbed(MockOllamaEmbeddingRepository repo) {
       input: any(named: 'input'),
       baseUrl: any(named: 'baseUrl'),
       model: any(named: 'model'),
+      invocationWrapper: any(named: 'invocationWrapper'),
     ),
-  ).thenAnswer((_) async => _fakeEmbedding());
+  ).thenAnswer(
+    (invocation) => _runEmbeddingInvocation(
+      invocation,
+      () async => _fakeEmbedding(),
+    ),
+  );
 }
 
 void _stubEntity(MockJournalDb db, JournalEntity entity) {
@@ -414,6 +432,9 @@ void main() {
   setUpAll(() {
     registerAllFallbackValues();
     registerFallbackValue(Float32List(0));
+    registerFallbackValue(
+      (Future<Float32List> Function() invoke) => invoke(),
+    );
   });
 
   setUp(() {
@@ -1039,6 +1060,77 @@ void main() {
       },
     );
 
+    test(
+      'does not attribute a request suppressed before provider invocation',
+      () async {
+        final previousRetryDelay = OllamaEmbeddingRepository.retryBaseDelay;
+        OllamaEmbeddingRepository.retryBaseDelay = Duration.zero;
+        addTearDown(() {
+          OllamaEmbeddingRepository.retryBaseDelay = previousRetryDelay;
+        });
+        final httpClient = MockHttpClient();
+        final repository = OllamaEmbeddingRepository(httpClient: httpClient);
+        addTearDown(repository.close);
+        var providerCallCount = 0;
+        when(
+          () => httpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async {
+          providerCallCount++;
+          throw const SocketException('Connection refused');
+        });
+
+        await expectLater(
+          () => repository.embed(
+            input: 'prime the confirmed outage',
+            baseUrl: _baseUrl,
+          ),
+          throwsException,
+        );
+        expect(providerCallCount, 3);
+
+        final bench = AiInteractionCaptureTestBench.create()..register();
+        addTearDown(bench.unregister);
+        await expectLater(
+          EmbeddingProcessor.processAgentReport(
+            reportId: 'report-suppressed',
+            reportContent:
+                'This report is long enough but the provider is cooling down.',
+            taskId: 'task-suppressed',
+            categoryId: 'cat-suppressed',
+            subtype: 'current',
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: repository,
+            baseUrl: _baseUrl,
+          ),
+          throwsA(isA<OllamaEmbeddingCooldownException>()),
+        );
+
+        expect(providerCallCount, 3);
+        expect(bench.recordedInteractions, isEmpty);
+        verifyNever(() => bench.service.begin(any()));
+        verifyNever(
+          () => bench.service.recordInteraction(
+            attributionId: any(named: 'attributionId'),
+            event: any(named: 'event'),
+          ),
+        );
+        verifyNever(
+          () => bench.service.prepareCompletion(
+            attributionId: any(named: 'attributionId'),
+            outputs: any(named: 'outputs'),
+            status: any(named: 'status'),
+            errorCode: any(named: 'errorCode'),
+            errorSummary: any(named: 'errorSummary'),
+          ),
+        );
+        verifyNever(() => bench.service.finalize(any()));
+      },
+    );
+
     test('terminalizes attribution when embedding generation fails', () async {
       final bench = AiInteractionCaptureTestBench.create()..register();
       addTearDown(bench.unregister);
@@ -1047,8 +1139,14 @@ void main() {
           input: any(named: 'input'),
           baseUrl: any(named: 'baseUrl'),
           model: any(named: 'model'),
+          invocationWrapper: any(named: 'invocationWrapper'),
         ),
-      ).thenThrow(StateError('offline'));
+      ).thenAnswer(
+        (invocation) => _runEmbeddingInvocation(
+          invocation,
+          () async => throw StateError('offline'),
+        ),
+      );
 
       await expectLater(
         EmbeddingProcessor.processAgentReport(

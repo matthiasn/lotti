@@ -2923,6 +2923,7 @@
   "maintenanceGenerateEmbeddingsConfirm": "SÍ, GENERAR",
   "maintenanceGenerateEmbeddingsDescription": "Generar embeddings para las entradas de las categorías seleccionadas",
   "maintenanceGenerateEmbeddingsMessage": "Selecciona categorías para generar embeddings.",
+  "maintenanceGenerateEmbeddingsOllamaUnavailable": "Ollama no está disponible. Intenta generar los embeddings de nuevo dentro de unos minutos.",
   "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entrada ({embedded, plural, =1{1 incrustada} other{{embedded} incrustadas}})} other{{processed} / {total} entradas ({embedded, plural, =1{1 incrustada} other{{embedded} incrustadas}})}}",
   "@maintenanceGenerateEmbeddingsProgress": {
     "placeholders": {

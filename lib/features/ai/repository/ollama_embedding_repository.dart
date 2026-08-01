@@ -10,6 +10,15 @@ import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 
+/// Wraps one already-reserved Ollama embedding provider invocation.
+///
+/// The repository reserves endpoint availability before calling this wrapper,
+/// so attribution can begin only for work that is allowed to reach Ollama.
+typedef OllamaEmbeddingInvocationWrapper =
+    Future<Float32List> Function(
+      Future<Float32List> Function() invoke,
+    );
+
 /// Repository for generating text embeddings via Ollama's `/api/embed` endpoint.
 ///
 /// Uses `mxbai-embed-large` (1024 dimensions) by default. The returned
@@ -45,73 +54,126 @@ class OllamaEmbeddingRepository {
     required String input,
     required String baseUrl,
     String model = ollamaEmbedDefaultModel,
+    OllamaEmbeddingInvocationWrapper? invocationWrapper,
   }) async {
     if (input.isEmpty) {
       throw ArgumentError('OllamaEmbeddingRepository.embed(): input is empty');
     }
 
-    _reserveAvailabilityProbeOrThrow(baseUrl);
+    final availabilityAttempt = _reserveAvailabilityAttempt(baseUrl);
+    var providerInvocationStarted = false;
 
-    final http.Response response;
-    try {
-      response = await _retryWithExponentialBackoff(
-        operation: () => _httpClient
-            .post(
-              Uri.parse('$baseUrl$ollamaEmbedEndpoint'),
-              headers: {'Content-Type': ollamaContentType},
-              body: jsonEncode({
-                'model': model,
-                'input': input,
-              }),
-            )
-            .timeout(
-              const Duration(seconds: ollamaEmbedTimeoutSeconds),
-            ),
-        context: 'embedding generation',
-      );
-    } on _OllamaEmbeddingUnavailableException {
-      _openAvailabilityCooldown(baseUrl);
-      rethrow;
-    } on Object {
-      _releaseAvailabilityProbe(baseUrl);
-      rethrow;
-    }
-
-    _markAvailable(baseUrl);
-
-    if (response.statusCode == httpStatusNotFound) {
-      final body = response.body.toLowerCase();
-      if (body.contains('not found') && body.contains('model')) {
-        throw ModelNotInstalledException(model);
+    Future<Float32List> invokeProvider() async {
+      if (providerInvocationStarted) {
+        throw StateError(
+          'An Ollama embedding invocation wrapper must invoke the provider '
+          'exactly once.',
+        );
       }
+      providerInvocationStarted = true;
+
+      final http.Response response;
+      try {
+        response = await _retryWithExponentialBackoff(
+          operation: () => _httpClient
+              .post(
+                Uri.parse('$baseUrl$ollamaEmbedEndpoint'),
+                headers: {'Content-Type': ollamaContentType},
+                body: jsonEncode({
+                  'model': model,
+                  'input': input,
+                }),
+              )
+              .timeout(
+                const Duration(seconds: ollamaEmbedTimeoutSeconds),
+              ),
+          context: 'embedding generation',
+        );
+      } on _OllamaEmbeddingUnavailableException {
+        _openAvailabilityCooldown(availabilityAttempt);
+        rethrow;
+      } on Object {
+        _releaseAvailabilityProbe(availabilityAttempt);
+        rethrow;
+      }
+
+      _markAvailable(availabilityAttempt);
+
+      if (response.statusCode == httpStatusNotFound) {
+        final body = response.body.toLowerCase();
+        if (body.contains('not found') && body.contains('model')) {
+          throw ModelNotInstalledException(model);
+        }
+      }
+
+      if (response.statusCode != httpStatusOk) {
+        throw Exception(
+          'Embedding request failed (HTTP ${response.statusCode}): '
+          '${response.body}',
+        );
+      }
+
+      return _parseEmbeddingResponse(response.body);
     }
 
-    if (response.statusCode != httpStatusOk) {
-      throw Exception(
-        'Embedding request failed (HTTP ${response.statusCode}): '
-        '${response.body}',
-      );
+    if (invocationWrapper == null) {
+      return invokeProvider();
     }
 
-    return _parseEmbeddingResponse(response.body);
+    try {
+      final result = await invocationWrapper(invokeProvider);
+      if (!providerInvocationStarted) {
+        _releaseAvailabilityProbe(availabilityAttempt);
+        throw StateError(
+          'An Ollama embedding invocation wrapper did not invoke the provider.',
+        );
+      }
+      return result;
+    } on Object {
+      if (!providerInvocationStarted) {
+        _releaseAvailabilityProbe(availabilityAttempt);
+      }
+      rethrow;
+    }
   }
 
-  void _reserveAvailabilityProbeOrThrow(String baseUrl) {
-    final backoff = _availabilityBackoff[baseUrl];
-    if (backoff == null) return;
-
+  _OllamaAvailabilityAttempt _reserveAvailabilityAttempt(String baseUrl) {
     final now = clock.now();
-    if (!backoff.recoveryProbeInFlight && !now.isBefore(backoff.retryAt)) {
-      backoff
-        ..recoveryProbeInFlight = true
-        ..retryAt = now.add(availabilityCooldown);
-      return;
+    final existing = _availabilityBackoff[baseUrl];
+    if (existing == null) {
+      final initial = _OllamaAvailabilityBackoff(
+        phase: _OllamaAvailabilityPhase.probing,
+        retryAt: now.add(availabilityCooldown),
+      );
+      _availabilityBackoff[baseUrl] = initial;
+      return _OllamaAvailabilityAttempt(
+        baseUrl: baseUrl,
+        generation: initial.generation,
+      );
     }
 
-    backoff.suppressedRequestCount++;
+    if (existing.phase == _OllamaAvailabilityPhase.available) {
+      return _OllamaAvailabilityAttempt(
+        baseUrl: baseUrl,
+        generation: existing.generation,
+      );
+    }
+
+    if (existing.phase == _OllamaAvailabilityPhase.coolingDown &&
+        !now.isBefore(existing.retryAt)) {
+      existing
+        ..phase = _OllamaAvailabilityPhase.probing
+        ..retryAt = now.add(availabilityCooldown);
+      return _OllamaAvailabilityAttempt(
+        baseUrl: baseUrl,
+        generation: existing.generation,
+      );
+    }
+
+    existing.suppressedRequestCount++;
     final exception = OllamaEmbeddingCooldownException(
-      retryAt: backoff.retryAt,
-      suppressedRequestCount: backoff.suppressedRequestCount,
+      retryAt: existing.retryAt,
+      suppressedRequestCount: existing.suppressedRequestCount,
     );
     if (exception.shouldLogSummary) {
       developer.log(
@@ -119,42 +181,58 @@ class OllamaEmbeddingRepository {
         '${exception.suppressedRequestCount} request'
         '${exception.suppressedRequestCount == 1 ? '' : 's'}; '
         'next probe is allowed at '
-        '${backoff.retryAt.toUtc().toIso8601String()}',
+        '${existing.retryAt.toUtc().toIso8601String()}',
         name: 'OllamaEmbeddingRepository',
       );
     }
     throw exception;
   }
 
-  void _openAvailabilityCooldown(String baseUrl) {
-    final retryAt = clock.now().add(availabilityCooldown);
-    final current = _availabilityBackoff[baseUrl];
-    if (current == null) {
-      _availabilityBackoff[baseUrl] = _OllamaAvailabilityBackoff(retryAt);
-    } else {
-      current
-        ..retryAt = retryAt
-        ..recoveryProbeInFlight = false;
+  void _openAvailabilityCooldown(_OllamaAvailabilityAttempt attempt) {
+    final current = _availabilityBackoff[attempt.baseUrl];
+    if (current == null || current.generation != attempt.generation) return;
+
+    current
+      ..phase = _OllamaAvailabilityPhase.coolingDown
+      ..retryAt = clock.now().add(availabilityCooldown)
+      ..outageConfirmed = true
+      ..generation = current.generation + 1;
+  }
+
+  void _releaseAvailabilityProbe(_OllamaAvailabilityAttempt attempt) {
+    final current = _availabilityBackoff[attempt.baseUrl];
+    if (current == null ||
+        current.generation != attempt.generation ||
+        current.phase != _OllamaAvailabilityPhase.probing) {
+      return;
     }
+
+    current
+      ..phase = _OllamaAvailabilityPhase.coolingDown
+      ..retryAt = clock.now()
+      ..generation = current.generation + 1;
   }
 
-  void _releaseAvailabilityProbe(String baseUrl) {
-    final backoff = _availabilityBackoff[baseUrl];
-    if (backoff == null || !backoff.recoveryProbeInFlight) return;
+  void _markAvailable(_OllamaAvailabilityAttempt attempt) {
+    final current = _availabilityBackoff[attempt.baseUrl];
+    if (current == null) return;
 
-    backoff
-      ..recoveryProbeInFlight = false
-      ..retryAt = clock.now();
-  }
+    final suppressedRequestCount = current.suppressedRequestCount;
+    final shouldLogRecovery =
+        current.outageConfirmed || suppressedRequestCount > 0;
+    current
+      ..phase = _OllamaAvailabilityPhase.available
+      ..retryAt = clock.now()
+      ..suppressedRequestCount = 0
+      ..outageConfirmed = false
+      ..generation = current.generation + 1;
 
-  void _markAvailable(String baseUrl) {
-    final recovered = _availabilityBackoff.remove(baseUrl);
-    if (recovered == null) return;
+    if (!shouldLogRecovery) return;
 
     developer.log(
       'Ollama embeddings recovered after suppressing '
-      '${recovered.suppressedRequestCount} request'
-      '${recovered.suppressedRequestCount == 1 ? '' : 's'}',
+      '$suppressedRequestCount request'
+      '${suppressedRequestCount == 1 ? '' : 's'}',
       name: 'OllamaEmbeddingRepository',
     );
   }
@@ -242,6 +320,7 @@ class OllamaEmbeddingRepository {
 
   /// Closes the underlying HTTP client.
   void close() {
+    _availabilityBackoff.clear();
     _httpClient.close();
   }
 }
@@ -282,10 +361,27 @@ class OllamaEmbeddingCooldownException implements Exception {
       '(count=$suppressedRequestCount, retryAt=${retryAt.toUtc().toIso8601String()})';
 }
 
-class _OllamaAvailabilityBackoff {
-  _OllamaAvailabilityBackoff(this.retryAt);
+enum _OllamaAvailabilityPhase { probing, available, coolingDown }
 
+class _OllamaAvailabilityAttempt {
+  const _OllamaAvailabilityAttempt({
+    required this.baseUrl,
+    required this.generation,
+  });
+
+  final String baseUrl;
+  final int generation;
+}
+
+class _OllamaAvailabilityBackoff {
+  _OllamaAvailabilityBackoff({
+    required this.phase,
+    required this.retryAt,
+  });
+
+  _OllamaAvailabilityPhase phase;
   DateTime retryAt;
   int suppressedRequestCount = 0;
-  bool recoveryProbeInFlight = false;
+  int generation = 0;
+  bool outageConfirmed = false;
 }

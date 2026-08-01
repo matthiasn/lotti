@@ -12221,6 +12221,12 @@ abstract class AppLocalizations {
   /// **'Select categories to generate embeddings for.'**
   String get maintenanceGenerateEmbeddingsMessage;
 
+  /// No description provided for @maintenanceGenerateEmbeddingsOllamaUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Ollama is unavailable. Try generating embeddings again in a few minutes.'**
+  String get maintenanceGenerateEmbeddingsOllamaUnavailable;
+
   /// No description provided for @maintenanceGenerateEmbeddingsProgress.
   ///
   /// In en, this message translates to:

@@ -7156,6 +7156,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber kategorie pro generování vektorů.';
 
   @override
+  String get maintenanceGenerateEmbeddingsOllamaUnavailable =>
+      'Ollama není dostupná. Zkus vektory vygenerovat znovu za několik minut.';
+
+  @override
   String maintenanceGenerateEmbeddingsProgress(
     int processed,
     int total,

@@ -3303,6 +3303,7 @@
   "maintenanceGenerateEmbeddingsConfirm": "JA, GENERER",
   "maintenanceGenerateEmbeddingsDescription": "Generer embeddings for poster i udvalgte kategorier",
   "maintenanceGenerateEmbeddingsMessage": "Vælg kategorier til at generere embeddings for.",
+  "maintenanceGenerateEmbeddingsOllamaUnavailable": "Ollama er ikke tilgængelig. Prøv at generere embeddings igen om et par minutter.",
   "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} post ({embedded} indlejret)} other{{processed} / {total} entries ({embedded} indlejret)}}",
   "@maintenanceGenerateEmbeddingsProgress": {
     "placeholders": {

@@ -117,7 +117,11 @@ class _BackfillProgressContent extends ConsumerWidget {
     final backfillState = ref.watch(embeddingBackfillControllerProvider);
     final progress = backfillState.progress;
     final isRunning = backfillState.isRunning;
-    final error = backfillState.error;
+    final error = switch (backfillState.errorCode) {
+      EmbeddingBackfillErrorCode.ollamaUnavailable =>
+        context.messages.maintenanceGenerateEmbeddingsOllamaUnavailable,
+      null => backfillState.error,
+    };
 
     return Column(
       mainAxisSize: MainAxisSize.min,

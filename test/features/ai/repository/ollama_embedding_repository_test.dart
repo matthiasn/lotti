@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -66,6 +67,177 @@ void main() {
 
         expect(result.length, kEmbeddingDimensions);
         expect(result[0], closeTo(0.42, 1e-5));
+      });
+
+      test(
+        'reserves availability before invoking the provider wrapper',
+        () async {
+          var wrapperStarted = false;
+          var providerCallCount = 0;
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async {
+            providerCallCount++;
+            return http.Response(
+              makeEmbeddingResponse(kEmbeddingDimensions),
+              200,
+            );
+          });
+
+          final result = await repository.embed(
+            input: 'wrapped request',
+            baseUrl: baseUrl,
+            invocationWrapper: (invoke) async {
+              wrapperStarted = true;
+              await expectLater(
+                () => repository.embed(
+                  input: 'concurrent request before provider invocation',
+                  baseUrl: baseUrl,
+                ),
+                throwsA(
+                  isA<OllamaEmbeddingCooldownException>().having(
+                    (error) => error.suppressedRequestCount,
+                    'suppressed request count',
+                    1,
+                  ),
+                ),
+              );
+              expect(providerCallCount, 0);
+              final embedding = await invoke();
+              expect(providerCallCount, 1);
+              return embedding;
+            },
+          );
+
+          expect(wrapperStarted, isTrue);
+          expect(result, hasLength(kEmbeddingDimensions));
+          expect(providerCallCount, 1);
+        },
+      );
+
+      test(
+        'wrapper failure before invocation releases the initial probe',
+        () async {
+          var providerCallCount = 0;
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async {
+            providerCallCount++;
+            return http.Response(
+              makeEmbeddingResponse(kEmbeddingDimensions),
+              200,
+            );
+          });
+
+          await expectLater(
+            () => repository.embed(
+              input: 'wrapper fails',
+              baseUrl: baseUrl,
+              invocationWrapper: (_) async =>
+                  throw StateError('capture failed'),
+            ),
+            throwsStateError,
+          );
+          expect(providerCallCount, 0);
+
+          final recovered = await repository.embed(
+            input: 'replacement probe',
+            baseUrl: baseUrl,
+          );
+          expect(recovered, hasLength(kEmbeddingDimensions));
+          expect(providerCallCount, 1);
+        },
+      );
+
+      test('rejects a wrapper that never invokes the provider', () async {
+        var providerCallCount = 0;
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async {
+          providerCallCount++;
+          return http.Response(
+            makeEmbeddingResponse(kEmbeddingDimensions),
+            200,
+          );
+        });
+
+        await expectLater(
+          () => repository.embed(
+            input: 'wrapper skips provider',
+            baseUrl: baseUrl,
+            invocationWrapper: (_) async => Float32List(
+              kEmbeddingDimensions,
+            ),
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('did not invoke'),
+            ),
+          ),
+        );
+        expect(providerCallCount, 0);
+
+        await repository.embed(
+          input: 'replacement probe',
+          baseUrl: baseUrl,
+        );
+        expect(providerCallCount, 1);
+      });
+
+      test('rejects a wrapper that invokes the provider twice', () async {
+        var providerCallCount = 0;
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async {
+          providerCallCount++;
+          return http.Response(
+            makeEmbeddingResponse(kEmbeddingDimensions),
+            200,
+          );
+        });
+
+        await expectLater(
+          () => repository.embed(
+            input: 'wrapper repeats provider',
+            baseUrl: baseUrl,
+            invocationWrapper: (invoke) async {
+              await invoke();
+              return invoke();
+            },
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('exactly once'),
+            ),
+          ),
+        );
+        expect(providerCallCount, 1);
+
+        await repository.embed(
+          input: 'normal request',
+          baseUrl: baseUrl,
+        );
+        expect(providerCallCount, 2);
       });
 
       // ── Property: parsed vector preserves every generated value ─────────
@@ -516,6 +688,152 @@ void main() {
           );
         },
       );
+
+      test('only one concurrent caller owns the initial probe', () async {
+        var callCount = 0;
+        final firstRequestStarted = Completer<void>();
+        final firstResponse = Completer<http.Response>();
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) {
+          callCount++;
+          if (callCount == 1) {
+            firstRequestStarted.complete();
+            return firstResponse.future;
+          }
+          return Future.value(
+            http.Response(
+              makeEmbeddingResponse(kEmbeddingDimensions),
+              200,
+            ),
+          );
+        });
+
+        final initialProbe = repository.embed(
+          input: 'initial probe',
+          baseUrl: baseUrl,
+        );
+        await firstRequestStarted.future;
+
+        try {
+          await expectLater(
+            () => repository.embed(
+              input: 'concurrent request',
+              baseUrl: baseUrl,
+            ),
+            throwsA(isA<OllamaEmbeddingCooldownException>()),
+          );
+          expect(
+            callCount,
+            1,
+            reason: 'the concurrent caller must not start its own retry loop',
+          );
+        } finally {
+          if (!firstResponse.isCompleted) {
+            firstResponse.complete(
+              http.Response(
+                makeEmbeddingResponse(kEmbeddingDimensions),
+                200,
+              ),
+            );
+          }
+        }
+
+        await expectLater(
+          initialProbe,
+          completion(hasLength(kEmbeddingDimensions)),
+        );
+        final normalRequest = await repository.embed(
+          input: 'normal request',
+          baseUrl: baseUrl,
+        );
+
+        expect(normalRequest, hasLength(kEmbeddingDimensions));
+        expect(callCount, 2);
+      });
+
+      test('a stale concurrent failure cannot hide a newer success', () async {
+        var callCount = 0;
+        var failureCallCount = 0;
+        final successStarted = Completer<void>();
+        final successResponse = Completer<http.Response>();
+        final failureStarted = Completer<void>();
+        final releaseFailure = Completer<void>();
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((invocation) async {
+          callCount++;
+          final body =
+              jsonDecode(
+                    invocation.namedArguments[#body] as String,
+                  )
+                  as Map<String, dynamic>;
+          final input = body['input'] as String;
+          switch (input) {
+            case 'establish availability':
+            case 'after concurrent completion':
+              return http.Response(
+                makeEmbeddingResponse(kEmbeddingDimensions),
+                200,
+              );
+            case 'successful concurrent request':
+              successStarted.complete();
+              return successResponse.future;
+            case 'failing concurrent request':
+              failureCallCount++;
+              if (failureCallCount == 1) {
+                failureStarted.complete();
+                await releaseFailure.future;
+              }
+              throw const SocketException('Connection refused');
+          }
+          throw StateError('unexpected embedding input: $input');
+        });
+
+        await repository.embed(
+          input: 'establish availability',
+          baseUrl: baseUrl,
+        );
+        final successfulRequest = repository.embed(
+          input: 'successful concurrent request',
+          baseUrl: baseUrl,
+        );
+        await successStarted.future;
+        final failingRequest = repository.embed(
+          input: 'failing concurrent request',
+          baseUrl: baseUrl,
+        );
+        await failureStarted.future;
+
+        successResponse.complete(
+          http.Response(
+            makeEmbeddingResponse(kEmbeddingDimensions),
+            200,
+          ),
+        );
+        await expectLater(
+          successfulRequest,
+          completion(hasLength(kEmbeddingDimensions)),
+        );
+        releaseFailure.complete();
+        await expectLater(failingRequest, throwsException);
+
+        final afterConcurrentCompletion = await repository.embed(
+          input: 'after concurrent completion',
+          baseUrl: baseUrl,
+        );
+        expect(afterConcurrentCompletion, hasLength(kEmbeddingDimensions));
+        expect(failureCallCount, 3);
+        expect(callCount, 6);
+      });
 
       test('only one concurrent caller owns the recovery probe', () async {
         var now = DateTime.utc(2026, 8, 1, 12);
