@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -64,9 +65,7 @@ void main() {
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
     registerFallbackValue(StateError('waveform missing'));
-    registerFallbackValue(
-      const FileSystemException('permission denied'),
-    );
+    registerFallbackValue(const FileSystemException('permission denied'));
     registerFallbackValue(StackTrace.fromString('fallback'));
   });
 
@@ -89,9 +88,7 @@ void main() {
       ..registerSingleton<DomainLogger>(mockDomainLogger)
       ..registerSingleton<Directory>(tempDir);
 
-    service = AudioWaveformService(
-      extractor: extractor.extract,
-    );
+    service = AudioWaveformService(extractor: extractor.extract);
   });
 
   tearDown(() async {
@@ -209,9 +206,7 @@ void main() {
     )..addAll(overrides ?? <String, dynamic>{});
     file
       ..createSync(recursive: true)
-      ..writeAsStringSync(
-        const JsonEncoder.withIndent('  ').convert(payload),
-      );
+      ..writeAsStringSync(const JsonEncoder.withIndent('  ').convert(payload));
   }
 
   /// Creates [count] cache files whose content is intentionally INVALID
@@ -233,14 +228,9 @@ void main() {
   }
 
   test('extracts waveform for long audio (no gating)', () async {
-    final audio = createAudio(
-      duration: const Duration(minutes: 5),
-    );
+    final audio = createAudio(duration: const Duration(minutes: 5));
 
-    final result = await service.loadWaveform(
-      audio,
-      targetBuckets: 200,
-    );
+    final result = await service.loadWaveform(audio, targetBuckets: 200);
 
     expect(result, isNotNull);
     // The core path must yield real data, not just a non-null shell.
@@ -272,22 +262,10 @@ void main() {
       sampleRate: 48000,
       samplesPerPixel: 480,
       length: 4,
-      data: <int>[
-        -32768,
-        32767,
-        -16384,
-        16384,
-        -8192,
-        8192,
-        0,
-        0,
-      ],
+      data: <int>[-32768, 32767, -16384, 16384, -8192, 8192, 0, 0],
     );
 
-    final result = await service.loadWaveform(
-      audio,
-      targetBuckets: 2,
-    );
+    final result = await service.loadWaveform(audio, targetBuckets: 2);
 
     expect(result, isNotNull);
     expect(result!.amplitudes, hasLength(2));
@@ -309,10 +287,7 @@ void main() {
     );
     expect(cacheFile.existsSync(), isTrue);
 
-    final cached = await service.loadWaveform(
-      audio,
-      targetBuckets: 2,
-    );
+    final cached = await service.loadWaveform(audio, targetBuckets: 2);
     expect(cached, isNotNull);
     expect(cached!.amplitudes.first, closeTo(result.amplitudes.first, 1e-6));
     expect(cached.amplitudes.last, closeTo(result.amplitudes.last, 1e-6));
@@ -359,10 +334,7 @@ void main() {
       data: <int>[-1, 1, -1, 1],
     );
 
-    final result = await service.loadWaveform(
-      audio,
-      targetBuckets: 2,
-    );
+    final result = await service.loadWaveform(audio, targetBuckets: 2);
 
     expect(result, isNotNull);
     expect(result!.amplitudes, <double>[0.2, 0.4]);
@@ -379,16 +351,7 @@ void main() {
         sampleRate: 48000,
         samplesPerPixel: 480,
         length: 4,
-        data: <int>[
-          -32768,
-          32767,
-          -16384,
-          16384,
-          -8192,
-          8192,
-          0,
-          0,
-        ],
+        data: <int>[-32768, 32767, -16384, 16384, -8192, 8192, 0, 0],
       );
     }
 
@@ -451,9 +414,7 @@ void main() {
       writeCache(
         audio: audio,
         bucketCount: 2,
-        overrides: <String, dynamic>{
-          'version': audioWaveformCacheVersion - 1,
-        },
+        overrides: <String, dynamic>{'version': audioWaveformCacheVersion - 1},
       );
 
       extractor
@@ -474,9 +435,7 @@ void main() {
       writeCache(
         audio: audio,
         bucketCount: 2,
-        overrides: <String, dynamic>{
-          'sampleCount': 3,
-        },
+        overrides: <String, dynamic>{'sampleCount': 3},
       );
 
       extractor
@@ -536,16 +495,7 @@ void main() {
             sampleRate: 48000,
             samplesPerPixel: 480,
             length: 4,
-            data: <int>[
-              -4096,
-              4096,
-              -2048,
-              2048,
-              -1024,
-              1024,
-              0,
-              0,
-            ],
+            data: <int>[-4096, 4096, -2048, 2048, -1024, 1024, 0, 0],
           );
 
         final result = await service.loadWaveform(audio, targetBuckets: 2);
@@ -583,10 +533,7 @@ void main() {
         data: <int>[],
       );
 
-      final result = await service.loadWaveform(
-        audio,
-        targetBuckets: 4,
-      );
+      final result = await service.loadWaveform(audio, targetBuckets: 4);
 
       expect(result, isNotNull);
       expect(result!.amplitudes, isEmpty);
@@ -606,16 +553,10 @@ void main() {
         sampleRate: 48000,
         samplesPerPixel: 480,
         length: 1,
-        data: <int>[
-          -32768,
-          32767,
-        ],
+        data: <int>[-32768, 32767],
       );
 
-      final result = await service.loadWaveform(
-        audio,
-        targetBuckets: 4,
-      );
+      final result = await service.loadWaveform(audio, targetBuckets: 4);
 
       expect(result, isNotNull);
       expect(result!.amplitudes, <double>[1]);
@@ -635,28 +576,14 @@ void main() {
         sampleRate: 48000,
         samplesPerPixel: 480,
         length: 2,
-        data: <int>[
-          -128,
-          127,
-          -64,
-          64,
-        ],
+        data: <int>[-128, 127, -64, 64],
       );
 
-      final result = await service.loadWaveform(
-        audio,
-        targetBuckets: 2,
-      );
+      final result = await service.loadWaveform(audio, targetBuckets: 2);
 
       expect(result, isNotNull);
-      expect(
-        result!.amplitudes.first,
-        closeTo(1.0, 1e-6),
-      );
-      expect(
-        result.amplitudes.last,
-        closeTo(0.5, 1e-6),
-      );
+      expect(result!.amplitudes.first, closeTo(1.0, 1e-6));
+      expect(result.amplitudes.last, closeTo(0.5, 1e-6));
     });
 
     test(
@@ -673,20 +600,10 @@ void main() {
           sampleRate: 48000,
           samplesPerPixel: 480,
           length: 3,
-          data: <int>[
-            -32768,
-            32767,
-            -16384,
-            16384,
-            -8192,
-            8192,
-          ],
+          data: <int>[-32768, 32767, -16384, 16384, -8192, 8192],
         );
 
-        final result = await service.loadWaveform(
-          audio,
-          targetBuckets: 10,
-        );
+        final result = await service.loadWaveform(audio, targetBuckets: 10);
 
         expect(result, isNotNull);
         expect(result!.amplitudes, hasLength(3));
@@ -727,10 +644,7 @@ void main() {
       final expectedBlended =
           amplitudes.reduce(math.max) * 0.7 + expectedRms * 0.3;
 
-      final result = await service.loadWaveform(
-        audio,
-        targetBuckets: 1,
-      );
+      final result = await service.loadWaveform(audio, targetBuckets: 1);
 
       expect(result, isNotNull);
       expect(result!.amplitudes, hasLength(1));
@@ -752,16 +666,10 @@ void main() {
         data: List<int>.filled(8, 0),
       );
 
-      final result = await service.loadWaveform(
-        audio,
-        targetBuckets: 4,
-      );
+      final result = await service.loadWaveform(audio, targetBuckets: 4);
 
       expect(result, isNotNull);
-      expect(
-        result!.amplitudes.every((value) => value == 0),
-        isTrue,
-      );
+      expect(result!.amplitudes.every((value) => value == 0), isTrue);
     });
 
     test('amplitudes are clamped to the range [0, 1]', () async {
@@ -776,18 +684,10 @@ void main() {
         sampleRate: 48000,
         samplesPerPixel: 480,
         length: 2,
-        data: <int>[
-          -40000,
-          40000,
-          -32000,
-          32000,
-        ],
+        data: <int>[-40000, 40000, -32000, 32000],
       );
 
-      final result = await service.loadWaveform(
-        audio,
-        targetBuckets: 2,
-      );
+      final result = await service.loadWaveform(audio, targetBuckets: 2);
 
       expect(result, isNotNull);
       expect(
@@ -820,10 +720,7 @@ void main() {
           subDomain: 'audio_waveform_service',
         ),
       ).called(1);
-      expect(
-        extractor.lastWaveOutFile?.existsSync(),
-        isFalse,
-      );
+      expect(extractor.lastWaveOutFile?.existsSync(), isFalse);
     });
 
     test('logs state error when extractor cannot provide waveform', () async {
@@ -1098,10 +995,7 @@ void main() {
       );
 
       expect(sanitizedSegment.length, inInclusiveRange(1, 60));
-      expect(
-        RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(sanitizedSegment),
-        isTrue,
-      );
+      expect(RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(sanitizedSegment), isTrue);
     });
   });
 
@@ -1226,12 +1120,7 @@ void main() {
       final sanitized = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
       final prefix = sanitized.length >= 2 ? sanitized.substring(0, 2) : '00';
       final cacheFile = File(
-        p.join(
-          tempDir.path,
-          'audio_waveforms',
-          prefix,
-          '${sanitized}_4.json',
-        ),
+        p.join(tempDir.path, 'audio_waveforms', prefix, '${sanitized}_4.json'),
       );
       expect(cacheFile.existsSync(), isTrue);
     });
@@ -1249,12 +1138,7 @@ void main() {
       final sanitized = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
       final prefix = sanitized.length >= 2 ? sanitized.substring(0, 2) : '00';
       final cacheFile = File(
-        p.join(
-          tempDir.path,
-          'audio_waveforms',
-          prefix,
-          '${sanitized}_2.json',
-        ),
+        p.join(tempDir.path, 'audio_waveforms', prefix, '${sanitized}_2.json'),
       );
       expect(cacheFile.existsSync(), isTrue);
     });
@@ -1274,12 +1158,7 @@ void main() {
       final sanitized = longId.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
       final prefix = sanitized.substring(0, 2);
       final cacheFile = File(
-        p.join(
-          tempDir.path,
-          'audio_waveforms',
-          prefix,
-          '${sanitized}_3.json',
-        ),
+        p.join(tempDir.path, 'audio_waveforms', prefix, '${sanitized}_3.json'),
       );
       expect(
         Directory(p.join(tempDir.path, 'audio_waveforms', prefix)).existsSync(),
@@ -1313,12 +1192,7 @@ void main() {
       final sanitized = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
       final prefix = sanitized.substring(0, 2);
       final cacheFile = File(
-        p.join(
-          tempDir.path,
-          'audio_waveforms',
-          prefix,
-          '${sanitized}_3.json',
-        ),
+        p.join(tempDir.path, 'audio_waveforms', prefix, '${sanitized}_3.json'),
       );
       expect(cacheFile.existsSync(), isTrue);
     });
@@ -1341,6 +1215,112 @@ void main() {
   });
 
   group('cache pruning', () {
+    test(
+      'serializes prune passes started by concurrent cache writes',
+      () async {
+        final releaseFirstPrune = Completer<void>();
+        final bothCachesWritten = Completer<void>();
+        var cacheWrites = 0;
+        var activePrunes = 0;
+        var maxConcurrentPrunes = 0;
+        var pruneStarts = 0;
+        service = AudioWaveformService(
+          extractor: extractor.extract,
+          maxCacheEntries: 1,
+          testHooks: AudioWaveformServiceTestHooks(
+            onCacheWritten: (_) {
+              cacheWrites++;
+              if (cacheWrites == 2) {
+                bothCachesWritten.complete();
+              }
+            },
+            beforeCachePrune: () async {
+              pruneStarts++;
+              activePrunes++;
+              maxConcurrentPrunes = math.max(maxConcurrentPrunes, activePrunes);
+              if (pruneStarts == 1) {
+                await releaseFirstPrune.future;
+              }
+              activePrunes--;
+            },
+          ),
+        );
+        final firstAudio = createAudio(
+          duration: const Duration(seconds: 10),
+          audioId: 'concurrent-first',
+          fileName: 'concurrent-first.m4a',
+        );
+        final secondAudio = createAudio(
+          duration: const Duration(seconds: 11),
+          audioId: 'concurrent-second',
+          fileName: 'concurrent-second.m4a',
+        );
+
+        final first = service.loadWaveform(firstAudio, targetBuckets: 2);
+        final second = service.loadWaveform(secondAudio, targetBuckets: 2);
+        await bothCachesWritten.future;
+        final concurrentPrunesBeforeRelease = maxConcurrentPrunes;
+        releaseFirstPrune.complete();
+        final results = await Future.wait([first, second]);
+        expect(results, everyElement(isNotNull));
+        expect(pruneStarts, 2);
+        expect(concurrentPrunesBeforeRelease, 1);
+        expect(maxConcurrentPrunes, 1);
+        final remainingFiles = Directory(
+          p.join(tempDir.path, 'audio_waveforms'),
+        ).listSync(recursive: true).whereType<File>().toList();
+        expect(remainingFiles, hasLength(1));
+        verifyNever(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'cache_prune',
+          ),
+        );
+      },
+    );
+
+    test('continues pruning when a listed cache file disappears', () async {
+      var removedListedFile = false;
+      service = AudioWaveformService(
+        extractor: extractor.extract,
+        maxCacheEntries: 2,
+        testHooks: AudioWaveformServiceTestHooks(
+          beforeCacheFileStat: (file) async {
+            if (!removedListedFile && p.basename(file.path) == 'entry_0.json') {
+              removedListedFile = true;
+              file.deleteSync();
+            }
+          },
+        ),
+      );
+      populateCacheEntries(4);
+      clearInteractions(mockDomainLogger);
+      final audio = createAudio(
+        duration: const Duration(seconds: 12),
+        audioId: 'disappearing-cache-entry',
+        fileName: 'disappearing.m4a',
+      );
+
+      final result = await service.loadWaveform(audio, targetBuckets: 2);
+
+      expect(result, isNotNull);
+      expect(removedListedFile, isTrue);
+      final remainingFiles = Directory(
+        p.join(tempDir.path, 'audio_waveforms'),
+      ).listSync(recursive: true).whereType<File>().toList();
+      expect(remainingFiles, hasLength(2));
+      verifyNever(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'cache_prune',
+        ),
+      );
+    });
+
     test('prunes oldest files when exceeding the cache limit', () async {
       // Small injected limit: 19 files exercise the same pruning path the
       // production 1000-entry limit does, without 1000+ file creations.
@@ -1364,16 +1344,7 @@ void main() {
           sampleRate: 48000,
           samplesPerPixel: 480,
           length: 4,
-          data: <int>[
-            -32768,
-            32767,
-            -16384,
-            16384,
-            -8192,
-            8192,
-            0,
-            0,
-          ],
+          data: <int>[-32768, 32767, -16384, 16384, -8192, 8192, 0, 0],
         );
 
       final result = await service.loadWaveform(audio, targetBuckets: 2);
@@ -1612,56 +1583,52 @@ void main() {
       glados.IntAnys(glados.any).intInRange(1, 200),
       glados.IntAnys(glados.any).intInRange(1, 300),
       glados.ExploreConfig(numRuns: 150),
-    ).test(
-      'amplitudes clamp to [0, 1]; length == min(pixels, buckets); '
-      'no downsampling when buckets >= pixels',
-      (pixelCount, targetBuckets) {
-        // Deterministic pseudo-random 16-bit min/max pairs per pixel.
-        final data = <int>[
-          for (var i = 0; i < pixelCount; i++) ...[
-            -((i * 2654435761) % 32768),
-            (i * 40503) % 32768,
-          ],
-        ];
-        final waveform = Waveform(
-          version: 1,
-          flags: 0,
-          sampleRate: 48000,
-          samplesPerPixel: 480,
-          length: pixelCount,
-          data: data,
-        );
+    ).test('amplitudes clamp to [0, 1]; length == min(pixels, buckets); '
+        'no downsampling when buckets >= pixels', (pixelCount, targetBuckets) {
+      // Deterministic pseudo-random 16-bit min/max pairs per pixel.
+      final data = <int>[
+        for (var i = 0; i < pixelCount; i++) ...[
+          -((i * 2654435761) % 32768),
+          (i * 40503) % 32768,
+        ],
+      ];
+      final waveform = Waveform(
+        version: 1,
+        flags: 0,
+        sampleRate: 48000,
+        samplesPerPixel: 480,
+        length: pixelCount,
+        data: data,
+      );
 
-        final normalized = AudioWaveformService().debugNormalizeWaveform(
-          waveform: waveform,
-          targetBuckets: targetBuckets,
-        );
+      final normalized = AudioWaveformService().debugNormalizeWaveform(
+        waveform: waveform,
+        targetBuckets: targetBuckets,
+      );
 
-        expect(
-          normalized.length,
-          math.min(pixelCount, targetBuckets),
-          reason: 'pixels=$pixelCount buckets=$targetBuckets',
-        );
-        for (final v in normalized) {
-          expect(v, greaterThanOrEqualTo(0.0));
-          expect(v, lessThanOrEqualTo(1.0));
+      expect(
+        normalized.length,
+        math.min(pixelCount, targetBuckets),
+        reason: 'pixels=$pixelCount buckets=$targetBuckets',
+      );
+      for (final v in normalized) {
+        expect(v, greaterThanOrEqualTo(0.0));
+        expect(v, lessThanOrEqualTo(1.0));
+      }
+      if (pixelCount <= targetBuckets) {
+        // Identity path: pure per-pixel normalization, no blending.
+        for (var i = 0; i < pixelCount; i++) {
+          final expected = math.min(
+            1,
+            math.max(
+                  waveform.getPixelMin(i).abs(),
+                  waveform.getPixelMax(i).abs(),
+                ) /
+                32768,
+          );
+          expect(normalized[i], closeTo(expected, 1e-9));
         }
-        if (pixelCount <= targetBuckets) {
-          // Identity path: pure per-pixel normalization, no blending.
-          for (var i = 0; i < pixelCount; i++) {
-            final expected = math.min(
-              1,
-              math.max(
-                    waveform.getPixelMin(i).abs(),
-                    waveform.getPixelMax(i).abs(),
-                  ) /
-                  32768,
-            );
-            expect(normalized[i], closeTo(expected, 1e-9));
-          }
-        }
-      },
-      tags: 'glados',
-    );
+      }
+    }, tags: 'glados');
   });
 }
