@@ -2234,7 +2234,7 @@ void main() {
           );
         });
 
-        test('a late wake that fails still re-arms from the run day', () async {
+        test("a failed catch-up keeps today's retry", () async {
           conversationRepository.errorToThrow = Exception('model failed');
 
           final result = await executeAsCoordinator(
@@ -2249,13 +2249,15 @@ void main() {
               .single;
           expect(
             rearmed.scheduledAt,
-            DateTime(2026, 5, 26, 6),
+            DateTime(2026, 5, 25, 6),
             reason:
-                'The failure path re-arms off the re-anchored day too, so a '
-                'failed catch-up cannot leave a same-day duplicate behind.',
+                'A failed run digested nothing and wrote no watermark, so the '
+                'day-bounded guard must not apply — skipping to tomorrow '
+                "would cost the user today's briefing over a transient "
+                'error.',
           );
           expect(rearmed.triggerTokens, [
-            dayAgentDigestToken('dayplan-2026-05-26'),
+            dayAgentDigestToken('dayplan-2026-05-25'),
           ]);
         });
       });

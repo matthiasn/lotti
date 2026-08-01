@@ -233,13 +233,8 @@ class DayAgentWorkflow {
       // occur before inference setup reaches its own failure handling.
       if (maintainsDigestCadence && !succeeded) {
         try {
-          await _scheduleNextCoordinatorDigest(
-            agentId: agentId,
-            now: now,
-            // An unparseable digest token resolves to no day; the run day is
-            // then the honest anchor, and the duplicate guard still applies.
-            anchoredDay: digestAnchorDay(effectiveTokens) ?? localDay(now),
-          );
+          // No completedDay: this path runs only when the wake failed.
+          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
         } catch (scheduleError, stackTrace) {
           _logError(
             'failed to re-arm coordinator digest wake',
@@ -757,7 +752,7 @@ class DayAgentWorkflow {
           await _scheduleNextCoordinatorDigest(
             agentId: agentId,
             now: now,
-            anchoredDay: dayDate,
+            completedDay: dayDate,
           );
         }
       });
@@ -796,16 +791,21 @@ class DayAgentWorkflow {
   /// Schedules the coordinator's next morning digest after either success or
   /// failure, because the current scheduled-wake record is consumed first.
   ///
-  /// [anchoredDay] is the day this wake actually digested (post re-anchor).
-  /// The next slot is bounded by it rather than by [now] alone, so a catch-up
-  /// that ran before the digest hour cannot re-arm a second digest for the day
-  /// it just covered.
+  /// [completedDay] is the day this wake actually digested, and bounds the
+  /// next slot so a catch-up that ran before the digest hour cannot re-arm a
+  /// second digest for the day it just covered. It is null when the wake
+  /// FAILED: nothing was digested, no `dailyWakeCompleted` watermark was
+  /// written, and skipping today's slot would cost the user today's briefing
+  /// over a transient error. A failed run therefore re-arms unbounded, which
+  /// restores the same-day retry.
   Future<void> _scheduleNextCoordinatorDigest({
     required String agentId,
     required DateTime now,
-    required DateTime anchoredDay,
+    DateTime? completedDay,
   }) async {
-    final next = nextDigestTimeAfterDay(now, anchoredDay);
+    final next = completedDay == null
+        ? nextDigestTime(now)
+        : nextDigestTimeAfterDay(now, completedDay);
     await syncService.upsertEntity(
       AgentDomainEntity.scheduledWake(
         id: scheduledWakeRecordId(

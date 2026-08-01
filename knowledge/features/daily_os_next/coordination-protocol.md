@@ -5,13 +5,13 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2026-10-26
+generated: { by: claude-code/opus-5, at: 2026-08-01T12:00:00Z }
+stale_after: 2026-11-01
 sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Directive, status and digest services
-    last_modified: 2026-07-26
+    last_modified: 2026-08-01
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination
@@ -118,15 +118,28 @@ early is clock skew, not staleness, and pulling the anchor backwards would diges
 a day twice.
 
 **Missed windows collapse into one run rather than replaying one digest per
-skipped day.** Nothing is lost — the digest reads status events from its
-watermark, not from its day token, so a week offline still surfaces that week's
-escalations in the single catch-up digest.
+skipped day.** The catch-up still sees everything back to its watermark, so a
+week offline surfaces that week's escalations in the single catch-up digest —
+*provided a previous digest completed*. With no `dailyWakeCompleted` milestone
+at all (a fresh install, or every prior attempt failed), the watermark falls
+back to 48 hours plus the 12-hour sync slack, and escalations older than that
+are not rendered before the watermark advances past them. That bound belongs to
+the watermark fallback, not to re-anchoring.
 
-The re-arm is bounded by the anchored day (`nextDigestTimeAfterDay`), not merely
-by `now`. A catch-up that runs at 03:00 re-anchors to today, and the plain next
-slot would be *today* at 06:00 — a second digest for the day just digested. Both
-the success and the failure re-arm path use the bounded computation, so the
-invariant holds at most one digest per day either way.
+The re-arm is bounded by the day just digested (`nextDigestTimeAfterDay`), not
+merely by `now`. A catch-up that runs at 03:00 re-anchors to today, and the plain
+next slot would be *today* at 06:00 — a second digest for the day just digested.
+
+**Only a successful run applies that bound.** A failed wake digested nothing and
+wrote no watermark, so it re-arms unbounded and keeps today's 06:00 retry;
+skipping to tomorrow would cost the user today's briefing over a transient
+error.
+
+The resulting invariant is **at most one digest per day per record history** —
+it is enforced by one device consuming and re-arming the record in sequence, and
+says nothing about two devices holding the same pending record before either
+`consumed` flip has synced. Cross-device exclusion is a separate concern with
+its own mechanism, tracked as `lotti3-hkb.11`.
 
 ## Severity ranking, not arrival order
 
