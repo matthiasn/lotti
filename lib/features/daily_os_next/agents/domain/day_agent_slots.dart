@@ -112,8 +112,17 @@ Duration canonicalRecordedDuration(Metadata meta) =>
     canonicalWallClockDuration(meta.dateFrom, meta.dateTo);
 
 /// The wall-clock length between two zone-less timestamps.
-Duration canonicalWallClockDuration(DateTime from, DateTime to) =>
-    recordedWallClock(to).difference(recordedWallClock(from));
+///
+/// Clamped at zero. Around a fall-back transition the recorder's own clock can
+/// legitimately run backwards — 01:50 daylight to 01:10 standard is 20 elapsed
+/// minutes but reads as −40 on the calendar — and a negative contribution
+/// would subtract from a category's total rather than merely mis-sizing it. A
+/// zero-length span is dropped like any other, which matches what the
+/// resolver already does with a non-positive elapsed duration.
+Duration canonicalWallClockDuration(DateTime from, DateTime to) {
+  final wall = recordedWallClock(to).difference(recordedWallClock(from));
+  return wall.isNegative ? Duration.zero : wall;
+}
 
 /// Monday 00:00 of the ISO week containing [date], read from [date]'s own
 /// calendar components and returned UTC-typed — the zone-free week key that

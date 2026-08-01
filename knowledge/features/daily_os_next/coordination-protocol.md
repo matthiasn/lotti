@@ -234,12 +234,18 @@ compute different *sets*, but never different *values*, so nothing flaps.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Legacy: register written before the canonical rule
-  [*] --> Canonical: register written by this build
-  Legacy --> Canonical: week inside the 4-week window at digest time
-  Legacy --> Legacy: week aged out — keeps legacy values, stays flagged
-  Canonical --> Canonical: recompute (write skipped when unchanged)
+  state "v1 week_rollup:<Monday>" as V1
+  state "v2 week_rollup_v2:<Monday>" as V2
+  [*] --> V1: written by a build before the canonical rule
+  [*] --> V2: written by this build, stamped recordedLocal
+  V1 --> V1: never rewritten — inert, and never read again
+  V1 --> V2: tombstone only, carried onto the new generation
+  V2 --> V2: recompute (write skipped when unchanged and stamped)
 ```
+
+The generations are **separate rows**, not one row migrated in place: nothing
+rewrites a v1 register. A week gets a fresh v2 register computed from source,
+and the v1 row is consulted only for its tombstone.
 
 **The register id carries a generation: `week_rollup_v2:<Monday>`.** During a
 staggered upgrade a device still on the previous build recomputes the *old* id

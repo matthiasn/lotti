@@ -160,6 +160,33 @@ void main() {
     });
   });
 
+  group('canonicalWallClockDuration', () {
+    test('reads the length off the calendar, not the instants', () {
+      expect(
+        canonicalWallClockDuration(
+          DateTime(2026, 5, 27, 9),
+          DateTime(2026, 5, 27, 10, 30),
+        ),
+        const Duration(minutes: 90),
+      );
+    });
+
+    test('a backwards fall-back interval contributes nothing, not a '
+        'negative', () {
+      // Around a fall-back transition the recorder's own clock legitimately
+      // runs backwards: 01:50 daylight to 01:10 standard is 20 elapsed
+      // minutes but reads as −40 on the calendar. A negative contribution
+      // would subtract from the category's total rather than mis-size it.
+      expect(
+        canonicalWallClockDuration(
+          DateTime(2026, 11, 1, 1, 50),
+          DateTime(2026, 11, 1, 1, 10),
+        ),
+        Duration.zero,
+      );
+    });
+  });
+
   group('weekRollupEntityId', () {
     test('locks the per-week register id format (Monday date key)', () {
       // The literal prefix is the PK the digest recompute writes and reads;
