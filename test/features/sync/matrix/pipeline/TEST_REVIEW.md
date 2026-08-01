@@ -142,7 +142,7 @@ Both active bootstrap strategies in `catch_up_strategy.dart` have Glados coverag
 - `collectHistoryForBootstrap` → `_GeneratedHistoryBootstrapScenario` (line 140)
 - `collectForwardForBootstrap` → `_GeneratedForwardBootstrapScenario` (line 785)
 
-The pure helper functions are also covered:
+The remaining pure helper is also covered:
 - `_isStrictlyAfter` is exercised indirectly via the bootstrap scenarios.
 
 - [x] **[MED]** `metrics_utils.dart` — `MetricsUtils.buildSnapshot` has no dedicated
@@ -248,13 +248,13 @@ The pure helper functions are also covered:
   the future is already complete before awaiting.
   **RESOLVED:** all three 1-second `.timeout(...)` guards replaced with `await expectLater(ingestor.whenIdle(), completes)` — fails fast under the test framework's own timeout instead of hanging behind a wall-clock cap.
 
-- [x] **[LOW]** Glados tests in `catch_up_strategy_test.dart` (three properties) run
+- [x] **[LOW]** Glados tests in `catch_up_strategy_test.dart` (two properties) run
   at default `numRuns` (no `ExploreConfig` specified), which defaults to 100 runs
   each. Given the scenario combinatorial space is already well-covered by the static
   tests in the same file, consider adding `ExploreConfig(numRuns: 80)` to cap the
   property runs. Impact: modest CPU saving on each CI Glados shard run.
-  **RESOLVED:** all three properties (`timestampCatchUpScenario`,
-  `historyBootstrapScenario`, `forwardBootstrapScenario`) now pass
+  **RESOLVED:** both remaining properties (`historyBootstrapScenario` and
+  `forwardBootstrapScenario`) now pass
   `glados.ExploreConfig(numRuns: 80)`.
 
 ---

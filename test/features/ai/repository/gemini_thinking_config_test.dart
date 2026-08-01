@@ -247,7 +247,7 @@ void main() {
         });
       });
 
-      test('serializes auto preset', () {
+      test('serializes auto budget (-1)', () {
         final json = const GeminiThinkingConfig(thinkingBudget: -1).toJson();
 
         expect(json, {
@@ -256,7 +256,7 @@ void main() {
         });
       });
 
-      test('serializes disabled preset', () {
+      test('serializes disabled budget (0)', () {
         final json = const GeminiThinkingConfig(thinkingBudget: 0).toJson();
 
         expect(json, {
@@ -265,7 +265,7 @@ void main() {
         });
       });
 
-      test('serializes standard preset', () {
+      test('serializes fixed budget (8192)', () {
         final json = const GeminiThinkingConfig(thinkingBudget: 8192).toJson();
 
         expect(json, {
@@ -337,21 +337,21 @@ void main() {
         expect(json.containsKey('thinkingLevel'), isFalse);
       });
 
-      test('maps auto preset to high for Gemini 3', () {
+      test('maps auto budget (-1) to high for Gemini 3', () {
         final json = const GeminiThinkingConfig(thinkingBudget: -1).toJson(
           modelId: 'gemini-3.1-pro-preview',
         );
         expect(json['thinkingLevel'], 'high');
       });
 
-      test('maps disabled preset to low for Gemini 3 Pro', () {
+      test('maps disabled budget (0) to low for Gemini 3 Pro', () {
         final json = const GeminiThinkingConfig(thinkingBudget: 0).toJson(
           modelId: 'gemini-3.1-pro-preview',
         );
         expect(json['thinkingLevel'], 'low');
       });
 
-      test('maps standard preset (8192) to high for Gemini 3', () {
+      test('maps fixed budget (8192) to high for Gemini 3', () {
         final json = const GeminiThinkingConfig(thinkingBudget: 8192).toJson(
           modelId: 'gemini-3.1-pro-preview',
         );
