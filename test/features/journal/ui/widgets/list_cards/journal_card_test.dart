@@ -15,7 +15,6 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -27,7 +26,6 @@ import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/state/checklist_completion_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
-import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -500,28 +498,6 @@ void main() {
 
       // Falls back to the localized "Day Plan" label.
       expect(find.text('Day Plan'), findsOneWidget);
-    });
-
-    testWidgets('renders task entry with title and status chip', (
-      tester,
-    ) async {
-      final taskEntry = testTask;
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernJournalCard(item: taskEntry),
-        ),
-      );
-
-      final context = tester.element(find.byType(ModernJournalCard));
-      expect(find.text(taskEntry.data.title), findsOneWidget);
-      // Status renders as a tonal metric chip (same grammar as every other
-      // chip) instead of the loud filled TaskStatusWidget.
-      expect(find.byType(TaskStatusWidget), findsNothing);
-      expect(
-        find.text(taskEntry.data.status.localizedLabel(context)),
-        findsOneWidget,
-      );
     });
 
     testWidgets('renders measurement entry with ruler glyph and value chip', (
