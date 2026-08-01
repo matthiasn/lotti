@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -182,31 +181,6 @@ void main() {
         expect(
           plan.map((row) => row.read<String>('detail')).join(' '),
           contains('idx_journal_day_audio'),
-        );
-      });
-
-      test('resolves a recording session through its unique index', () async {
-        final entry = buildAudioEntry(
-          id: 'session-owner',
-          timestamp: DateTime(2026, 7, 18, 8),
-          audioDirectory: '/audio/',
-          audioFile: 'owner.wav',
-          dayContext: context(
-            dayId: 'dayplan-2026-07-18',
-            sessionId: 'stable-session',
-            capturedAt: DateTime(2026, 7, 18, 8),
-          ),
-        );
-        await db!.upsertJournalDbEntity(toDbEntity(entry));
-
-        final found = await db!.journalAudioByRecordingSessionId(
-          'stable-session',
-        );
-
-        expect(found?.meta.id, 'session-owner');
-        expect(
-          await db!.journalAudioByRecordingSessionId('missing-session'),
-          isNull,
         );
       });
     });
@@ -585,110 +559,6 @@ void main() {
                 .map((entry) => entry.meta.id),
             ['cached-journal-2', 'cached-journal-1'],
           );
-        },
-      );
-    });
-
-    group('getCategoryIdsForEntryIds -', () {
-      test(
-        'returns empty map for empty input without hitting the db',
-        () async {
-          expect(
-            await db!.getCategoryIdsForEntryIds(const <String>[]),
-            isEmpty,
-          );
-        },
-      );
-
-      test(
-        'returns denormalized category per id and maps empty column to null',
-        () async {
-          final base = DateTime(2026, 3, 1);
-          final withCategory = buildJournalEntry(
-            id: 'cat-id-entry-1',
-            timestamp: base,
-            text: 'has category',
-            categoryId: 'cat-alpha',
-          );
-          final withoutCategory = buildJournalEntry(
-            id: 'cat-id-entry-2',
-            timestamp: base.add(const Duration(minutes: 1)),
-            text: 'no category',
-          );
-
-          await db!.upsertJournalDbEntity(toDbEntity(withCategory));
-          await db!.upsertJournalDbEntity(toDbEntity(withoutCategory));
-
-          final result = await db!.getCategoryIdsForEntryIds([
-            withCategory.meta.id,
-            withoutCategory.meta.id,
-            // Duplicate id is deduplicated via toSet() before the query.
-            withCategory.meta.id,
-            // Missing ids are simply absent from the returned map.
-            'cat-id-missing',
-          ]);
-
-          expect(result, hasLength(2));
-          expect(result[withCategory.meta.id], 'cat-alpha');
-          // Empty column value is normalized to null so callers can treat
-          // "no category" and "not present" uniformly.
-          expect(result.containsKey(withoutCategory.meta.id), isTrue);
-          expect(result[withoutCategory.meta.id], isNull);
-          expect(result.containsKey('cat-id-missing'), isFalse);
-        },
-      );
-
-      test(
-        'filtered path drops private entries when privateFlag is off',
-        () async {
-          final base = DateTime(2026, 3, 2);
-          final publicEntry = buildJournalEntry(
-            id: 'cat-id-public',
-            timestamp: base,
-            text: 'public',
-            categoryId: 'cat-public',
-          );
-          final privateEntry = buildJournalEntry(
-            id: 'cat-id-private',
-            timestamp: base.add(const Duration(minutes: 1)),
-            text: 'private',
-            privateFlag: true,
-            categoryId: 'cat-private',
-          );
-
-          await db!.upsertJournalDbEntity(toDbEntity(publicEntry));
-          await db!.upsertJournalDbEntity(toDbEntity(privateEntry));
-
-          await db!.upsertConfigFlag(
-            const ConfigFlag(
-              name: privateFlag,
-              description: 'Show private entries?',
-              status: false,
-            ),
-          );
-
-          final filtered = await db!.getCategoryIdsForEntryIds([
-            publicEntry.meta.id,
-            privateEntry.meta.id,
-          ]);
-          expect(filtered, {publicEntry.meta.id: 'cat-public'});
-
-          await db!.upsertConfigFlag(
-            const ConfigFlag(
-              name: privateFlag,
-              description: 'Show private entries?',
-              status: true,
-            ),
-          );
-
-          final all = await db!.getCategoryIdsForEntryIds([
-            publicEntry.meta.id,
-            privateEntry.meta.id,
-          ]);
-          expect(all, {
-            publicEntry.meta.id: 'cat-public',
-            privateEntry.meta.id: 'cat-private',
-          });
         },
       );
     });
@@ -1538,94 +1408,4 @@ void main() {
       );
     });
   });
-
-  group('vector clock extraction (pure parsers) -', () {
-    glados.Glados(glados.any.vectorClockMap).test(
-      'journal-entity round-trip: meta.vectorClock survives extraction',
-      (vclock) {
-        final serialized = jsonEncode({
-          'meta': {'vectorClock': vclock},
-        });
-        expect(extractVectorClockForTesting(serialized), vclock);
-      },
-      tags: 'glados',
-    );
-
-    glados.Glados(glados.any.vectorClockMap).test(
-      'entry-link round-trip: vectorClock survives extraction',
-      (vclock) {
-        final serialized = jsonEncode({'vectorClock': vclock});
-        expect(extractEntryLinkVectorClockForTesting(serialized), vclock);
-      },
-      tags: 'glados',
-    );
-
-    glados.Glados(glados.any.nonVectorClockJson).test(
-      'malformed or non-object JSON never throws and yields null for both '
-      'extractors',
-      (garbage) {
-        expect(extractVectorClockForTesting(garbage), isNull);
-        expect(extractEntryLinkVectorClockForTesting(garbage), isNull);
-      },
-      tags: 'glados',
-    );
-
-    glados.Glados(glados.any.vectorClockMap).test(
-      'non-numeric clock values yield null for both extractors',
-      (vclock) {
-        final tainted = <String, dynamic>{...vclock, 'bad-host': 'NaN'};
-        expect(
-          extractVectorClockForTesting(
-            jsonEncode({
-              'meta': {'vectorClock': tainted},
-            }),
-          ),
-          isNull,
-        );
-        expect(
-          extractEntryLinkVectorClockForTesting(
-            jsonEncode({'vectorClock': tainted}),
-          ),
-          isNull,
-        );
-      },
-      tags: 'glados',
-    );
-
-    test('missing meta or vectorClock yields null', () {
-      expect(extractVectorClockForTesting('{}'), isNull);
-      expect(extractVectorClockForTesting('{"meta": {}}'), isNull);
-      expect(extractVectorClockForTesting('{"meta": null}'), isNull);
-      expect(extractEntryLinkVectorClockForTesting('{}'), isNull);
-      expect(
-        extractEntryLinkVectorClockForTesting('{"vectorClock": null}'),
-        isNull,
-      );
-    });
-  });
-}
-
-extension _AnyVectorClockJson on glados.Any {
-  /// Arbitrary host-id → counter maps, the shape both extractors return.
-  glados.Generator<Map<String, int>> get vectorClockMap =>
-      glados.MapAnys(this).map(
-        glados.StringAnys(this).nonEmptyLetterOrDigits,
-        glados.IntAnys(this).intInRange(-1000000, 1000000),
-      );
-
-  /// Strings that either fail to parse as JSON at all or parse to a
-  /// non-object top level (array, string, number). Both extractors must
-  /// map every one of them to null without throwing.
-  glados.Generator<String> get nonVectorClockJson =>
-      glados.CombinableAny(this).combine2(
-        glados.IntAnys(this).intInRange(0, 5),
-        glados.StringAnys(this).letterOrDigits,
-        (int shape, String s) => switch (shape) {
-          0 => '{$s', // unbalanced object — never valid JSON
-          1 => '[$s]', // array (or garbage) — wrong top-level shape
-          2 => '"$s"', // JSON string — wrong top-level shape
-          3 => s, // bare token: number or garbage
-          _ => '$s}', // trailing garbage
-        },
-      );
 }

@@ -56,10 +56,6 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     });
   }
 
-  Future<int> getLabeledCount() async {
-    return (await countLabeled().get()).first;
-  }
-
   Future<MeasurableDataType?> getMeasurableDataTypeById(String id) async {
     final res = await measurableTypeById(id).get();
     return res.map(measurableDataType).firstOrNull;
@@ -99,10 +95,6 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     }
     return usage;
   }
-
-  /// Alias to snapshot method for clarity when used alongside the stream variant.
-  Future<Map<String, int>> getLabelUsageCountsSnapshot() =>
-      getLabelUsageCounts();
 
   Future<List<LabelDefinition>> getAllLabelDefinitions() async {
     final labels = await _queryWithPrivateFilter(

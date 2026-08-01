@@ -24,24 +24,6 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
     return rows.map(fromDbEntity).whereType<JournalAudio>().toList();
   }
 
-  /// Looks up the sole live audio owner of a durable recording session.
-  Future<JournalAudio?> journalAudioByRecordingSessionId(
-    String recordingSessionId,
-  ) async {
-    final row =
-        await (select(journal)
-              ..where(
-                (entry) =>
-                    entry.type.equals('JournalAudio') &
-                    entry.deleted.equals(false) &
-                    entry.recordingSessionId.equals(recordingSessionId),
-              )
-              ..limit(1))
-            .getSingleOrNull();
-    final entity = row == null ? null : fromDbEntity(row);
-    return entity is JournalAudio ? entity : null;
-  }
-
   Future<JournalDbEntity?> entityById(String id) async {
     final res =
         await (select(journal)
@@ -116,9 +98,7 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
   ///
   /// Chunks the id list into [_sqliteInListChunk]-sized batches so a
   /// caller passing a long list (well above what an outbox bundle ever
-  /// produces) cannot blow past SQLite's bind-variable cap. Same pattern
-  /// the other bulk-by-id helpers in this file use (e.g.
-  /// `getDayPlansForIds`).
+  /// produces) cannot blow past SQLite's bind-variable cap.
   Future<Map<String, JournalEntity>> journalEntityMapForIds(
     Iterable<String> ids,
   ) async {
@@ -224,42 +204,6 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
       filtered: (s) => journalEntitiesByIdsUnordered(idList, s).get(),
     );
     return dbEntities.map(fromDbEntity).toList();
-  }
-
-  /// Lean metadata-only fetch: returns the denormalized `category` column for
-  /// each id, without loading or deserializing the fat `serialized` JSON
-  /// payload. Intended for callers that only need the category-id lookup
-  /// (e.g. time-history header aggregation) — any caller that also needs
-  /// `meta.categoryId` as the source of truth can use this without losing
-  /// information because `conversions.toDbEntity` keeps the column in lock-
-  /// step with the JSON on every upsert.
-  ///
-  /// Entries filtered out by the private-status gate are simply absent from
-  /// the returned map. An empty category value in the `journal.category`
-  /// column is returned as `null` so callers can treat "no category" and
-  /// "not present" uniformly.
-  Future<Map<String, String?>> getCategoryIdsForEntryIds(
-    Iterable<String> ids,
-  ) async {
-    final idList = ids.toSet().toList(growable: false);
-    if (idList.isEmpty) return const <String, String?>{};
-    final pairs = await _queryWithPrivateFilter<List<MapEntry<String, String>>>(
-      allPrivate: () async {
-        final rows = await journalCategoriesByIds(idList).get();
-        return [for (final row in rows) MapEntry(row.id, row.category)];
-      },
-      filtered: (s) async {
-        final rows = await journalCategoriesByIdsByPrivateStatuses(
-          idList,
-          s,
-        ).get();
-        return [for (final row in rows) MapEntry(row.id, row.category)];
-      },
-    );
-    return {
-      for (final pair in pairs)
-        pair.key: pair.value.isEmpty ? null : pair.value,
-    };
   }
 
   Future<List<String>> getJournalEntityIdsSortedByDateFromDesc(
@@ -556,18 +500,6 @@ Map<String, int>? _extractEntryLinkVectorClock(String serialized) {
     return null;
   }
 }
-
-/// Test-only seam for the pure JSON parser behind
-/// [_JournalDbJournalQueries.streamEntriesWithVectorClock].
-@visibleForTesting
-Map<String, int>? extractVectorClockForTesting(String serialized) =>
-    _extractVectorClock(serialized);
-
-/// Test-only seam for the pure JSON parser behind
-/// [_JournalDbJournalQueries.streamEntryLinksWithVectorClock].
-@visibleForTesting
-Map<String, int>? extractEntryLinkVectorClockForTesting(String serialized) =>
-    _extractEntryLinkVectorClock(serialized);
 
 /// In-flight coalescing wave for `journalEntityById`. Concurrent callers
 /// within the same microtask merge their ids; the wave fires one bulk

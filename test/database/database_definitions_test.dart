@@ -352,32 +352,7 @@ void main() {
       });
     });
 
-    group('getLabeledCount -', () {
-      test('counts labeled associations', () async {
-        await db!.upsertLabelDefinition(
-          LabelDefinition(
-            id: 'lbl-count-1',
-            createdAt: DateTime(2024, 11, 4),
-            updatedAt: DateTime(2024, 11, 4),
-            name: 'CountLabel',
-            color: '#112233',
-            vectorClock: null,
-          ),
-        );
-        final entry = buildJournalEntry(
-          id: 'lbl-count-entry-1',
-          timestamp: DateTime(2024, 11, 4),
-          text: 'Labeled entry',
-        );
-        await db!.upsertJournalDbEntity(toDbEntity(entry));
-        await db!.insertLabel('lbl-count-entry-1', 'lbl-count-1');
-
-        final count = await db!.getLabeledCount();
-        expect(count, 1);
-      });
-    });
-
-    group('getLabelUsageCounts / getLabelUsageCountsSnapshot -', () {
+    group('getLabelUsageCounts -', () {
       test('returns usage counts per label', () async {
         await db!.upsertLabelDefinition(
           LabelDefinition(
@@ -406,9 +381,6 @@ void main() {
 
         final counts = await db!.getLabelUsageCounts();
         expect(counts['lbl-usage-a'], 2);
-
-        final snapshot = await db!.getLabelUsageCountsSnapshot();
-        expect(snapshot['lbl-usage-a'], 2);
       });
 
       test('returns empty map when no labels are applied', () async {

@@ -7355,14 +7355,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
   }
 
-  Selectable<int> countLabeled() {
-    return customSelect(
-      'SELECT COUNT(*) AS _c0 FROM labeled',
-      variables: [],
-      readsFrom: {labeled},
-    ).map((QueryRow row) => row.read<int>('_c0'));
-  }
-
   Selectable<JournalDbEntity> linkedJournalEntities(
     String fromId,
     List<bool> privateStatuses,
@@ -7535,52 +7527,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<JournalCategoriesByIdsResult> journalCategoriesByIds(
-    List<String> ids,
-  ) {
-    var $arrayStartIndex = 1;
-    final expandedids = $expandVar($arrayStartIndex, ids.length);
-    $arrayStartIndex += ids.length;
-    return customSelect(
-      'SELECT id, category FROM journal WHERE deleted = FALSE AND id IN ($expandedids)',
-      variables: [for (var $ in ids) Variable<String>($)],
-      readsFrom: {journal},
-    ).map(
-      (QueryRow row) => JournalCategoriesByIdsResult(
-        id: row.read<String>('id'),
-        category: row.read<String>('category'),
-      ),
-    );
-  }
-
-  Selectable<JournalCategoriesByIdsByPrivateStatusesResult>
-  journalCategoriesByIdsByPrivateStatuses(
-    List<String> ids,
-    List<bool> privateStatuses,
-  ) {
-    var $arrayStartIndex = 1;
-    final expandedids = $expandVar($arrayStartIndex, ids.length);
-    $arrayStartIndex += ids.length;
-    final expandedprivateStatuses = $expandVar(
-      $arrayStartIndex,
-      privateStatuses.length,
-    );
-    $arrayStartIndex += privateStatuses.length;
-    return customSelect(
-      'SELECT id, category FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN ($expandedprivateStatuses)',
-      variables: [
-        for (var $ in ids) Variable<String>($),
-        for (var $ in privateStatuses) Variable<bool>($),
-      ],
-      readsFrom: {journal},
-    ).map(
-      (QueryRow row) => JournalCategoriesByIdsByPrivateStatusesResult(
-        id: row.read<String>('id'),
-        category: row.read<String>('category'),
-      ),
-    );
-  }
-
   Selectable<String> linkedJournalEntityIds(String fromId, List<bool?> hidden) {
     var $arrayStartIndex = 2;
     final expandedhidden = $expandVar($arrayStartIndex, hidden.length);
@@ -7680,121 +7626,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<JournalDbEntity> dayPlanById(String id) {
-    return customSelect(
-      'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id = ?1 AND deleted = FALSE',
-      variables: [Variable<String>(id)],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> dayPlanByIdByPrivateStatuses(
-    String id,
-    List<bool> privateStatuses,
-  ) {
-    var $arrayStartIndex = 2;
-    final expandedprivateStatuses = $expandVar(
-      $arrayStartIndex,
-      privateStatuses.length,
-    );
-    $arrayStartIndex += privateStatuses.length;
-    return customSelect(
-      'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id = ?1 AND deleted = FALSE AND private IN ($expandedprivateStatuses)',
-      variables: [
-        Variable<String>(id),
-        for (var $ in privateStatuses) Variable<bool>($),
-      ],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> dayPlansByIds(List<String> ids) {
-    var $arrayStartIndex = 1;
-    final expandedids = $expandVar($arrayStartIndex, ids.length);
-    $arrayStartIndex += ids.length;
-    return customSelect(
-      'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id IN ($expandedids) AND deleted = FALSE',
-      variables: [for (var $ in ids) Variable<String>($)],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> dayPlansByIdsByPrivateStatuses(
-    List<String> ids,
-    List<bool> privateStatuses,
-  ) {
-    var $arrayStartIndex = 1;
-    final expandedids = $expandVar($arrayStartIndex, ids.length);
-    $arrayStartIndex += ids.length;
-    final expandedprivateStatuses = $expandVar(
-      $arrayStartIndex,
-      privateStatuses.length,
-    );
-    $arrayStartIndex += privateStatuses.length;
-    return customSelect(
-      'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id IN ($expandedids) AND deleted = FALSE AND private IN ($expandedprivateStatuses)',
-      variables: [
-        for (var $ in ids) Variable<String>($),
-        for (var $ in privateStatuses) Variable<bool>($),
-      ],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> dayPlansInRange(
-    DateTime rangeStart,
-    DateTime rangeEnd,
-  ) {
-    return customSelect(
-      'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC',
-      variables: [Variable<DateTime>(rangeStart), Variable<DateTime>(rangeEnd)],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> dayPlansInRangeByPrivateStatuses(
-    DateTime rangeStart,
-    DateTime rangeEnd,
-    List<bool> privateStatuses,
-  ) {
-    var $arrayStartIndex = 3;
-    final expandedprivateStatuses = $expandVar(
-      $arrayStartIndex,
-      privateStatuses.length,
-    );
-    $arrayStartIndex += privateStatuses.length;
-    return customSelect(
-      'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 AND private IN ($expandedprivateStatuses) ORDER BY date_from DESC',
-      variables: [
-        Variable<DateTime>(rangeStart),
-        Variable<DateTime>(rangeEnd),
-        for (var $ in privateStatuses) Variable<bool>($),
-      ],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<RatingsForTimeEntriesResult> ratingsForTimeEntries(
-    List<String> timeEntryIds,
-  ) {
-    var $arrayStartIndex = 1;
-    final expandedtimeEntryIds = $expandVar(
-      $arrayStartIndex,
-      timeEntryIds.length,
-    );
-    $arrayStartIndex += timeEntryIds.length;
-    return customSelect(
-      'SELECT le.from_id AS rating_id, le.to_id AS time_entry_id FROM linked_entries AS le INNER JOIN journal AS j ON j.id = le.from_id WHERE le.to_id IN ($expandedtimeEntryIds) AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at ASC',
-      variables: [for (var $ in timeEntryIds) Variable<String>($)],
-      readsFrom: {linkedEntries, journal},
-    ).map(
-      (QueryRow row) => RatingsForTimeEntriesResult(
-        ratingId: row.read<String>('rating_id'),
-        timeEntryId: row.read<String>('time_entry_id'),
-      ),
-    );
-  }
-
   Selectable<JournalDbEntity> ratingForTimeEntry(
     String targetId,
     String catalogId,
@@ -7802,14 +7633,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(NULLIF(j.subtype, \'\'), \'session\') = ?2 AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at DESC LIMIT 1',
       variables: [Variable<String>(targetId), Variable<String>(catalogId)],
-      readsFrom: {journal, linkedEntries},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> allRatingsForTarget(String targetId) {
-    return customSelect(
-      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY COALESCE(NULLIF(j.subtype, \'\'), \'session\') ASC, j.updated_at DESC',
-      variables: [Variable<String>(targetId)],
       readsFrom: {journal, linkedEntries},
     ).asyncMap(journal.mapFromRow);
   }
@@ -10763,29 +10586,5 @@ class CountTasksGroupedByCategoryResult {
   CountTasksGroupedByCategoryResult({
     required this.category,
     required this.taskCount,
-  });
-}
-
-class JournalCategoriesByIdsResult {
-  final String id;
-  final String category;
-  JournalCategoriesByIdsResult({required this.id, required this.category});
-}
-
-class JournalCategoriesByIdsByPrivateStatusesResult {
-  final String id;
-  final String category;
-  JournalCategoriesByIdsByPrivateStatusesResult({
-    required this.id,
-    required this.category,
-  });
-}
-
-class RatingsForTimeEntriesResult {
-  final String ratingId;
-  final String timeEntryId;
-  RatingsForTimeEntriesResult({
-    required this.ratingId,
-    required this.timeEntryId,
   });
 }

@@ -2,7 +2,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
@@ -10,7 +9,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:research_package/model.dart';
 
@@ -55,182 +53,6 @@ void main() {
     tearDownAll(() async {
       await db?.close();
       await getIt.reset();
-    });
-
-    group('Day plan queries -', () {
-      test(
-        'day plan reads respect the private flag without a config subquery',
-        () async {
-          final publicPlanDate = DateTime(2026, 1, 15);
-          final privatePlanDate = publicPlanDate.add(const Duration(days: 1));
-          final publicPlan = DayPlanEntry(
-            meta: Metadata(
-              id: dayPlanId(publicPlanDate),
-              createdAt: publicPlanDate,
-              updatedAt: publicPlanDate,
-              dateFrom: publicPlanDate,
-              dateTo: publicPlanDate.add(const Duration(days: 1)),
-            ),
-            data: DayPlanData(
-              planDate: publicPlanDate,
-              status: const DayPlanStatus.draft(),
-              plannedBlocks: const [],
-            ),
-          );
-          final privatePlan = DayPlanEntry(
-            meta: Metadata(
-              id: dayPlanId(privatePlanDate),
-              createdAt: privatePlanDate,
-              updatedAt: privatePlanDate,
-              dateFrom: privatePlanDate,
-              dateTo: privatePlanDate.add(const Duration(days: 1)),
-              private: true,
-            ),
-            data: DayPlanData(
-              planDate: privatePlanDate,
-              status: const DayPlanStatus.draft(),
-              plannedBlocks: const [],
-            ),
-          );
-
-          await db!.upsertJournalDbEntity(toDbEntity(publicPlan));
-          await db!.upsertJournalDbEntity(toDbEntity(privatePlan));
-
-          await db!.upsertConfigFlag(
-            const ConfigFlag(
-              name: privateFlag,
-              description: 'Show private entries?',
-              status: false,
-            ),
-          );
-
-          expect(await db!.getDayPlanById(publicPlan.meta.id), isNotNull);
-          expect(await db!.getDayPlanById(privatePlan.meta.id), isNull);
-
-          final visiblePlans = await db!.getDayPlansInRange(
-            rangeStart: publicPlanDate.subtract(const Duration(days: 1)),
-            rangeEnd: privatePlanDate.add(const Duration(days: 2)),
-          );
-
-          expect(visiblePlans.map((e) => e.meta.id), [publicPlan.meta.id]);
-
-          // Enable private flag → allPrivate path returns both plans
-          await db!.upsertConfigFlag(
-            const ConfigFlag(
-              name: privateFlag,
-              description: 'Show private entries?',
-              status: true,
-            ),
-          );
-
-          expect(await db!.getDayPlanById(privatePlan.meta.id), isNotNull);
-
-          final allPlans = await db!.getDayPlansInRange(
-            rangeStart: publicPlanDate.subtract(const Duration(days: 1)),
-            rangeEnd: privatePlanDate.add(const Duration(days: 2)),
-          );
-          expect(allPlans, hasLength(2));
-        },
-      );
-
-      test('getDayPlansByIds returns empty list for empty input', () async {
-        expect(await db!.getDayPlansByIds(const <String>[]), isEmpty);
-      });
-
-      test(
-        'getDayPlansByIds batch-fetches matching plans and honors private flag',
-        () async {
-          final baseDate = DateTime(2026, 2, 10);
-          final publicA = DayPlanEntry(
-            meta: Metadata(
-              id: dayPlanId(baseDate),
-              createdAt: baseDate,
-              updatedAt: baseDate,
-              dateFrom: baseDate,
-              dateTo: baseDate.add(const Duration(days: 1)),
-            ),
-            data: DayPlanData(
-              planDate: baseDate,
-              status: const DayPlanStatus.draft(),
-              plannedBlocks: const [],
-            ),
-          );
-          final publicB = DayPlanEntry(
-            meta: Metadata(
-              id: dayPlanId(baseDate.add(const Duration(days: 1))),
-              createdAt: baseDate.add(const Duration(days: 1)),
-              updatedAt: baseDate.add(const Duration(days: 1)),
-              dateFrom: baseDate.add(const Duration(days: 1)),
-              dateTo: baseDate.add(const Duration(days: 2)),
-            ),
-            data: DayPlanData(
-              planDate: baseDate.add(const Duration(days: 1)),
-              status: const DayPlanStatus.draft(),
-              plannedBlocks: const [],
-            ),
-          );
-          final privatePlan = DayPlanEntry(
-            meta: Metadata(
-              id: dayPlanId(baseDate.add(const Duration(days: 2))),
-              createdAt: baseDate.add(const Duration(days: 2)),
-              updatedAt: baseDate.add(const Duration(days: 2)),
-              dateFrom: baseDate.add(const Duration(days: 2)),
-              dateTo: baseDate.add(const Duration(days: 3)),
-              private: true,
-            ),
-            data: DayPlanData(
-              planDate: baseDate.add(const Duration(days: 2)),
-              status: const DayPlanStatus.draft(),
-              plannedBlocks: const [],
-            ),
-          );
-
-          await db!.upsertJournalDbEntity(toDbEntity(publicA));
-          await db!.upsertJournalDbEntity(toDbEntity(publicB));
-          await db!.upsertJournalDbEntity(toDbEntity(privatePlan));
-
-          // Filtered path: privateFlag = false → private plan is excluded
-          // from the batch, missing ids are silently skipped, and the two
-          // public plans come back.
-          await db!.upsertConfigFlag(
-            const ConfigFlag(
-              name: privateFlag,
-              description: 'Show private entries?',
-              status: false,
-            ),
-          );
-
-          final filtered = await db!.getDayPlansByIds([
-            publicA.meta.id,
-            publicB.meta.id,
-            privatePlan.meta.id,
-            'dayplan-does-not-exist',
-          ]);
-          expect(
-            filtered.map((e) => e.meta.id).toSet(),
-            {publicA.meta.id, publicB.meta.id},
-          );
-
-          // allPrivate path: privateFlag = true → all three plans come back.
-          await db!.upsertConfigFlag(
-            const ConfigFlag(
-              name: privateFlag,
-              description: 'Show private entries?',
-              status: true,
-            ),
-          );
-
-          final all = await db!.getDayPlansByIds([
-            publicA.meta.id,
-            publicB.meta.id,
-            privatePlan.meta.id,
-          ]);
-          expect(
-            all.map((e) => e.meta.id).toSet(),
-            {publicA.meta.id, publicB.meta.id, privatePlan.meta.id},
-          );
-        },
-      );
     });
 
     group('Time-range queries -', () {

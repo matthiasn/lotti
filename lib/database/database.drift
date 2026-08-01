@@ -370,8 +370,8 @@ CREATE INDEX idx_linked_entries_to_id_type ON linked_entries(
   to_id COLLATE BINARY ASC,
   type COLLATE BINARY ASC
 );
--- Hot-path partial for `ratingsForTimeEntries` and the per-target
--- rating queries: filters `to_id IN (...) AND type='RatingLink' AND
+-- Hot-path partial for per-target rating queries: filters
+-- `to_id = ? AND type='RatingLink' AND
 -- COALESCE(hidden, FALSE) = FALSE`. The non-partial composite above
 -- still serves general (to_id, type) lookups; this partial keeps the
 -- rating reverse-link reads index-only and trivially small even on
@@ -1117,9 +1117,6 @@ purgeDeletedJournalEntities:
 DELETE FROM journal
   WHERE deleted = TRUE;
 
-countLabeled:
-SELECT COUNT(*) FROM labeled;
-
 linkedJournalEntities:
 SELECT journal.* FROM linked_entries
   INNER JOIN journal ON journal.id = linked_entries.to_id
@@ -1194,20 +1191,6 @@ SELECT * FROM journal
   WHERE deleted = false
   AND id IN :ids;
 
--- Lean projection returning only (id, category) for callers that just need
--- the denormalized category column to build a lookup map. Skips the
--- serialized JSON blob and the fromDbEntity deserialization pass.
-journalCategoriesByIds:
-SELECT id, category FROM journal
-  WHERE deleted = false
-  AND id IN :ids;
-
-journalCategoriesByIdsByPrivateStatuses:
-SELECT id, category FROM journal
-  WHERE deleted = false
-  AND id IN :ids
-  AND private IN :privateStatuses;
-
 linkedJournalEntityIds:
 SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden IN :hidden;
 
@@ -1258,65 +1241,7 @@ SELECT * FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
-dayPlanById:
-SELECT * FROM journal
-  WHERE type = 'DayPlanEntry'
-  AND id = :id
-  AND deleted = false;
-
-dayPlanByIdByPrivateStatuses:
-SELECT * FROM journal
-  WHERE type = 'DayPlanEntry'
-  AND id = :id
-  AND deleted = false
-  AND private IN :privateStatuses;
-
--- Batch fetch variants: used by the microtask-coalescing layer in
--- DayPlanRepositoryImpl so a prefetch window of N dates collapses into a
--- single round-trip instead of N single-row SELECTs.
-dayPlansByIds:
-SELECT * FROM journal
-  WHERE type = 'DayPlanEntry'
-  AND id IN :ids
-  AND deleted = false;
-
-dayPlansByIdsByPrivateStatuses:
-SELECT * FROM journal
-  WHERE type = 'DayPlanEntry'
-  AND id IN :ids
-  AND deleted = false
-  AND private IN :privateStatuses;
-
-dayPlansInRange:
-SELECT * FROM journal
-  WHERE type = 'DayPlanEntry'
-  AND deleted = false
-  AND date_from >= :rangeStart
-  AND date_to <= :rangeEnd
-  ORDER BY date_from DESC;
-
-dayPlansInRangeByPrivateStatuses:
-SELECT * FROM journal
-  WHERE type = 'DayPlanEntry'
-  AND deleted = false
-  AND date_from >= :rangeStart
-  AND date_to <= :rangeEnd
-  AND private IN :privateStatuses
-  ORDER BY date_from DESC;
-
 /* Rating queries ------------------------------------------------ */
-
--- Find ratings linked to a set of time entry IDs (avoids N+1).
--- Joins journal to exclude soft-deleted rating entities.
-ratingsForTimeEntries:
-SELECT le.from_id AS rating_id, le.to_id AS time_entry_id
-  FROM linked_entries le
-  INNER JOIN journal j ON j.id = le.from_id
-  WHERE le.to_id IN :timeEntryIds
-  AND le.type = 'RatingLink'
-  AND COALESCE(le.hidden, false) = false
-  AND j.deleted = false
-  ORDER BY j.updated_at ASC;
 
 -- Find existing rating for a specific time entry and catalog
 -- (for re-open logic). Orders by most recently updated to ensure
@@ -1332,18 +1257,6 @@ SELECT j.* FROM journal j
   AND j.deleted = false
   ORDER BY j.updated_at DESC
   LIMIT 1;
-
--- Find all ratings linked to a target entity (for summary views
--- showing multiple catalogs). Returns all catalogs, most recent first
--- within each catalog.
-allRatingsForTarget:
-SELECT j.* FROM journal j
-  INNER JOIN linked_entries le ON j.id = le.from_id
-  WHERE le.to_id = :targetId
-  AND le.type = 'RatingLink'
-  AND COALESCE(le.hidden, false) = false
-  AND j.deleted = false
-  ORDER BY COALESCE(NULLIF(j.subtype, ''), 'session') ASC, j.updated_at DESC;
 
 /* Project queries ----------------------------------------------- */
 

@@ -11,7 +11,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -36,6 +35,15 @@ class _CountingProjectForTaskJournalDb extends JournalDb {
     return super.runProjectForTaskFetch(taskIds);
   }
 }
+
+Future<void> _seedProjectId(
+  JournalDb db,
+  String taskId,
+  String projectId,
+) => db.customStatement(
+  'UPDATE journal SET project_id = ? WHERE id = ?',
+  [projectId, taskId],
+);
 
 void main() {
   setUpAll(registerJournalDbTestFallbacks);
@@ -76,56 +84,6 @@ void main() {
       await getIt.reset();
     });
 
-    group('updateProjectIdColumn -', () {
-      test('sets and clears projectId column for a task', () async {
-        final base = DateTime(2024, 11, 2, 9);
-        final task = buildTaskEntry(
-          id: 'proj-id-col-task',
-          timestamp: base,
-          status: TaskStatus.open(
-            id: 'proj-id-col-status',
-            createdAt: base,
-            utcOffset: 0,
-          ),
-        );
-        await db!.upsertJournalDbEntity(toDbEntity(task));
-
-        await db!.updateProjectIdColumn('proj-id-col-task', 'some-project');
-        var row = await (db!.select(
-          db!.journal,
-        )..where((t) => t.id.equals('proj-id-col-task'))).getSingle();
-        expect(row.projectId, 'some-project');
-
-        await db!.updateProjectIdColumn('proj-id-col-task', null);
-        row = await (db!.select(
-          db!.journal,
-        )..where((t) => t.id.equals('proj-id-col-task'))).getSingle();
-        expect(row.projectId, isNull);
-      });
-
-      test('logs and swallows when the underlying statement fails', () async {
-        // Dropping the journal table makes the raw UPDATE throw; the method
-        // must log the failure instead of propagating it to the caller.
-        // Use a throwaway DB so the destructive DROP never corrupts the
-        // file-shared instance the other tests reuse.
-        final throwawayDb = JournalDb(inMemoryDatabase: true);
-        addTearDown(throwawayDb.close);
-        await initConfigFlags(throwawayDb, inMemoryDatabase: true);
-
-        await throwawayDb.customStatement('DROP TABLE journal');
-        DevLogger.clear();
-
-        await throwawayDb.updateProjectIdColumn('proj-id-col-task', 'proj-x');
-
-        expect(
-          DevLogger.capturedLogs.any(
-            (message) => message.contains('updateProjectIdColumn error'),
-          ),
-          isTrue,
-        );
-      });
-    });
-
     group('getTaskIdsForProjects -', () {
       test('returns empty set for empty input', () async {
         expect(await db!.getTaskIdsForProjects({}), isEmpty);
@@ -156,7 +114,7 @@ void main() {
         await db!.upsertJournalDbEntity(toDbEntity(taskA));
         await db!.upsertJournalDbEntity(toDbEntity(taskB));
         // Associate taskA with a project via direct column update.
-        await db!.updateProjectIdColumn('task-proj-a', 'proj-x');
+        await _seedProjectId(db!, 'task-proj-a', 'proj-x');
 
         final ids = await db!.getTaskIdsForProjects({'proj-x', 'proj-y'});
         expect(ids, contains('task-proj-a'));
@@ -186,7 +144,7 @@ void main() {
                 ),
               ),
             );
-            await db!.updateProjectIdColumn(taskId, projectId);
+            await _seedProjectId(db!, taskId, projectId);
           }
 
           // Real ids sit at positions 0 and 500 so they land in different
@@ -906,7 +864,7 @@ void main() {
                   ),
                 ),
               );
-              await db!.updateProjectIdColumn(id, 'proj-chunk-shared');
+              await _seedProjectId(db!, id, 'proj-chunk-shared');
             }
 
             final map = await db!.getProjectIdMapForTasks(ids);

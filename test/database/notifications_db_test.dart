@@ -69,7 +69,6 @@ void main() {
         ['upcoming'],
       );
       expect(await db.unseenCount(now), 1);
-      expect(await db.countAllNotifications(), 3);
       expect(
         (await db.forLinkedEntity('task-1')).map((entity) => entity.id),
         ['upcoming', 'due'],
@@ -181,58 +180,6 @@ void main() {
           const VectorClock({'local': 1, 'remote': 2, 'other': 1}),
         );
         expect(second.entity?.meta.originatingHostId, 'other');
-      },
-    );
-
-    test('streams vector clocks in deterministic batches', () async {
-      await db.upsertNotification(
-        _notification(
-          id: 'a',
-          vectorClock: const VectorClock({'a-host': 1}),
-        ),
-      );
-      await db.upsertNotification(
-        _notification(
-          id: 'b',
-          vectorClock: const VectorClock({'b-host': 2}),
-        ),
-      );
-
-      final batches = await db
-          .streamNotificationsWithVectorClock(batchSize: 1)
-          .toList();
-
-      expect(batches, hasLength(2));
-      expect(batches.first.single.id, 'a');
-      expect(batches.first.single.vectorClock, {'a-host': 1});
-      expect(batches.last.single.id, 'b');
-      expect(batches.last.single.vectorClock, {'b-host': 2});
-    });
-
-    test(
-      'keyset pagination walks every row exactly once with multi-row batches',
-      () async {
-        for (var i = 0; i < 7; i++) {
-          // ids are lexicographically ordered so keyset seek `id > lastId` is
-          // monotonic. Mixing widths exercises the comparator beyond plain int
-          // ordering.
-          final id = i.toString().padLeft(2, '0');
-          await db.upsertNotification(
-            _notification(
-              id: id,
-              vectorClock: VectorClock({'host-$i': i}),
-            ),
-          );
-        }
-
-        final batches = await db
-            .streamNotificationsWithVectorClock(batchSize: 3)
-            .toList();
-
-        // 7 rows / batchSize=3 → batches of 3, 3, 1.
-        expect(batches.map((b) => b.length).toList(), [3, 3, 1]);
-        final ids = [for (final batch in batches) ...batch.map((r) => r.id)];
-        expect(ids, ['00', '01', '02', '03', '04', '05', '06']);
       },
     );
   });

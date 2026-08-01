@@ -300,12 +300,12 @@ rather than a read path.
 
 ## What is genuinely not filtered
 
-Not "by-id reads" as a class — `getDayPlanById`, `getLabelDefinitionById` and the
-id-**batch** journal reads (`getJournalEntitiesForIds` and friends) all go through
-the helper. What does not filter is narrower:
+Not "by-id reads" as a class — `getLabelDefinitionById` and the id-**batch**
+journal reads (`getJournalEntitiesForIds` and friends) go through the helper.
+What does not filter is narrower:
 
 - **`journalEntityById`** — the single-entity read behind every detail page.
-- `getDayAudioEntries` and `journalAudioByRecordingSessionId`.
+- `getDayAudioEntries`.
 - `countAllJournalEntries`, which counts deleted rows too.
 
 So the shape is: **lists, searches and batches thin out private entries; fetching
