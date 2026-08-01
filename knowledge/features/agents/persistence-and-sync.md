@@ -5,16 +5,17 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T17:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-01T12:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: db
     resource: ../../../lib/features/agents/database/agent_database.dart
     title: AgentDatabase
-    last_modified: 2026-07-25
+    last_modified: 2026-08-01
   - id: coalescer
     resource: ../../../lib/features/agents/database/agent_entity_by_id_coalescer.dart
     title: AgentEntityByIdCoalescer
+    last_modified: 2026-08-01
   - id: ledger
     resource: ../../../lib/features/agents/database/agent_proposal_ledger.dart
     title: AgentProposalLedger
