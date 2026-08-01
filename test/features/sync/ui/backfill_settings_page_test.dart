@@ -1117,8 +1117,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 250));
       }
 
-      // The localized label, not SyncError.toString() — that is a hard-coded
-      // English sentence and would reach every locale untranslated.
+      // The localized label is shown instead of the raw exception text.
       expect(find.text(messages.backfillAgentClocksFailed), findsOneWidget);
       expect(find.text('Exception: boom'), findsNothing);
     });

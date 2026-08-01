@@ -933,15 +933,7 @@ The current tests cover important pieces, but there is still a notable hole.
 
 ### Not covered by focused invariant tests
 
-There is no targeted test that proves the room-history replay path end to end
-(this was the pre-fix behavior; the bounded-tail fallback now prevents the
-large replay, but the scenario is documented for completeness):
-
-1. stored `lastEventId` is missing from catch-up
-2. catch-up returns a bounded tail (post-fix) instead of a full snapshot
-3. the bounded tail is small enough for the LRU dedupe to suppress duplicates
-
-There is also no targeted test that proves the exact sequence-mapping
+There is no targeted test that proves the exact sequence-mapping
 contradiction end to end:
 
 1. `(hostId, counter)` resolves to a payload ID in the sequence log
@@ -988,8 +980,6 @@ Likely fix directions to evaluate:
 
 - stop treating any exact sequence row with non-null `entryId` as immediately
   answerable when the payload VC is already behind the requested counter
-- bind catch-up progression more tightly to a durable marker so the consumer
-  cannot fall back to full-room replay so easily
 - bind text events to their exact descriptor event ID instead of path-only
   lookup
 - include the agent entity vector clock directly in the text envelope even when
@@ -1008,8 +998,9 @@ The current sync system has three important truths at the same time:
 2. the actual implementation is a tightly coupled feedback loop where small
    causality mistakes get amplified into missing-counter storms
 3. two runtime failures were identified and fixed in the stabilization work:
-   - **Large room-history replay waves** — the catch-up fallback now returns a
-     bounded tail instead of the entire snapshot, preventing replay storms.
+   - **Large room-history replay waves** — the legacy snapshot collector was
+     first bounded and later removed when ingestion moved entirely to the
+     durable queue pipeline.
    - **Exact backfill mappings with stale VCs** — exact hits are now validated
      against the payload's current vector clock before resend, and the covering
      entry search now iterates past stale candidates.

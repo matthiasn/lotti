@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/sync/models/sync_error.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -132,10 +131,11 @@ class SyncMaintenanceController extends Notifier<SyncState> {
         progress: 100,
       );
     } catch (e, stackTrace) {
-      SyncError.fromException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        stackTrace,
-        _loggingService,
+        stackTrace: stackTrace,
+        subDomain: 'SYNC_CONTROLLER',
       );
 
       state = state.copyWith(
