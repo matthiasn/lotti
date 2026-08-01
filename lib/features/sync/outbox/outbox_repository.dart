@@ -196,19 +196,30 @@ class DatabaseOutboxRepository implements OutboxRepository {
   Future<void> markRetryBatch(List<OutboxItem> items) async {
     if (items.isEmpty) return;
     final now = DateTime.now();
-    await _database.transaction(() async {
+    // One batched statement set rather than one round trip per row.
+    //
+    // A failed bundle retries up to `SyncTuning.outboxBundleMaxSize` (50) rows
+    // at once, and the loop this replaces issued 50 separate updates while
+    // holding sync.sqlite's single write lock. Every reader queues behind that
+    // lock — the 2026-06/07 logs caught nine sync reads finishing together
+    // after 25 s, which is the shape of queue-behind-a-writer. `batch` keeps
+    // the same transaction semantics (drift runs it in one) but collapses the
+    // round trips, so the lock is held for a fraction of the time.
+    // See `docs/perf/2026-08-01_slow-queries-investigation.md`.
+    await _database.batch((batch) {
       for (final item in items) {
         final retries = item.retries + 1;
         final newStatus = retries < maxRetries
             ? OutboxStatus.pending.index
             : OutboxStatus.error.index;
-        await _database.updateOutboxItem(
+        batch.update(
+          _database.outbox,
           OutboxCompanion(
-            id: Value(item.id),
             status: Value(newStatus),
             retries: Value(retries),
             updatedAt: Value(now),
           ),
+          where: (t) => t.id.equals(item.id),
         );
       }
     });
