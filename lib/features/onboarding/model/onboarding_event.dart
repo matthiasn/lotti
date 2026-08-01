@@ -93,8 +93,8 @@ enum OnboardingEventName {
   // ── Daily OS onboarding walkthrough ──────────────────────────────────────
   // A distinct vocabulary sharing the same physical event store. These events
   // are partitioned out of the general FTUE funnel derivation (see
-  // [OnboardingFunnelState]) and feed [DailyOsOnboardingFunnelState] instead,
-  // so reusing the table never changes the meaning of the FTUE metrics.
+  // [OnboardingFunnelState]), so reusing the table never changes the meaning
+  // of the FTUE metrics.
 
   /// The Daily OS onboarding spotlight was shown (reason carries auto|replay).
   dailyOsWalkthroughShown,
@@ -154,8 +154,7 @@ final Map<String, OnboardingEventName> _byWireName = {
 /// onboarding events (and any unknown/future names) share the same physical
 /// store but are excluded from these counts and active-day metrics, so reusing
 /// the table for Daily OS onboarding never shifts `activeDaysCount`,
-/// `activeDaysInFirst7`, or any FTUE event count. See
-/// [DailyOsOnboardingFunnelState] for the Daily OS projection.
+/// `activeDaysInFirst7`, or any FTUE event count.
 class OnboardingFunnelState {
   const OnboardingFunnelState({
     required this.installFirstSeen,
@@ -204,58 +203,5 @@ class OnboardingFunnelState {
   /// Whether [name] occurred at least once.
   bool reached(OnboardingEventName name) => countOf(name) > 0;
 
-  bool get connectedProvider => reached(OnboardingEventName.providerConnected);
-  bool get capturedAudio => reached(OnboardingEventName.firstAudioCaptured);
-  bool get tappedMakeTask => reached(OnboardingEventName.makeTaskTapped);
   bool get reachedRealAha => reached(OnboardingEventName.realAha);
-  bool get usedStructuringFloor =>
-      reached(OnboardingEventName.structuringFloorUsed);
-}
-
-/// Derived, read-only snapshot of the Daily OS onboarding funnel, computed from
-/// the same append-only event log as [OnboardingFunnelState] but partitioned to
-/// the Daily OS onboarding vocabulary. Never persisted as a second store.
-class DailyOsOnboardingFunnelState {
-  const DailyOsOnboardingFunnelState({
-    required this.activeDayBuckets,
-    required this.eventCounts,
-  });
-
-  /// Empty state used before any Daily OS onboarding event has been recorded.
-  const DailyOsOnboardingFunnelState.empty()
-    : activeDayBuckets = const [],
-      eventCounts = const {};
-
-  /// Sorted, de-duplicated UTC day buckets on which a Daily OS onboarding event
-  /// occurred.
-  final List<int> activeDayBuckets;
-
-  /// Count of Daily OS onboarding events per [OnboardingEventName.wireName].
-  final Map<String, int> eventCounts;
-
-  /// Number of distinct days with Daily OS onboarding activity.
-  int get activeDaysCount => activeDayBuckets.length;
-
-  /// How many times [name] occurred.
-  int countOf(OnboardingEventName name) => eventCounts[name.wireName] ?? 0;
-
-  /// Whether [name] occurred at least once.
-  bool reached(OnboardingEventName name) => countOf(name) > 0;
-
-  int get shownCount => countOf(OnboardingEventName.dailyOsWalkthroughShown);
-  int get skippedCount =>
-      countOf(OnboardingEventName.dailyOsWalkthroughSkipped);
-  int get reconcileReachedCount =>
-      countOf(OnboardingEventName.dailyOsReconcileReached);
-  int get draftingStartedCount =>
-      countOf(OnboardingEventName.dailyOsDraftingStarted);
-  int get taskMaterializedCount =>
-      countOf(OnboardingEventName.dailyOsTaskMaterialized);
-  int get completedCount =>
-      countOf(OnboardingEventName.dailyOsWalkthroughCompleted);
-
-  /// Whether the walkthrough has completed at least once (a persisted plan
-  /// landed).
-  bool get completed =>
-      reached(OnboardingEventName.dailyOsWalkthroughCompleted);
 }

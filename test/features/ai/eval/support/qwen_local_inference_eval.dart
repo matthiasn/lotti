@@ -1,12 +1,13 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/ai/eval/qwen_local_eval_config.dart';
-import 'package:lotti/features/ai/eval/qwen_local_eval_report.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-export 'package:lotti/features/ai/eval/qwen_local_eval_config.dart';
-export 'package:lotti/features/ai/eval/qwen_local_eval_report.dart';
+import 'qwen_local_eval_config.dart';
+import 'qwen_local_eval_report.dart';
+
+export 'qwen_local_eval_config.dart';
+export 'qwen_local_eval_report.dart';
 
 class QwenLocalInferenceEvalRunner {
   QwenLocalInferenceEvalRunner({

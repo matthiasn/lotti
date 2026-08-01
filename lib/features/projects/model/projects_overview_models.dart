@@ -11,11 +11,6 @@ import 'package:lotti/classes/project_data.dart';
 enum ProjectsSearchMode {
   disabled,
   localText,
-
-  /// Reserved for vector-based search — not yet wired into the filter
-  /// pipeline. Keep this slot so the persisted enum index stays stable
-  /// when the embedding-backed path lands.
-  vector,
 }
 
 /// Stable string identifiers for the six project statuses, used as filter
@@ -53,14 +48,6 @@ class ProjectsQuery {
       return true;
     }
     return categoryId != null && categoryIds.contains(categoryId);
-  }
-
-  ProjectsQuery copyWith({
-    Set<String>? categoryIds,
-  }) {
-    return ProjectsQuery(
-      categoryIds: categoryIds ?? this.categoryIds,
-    );
   }
 
   @override
@@ -156,12 +143,10 @@ class ProjectTaskRollupData {
   const ProjectTaskRollupData({
     this.totalTaskCount = 0,
     this.completedTaskCount = 0,
-    this.blockedTaskCount = 0,
   });
 
   final int totalTaskCount;
   final int completedTaskCount;
-  final int blockedTaskCount;
 
   double get completionRatio {
     if (totalTaskCount == 0) {
@@ -189,8 +174,6 @@ class ProjectListItemData {
   final ProjectEntry project;
   final CategoryDefinition? category;
   final ProjectTaskRollupData taskRollup;
-
-  String? get categoryId => project.meta.categoryId;
 
   String get categoryName => category?.name ?? '';
 
@@ -247,8 +230,6 @@ class ProjectsOverviewSnapshot {
     0,
     (sum, group) => sum + group.projectCount,
   );
-
-  bool get isEmpty => totalProjectCount == 0;
 }
 
 /// Applies [filter] to a loaded [overview], returning only the matching groups.

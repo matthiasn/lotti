@@ -31,6 +31,88 @@ import 'helpers/journal_controller_test_setup.dart';
 final _testDate = DateTime(2024);
 final _testDateRefresh = DateTime(2024, 3, 15);
 
+/// Compatibility helpers for exercising the production batch mutation path
+/// from older focused controller tests.
+extension _JournalPageControllerTestFilters on JournalPageController {
+  Future<void> setSelectedTaskStatuses(Set<String> statuses) =>
+      applyBatchFilterUpdate(statuses: statuses);
+
+  Future<void> setSelectedCategoryIds(Set<String> categoryIds) =>
+      applyBatchFilterUpdate(categoryIds: categoryIds, projectIds: {});
+
+  Future<void> setSelectedLabelIds(Set<String> labelIds) =>
+      applyBatchFilterUpdate(labelIds: labelIds);
+
+  Future<void> setSelectedProjectIds(Set<String> projectIds) =>
+      applyBatchFilterUpdate(projectIds: projectIds);
+
+  Future<void> setSelectedPriorities(Set<String> priorities) =>
+      applyBatchFilterUpdate(priorities: priorities);
+
+  Future<void> toggleSelectedTaskStatus(String status) =>
+      applyBatchFilterUpdate(
+        statuses: state.selectedTaskStatuses.contains(status)
+            ? state.selectedTaskStatuses.difference({status})
+            : state.selectedTaskStatuses.union({status}),
+      );
+
+  Future<void> toggleProjectFilter(String projectId) => applyBatchFilterUpdate(
+    projectIds: state.selectedProjectIds.contains(projectId)
+        ? state.selectedProjectIds.difference({projectId})
+        : state.selectedProjectIds.union({projectId}),
+  );
+
+  Future<void> clearProjectFilter() =>
+      applyBatchFilterUpdate(projectIds: const {});
+
+  Future<void> removeStaleProjectFilters(Set<String> staleIds) =>
+      staleIds.isEmpty
+      ? Future<void>.value()
+      : applyBatchFilterUpdate(
+          projectIds: state.selectedProjectIds.difference(staleIds),
+        );
+
+  Future<void> toggleSelectedLabelId(String labelId) => applyBatchFilterUpdate(
+    labelIds: state.selectedLabelIds.contains(labelId)
+        ? state.selectedLabelIds.difference({labelId})
+        : state.selectedLabelIds.union({labelId}),
+  );
+
+  Future<void> clearSelectedLabelIds() =>
+      applyBatchFilterUpdate(labelIds: const {});
+
+  Future<void> selectSingleTaskStatus(String taskStatus) =>
+      applyBatchFilterUpdate(statuses: {taskStatus});
+
+  Future<void> selectAllTaskStatuses() =>
+      applyBatchFilterUpdate(statuses: state.taskStatuses.toSet());
+
+  Future<void> clearSelectedTaskStatuses() =>
+      applyBatchFilterUpdate(statuses: const {});
+
+  Future<void> toggleSelectedPriority(String priority) =>
+      applyBatchFilterUpdate(
+        priorities: state.selectedPriorities.contains(priority)
+            ? state.selectedPriorities.difference({priority})
+            : state.selectedPriorities.union({priority}),
+      );
+
+  Future<void> clearSelectedPriorities() =>
+      applyBatchFilterUpdate(priorities: const {});
+
+  Future<void> setAgentAssignmentFilter(AgentAssignmentFilter filter) =>
+      applyBatchFilterUpdate(agentAssignmentFilter: filter);
+
+  Future<void> setSortOption(TaskSortOption option) =>
+      applyBatchFilterUpdate(sortOption: option);
+
+  Future<void> setShowCreationDate({required bool show}) =>
+      applyBatchFilterUpdate(showCreationDate: show);
+
+  Future<void> setShowDueDate({required bool show}) =>
+      applyBatchFilterUpdate(showDueDate: show);
+}
+
 /// Mutable call counter returned by `stubCountingQuery`.
 class _QueryCallCounter {
   int count = 0;

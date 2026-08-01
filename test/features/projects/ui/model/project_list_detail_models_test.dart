@@ -34,7 +34,6 @@ void main() {
       expect(item.category, same(record.category));
       expect(item.taskRollup.completedTaskCount, 4);
       expect(item.taskRollup.totalTaskCount, 6);
-      expect(item.taskRollup.blockedTaskCount, 2);
     });
   });
 

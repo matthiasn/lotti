@@ -95,7 +95,7 @@ void main() {
       expect(state.installFirstSeen!.isAtSameMomentAs(day0), isTrue);
       expect(state.activeDaysCount, 2);
       expect(state.activeDaysInFirst7, 2);
-      expect(state.capturedAudio, isTrue);
+      expect(state.reached(OnboardingEventName.firstAudioCaptured), isTrue);
       expect(state.reachedRealAha, isTrue);
       expect(state.countOf(OnboardingEventName.realAha), 1);
       // Installed after the FTUE release and not pre-existing → not baseline.
@@ -219,7 +219,7 @@ void main() {
     },
   );
 
-  test('funnel-state getters reflect exactly the recorded events', () async {
+  test('funnel state reaches exactly the recorded events', () async {
     final repo = makeRepo();
     await repo.recordEvent(OnboardingEventName.providerConnected);
     await repo.recordEvent(OnboardingEventName.firstAudioCaptured);
@@ -228,56 +228,21 @@ void main() {
     // structuringFloorUsed is intentionally NOT recorded.
 
     final state = await makeRepo().funnelState();
-    expect(state.connectedProvider, isTrue);
-    expect(state.capturedAudio, isTrue);
-    expect(state.tappedMakeTask, isTrue);
+    expect(state.reached(OnboardingEventName.providerConnected), isTrue);
+    expect(state.reached(OnboardingEventName.firstAudioCaptured), isTrue);
+    expect(state.reached(OnboardingEventName.makeTaskTapped), isTrue);
     expect(state.reachedRealAha, isTrue);
-    expect(state.usedStructuringFloor, isFalse);
+    expect(state.reached(OnboardingEventName.structuringFloorUsed), isFalse);
 
-    // The floor getter flips to true once its event is recorded, while the
-    // others remain accurate.
+    // The floor event becomes reachable once recorded, while the others remain
+    // accurate.
     await repo.recordEvent(OnboardingEventName.structuringFloorUsed);
     final after = await makeRepo().funnelState();
-    expect(after.usedStructuringFloor, isTrue);
-    expect(after.connectedProvider, isTrue);
+    expect(after.reached(OnboardingEventName.structuringFloorUsed), isTrue);
+    expect(after.reached(OnboardingEventName.providerConnected), isTrue);
   });
 
   group('Daily OS onboarding funnel partition', () {
-    test('dailyOsOnboardingFunnelState is empty before any events', () async {
-      final state = await makeRepo().dailyOsOnboardingFunnelState();
-      expect(state.activeDaysCount, 0);
-      expect(state.shownCount, 0);
-      expect(state.completed, isFalse);
-    });
-
-    test('derives Daily OS stage counts and active days', () async {
-      final day0 = DateTime.utc(2026, 7, 1, 9);
-      final day1 = DateTime.utc(2026, 7, 2, 9);
-      final r0 = makeRepo(clock: () => day0);
-      await r0.recordEvent(
-        OnboardingEventName.dailyOsWalkthroughShown,
-        reason: 'auto',
-      );
-      await r0.recordEvent(OnboardingEventName.dailyOsReconcileReached);
-      await r0.recordEvent(OnboardingEventName.dailyOsDraftingStarted);
-      await r0.recordEvent(
-        OnboardingEventName.dailyOsTaskMaterialized,
-        valueBucket: 2,
-      );
-      await makeRepo(
-        clock: () => day1,
-      ).recordEvent(OnboardingEventName.dailyOsWalkthroughCompleted);
-
-      final state = await makeRepo().dailyOsOnboardingFunnelState();
-      expect(state.activeDaysCount, 2);
-      expect(state.shownCount, 1);
-      expect(state.reconcileReachedCount, 1);
-      expect(state.draftingStartedCount, 1);
-      expect(state.taskMaterializedCount, 1);
-      expect(state.completedCount, 1);
-      expect(state.completed, isTrue);
-    });
-
     test(
       'Daily OS events do not change the general FTUE funnel metrics',
       () async {
@@ -309,19 +274,6 @@ void main() {
           after.countOf(OnboardingEventName.dailyOsWalkthroughShown),
           0,
         );
-      },
-    );
-
-    test(
-      'general FTUE events do not contribute to the Daily OS funnel',
-      () async {
-        final repo = makeRepo();
-        await repo.recordEvent(OnboardingEventName.realAha);
-        await repo.recordEvent(OnboardingEventName.providerConnected);
-
-        final state = await makeRepo().dailyOsOnboardingFunnelState();
-        expect(state.activeDaysCount, 0);
-        expect(state.shownCount, 0);
       },
     );
   });

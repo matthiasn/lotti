@@ -556,33 +556,12 @@ abstract class _$OnboardingMetricsDb extends GeneratedDatabase {
     ).asyncMap(onboardingEvents.mapFromRow);
   }
 
-  Selectable<CountOnboardingEventsByNameResult> countOnboardingEventsByName() {
-    return customSelect(
-      'SELECT event_name, COUNT(*) AS cnt FROM onboarding_events GROUP BY event_name',
-      variables: [],
-      readsFrom: {onboardingEvents},
-    ).map(
-      (QueryRow row) => CountOnboardingEventsByNameResult(
-        eventName: row.read<String>('event_name'),
-        cnt: row.read<int>('cnt'),
-      ),
-    );
-  }
-
   Selectable<DateTime?> firstOnboardingEventTime(String eventName) {
     return customSelect(
       'SELECT MIN(created_at) AS ts FROM onboarding_events WHERE event_name = ?1',
       variables: [Variable<String>(eventName)],
       readsFrom: {onboardingEvents},
     ).map((QueryRow row) => row.readNullable<DateTime>('ts'));
-  }
-
-  Selectable<int> distinctActiveDayBuckets() {
-    return customSelect(
-      'SELECT DISTINCT day_bucket FROM onboarding_events ORDER BY day_bucket ASC',
-      variables: [],
-      readsFrom: {onboardingEvents},
-    ).map((QueryRow row) => row.read<int>('day_bucket'));
   }
 
   @override
@@ -871,13 +850,4 @@ class $OnboardingMetricsDbManager {
   $OnboardingMetricsDbManager(this._db);
   $OnboardingEventsTableManager get onboardingEvents =>
       $OnboardingEventsTableManager(_db, _db.onboardingEvents);
-}
-
-class CountOnboardingEventsByNameResult {
-  final String eventName;
-  final int cnt;
-  CountOnboardingEventsByNameResult({
-    required this.eventName,
-    required this.cnt,
-  });
 }

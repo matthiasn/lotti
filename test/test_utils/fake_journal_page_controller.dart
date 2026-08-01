@@ -64,27 +64,22 @@ class FakeJournalPageController extends JournalPageController {
   int applyBatchFilterUpdateCalled = 0;
 
   // Category methods
-  @override
   Future<void> setSelectedTaskStatuses(Set<String> statuses) async {
     setSelectedTaskStatusesCalls.add(statuses);
   }
 
-  @override
   Future<void> setSelectedCategoryIds(Set<String> categoryIds) async {
     setSelectedCategoryIdsCalls.add(categoryIds);
   }
 
-  @override
   Future<void> setSelectedLabelIds(Set<String> labelIds) async {
     setSelectedLabelIdsCalls.add(labelIds);
   }
 
-  @override
   Future<void> setSelectedProjectIds(Set<String> projectIds) async {
     setSelectedProjectIdsCalls.add(projectIds);
   }
 
-  @override
   Future<void> setSelectedPriorities(Set<String> priorities) async {
     setSelectedPrioritiesCalls.add(priorities);
   }
@@ -128,77 +123,63 @@ class FakeJournalPageController extends JournalPageController {
   }
 
   // Label methods
-  @override
   Future<void> toggleSelectedLabelId(String labelId) async {
     toggledLabelIds.add(labelId);
   }
 
-  @override
   Future<void> clearSelectedLabelIds() async {
     clearSelectedLabelIdsCalled++;
   }
 
   // Task status methods
-  @override
   Future<void> toggleSelectedTaskStatus(String status) async {
     toggledTaskStatuses.add(status);
   }
 
-  @override
   Future<void> selectSingleTaskStatus(String taskStatus) async {
     singleTaskStatusCalls.add(taskStatus);
   }
 
-  @override
   Future<void> selectAllTaskStatuses() async {
     selectAllTaskStatusesCalled++;
   }
 
-  @override
   Future<void> clearSelectedTaskStatuses() async {
     clearSelectedTaskStatusesCalled++;
   }
 
   // Priority methods
-  @override
   Future<void> toggleSelectedPriority(String priority) async {
     toggledPriorities.add(priority);
   }
 
-  @override
   Future<void> clearSelectedPriorities() async {
     clearSelectedPrioritiesCalled++;
   }
 
   // Sort and display methods
-  @override
   Future<void> setSortOption(TaskSortOption sortOption) async {
     sortOptionCalls.add(sortOption);
   }
 
-  @override
   Future<void> setShowCreationDate({required bool show}) async {
     showCreationDateCalls.add(show);
   }
 
-  @override
   Future<void> setShowDueDate({required bool show}) async {
     showDueDateCalls.add(show);
   }
 
   // Agent assignment filter
-  @override
   Future<void> setAgentAssignmentFilter(AgentAssignmentFilter filter) async {
     agentAssignmentFilterCalls.add(filter);
   }
 
   // Project filter methods
-  @override
   Future<void> toggleProjectFilter(String projectId) async {
     toggledProjectIds.add(projectId);
   }
 
-  @override
   Future<void> clearProjectFilter() async {
     clearProjectFilterCalled++;
   }

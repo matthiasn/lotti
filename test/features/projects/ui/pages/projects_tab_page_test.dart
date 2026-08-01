@@ -82,7 +82,6 @@ void main() {
           taskRollup: const ProjectTaskRollupData(
             totalTaskCount: 5,
             completedTaskCount: 3,
-            blockedTaskCount: 1,
           ),
         ),
         ProjectListItemData(
