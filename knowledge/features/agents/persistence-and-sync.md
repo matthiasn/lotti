@@ -12,6 +12,10 @@ sources:
     resource: ../../../lib/features/agents/database/agent_database.dart
     title: AgentDatabase
     last_modified: 2026-07-25
+  - id: coalescer
+    resource: ../../../lib/features/agents/database/agent_entity_by_id_coalescer.dart
+    title: AgentEntityByIdCoalescer
+    last_modified: 2026-08-01
   - id: constants
     resource: ../../../lib/features/agents/model/agent_constants.dart
     title: AgentLinkTypes
@@ -128,6 +132,22 @@ flowchart LR
 deduplicate inputs and split large `IN (...)` lists into **900-id chunks**. This
 keeps linked-task and report context collection on the indexed batch path even
 when sync or wake preparation considers thousands of ids.
+
+Single-id reads are folded into those batches automatically.
+`AgentRepoCore.getEntity` does not issue `WHERE id = ?` per call; it hands the
+id to `AgentEntityByIdCoalescer`, which collects every load made in the same
+event-loop turn and satisfies them with one `getEntitiesByIds` round trip. The
+fan-out this addresses is structural rather than local — independent callers
+(Riverpod provider families resolving one row each) firing in the same turn,
+with no single loop to batch. The 2026-06/07 logs recorded 92,787 such reads,
+peaking at 606 in one second at a median inter-arrival gap of 0.0 ms.
+
+Batches are keyed by `Zone` identity, and the flush is scheduled from the
+requesting zone so it runs there. This is load-bearing: drift resolves a
+statement's executor from `Zone.current`, so a batch that merged calls from
+inside a transaction with calls from outside would run on the wrong executor
+and break read-your-writes — `upsertEntity` reads entities back by id inside
+its own transaction.
 
 Latest-per-agent batch reads are backed by active-row indexes that include the
 `(created_at DESC, id DESC)` ranking order for both type-only and

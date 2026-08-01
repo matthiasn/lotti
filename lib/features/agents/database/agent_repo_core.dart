@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_attention_projection.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/database/agent_entity_by_id_coalescer.dart';
 import 'package:lotti/features/agents/database/agent_repo_internals.dart';
 import 'package:lotti/features/agents/database/agent_repo_queries.dart'
     show AgentRepoQueries;
@@ -22,6 +23,13 @@ class AgentRepoCore {
   AgentRepoCore(this._db);
 
   final AgentDatabase _db;
+
+  /// Folds concurrent [getEntity] calls into batched `id IN (…)` reads. Keyed
+  /// by zone internally so batching never crosses a drift transaction
+  /// boundary — see [AgentEntityByIdCoalescer].
+  late final AgentEntityByIdCoalescer _byIdCoalescer = AgentEntityByIdCoalescer(
+    getEntitiesByIds,
+  );
 
   /// The projection collaborator used by [upsertEntity] to keep the local
   /// attention/standing indexes in sync. Wired by [AgentRepository] after both
@@ -84,11 +92,25 @@ class AgentRepoCore {
   }
 
   /// Fetch a single entity by its [id], or `null` if not found.
-  Future<AgentDomainEntity?> getEntity(String id) async {
-    final rows = await _db.getAgentEntityById(id).get();
-    if (rows.isEmpty) return null;
-    return AgentDbConversions.fromEntityRow(rows.first);
-  }
+  ///
+  /// Calls issued within the same event-loop turn are **coalesced** into one
+  /// `WHERE id IN (…)` round trip by [AgentEntityByIdCoalescer] rather than one round
+  /// trip each. Callers see no behavioural difference — the returned future
+  /// still completes with that id's entity or `null`.
+  ///
+  /// This exists because the fan-out is structural, not local: the
+  /// 2026-06/07 slow-query logs captured 92,787 hits on
+  /// `SELECT * FROM agent_entities WHERE id = ?` with a *median inter-arrival
+  /// gap of 0.0 ms* and bursts of 606 in a single second — the signature of
+  /// many independent callers (Riverpod provider families resolving one row
+  /// each) firing concurrently, not of one loop that could be batched at its
+  /// call site. The plan was always a clean primary-key seek; the cost was
+  /// ~19 ms of isolate round trip per call. Coalescing at this layer fixes
+  /// every such caller at once, including ones that have no single place to
+  /// batch.
+  ///
+  /// See `docs/perf/2026-08-01_slow-queries-investigation.md`.
+  Future<AgentDomainEntity?> getEntity(String id) => _byIdCoalescer.load(id);
 
   /// Batch-fetch non-deleted entities for every id in [ids]. Returns
   /// the matched entities keyed by their `id` column so the caller can
