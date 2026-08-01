@@ -966,6 +966,77 @@ void main() {
       });
     });
 
+    group('getAgentStatesWithPendingWakes', () {
+      // Facade-level coverage for the filtered read the pending-wakes screen
+      // uses. The query semantics are pinned in agent_repo_core_test.dart;
+      // what matters here is that the delegator forwards both arguments.
+
+      test('returns only agents whose latest state carries a wake', () async {
+        await repo.upsertEntity(
+          AgentDomainEntity.agentState(
+            id: 'state-wake',
+            agentId: testAgentId,
+            revision: 1,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2026, 2, 20),
+            nextWakeAt: DateTime(2026, 2, 21),
+            vectorClock: const VectorClock({'node-1': 1}),
+          ),
+        );
+        await repo.upsertEntity(
+          AgentDomainEntity.agentState(
+            id: 'state-idle',
+            agentId: 'agent-idle',
+            revision: 1,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2026, 2, 20),
+            vectorClock: const VectorClock({'node-1': 1}),
+          ),
+        );
+
+        final result = await repo.getAgentStatesWithPendingWakes([
+          testAgentId,
+          'agent-idle',
+        ]);
+
+        expect(result.keys, [testAgentId]);
+      });
+
+      test('forwards alsoIncludeAgentIds through to the core read', () async {
+        await repo.upsertEntity(
+          AgentDomainEntity.agentState(
+            id: 'state-workspace',
+            agentId: 'agent-workspace',
+            revision: 1,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2026, 2, 20),
+            vectorClock: const VectorClock({'node-1': 1}),
+          ),
+        );
+
+        final without = await repo.getAgentStatesWithPendingWakes([
+          'agent-workspace',
+        ]);
+        final with_ = await repo.getAgentStatesWithPendingWakes(
+          ['agent-workspace'],
+          alsoIncludeAgentIds: ['agent-workspace'],
+        );
+
+        expect(
+          without,
+          isEmpty,
+          reason: 'no wake field, so it is filtered out by default',
+        );
+        expect(
+          with_.keys,
+          ['agent-workspace'],
+          reason:
+              'naming it explicitly must survive the filter — if the '
+              'delegator dropped the argument this would be empty too',
+        );
+      });
+    });
+
     group('getAgentStatesByAgentIds', () {
       test('returns empty map when no agent IDs are requested', () async {
         final result = await repo.getAgentStatesByAgentIds(const []);
