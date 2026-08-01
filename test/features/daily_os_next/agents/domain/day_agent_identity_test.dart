@@ -36,19 +36,6 @@ void main() {
     });
   });
 
-  group('dayIdFromPerDayAgentId', () {
-    test('round-trips through perDayAgentId', () {
-      const dayId = 'dayplan-2026-07-22';
-      expect(dayIdFromPerDayAgentId(perDayAgentId(dayId)), dayId);
-    });
-
-    test('returns null for foreign ids and a bare prefix', () {
-      expect(dayIdFromPerDayAgentId(dailyOsPlannerAgentId), isNull);
-      expect(dayIdFromPerDayAgentId('dayplan-2026-07-22'), isNull);
-      expect(dayIdFromPerDayAgentId(perDayAgentIdPrefix), isNull);
-    });
-  });
-
   group('isDailyOsDayOwner', () {
     test('accepts the coordinator and per-day agents only', () {
       expect(isDailyOsDayOwner(dailyOsPlannerAgentId), isTrue);

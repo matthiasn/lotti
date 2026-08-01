@@ -5,8 +5,6 @@ const String matrixRoomKey = 'MATRIX_ROOM';
 const String lastReadMatrixEventId = 'LAST_READ_MATRIX_EVENT_ID';
 const String lastReadMatrixEventTs = 'LAST_READ_MATRIX_EVENT_TS';
 
-const String syncLoggingDomain = 'MATRIX_SYNC';
-
 /// Key in a sync attachment event's content that declares an on-wire encoding
 /// applied by the sender. Absent means the bytes are the payload verbatim.
 const String attachmentEncodingKey = 'com.lotti.encoding';

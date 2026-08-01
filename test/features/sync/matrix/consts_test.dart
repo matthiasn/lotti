@@ -27,10 +27,6 @@ void main() {
       expect(lastReadMatrixEventTs, 'LAST_READ_MATRIX_EVENT_TS');
     });
 
-    test('syncLoggingDomain has expected value', () {
-      expect(syncLoggingDomain, 'MATRIX_SYNC');
-    });
-
     test('attachmentEncodingKey has expected value', () {
       expect(attachmentEncodingKey, 'com.lotti.encoding');
     });

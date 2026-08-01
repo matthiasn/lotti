@@ -193,7 +193,6 @@ void main() {
         expect(screenshotDirectoryPath, isNotEmpty);
         expect(screenshotDateFormat, isNotEmpty);
         expect(screenshotDelaySeconds, isPositive);
-        expect(screenshotDomain, isNotEmpty);
         expect(linuxScreenshotTools, isNotEmpty);
         expect(screenshotToolConfigs, isNotEmpty);
       });

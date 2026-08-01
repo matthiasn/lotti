@@ -14,7 +14,6 @@ import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
-import 'package:lotti/features/agents/service/standing_agreement_service.dart';
 import 'package:lotti/features/agents/state/agent_wiring.dart';
 import 'package:lotti/features/agents/state/agent_workflow_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -360,18 +359,6 @@ final agentTemplateServiceProvider = Provider<AgentTemplateService>(
 );
 AgentTemplateService agentTemplateService(Ref ref) {
   return AgentTemplateService(
-    repository: ref.watch(agentRepositoryProvider),
-    syncService: ref.watch(agentSyncServiceProvider),
-  );
-}
-
-/// The standing agreement authoring service.
-final standingAgreementServiceProvider = Provider<StandingAgreementService>(
-  standingAgreementService,
-  name: 'standingAgreementServiceProvider',
-);
-StandingAgreementService standingAgreementService(Ref ref) {
-  return StandingAgreementService(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
   );

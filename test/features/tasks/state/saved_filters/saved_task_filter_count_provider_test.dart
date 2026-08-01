@@ -315,45 +315,6 @@ void main() {
     );
   });
 
-  group('savedTaskFilterCountProvider (single id)', () {
-    test('returns 0 when the saved id is unknown', () async {
-      final container = _buildContainer(
-        seed: const [],
-        repo: _FakeRepo(const [99]),
-      );
-      addTearDown(container.dispose);
-      final sub = container.listen(
-        savedTaskFilterCountProvider('missing'),
-        (_, _) {},
-      );
-      addTearDown(sub.close);
-
-      expect(
-        await container.read(savedTaskFilterCountProvider('missing').future),
-        0,
-      );
-    });
-
-    test('reads the per-id count from the aggregated map', () async {
-      final repo = _FakeRepo(const [11]);
-      final container = _buildContainer(
-        seed: const [_filter],
-        repo: repo,
-      );
-      addTearDown(container.dispose);
-      final sub = container.listen(
-        savedTaskFilterCountProvider('sv-1'),
-        (_, _) {},
-      );
-      addTearDown(sub.close);
-
-      expect(
-        await container.read(savedTaskFilterCountProvider('sv-1').future),
-        11,
-      );
-    });
-  });
-
   group('currentTasksFilterCountProvider', () {
     ProviderContainer build({
       required JournalPageState pageState,

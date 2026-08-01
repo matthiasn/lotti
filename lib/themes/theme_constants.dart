@@ -53,9 +53,7 @@ class AppTheme {
 
   // Typography constants - Modern typography scale
   static const double titleFontSize = 18; // Increased
-  static const double titleFontSizeCompact = 17;
   static const double subtitleFontSize = 13; // Increased
-  static const double subtitleFontSizeCompact = 12;
   static const double letterSpacingTitle = 0.15; // Increased letter spacing
   static const double letterSpacingSubtitle = 0.05;
   static const double lineHeightSubtitle = 1.5; // Better line height

@@ -6,7 +6,6 @@ import 'package:tinycolor2/tinycolor2.dart';
 // Legacy colors (keeping for backward compatibility)
 final Color oldPrimaryColor = colorFromCssHex('#82E6CE');
 final Color alarm = colorFromCssHex('#FF7373');
-final Color nickel = colorFromCssHex('#B4B2B2');
 
 final Color successColor = colorFromCssHex('#34C191');
 final Color failColor = colorFromCssHex('#FF7373');
@@ -57,9 +56,6 @@ const Color projectStatusBlue = taskStatusBlue;
 const Color projectStatusGreen = taskStatusGreen;
 const Color projectStatusOrange = taskStatusOrange;
 const Color projectStatusTeal = Colors.teal;
-
-// Sync filter colors
-const Color syncPendingAccentColor = Colors.orange;
 
 final Color secondaryTextColor = oldPrimaryColor.desaturate(70).darken(20);
 

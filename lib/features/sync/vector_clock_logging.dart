@@ -1,8 +1,6 @@
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 
-const vectorClockLogDomain = 'VECTOR_CLOCK';
-
 String _formatClock(VectorClock? clock) => clock?.vclock.toString() ?? 'null';
 
 String _formatClocks(List<VectorClock>? clocks) =>

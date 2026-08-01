@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -154,17 +153,4 @@ Future<int> currentTasksFilterCount(Ref ref) async {
 
   final repo = ref.watch(savedTaskFilterCountRepositoryProvider);
   return repo.count(effective);
-}
-
-/// Convenience family — reads a single saved filter's count from the
-/// aggregated map. Returns 0 when the id no longer resolves (concurrent
-/// delete) so saved-filter surfaces don't show a stale number.
-final FutureProviderFamily<int, String> savedTaskFilterCountProvider =
-    FutureProvider.autoDispose.family<int, String>(
-      savedTaskFilterCount,
-      name: 'savedTaskFilterCountProvider',
-    );
-Future<int> savedTaskFilterCount(Ref ref, String savedFilterId) async {
-  final all = await ref.watch(savedTaskFilterCountsProvider.future);
-  return all[savedFilterId] ?? 0;
 }

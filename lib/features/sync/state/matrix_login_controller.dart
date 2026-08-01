@@ -13,34 +13,3 @@ final StreamProvider<LoginState> loginStateStreamProvider =
 Stream<LoginState> loginStateStream(Ref ref) {
   return ref.watch(matrixServiceProvider).client.onLoginStateChanged.stream;
 }
-
-/// True once the session reaches [LoginState.loggedIn].
-final FutureProvider<bool> isLoggedInProvider =
-    FutureProvider.autoDispose<bool>(
-      isLoggedIn,
-      name: 'isLoggedInProvider',
-    );
-Future<bool> isLoggedIn(Ref ref) async {
-  final loginState = ref.watch(loginStateStreamProvider).value;
-  return loginState == LoginState.loggedIn;
-}
-
-/// The logged-in Matrix user id, or null when not logged in. Falls back to the
-/// client's last-known login state if the stream has not yet emitted.
-final FutureProvider<String?> loggedInUserIdProvider =
-    FutureProvider.autoDispose<String?>(
-      loggedInUserId,
-      name: 'loggedInUserIdProvider',
-    );
-Future<String?> loggedInUserId(Ref ref) async {
-  final matrixService = ref.watch(matrixServiceProvider);
-  final loginState =
-      ref.watch(loginStateStreamProvider).value ??
-      matrixService.client.onLoginStateChanged.value;
-
-  if (loginState == LoginState.loggedIn) {
-    return matrixService.client.userID;
-  }
-
-  return null;
-}

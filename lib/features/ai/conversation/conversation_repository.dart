@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -570,42 +569,4 @@ class _RethrownInferenceError implements Exception {
 
   final Object error;
   final StackTrace stackTrace;
-}
-
-/// Provider for accessing conversation events
-final StreamProviderFamily<ConversationEvent, String>
-conversationEventsProvider = StreamProvider.autoDispose
-    .family<ConversationEvent, String>(
-      conversationEvents,
-      name: 'conversationEventsProvider',
-    );
-Stream<ConversationEvent> conversationEvents(
-  Ref ref,
-  String conversationId,
-) {
-  final repo = ref.watch(conversationRepositoryProvider.notifier);
-  final manager = repo.getConversation(conversationId);
-
-  if (manager == null) {
-    return Stream.error('Conversation $conversationId not found');
-  }
-
-  return manager.events;
-}
-
-/// Provider for conversation messages
-final ProviderFamily<List<ChatCompletionMessage>, String>
-conversationMessagesProvider = Provider.autoDispose
-    .family<List<ChatCompletionMessage>, String>(
-      conversationMessages,
-      name: 'conversationMessagesProvider',
-    );
-List<ChatCompletionMessage> conversationMessages(
-  Ref ref,
-  String conversationId,
-) {
-  final repo = ref.watch(conversationRepositoryProvider.notifier);
-  final manager = repo.getConversation(conversationId);
-
-  return manager?.messages ?? [];
 }

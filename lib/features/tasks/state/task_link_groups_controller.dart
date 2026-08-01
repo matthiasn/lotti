@@ -95,11 +95,9 @@ const _allTaskLinkDbTypes = {
 
 /// Resolves every plain and typed task-relationship link touching a task, in
 /// both directions, from a single batched
-/// `JournalRepository.getTypedLinksForTaskIds` call. Replaces
-/// `outgoingLinkedTasksProvider`/`linkedFromEntriesControllerProvider` for
-/// `LinkedTasksWidget`'s own reads — those shared providers stay untouched
-/// for every other consumer (AI context resolution, reference-image selection,
-/// generic journal linking), since scoping them here would risk breaking those.
+/// `JournalRepository.getTypedLinksForTaskIds` call. This keeps
+/// `LinkedTasksWidget` independent from the generic journal-link providers used
+/// by AI context resolution, reference-image selection, and journal linking.
 final AsyncNotifierProviderFamily<
   TaskLinkGroupsController,
   TaskLinkGroups,
