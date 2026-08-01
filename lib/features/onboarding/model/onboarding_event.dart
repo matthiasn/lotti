@@ -120,13 +120,13 @@ enum OnboardingEventName {
   String get wireName => name;
 
   /// Whether this event belongs to the Daily OS onboarding vocabulary rather
-  /// than the general FTUE funnel. Used to partition the two derived funnels
-  /// over the shared event store.
+  /// than the general FTUE funnel. Daily OS events are excluded from
+  /// [OnboardingFunnelState] while sharing the same event store.
   bool get isDailyOsOnboarding => _dailyOsOnboardingEvents.contains(this);
 
   /// Resolves a stored [wireName] back to its [OnboardingEventName], or null if
-  /// the name is unknown (e.g. a future event recorded by a newer build). Neither
-  /// funnel projection treats an unknown name as activity.
+  /// the name is unknown (e.g. a future event recorded by a newer build).
+  /// [OnboardingFunnelState] does not treat an unknown name as activity.
   static OnboardingEventName? fromWireName(String wireName) =>
       _byWireName[wireName];
 }

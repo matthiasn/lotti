@@ -22,7 +22,7 @@ developer tool that answers:
 - Status: MVP implemented and committed; follow-up strict argument/tool-selection
   eval changes are implemented and verified.
 - Current follow-up diff: 6 files, 240 insertions, 31 deletions.
-- New production modules are intentionally small:
+- New test-support modules are intentionally small:
   - `test/features/ai/eval/support/qwen_local_eval_config.dart` — 177 lines
   - `test/features/ai/eval/support/qwen_local_eval_report.dart` — 334 lines
   - `test/features/ai/eval/support/qwen_local_inference_eval.dart` — 239 lines
