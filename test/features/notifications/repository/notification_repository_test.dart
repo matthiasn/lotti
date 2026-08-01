@@ -385,7 +385,6 @@ void main() {
       );
 
       expect(saved, isNull);
-      expect(await notificationsDb.countAllNotifications(), 0);
       verifyNever(
         () => outboxService.enqueueNotification(any<NotificationEntity>()),
       );

@@ -10,24 +10,6 @@ typedef ProjectTaskRollupCounts = ({
 /// aggregates.
 mixin _JournalDbProjectQueries
     on _$JournalDb, _JournalDbConfigFlags, _JournalDbJournalQueries {
-  /// Updates the denormalized `project_id` column for a task row.
-  ///
-  /// Pass [projectId] = null to clear the project association.
-  Future<void> updateProjectIdColumn(String taskId, String? projectId) async {
-    try {
-      await customStatement(
-        'UPDATE journal SET project_id = ? WHERE id = ?',
-        [projectId, taskId],
-      );
-    } catch (e) {
-      DevLogger.error(
-        name: 'JournalDb',
-        message: 'updateProjectIdColumn error',
-        error: e,
-      );
-    }
-  }
-
   /// Returns the IDs of all non-deleted tasks whose `project_id` is in
   /// [projectIds]. Uses the `idx_journal_project_id` partial index.
   Future<Set<String>> getTaskIdsForProjects(Set<String> projectIds) async {

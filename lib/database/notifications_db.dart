@@ -132,52 +132,6 @@ class NotificationsDb extends _$NotificationsDb {
     });
   }
 
-  // Keyset pagination over the `id` primary key. `LIMIT/OFFSET` would re-scan
-  // the first N rows on every page (quadratic for large tables); seeking by
-  // `id > :lastId` keeps each page O(batchSize) using the PK index.
-  Stream<List<({String id, Map<String, int>? vectorClock})>>
-  streamNotificationsWithVectorClock({int batchSize = 1000}) async* {
-    String? lastId;
-
-    while (true) {
-      final rows = await customSelect(
-        lastId == null
-            ? 'SELECT id, vector_clock FROM notifications '
-                  'ORDER BY id LIMIT ?'
-            : 'SELECT id, vector_clock FROM notifications '
-                  'WHERE id > ? ORDER BY id LIMIT ?',
-        variables: lastId == null
-            ? [Variable<int>(batchSize)]
-            : [Variable<String>(lastId), Variable<int>(batchSize)],
-        readsFrom: {notifications},
-      ).get();
-
-      if (rows.isEmpty) break;
-
-      final batch = rows
-          .map(
-            (row) => (
-              id: row.read<String>('id'),
-              vectorClock: _decodeVectorClockMap(
-                row.read<String>('vector_clock'),
-              ),
-            ),
-          )
-          .toList();
-      yield batch;
-      lastId = batch.last.id;
-      if (batch.length < batchSize) break;
-    }
-  }
-
-  Future<int> countAllNotifications() async {
-    final row = await customSelect(
-      'SELECT COUNT(*) AS cnt FROM notifications',
-      readsFrom: {notifications},
-    ).getSingle();
-    return row.read<int>('cnt');
-  }
-
   static NotificationDbEntity notificationToDbEntity(
     NotificationEntity entity,
   ) {
@@ -205,16 +159,6 @@ class NotificationsDb extends _$NotificationsDb {
     return NotificationEntity.fromJson(
       jsonDecode(row.serialized) as Map<String, dynamic>,
     );
-  }
-
-  static Map<String, int>? _decodeVectorClockMap(String raw) {
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map<String, dynamic>) return null;
-      return Map<String, int>.from(decoded);
-    } catch (_) {
-      return null;
-    }
   }
 }
 

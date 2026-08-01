@@ -76,51 +76,6 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
     return rows.map((row) => fromDbEntity(journal.map(row.data))).toList();
   }
 
-  Future<DayPlanEntry?> getDayPlanById(String id) async {
-    final res = await _queryWithPrivateFilter(
-      allPrivate: () => dayPlanById(id).get(),
-      filtered: (s) => dayPlanByIdByPrivateStatuses(id, s).get(),
-    );
-    if (res.isEmpty) return null;
-    return fromDbEntity(res.first) as DayPlanEntry;
-  }
-
-  /// Batch variant of [getDayPlanById]. Used by the coalescing layer in
-  /// the day-plan repository so a prefetch window of N dates collapses
-  /// into a single round-trip. Chunks inputs to stay under SQLite's
-  /// default 999-variable limit even if a caller fans out far past the
-  /// DailyOS prefetch window. Duplicate ids are removed before chunking
-  /// so the `IN (…)` semantics of the original single-query form are
-  /// preserved — otherwise dupes in different chunks would yield dupe
-  /// rows.
-  Future<List<DayPlanEntry>> getDayPlansByIds(Iterable<String> ids) async {
-    final idList = ids.toSet().toList(growable: false);
-    if (idList.isEmpty) return const [];
-    final out = <DayPlanEntry>[];
-    for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
-      final end = (i + _sqliteInListChunk).clamp(0, idList.length);
-      final chunk = idList.sublist(i, end);
-      final res = await _queryWithPrivateFilter(
-        allPrivate: () => dayPlansByIds(chunk).get(),
-        filtered: (s) => dayPlansByIdsByPrivateStatuses(chunk, s).get(),
-      );
-      out.addAll(res.map((e) => fromDbEntity(e) as DayPlanEntry));
-    }
-    return out;
-  }
-
-  Future<List<DayPlanEntry>> getDayPlansInRange({
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) async {
-    final res = await _queryWithPrivateFilter(
-      allPrivate: () => dayPlansInRange(rangeStart, rangeEnd).get(),
-      filtered: (s) =>
-          dayPlansInRangeByPrivateStatuses(rangeStart, rangeEnd, s).get(),
-    );
-    return res.map((e) => fromDbEntity(e) as DayPlanEntry).toList();
-  }
-
   Future<List<JournalEntity>> getQuantitativeByType({
     required String type,
     required DateTime rangeStart,
