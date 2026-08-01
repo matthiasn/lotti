@@ -82,6 +82,16 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
       if (didEmbed && previousReportId != null) {
         await store.deleteEntityEmbeddings(previousReportId);
       }
+    } on OllamaEmbeddingCooldownException catch (e) {
+      // The shared repository records sampled, counted cooldown summaries.
+      // A stack trace per optional report would recreate the outage-driven
+      // log amplification that the availability circuit is meant to stop.
+      if (e.shouldLogSummary) {
+        _logError(
+          'optional agent report embedding paused; counted cooldown summary',
+          error: e,
+        );
+      }
     } catch (e, s) {
       _logError('failed to embed agent report', error: e, stackTrace: s);
     }

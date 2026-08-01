@@ -29,6 +29,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
@@ -41,6 +42,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -4082,6 +4084,130 @@ not describe task configuration or tool activity as progress.
           verifyNever(
             () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
           );
+        },
+      );
+
+      test(
+        'persists report and emits counted cooldown summary without stack',
+        () async {
+          final mockEmbeddingStore = MockEmbeddingStore();
+          final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+          final mockDomainLogger = MockDomainLogger();
+          final workflowWithEmbeddings = TaskAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            domainLogger: mockDomainLogger,
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepository,
+          );
+
+          when(
+            () => mockAgentRepository.getReportHead(agentId, 'current'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfigRepository.resolveOllamaBaseUrl(),
+          ).thenAnswer((_) async => 'http://localhost:11434');
+          when(
+            () => mockJournalDb.getAllLabelDefinitions(),
+          ).thenAnswer((_) async => []);
+          when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer(
+            (_) async => TestTaskFactory.create(
+              id: taskId,
+              title: 'Keep report persistence independent',
+              categoryId: 'cat-001',
+            ),
+          );
+
+          final embeddingAttempted = Completer<void>();
+          when(
+            () => mockEmbeddingRepository.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+            ),
+          ).thenAnswer((_) async {
+            if (!embeddingAttempted.isCompleted) {
+              embeddingAttempted.complete();
+            }
+            throw OllamaEmbeddingCooldownException(
+              retryAt: testDate.add(
+                OllamaEmbeddingRepository.availabilityCooldown,
+              ),
+              suppressedRequestCount: 8,
+            );
+          });
+
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      const ChatCompletionMessageToolCall(
+                        id: 'rpt-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'update_report',
+                          arguments:
+                              r'{"content":"# Report\nThis persisted report remains independent of optional embeddings.","oneLiner":"Report persisted","tldr":"The report persisted without optional embeddings."}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+          when(() => mockConversationManager.messages).thenReturn([]);
+
+          final result = await workflowWithEmbeddings.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          final persisted = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          expect(persisted.whereType<AgentReportEntity>(), hasLength(1));
+          await embeddingAttempted.future;
+          await pumpEventQueue();
+
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.agentWorkflow,
+              isA<OllamaEmbeddingCooldownException>().having(
+                (error) => error.suppressedRequestCount,
+                'suppressed request count',
+                8,
+              ),
+              message:
+                  'optional agent report embedding paused; '
+                  'counted cooldown summary',
+            ),
+          ).called(1);
         },
       );
     });

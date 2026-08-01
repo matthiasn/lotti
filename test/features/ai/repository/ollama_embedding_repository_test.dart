@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
@@ -385,6 +386,225 @@ void main() {
     });
 
     group('retry logic', () {
+      test(
+        'does not repeat network attempts during an availability cooldown',
+        () async {
+          final now = DateTime.utc(2026, 8, 1, 12);
+          await withClock(Clock.fixed(now), () async {
+            var callCount = 0;
+            when(
+              () => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              ),
+            ).thenAnswer((_) async {
+              callCount++;
+              throw const SocketException('Connection refused');
+            });
+
+            await expectLater(
+              () => repository.embed(input: 'first', baseUrl: baseUrl),
+              throwsException,
+            );
+            expect(callCount, 3);
+
+            await expectLater(
+              () => repository.embed(input: 'second', baseUrl: baseUrl),
+              throwsA(
+                isA<OllamaEmbeddingCooldownException>()
+                    .having(
+                      (error) => error.suppressedRequestCount,
+                      'suppressed request count',
+                      1,
+                    )
+                    .having(
+                      (error) => error.retryAt,
+                      'retry time',
+                      now.add(
+                        OllamaEmbeddingRepository.availabilityCooldown,
+                      ),
+                    )
+                    .having(
+                      (error) => error.shouldLogSummary,
+                      'summary boundary',
+                      isTrue,
+                    ),
+              ),
+            );
+            await expectLater(
+              () => repository.embed(input: 'third', baseUrl: baseUrl),
+              throwsA(
+                isA<OllamaEmbeddingCooldownException>()
+                    .having(
+                      (error) => error.suppressedRequestCount,
+                      'suppressed request count',
+                      2,
+                    )
+                    .having(
+                      (error) => error.shouldLogSummary,
+                      'summary boundary',
+                      isTrue,
+                    ),
+              ),
+            );
+            await expectLater(
+              () => repository.embed(input: 'fourth', baseUrl: baseUrl),
+              throwsA(
+                isA<OllamaEmbeddingCooldownException>()
+                    .having(
+                      (error) => error.suppressedRequestCount,
+                      'suppressed request count',
+                      3,
+                    )
+                    .having(
+                      (error) => error.shouldLogSummary,
+                      'summary boundary',
+                      isFalse,
+                    ),
+              ),
+            );
+
+            expect(
+              callCount,
+              3,
+              reason: 'the known outage must suppress another three attempts',
+            );
+          });
+        },
+      );
+
+      test('successful post-cooldown probe re-enables embeddings', () async {
+        var now = DateTime.utc(2026, 8, 1, 12);
+        var callCount = 0;
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          if (callCount <= 3) {
+            throw const SocketException('Connection refused');
+          }
+          return http.Response(
+            makeEmbeddingResponse(kEmbeddingDimensions),
+            200,
+          );
+        });
+
+        await withClock(Clock(() => now), () async {
+          await expectLater(
+            () => repository.embed(input: 'initial', baseUrl: baseUrl),
+            throwsException,
+          );
+          await expectLater(
+            () => repository.embed(input: 'suppressed', baseUrl: baseUrl),
+            throwsException,
+          );
+          expect(callCount, 3);
+
+          now = now.add(OllamaEmbeddingRepository.availabilityCooldown);
+          final recovered = await repository.embed(
+            input: 'recovery probe',
+            baseUrl: baseUrl,
+          );
+          final afterRecovery = await repository.embed(
+            input: 'normal request',
+            baseUrl: baseUrl,
+          );
+
+          expect(recovered, hasLength(kEmbeddingDimensions));
+          expect(afterRecovery, hasLength(kEmbeddingDimensions));
+          expect(callCount, 5);
+        });
+      });
+
+      test('failed post-cooldown probe opens a fresh cooldown', () async {
+        var now = DateTime.utc(2026, 8, 1, 12);
+        var callCount = 0;
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          throw const SocketException('Connection refused');
+        });
+
+        await withClock(Clock(() => now), () async {
+          await expectLater(
+            () => repository.embed(input: 'initial', baseUrl: baseUrl),
+            throwsException,
+          );
+
+          now = now.add(OllamaEmbeddingRepository.availabilityCooldown);
+          await expectLater(
+            () => repository.embed(input: 'failed probe', baseUrl: baseUrl),
+            throwsException,
+          );
+          expect(callCount, 6);
+
+          await expectLater(
+            () => repository.embed(
+              input: 'suppressed again',
+              baseUrl: baseUrl,
+            ),
+            throwsA(
+              isA<OllamaEmbeddingCooldownException>().having(
+                (error) => error.retryAt,
+                'refreshed retry time',
+                now.add(OllamaEmbeddingRepository.availabilityCooldown),
+              ),
+            ),
+          );
+          expect(callCount, 6);
+        });
+      });
+
+      test(
+        'a failed base URL does not suppress a replacement endpoint',
+        () async {
+          const replacementBaseUrl = 'http://localhost:11435';
+          var failedEndpointCalls = 0;
+          var replacementEndpointCalls = 0;
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((invocation) async {
+            final uri = invocation.positionalArguments.first as Uri;
+            if (uri.port == 11434) {
+              failedEndpointCalls++;
+              throw const SocketException('Connection refused');
+            }
+            replacementEndpointCalls++;
+            return http.Response(
+              makeEmbeddingResponse(kEmbeddingDimensions),
+              200,
+            );
+          });
+
+          await expectLater(
+            () => repository.embed(input: 'initial', baseUrl: baseUrl),
+            throwsException,
+          );
+          final result = await repository.embed(
+            input: 'replacement',
+            baseUrl: replacementBaseUrl,
+          );
+
+          expect(result, hasLength(kEmbeddingDimensions));
+          expect(failedEndpointCalls, 3);
+          expect(replacementEndpointCalls, 1);
+        },
+      );
+
       test(
         'retries on TimeoutException and throws after max retries',
         () async {

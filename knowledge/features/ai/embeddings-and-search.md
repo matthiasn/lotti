@@ -20,6 +20,14 @@ sources:
     resource: ../../../lib/features/ai/repository/vector_search_repository.dart
     title: VectorSearchRepository
     last_modified: 2026-06-07
+  - id: ollama-embedding-repository
+    resource: ../../../lib/features/ai/repository/ollama_embedding_repository.dart
+    title: OllamaEmbeddingRepository
+    last_modified: 2026-08-01
+  - id: task-agent-report-embedding
+    resource: ../../../lib/features/agents/workflow/task_agent_persistence_helpers.dart
+    title: Optional task-agent report embedding
+    last_modified: 2026-08-01
 ---
 
 The AI feature owns local embeddings and vector search — the one place where the
@@ -53,6 +61,26 @@ flowchart LR
   body.
 - Agent reports are stored with `taskId` metadata, so a search hit can resolve
   back to the owning task.
+- The production `OllamaEmbeddingRepository` is shared. After three transport
+  failures confirm that one base URL is unavailable, it opens a five-minute
+  cooldown for that URL. Calls during the cooldown fail before network I/O and
+  carry a cumulative suppressed-request count; the task-agent path does not
+  emit a full stack trace for every optional report.
+- The first call after the cooldown is the recovery probe. Any HTTP response
+  proves the service is reachable and closes the circuit; another exhausted
+  transport retry budget opens a fresh cooldown. A failed optional embedding
+  never rolls back the already-persisted agent report or deletes its previous
+  embedding.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Available
+  Available --> CoolingDown: transport retries exhausted
+  CoolingDown --> CoolingDown: calls suppressed and counted
+  CoolingDown --> RecoveryProbe: five minutes elapsed
+  RecoveryProbe --> Available: HTTP response received
+  RecoveryProbe --> CoolingDown: transport retries exhausted
+```
 
 Embedding indexing participates in [work attribution](attribution.md): it begins
 before its first chunk, records one interaction per chunk with digests only and

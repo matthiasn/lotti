@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
@@ -20,12 +21,16 @@ class OllamaEmbeddingRepository {
     : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
+  final Map<String, _OllamaAvailabilityBackoff> _availabilityBackoff = {};
 
   /// Overridable for tests to eliminate real delays.
   static Duration retryBaseDelay = const Duration(seconds: 2);
 
   /// Maximum number of retry attempts for transient errors.
   static const int _maxRetries = 3;
+
+  /// How long a confirmed Ollama outage suppresses optional embedding calls.
+  static const Duration availabilityCooldown = Duration(minutes: 5);
 
   /// Generates an embedding vector for the given [input] text.
   ///
@@ -45,21 +50,31 @@ class OllamaEmbeddingRepository {
       throw ArgumentError('OllamaEmbeddingRepository.embed(): input is empty');
     }
 
-    final response = await _retryWithExponentialBackoff(
-      operation: () => _httpClient
-          .post(
-            Uri.parse('$baseUrl$ollamaEmbedEndpoint'),
-            headers: {'Content-Type': ollamaContentType},
-            body: jsonEncode({
-              'model': model,
-              'input': input,
-            }),
-          )
-          .timeout(
-            const Duration(seconds: ollamaEmbedTimeoutSeconds),
-          ),
-      context: 'embedding generation',
-    );
+    _throwIfAvailabilityCoolingDown(baseUrl);
+
+    final http.Response response;
+    try {
+      response = await _retryWithExponentialBackoff(
+        operation: () => _httpClient
+            .post(
+              Uri.parse('$baseUrl$ollamaEmbedEndpoint'),
+              headers: {'Content-Type': ollamaContentType},
+              body: jsonEncode({
+                'model': model,
+                'input': input,
+              }),
+            )
+            .timeout(
+              const Duration(seconds: ollamaEmbedTimeoutSeconds),
+            ),
+        context: 'embedding generation',
+      );
+    } on _OllamaEmbeddingUnavailableException {
+      _openAvailabilityCooldown(baseUrl);
+      rethrow;
+    }
+
+    _markAvailable(baseUrl);
 
     if (response.statusCode == httpStatusNotFound) {
       final body = response.body.toLowerCase();
@@ -76,6 +91,50 @@ class OllamaEmbeddingRepository {
     }
 
     return _parseEmbeddingResponse(response.body);
+  }
+
+  void _throwIfAvailabilityCoolingDown(String baseUrl) {
+    final backoff = _availabilityBackoff[baseUrl];
+    if (backoff == null || !clock.now().isBefore(backoff.retryAt)) return;
+
+    backoff.suppressedRequestCount++;
+    final exception = OllamaEmbeddingCooldownException(
+      retryAt: backoff.retryAt,
+      suppressedRequestCount: backoff.suppressedRequestCount,
+    );
+    if (exception.shouldLogSummary) {
+      developer.log(
+        'Ollama embedding availability cooldown suppressed '
+        '${exception.suppressedRequestCount} request'
+        '${exception.suppressedRequestCount == 1 ? '' : 's'}; '
+        'next probe is allowed at '
+        '${backoff.retryAt.toUtc().toIso8601String()}',
+        name: 'OllamaEmbeddingRepository',
+      );
+    }
+    throw exception;
+  }
+
+  void _openAvailabilityCooldown(String baseUrl) {
+    final retryAt = clock.now().add(availabilityCooldown);
+    final current = _availabilityBackoff[baseUrl];
+    if (current == null) {
+      _availabilityBackoff[baseUrl] = _OllamaAvailabilityBackoff(retryAt);
+    } else {
+      current.retryAt = retryAt;
+    }
+  }
+
+  void _markAvailable(String baseUrl) {
+    final recovered = _availabilityBackoff.remove(baseUrl);
+    if (recovered == null) return;
+
+    developer.log(
+      'Ollama embeddings recovered after suppressing '
+      '${recovered.suppressedRequestCount} request'
+      '${recovered.suppressedRequestCount == 1 ? '' : 's'}',
+      name: 'OllamaEmbeddingRepository',
+    );
   }
 
   /// Parses the Ollama `/api/embed` JSON response into a [Float32List].
@@ -132,12 +191,12 @@ class OllamaEmbeddingRepository {
         if (e is TimeoutException || e is SocketException) {
           if (attempt >= _maxRetries) {
             if (e is TimeoutException) {
-              throw Exception(
+              throw const _OllamaEmbeddingUnavailableException(
                 'Embedding request timed out after $_maxRetries attempts. '
                 'Is the Ollama server running?',
               );
             } else {
-              throw Exception(
+              throw _OllamaEmbeddingUnavailableException(
                 'Network error during $context after $_maxRetries attempts. '
                 'Is the Ollama server running?',
               );
@@ -160,4 +219,47 @@ class OllamaEmbeddingRepository {
   void close() {
     _httpClient.close();
   }
+}
+
+/// A transient Ollama outage confirmed after the repository's retry budget.
+class _OllamaEmbeddingUnavailableException implements Exception {
+  const _OllamaEmbeddingUnavailableException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// A fast failure while a previously confirmed Ollama outage is cooling down.
+///
+/// [suppressedRequestCount] is cumulative for the current outage and lets
+/// callers report sampled summaries without emitting a stack trace per item.
+class OllamaEmbeddingCooldownException implements Exception {
+  const OllamaEmbeddingCooldownException({
+    required this.retryAt,
+    required this.suppressedRequestCount,
+  });
+
+  final DateTime retryAt;
+  final int suppressedRequestCount;
+
+  /// Whether this cumulative count should produce a compact diagnostic.
+  ///
+  /// Powers of two retain growth visibility with logarithmic log volume.
+  bool get shouldLogSummary =>
+      suppressedRequestCount > 0 &&
+      suppressedRequestCount & (suppressedRequestCount - 1) == 0;
+
+  @override
+  String toString() =>
+      'Ollama embedding request suppressed during availability cooldown '
+      '(count=$suppressedRequestCount, retryAt=${retryAt.toUtc().toIso8601String()})';
+}
+
+class _OllamaAvailabilityBackoff {
+  _OllamaAvailabilityBackoff(this.retryAt);
+
+  DateTime retryAt;
+  int suppressedRequestCount = 0;
 }
