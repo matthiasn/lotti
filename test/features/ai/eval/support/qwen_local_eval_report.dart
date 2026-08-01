@@ -1,7 +1,8 @@
 import 'dart:convert';
 
-import 'package:lotti/features/ai/eval/qwen_local_eval_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+
+import 'qwen_local_eval_config.dart';
 
 enum QwenLocalEvalFailureCategory {
   none,

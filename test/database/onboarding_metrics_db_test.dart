@@ -42,13 +42,6 @@ void main() {
     expect(rows.map((r) => r.eventName).toList(), ['earlier', 'later']);
   });
 
-  test('eventCounts aggregates occurrences per name', () async {
-    await insert('x', DateTime.utc(2026, 1, 1), 1);
-    await insert('x', DateTime.utc(2026, 1, 1), 1);
-    await insert('y', DateTime.utc(2026, 1, 1), 1);
-    expect(await db.eventCounts(), {'x': 2, 'y': 1});
-  });
-
   test('firstSeen returns earliest timestamp, null when absent', () async {
     expect(await db.firstSeen('x'), isNull);
     await insert('x', DateTime.utc(2026, 1, 5), 5);
@@ -56,13 +49,6 @@ void main() {
     final first = await db.firstSeen('x');
     expect(first, isNotNull);
     expect(first!.isAtSameMomentAs(DateTime.utc(2026, 1, 3)), isTrue);
-  });
-
-  test('activeDayBuckets returns sorted, de-duplicated days', () async {
-    await insert('a', DateTime.utc(2026, 1, 3), 3);
-    await insert('b', DateTime.utc(2026, 1, 1), 1);
-    await insert('c', DateTime.utc(2026, 1, 3), 3);
-    expect(await db.activeDayBuckets(), [1, 3]);
   });
 
   test('typed dimensions round-trip', () async {

@@ -102,3 +102,4 @@ Each ADR should contain:
 - [`0044-day-processing-outbox-storage.md`](./0044-day-processing-outbox-storage.md)
 - [`0045-exclude-unverified-devices-from-key-sharing.md`](./0045-exclude-unverified-devices-from-key-sharing.md)
 - [`0046-sync-actor-isolate-removed-and-how-to-rebuild.md`](./0046-sync-actor-isolate-removed-and-how-to-rebuild.md)
+- [`0047-lean-keyboard-command-catalog-metadata.md`](./0047-lean-keyboard-command-catalog-metadata.md)

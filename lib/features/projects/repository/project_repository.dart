@@ -151,7 +151,6 @@ class ProjectRepository {
                 final ProjectTaskRollupCounts rollup => ProjectTaskRollupData(
                   totalTaskCount: rollup.totalTaskCount,
                   completedTaskCount: rollup.completedTaskCount,
-                  blockedTaskCount: rollup.blockedTaskCount,
                 ),
                 null => const ProjectTaskRollupData(),
               },

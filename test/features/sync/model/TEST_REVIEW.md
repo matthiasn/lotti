@@ -15,9 +15,7 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
 | `test/features/sync/model/node_capability_mapping_test.dart` | 145 | — | Good; has Glados with `tags: 'glados'` |
 | `test/features/sync/model/sync_message_test.dart` | 723 | — | Repeated copy-paste round-trip structure; Glados candidate |
 | `test/features/sync/model/sync_node_profile_test.dart` | 172 | — | Solid coverage; no Glados yet |
-| `lib/features/sync/models/sync_error.dart` | 77 | Yes (159 lines) | Weak assertions; keyword-match tests are brittle |
 | `lib/features/sync/models/sync_models.dart` | 69 | Yes (112 lines) | `copyWith` tests cover fields but miss type invariants |
-| `test/features/sync/models/sync_error_test.dart` | 159 | — | Two smoke tests with no assertion; keyword-based detection not generative |
 | `test/features/sync/models/sync_models_test.dart` | 112 | — | Solid for data model; no Glados needed (non-trivial logic absent) |
 
 ---
@@ -39,12 +37,6 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
   ```
   Then each variant test reduces to one assertion on the decoded type plus two field checks, collapsing the 8×15 lines into 8×5 lines.
 
-- [x] **[MED]** `sync_error_test.dart` lines 119–134: two tests (`'logs the exception via logging service without error'` and `'uses custom domain without error'`) contain no `expect` calls — they only verify that `SyncError.fromException(...)` does not throw. These are zero-value smoke tests by AGENTS.md rules. Add meaningful assertions: verify that `loggingService.log` / `error` was called, or verify the returned `SyncError.type`, or remove the tests.
-  - **RESOLVED:** done — the two assertion-free tests were replaced by one that verifies the side effect: `loggingService.error(LogDomain.sync, original, stackTrace, subDomain: 'SYNC_CONTROLLER')` called exactly once.
-
-- [x] **[MED]** `sync_error_test.dart` lines 53–116: the keyword-detection tests (`'database error occurred'`, `'network timeout'`, `'connection refused'`, `'outbox queue full'`) assert the right `SyncErrorType` is returned when the message string contains a specific keyword. These are brittle string-matching tests. If the error classification logic changes (e.g., a new keyword is added), the tests will silently under-test the new keyword. This is an ideal Glados candidate (see below).
-  - **RESOLVED:** done — superseded by the Glados classification property (see the Glados item); the four concrete keyword tests stay as readable examples while the property sweeps arbitrary message shapes.
-
 - [x] **[LOW]** `sync_models_test.dart` line 92–98: `'copyWith without error clears it'` asserts `cleared.error == null`, but the `copyWith` implementation may default to `null` rather than truly clearing. The comment "error parameter defaults to null in copyWith, clearing previous error" suggests uncertainty. Add an assertion that explicitly sets an error first and then confirms it is gone, with a reason string explaining the semantics.
   **RESOLVED:** rewrote as `'copyWith always clears error unless explicitly re-supplied'` — it now pins all three halves of the deliberate asymmetry (`error` is assigned directly, not `?? this.error`): supplied error is retained, no-arg copyWith drops it to null, and a new error overwrites the old one. Each branch has a reason string documenting the intent, so a future refactor to `error ?? this.error` is caught.
 
@@ -53,9 +45,6 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
 ## Generative (Glados) testing opportunities
 
 - [x] **[HIGH]** `sync_message_test.dart`: `SyncMessage` JSON round-trips are a classic generative target. The `runtimeType` discriminator + all scalar fields can be generated. A single Glados property — *decode(encode(m)) == m* — over the full union of message variants would replace or compress the 8+ static round-trip tests and would catch any new variant that fails to fully serialize/deserialize. Generator shape: a `_GeneratedSyncMessage` sealed class with a `choose` over variants; each variant generates its specific fields.
-
-- [x] **[MED]** `sync_error_test.dart`: `SyncError.fromException` keyword-classification is a pure mapping function. A Glados property over generated exception message strings could verify the exhaustive rule: the returned `SyncErrorType` is one of the four valid values, and any message containing `'database'` always maps to `SyncErrorType.database`, etc. This replaces the brittle one-keyword-one-test pattern.
-  - **RESOLVED:** done — added a Glados2 property (keyword choice × keyword-free noise, numRuns 150, `tags: 'glados'`): the resolved type matches the keyword rule (with absence → unknown) and the user-facing message is exactly the canonical text for the type, never raw exception output.
 
 - [x] **[LOW]** `sync_node_profile_test.dart`: `SyncNodeProfile` JSON round-trip is partially covered by static tests. Adding a Glados property over generated `(hostId, displayName, platform, capabilities)` tuples would catch any future serialization regression without needing to add a new static test per new optional field.
   **RESOLVED:** added a `SyncNodeProfile — Glados JSON round-trip` group with a private `_GeneratedNodeProfile` value class (with `toString()`) and a `combine10`-based generator covering all 10 fields — required scalars, the capability list, a deterministic UTC `updatedAt` (built from a generated ms offset, never `DateTime.now()`), and the four optional hardware fields plus `appVersion` as nullable. Property 1 asserts whole-object value equality `decode(encode(profile)) == profile` (freezed `==` uses `DeepCollectionEquality` for capabilities — verified in the generated code) plus field-level spell-outs and `updatedAt.isUtc`; property 2 asserts capability `orderedEquals` to lock wire ordering. Both `numRuns: 120`, `tags: 'glados'`. No new optional field can silently fail to (de)serialize without breaking property 1.
@@ -66,9 +55,6 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
 
 - [x] **[MED]** `sync_message_test.dart`: tests cover serialization of all known variants, but there is no test for an **unknown `runtimeType`** value in JSON (forward-compatibility: what happens when a newer device sends a message type the older device's `fromJson` doesn't know). Add a test that passes `{'runtimeType': 'unknownFutureVariant', ...}` and asserts the expected fallback (throws, returns null, or returns an `UnknownSyncMessage` type).
   - **RESOLVED:** done — added `'an unknown runtimeType from a newer peer throws on fromJson'`, pinning the current freezed-union contract (`CheckedFromJsonException`, handled per-message by the inbound pipeline) with a note on how to evolve it if a silent fallback is ever wanted.
-
-- [x] **[MED]** `sync_error_test.dart`: `SyncError.fromException` is called with `LoggingService` wired, but the test never verifies that `loggingService.log` or `loggingService.error` is actually invoked. The `MockDomainLogger` is set up but never queried with `verify`. Add at least one `verify(() => loggingService.error(...)).called(1)` call to confirm the logging side-effect.
-  - **RESOLVED:** done — same fix as the smoke-test item: the logging side effect is now verified with exact arguments.
 
 - [x] **[LOW]** `sync_models_test.dart`: `SyncState.copyWith` is tested for individual field overrides, but the combination path (set `isSyncing=true` + `stepProgress` map with entries, then `copyWith()` with no args) is not tested. This is how the controller transitions state — ensure the no-arg `copyWith` preserves nested map contents correctly.
   **RESOLVED:** added `'no-arg copyWith preserves nested stepProgress and selectedSteps'` — builds a mid-sync state (isSyncing, currentStep, progress, a 2-entry `stepProgress` map, a 2-entry `selectedSteps` set), calls `copyWith()` with no args, and asserts the scalars survive, the nested Map/Set are passed through by identity (no defensive copy via `?? this.field`), and the map's `StepProgress` contents are intact via `isA<StepProgress>().having(...)`.
@@ -91,8 +77,6 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
 ## Summary
 
 - `sync_message_test.dart` at 723 lines has 8+ copy-paste round-trip bodies — extract a `_roundTrip` helper and consider a file split before the file reaches 1000 lines.
-- 2 zero-assertion smoke tests in `sync_error_test.dart` (lines 119–134) — add `verify` calls or remove them.
 - 1 strong Glados candidate: `SyncMessage` JSON round-trip property over all variants.
-- 1 medium Glados candidate: `SyncError.fromException` keyword-to-type mapping.
-- Missing behavior: unknown `runtimeType` forward-compat path in `SyncMessage.fromJson`; logging side-effect not verified in `sync_error_test.dart`.
+- Missing behavior: unknown `runtimeType` forward-compat path in `SyncMessage.fromJson`.
 - No oversized impl files (largest is 217 lines); `sync_message_test.dart` approaching split threshold at 723 lines.

@@ -5,13 +5,13 @@ description: A typed command layer resolving key combinations against the focuse
 resource: ../../lib/features/keyboard
 tags: [keyboard, commands, desktop, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T04:00:00Z }
+generated: { by: codex/5, at: 2026-08-01T17:41:39+02:00 }
 stale_after: 2027-03-01
 sources:
   - id: src
     resource: ../../lib/features/keyboard
     title: Desktop keyboard commands source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-01
 ---
 
 The keyboard feature is Lotti's **desktop command layer**. It turns platform key
@@ -41,3 +41,8 @@ Examples live with their features: the
 [task list's commands](tasks/filtering.md), the
 [entry editor's save](journal/detail-and-saving.md), and the settings detail
 scaffold's save. Global navigation and task creation are owned by the app shell.
+
+The original command-system rationale is recorded in
+[ADR 0030](../../docs/adr/0030-desktop-keyboard-command-system.md). The catalog's
+deliberately lean metadata contract is recorded in
+[ADR 0047](../../docs/adr/0047-lean-keyboard-command-catalog-metadata.md).

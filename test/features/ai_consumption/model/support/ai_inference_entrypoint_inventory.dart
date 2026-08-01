@@ -106,7 +106,7 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
   ),
   AiInferenceEntrypoint(
     id: 'provider-verification-and-evals',
-    owner: 'lib/features/ai/eval and AI settings verification services',
+    owner: 'test/features/ai/eval and AI settings verification services',
     workTypes: {AiWorkType.internalInference},
     coverage: AiAttributionCoverage.developmentOnly,
     outputCarrier: null,

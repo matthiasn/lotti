@@ -28,14 +28,6 @@ CREATE INDEX idx_onboarding_events_day ON onboarding_events (day_bucket);
 allOnboardingEvents:
 SELECT * FROM onboarding_events ORDER BY created_at ASC, id ASC;
 
-countOnboardingEventsByName:
-SELECT event_name, COUNT(*) AS cnt
-  FROM onboarding_events
-  GROUP BY event_name;
-
 firstOnboardingEventTime:
 SELECT MIN(created_at) AS ts FROM onboarding_events
   WHERE event_name = :event_name;
-
-distinctActiveDayBuckets:
-SELECT DISTINCT day_bucket FROM onboarding_events ORDER BY day_bucket ASC;

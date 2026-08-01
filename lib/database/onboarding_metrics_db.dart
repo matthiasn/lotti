@@ -79,18 +79,9 @@ class OnboardingMetricsDb extends _$OnboardingMetricsDb {
   Future<List<OnboardingEventRow>> getAllEvents() =>
       allOnboardingEvents().get();
 
-  /// Count of events per event name, keyed by name.
-  Future<Map<String, int>> eventCounts() async {
-    final rows = await countOnboardingEventsByName().get();
-    return {for (final row in rows) row.eventName: row.cnt};
-  }
-
   /// Earliest timestamp for [eventName], or null if it never occurred.
   Future<DateTime?> firstSeen(String eventName) =>
       firstOnboardingEventTime(eventName).getSingleOrNull();
-
-  /// Sorted set of distinct UTC day buckets on which any event occurred.
-  Future<List<int>> activeDayBuckets() => distinctActiveDayBuckets().get();
 
   /// Removes every event. Used by the debug "reset" action and test teardown.
   Future<int> clearAll() => delete(onboardingEvents).go();

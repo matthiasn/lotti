@@ -42,7 +42,6 @@ class ProjectRecord {
     taskRollup: ProjectTaskRollupData(
       totalTaskCount: totalTaskCount,
       completedTaskCount: completedTaskCount,
-      blockedTaskCount: blockedTaskCount,
     ),
   );
 }

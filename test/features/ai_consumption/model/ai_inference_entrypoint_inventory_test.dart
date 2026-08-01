@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/model/ai_inference_entrypoint_inventory.dart';
+
+import 'support/ai_inference_entrypoint_inventory.dart';
 
 void main() {
   test('inventory uniquely classifies every supported AI work type', () {

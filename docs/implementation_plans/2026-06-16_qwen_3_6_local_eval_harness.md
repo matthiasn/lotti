@@ -22,10 +22,10 @@ developer tool that answers:
 - Status: MVP implemented and committed; follow-up strict argument/tool-selection
   eval changes are implemented and verified.
 - Current follow-up diff: 6 files, 240 insertions, 31 deletions.
-- New production modules are intentionally small:
-  - `lib/features/ai/eval/qwen_local_eval_config.dart` — 177 lines
-  - `lib/features/ai/eval/qwen_local_eval_report.dart` — 334 lines
-  - `lib/features/ai/eval/qwen_local_inference_eval.dart` — 239 lines
+- New test-support modules are intentionally small:
+  - `test/features/ai/eval/support/qwen_local_eval_config.dart` — 177 lines
+  - `test/features/ai/eval/support/qwen_local_eval_report.dart` — 334 lines
+  - `test/features/ai/eval/support/qwen_local_inference_eval.dart` — 239 lines
 
 ## Files Added Or Changed
 
@@ -36,14 +36,14 @@ developer tool that answers:
   - Added the `eval-live` tag for manual local-inference tests.
 - `lib/features/ai/README.md`
   - Added a short developer-tool note for the Qwen local eval wrapper.
-- `lib/features/ai/eval/qwen_local_eval_config.dart`
+- `test/features/ai/eval/support/qwen_local_eval_config.dart`
   - Defines default Qwen profiles, scenario definitions, profile parsing, and
     scenario selection. The default scenarios expose the five competing core
     task-field tools together.
-- `lib/features/ai/eval/qwen_local_eval_report.dart`
+- `test/features/ai/eval/support/qwen_local_eval_report.dart`
   - Defines case results, profile summaries, JSON output, and Markdown output,
     including tool-name and argument-value match rates.
-- `lib/features/ai/eval/qwen_local_inference_eval.dart`
+- `test/features/ai/eval/support/qwen_local_inference_eval.dart`
   - Runs the profile/scenario matrix through `InferenceRepositoryInterface`,
     using the real task-agent tool definitions from `AgentToolRegistry`.
 - `test/features/ai/eval/qwen_local_inference_eval_test.dart`
@@ -149,9 +149,9 @@ Focused formatting:
 
 ```bash
 fvm dart format \
-  lib/features/ai/eval/qwen_local_eval_config.dart \
-  lib/features/ai/eval/qwen_local_eval_report.dart \
-  lib/features/ai/eval/qwen_local_inference_eval.dart \
+  test/features/ai/eval/support/qwen_local_eval_config.dart \
+  test/features/ai/eval/support/qwen_local_eval_report.dart \
+  test/features/ai/eval/support/qwen_local_inference_eval.dart \
   test/features/ai/eval/qwen_local_inference_eval_test.dart \
   test/features/ai/eval/qwen_local_inference_eval_live_test.dart
 ```
@@ -174,9 +174,9 @@ Targeted analyzer:
 
 ```bash
 fvm flutter analyze --no-pub \
-  lib/features/ai/eval/qwen_local_eval_config.dart \
-  lib/features/ai/eval/qwen_local_eval_report.dart \
-  lib/features/ai/eval/qwen_local_inference_eval.dart \
+  test/features/ai/eval/support/qwen_local_eval_config.dart \
+  test/features/ai/eval/support/qwen_local_eval_report.dart \
+  test/features/ai/eval/support/qwen_local_inference_eval.dart \
   test/features/ai/eval/qwen_local_inference_eval_test.dart \
   test/features/ai/eval/qwen_local_inference_eval_live_test.dart
 ```
@@ -271,7 +271,7 @@ contract.
 
 The follow-up eval adds:
 
-- `lib/features/ai/eval/local_task_agent_inference_eval.dart`
+- `test/features/ai/eval/support/local_task_agent_inference_eval.dart`
 - `test/features/ai/eval/local_task_agent_inference_eval_test.dart`
 - `test/features/ai/eval/local_task_agent_inference_eval_live_test.dart`
 - `tool/local_task_agent_inference_eval.sh`
@@ -412,9 +412,9 @@ This MVP intentionally does not add:
 
    ```bash
    fvm dart format \
-     lib/features/ai/eval/qwen_local_eval_config.dart \
-     lib/features/ai/eval/qwen_local_eval_report.dart \
-     lib/features/ai/eval/qwen_local_inference_eval.dart \
+     test/features/ai/eval/support/qwen_local_eval_config.dart \
+     test/features/ai/eval/support/qwen_local_eval_report.dart \
+     test/features/ai/eval/support/qwen_local_inference_eval.dart \
      test/features/ai/eval/qwen_local_inference_eval_test.dart \
      test/features/ai/eval/qwen_local_inference_eval_live_test.dart
 

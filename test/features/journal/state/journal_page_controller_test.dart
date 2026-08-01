@@ -882,8 +882,8 @@ void main() {
       });
     });
 
-    group('Task Status Selection Edge Cases', () {
-      test('selectSingleTaskStatus clears other statuses', () {
+    group('Batch Task Status Selection Edge Cases', () {
+      test('batch status update replaces an existing selection', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -892,12 +892,14 @@ void main() {
           settle(async);
 
           // First select all
-          controller.selectAllTaskStatuses();
+          controller.applyBatchFilterUpdate(
+            statuses: controller.state.taskStatuses.toSet(),
+          );
 
           settle(async);
 
           // Then select single
-          controller.selectSingleTaskStatus('DONE');
+          controller.applyBatchFilterUpdate(statuses: const {'DONE'});
 
           settle(async);
 
@@ -1272,7 +1274,9 @@ void main() {
 
           settle(async);
 
-          controller.setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent);
+          controller.applyBatchFilterUpdate(
+            agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+          );
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -1297,7 +1301,9 @@ void main() {
 
           settle(async);
 
-          controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
+          controller.applyBatchFilterUpdate(
+            agentAssignmentFilter: AgentAssignmentFilter.noAgent,
+          );
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -1323,7 +1329,9 @@ void main() {
           settle(async);
 
           // Default is 'all' — should return both tasks
-          controller.setAgentAssignmentFilter(AgentAssignmentFilter.all);
+          controller.applyBatchFilterUpdate(
+            agentAssignmentFilter: AgentAssignmentFilter.all,
+          );
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -1401,10 +1409,10 @@ void main() {
 
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          await controller.setAgentAssignmentFilter(
-            AgentAssignmentFilter.hasAgent,
+          await controller.applyBatchFilterUpdate(
+            agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+            sortOption: TaskSortOption.byDueDate,
           );
-          await controller.setSortOption(TaskSortOption.byDueDate);
 
           await Future<void>.delayed(const Duration(milliseconds: 200));
 
@@ -1446,7 +1454,9 @@ void main() {
 
           settle(async);
 
-          controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
+          controller.applyBatchFilterUpdate(
+            agentAssignmentFilter: AgentAssignmentFilter.noAgent,
+          );
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -1458,7 +1468,7 @@ void main() {
     });
 
     group('Filter Management - Project', () {
-      test('toggleProjectFilter adds project when not present', () {
+      test('batch project update selects a project', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -1466,7 +1476,9 @@ void main() {
 
           settle(async);
 
-          controller.toggleProjectFilter('proj-1');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
 
           settle(async);
 
@@ -1475,7 +1487,7 @@ void main() {
         });
       });
 
-      test('toggleProjectFilter removes project when present', () {
+      test('batch project update clears an existing selection', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -1484,8 +1496,8 @@ void main() {
           settle(async);
 
           controller
-            ..toggleProjectFilter('proj-1')
-            ..toggleProjectFilter('proj-1');
+            ..applyBatchFilterUpdate(projectIds: const {'proj-1'})
+            ..applyBatchFilterUpdate(projectIds: const {});
 
           settle(async);
 
@@ -1494,7 +1506,7 @@ void main() {
         });
       });
 
-      test('clearProjectFilter removes all project selections', () {
+      test('empty project batch clears all selections', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -1502,13 +1514,13 @@ void main() {
 
           settle(async);
 
-          controller
-            ..toggleProjectFilter('proj-1')
-            ..toggleProjectFilter('proj-2');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1', 'proj-2'},
+          );
 
           settle(async);
 
-          controller.clearProjectFilter();
+          controller.applyBatchFilterUpdate(projectIds: const {});
 
           settle(async);
 
@@ -1517,7 +1529,7 @@ void main() {
         });
       });
 
-      test('removeStaleProjectFilters removes only stale IDs', () {
+      test('replacement project batch keeps only valid IDs', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -1525,14 +1537,13 @@ void main() {
 
           settle(async);
 
-          controller
-            ..toggleProjectFilter('proj-1')
-            ..toggleProjectFilter('proj-2')
-            ..toggleProjectFilter('proj-3');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1', 'proj-2', 'proj-3'},
+          );
 
           settle(async);
 
-          controller.removeStaleProjectFilters({'proj-1', 'proj-3'});
+          controller.applyBatchFilterUpdate(projectIds: const {'proj-2'});
 
           settle(async);
 
@@ -1541,7 +1552,7 @@ void main() {
         });
       });
 
-      test('removeStaleProjectFilters is no-op when staleIds is empty', () {
+      test('omitting project IDs preserves the current selection', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -1549,11 +1560,13 @@ void main() {
 
           settle(async);
 
-          controller.toggleProjectFilter('proj-1');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
 
           settle(async);
 
-          controller.removeStaleProjectFilters(<String>{});
+          controller.applyBatchFilterUpdate();
 
           settle(async);
 
@@ -1571,7 +1584,9 @@ void main() {
           settle(async);
 
           // Set a project filter first
-          controller.toggleProjectFilter('proj-1');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
 
           settle(async);
 
@@ -1596,7 +1611,9 @@ void main() {
 
           settle(async);
 
-          controller.toggleProjectFilter('proj-1');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
 
           settle(async);
 
@@ -1680,7 +1697,9 @@ void main() {
 
           settle(async);
 
-          controller.toggleProjectFilter('proj-1');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -1782,8 +1801,12 @@ void main() {
 
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          await controller.toggleProjectFilter('proj-1');
-          await controller.setSortOption(TaskSortOption.byDueDate);
+          await controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
+          await controller.applyBatchFilterUpdate(
+            sortOption: TaskSortOption.byDueDate,
+          );
 
           await Future<void>.delayed(const Duration(milliseconds: 200));
 
@@ -1801,7 +1824,7 @@ void main() {
       );
     });
 
-    group('Batch Setters', () {
+    group('Batch Filter Updates', () {
       late AgentDatabase agentDbForBatch;
 
       setUp(() {
@@ -1817,7 +1840,7 @@ void main() {
         getIt.unregister<AgentDatabase>();
       });
 
-      test('setSelectedTaskStatuses replaces all statuses', () {
+      test('replaces all selected task statuses', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -1825,7 +1848,9 @@ void main() {
 
           settle(async);
 
-          controller.setSelectedTaskStatuses({'DONE', 'BLOCKED'});
+          controller.applyBatchFilterUpdate(
+            statuses: const {'DONE', 'BLOCKED'},
+          );
 
           settle(async);
 
@@ -1835,7 +1860,7 @@ void main() {
       });
 
       test(
-        'setSelectedCategoryIds replaces categories and clears projects',
+        'replaces categories and clears projects atomically',
         () {
           fakeAsync((async) {
             final controller = container.read(
@@ -1845,12 +1870,17 @@ void main() {
             settle(async);
 
             // First set some projects
-            controller.setSelectedProjectIds({'proj-1'});
+            controller.applyBatchFilterUpdate(
+              projectIds: const {'proj-1'},
+            );
 
             settle(async);
 
             // Now set categories — projects should be cleared
-            controller.setSelectedCategoryIds({'cat-1', 'cat-2'});
+            controller.applyBatchFilterUpdate(
+              categoryIds: const {'cat-1', 'cat-2'},
+              projectIds: const {},
+            );
 
             settle(async);
 
@@ -1861,7 +1891,7 @@ void main() {
         },
       );
 
-      test('setSelectedLabelIds replaces all labels', () {
+      test('replaces all selected labels', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -1869,7 +1899,9 @@ void main() {
 
           settle(async);
 
-          controller.setSelectedLabelIds({'label-1', 'label-2'});
+          controller.applyBatchFilterUpdate(
+            labelIds: const {'label-1', 'label-2'},
+          );
 
           settle(async);
 
@@ -1878,7 +1910,7 @@ void main() {
         });
       });
 
-      test('setSelectedProjectIds replaces all projects', () {
+      test('replaces all selected projects', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -1886,7 +1918,9 @@ void main() {
 
           settle(async);
 
-          controller.setSelectedProjectIds({'proj-a', 'proj-b'});
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-a', 'proj-b'},
+          );
 
           settle(async);
 
@@ -1895,7 +1929,7 @@ void main() {
         });
       });
 
-      test('setSelectedPriorities replaces all priorities', () {
+      test('replaces all selected priorities', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -1903,7 +1937,9 @@ void main() {
 
           settle(async);
 
-          controller.setSelectedPriorities({'HIGH', 'CRITICAL'});
+          controller.applyBatchFilterUpdate(
+            priorities: const {'HIGH', 'CRITICAL'},
+          );
 
           settle(async);
 
@@ -1921,7 +1957,7 @@ void main() {
           settle(async);
 
           final mutableSet = {'DONE'};
-          controller.setSelectedTaskStatuses(mutableSet);
+          controller.applyBatchFilterUpdate(statuses: mutableSet);
 
           settle(async);
 
@@ -2949,7 +2985,11 @@ void main() {
 
             async.flushMicrotasks();
 
-            unawaited(controller.toggleProjectFilter('proj-1'));
+            unawaited(
+              controller.applyBatchFilterUpdate(
+                projectIds: const {'proj-1'},
+              ),
+            );
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
 
@@ -3661,7 +3701,11 @@ void main() {
 
             async.flushMicrotasks();
 
-            unawaited(controller.toggleProjectFilter('proj-1'));
+            unawaited(
+              controller.applyBatchFilterUpdate(
+                projectIds: const {'proj-1'},
+              ),
+            );
             async.flushMicrotasks();
 
             state.pagingController!.value = PagingState<int, JournalEntity>(
@@ -3823,7 +3867,11 @@ void main() {
 
             async.flushMicrotasks();
 
-            unawaited(controller.toggleProjectFilter('proj-1'));
+            unawaited(
+              controller.applyBatchFilterUpdate(
+                projectIds: const {'proj-1'},
+              ),
+            );
             async.flushMicrotasks();
 
             state.pagingController!.value = PagingState<int, JournalEntity>(
@@ -3959,7 +4007,11 @@ void main() {
 
             async.flushMicrotasks();
 
-            unawaited(controller.toggleProjectFilter('proj-1'));
+            unawaited(
+              controller.applyBatchFilterUpdate(
+                projectIds: const {'proj-1'},
+              ),
+            );
             async.flushMicrotasks();
 
             // Set up two pages so sequential loop iterates twice.
@@ -4244,8 +4296,8 @@ void main() {
     });
 
     group('Filter Management - toggle membership contract', () {
-      // All five toggle methods share one contract: toggling a value flips
-      // its membership in the corresponding selection set. One spec per
+      // Both remaining toggle methods share one contract: toggling a value
+      // flips membership in its corresponding selection set. One spec per
       // method drives both directions.
       final toggleSpecs =
           <
@@ -4262,17 +4314,6 @@ void main() {
             })
           >[
             (
-              method: 'toggleSelectedTaskStatus',
-              tasksTab: true,
-              toggle: (c, v) => c.toggleSelectedTaskStatus(v),
-              prepareAdd: null,
-              contains: (s, v) => s.selectedTaskStatuses.contains(v),
-              addValue: 'BLOCKED',
-              // OPEN is in the default set, so a single toggle removes it.
-              removeValue: 'OPEN',
-              removeByDoubleToggle: false,
-            ),
-            (
               method: 'toggleSelectedCategoryIds',
               tasksTab: true,
               toggle: (c, v) => c.toggleSelectedCategoryIds(v),
@@ -4280,26 +4321,6 @@ void main() {
               contains: (s, v) => s.selectedCategoryIds.contains(v),
               addValue: 'cat1',
               removeValue: 'cat1',
-              removeByDoubleToggle: true,
-            ),
-            (
-              method: 'toggleSelectedLabelId',
-              tasksTab: true,
-              toggle: (c, v) => c.toggleSelectedLabelId(v),
-              prepareAdd: null,
-              contains: (s, v) => s.selectedLabelIds.contains(v),
-              addValue: 'label-A',
-              removeValue: 'label-A',
-              removeByDoubleToggle: true,
-            ),
-            (
-              method: 'toggleSelectedPriority',
-              tasksTab: true,
-              toggle: (c, v) => c.toggleSelectedPriority(v),
-              prepareAdd: null,
-              contains: (s, v) => s.selectedPriorities.contains(v),
-              addValue: 'P0',
-              removeValue: 'P0',
               removeByDoubleToggle: true,
             ),
             (
@@ -4360,8 +4381,8 @@ void main() {
       }
     });
 
-    group('Filter Management - Task Status', () {
-      test('selectSingleTaskStatus sets only one status', () {
+    group('Batch Filter Updates - Task Status', () {
+      test('sets only one task status', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4369,7 +4390,7 @@ void main() {
 
           settle(async);
 
-          controller.selectSingleTaskStatus('DONE');
+          controller.applyBatchFilterUpdate(statuses: const {'DONE'});
 
           settle(async);
 
@@ -4378,7 +4399,7 @@ void main() {
         });
       });
 
-      test('selectAllTaskStatuses selects all statuses', () {
+      test('selects all task statuses', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4386,7 +4407,9 @@ void main() {
 
           settle(async);
 
-          controller.selectAllTaskStatuses();
+          controller.applyBatchFilterUpdate(
+            statuses: controller.state.taskStatuses.toSet(),
+          );
 
           settle(async);
 
@@ -4398,7 +4421,7 @@ void main() {
         });
       });
 
-      test('clearSelectedTaskStatuses removes all selections', () {
+      test('clears all task status selections', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4406,7 +4429,7 @@ void main() {
 
           settle(async);
 
-          controller.clearSelectedTaskStatuses();
+          controller.applyBatchFilterUpdate(statuses: const {});
 
           settle(async);
 
@@ -4455,7 +4478,7 @@ void main() {
     });
 
     group('Filter Management - Labels', () {
-      test('clearSelectedLabelIds removes all label filters', () {
+      test('an empty label batch clears all label filters', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(false).notifier,
@@ -4463,13 +4486,13 @@ void main() {
 
           settle(async);
 
-          controller
-            ..toggleSelectedLabelId('label-A')
-            ..toggleSelectedLabelId('label-B');
+          controller.applyBatchFilterUpdate(
+            labelIds: const {'label-A', 'label-B'},
+          );
 
           settle(async);
 
-          controller.clearSelectedLabelIds();
+          controller.applyBatchFilterUpdate(labelIds: const {});
 
           settle(async);
 
@@ -4480,7 +4503,7 @@ void main() {
     });
 
     group('Filter Management - Priority', () {
-      test('clearSelectedPriorities removes all priorities', () {
+      test('an empty priority batch clears all priorities', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4489,9 +4512,8 @@ void main() {
           settle(async);
 
           controller
-            ..toggleSelectedPriority('P0')
-            ..toggleSelectedPriority('P1')
-            ..clearSelectedPriorities();
+            ..applyBatchFilterUpdate(priorities: const {'P0', 'P1'})
+            ..applyBatchFilterUpdate(priorities: const {});
 
           settle(async);
 
@@ -4634,7 +4656,7 @@ void main() {
     });
 
     group('Sort Option Management', () {
-      test('setSortOption updates sortOption to byDate', () {
+      test('batch update sets sort option to byDate', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4642,7 +4664,7 @@ void main() {
 
           settle(async);
 
-          controller.setSortOption(TaskSortOption.byDate);
+          controller.applyBatchFilterUpdate(sortOption: TaskSortOption.byDate);
 
           settle(async);
 
@@ -4651,7 +4673,7 @@ void main() {
         });
       });
 
-      test('setSortOption can toggle back to byPriority', () {
+      test('batch update can restore byPriority sorting', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4660,8 +4682,8 @@ void main() {
           settle(async);
 
           controller
-            ..setSortOption(TaskSortOption.byDate)
-            ..setSortOption(TaskSortOption.byPriority);
+            ..applyBatchFilterUpdate(sortOption: TaskSortOption.byDate)
+            ..applyBatchFilterUpdate(sortOption: TaskSortOption.byPriority);
 
           settle(async);
 
@@ -4670,7 +4692,7 @@ void main() {
         });
       });
 
-      test('setSortOption updates sortOption to byDueDate', () {
+      test('batch update sets sort option to byDueDate', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4678,7 +4700,9 @@ void main() {
 
           settle(async);
 
-          controller.setSortOption(TaskSortOption.byDueDate);
+          controller.applyBatchFilterUpdate(
+            sortOption: TaskSortOption.byDueDate,
+          );
 
           settle(async);
 
@@ -4687,7 +4711,7 @@ void main() {
         });
       });
 
-      test('setSortOption cycles through all three options', () {
+      test('batch updates cover all three sort options', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4700,19 +4724,23 @@ void main() {
           expect(state.sortOption, equals(TaskSortOption.byPriority));
 
           // Switch to byDueDate
-          controller.setSortOption(TaskSortOption.byDueDate);
+          controller.applyBatchFilterUpdate(
+            sortOption: TaskSortOption.byDueDate,
+          );
           settle(async);
           state = container.read(journalPageControllerProvider(true));
           expect(state.sortOption, equals(TaskSortOption.byDueDate));
 
           // Switch to byDate
-          controller.setSortOption(TaskSortOption.byDate);
+          controller.applyBatchFilterUpdate(sortOption: TaskSortOption.byDate);
           settle(async);
           state = container.read(journalPageControllerProvider(true));
           expect(state.sortOption, equals(TaskSortOption.byDate));
 
           // Back to byPriority
-          controller.setSortOption(TaskSortOption.byPriority);
+          controller.applyBatchFilterUpdate(
+            sortOption: TaskSortOption.byPriority,
+          );
           settle(async);
           state = container.read(journalPageControllerProvider(true));
           expect(state.sortOption, equals(TaskSortOption.byPriority));
@@ -4762,8 +4790,8 @@ void main() {
             );
 
             // Agent filter active -> sequential.
-            taskController.setAgentAssignmentFilter(
-              AgentAssignmentFilter.hasAgent,
+            taskController.applyBatchFilterUpdate(
+              agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
             );
             settle(async);
             expect(
@@ -4772,9 +4800,13 @@ void main() {
             );
 
             // Back to all, but with a project selected -> still sequential.
-            taskController.setAgentAssignmentFilter(AgentAssignmentFilter.all);
+            taskController.applyBatchFilterUpdate(
+              agentAssignmentFilter: AgentAssignmentFilter.all,
+            );
             settle(async);
-            taskController.setSelectedProjectIds({'proj-1'});
+            taskController.applyBatchFilterUpdate(
+              projectIds: const {'proj-1'},
+            );
             settle(async);
             expect(
               taskController.debugRequiresSequentialRetainedRefresh,
@@ -4782,7 +4814,7 @@ void main() {
             );
 
             // Clearing the project selection returns to parallel.
-            taskController.setSelectedProjectIds({});
+            taskController.applyBatchFilterUpdate(projectIds: const {});
             settle(async);
             expect(
               taskController.debugRequiresSequentialRetainedRefresh,
@@ -4792,7 +4824,7 @@ void main() {
         },
       );
 
-      test('setAgentAssignmentFilter updates to hasAgent', () {
+      test('batch update sets agent filter to hasAgent', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4800,7 +4832,9 @@ void main() {
 
           settle(async);
 
-          controller.setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent);
+          controller.applyBatchFilterUpdate(
+            agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+          );
 
           settle(async);
 
@@ -4812,7 +4846,7 @@ void main() {
         });
       });
 
-      test('setAgentAssignmentFilter updates to noAgent', () {
+      test('batch update sets agent filter to noAgent', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4820,7 +4854,9 @@ void main() {
 
           settle(async);
 
-          controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
+          controller.applyBatchFilterUpdate(
+            agentAssignmentFilter: AgentAssignmentFilter.noAgent,
+          );
 
           settle(async);
 
@@ -4832,7 +4868,7 @@ void main() {
         });
       });
 
-      test('setAgentAssignmentFilter cycles back to all', () {
+      test('batch update restores the all-agents filter', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4841,8 +4877,12 @@ void main() {
           settle(async);
 
           controller
-            ..setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent)
-            ..setAgentAssignmentFilter(AgentAssignmentFilter.all);
+            ..applyBatchFilterUpdate(
+              agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+            )
+            ..applyBatchFilterUpdate(
+              agentAssignmentFilter: AgentAssignmentFilter.all,
+            );
 
           settle(async);
 
@@ -4868,7 +4908,7 @@ void main() {
     });
 
     group('Show Creation Date Toggle', () {
-      test('setShowCreationDate updates showCreationDate to true', () {
+      test('batch update enables creation dates', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4876,7 +4916,7 @@ void main() {
 
           settle(async);
 
-          controller.setShowCreationDate(show: true);
+          controller.applyBatchFilterUpdate(showCreationDate: true);
 
           settle(async);
 
@@ -4885,7 +4925,7 @@ void main() {
         });
       });
 
-      test('setShowCreationDate can toggle back to false', () {
+      test('batch update can disable creation dates again', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4894,8 +4934,8 @@ void main() {
           settle(async);
 
           controller
-            ..setShowCreationDate(show: true)
-            ..setShowCreationDate(show: false);
+            ..applyBatchFilterUpdate(showCreationDate: true)
+            ..applyBatchFilterUpdate(showCreationDate: false);
 
           settle(async);
 
@@ -4915,8 +4955,10 @@ void main() {
             settle(async);
 
             controller
-              ..setSortOption(TaskSortOption.byDate)
-              ..setShowCreationDate(show: true)
+              ..applyBatchFilterUpdate(
+                sortOption: TaskSortOption.byDate,
+                showCreationDate: true,
+              )
               // Trigger unrelated state update
               ..setFilters({DisplayFilter.starredEntriesOnly});
 
@@ -4932,7 +4974,7 @@ void main() {
     });
 
     group('Show Due Date Toggle', () {
-      test('setShowDueDate updates showDueDate to false', () {
+      test('batch update disables due dates', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4941,7 +4983,7 @@ void main() {
           settle(async);
 
           // Default is true, so toggle to false
-          controller.setShowDueDate(show: false);
+          controller.applyBatchFilterUpdate(showDueDate: false);
 
           settle(async);
 
@@ -4950,7 +4992,7 @@ void main() {
         });
       });
 
-      test('setShowDueDate can toggle back to true', () {
+      test('batch update can enable due dates again', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4959,8 +5001,8 @@ void main() {
           settle(async);
 
           controller
-            ..setShowDueDate(show: false)
-            ..setShowDueDate(show: true);
+            ..applyBatchFilterUpdate(showDueDate: false)
+            ..applyBatchFilterUpdate(showDueDate: true);
 
           settle(async);
 
@@ -4982,7 +5024,7 @@ void main() {
     });
 
     group('Filter Management - Project (Filter)', () {
-      test('toggleProjectFilter adds project when not present', () {
+      test('batch project update selects a project', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -4990,7 +5032,9 @@ void main() {
 
           settle(async);
 
-          controller.toggleProjectFilter('proj-1');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
 
           settle(async);
 
@@ -4999,7 +5043,7 @@ void main() {
         });
       });
 
-      test('toggleProjectFilter removes project when present', () {
+      test('batch project update clears an existing selection', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -5008,8 +5052,8 @@ void main() {
           settle(async);
 
           controller
-            ..toggleProjectFilter('proj-1')
-            ..toggleProjectFilter('proj-1');
+            ..applyBatchFilterUpdate(projectIds: const {'proj-1'})
+            ..applyBatchFilterUpdate(projectIds: const {});
 
           settle(async);
 
@@ -5018,7 +5062,7 @@ void main() {
         });
       });
 
-      test('clearProjectFilter removes all project selections', () {
+      test('empty project batch clears all selections', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -5026,13 +5070,13 @@ void main() {
 
           settle(async);
 
-          controller
-            ..toggleProjectFilter('proj-1')
-            ..toggleProjectFilter('proj-2');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1', 'proj-2'},
+          );
 
           settle(async);
 
-          controller.clearProjectFilter();
+          controller.applyBatchFilterUpdate(projectIds: const {});
 
           settle(async);
 
@@ -5041,7 +5085,7 @@ void main() {
         });
       });
 
-      test('removeStaleProjectFilters removes only stale IDs', () {
+      test('replacement project batch keeps only valid IDs', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -5049,14 +5093,13 @@ void main() {
 
           settle(async);
 
-          controller
-            ..toggleProjectFilter('proj-1')
-            ..toggleProjectFilter('proj-2')
-            ..toggleProjectFilter('proj-3');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1', 'proj-2', 'proj-3'},
+          );
 
           settle(async);
 
-          controller.removeStaleProjectFilters({'proj-1', 'proj-3'});
+          controller.applyBatchFilterUpdate(projectIds: const {'proj-2'});
 
           settle(async);
 
@@ -5065,7 +5108,7 @@ void main() {
         });
       });
 
-      test('removeStaleProjectFilters is no-op when staleIds is empty', () {
+      test('omitting project IDs preserves the current selection', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -5073,11 +5116,13 @@ void main() {
 
           settle(async);
 
-          controller.toggleProjectFilter('proj-1');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
 
           settle(async);
 
-          controller.removeStaleProjectFilters(<String>{});
+          controller.applyBatchFilterUpdate();
 
           settle(async);
 
@@ -5095,7 +5140,9 @@ void main() {
           settle(async);
 
           // Set a project filter first
-          controller.toggleProjectFilter('proj-1');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
 
           settle(async);
 
@@ -5120,7 +5167,9 @@ void main() {
 
           settle(async);
 
-          controller.toggleProjectFilter('proj-1');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
 
           settle(async);
 
@@ -5204,7 +5253,9 @@ void main() {
 
           settle(async);
 
-          controller.toggleProjectFilter('proj-1');
+          controller.applyBatchFilterUpdate(
+            projectIds: const {'proj-1'},
+          );
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -5294,9 +5345,10 @@ void main() {
 
             settle(async);
 
-            controller
-              ..toggleProjectFilter('proj-1')
-              ..setSortOption(TaskSortOption.byDueDate);
+            controller.applyBatchFilterUpdate(
+              projectIds: const {'proj-1'},
+              sortOption: TaskSortOption.byDueDate,
+            );
 
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();

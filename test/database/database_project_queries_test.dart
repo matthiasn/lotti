@@ -1394,17 +1394,15 @@ void main() {
 
           expect(result, hasLength(2));
 
-          // Project 1: 3 total, 1 completed, 1 blocked
+          // Project 1: 3 total, 1 completed
           final rollup1 = result['proj-rollup-1']!;
           expect(rollup1.totalTaskCount, 3);
           expect(rollup1.completedTaskCount, 1);
-          expect(rollup1.blockedTaskCount, 1);
 
-          // Project 2: 2 total, 2 completed, 0 blocked
+          // Project 2: 2 total, 2 completed
           final rollup2 = result['proj-rollup-2']!;
           expect(rollup2.totalTaskCount, 2);
           expect(rollup2.completedTaskCount, 2);
-          expect(rollup2.blockedTaskCount, 0);
         },
       );
 

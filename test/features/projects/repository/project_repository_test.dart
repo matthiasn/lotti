@@ -258,12 +258,10 @@ void main() {
             'project-001': (
               totalTaskCount: 5,
               completedTaskCount: 3,
-              blockedTaskCount: 1,
             ),
             'project-002': (
               totalTaskCount: 2,
               completedTaskCount: 1,
-              blockedTaskCount: 0,
             ),
           },
         );
@@ -316,7 +314,6 @@ void main() {
             id: (
               totalTaskCount: id == 'project-011' ? 2 : 1,
               completedTaskCount: 0,
-              blockedTaskCount: 0,
             ),
         };
       });
@@ -367,7 +364,6 @@ void main() {
             'project-001': (
               totalTaskCount: 1,
               completedTaskCount: 0,
-              blockedTaskCount: 0,
             ),
           },
         );
@@ -408,7 +404,6 @@ void main() {
             'project-001': (
               totalTaskCount: 1,
               completedTaskCount: 0,
-              blockedTaskCount: 0,
             ),
           },
         );
@@ -479,7 +474,6 @@ void main() {
             'project-001': (
               totalTaskCount: repositoryCallCount,
               completedTaskCount: 0,
-              blockedTaskCount: 0,
             ),
           },
         );
@@ -523,7 +517,6 @@ void main() {
           'project-001': (
             totalTaskCount: 1,
             completedTaskCount: 0,
-            blockedTaskCount: 0,
           ),
         },
       );
@@ -586,7 +579,6 @@ void main() {
           'project-020': (
             totalTaskCount: 5,
             completedTaskCount: 5,
-            blockedTaskCount: 0,
           ),
         },
       );
@@ -1411,7 +1403,6 @@ void main() {
           'project-prf': (
             totalTaskCount: 1,
             completedTaskCount: 0,
-            blockedTaskCount: 0,
           ),
         },
       );

@@ -9,13 +9,12 @@ import '../test_utils.dart';
 void main() {
   group('ProjectsSearchMode', () {
     test('has expected values', () {
-      expect(ProjectsSearchMode.values, hasLength(3));
+      expect(ProjectsSearchMode.values, hasLength(2));
       expect(
         ProjectsSearchMode.values,
         containsAll([
           ProjectsSearchMode.disabled,
           ProjectsSearchMode.localText,
-          ProjectsSearchMode.vector,
         ]),
       );
     });
@@ -71,20 +70,6 @@ void main() {
         expect(query, isNot(equals('not a query')));
       });
     });
-
-    group('copyWith', () {
-      test('copies with new categoryIds', () {
-        const original = ProjectsQuery(categoryIds: {'a'});
-        final copied = original.copyWith(categoryIds: {'b', 'c'});
-        expect(copied.categoryIds, equals({'b', 'c'}));
-      });
-
-      test('retains original categoryIds when not specified', () {
-        const original = ProjectsQuery(categoryIds: {'a'});
-        final copied = original.copyWith();
-        expect(copied.categoryIds, equals({'a'}));
-      });
-    });
   });
 
   group('ProjectsFilter', () {
@@ -119,7 +104,7 @@ void main() {
       test('not equal when searchMode differs', () {
         // ignore: avoid_redundant_argument_values
         const a = ProjectsFilter(searchMode: ProjectsSearchMode.disabled);
-        const b = ProjectsFilter(searchMode: ProjectsSearchMode.vector);
+        const b = ProjectsFilter(searchMode: ProjectsSearchMode.localText);
         expect(a, isNot(equals(b)));
       });
 
@@ -158,8 +143,10 @@ void main() {
 
       test('copies with new searchMode', () {
         const original = ProjectsFilter();
-        final copied = original.copyWith(searchMode: ProjectsSearchMode.vector);
-        expect(copied.searchMode, ProjectsSearchMode.vector);
+        final copied = original.copyWith(
+          searchMode: ProjectsSearchMode.localText,
+        );
+        expect(copied.searchMode, ProjectsSearchMode.localText);
       });
 
       test('retains all fields when no arguments given', () {
@@ -245,23 +232,6 @@ void main() {
       name: 'Work',
       color: '#FF0000',
     );
-
-    group('categoryId', () {
-      test('returns categoryId from project meta', () {
-        final item = makeTestProjectListItemData(
-          project: makeTestProject(categoryId: 'cat-work'),
-          category: category,
-        );
-        expect(item.categoryId, 'cat-work');
-      });
-
-      test('returns null when project has no categoryId', () {
-        final item = makeTestProjectListItemData(
-          project: makeTestProject(),
-        );
-        expect(item.categoryId, isNull);
-      });
-    });
 
     group('categoryName', () {
       test('returns category name when category is set', () {
@@ -481,39 +451,6 @@ void main() {
           ],
         );
         expect(snapshot.totalProjectCount, 0);
-      });
-    });
-
-    group('isEmpty', () {
-      test('returns true when no projects exist', () {
-        const snapshot = ProjectsOverviewSnapshot(groups: []);
-        expect(snapshot.isEmpty, isTrue);
-      });
-
-      test('returns true when all groups have empty project lists', () {
-        final snapshot = ProjectsOverviewSnapshot(
-          groups: [
-            ProjectCategoryGroup(
-              categoryId: 'cat-1',
-              category: category,
-              projects: const [],
-            ),
-          ],
-        );
-        expect(snapshot.isEmpty, isTrue);
-      });
-
-      test('returns false when projects exist', () {
-        final snapshot = ProjectsOverviewSnapshot(
-          groups: [
-            ProjectCategoryGroup(
-              categoryId: 'cat-1',
-              category: category,
-              projects: [makeTestProjectListItemData(category: category)],
-            ),
-          ],
-        );
-        expect(snapshot.isEmpty, isFalse);
       });
     });
   });

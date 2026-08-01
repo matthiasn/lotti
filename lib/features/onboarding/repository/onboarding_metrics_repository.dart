@@ -87,7 +87,6 @@ class OnboardingMetricsRepository {
   /// Only events belonging to the general FTUE vocabulary contribute: Daily OS
   /// onboarding events (and any unknown/future names) are partitioned out so
   /// they never shift the FTUE active-day or activation metrics. See
-  /// [dailyOsOnboardingFunnelState] for the Daily OS projection.
   Future<OnboardingFunnelState> funnelState() async {
     final events = await _db.getAllEvents();
     if (events.isEmpty) return const OnboardingFunnelState.empty();
@@ -122,29 +121,6 @@ class OnboardingMetricsRepository {
       installFirstSeen: installFirstSeen,
       activeDayBuckets: days.toList()..sort(),
       isBaselineCohort: isBaseline,
-      eventCounts: counts,
-    );
-  }
-
-  /// Computes the derived Daily OS onboarding funnel state from the same event
-  /// log, partitioned to the Daily OS onboarding vocabulary. Events from the
-  /// general FTUE (and unknown names) do not contribute.
-  Future<DailyOsOnboardingFunnelState> dailyOsOnboardingFunnelState() async {
-    final events = await _db.getAllEvents();
-    if (events.isEmpty) return const DailyOsOnboardingFunnelState.empty();
-
-    final counts = <String, int>{};
-    final days = <int>{};
-
-    for (final event in events) {
-      final name = OnboardingEventName.fromWireName(event.eventName);
-      if (name == null || !name.isDailyOsOnboarding) continue;
-      counts.update(event.eventName, (v) => v + 1, ifAbsent: () => 1);
-      days.add(event.dayBucket);
-    }
-
-    return DailyOsOnboardingFunnelState(
-      activeDayBuckets: days.toList()..sort(),
       eventCounts: counts,
     );
   }

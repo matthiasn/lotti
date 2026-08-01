@@ -19,11 +19,11 @@ import 'package:meta/meta.dart';
 ///
 /// Joins the editable project from [projectDetailControllerProvider] with the
 /// category, the latest project-agent report/state (health band, AI summary,
-/// recommendations, next scheduled wake), and the linked tasks — sorted by
-/// [_compareTasks] and decorated with their per-task one-liners and a rolled-up
-/// estimate total. Returns `null` when the project no longer exists. Because it
-/// watches the controller, edits and background DB notifications recompute the
-/// record automatically.
+/// next scheduled wake), and the linked tasks — sorted by [_compareTasks] and
+/// decorated with their per-task one-liners and a rolled-up estimate total.
+/// Recommendation UI watches its own provider separately. Returns `null` when
+/// the project no longer exists. Because this provider watches the controller,
+/// edits and background DB notifications recompute the record automatically.
 final projectDetailRecordProvider = FutureProvider.autoDispose
     .family<ProjectRecord?, String>((
       ref,

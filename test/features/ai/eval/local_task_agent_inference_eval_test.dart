@@ -7,7 +7,6 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
-import 'package:lotti/features/ai/eval/local_task_agent_inference_eval.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
@@ -15,6 +14,8 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+import 'support/local_task_agent_inference_eval.dart';
 
 void main() {
   final provider = AiConfigInferenceProvider(

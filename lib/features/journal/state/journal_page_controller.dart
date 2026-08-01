@@ -608,7 +608,6 @@ class JournalPageController extends Notifier<JournalPageState>
     await _persistTasksFilterWithoutRefresh();
   }
 
-  @override
   Future<void> _persistTasksFilterWithoutRefresh() async {
     final filter = TasksFilter(
       selectedCategoryIds: _selectedCategoryIds,
