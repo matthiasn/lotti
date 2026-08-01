@@ -247,7 +247,12 @@ class DayProcessingOutboxProcessor {
   }
 
   void _finished(DayProcessingJob job) {
-    if (job.isTerminal) onJobFinished?.call(job);
+    // Every observed state, not only the terminal ones. `failed` is not
+    // terminal — a retry can still resurrect it — so gating on `isTerminal`
+    // meant the plan-failure notification added for lotti3-hkb.10 could never
+    // fire, which is exactly the silence it was written to end. The listener
+    // decides what is worth saying; this is only the delivery point.
+    onJobFinished?.call(job);
   }
 
   /// Drains due jobs of [kinds] (or every kind when omitted) up to

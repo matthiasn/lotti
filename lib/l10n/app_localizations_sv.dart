@@ -3583,6 +3583,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'AI-modellen kunde inte slutföra det här.';
 
   @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Det finns ingen dagsplan att uppdatera ännu.';
+
+  @override
   String get dailyOsNextActivityAgentJobParse =>
       'Läsningen av din avstämning blev inte klar.';
 

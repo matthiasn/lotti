@@ -1834,6 +1834,7 @@
   "dailyOsNextActivityAgentActionFailed": "Handlingen blev ikke færdig. Intet gik tabt – prøv igen.",
   "dailyOsNextActivityAgentJobDraft": "Udkastet til din dagsplan blev ikke færdigt.",
   "dailyOsNextActivityAgentJobModelFailed": "AI-modellen kunne ikke gøre det færdigt.",
+  "dailyOsNextActivityAgentJobNoPlan": "Der er endnu ingen dagsplan at opdatere.",
   "dailyOsNextActivityAgentJobParse": "Læsningen af dit tjek-ind blev ikke færdig.",
   "dailyOsNextActivityAgentJobRefine": "Opdateringen af din dagsplan blev ikke færdig.",
   "dailyOsNextActivityAgentJobRetryHint": "Intet gik tabt. Prøv igen, når du er klar.",

@@ -483,10 +483,13 @@ void main() {
         final saved = await repository.getById('parse_cap-1');
         expect(saved!.status, DayProcessingJobStatus.failed);
         expect(saved.lastError, contains('ambiguous day resolution'));
-        // `failed` is not one of DayProcessingJob.isTerminal's two statuses
-        // (succeeded/cancelled), so _finished's onJobFinished gate stays
-        // closed here — this only proves _finished(failed) was reached.
-        expect(finished, isEmpty);
+        // A failure is delivered like any other outcome: `failed` is not
+        // terminal, and gating on that is what kept the plan-failure
+        // notification from ever firing.
+        expect(
+          [for (final job in finished) job.status],
+          [DayProcessingJobStatus.failed],
+        );
       },
     );
 
@@ -516,7 +519,7 @@ void main() {
       },
     );
 
-    test('onJobFinished fires only for terminal outcomes', () async {
+    test('onJobFinished fires for every observed outcome', () async {
       final finished = <DayProcessingJob>[];
       final processor = DayProcessingOutboxProcessor(
         repository: repository,
@@ -534,8 +537,14 @@ void main() {
         kinds: const {DayProcessingJobKind.parseCapture},
       );
 
-      // A deferred (non-terminal) outcome must not fire onJobFinished.
-      expect(finished, isEmpty);
+      // Delivery is not the place to decide what is worth saying. Gating on
+      // isTerminal here meant `failed` — which is NOT terminal, since a retry
+      // can resurrect it — never reached DayPlanReadyNotifier at all, so the
+      // plan-failure notification could not fire. The listener filters.
+      expect(
+        [for (final job in finished) job.status],
+        [DayProcessingJobStatus.queued],
+      );
     });
 
     test(

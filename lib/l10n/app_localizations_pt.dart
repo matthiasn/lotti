@@ -3608,6 +3608,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'O modelo de IA não conseguiu concluir isto.';
 
   @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Ainda não há nenhum plano do dia para atualizar.';
+
+  @override
   String get dailyOsNextActivityAgentJobParse =>
       'A leitura do teu registo não chegou ao fim.';
 

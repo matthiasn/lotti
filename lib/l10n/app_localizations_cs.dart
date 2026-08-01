@@ -3625,6 +3625,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Model AI to nedokázal dokončit.';
 
   @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Zatím není žádný denní plán k aktualizaci.';
+
+  @override
   String get dailyOsNextActivityAgentJobParse =>
       'Zpracování tvého zápisu se nedokončilo.';
 

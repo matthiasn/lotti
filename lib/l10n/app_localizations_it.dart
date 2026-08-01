@@ -3621,6 +3621,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il modello IA non è riuscito a completarlo.';
 
   @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Non c’è ancora un piano della giornata da aggiornare.';
+
+  @override
   String get dailyOsNextActivityAgentJobParse =>
       'La lettura del tuo check-in non è stata completata.';
 

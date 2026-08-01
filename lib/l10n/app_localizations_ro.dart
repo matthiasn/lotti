@@ -3631,6 +3631,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Modelul AI nu a putut finaliza această sarcină.';
 
   @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Nu există încă un plan al zilei de actualizat.';
+
+  @override
   String get dailyOsNextActivityAgentJobParse =>
       'Citirea notei dumneavoastră nu s-a finalizat.';
 

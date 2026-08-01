@@ -2090,6 +2090,10 @@
   "@dailyOsNextActivityAgentJobModelFailed": {
     "description": "Explains a stalled agent job the model could not complete."
   },
+  "dailyOsNextActivityAgentJobNoPlan": "There's no day plan to update yet.",
+  "@dailyOsNextActivityAgentJobNoPlan": {
+    "description": "Explains a refine job that stalled because the day has no plan yet."
+  },
   "dailyOsNextActivityAgentJobParse": "Reading your check-in didn't finish.",
   "@dailyOsNextActivityAgentJobParse": {
     "description": "Activity row title for a stalled capture-parsing job."

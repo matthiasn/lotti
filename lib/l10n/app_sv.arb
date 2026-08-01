@@ -1834,6 +1834,7 @@
   "dailyOsNextActivityAgentActionFailed": "Åtgärden blev inte klar. Ingenting gick förlorat – försök igen.",
   "dailyOsNextActivityAgentJobDraft": "Utkastet till din dagsplan blev inte klart.",
   "dailyOsNextActivityAgentJobModelFailed": "AI-modellen kunde inte slutföra det här.",
+  "dailyOsNextActivityAgentJobNoPlan": "Det finns ingen dagsplan att uppdatera ännu.",
   "dailyOsNextActivityAgentJobParse": "Läsningen av din avstämning blev inte klar.",
   "dailyOsNextActivityAgentJobRefine": "Uppdateringen av din dagsplan blev inte klar.",
   "dailyOsNextActivityAgentJobRetryHint": "Ingenting gick förlorat. Försök igen när du vill.",

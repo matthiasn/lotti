@@ -1656,6 +1656,7 @@
   "dailyOsNextActivityAgentActionFailed": "Akce se nedokončila. Nic se neztratilo – zkus to znovu.",
   "dailyOsNextActivityAgentJobDraft": "Návrh tvého denního plánu se nedokončil.",
   "dailyOsNextActivityAgentJobModelFailed": "Model AI to nedokázal dokončit.",
+  "dailyOsNextActivityAgentJobNoPlan": "Zatím není žádný denní plán k aktualizaci.",
   "dailyOsNextActivityAgentJobParse": "Zpracování tvého zápisu se nedokončilo.",
   "dailyOsNextActivityAgentJobRefine": "Aktualizace tvého denního plánu se nedokončila.",
   "dailyOsNextActivityAgentJobRetryHint": "Nic se neztratilo. Zkus to znovu, až budeš chtít.",

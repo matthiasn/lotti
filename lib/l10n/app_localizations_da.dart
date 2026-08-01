@@ -3577,6 +3577,10 @@ class AppLocalizationsDa extends AppLocalizations {
       'AI-modellen kunne ikke gøre det færdigt.';
 
   @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Der er endnu ingen dagsplan at opdatere.';
+
+  @override
   String get dailyOsNextActivityAgentJobParse =>
       'Læsningen af dit tjek-ind blev ikke færdig.';
 

@@ -1833,6 +1833,7 @@
   "dailyOsNextActivityAgentActionFailed": "Die actie is niet afgerond. Er is niets verloren gegaan — probeer het opnieuw.",
   "dailyOsNextActivityAgentJobDraft": "Het opstellen van je dagplan is niet afgerond.",
   "dailyOsNextActivityAgentJobModelFailed": "Het AI-model kon dit niet afmaken.",
+  "dailyOsNextActivityAgentJobNoPlan": "Er is nog geen dagplan om bij te werken.",
   "dailyOsNextActivityAgentJobParse": "Het uitlezen van je check-in is niet afgerond.",
   "dailyOsNextActivityAgentJobRefine": "Het bijwerken van je dagplan is niet afgerond.",
   "dailyOsNextActivityAgentJobRetryHint": "Er is niets verloren gegaan. Probeer het opnieuw wanneer je wilt.",

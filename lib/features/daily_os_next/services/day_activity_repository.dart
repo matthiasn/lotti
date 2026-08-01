@@ -117,9 +117,20 @@ class DayActivityRepository {
       dayId,
       kinds: const {DayProcessingJobKind.transcribeAudio},
     );
+    final liveCaptureIds = {
+      for (final capture in captures)
+        if (capture.deletedAt == null) capture.id,
+    };
     final stalledAgentJobs = [
       for (final job in await outbox.getForDay(dayId, kinds: agentJobKinds))
-        if (stalledAgentJobStatuses.contains(job.status)) job,
+        if (stalledAgentJobStatuses.contains(job.status))
+          // A failed parse whose capture has since been deleted is an intent
+          // that no longer exists: nothing will reschedule it, and offering
+          // Retry for a tombstoned capture only leads the user to a job that
+          // terminates on its own pre-check.
+          if (job.parsedCaptureId == null ||
+              liveCaptureIds.contains(job.parsedCaptureId))
+            job,
     ];
     final jobsByActivity = <String, DayProcessingJob>{
       for (final job in jobs) ?job.activityEntryId: job,
@@ -201,10 +212,12 @@ class DayActivityRepository {
               id: job.id,
               kind: DayActivityEntryKind.agentJob,
               activityEntryId: job.id,
-              // The moment the work stalled, not the moment it was first
-              // requested: the row belongs where the failure happened in the
-              // day's narrative, and it moves forward with each new attempt.
-              createdAt: job.updatedAt,
+              // The request time, not `updatedAt`. While the device is
+              // offline the runtime probes each waiting job on a timer,
+              // re-queuing and re-parking it, and both transitions rewrite
+              // `updatedAt` — so ordering by it made the row jump to the
+              // newest position every probe without any attempt having run.
+              createdAt: job.requestedAt,
               processingJob: job,
             ),
           for (final summary in summaries.where(

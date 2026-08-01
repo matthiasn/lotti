@@ -3589,6 +3589,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Het AI-model kon dit niet afmaken.';
 
   @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Er is nog geen dagplan om bij te werken.';
+
+  @override
   String get dailyOsNextActivityAgentJobParse =>
       'Het uitlezen van je check-in is niet afgerond.';
 

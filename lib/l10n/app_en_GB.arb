@@ -26,6 +26,7 @@
   "dailyOsNextActivityAgentActionFailed": "That action didn't finish. Nothing was lost—try again.",
   "dailyOsNextActivityAgentJobDraft": "Drafting your day plan didn't finish.",
   "dailyOsNextActivityAgentJobModelFailed": "The AI model couldn't finish this one.",
+  "dailyOsNextActivityAgentJobNoPlan": "There's no day plan to update yet.",
   "dailyOsNextActivityAgentJobParse": "Reading your check-in didn't finish.",
   "dailyOsNextActivityAgentJobRefine": "Updating your day plan didn't finish.",
   "dailyOsNextActivityAgentJobRetryHint": "Nothing was lost. Retry when you're ready.",

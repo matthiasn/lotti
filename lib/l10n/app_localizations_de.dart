@@ -3602,6 +3602,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das KI-Modell konnte das nicht abschließen.';
 
   @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Es gibt noch keinen Tagesplan zum Aktualisieren.';
+
+  @override
   String get dailyOsNextActivityAgentJobParse =>
       'Das Auswerten deines Check-ins wurde nicht fertig.';
 

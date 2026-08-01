@@ -6023,6 +6023,12 @@ abstract class AppLocalizations {
   /// **'The AI model couldn\'t finish this one.'**
   String get dailyOsNextActivityAgentJobModelFailed;
 
+  /// Explains a refine job that stalled because the day has no plan yet.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no day plan to update yet.'**
+  String get dailyOsNextActivityAgentJobNoPlan;
+
   /// Activity row title for a stalled capture-parsing job.
   ///
   /// In en, this message translates to:

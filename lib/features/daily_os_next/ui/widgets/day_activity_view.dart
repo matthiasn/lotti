@@ -416,16 +416,26 @@ class _ActivityCard extends StatelessWidget {
   ///
   /// Mapped from the durable failure class rather than from the provider's
   /// own message, which is hard-coded English meant for a log.
-  String _agentFailureDetail(BuildContext context, DayActivityEntry entry) =>
-      switch (entry.processingJob?.lastFailureClass) {
-        DayProcessingFailureClass.setupRequired =>
-          context.messages.dailyOsNextActivityAgentJobSetupRequired,
-        DayProcessingFailureClass.network ||
-        DayProcessingFailureClass.timeout ||
-        DayProcessingFailureClass.providerBusy =>
-          context.messages.dailyOsNextActivityAgentJobTemporary,
-        _ => context.messages.dailyOsNextActivityAgentJobModelFailed,
-      };
+  String _agentFailureDetail(BuildContext context, DayActivityEntry entry) {
+    // A refine that stalled with no plan to act on is a missing prerequisite,
+    // not a model that failed. The executor records it deterministically
+    // before any inference, and Retry repeats that same pre-check until a plan
+    // exists — so saying "the model couldn't finish" points the user at the
+    // wrong thing entirely.
+    if (entry.processingJob?.kind == DayProcessingJobKind.refinePlan &&
+        !hasPlan) {
+      return context.messages.dailyOsNextActivityAgentJobNoPlan;
+    }
+    return switch (entry.processingJob?.lastFailureClass) {
+      DayProcessingFailureClass.setupRequired =>
+        context.messages.dailyOsNextActivityAgentJobSetupRequired,
+      DayProcessingFailureClass.network ||
+      DayProcessingFailureClass.timeout ||
+      DayProcessingFailureClass.providerBusy =>
+        context.messages.dailyOsNextActivityAgentJobTemporary,
+      _ => context.messages.dailyOsNextActivityAgentJobModelFailed,
+    };
+  }
 
   bool _canRetry(DayActivityEntry entry) {
     // Queued jobs sit under exponential backoff; the user must always be

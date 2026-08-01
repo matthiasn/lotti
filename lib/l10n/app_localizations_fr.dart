@@ -3624,6 +3624,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le modèle d’IA n’a pas pu aller au bout.';
 
   @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Il n’y a pas encore de plan de journée à mettre à jour.';
+
+  @override
   String get dailyOsNextActivityAgentJobParse =>
       'L’analyse de ton point d’étape n’est pas allée au bout.';
 

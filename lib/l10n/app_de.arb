@@ -1649,6 +1649,7 @@
   "dailyOsNextActivityAgentActionFailed": "Die Aktion wurde nicht abgeschlossen. Es ist nichts verloren gegangen – versuch es erneut.",
   "dailyOsNextActivityAgentJobDraft": "Der Entwurf deines Tagesplans wurde nicht fertig.",
   "dailyOsNextActivityAgentJobModelFailed": "Das KI-Modell konnte das nicht abschließen.",
+  "dailyOsNextActivityAgentJobNoPlan": "Es gibt noch keinen Tagesplan zum Aktualisieren.",
   "dailyOsNextActivityAgentJobParse": "Das Auswerten deines Check-ins wurde nicht fertig.",
   "dailyOsNextActivityAgentJobRefine": "Die Aktualisierung deines Tagesplans wurde nicht fertig.",
   "dailyOsNextActivityAgentJobRetryHint": "Es ist nichts verloren gegangen. Versuch es erneut, wenn du so weit bist.",

@@ -1649,6 +1649,7 @@
   "dailyOsNextActivityAgentActionFailed": "Acțiunea nu s-a finalizat. Nu s-a pierdut nimic — încercați din nou.",
   "dailyOsNextActivityAgentJobDraft": "Crearea planului dumneavoastră pentru zi nu s-a finalizat.",
   "dailyOsNextActivityAgentJobModelFailed": "Modelul AI nu a putut finaliza această sarcină.",
+  "dailyOsNextActivityAgentJobNoPlan": "Nu există încă un plan al zilei de actualizat.",
   "dailyOsNextActivityAgentJobParse": "Citirea notei dumneavoastră nu s-a finalizat.",
   "dailyOsNextActivityAgentJobRefine": "Actualizarea planului dumneavoastră pentru zi nu s-a finalizat.",
   "dailyOsNextActivityAgentJobRetryHint": "Nu s-a pierdut nimic. Încercați din nou când doriți.",

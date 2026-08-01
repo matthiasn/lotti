@@ -452,6 +452,37 @@ void main() {
       },
     );
 
+    test('a parse failure for a deleted capture stops being offered', () async {
+      await outbox.enqueueParseCapture(dayId: dayId, captureId: 'capture-1');
+      final claim = await outbox.claimNext();
+      await outbox.markFailure(
+        jobId: claim!.job.id,
+        claimToken: claim.token,
+        failureClass: DayProcessingFailureClass.deterministic,
+        error: 'could not read it',
+      );
+      final deleted =
+          AgentDomainEntity.capture(
+                id: 'capture-1',
+                agentId: 'planner',
+                transcript: 'gone',
+                capturedAt: capturedAt,
+                createdAt: capturedAt,
+                vectorClock: null,
+                dayId: dayId,
+                deletedAt: capturedAt,
+              )
+              as CaptureEntity;
+
+      expect(
+        await repository.load(dayId: dayId, captures: [deleted]),
+        isEmpty,
+        reason:
+            'The intent no longer exists — nothing reschedules it, and Retry '
+            'would only run a pre-check that terminates on its own.',
+      );
+    });
+
     test('a succeeded agent job leaves no trace in Activity', () async {
       await outbox.enqueueParseCapture(dayId: dayId, captureId: 'capture-1');
       final claim = await outbox.claimNext();

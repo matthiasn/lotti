@@ -91,10 +91,23 @@ notification:
 | `waitingForUser` | Needs a prerequisite only the user can supply (e.g. a configured model) |
 | `waitingForNetwork` | Parked until connectivity returns |
 
-The row is placed at `updatedAt` — where the failure happened in the day's
-narrative, moving forward with each attempt — and retries through the existing
-`retryNow`, which re-queues the job and clears its error state. Retrying
-therefore removes the row: the work is in flight again.
+The row is placed at `requestedAt`, not `updatedAt`. While the device is offline
+the runtime probes each waiting job on a timer, re-queuing and re-parking it,
+and both transitions rewrite `updatedAt` — ordering by it made the row jump to
+the newest timeline position on every probe with no attempt having run.
+
+A **failed `parseCapture` whose capture has since been deleted** earns no row:
+nothing reschedules it, and Retry would only run a pre-check that terminates on
+its own.
+
+Retries go through the existing `retryNow`, which re-queues the job and clears
+its error state — so retrying removes the row: the work is in flight again.
+
+**`onJobFinished` fires for every observed outcome, not only terminal ones.**
+`failed` is deliberately *not* terminal — a retry can resurrect it — so gating
+delivery on `isTerminal` meant the plan-failure notification could never reach
+`DayPlanReadyNotifier`. Delivery is not the place to decide what is worth
+saying; the listener filters.
 
 # Claiming
 

@@ -782,6 +782,67 @@ void main() {
     },
   );
 
+  testWidgets('a refine with no plan yet is not blamed on the model', (
+    tester,
+  ) async {
+    final outbox = MockDayProcessingOutboxRepository();
+    final runtime = MockDayProcessingRuntime();
+    when(() => outbox.retryNow(any())).thenAnswer((_) async => null);
+    when(runtime.nudge).thenAnswer((_) async {});
+    final stalled = DayActivityEntry(
+      id: 'refine_dayplan-2026-07-18_abc',
+      kind: DayActivityEntryKind.agentJob,
+      createdAt: capturedAt,
+      activityEntryId: 'refine_dayplan-2026-07-18_abc',
+      processingJob: DayProcessingJob(
+        id: 'refine_dayplan-2026-07-18_abc',
+        status: DayProcessingJobStatus.failed,
+        dayId: 'dayplan-2026-07-18',
+        payload: const RefinePlanPayload(),
+        createdAt: capturedAt,
+        updatedAt: capturedAt,
+        requestedAt: capturedAt,
+        nextAttemptAt: capturedAt,
+        attempts: 1,
+        generation: 0,
+        lastFailureClass: DayProcessingFailureClass.deterministic,
+        lastError: 'No plan to refine — the day has no drafted plan',
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayActivityView(
+          date: date,
+          // No plan for the day: the prerequisite, not the model, is missing.
+          hasPlan: false,
+          actualBlocks: const [],
+          onUseEntry: (_) {},
+        ),
+        overrides: [
+          dayActivityProvider.overrideWith((ref, date) async => [stalled]),
+          dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+          dayProcessingRuntimeProvider.overrideWithValue(runtime),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final messages = tester.element(find.byType(DayActivityView)).messages;
+    expect(
+      find.textContaining(messages.dailyOsNextActivityAgentJobNoPlan),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(messages.dailyOsNextActivityAgentJobModelFailed),
+      findsNothing,
+      reason:
+          'The executor records this before any inference runs; Retry repeats '
+          'the same pre-check until a plan exists, so blaming the model sends '
+          'the user after the wrong thing.',
+    );
+  });
+
   testWidgets('a stalled refine with no model configured offers Daily OS '
       'setup', (
     tester,
@@ -832,6 +893,10 @@ void main() {
     final messages = tester.element(find.byType(DayActivityView)).messages;
     expect(
       find.text(messages.dailyOsNextActivityAgentJobRefine),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(messages.dailyOsNextActivityAgentJobSetupRequired),
       findsOneWidget,
     );
     // The transcription wording would be wrong here — this job needs a

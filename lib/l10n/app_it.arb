@@ -1834,6 +1834,7 @@
   "dailyOsNextActivityAgentActionFailed": "L’azione non è stata completata. Non è andato perso nulla: riprova.",
   "dailyOsNextActivityAgentJobDraft": "La creazione del tuo piano della giornata non è stata completata.",
   "dailyOsNextActivityAgentJobModelFailed": "Il modello IA non è riuscito a completarlo.",
+  "dailyOsNextActivityAgentJobNoPlan": "Non c’è ancora un piano della giornata da aggiornare.",
   "dailyOsNextActivityAgentJobParse": "La lettura del tuo check-in non è stata completata.",
   "dailyOsNextActivityAgentJobRefine": "L’aggiornamento del tuo piano della giornata non è stato completato.",
   "dailyOsNextActivityAgentJobRetryHint": "Non è andato perso nulla. Riprova quando vuoi.",

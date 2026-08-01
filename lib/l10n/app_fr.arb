@@ -1649,6 +1649,7 @@
   "dailyOsNextActivityAgentActionFailed": "L’action n’est pas allée au bout. Rien n’est perdu — réessaie.",
   "dailyOsNextActivityAgentJobDraft": "La création de ton plan de journée n’est pas allée au bout.",
   "dailyOsNextActivityAgentJobModelFailed": "Le modèle d’IA n’a pas pu aller au bout.",
+  "dailyOsNextActivityAgentJobNoPlan": "Il n’y a pas encore de plan de journée à mettre à jour.",
   "dailyOsNextActivityAgentJobParse": "L’analyse de ton point d’étape n’est pas allée au bout.",
   "dailyOsNextActivityAgentJobRefine": "La mise à jour de ton plan de journée n’est pas allée au bout.",
   "dailyOsNextActivityAgentJobRetryHint": "Rien n’est perdu. Réessaie quand tu veux.",

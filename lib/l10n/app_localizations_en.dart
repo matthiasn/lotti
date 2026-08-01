@@ -3560,6 +3560,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The AI model couldn\'t finish this one.';
 
   @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'There\'s no day plan to update yet.';
+
+  @override
   String get dailyOsNextActivityAgentJobParse =>
       'Reading your check-in didn\'t finish.';
 
@@ -11463,6 +11467,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get dailyOsNextActivityAgentJobModelFailed =>
       'The AI model couldn\'t finish this one.';
+
+  @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'There\'s no day plan to update yet.';
 
   @override
   String get dailyOsNextActivityAgentJobParse =>
