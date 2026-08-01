@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart'
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:meta/meta.dart';
 
 /// Entity CRUD, transaction scoping, and the shared batched-read primitives for
 /// [AgentRepository]. Collaborator extracted from the former `_AgentRepoCore`
@@ -30,6 +31,33 @@ class AgentRepoCore {
   late final AgentEntityByIdCoalescer _byIdCoalescer = AgentEntityByIdCoalescer(
     getEntitiesByIds,
   );
+
+  /// Cached result of `AgentRepoEvolution.getAllAgentIdentities`.
+  ///
+  /// Agent identities change rarely but are re-read constantly: the 2026-06/07
+  /// slow-query logs show 1,734 full reads of every agent in 14 days (87.4 s at
+  /// ~50 ms each — well above the round-trip floor, because ~900 fat rows are
+  /// decoded from JSON each time). The read is not bursty (1,449 of 1,587
+  /// occurrences are isolated), so microtask coalescing does nothing for it;
+  /// what helps is not repeating the work when nothing changed.
+  ///
+  /// Held here rather than on the evolution collaborator because *this* class
+  /// owns the only write path ([_upsertEntity]), so invalidation cannot be
+  /// missed. Soft deletes are upserts with `deletedAt` set and therefore land
+  /// on the same hook.
+  List<AgentIdentityEntity>? _agentIdentitiesCache;
+
+  /// Returns the cached identity list, or populates it via [load].
+  Future<List<AgentIdentityEntity>> cachedAgentIdentities(
+    Future<List<AgentIdentityEntity>> Function() load,
+  ) async {
+    return _agentIdentitiesCache ??= await load();
+  }
+
+  /// Drops the cached identity list. Called on every identity write; exposed
+  /// so tests can force a reload without reaching into private state.
+  @visibleForTesting
+  void invalidateAgentIdentitiesCache() => _agentIdentitiesCache = null;
 
   /// The projection collaborator used by [upsertEntity] to keep the local
   /// attention/standing indexes in sync. Wired by [AgentRepository] after both
@@ -70,6 +98,11 @@ class AgentRepoCore {
   }
 
   Future<void> _upsertEntity(AgentDomainEntity entity) async {
+    // Any identity write — including a soft delete, which is an upsert with
+    // `deletedAt` set — makes the cached list stale.
+    if (entity is AgentIdentityEntity) {
+      _agentIdentitiesCache = null;
+    }
     final companion = AgentDbConversions.toEntityCompanion(entity);
     final affectsAttentionClaims = affectsAttentionClaimProjection(entity);
     final affectsStandingAgreements = affectsStandingAgreementProjection(

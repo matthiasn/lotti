@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/database/agent_proposal_ledger.dart';
 import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/database/agent_repo_evolution.dart';
@@ -33,6 +34,114 @@ void main() {
 
   tearDown(() async {
     await db.close();
+  });
+
+  group('getAllAgentIdentities caching', () {
+    // The list is cached between identity writes. A cache is only as good as
+    // its invalidation, so these tests exercise the write paths that must
+    // drop it — including soft delete, which is an upsert with deletedAt set.
+    //
+    // Bypassing the repository (writing straight to the table) is how each
+    // test proves the *cached* value is being served rather than a fresh read.
+
+    Future<void> insertIdentityBypassingCache(String id) async {
+      await db
+          .into(db.agentEntities)
+          .insertOnConflictUpdate(
+            AgentDbConversions.toEntityCompanion(
+              makeTestIdentity(id: id, agentId: id, displayName: id),
+            ),
+          );
+    }
+
+    test('serves a cached list on repeated reads', () async {
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+      );
+      expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+      await insertIdentityBypassingCache('a-2');
+
+      expect(
+        await evolution.getAllAgentIdentities(),
+        hasLength(1),
+        reason: 'the second read is served from cache, not the table',
+      );
+    });
+
+    test('an identity write invalidates the cache', () async {
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+      );
+      expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-2', agentId: 'a-2', displayName: 'Second'),
+      );
+
+      expect(
+        (await evolution.getAllAgentIdentities()).map((a) => a.agentId).toSet(),
+        {'a-1', 'a-2'},
+        reason: 'writing an identity must drop the cached list',
+      );
+    });
+
+    test('an identity rename is visible after the write', () async {
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'Before'),
+      );
+      expect(
+        (await evolution.getAllAgentIdentities()).single.displayName,
+        'Before',
+      );
+
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'After'),
+      );
+
+      expect(
+        (await evolution.getAllAgentIdentities()).single.displayName,
+        'After',
+        reason: 'an in-place update must not serve the stale name',
+      );
+    });
+
+    test('a soft delete invalidates the cache', () async {
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'Doomed'),
+      );
+      expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+      await core.upsertEntity(
+        makeTestIdentity(
+          id: 'a-1',
+          agentId: 'a-1',
+          displayName: 'Doomed',
+        ).copyWith(deletedAt: testDate),
+      );
+
+      expect(
+        await evolution.getAllAgentIdentities(),
+        isEmpty,
+        reason: 'a soft-deleted identity must disappear from the cached list',
+      );
+    });
+
+    test('a non-identity write leaves the cache in place', () async {
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+      );
+      expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+      await insertIdentityBypassingCache('a-2');
+      await core.upsertEntity(makeTestState(id: 'st-1', agentId: 'a-1'));
+
+      expect(
+        await evolution.getAllAgentIdentities(),
+        hasLength(1),
+        reason: 'only identity writes need to invalidate; states do not',
+      );
+    });
   });
 
   group('getEvolutionSessions', () {
