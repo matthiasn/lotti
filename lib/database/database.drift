@@ -513,14 +513,12 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
-          AND labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND journal.id IN (
+        SELECT labeled.journal_id FROM labeled
+          WHERE labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND NOT EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
+      OR (:includeUnlabeled AND journal.id NOT IN (
+        SELECT labeled.journal_id FROM labeled
       ))
     )
   )
@@ -599,14 +597,12 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
-          AND labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND journal.id IN (
+        SELECT labeled.journal_id FROM labeled
+          WHERE labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND NOT EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
+      OR (:includeUnlabeled AND journal.id NOT IN (
+        SELECT labeled.journal_id FROM labeled
       ))
     )
   )
@@ -629,14 +625,12 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
-          AND labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND journal.id IN (
+        SELECT labeled.journal_id FROM labeled
+          WHERE labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND NOT EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
+      OR (:includeUnlabeled AND journal.id NOT IN (
+        SELECT labeled.journal_id FROM labeled
       ))
     )
   )
@@ -662,14 +656,12 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
-          AND labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND journal.id IN (
+        SELECT labeled.journal_id FROM labeled
+          WHERE labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND NOT EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
+      OR (:includeUnlabeled AND journal.id NOT IN (
+        SELECT labeled.journal_id FROM labeled
       ))
     )
   )
@@ -692,14 +684,12 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
-          AND labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND journal.id IN (
+        SELECT labeled.journal_id FROM labeled
+          WHERE labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND NOT EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
+      OR (:includeUnlabeled AND journal.id NOT IN (
+        SELECT labeled.journal_id FROM labeled
       ))
     )
   )
@@ -775,14 +765,12 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
-          AND labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND journal.id IN (
+        SELECT labeled.journal_id FROM labeled
+          WHERE labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND NOT EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
+      OR (:includeUnlabeled AND journal.id NOT IN (
+        SELECT labeled.journal_id FROM labeled
       ))
     )
   )
@@ -968,6 +956,15 @@ SELECT category, COUNT(*) AS task_count FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   GROUP BY category;
 
+-- Label predicates use `journal.id IN (SELECT journal_id FROM labeled …)`
+-- rather than a correlated `EXISTS`. Both are correct; the correlated form
+-- re-runs an index seek for every candidate task, while the IN-form lets SQLite
+-- build the matching id set once. Measured on 20 000 tasks with 30% labelled:
+-- 6–7 ms correlated vs ~1 ms, same result. `NOT IN` is safe here because
+-- `labeled.journal_id` is NOT NULL, so it cannot produce the NULL-swallowing
+-- behaviour `NOT IN` is usually warned about.
+-- See docs/perf/2026-08-01_slow-queries-investigation.md.
+
 -- COUNT(*) variant used for saved-filter sidebar counts. Predicates:
 -- :privateStatuses (parameterised, like `filteredTasks`) + :taskStatuses
 -- + :categories + label/priority subselects. No starred predicate — saved
@@ -984,14 +981,12 @@ SELECT COUNT(*) FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
-          AND labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND journal.id IN (
+        SELECT labeled.journal_id FROM labeled
+          WHERE labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND NOT EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
+      OR (:includeUnlabeled AND journal.id NOT IN (
+        SELECT labeled.journal_id FROM labeled
       ))
     )
   )
@@ -1014,14 +1009,12 @@ SELECT id FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
-          AND labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND journal.id IN (
+        SELECT labeled.journal_id FROM labeled
+          WHERE labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND NOT EXISTS (
-        SELECT 1 FROM labeled
-          WHERE labeled.journal_id = journal.id
+      OR (:includeUnlabeled AND journal.id NOT IN (
+        SELECT labeled.journal_id FROM labeled
       ))
     )
   )

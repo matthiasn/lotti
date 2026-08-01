@@ -6219,7 +6219,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND private IN ($expandedprivateStatuses) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND EXISTS (SELECT 1 AS _c0 FROM labeled WHERE labeled.journal_id = journal.id AND labeled.label_id IN ($expandedlabelIds)))OR(?3 AND NOT EXISTS (SELECT 1 AS _c1 FROM labeled WHERE labeled.journal_id = journal.id))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY task_priority_rank ASC, date_from DESC LIMIT ?6 OFFSET ?7',
+      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND private IN ($expandedprivateStatuses) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND journal.id IN (SELECT labeled.journal_id FROM labeled WHERE labeled.label_id IN ($expandedlabelIds)))OR(?3 AND journal.id NOT IN (SELECT labeled.journal_id FROM labeled))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY task_priority_rank ASC, date_from DESC LIMIT ?6 OFFSET ?7',
       variables: [
         Variable<bool>(filterByLabels),
         Variable<int>(labelFilterCount),
@@ -6421,7 +6421,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND id IN ($expandedids) AND private IN ($expandedprivateStatuses) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND EXISTS (SELECT 1 AS _c0 FROM labeled WHERE labeled.journal_id = journal.id AND labeled.label_id IN ($expandedlabelIds)))OR(?3 AND NOT EXISTS (SELECT 1 AS _c1 FROM labeled WHERE labeled.journal_id = journal.id))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY task_priority_rank ASC, date_from DESC LIMIT ?6 OFFSET ?7',
+      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND id IN ($expandedids) AND private IN ($expandedprivateStatuses) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND journal.id IN (SELECT labeled.journal_id FROM labeled WHERE labeled.label_id IN ($expandedlabelIds)))OR(?3 AND journal.id NOT IN (SELECT labeled.journal_id FROM labeled))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY task_priority_rank ASC, date_from DESC LIMIT ?6 OFFSET ?7',
       variables: [
         Variable<bool>(filterByLabels),
         Variable<int>(labelFilterCount),
@@ -6468,7 +6468,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND EXISTS (SELECT 1 AS _c0 FROM labeled WHERE labeled.journal_id = journal.id AND labeled.label_id IN ($expandedlabelIds)))OR(?3 AND NOT EXISTS (SELECT 1 AS _c1 FROM labeled WHERE labeled.journal_id = journal.id))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY task_priority_rank ASC, date_from DESC LIMIT ?6 OFFSET ?7',
+      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND journal.id IN (SELECT labeled.journal_id FROM labeled WHERE labeled.label_id IN ($expandedlabelIds)))OR(?3 AND journal.id NOT IN (SELECT labeled.journal_id FROM labeled))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY task_priority_rank ASC, date_from DESC LIMIT ?6 OFFSET ?7',
       variables: [
         Variable<bool>(filterByLabels),
         Variable<int>(labelFilterCount),
@@ -6524,7 +6524,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND private IN ($expandedprivateStatuses) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND EXISTS (SELECT 1 AS _c0 FROM labeled WHERE labeled.journal_id = journal.id AND labeled.label_id IN ($expandedlabelIds)))OR(?3 AND NOT EXISTS (SELECT 1 AS _c1 FROM labeled WHERE labeled.journal_id = journal.id))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
+      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND private IN ($expandedprivateStatuses) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND journal.id IN (SELECT labeled.journal_id FROM labeled WHERE labeled.label_id IN ($expandedlabelIds)))OR(?3 AND journal.id NOT IN (SELECT labeled.journal_id FROM labeled))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
       variables: [
         Variable<bool>(filterByLabels),
         Variable<int>(labelFilterCount),
@@ -6570,7 +6570,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND EXISTS (SELECT 1 AS _c0 FROM labeled WHERE labeled.journal_id = journal.id AND labeled.label_id IN ($expandedlabelIds)))OR(?3 AND NOT EXISTS (SELECT 1 AS _c1 FROM labeled WHERE labeled.journal_id = journal.id))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
+      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND journal.id IN (SELECT labeled.journal_id FROM labeled WHERE labeled.label_id IN ($expandedlabelIds)))OR(?3 AND journal.id NOT IN (SELECT labeled.journal_id FROM labeled))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
       variables: [
         Variable<bool>(filterByLabels),
         Variable<int>(labelFilterCount),
@@ -6770,7 +6770,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND id IN ($expandedids) AND private IN ($expandedprivateStatuses) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND EXISTS (SELECT 1 AS _c0 FROM labeled WHERE labeled.journal_id = journal.id AND labeled.label_id IN ($expandedlabelIds)))OR(?3 AND NOT EXISTS (SELECT 1 AS _c1 FROM labeled WHERE labeled.journal_id = journal.id))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
+      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = FALSE AND id IN ($expandedids) AND private IN ($expandedprivateStatuses) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND journal.id IN (SELECT labeled.journal_id FROM labeled WHERE labeled.label_id IN ($expandedlabelIds)))OR(?3 AND journal.id NOT IN (SELECT labeled.journal_id FROM labeled))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
       variables: [
         Variable<bool>(filterByLabels),
         Variable<int>(labelFilterCount),
@@ -7129,7 +7129,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-      'SELECT COUNT(*) AS _c0 FROM journal WHERE type = \'Task\' AND deleted = FALSE AND task = 1 AND private IN ($expandedprivateStatuses) AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND EXISTS (SELECT 1 AS _c1 FROM labeled WHERE labeled.journal_id = journal.id AND labeled.label_id IN ($expandedlabelIds)))OR(?3 AND NOT EXISTS (SELECT 1 AS _c2 FROM labeled WHERE labeled.journal_id = journal.id))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))',
+      'SELECT COUNT(*) AS _c0 FROM journal WHERE type = \'Task\' AND deleted = FALSE AND task = 1 AND private IN ($expandedprivateStatuses) AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND journal.id IN (SELECT labeled.journal_id FROM labeled WHERE labeled.label_id IN ($expandedlabelIds)))OR(?3 AND journal.id NOT IN (SELECT labeled.journal_id FROM labeled))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))',
       variables: [
         Variable<bool>(filterByLabels),
         Variable<int>(labelFilterCount),
@@ -7176,7 +7176,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-      'SELECT id FROM journal WHERE type = \'Task\' AND deleted = FALSE AND task = 1 AND private IN ($expandedprivateStatuses) AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND EXISTS (SELECT 1 AS _c0 FROM labeled WHERE labeled.journal_id = journal.id AND labeled.label_id IN ($expandedlabelIds)))OR(?3 AND NOT EXISTS (SELECT 1 AS _c1 FROM labeled WHERE labeled.journal_id = journal.id))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))',
+      'SELECT id FROM journal WHERE type = \'Task\' AND deleted = FALSE AND task = 1 AND private IN ($expandedprivateStatuses) AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND journal.id IN (SELECT labeled.journal_id FROM labeled WHERE labeled.label_id IN ($expandedlabelIds)))OR(?3 AND journal.id NOT IN (SELECT labeled.journal_id FROM labeled))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))',
       variables: [
         Variable<bool>(filterByLabels),
         Variable<int>(labelFilterCount),
