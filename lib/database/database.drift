@@ -894,14 +894,6 @@ SELECT * FROM journal
   AND deleted = false
   ORDER BY date_from DESC;
 
-habitCompletionsInRange:
-SELECT * FROM journal
-  WHERE type = 'HabitCompletionEntry'
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  AND date_from >= :rangeStart
-  AND deleted = false
-  ORDER BY date_from ASC;
-
 quantitativeByType:
 SELECT * FROM journal
   WHERE type = 'QuantitativeEntry'

@@ -6981,14 +6981,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<JournalDbEntity> habitCompletionsInRange(DateTime rangeStart) {
-    return customSelect(
-      'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND deleted = FALSE ORDER BY date_from ASC',
-      variables: [Variable<DateTime>(rangeStart)],
-      readsFrom: {journal, configFlags},
-    ).asyncMap(journal.mapFromRow);
-  }
-
   Selectable<JournalDbEntity> quantitativeByType(
     String? subtype,
     DateTime rangeStart,
