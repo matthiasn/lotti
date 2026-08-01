@@ -347,7 +347,7 @@ void main() {
       expect(container.read(includeHiddenControllerProvider(testId)), isFalse);
 
       // Update the value
-      controller.includeHidden = true;
+      controller.setIncludeHidden(value: true);
 
       // Assert
       expect(
@@ -387,7 +387,7 @@ void main() {
       );
 
       // Update the value
-      controller.showFlaggedOnly = true;
+      controller.setShowFlaggedOnly(value: true);
 
       // Assert
       expect(
@@ -401,9 +401,8 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       container
-              .read(showFlaggedOnlyControllerProvider(testId).notifier)
-              .showFlaggedOnly =
-          true;
+          .read(showFlaggedOnlyControllerProvider(testId).notifier)
+          .setShowFlaggedOnly(value: true);
 
       // Assert: another entry id keeps its own independent default
       expect(

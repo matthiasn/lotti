@@ -533,11 +533,10 @@ void main() {
         tester.element(find.byType(LinkedEntriesWidget)),
       );
       container
-              .read(
-                showFlaggedOnlyControllerProvider(testTask.meta.id).notifier,
-              )
-              .showFlaggedOnly =
-          true;
+          .read(
+            showFlaggedOnlyControllerProvider(testTask.meta.id).notifier,
+          )
+          .setShowFlaggedOnly(value: true);
       await tester.pumpAndSettle();
 
       expect(entryDetails(flaggedEntry.meta.id), findsOneWidget);
@@ -545,11 +544,10 @@ void main() {
 
       // Toggling it back off restores the non-flagged entry.
       container
-              .read(
-                showFlaggedOnlyControllerProvider(testTask.meta.id).notifier,
-              )
-              .showFlaggedOnly =
-          false;
+          .read(
+            showFlaggedOnlyControllerProvider(testTask.meta.id).notifier,
+          )
+          .setShowFlaggedOnly(value: false);
       await tester.pumpAndSettle();
 
       expect(entryDetails(flaggedEntry.meta.id), findsOneWidget);

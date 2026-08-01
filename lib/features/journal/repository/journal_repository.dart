@@ -16,7 +16,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:meta/meta.dart';
 
 /// App-facing facade for journal entity reads, writes, links, and deletes.
 ///

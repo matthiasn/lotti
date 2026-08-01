@@ -116,7 +116,8 @@ class IncludeHiddenController extends Notifier<bool> {
     return false;
   }
 
-  set includeHidden(bool value) {
+  void setIncludeHidden({required bool value}) {
+    if (state == value) return;
     state = value;
   }
 }
@@ -140,7 +141,8 @@ class ShowFlaggedOnlyController extends Notifier<bool> {
     return false;
   }
 
-  set showFlaggedOnly(bool value) {
+  void setShowFlaggedOnly({required bool value}) {
+    if (state == value) return;
     state = value;
   }
 }
