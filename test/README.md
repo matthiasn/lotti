@@ -599,6 +599,14 @@ locales at roughly twelve minutes each, which is why CI fans the locales out
 across parallel jobs rather than looping — and why it does so nightly rather
 than per push.
 
+**Do not assume a green English run means the capture is healthy.** English is
+the fallback every other locale degrades to, so a rendering that only breaks
+once a translation is involved passes there — locale-specific quotation marks
+have already slipped through exactly this way. `manual-capture-check.yml`
+therefore captures German on pull requests that touch `lib/`, a harness, or a
+registered screenshot test; check a second locale locally before concluding a
+harness change is safe.
+
 The case contract lives in `docs-site/metadata/screenshot-cases.json`. Each
 case must name a deterministic source test and provide all four inputs:
 mobile-light, mobile-dark, desktop-light, and desktop-dark. The build converts
