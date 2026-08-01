@@ -5,9 +5,29 @@ description: The eleven Drift/SQLite databases, how connections are opened and m
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T20:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-01T15:45:00Z }
 stale_after: 2027-01-11
 sources:
+  - id: sync-db
+    resource: ../../lib/database/sync_db.dart
+    title: SyncDatabase
+    last_modified: 2026-07-27
+  - id: agent-db
+    resource: ../../lib/features/agents/database/agent_database.dart
+    title: AgentDatabase
+    last_modified: 2026-08-01
+  - id: notifications-db
+    resource: ../../lib/database/notifications_db.dart
+    title: NotificationsDb
+    last_modified: 2026-05-17
+  - id: consumption-db
+    resource: ../../lib/features/ai_consumption/database/consumption_database.dart
+    title: ConsumptionDatabase
+    last_modified: 2026-07-21
+  - id: day-processing-db
+    resource: ../../lib/features/daily_os_next/database/day_processing_db.dart
+    title: DayProcessingDb
+    last_modified: 2026-07-25
   - id: notifications
     resource: ../../lib/services/db_notification.dart
     title: UpdateNotifications token vocabulary
@@ -50,8 +70,8 @@ migration work has to cover both, and embeddings are a third store again (below)
 | Database | File | Schema | Owns |
 |----------|------|--------|------|
 | `JournalDb` | `db.sqlite` | 45 | Journal entities, tasks, links, tags, config flags — the primary store |
-| `SyncDatabase` | `sync.sqlite` | 27 | Outbox, sequence log, host activity, inbound event queue, queue markers |
-| `AgentDatabase` | `agent.sqlite` | 17 | Agent state, reports, observations, change proposals, wake history |
+| `SyncDatabase` | `sync.sqlite` | 28 | Outbox, sequence log, host activity, inbound event queue, queue markers |
+| `AgentDatabase` | `agent.sqlite` | 18 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
 | `ConsumptionDatabase` | `ai_consumption.sqlite` | 2 | AI token usage and the interaction ledger |
 | `SettingsDb` | `settings.sqlite` | 1 | Key/value app settings, sync watermarks, saved filters |
@@ -94,7 +114,37 @@ flowchart TD
   the UI isolate. It is set to `false` only when opening from an actor isolate,
   where nesting isolates would be wrong.
 - **`readPool` offloads heavy reads** to read-only isolates. It only takes
-  effect when `background` is true.
+  effect when `background` is true, and `inMemoryDatabase: true` bypasses it —
+  a test that wants to exercise a pool must be file-backed.
+
+  | Database | `readPool` |
+  |----------|-----------:|
+  | `db.sqlite` (`JournalDb`) | 4 |
+  | `agent.sqlite` (`AgentDatabase`) | 2 |
+  | `notifications.sqlite` (`NotificationsDb`) | 2 |
+  | `ai_consumption.sqlite` (`ConsumptionDatabase`) | 1 |
+  | `day_processing.sqlite` (`DayProcessingDb`) | 1 |
+
+  Anything not listed — including `sync.sqlite` — takes `openDbConnection`'s
+  default of 0.
+
+  **A pool is not a free win, and `readPool: 0` is not a substitute for a
+  transaction.** A single executor serialises individual *statements*, not
+  *sequences*: a read, an `await`, and a later write can still interleave with
+  another caller's statements on the same executor. So a check-then-act pair
+  that is not wrapped in a transaction is **already racy at 0**.
+
+  What a pool changes is how easy the race is to hit. Pooled reads can also
+  serve a snapshot taken before a queued write commits, which widens the window
+  from "interleaved between statements" to "stale by a whole transaction".
+
+  Giving `sync.sqlite` a pool was attempted and abandoned on those grounds
+  (#3720): review surfaced four read-after-write pairs in the outbox,
+  sequence-log and inbound-queue paths — none inside a transaction — that the
+  pool would have made materially more likely to fire, without the PR
+  addressing any of them. The durable fix for those sites is a transaction
+  around the read and the write, which is worth doing whether or not a pool is
+  ever added.
 - **Pragmas are applied per connection** through the `setup` callback, so read-
   pool isolates inherit them:
 
