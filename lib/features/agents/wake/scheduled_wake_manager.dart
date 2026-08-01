@@ -69,6 +69,12 @@ class ScheduledWakeManager {
 
   Timer? _timer;
   Timer? _settleTimer;
+
+  /// Incremented by [stop]. A check that was already in flight — awaiting the
+  /// host lookup or the claim write — compares against this before arming or
+  /// running a settle timer, so a stopped manager cannot resurrect itself and
+  /// race a restarted one for the same digest.
+  int _generation = 0;
   bool _isChecking = false;
 
   /// Start periodic checking. Also immediately checks for missed wakes.
@@ -85,6 +91,7 @@ class ScheduledWakeManager {
 
   /// Stop periodic checking.
   void stop() {
+    _generation++;
     _timer?.cancel();
     _timer = null;
     _settleTimer?.cancel();
@@ -92,9 +99,28 @@ class ScheduledWakeManager {
     _log('stopped');
   }
 
+  /// Arms a one-shot re-check [delay] from now, unless the manager was stopped
+  /// while the caller was awaiting.
+  ///
+  /// The periodic tick is hourly, so every branch that returns "not yet" owes
+  /// the record a wake-up of its own — otherwise a 06:00 digest waits for the
+  /// 07:00 tick.
+  void _scheduleRecheck(Duration delay, int generation) {
+    if (generation != _generation) return;
+    _settleTimer?.cancel();
+    _settleTimer = Timer(delay.isNegative ? Duration.zero : delay, () {
+      if (generation != _generation) return;
+      unawaited(_checkAndEnqueue());
+    });
+  }
+
   Future<void> _checkAndEnqueue() async {
     if (_isChecking) return;
     _isChecking = true;
+    // Captured before the first await: `stop()` may land while this pass is
+    // waiting on the repository, the host lookup or the claim write, and the
+    // continuation must not then arm a timer the stop could never cancel.
+    final generation = _generation;
     try {
       final now = clock.now();
       final dueStates = await _repository.getDueScheduledAgentStates(now);
@@ -138,7 +164,7 @@ class ScheduledWakeManager {
         }
       }
 
-      final recordsEnqueued = await _processDueRecords(now);
+      final recordsEnqueued = await _processDueRecords(now, generation);
 
       if (dueStates.isNotEmpty || recordsEnqueued > 0) {
         _log(
@@ -162,12 +188,12 @@ class ScheduledWakeManager {
   /// `scheduledWakeAt` path. After enqueuing, the record is flipped to
   /// [ScheduledWakeStatus.consumed] in place (not hard-deleted) so a
   /// concurrent device's flip converges via LWW instead of resurrecting it.
-  Future<int> _processDueRecords(DateTime now) async {
+  Future<int> _processDueRecords(DateTime now, int generation) async {
     final dueRecords = await _repository.getDueScheduledWakeRecords(now);
     var enqueued = 0;
     for (final record in dueRecords) {
       try {
-        if (!await _holdsLease(record, now)) continue;
+        if (!await _holdsLease(record, now, generation)) continue;
         _orchestrator.enqueueManualWake(
           agentId: record.agentId,
           reason: record.reason,
@@ -218,7 +244,11 @@ class ScheduledWakeManager {
   /// to happen. A lease that lapses without the record being consumed is a
   /// claimant that crashed or went offline, and any device may take over, so a
   /// window is delayed rather than lost.
-  Future<bool> _holdsLease(ScheduledWakeEntity record, DateTime now) async {
+  Future<bool> _holdsLease(
+    ScheduledWakeEntity record,
+    DateTime now,
+    int generation,
+  ) async {
     final needsLease = requiresLease?.call(record) ?? false;
     final hostIdOf = localHostId;
     if (!needsLease || hostIdOf == null) return true;
@@ -233,6 +263,10 @@ class ScheduledWakeManager {
         'digest lease held elsewhere for '
         '${DomainLogger.sanitizeId(record.id)}',
       );
+      // Take over the moment the foreign lease lapses. Without this, a
+      // claimant that crashed would hold the window until the next hourly
+      // tick — up to an hour late on top of the 30-minute lease.
+      _scheduleRecheck(until.difference(now), generation);
       return false;
     }
     if (held && record.leaseHostId == hostId) {
@@ -243,7 +277,15 @@ class ScheduledWakeManager {
       // peer's later crossing claim moves the deadline forward too, so this
       // still restarts the settle for both sides.
       final claimedAt = until.subtract(leaseDuration);
-      if (now.toUtc().difference(claimedAt) < leaseSettle) return false;
+      final waited = now.toUtc().difference(claimedAt);
+      if (waited < leaseSettle) {
+        // A restart inside the settle window loses the original timer, and the
+        // hourly tick would not come back before the lease expired — the
+        // device would then reclaim its own record and delay the briefing by
+        // about an hour. Arm the remainder instead.
+        _scheduleRecheck(leaseSettle - waited, generation);
+        return false;
+      }
       return true;
     }
 
@@ -260,10 +302,7 @@ class ScheduledWakeManager {
         updatedAt: now,
       ),
     );
-    // The periodic tick is hourly; without this the confirm would wait for it
-    // and a 06:00 digest could land at 07:00.
-    _settleTimer?.cancel();
-    _settleTimer = Timer(leaseSettle, () => unawaited(_checkAndEnqueue()));
+    _scheduleRecheck(leaseSettle, generation);
     return false;
   }
 

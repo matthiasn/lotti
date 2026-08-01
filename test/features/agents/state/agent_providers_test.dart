@@ -2186,6 +2186,11 @@ void main() {
       final notifications = UpdateNotifications();
       final vectorClockService = MockVectorClockService();
       when(vectorClockService.getHost).thenAnswer((_) async => 'host-a');
+      // The provider awaits initialization first: getHost() reads a `late`
+      // field the service assigns in init(), so a cold start that skipped the
+      // await threw LateInitializationError and left a due digest neither
+      // claimed nor fired until the next hourly tick.
+      when(() => vectorClockService.initialized).thenAnswer((_) async {});
       if (getIt.isRegistered<VectorClockService>()) {
         getIt.unregister<VectorClockService>();
       }

@@ -320,7 +320,16 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
     // on the unleased path.
     requiresLease: (record) =>
         record.workspaceKey == coordinatorDigestWorkspaceKey,
-    localHostId: () => getIt<VectorClockService>().getHost(),
+    // `getHost()` reads a `late` field the service only assigns in `init()`,
+    // so a cold start that reaches here first throws
+    // LateInitializationError. The manager would catch that as a per-record
+    // failure and leave a due digest neither claimed nor fired until the next
+    // hourly tick.
+    localHostId: () async {
+      final vectorClock = getIt<VectorClockService>();
+      await vectorClock.initialized;
+      return vectorClock.getHost();
+    },
   );
   ref.onDispose(manager.stop);
   return manager;

@@ -666,6 +666,9 @@ void main() {
       ScheduledWakeManager managerFor(
         ScheduledWakeEntity record, {
         String hostId = 'host-a',
+        // Tests about an armed timer must not be rescued by the periodic tick,
+        // or they pass with no timer at all.
+        Duration checkInterval = const Duration(minutes: 1),
       }) {
         when(
           () => repository.getDueScheduledAgentStates(any()),
@@ -678,7 +681,7 @@ void main() {
           repository: repository,
           orchestrator: orchestrator,
           syncService: syncService,
-          checkInterval: const Duration(minutes: 1),
+          checkInterval: checkInterval,
           requiresLease: (r) => r.workspaceKey == digestWorkspace,
           localHostId: () async => hostId,
         )..start();
@@ -751,6 +754,96 @@ void main() {
             );
 
             manager.stop();
+          });
+        });
+      });
+
+      test('takes over the moment a foreign lease lapses', () {
+        fakeAsync((async) {
+          withClock(Clock(() => now.add(async.elapsed)), () {
+            final manager = managerFor(
+              leased(
+                leaseHostId: 'host-b',
+                leaseUntil: now.toUtc().add(const Duration(minutes: 10)),
+                updatedAt: now,
+              ),
+              checkInterval: const Duration(hours: 1),
+            );
+            async.flushMicrotasks();
+            expectNoWake();
+
+            // The periodic tick is hourly, so without a timer of its own a
+            // crashed claimant would hold the window for the rest of the hour
+            // on top of its lease.
+            async.elapse(const Duration(minutes: 10, seconds: 1));
+            async.flushMicrotasks();
+
+            verify(() => syncService.upsertEntity(any())).called(1);
+            manager.stop();
+          });
+        });
+      });
+
+      test('a restart inside the settle arms the remainder', () {
+        fakeAsync((async) {
+          // Claimed one minute ago by this host; two minutes of settle left.
+          final restart = now.add(const Duration(minutes: 1));
+          withClock(Clock(() => restart.add(async.elapsed)), () {
+            final manager = managerFor(
+              leased(
+                leaseHostId: 'host-a',
+                leaseUntil: now.toUtc().add(const Duration(minutes: 30)),
+                updatedAt: now,
+              ),
+              checkInterval: const Duration(hours: 1),
+            );
+            async.flushMicrotasks();
+            expectNoWake();
+
+            // The restart lost the original settle timer. Without a
+            // replacement the next check is the hourly tick, by which point
+            // the lease has expired and the device reclaims its own record.
+            async.elapse(const Duration(minutes: 1, seconds: 59));
+            async.flushMicrotasks();
+            expectNoWake();
+
+            async.elapse(const Duration(seconds: 2));
+            async.flushMicrotasks();
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: 'daily_os_planner',
+                reason: 'digest',
+                triggerTokens: {'digest:dayplan-2026-05-20'},
+                workspaceKey: digestWorkspace,
+              ),
+            ).called(1);
+            manager.stop();
+          });
+        });
+      });
+
+      test('a stopped manager does not fire from a pending settle', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final manager = managerFor(
+              leased(),
+              checkInterval: const Duration(hours: 1),
+            );
+
+            // Stop *while the claim is still in flight* — before the
+            // continuation reaches the line that arms the settle timer. Only
+            // then is there a timer for stop() to have missed; flushing first
+            // would let stop() cancel an already-armed one and prove nothing.
+            manager.stop();
+            async.flushMicrotasks();
+            async.elapse(const Duration(minutes: 10));
+            async.flushMicrotasks();
+
+            // The in-flight pass writes its claim; nothing after it should.
+            // Otherwise a disposed manager keeps re-claiming on a timer stop()
+            // never saw, racing a restarted one for the same digest.
+            verify(() => syncService.upsertEntity(any())).called(1);
+            expectNoWake();
           });
         });
       });
