@@ -63,7 +63,7 @@
 
 | File | Lines | Has test? | Top issue |
 |------|-------|-----------|-----------|
-| `lib/widgets/selection/unified_toggle.dart` | 406 | ✅ `unified_toggle_test.dart` (603) | **Impl is close to oversized at 406 lines** — extracting `UnifiedToggleField` into its own file would be a natural split; 5 nearly-identical variant tests (normal, warning, priority, archived, ai) differ only in `variant` + `activeTrackColor` — a parameterized loop would cut ~100 lines; 3 `pumpAndSettle` calls |
+| `lib/widgets/selection/unified_toggle.dart` | — | ✅ `unified_toggle_test.dart` | Material/Cupertino variants are parameterized; the AI settings field remains in `unified_toggle_field.dart` |
 | `lib/widgets/selection/selection_option.dart` | 202 | ✅ `selection_option_test.dart` (381) | Uses ad-hoc `MaterialApp` per test; `adapts to dark theme` only checks `colorScheme.brightness` — smoke-level assertion |
 | `lib/widgets/selection/selection_modal_base.dart` | 75 | ✅ `selection_modal_base_test.dart` (610) | Test file is 8× the impl; contains a 48-line `TestSelectionModal` concrete class that reimplements the widget under test rather than testing the real `SelectionModalBase`; 28 `pumpAndSettle` calls; `handles empty content` asserts only `findsAtLeastNWidgets(1)` on `SizedBox` |
 | `lib/widgets/selection/selection_save_button.dart` | 58 | ✅ `selection_save_button_test.dart` (451) | Test file is 7.8× the impl at 451 lines; 24 `pumpAndSettle` calls; `applies correct colors when enabled/disabled` both assert only `findsOneWidget` on the widget itself — pure smoke tests; `has correct padding` and `has correct border radius` tests have zero numeric assertions |
@@ -87,7 +87,7 @@
 
 - [x] **[HIGH]** `test/widgets/search/entry_type_filter_test.dart` — 1003 lines for a 154-line impl. The `EntryTypeFilter Tests` group repeats `when(mockDb.watchConfigFlags)` + `GetIt.I.registerSingleton<JournalDb>(mockDb)` + `makeTestableWidgetWithScaffold` + same 3-provider `overrides` block in every one of ~14 tests. Extract a `_pumpFilter(tester, {Set<ConfigFlag> flags, JournalPageController? controller})` helper.
 
-- [x] **[MED]** `lib/widgets/selection/unified_toggle.dart` — 406 lines for two widgets (`UnifiedToggle` + `UnifiedToggleField`). Split into `unified_toggle.dart` + `unified_toggle_field.dart` with matching test files to respect one-source-one-test policy and reduce scroll distance. **RESOLVED:** (adapted) split via a `part` file (`unified_toggle_field.dart`, 250 lines; library file 159) so the single mirror test stays valid.
+- [x] **[MED]** `lib/widgets/selection/unified_toggle.dart` — split the specialized AI settings field from the base toggle. **RESOLVED:** `UnifiedAiToggleField` remains in `unified_toggle_field.dart`; the unused general-purpose `UnifiedToggleField` was removed.
 
 - [x] **[MED]** `test/widgets/selection/selection_save_button_test.dart` — 451 lines for a 58-line impl (7.8× ratio). The `Rendering`, `States`, `Styling`, `Interaction` groups all call `createTestWidget(onPressed: () {})` and `pumpAndSettle` redundantly. The `applies correct colors when enabled/disabled` tests add no value over the real state tests. **RESOLVED:** the two color smoke tests were replaced by one test resolving the actual enabled/disabled background colors from the button style.
 

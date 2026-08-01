@@ -15,7 +15,7 @@ void main() {
 
   setUp(() {
     strategy = EvolutionStrategy();
-    manager = ConversationManager(conversationId: 'test-conv')
+    manager = ConversationManager()
       ..initialize(systemMessage: 'You are an evolution agent.');
   });
 
@@ -484,8 +484,7 @@ void main() {
       final emptyProcessor = SurfaceController(catalogs: []);
       final brokenBridge = GenUiBridge(processor: emptyProcessor);
       final strat = EvolutionStrategy(genUiBridge: brokenBridge);
-      final mgr = ConversationManager(conversationId: 'test-broken')
-        ..initialize();
+      final mgr = ConversationManager()..initialize();
 
       final toolCall = makeToolCall(
         name: 'propose_soul_directives',

@@ -97,7 +97,7 @@ class ScriptedConversationRepository extends ConversationRepository {
     final id = 'conversation-$_createdCount';
     lastSystemMessage = systemMessage;
     _systemMessages[id] = systemMessage ?? '';
-    _managers[id] = ConversationManager(conversationId: id, maxTurns: maxTurns)
+    _managers[id] = ConversationManager(maxTurns: maxTurns)
       ..initialize(systemMessage: systemMessage);
     return id;
   }
@@ -174,7 +174,7 @@ class ScriptedConversationRepository extends ConversationRepository {
 
   @override
   void deleteConversation(String conversationId) {
-    _managers.remove(conversationId)?.dispose();
+    _managers.remove(conversationId);
     _systemMessages.remove(conversationId);
   }
 }

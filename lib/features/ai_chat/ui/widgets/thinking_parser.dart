@@ -1,42 +1,6 @@
-// Result of parsing a message that may contain hidden `thinking` content.
-/*
-Reasoning Behavior
-
-- Supported markers: <think>…</think>, <thinking>…</thinking>, [think]…[/think],
-  [thinking]…[/thinking], and fenced code blocks with language "think" or
-  "thinking" (```think / ```thinking).
-- UI model: `message_bubble.dart` calls `splitThinkingSegments` and renders each
-  thinking segment inline as its own collapsible `ThinkingDisclosure`,
-  interleaved (in order) with the visible markdown segments. (Earlier versions
-  consolidated all thinking into one disclosure; the current UI is per-segment.)
-- Streaming/open‑ended: if a close token has not arrived yet (e.g., mid‑stream),
-  everything after the opening token is treated as thinking until the close
-  appears in a later chunk. This keeps the disclosure consistent during
-  streaming.
-- Gemini mapping: the backend adapter emits at most one consolidated
-  <thinking> block BEFORE visible content on non‑flash models when enabled;
-  flash models never surface thinking. The parser treats that block like any
-  other thinking segment.
-- Copy behavior: when copying an assistant message, the UI strips thinking by
-  default so users share only the visible answer.
-*/
-import 'dart:collection';
-
-class ParsedThinking {
-  const ParsedThinking({required this.visible, this.thinking});
-
-  /// The content to display as the actual assistant message (markdown).
-  final String visible;
-
-  /// Optional hidden reasoning/thinking content.
-  ///
-  /// Note: When multiple thinking sections are present in the source, they
-  /// are concatenated (in order) into this single string. This allows the UI
-  /// to present one elegant, collapsible disclosure that updates as streaming
-  /// continues, regardless of how many distinct thinking blocks appear before
-  /// or after tool calls.
-  final String? thinking;
-}
+// Splits assistant output into ordered visible and reasoning segments for the
+// evolution chat UI. Open-ended markers are supported so streamed reasoning
+// remains classified as thinking until its closing marker arrives.
 
 /// A single content segment extracted from assistant output,
 /// preserving order and type.
@@ -47,28 +11,7 @@ class ThinkingSegment {
   final String text;
 }
 
-/// Compiled patterns and configuration for parsing thinking blocks.
-class ThinkingPatterns {
-  // HTML-like tags (case-insensitive) — support <think> and <thinking>
-  static final RegExp htmlOpen = RegExp(
-    '<think(?:ing)?>',
-    caseSensitive: false,
-  );
-  static final RegExp htmlClose = RegExp(
-    '</think(?:ing)?>',
-    caseSensitive: false,
-  );
-
-  // Bracket-style tags (case-insensitive) — support [think] and [thinking]
-  static final RegExp bracketOpen = RegExp(
-    r'\[(?:think|thinking)\]',
-    caseSensitive: false,
-  );
-  static final RegExp bracketClose = RegExp(
-    r'\[/(?:think|thinking)\]',
-    caseSensitive: false,
-  );
-
+class _ThinkingPatterns {
   // Fenced code block language (case-insensitive) — support ```think and ```thinking
   static final RegExp fenceOpen = RegExp(
     r'```[ \t]*(?:think|thinking)[ \t]*\n',
@@ -77,33 +20,11 @@ class ThinkingPatterns {
   static const String fenceClose = '```';
 }
 
-/// Utilities related to thinking content.
-class ThinkingUtils {
-  static const int maxThinkingLength = 20000; // Prevent runaway UI
-
-  // Lightweight LRU cache for parsed results
-  static final LinkedHashMap<String, ParsedThinking> _cache =
-      LinkedHashMap<String, ParsedThinking>();
-  static const int _cacheLimit = 100;
-
-  static ParsedThinking? _getCache(String key) => _cache[key];
-  static void _setCache(String key, ParsedThinking value) {
-    if (_cache.length > _cacheLimit) {
-      _cache.remove(_cache.keys.first);
-    }
-    _cache[key] = value;
-  }
-
-  /// Remove all thinking blocks and return only the visible content.
-  static String stripThinking(String input) => parseThinking(input).visible;
-}
-
-// Shared helpers to avoid duplication between parseThinking and
-// splitThinkingSegments.
-
 // Finds the body start for a fenced block beginning at or after `from`.
 int? _fenceBodyStartFor(String content, int from) {
-  final match = ThinkingPatterns.fenceOpen.firstMatch(content.substring(from));
+  final match = _ThinkingPatterns.fenceOpen.firstMatch(
+    content.substring(from),
+  );
   if (match == null) return null;
   return from + match.end;
 }
@@ -177,7 +98,7 @@ int? _fenceBodyStartFor(String content, int from) {
 
   // Fenced: find next match start
   var fenceIdx = -1;
-  final iter = ThinkingPatterns.fenceOpen.allMatches(content, index).iterator;
+  final iter = _ThinkingPatterns.fenceOpen.allMatches(content, index).iterator;
   if (iter.moveNext()) {
     fenceIdx = iter.current.start;
   }
@@ -256,7 +177,7 @@ _resolveTokens(String content, String type, int nextIdx) {
       final fallbackNl = content.indexOf('\n', nextIdx);
       final bodyStart =
           computed ?? (fallbackNl >= 0 ? fallbackNl + 1 : content.length);
-      const closeToken = ThinkingPatterns.fenceClose;
+      const closeToken = _ThinkingPatterns.fenceClose;
       return (
         bodyStart: bodyStart,
         openToken: openToken,
@@ -273,117 +194,8 @@ _resolveTokens(String content, String type, int nextIdx) {
   }
 }
 
-/// Parses assistant output to extract any hidden `thinking` sections and
-/// return visible content separately.
-///
-/// Behavior:
-/// - Supports HTML, bracket, and fenced-code syntaxes, case-insensitive.
-/// - Aggregates multiple segments in order, separated by a Markdown HR (---).
-/// - Handles open-ended blocks for streaming and nested blocks (HTML/bracket).
-/// - Enforces a maximum combined length for thinking to protect the UI.
-///
-/// Recognized patterns (multiple supported and concatenated):
-/// - `<think> ... </think>` (HTML-like)
-/// - ```think\n ... \n``` (fenced code with language `think`)
-/// - `[think] ... [/think]` (BBCode-like)
-///
-/// Examples:
-/// - `<thinking>Reasoning steps here</thinking> Visible answer here.`
-/// - ```thinking\nChain-of-thought steps...\n```\nFinal answer.```
-/// - `[thinking]Reasoning...[/thinking] Result text.`
-///
-/// Streaming-friendly: also detects open-ended blocks (no closing yet) and
-/// assigns all remaining content to `thinking` until more tokens arrive.
-ParsedThinking parseThinking(String content) {
-  try {
-    if (content.isEmpty) return const ParsedThinking(visible: '');
-
-    // Memoize to avoid repeated heavy regex work on identical content.
-    final cached = ThinkingUtils._getCache(content);
-    if (cached != null) return cached;
-
-    final visible = StringBuffer();
-    final thinking = StringBuffer();
-
-    var index = 0;
-    var foundThinking = false;
-
-    while (index < content.length) {
-      final found = _findNextBlockType(content, index);
-      if (found == null) {
-        // No more thinking blocks; add remainder to visible and stop.
-        visible.write(content.substring(index));
-        break;
-      }
-
-      // Emit preceding visible content
-      if (found.nextIdx > index) {
-        visible.write(content.substring(index, found.nextIdx));
-      }
-
-      // Advance past opening token and capture thinking until its close (or end)
-      final tokens = _resolveTokens(content, found.type, found.nextIdx);
-
-      String segment;
-      int nextIndexAfterClose;
-
-      if (found.type == 'html' || found.type == 'bracket') {
-        final res = _extractNested(
-          content,
-          tokens.bodyStart,
-          tokens.openToken,
-          tokens.closeToken,
-        );
-        segment = res.body;
-        nextIndexAfterClose = res.end;
-      } else {
-        // fence: not nested, find next ```
-        final closeIdx = content.indexOf(tokens.closeToken, tokens.bodyStart);
-        if (closeIdx >= 0) {
-          segment = content.substring(tokens.bodyStart, closeIdx);
-          nextIndexAfterClose = closeIdx + tokens.afterCloseAdvance;
-        } else {
-          segment = content.substring(tokens.bodyStart);
-          nextIndexAfterClose = content.length;
-        }
-      }
-
-      if (foundThinking && thinking.isNotEmpty) thinking.write('\n\n---\n\n');
-      // Enforce maximum length to avoid UI stalls.
-      final remaining = ThinkingUtils.maxThinkingLength - thinking.length;
-      if (remaining > 0) {
-        if (segment.length > remaining) {
-          thinking
-            ..write(segment.substring(0, remaining))
-            ..write('\n\n[Thinking content truncated...]');
-          foundThinking = true;
-          break; // Stop processing further thinking blocks
-        } else {
-          thinking.write(segment);
-        }
-      } else {
-        thinking.write('\n\n[Thinking content truncated...]');
-        break;
-      }
-      foundThinking = true;
-      index = nextIndexAfterClose;
-    }
-
-    final visibleStr = visible.toString().trim();
-    final thinkingStr = foundThinking ? thinking.toString().trim() : null;
-    final result = ParsedThinking(visible: visibleStr, thinking: thinkingStr);
-    // Only cache reasonably-sized content
-    if (content.length <= 10000) ThinkingUtils._setCache(content, result);
-    return result;
-  } catch (_) {
-    // Defensive fallback — return original content visible if anything fails
-    return ParsedThinking(visible: content);
-  }
-}
-
 /// Splits content into ordered segments of visible vs. thinking blocks.
-/// Unlike [parseThinking], this does not aggregate all thinking into one block
-/// and instead returns each section as its own segment.
+/// Each recognized section remains its own segment.
 List<ThinkingSegment> splitThinkingSegments(String content) {
   final segments = <ThinkingSegment>[];
   try {

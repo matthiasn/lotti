@@ -64,7 +64,6 @@ class _TestConversationRepository extends ConversationRepository {
 
     final manager =
         ConversationManager(
-            conversationId: conversationId,
             maxTurns: 1,
           )
           ..initialize()
@@ -162,7 +161,7 @@ _strategyWithProposal({
   String rationale = 'R',
 }) async {
   final strategy = EvolutionStrategy();
-  final manager = ConversationManager(conversationId: 'conv-1')..initialize();
+  final manager = ConversationManager()..initialize();
   final toolCall = ChatCompletionMessageToolCall(
     id: 'call-1',
     type: ChatCompletionMessageToolCallType.function,
@@ -661,8 +660,7 @@ void main() {
       final strategy1 = EvolutionStrategy();
       final strategy2 = EvolutionStrategy();
 
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const call1 = ChatCompletionMessageToolCall(
         id: 'call-1',
         type: ChatCompletionMessageToolCallType.function,
@@ -747,8 +745,7 @@ void main() {
       ;
 
       // Manually add a proposal by processing a tool call.
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-1',
         type: ChatCompletionMessageToolCallType.function,
@@ -1122,8 +1119,7 @@ void main() {
       ).thenAnswer((_) async => makeTestEvolutionSession());
 
       // Add a proposal.
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-1',
         type: ChatCompletionMessageToolCallType.function,
@@ -1180,8 +1176,7 @@ void main() {
       // Pre-populate a recap with non-empty TLDR via tool call processing
       // (must happen before approveSummaryWith, which creates its own
       // ConversationManager for the proposal).
-      final manager = ConversationManager(conversationId: 'conv-recap')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const recapCall = ChatCompletionMessageToolCall(
         id: 'call-recap',
         type: ChatCompletionMessageToolCallType.function,
@@ -1248,8 +1243,7 @@ void main() {
           () => mockRepository.getEntity(any()),
         ).thenAnswer((_) async => makeTestEvolutionSession());
 
-        final manager = ConversationManager(conversationId: 'conv-empty')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call-1',
           type: ChatCompletionMessageToolCallType.function,
@@ -1313,8 +1307,7 @@ void main() {
       final strategy = EvolutionStrategy();
 
       // Add a proposal.
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-1',
         type: ChatCompletionMessageToolCallType.function,
@@ -1400,8 +1393,7 @@ void main() {
       final strategy = EvolutionStrategy();
 
       // Add a note.
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-1',
         type: ChatCompletionMessageToolCallType.function,
@@ -1492,8 +1484,7 @@ void main() {
       ).thenAnswer((_) async => makeTestEvolutionSession());
 
       final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-1',
         type: ChatCompletionMessageToolCallType.function,
@@ -1723,8 +1714,7 @@ void main() {
       ).thenAnswer((_) async => makeTestEvolutionSession());
 
       final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
 
       // Add proposal.
       const proposalCall = ChatCompletionMessageToolCall(
@@ -1862,8 +1852,7 @@ void main() {
         ).thenAnswer((_) async => makeTestEvolutionSession());
 
         final strategy = EvolutionStrategy();
-        final manager = ConversationManager(conversationId: 'conv-1')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
 
         // First proposal.
         const firstProposal = ChatCompletionMessageToolCall(
@@ -1953,8 +1942,7 @@ void main() {
         ).thenAnswer((_) async => makeTestEvolutionSession());
 
         final strategy = EvolutionStrategy();
-        final manager = ConversationManager(conversationId: 'conv-1')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
 
         // Add proposal.
         const proposalCall = ChatCompletionMessageToolCall(
@@ -2070,8 +2058,7 @@ void main() {
         ).thenAnswer((_) async => makeTestEvolutionSession());
 
         final strategy = EvolutionStrategy();
-        final manager = ConversationManager(conversationId: 'conv-1')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
 
         // Add proposal.
         const proposalCall = ChatCompletionMessageToolCall(
@@ -2525,8 +2512,7 @@ void main() {
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
 
       final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const proposalCall = ChatCompletionMessageToolCall(
         id: 'call-1',
         type: ChatCompletionMessageToolCallType.function,
@@ -3066,8 +3052,7 @@ void main() {
   group('getCurrentRecap', () {
     test('returns recap when one exists on the session', () async {
       final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-recap')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       // Publish a ritual recap so latestRecap is non-null.
       const recapCall = ChatCompletionMessageToolCall(
         id: 'call-recap',
@@ -3218,8 +3203,7 @@ void main() {
         ).thenAnswer((_) async => makeTestEvolutionSession());
 
         final strategy = EvolutionStrategy();
-        final manager = ConversationManager(conversationId: 'conv-idempotent')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call-idempotent',
           type: ChatCompletionMessageToolCallType.function,
@@ -3293,8 +3277,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         final strategy = EvolutionStrategy();
-        final manager = ConversationManager(conversationId: 'conv-rethrow')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call-rethrow',
           type: ChatCompletionMessageToolCallType.function,
@@ -3386,8 +3369,7 @@ void main() {
               content: '',
             ),
           );
-        final manager = ConversationManager(conversationId: 'conv-no-recap')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call-no-recap',
           type: ChatCompletionMessageToolCallType.function,
@@ -3488,7 +3470,7 @@ void main() {
         ).thenAnswer((_) async => makeTestEvolutionSession());
 
         // Set up a ConversationManager with both user and assistant messages.
-        final convManager = ConversationManager(conversationId: 'conv-trans')
+        final convManager = ConversationManager()
           ..initialize()
           ..addUserMessage('What should I improve?')
           ..addAssistantMessage(content: 'Focus on tone.');
@@ -3500,8 +3482,7 @@ void main() {
         );
 
         final strategy = EvolutionStrategy();
-        final manager = ConversationManager(conversationId: 'conv-propose')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call-trans',
           type: ChatCompletionMessageToolCallType.function,

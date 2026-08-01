@@ -1973,7 +1973,6 @@ turn task metadata or a checklist edit into an accomplishment.
     'editor deletes its isolated conversation when sending throws',
     () async {
       final repository = _ThrowingConversationRepository();
-      addTearDown(repository.disposeManager);
       final editor = TaskAgentReportEditor(
         conversationRepository: repository,
         inferenceRepository: _QueuedInferenceRepository(const []),
@@ -1996,7 +1995,6 @@ turn task metadata or a checklist edit into an accomplishment.
 
   test('editor retains prior-attempt usage when a repair throws', () async {
     final repository = _ThrowingConversationRepository(throwOnCall: 2);
-    addTearDown(repository.disposeManager);
     final result =
         await TaskAgentReportEditor(
           conversationRepository: repository,
@@ -2119,13 +2117,10 @@ class _ThrowingConversationRepository extends ConversationRepository {
 
   final int throwOnCall;
   final _manager = ConversationManager(
-    conversationId: 'throwing-report-editor',
     maxTurns: 2,
   );
   int deleteCount = 0;
   int sendCount = 0;
-
-  void disposeManager() => _manager.dispose();
 
   @override
   String createConversation({String? systemMessage, int maxTurns = 20}) {

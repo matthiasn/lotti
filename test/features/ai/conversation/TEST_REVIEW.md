@@ -9,7 +9,7 @@
 
 | File | Lines | Has test? | Top issue |
 |------|-------|-----------|-----------|
-| `lib/features/ai/conversation/conversation_manager.dart` | 351 | Yes (1126 ln) | Test 3× the impl; no Glados for history-truncation reducer |
+| `lib/features/ai/conversation/conversation_manager.dart` | — | Yes | History, turn limits, error state, and signatures have direct and generated coverage |
 | `lib/features/ai/conversation/conversation_repository.dart` | 417 | Yes (1812 ln) | **Heavily oversized test** — 1812 lines vs 417; ~18 copy-paste `when` stubs; inline mocks |
 | `lib/features/ai/conversation/conversation_repository.g.dart` | 284 | (generated) | Do not edit |
 
@@ -20,8 +20,6 @@
 - [x] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` at **1812 lines** is the single most oversized test file in the entire scope. The core issue is copy-paste: every one of the ~18 `sendMessage` sub-tests re-declares the identical 8-argument `when(() => mockOllamaRepo.generateTextWithMessages(...))` stub (lines 157–168, 211–222, 274–285, 325–336, 399–410, 503–514, 588–599, 670–681, 711–722, 816–827, 914–925, 984–995, 1082–1093, 1218–1229, 1317–1328, 1401–1412, 1489–1500, 1551–1562, 1657–1668, 1696–1707). Extracting a `_stubGenerateText(mock, {Stream? stream})` helper would reduce the file by at least 300 lines. **RESOLVED:** shared `_stubGenerateText(mock)` helper replaces all 19 copies of the 8-argument stub.
 
 - [x] **[HIGH]** `test/features/ai/conversation/conversation_manager_test.dart` at **1126 lines** vs a 351-line impl. The two Glados properties at the bottom (lines 902–1074) are excellent and correctly-tagged. The first ~800 lines of static tests contain several near-duplicate assistant-message scenarios (lines 537–656) that test orthogonal flag combinations without using a loop or parameterized helper. A `_assertAssistantMessage(manager, {content, toolCalls, expectedEvent})` helper would reduce this section by ~100 lines. **RESOLVED:** the four assistant-message scenarios are now one parameterized loop over (description, content, toolCalls, expected event) cases.
-
-  Concrete split seam: `ConversationManager` (351 lines) is cleanly bounded. The `ConversationEvent` sealed class hierarchy (lines 225–351, ~127 lines) and the `ConversationStrategy` / `ConversationAction` declarations (lines 332–351) could be extracted to a `conversation_events.dart` and `conversation_strategy.dart` respectively, keeping `conversation_manager.dart` under 250 lines and enabling per-file test mirroring.
 
 - [x] **[MED]** `lib/features/ai/conversation/conversation_repository.dart` at 417 lines is within limits, but the `sendMessage` method body is 280 lines (lines 90–382) with deeply nested tool-call accumulation logic. The Gemini-style detection block (lines 188–219) and the standard OpenAI accumulation loop (lines 220–289) are natural extraction candidates into private helpers (`_handleGeminiToolCalls`, `_handleOpenAiToolCallChunks`), which would also make their unit tests cheaper to write.
   **RESOLVED:** done — the Gemini block and the OpenAI accumulation loop are now `@visibleForTesting` statics on `ConversationRepository` (`isGeminiStyleToolCallDelta`, `appendGeminiToolCalls`, `accumulateOpenAiToolCallChunks`), with `sendMessage` reduced to a dispatch over them; the dead `// DEBUG` no-op loop was deleted. Each helper now has direct unit tests (detection edges, turn-scoped id synthesis, by-id and by-index stitching).
@@ -53,7 +51,7 @@
   **RESOLVED:** the brittle `length == 3` + ordinal-`.index` assertions were dropped. The test now asserts the set of action *names* (`{'continueConversation', 'complete', 'wait'}`), which documents the contract the repository's `sendMessage` switch relies on and is robust to reordering. The per-action runtime behavior (continue-with-prompt, continue-without-prompt, complete, wait) is already covered behaviorally in `conversation_repository_test.dart` (the strategy-driven sendMessage tests at the `ConversationAction.continueConversation/.complete/.wait` stubs).
 
 - [x] **[LOW]** `test/features/ai/conversation/conversation_repository_test.dart` line 670 — `'handles errors during API call'`: the `when` stub at lines 670–681 uses 7 named arguments but omits `turnIndex: any(named: 'turnIndex')`, unlike all other stubs. This means the stub will not match a call that includes `turnIndex`, causing the test to miss the actual call. Verify the mock matches correctly and add the missing named argument for consistency.
-  **RESOLVED:** the inline 7-argument stub was replaced with the shared `_stubGenerateText(mockOllamaRepo).thenThrow(...)` helper, which includes `turnIndex: any(named: 'turnIndex')` so it actually matches the `sendMessage` call (which always passes `turnIndex`). The assertion was also strengthened to verify the emitted `ConversationErrorEvent.message` contains `'API Error'`, proving the thrown exception (not an unmatched-mock error) is what propagates.
+  **RESOLVED:** the inline 7-argument stub was replaced with the shared `_stubGenerateText(mockOllamaRepo).thenThrow(...)` helper, which includes `turnIndex: any(named: 'turnIndex')` so it actually matches the `sendMessage` call (which always passes `turnIndex`). The assertion verifies `ConversationManager.lastError` contains `'API Error'`, proving the thrown exception (not an unmatched-mock error) is what was captured.
 
 ---
 
@@ -92,9 +90,6 @@
 
 - [x] **[HIGH]** `lib/features/ai/conversation/conversation_repository.dart` line 98: the `toolChoice` parameter is documented ("the hook the Task Agent uses to force a terminal `update_report` call") but **there is no test** that passes a non-null `toolChoice` and verifies it is forwarded to `generateTextWithMessages`. Add a test that supplies `ChatCompletionToolChoiceOption.named('update_report')` and verifies the mock was called with that `toolChoice`. **RESOLVED:** added a test forwarding `ChatCompletionToolChoiceOption.tool(update_report)` and capturing it off `generateTextWithMessages`.
 
-- [x] **[MED]** `lib/features/ai/conversation/conversation_repository.dart` — `deleteConversation` (lines 384–387) is tested by the basic `'deleteConversation removes conversation'` test. However, there is no test that verifies `dispose()` is called on the removed manager (stream cleanup). A test that listens to `manager.events` before deletion and then checks the stream closes after `deleteConversation` would strengthen cleanup guarantees.
-  **RESOLVED:** done — added 'deleteConversation disposes the manager (events stream closes)': listens to `manager.events`, deletes, and awaits `emitsDone`.
-
 - [x] **[MED]** `lib/features/ai/conversation/conversation_manager.dart` — `initialize()` clears `_thoughtSignatures` (line 47). The test at line 686 verifies messages are cleared but does **not** verify signatures are cleared. Add an assertion to the `'initialize clears existing messages'` test that checks `manager.thoughtSignatures.isEmpty` after re-initialization.
   **RESOLVED:** done — the initialize test now also seeds a thought signature via `addAssistantMessage(signatures: …)` and asserts `manager.thoughtSignatures` is empty after re-initialization (renamed to 'initialize clears existing messages and thought signatures').
 
@@ -112,9 +107,6 @@
 
 - [x] **[MED]** `test/features/ai/conversation/conversation_manager_test.dart` — two Glados properties at `numRuns: 180` (lines 903, 991) are well-calibrated. The history scenario at numRuns=180 generates lists of up to 60 user messages per scenario; each iteration constructs a `ConversationManager` and adds N messages with O(N) trim logic. At 180 runs this is acceptable; do not reduce.
   **RESOLVED:** verified, no change — the item itself concludes the calibration is correct ('do not reduce'); numRuns stays at 180 for both properties.
-
-- [x] **[LOW]** `test/features/ai/conversation/conversation_manager_test.dart` lines 427–462: several tests use `fakeAsync` + `flushMicrotasks` correctly for event delivery. One test (lines 452–462 under `'export'`) does not use `fakeAsync` at all — this is safe since `canContinue()` is synchronous, but the pattern is inconsistent with the rest of the group.
-  **RESOLVED (no change needed):** the offending `'export'` group (and its single non-`fakeAsync` test) was already deleted under the MED item above, so the inconsistency no longer exists. The remaining tests that emit events (`addUserMessage`, `Event Emission`, `Tool Response Handling`, `Assistant Message Handling`) all wrap event-stream assertions in `fakeAsync` + `flushMicrotasks`, while the purely-synchronous tests (`turnCount`, `canContinue`, trimming, `getMessagesForRequest`) correctly omit it. The pattern is now consistent.
 
 ---
 

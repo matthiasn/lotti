@@ -16,7 +16,7 @@ buildGenUiBench({
   final bridge = GenUiBridge(processor: processor);
   final strategy =
       strategyBuilder?.call(bridge) ?? EvolutionStrategy(genUiBridge: bridge);
-  final manager = ConversationManager(conversationId: conversationId)
+  final manager = ConversationManager()
     ..initialize(systemMessage: 'You are an evolution agent.');
   return (bridge: bridge, strategy: strategy, manager: manager);
 }

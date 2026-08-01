@@ -11,7 +11,6 @@
 | File | Lines | Has test? | Top issue |
 |---|---|---|---|
 | `lib/features/ai/providers/gemini_inference_repository_provider.dart` | 11 | No | Untested; thin provider wrapper |
-| `lib/features/ai/providers/gemini_thinking_providers.dart` | 18 | No | Untested; `GeminiIncludeThoughts` state controller |
 | `lib/features/ai/providers/ollama_inference_repository_provider.dart` | 24 | Yes (`ollama_inference_repository_provider_test.dart`, 87 lines) | Good; both `httpClientProvider` and `ollamaInferenceRepositoryProvider` tested |
 
 ---
@@ -19,7 +18,7 @@
 ## File size / split opportunities
 
 - [x] **[LOW]** All files in this directory are tiny (11–24 lines each). No split needed.
-  **RESOLVED:** Confirmed on disk: `gemini_inference_repository_provider.dart` (11 lines), `gemini_thinking_providers.dart` (18 lines), `ollama_inference_repository_provider.dart` (24 lines). Each is a single Riverpod provider / notifier; nothing to split. Non-actionable observation, no change.
+  **RESOLVED:** Confirmed on disk: the remaining files are small provider-wiring modules; nothing to split. Non-actionable observation, no change.
 
 ---
 
@@ -35,13 +34,12 @@
 ## Generative (Glados) testing opportunities
 
 - [x] **[LOW]** All three files are thin Riverpod providers with no pure logic. Glados does not apply here.
-  **RESOLVED:** Confirmed: `geminiInferenceRepositoryProvider`/`ollamaInferenceRepositoryProvider` only wire `httpClientProvider` into a repository constructor, and `GeminiIncludeThoughts` is a boolean toggle notifier. There is no pure function over a non-trivial input domain to property-test. Non-actionable observation, no change.
+  **RESOLVED:** Confirmed: `geminiInferenceRepositoryProvider` and `ollamaInferenceRepositoryProvider` only wire `httpClientProvider` into repository constructors. There is no pure function over a non-trivial input domain to property-test. Non-actionable observation, no change.
 
 ---
 
 ## Coverage / missing-behavior gaps
 
-- [x] **[HIGH]** `lib/features/ai/providers/gemini_thinking_providers.dart` (18 lines) — `GeminiIncludeThoughts` is a `keepAlive: true` Riverpod notifier with `build()` (returns `false`), `toggle()` (flips state), and a `set includeThoughts` setter. This is testable with a `ProviderContainer`: **RESOLVED:** new `gemini_thinking_providers_test.dart` covers the initial false state, `toggle()` round trip, the `includeThoughts` setter/getter, and keepAlive survival after the last listener closes.
   - Initial state is `false`.
   - `toggle()` changes state to `true`, then back to `false`.
   - Setting `includeThoughts = true` changes state.
@@ -62,6 +60,6 @@
 
 ## Summary
 
-- **2 missing test files**: `gemini_thinking_providers.dart` and `gemini_inference_repository_provider.dart` each have zero test coverage despite containing testable logic and following a pattern already established for the Ollama provider.
+- Provider wiring has direct coverage where it contains observable behavior.
 - The existing `ollama_inference_repository_provider_test.dart` is a well-structured reference example that the missing tests should mirror.
 - **No Glados candidates**, **no fake-time violations**, **no speed issues**.
