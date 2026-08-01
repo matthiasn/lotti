@@ -1980,6 +1980,53 @@ void main() {
     },
   );
 
+  test('report editing classifies a malformed revision as invalid', () async {
+    final inferenceRepository = _QueuedInferenceRepository([
+      [
+        _toolCalls([
+          ..._expectedMetadataToolCalls(),
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Task configured for model validation',
+              'tldr': 'Metadata updated. Ready to begin.',
+              'content': 'Task configured.',
+            }),
+          ),
+        ]),
+      ],
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: 'not-json',
+          ),
+        ]),
+      ],
+    ]);
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: inferenceRepository,
+      executionMode: LocalTaskAgentEvalExecutionMode.reportEditing,
+      temperature: 0,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultLocalTaskAgentWakeScenario()],
+    );
+
+    final result = report.results.single;
+    expect(
+      result.failureCategory,
+      LocalTaskAgentEvalFailureCategory.invalidReportRevision,
+    );
+    expect(result.reportEditorAttempts, 1);
+    expect(result.reportEditorValidationIssues, [
+      TaskAgentReportRevisionIssue.invalidShape,
+    ]);
+  });
+
   test('report editing fails after the final invalid revision', () async {
     final inferenceRepository = _QueuedInferenceRepository([
       [
