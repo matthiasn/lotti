@@ -190,9 +190,10 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
       if (habitDefinition != null) {
         // Scheduling the next reminder is a side effect of a completion that
         // has already been written. Letting it throw here would return null
-        // and tell the caller the write failed — it did not — so the user
-        // would get no confirmation for a completion that is in the database,
-        // and would likely tap again and record a duplicate.
+        // and tell the caller the write failed — it did not. The UI then skips
+        // its confirmation toast and, because it clears the optimistic-
+        // celebration flag, replays the celebration when the row's
+        // `completedToday` flip finally arrives.
         try {
           await getIt<NotificationService>().scheduleHabitNotification(
             habitDefinition,

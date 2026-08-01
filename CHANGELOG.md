@@ -36,12 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the clock of the device that recorded it: an hour worked at 9am in Tokyo counts
   to that Tokyo week everywhere. Past weeks are re-summed under the new rule as
   they come back into range.
-- **Ticking off a habit on macOS confirms it again.** Completing a habit
-  recorded it but then showed no confirmation — no celebration, no toast — so
-  it looked like nothing had happened and the obvious response was to tap
-  again, recording a duplicate. Scheduling the next reminder was failing on
-  macOS and the failure was being reported as if the completion itself had
-  failed.
+- **Habit reminders schedule again on macOS.** Ticking off a habit recorded it,
+  but arming the next reminder failed, so no follow-up notification was
+  scheduled. The failure was also reported as though the completion itself had
+  failed, which skipped the confirmation toast and replayed the celebration
+  animation a second time once the row caught up.
 - **The morning briefing plans the day you came back on, not the day you
   left.** Daily OS arms its next morning digest ahead of time, tagged with the
   day it was meant to run. If the device was asleep, offline, or the app simply

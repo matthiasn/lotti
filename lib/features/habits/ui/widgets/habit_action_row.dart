@@ -241,8 +241,9 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
       //
       // This branch means the *write* failed, and only that. Side effects of a
       // successful write — scheduling the next reminder, for one — are caught
-      // where they happen so a failed reminder cannot masquerade as a failed
-      // completion.
+      // where they happen. Reaching here after a successful write also
+      // double-fires the celebration: clearing the flag lets `didUpdateWidget`
+      // treat the incoming `completedToday` flip as a fresh completion.
       _optimisticCelebration = false;
       return;
     }
