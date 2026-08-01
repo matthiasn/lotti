@@ -124,6 +124,9 @@ void main() {
     test('shutdown drains framework summaries before log flush', () async {
       final callOrder = <String>[];
       final loggingService = MockLoggingService();
+      when(() => getIt<SettingsDb>().close()).thenAnswer((_) async {
+        callOrder.add('databaseClose');
+      });
       when(loggingService.flush).thenAnswer((_) async {
         callOrder.add('logFlush');
       });
@@ -133,13 +136,20 @@ void main() {
         skipWindowManagerSetup: true,
         isMacOSOverride: () => true,
         exitOverride: (_) {},
-        playerDisposerOverride: () async {},
+        playerDisposerOverride: () async {
+          callOrder.add('playerDispose');
+        },
         beforeLogFlush: () async {
           callOrder.add('frameworkSummaryDrain');
         },
       ).shutdown();
 
-      expect(callOrder, ['frameworkSummaryDrain', 'logFlush']);
+      expect(callOrder, [
+        'databaseClose',
+        'playerDispose',
+        'frameworkSummaryDrain',
+        'logFlush',
+      ]);
     });
 
     test('detached lifecycle event triggers macOS shutdown sequence', () async {

@@ -160,7 +160,8 @@ Desktop close paths converge on one ordered teardown. `AppLifecycleListener`'s
 `WindowService.closeWindow()`, which releases SQLite handles before the process
 is allowed to exit. On macOS the immediate-exit path is only reached after
 that release — exiting earlier risks a half-flushed WAL. The pre-flush callback
-also drains pending framework-error counts as described in
+then drains pending framework-error counts after service/player teardown and
+immediately before `LoggingService.flush()`, as described in
 [Logging and diagnostics](logging-and-diagnostics.md#the-gate-and-what-bypasses-it).
 
 # Where to look

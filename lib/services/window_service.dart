@@ -148,22 +148,23 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
   /// Both Flutter's app-exit callback and the window-manager callback await
   /// this same future. This prevents concurrent or duplicate Drift closes and
   /// ensures a second shutdown signal cannot let engine teardown race ahead of
-  /// the first teardown sequence.
+  /// the first teardown sequence. Pending framework summaries drain after
+  /// service/player teardown and immediately before the final log flush.
   Future<void> shutdown() => _shutdownFuture ??= _shutdown();
 
   Future<void> _shutdown() async {
-    try {
-      await _beforeLogFlush();
-    } catch (e, s) {
-      _logDisposalError(e, s, 'frameworkErrorSummaries');
-    }
-
     await _disposer.disposeAll();
 
     try {
       await _playerDisposer();
     } catch (e, s) {
       _logDisposalError(e, s, 'audioPlayer');
+    }
+
+    try {
+      await _beforeLogFlush();
+    } catch (e, s) {
+      _logDisposalError(e, s, 'frameworkErrorSummaries');
     }
 
     // Bounded so a hung file flush cannot indefinitely delay shutdown.

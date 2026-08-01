@@ -462,6 +462,7 @@ void main() {
       library: 'widgets library',
     );
     app.handleFlutterFrameworkError(oldestDetails);
+    app.handleFlutterFrameworkError(oldestDetails);
     for (var i = 1; i <= 256; i++) {
       app.handleFlutterFrameworkError(
         FlutterErrorDetails(
@@ -489,6 +490,17 @@ void main() {
         subDomain: 'widgets library',
       ),
     ).called(2);
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        any<Object>(),
+        subDomain: 'widgets library',
+        message: any<String>(
+          named: 'message',
+          that: allOf(contains('observed=1'), contains('total=2')),
+        ),
+      ),
+    ).called(1);
   });
 
   test('uncaught zone errors always echo to the console', () {
