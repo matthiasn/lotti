@@ -610,19 +610,6 @@ class TaskAgentService {
     // and leave the queued job permanently stuck.
   }
 
-  Future<Map<String, AgentStateEntity>?> _loadStatesForRestore(
-    List<AgentIdentityEntity> agents,
-  ) async {
-    if (agents.isEmpty) return const {};
-    try {
-      return await repository.getAgentStatesByAgentIds([
-        for (final agent in agents) agent.agentId,
-      ]);
-    } catch (_) {
-      return null;
-    }
-  }
-
   /// Returns the ID of the best default template, or `null` if none exist.
   ///
   /// Prefers the well-known Laura template if it exists, otherwise falls back
@@ -641,9 +628,10 @@ class TaskAgentService {
 
   /// Re-register subscriptions for all active task agents.
   ///
-  /// Called during app startup to restore orchestrator state from the database.
-  /// Iterates all active agent identities, finds their `agent_task` links, and
-  /// registers wake subscriptions for each.
+  /// Called during app startup to restore orchestrator state from one bulk
+  /// snapshot of agent states and `agent_task` links. A snapshot failure
+  /// propagates before the per-agent loop; runtime registration failures after
+  /// a successful snapshot remain isolated to their agent.
   Future<void> restoreSubscriptions() async {
     domainLogger?.log(
       LogDomain.agentRuntime,
@@ -662,15 +650,21 @@ class TaskAgentService {
                   AgentInferenceSetupMode.disabled,
         )
         .toList(growable: false);
-    final statesByAgentId = await _loadStatesForRestore(taskAgents);
+    final agentIds = [for (final agent in taskAgents) agent.agentId];
+    final statesByAgentId = taskAgents.isEmpty
+        ? const <String, AgentStateEntity>{}
+        : await repository.getAgentStatesByAgentIds(agentIds);
+    final linksByAgentId = taskAgents.isEmpty
+        ? const <String, List<AgentLink>>{}
+        : await repository.getLinksFromMultiple(
+            agentIds,
+            type: AgentLinkTypes.agentTask,
+          );
 
     var count = 0;
     for (final agent in taskAgents) {
       try {
-        final links = await repository.getLinksFrom(
-          agent.agentId,
-          type: AgentLinkTypes.agentTask,
-        );
+        final links = linksByAgentId[agent.agentId] ?? const <AgentLink>[];
 
         for (final link in links) {
           _registerTaskSubscription(agent.agentId, link.toId);
@@ -679,9 +673,7 @@ class TaskAgentService {
 
         // Restore persisted deferred wake work so due deadlines survive app
         // restarts and backgrounding.
-        final state = statesByAgentId == null
-            ? await repository.getAgentState(agent.agentId)
-            : statesByAgentId[agent.agentId];
+        final state = statesByAgentId[agent.agentId];
         if (agent.config.automaticUpdatesEnabledEffective) {
           orchestrator.enableAutomaticUpdatesRuntime(agent.agentId);
           _hydrateThrottleDeadlineFromState(agent.agentId, state);

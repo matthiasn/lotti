@@ -1501,11 +1501,15 @@ void main() {
         );
 
         when(
-          () => mockRepository.getLinksFrom('ta-1', type: 'agent_task'),
-        ).thenAnswer((_) async => [link1, link2]);
-        when(
-          () => mockRepository.getAgentState('ta-1'),
-        ).thenAnswer((_) async => null);
+          () => mockRepository.getLinksFromMultiple(
+            ['ta-1'],
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'ta-1': [link1, link2],
+          },
+        );
 
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
 
@@ -1528,10 +1532,17 @@ void main() {
         expect(sub2.matchEntityIds, contains('task-20'));
         expect(sub2.id, 'ta-1_task_task-20');
 
-        // Verify getLinksFrom was NOT called for the non-task agent
+        verify(
+          () => mockRepository.getLinksFromMultiple(
+            ['ta-1'],
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).called(1);
+        // No per-agent link or state reads remain in startup restoration.
         verifyNever(
-          () => mockRepository.getLinksFrom('other-1', type: 'agent_task'),
+          () => mockRepository.getLinksFrom(any(), type: any(named: 'type')),
         );
+        verifyNever(() => mockRepository.getAgentState(any()));
         verify(
           () => mockOrchestrator.disableAutomaticUpdatesRuntime('ta-1'),
         ).called(1);
@@ -1550,8 +1561,11 @@ void main() {
             ),
           ).thenAnswer((_) async => [taskAgent]);
           when(
-            () => mockRepository.getLinksFrom('ta-auto', type: 'agent_task'),
-          ).thenAnswer((_) async => []);
+            () => mockRepository.getLinksFromMultiple(
+              ['ta-auto'],
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer((_) async => const {});
 
           await service.restoreSubscriptions();
 
@@ -1586,11 +1600,17 @@ void main() {
         verifyNever(
           () => mockRepository.getLinksFrom(any(), type: any(named: 'type')),
         );
+        verifyNever(
+          () => mockRepository.getLinksFromMultiple(
+            any(),
+            type: any(named: 'type'),
+          ),
+        );
         // No subscriptions should be registered
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
 
-      test('catches getLinksFrom error and continues to next agent', () async {
+      test('catches a runtime registration error and continues', () async {
         final failingAgent = makeIdentity(agentId: 'ta-fail');
         final okAgent = makeIdentity(agentId: 'ta-ok');
 
@@ -1600,12 +1620,14 @@ void main() {
           ),
         ).thenAnswer((_) async => [failingAgent, okAgent]);
 
-        // First agent's link lookup throws.
-        when(
-          () => mockRepository.getLinksFrom('ta-fail', type: 'agent_task'),
-        ).thenThrow(Exception('DB error'));
-
-        // Second agent's link lookup succeeds.
+        final failingLink = AgentLink.agentTask(
+          id: 'link-fail',
+          fromId: 'ta-fail',
+          toId: 'task-fail',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
         final link = AgentLink.agentTask(
           id: 'link-ok',
           fromId: 'ta-ok',
@@ -1615,24 +1637,69 @@ void main() {
           vectorClock: null,
         );
         when(
-          () => mockRepository.getLinksFrom('ta-ok', type: 'agent_task'),
-        ).thenAnswer((_) async => [link]);
-        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-        when(
-          () => mockRepository.getAgentState('ta-ok'),
-        ).thenAnswer((_) async => null);
+          () => mockRepository.getLinksFromMultiple(
+            ['ta-fail', 'ta-ok'],
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'ta-fail': [failingLink],
+            'ta-ok': [link],
+          },
+        );
+        when(() => mockOrchestrator.addSubscription(any())).thenAnswer((call) {
+          final subscription =
+              call.positionalArguments.single as AgentSubscription;
+          if (subscription.agentId == 'ta-fail') {
+            throw StateError('runtime registration failed');
+          }
+        });
 
         // Should not throw — error is caught internally.
         await service.restoreSubscriptions();
 
         // The second agent's subscription should still be registered.
-        final captured = verify(
-          () => mockOrchestrator.addSubscription(captureAny()),
-        ).captured;
-        expect(captured, hasLength(1));
-        final sub = captured.first as AgentSubscription;
-        expect(sub.agentId, 'ta-ok');
-        expect(sub.matchEntityIds, contains('task-ok'));
+        verify(
+          () => mockOrchestrator.addSubscription(
+            any(
+              that: isA<AgentSubscription>()
+                  .having((sub) => sub.agentId, 'agentId', 'ta-ok')
+                  .having(
+                    (sub) => sub.matchEntityIds,
+                    'matchEntityIds',
+                    contains('task-ok'),
+                  ),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('aborts before per-agent work when state preload fails', () async {
+        final first = makeIdentity(agentId: 'ta-1');
+        final second = makeIdentity(agentId: 'ta-2');
+        when(
+          () => mockAgentService.listAgents(
+            lifecycle: AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => [first, second]);
+        when(
+          () => mockRepository.getAgentStatesByAgentIds(['ta-1', 'ta-2']),
+        ).thenThrow(StateError('database connection closed'));
+
+        await expectLater(
+          service.restoreSubscriptions(),
+          throwsA(isA<StateError>()),
+        );
+
+        verifyNever(
+          () => mockRepository.getLinksFromMultiple(
+            any(),
+            type: any(named: 'type'),
+          ),
+        );
+        verifyNever(() => mockRepository.getLinksFrom(any()));
+        verifyNever(() => mockRepository.getAgentState(any()));
+        verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
 
       test('handles empty agent list gracefully', () async {
@@ -1669,15 +1736,33 @@ void main() {
               lifecycle: AgentLifecycle.active,
             ),
           ).thenAnswer((_) async => [failingAgent]);
+          final failingLink = AgentLink.agentTask(
+            id: 'link-fail',
+            fromId: 'ta-fail',
+            toId: 'task-fail',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
           when(
-            () => mockRepository.getLinksFrom('ta-fail', type: 'agent_task'),
-          ).thenThrow(Exception('DB error'));
+            () => mockRepository.getLinksFromMultiple(
+              ['ta-fail'],
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'ta-fail': [failingLink],
+            },
+          );
+          when(
+            () => mockOrchestrator.addSubscription(any()),
+          ).thenThrow(StateError('runtime registration failed'));
 
           // Should not throw — error is caught and logged via developer.log.
           await nullLoggerService.restoreSubscriptions();
 
-          // Verify no subscription was registered (agent errored out).
-          verifyNever(() => mockOrchestrator.addSubscription(any()));
+          // Registration was attempted once and its failure was contained.
+          verify(() => mockOrchestrator.addSubscription(any())).called(1);
         },
       );
     });

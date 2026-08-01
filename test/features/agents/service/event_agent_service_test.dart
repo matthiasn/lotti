@@ -378,14 +378,16 @@ void main() {
         () => mockAgentService.listAgents(lifecycle: AgentLifecycle.active),
       ).thenAnswer((_) async => [eventAgent, taskAgent]);
       when(
-        () => mockRepository.getLinksFrom(
-          'agent-event',
+        () => mockRepository.getLinksFromMultiple(
+          ['agent-event'],
           type: AgentLinkTypes.agentEvent,
         ),
       ).thenAnswer(
-        (_) async => [
-          makeTestAgentEventLink(fromId: 'agent-event', toId: eventId),
-        ],
+        (_) async => {
+          'agent-event': [
+            makeTestAgentEventLink(fromId: 'agent-event', toId: eventId),
+          ],
+        },
       );
       when(
         () => mockRepository.getAgentStatesByAgentIds(any()),
@@ -404,10 +406,16 @@ void main() {
       // The non-event agent is skipped entirely.
       verifyNever(
         () => mockRepository.getLinksFrom(
-          'agent-task',
+          any(),
           type: any(named: 'type'),
         ),
       );
+      verify(
+        () => mockRepository.getLinksFromMultiple(
+          ['agent-event'],
+          type: AgentLinkTypes.agentEvent,
+        ),
+      ).called(1);
 
       // Throttle deadline rehydrated, content gate mirrored, subscription set.
       verify(
@@ -446,12 +454,26 @@ void main() {
       when(
         () => mockAgentService.listAgents(lifecycle: AgentLifecycle.active),
       ).thenAnswer((_) async => [eventAgent]);
+      final link = makeTestAgentEventLink(
+        fromId: 'agent-event',
+        toId: eventId,
+      );
       when(
-        () => mockRepository.getLinksFrom(
-          'agent-event',
+        () => mockRepository.getLinksFromMultiple(
+          ['agent-event'],
           type: AgentLinkTypes.agentEvent,
         ),
-      ).thenThrow(Exception('boom'));
+      ).thenAnswer(
+        (_) async => {
+          'agent-event': [link],
+        },
+      );
+      when(
+        () => mockOrchestrator.setAwaitingContent(
+          'agent-event',
+          awaiting: false,
+        ),
+      ).thenThrow(StateError('runtime registration failed'));
 
       // Must not rethrow — a single bad agent cannot abort startup restore.
       await service.restoreSubscriptions();
@@ -473,15 +495,55 @@ void main() {
       when(
         () => mockAgentService.listAgents(lifecycle: AgentLifecycle.active),
       ).thenAnswer((_) async => [eventAgent]);
+      final link = makeTestAgentEventLink(
+        fromId: 'agent-event',
+        toId: eventId,
+      );
       when(
-        () => mockRepository.getLinksFrom(
-          'agent-event',
+        () => mockRepository.getLinksFromMultiple(
+          ['agent-event'],
           type: AgentLinkTypes.agentEvent,
         ),
-      ).thenThrow(Exception('boom'));
+      ).thenAnswer(
+        (_) async => {
+          'agent-event': [link],
+        },
+      );
+      when(
+        () => mockOrchestrator.setAwaitingContent(
+          'agent-event',
+          awaiting: false,
+        ),
+      ).thenThrow(StateError('runtime registration failed'));
 
       await loggerlessService.restoreSubscriptions();
 
+      verifyNever(() => mockOrchestrator.addSubscription(any()));
+    });
+
+    test('aborts before per-agent work when state preload fails', () async {
+      final first = makeIdentity(agentId: 'event-1');
+      final second = makeIdentity(agentId: 'event-2');
+      when(
+        () => mockAgentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async => [first, second]);
+      when(
+        () => mockRepository.getAgentStatesByAgentIds(['event-1', 'event-2']),
+      ).thenThrow(StateError('database connection closed'));
+
+      await expectLater(
+        service.restoreSubscriptions(),
+        throwsA(isA<StateError>()),
+      );
+
+      verifyNever(
+        () => mockRepository.getLinksFromMultiple(
+          any(),
+          type: any(named: 'type'),
+        ),
+      );
+      verifyNever(() => mockRepository.getLinksFrom(any()));
+      verifyNever(() => mockRepository.getAgentState(any()));
       verifyNever(() => mockOrchestrator.addSubscription(any()));
     });
   });
