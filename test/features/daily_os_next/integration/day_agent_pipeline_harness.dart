@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
@@ -612,7 +613,7 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
           (c) =>
               c.agentId == agentId &&
               c.deletedAt == null &&
-              captureEventDayId(captureEventMeta(c)) == dayId,
+              captureDayId(c) == dayId,
         )
         .map(
           (c) => (

@@ -11,29 +11,6 @@ typedef ResolvedInferenceProvider = ({
   AiConfigInferenceProvider provider,
 });
 
-/// Resolves the inference provider for a given [modelId].
-///
-/// Looks up configured [AiConfigModel] rows whose `providerModelId` matches
-/// [modelId], then resolves the first usable provider with the known matching
-/// provider type. This keeps the caller resilient to stale synced model rows
-/// that point at a provider deleted on another device while a newer duplicate
-/// row still points at a valid provider.
-///
-/// Returns `null` if the model is not configured, the provider is missing,
-/// or the provider has no API key set.
-Future<AiConfigInferenceProvider?> resolveInferenceProvider({
-  required String modelId,
-  required AiConfigRepository aiConfigRepository,
-  String logTag = 'InferenceProviderResolver',
-}) async {
-  final resolved = await resolveInferenceProviderWithModel(
-    modelId: modelId,
-    aiConfigRepository: aiConfigRepository,
-    logTag: logTag,
-  );
-  return resolved?.provider;
-}
-
 /// Resolves the configured model row and provider for a provider-native
 /// [modelId].
 ///

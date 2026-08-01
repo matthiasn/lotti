@@ -37,7 +37,7 @@ not compiled into the runtime effect. `AiVoiceInputShader` creates one
 dBFS uniforms change, rather than allocating a native shader every frame.
 
 The widget accepts a dBFS value (`-80..0` by default), matching
-`record.Amplitude.current` and `computeDbfsFromPcm16`.
+`record.Amplitude.current` and `measurePcm16Amplitude(...).dbfs`.
 
 **Five shared quadrature harmonic pairs and four bounded pressure lobes drive
 every contour.** Each ribbon gets a different phase by mixing those bases rather

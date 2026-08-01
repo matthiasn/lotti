@@ -52,21 +52,6 @@ enum AgentInteractionMode {
   hybrid,
 }
 
-/// Runtime status of an agent (in-memory only, not persisted).
-enum AgentRunStatus {
-  /// Agent is sleeping, waiting for triggers.
-  idle,
-
-  /// A wake has been enqueued but not yet started.
-  queued,
-
-  /// Agent is currently executing a wake.
-  running,
-
-  /// Last wake failed.
-  failed,
-}
-
 /// Kind of agent template.
 enum AgentTemplateKind {
   /// A task-focused agent template.
@@ -101,19 +86,6 @@ enum SoulDocumentVersionStatus {
 
   /// This version has been superseded.
   archived,
-}
-
-/// Classification target for agent observations, used to route feedback to the
-/// correct evolution cycle (skill vs. personality).
-enum ObservationTarget {
-  /// Feedback about template skills and operational directives.
-  template,
-
-  /// Feedback about personality and soul.
-  soul,
-
-  /// Feedback that applies to both.
-  both,
 }
 
 /// Status of a wake run in the wake-run log.

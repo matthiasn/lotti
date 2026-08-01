@@ -111,20 +111,4 @@ void main() {
       tags: 'glados',
     );
   });
-
-  group('AddChecklistItemResult.fromJson', () {
-    test('deserializes all fields', () {
-      for (final created in [true, false]) {
-        final result = AddChecklistItemResult.fromJson({
-          'checklistId': 'checklist-1',
-          'checklistItemId': 'item-9',
-          'checklistCreated': created,
-        });
-
-        expect(result.checklistId, 'checklist-1');
-        expect(result.checklistItemId, 'item-9');
-        expect(result.checklistCreated, created);
-      }
-    });
-  });
 }

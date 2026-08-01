@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../test_utils.dart';
+import '../util/seed_tombstone_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -217,7 +218,9 @@ void main() {
       // A legacy ledger entry the migration will try to convert…
       await getIt<SettingsDb>().saveSettingsItem(
         legacySeedTombstonesSettingsKey,
-        jsonEncode([SeedTombstoneIdentities.profile(profileGeminiFlashId)]),
+        jsonEncode([
+          TestSeedTombstoneIdentities.profile(profileGeminiFlashId),
+        ]),
       );
       // …whose write fails.
       when(() => repo.saveConfig(any())).thenThrow(Exception('db unavailable'));

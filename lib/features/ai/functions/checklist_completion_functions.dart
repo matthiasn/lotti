@@ -167,16 +167,3 @@ enum ChecklistCompletionConfidence {
   medium,
   low,
 }
-
-/// Response from the add checklist item function
-@freezed
-abstract class AddChecklistItemResult with _$AddChecklistItemResult {
-  const factory AddChecklistItemResult({
-    required String checklistId,
-    required String checklistItemId,
-    required bool checklistCreated,
-  }) = _AddChecklistItemResult;
-
-  factory AddChecklistItemResult.fromJson(Map<String, dynamic> json) =>
-      _$AddChecklistItemResultFromJson(json);
-}

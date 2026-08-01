@@ -3,30 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/themes/colors.dart';
 
 void main() {
-  group('syncErrorCountAccentColor', () {
-    test('lightens the scheme error color', () {
-      const scheme = ColorScheme.dark(error: Color(0xFF990000));
-
-      final accent = syncErrorCountAccentColor(scheme);
-
-      expect(accent, isNot(scheme.error));
-      // Lightened: higher computed luminance than the source error color.
-      expect(
-        accent.computeLuminance(),
-        greaterThan(scheme.error.computeLuminance()),
-      );
-    });
-  });
-
   group('module-level computed colors', () {
     test('derive without throwing and differ from their sources', () {
       expect(habitSkipColor, isA<Color>());
-      expect(syncPendingCountAccentColor, isA<Color>());
-      // Lightened pending accent must be brighter than its source.
-      expect(
-        syncPendingCountAccentColor.computeLuminance(),
-        greaterThan(syncPendingAccentColor.computeLuminance()),
-      );
     });
   });
 

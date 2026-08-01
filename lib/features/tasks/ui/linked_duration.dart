@@ -14,8 +14,8 @@ import 'package:tinycolor2/tinycolor2.dart';
 /// Renders a full-width [LinearProgressIndicator] (logged time over estimate,
 /// clamped to 100%) above a row showing the formatted logged duration on the
 /// left and the estimate on the right; both turn to the error colour on
-/// overtime. Unlike `CompactTaskProgress`, this lays the bar out full width
-/// with the two durations beneath it rather than a fixed-width inline bar.
+/// overtime. The bar spans the available width with the two durations beneath
+/// it.
 /// Renders nothing when there is no progress state or the estimate is zero.
 class LinkedDuration extends ConsumerWidget {
   const LinkedDuration({

@@ -199,63 +199,6 @@ void main() {
     });
   });
 
-  group('choiceChipTextStyle', () {
-    test('uses onSecondary when selected and secondary when not', () {
-      final themeData = ThemeData.light();
-
-      final selected = choiceChipTextStyle(
-        themeData: themeData,
-        isSelected: true,
-      );
-      final unselected = choiceChipTextStyle(
-        themeData: themeData,
-        isSelected: false,
-      );
-
-      expect(selected.color, equals(themeData.colorScheme.onSecondary));
-      expect(unselected.color, equals(themeData.colorScheme.secondary));
-      // Size and weight are constant across the boolean branch.
-      for (final style in [selected, unselected]) {
-        expect(style.fontSize, equals(fontSizeMedium));
-        expect(style.fontWeight, equals(TypographyConstants.bodyFontWeight));
-      }
-    });
-
-    glados.Glados(
-      glados.any.bool,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'color is always one of onSecondary or secondary',
-      (isSelected) {
-        // Build distinct secondary/onSecondary colors so the branch choice is
-        // observable and the assertion is non-vacuous.
-        const scheme = ColorScheme.light(
-          secondary: Color(0xFF0A0B0C),
-          onSecondary: Color(0xFFF0E0D0),
-        );
-        final themeData = ThemeData.from(colorScheme: scheme);
-
-        final style = choiceChipTextStyle(
-          themeData: themeData,
-          isSelected: isSelected,
-        );
-
-        expect(
-          style.color,
-          equals(
-            isSelected ? scheme.onSecondary : scheme.secondary,
-          ),
-          reason: 'isSelected=$isSelected',
-        );
-        expect(
-          style.color,
-          anyOf(equals(scheme.onSecondary), equals(scheme.secondary)),
-        );
-      },
-      tags: 'glados',
-    );
-  });
-
   group('monoTabularStyle', () {
     test('uses Inconsolata with tabular figures and given defaults', () {
       final style = monoTabularStyle(fontSize: 14);

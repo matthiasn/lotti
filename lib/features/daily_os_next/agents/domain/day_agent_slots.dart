@@ -1,17 +1,10 @@
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 
 // Re-exported so the many Daily OS call sites that reach for these through
 // the slot helpers keep working; they now live beside dayPlanId so the agent
 // persistence layer can derive a capture's day without depending on a feature.
 export 'package:lotti/classes/day_plan.dart' show dayAgentIdForDate, localDay;
-
-/// Slot helpers for day-agent identities.
-extension DayAgentSlots on AgentSlots {
-  /// Whether this state is bound to a Daily OS day plan.
-  bool get hasActiveDay => activeDayId != null && activeDayId!.isNotEmpty;
-}
 
 /// Day workspace a capture belongs to (ADR 0022), derived-on-read.
 ///

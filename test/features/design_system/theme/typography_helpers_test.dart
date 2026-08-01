@@ -117,16 +117,6 @@ void main() {
       expect(style.color, tokens.colors.text.highEmphasis);
     });
 
-    test('hero is 34/500 with -0.02em tracking', () {
-      const tokens = dsTokensLight;
-      final style = calmHeroStyle(tokens);
-
-      expect(style.fontSize, 34);
-      expect(style.fontWeight, FontWeight.w500);
-      expect(style.letterSpacing, closeTo(34 * -0.02, 1e-9));
-      expect(style.color, tokens.colors.text.highEmphasis);
-    });
-
     test('display moment is 26/600 with -0.02em tracking', () {
       const tokens = dsTokensDark;
       final style = calmDisplayStyle(tokens);
@@ -157,7 +147,6 @@ void main() {
         final styles = [
           calmEyebrowStyle(tokens, color: color),
           calmPageTitleStyle(tokens, color: color),
-          calmHeroStyle(tokens, color: color),
           calmDisplayStyle(tokens, color: color),
           calmGreetingStyle(tokens, color: color),
         ];

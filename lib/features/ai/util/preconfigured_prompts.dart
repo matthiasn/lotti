@@ -10,33 +10,16 @@
 /// "Add Preconfigured Prompt" functionality.
 library;
 
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/consts.dart';
-
 /// Represents a preconfigured prompt template that can be used
 /// to quickly create common prompt types.
 class PreconfiguredPrompt {
   const PreconfiguredPrompt({
-    required this.id,
-    required this.name,
     required this.systemMessage,
     required this.userMessage,
-    required this.requiredInputData,
-    required this.aiResponseType,
-    required this.useReasoning,
-    required this.description,
-    this.defaultVariables,
   });
 
-  final String id;
-  final String name;
   final String systemMessage;
   final String userMessage;
-  final List<InputDataType> requiredInputData;
-  final AiResponseType aiResponseType;
-  final bool useReasoning;
-  final String description;
-  final Map<String, String>? defaultVariables;
 }
 
 /// Lookup map for finding preconfigured prompts by ID.
@@ -53,8 +36,6 @@ const Map<String, PreconfiguredPrompt> preconfiguredPrompts = {
 /// Image Prompt Generation template - transforms audio/text + task context into a
 /// detailed prompt for AI image generators
 const imagePromptGenerationPrompt = PreconfiguredPrompt(
-  id: 'image_prompt_generation',
-  name: 'Generate Image Prompt',
   systemMessage: '''
 You are an expert prompt engineer specializing in creating detailed, evocative prompts for AI image generators like Midjourney, DALL-E 3, Stable Diffusion, and Gemini Imagen.
 
@@ -168,17 +149,10 @@ Consider:
   // the transcript via {{audioTranscript}} placeholder, not by uploading the audio file.
   // The prompt appears on audio entries via a special case in _isPromptActiveForEntity
   // that allows imagePromptGeneration to show on audio entries linked to tasks.
-  requiredInputData: [InputDataType.task],
-  aiResponseType: AiResponseType.imagePromptGeneration,
-  useReasoning: true,
-  description:
-      'Generate a detailed image prompt from audio/text with full task context',
 );
 
 /// Cover Art Generation prompt - generates images directly using Gemini image models
 const coverArtGenerationPrompt = PreconfiguredPrompt(
-  id: 'cover_art_generation',
-  name: 'Generate Cover Art',
   systemMessage: '''
 You are an expert visual artist specializing in creating memorable, evocative cover art images for tasks and projects.
 
@@ -240,9 +214,4 @@ Create a visually memorable image that:
 6. Uses the 16:9 aspect ratio for wide display with square-crop compatibility
 7. Is instantly recognizable and memorable
 8. Avoids placing text, faces, or key elements in the top-center area (Dynamic Island safe zone)''',
-  requiredInputData: [InputDataType.task],
-  aiResponseType: AiResponseType.imageGeneration,
-  useReasoning: false,
-  description:
-      'Generate cover art image from task context, summary insights, reference images, and voice description',
 );

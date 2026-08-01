@@ -76,13 +76,6 @@ void main() {
       expect(AiInputAiResponseObject.fromJson(_roundTrip(response)), response);
     });
 
-    test('AiInputActionItemsList survives a round-trip', () {
-      final list = AiInputActionItemsList(items: [actionItem]);
-      final decoded = AiInputActionItemsList.fromJson(_roundTrip(list));
-      expect(decoded, list);
-      expect(decoded.items.single.title, 'Write tests');
-    });
-
     test('AiInputTaskObject survives a round-trip with nested items', () {
       final task = AiInputTaskObject(
         title: 'Ship feature',

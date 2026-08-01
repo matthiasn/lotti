@@ -1,6 +1,5 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/utils/string_utils.dart';
 
 /// Lightweight ordering metadata for one capture — enough to fix its position
@@ -12,12 +11,6 @@ typedef CaptureEventMeta = ({
   DateTime createdAt,
   DateTime capturedAt,
 });
-
-/// Resolves the workspace carried by capture metadata, retaining a fallback
-/// for captures written by peers predating the explicit `dayId` field.
-String captureEventDayId(CaptureEventMeta capture) => capture.dayId.isNotEmpty
-    ? capture.dayId
-    : dayAgentIdForDate(capture.capturedAt);
 
 /// Projects submitted Daily OS capture transcripts into **deferred** inline
 /// [InputEvent]s so they share the day agent's memory substrate (ADR 0016/0017):

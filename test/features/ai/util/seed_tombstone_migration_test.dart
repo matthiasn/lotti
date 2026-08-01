@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import 'seed_tombstone_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -57,7 +58,9 @@ void main() {
     // settings row, so after upgrading the row is absent — indistinguishable
     // from "never seeded" — and seeding would recreate it.
     test('writes a tombstone row for a deleted bundled profile', () async {
-      await seedLedger([SeedTombstoneIdentities.profile(profileGeminiFlashId)]);
+      await seedLedger([
+        TestSeedTombstoneIdentities.profile(profileGeminiFlashId),
+      ]);
 
       await migration.migrate();
 
@@ -87,7 +90,7 @@ void main() {
         ),
       );
       await seedLedger([
-        SeedTombstoneIdentities.model(
+        TestSeedTombstoneIdentities.model(
           inferenceProviderId: providerId,
           providerModelId: known.providerModelId,
         ),
@@ -116,7 +119,9 @@ void main() {
           (profile) => profile.id == profileGeminiFlashId,
         ),
       );
-      await seedLedger([SeedTombstoneIdentities.profile(profileGeminiFlashId)]);
+      await seedLedger([
+        TestSeedTombstoneIdentities.profile(profileGeminiFlashId),
+      ]);
 
       await migration.migrate();
 
@@ -135,7 +140,9 @@ void main() {
             .firstWhere((profile) => profile.id == profileGeminiFlashId)
             .copyWith(deletedAt: DateTime(2026, 7, 25)),
       );
-      await seedLedger([SeedTombstoneIdentities.profile(profileGeminiFlashId)]);
+      await seedLedger([
+        TestSeedTombstoneIdentities.profile(profileGeminiFlashId),
+      ]);
 
       await migration.migrate();
 
@@ -161,7 +168,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [liveRow]);
       await seedLedger([
-        SeedTombstoneIdentities.model(
+        TestSeedTombstoneIdentities.model(
           inferenceProviderId: providerId,
           providerModelId: known.providerModelId,
         ),
@@ -186,7 +193,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [deletedRow]);
       await seedLedger([
-        SeedTombstoneIdentities.model(
+        TestSeedTombstoneIdentities.model(
           inferenceProviderId: providerId,
           providerModelId: known.providerModelId,
         ),
@@ -226,7 +233,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [row('uuid-row'), row('deterministic-row')]);
       await seedLedger([
-        SeedTombstoneIdentities.model(
+        TestSeedTombstoneIdentities.model(
           inferenceProviderId: providerId,
           providerModelId: known.providerModelId,
         ),
@@ -242,7 +249,9 @@ void main() {
 
     // Clearing the key is what stops this running on every launch.
     test('clears the legacy key when done', () async {
-      await seedLedger([SeedTombstoneIdentities.profile(profileGeminiFlashId)]);
+      await seedLedger([
+        TestSeedTombstoneIdentities.profile(profileGeminiFlashId),
+      ]);
 
       await migration.migrate();
 
@@ -280,7 +289,7 @@ void main() {
         'profile:no-such-profile',
         'model:missing-provider:some-model',
         'garbage',
-        SeedTombstoneIdentities.profile(profileGeminiProId),
+        TestSeedTombstoneIdentities.profile(profileGeminiProId),
       ]);
 
       await migration.migrate();

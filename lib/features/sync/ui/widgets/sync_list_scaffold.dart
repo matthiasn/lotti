@@ -132,7 +132,7 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
   /// Optional widget inserted as a sliver between the header and list content.
   final Widget? headerSliver;
 
-  /// Whether to display the back button in the `SliverTitleBar`.
+  /// Whether to display the back button in the page header.
   final bool backButton;
 
   @override

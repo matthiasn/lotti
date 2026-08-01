@@ -5,11 +5,9 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 enum _GeneratedAgentEnumFamily {
   lifecycle,
   interactionMode,
-  runStatus,
   templateKind,
   templateVersionStatus,
   soulDocumentVersionStatus,
-  observationTarget,
   wakeRunStatus,
   wakeReason,
   evolutionSessionStatus,
@@ -196,9 +194,6 @@ List<Enum> _agentEnumValues(_GeneratedAgentEnumFamily family) {
     _GeneratedAgentEnumFamily.interactionMode => List<Enum>.of(
       AgentInteractionMode.values,
     ),
-    _GeneratedAgentEnumFamily.runStatus => List<Enum>.of(
-      AgentRunStatus.values,
-    ),
     _GeneratedAgentEnumFamily.templateKind => List<Enum>.of(
       AgentTemplateKind.values,
     ),
@@ -207,9 +202,6 @@ List<Enum> _agentEnumValues(_GeneratedAgentEnumFamily family) {
     ),
     _GeneratedAgentEnumFamily.soulDocumentVersionStatus => List<Enum>.of(
       SoulDocumentVersionStatus.values,
-    ),
-    _GeneratedAgentEnumFamily.observationTarget => List<Enum>.of(
-      ObservationTarget.values,
     ),
     _GeneratedAgentEnumFamily.wakeRunStatus => List<Enum>.of(
       WakeRunStatus.values,

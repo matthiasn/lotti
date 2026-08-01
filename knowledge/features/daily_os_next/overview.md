@@ -168,12 +168,7 @@ Availability is strictly opt-in via the category editor's "Day planning" switch
   preference. Exclusions are scoped to the day-plan universe: confirming the
   picker rebuilds the exclusion set from currently flagged categories, so
   exclusions of since-unflagged categories are dropped.
-- Projects are tiered by `dayPlanProjectPriority`: `active` forms the scheduled
-  pool; `open`/`monitoring`/`onHold` stay available at opportunistic priority;
-  `completed`/`archived` are unavailable. `filterDayPlanProjects` orders the
-  scheduled tier first.
-
-**These helpers are not yet wired into the planner identity.**
+**Category constraints are not yet wired into the planner identity.**
 `AgentIdentity.allowedCategoryIds` treats an **empty** set as allow-all, so
 passing the strict — possibly empty — opt-in set would invert the semantics.
 Wiring the agent layer needs an explicit "constrained" marker first. The per-wake

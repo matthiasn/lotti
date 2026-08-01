@@ -112,18 +112,6 @@ Map<String, dynamic> _$AiInputAiResponseObjectToJson(
   'text': instance.text,
 };
 
-_AiInputActionItemsList _$AiInputActionItemsListFromJson(
-  Map<String, dynamic> json,
-) => _AiInputActionItemsList(
-  items: (json['items'] as List<dynamic>)
-      .map((e) => AiActionItem.fromJson(e as Map<String, dynamic>))
-      .toList(),
-);
-
-Map<String, dynamic> _$AiInputActionItemsListToJson(
-  _AiInputActionItemsList instance,
-) => <String, dynamic>{'items': instance.items};
-
 _AiLinkedTaskContext _$AiLinkedTaskContextFromJson(Map<String, dynamic> json) =>
     _AiLinkedTaskContext(
       id: json['id'] as String,

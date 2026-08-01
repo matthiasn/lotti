@@ -9,32 +9,15 @@ import 'dart:typed_data';
 class Pcm16AmplitudeStats {
   const Pcm16AmplitudeStats({
     required this.dbfs,
-    required this.sampleCount,
     required this.nonZeroSampleCount,
     required this.peakSample,
     required this.rmsSample,
   });
 
   final double dbfs;
-  final int sampleCount;
   final int nonZeroSampleCount;
   final int peakSample;
   final double rmsSample;
-
-  bool get isSilent => nonZeroSampleCount == 0;
-}
-
-/// Computes dBFS (decibels relative to full scale) from a PCM 16-bit
-/// signed little-endian audio chunk.
-///
-/// Returns a value typically in the range [-80, 0] where 0 is maximum
-/// amplitude and -80 is near-silence.
-///
-/// The [pcmBytes] must contain an even number of bytes (each sample is
-/// 2 bytes, little-endian). Trailing odd bytes are ignored.
-/// Returns [floorDbfs] for empty or silent input.
-double computeDbfsFromPcm16(Uint8List pcmBytes, {double floorDbfs = -80}) {
-  return measurePcm16Amplitude(pcmBytes, floorDbfs: floorDbfs).dbfs;
 }
 
 /// Measures RMS and peak information from a PCM 16-bit signed little-endian
@@ -51,7 +34,6 @@ Pcm16AmplitudeStats measurePcm16Amplitude(
   if (numSamples == 0) {
     return Pcm16AmplitudeStats(
       dbfs: floorDbfs,
-      sampleCount: 0,
       nonZeroSampleCount: 0,
       peakSample: 0,
       rmsSample: 0,
@@ -78,7 +60,6 @@ Pcm16AmplitudeStats measurePcm16Amplitude(
   if (rms == 0) {
     return Pcm16AmplitudeStats(
       dbfs: floorDbfs,
-      sampleCount: numSamples,
       nonZeroSampleCount: nonZeroSampleCount,
       peakSample: peakSample,
       rmsSample: rms,
@@ -90,7 +71,6 @@ Pcm16AmplitudeStats measurePcm16Amplitude(
 
   return Pcm16AmplitudeStats(
     dbfs: dbfs.clamp(floorDbfs, 0),
-    sampleCount: numSamples,
     nonZeroSampleCount: nonZeroSampleCount,
     peakSample: peakSample,
     rmsSample: rms,
