@@ -867,7 +867,11 @@ void main() {
           failingRequest,
           throwsA(
             allOf(
-              isA<Exception>(),
+              isA<Exception>().having(
+                (error) => error.toString(),
+                'diagnostic message',
+                contains('Network error during embedding generation'),
+              ),
               isNot(isA<OllamaEmbeddingAvailabilityException>()),
             ),
           ),

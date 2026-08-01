@@ -173,13 +173,7 @@ class OllamaEmbeddingRepository {
       }
 
       if (existing.phase == _OllamaAvailabilityPhase.probing) {
-        final activeProbe = existing.activeProbe;
-        if (activeProbe == null) {
-          throw StateError(
-            'Ollama availability probe has no completion signal.',
-          );
-        }
-        await activeProbe.future;
+        await existing.activeProbe.future;
         continue;
       }
 
@@ -271,8 +265,7 @@ class OllamaEmbeddingRepository {
 
   void _completeAvailabilityProbe(_OllamaAvailabilityBackoff backoff) {
     final activeProbe = backoff.activeProbe;
-    backoff.activeProbe = null;
-    if (activeProbe != null && !activeProbe.isCompleted) {
+    if (!activeProbe.isCompleted) {
       activeProbe.complete();
     }
   }
@@ -443,7 +436,7 @@ class _OllamaAvailabilityBackoff {
   _OllamaAvailabilityBackoff({
     required this.phase,
     required this.retryAt,
-    this.activeProbe,
+    required this.activeProbe,
   });
 
   _OllamaAvailabilityPhase phase;
@@ -451,5 +444,5 @@ class _OllamaAvailabilityBackoff {
   int suppressedRequestCount = 0;
   int generation = 0;
   bool outageConfirmed = false;
-  Completer<void>? activeProbe;
+  Completer<void> activeProbe;
 }
