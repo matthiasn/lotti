@@ -5,9 +5,25 @@ description: The eleven Drift/SQLite databases, how connections are opened and m
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-01T17:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-01T15:45:00Z }
 stale_after: 2027-01-11
 sources:
+  - id: agent-db
+    resource: ../../lib/features/agents/database/agent_database.dart
+    title: AgentDatabase
+    last_modified: 2026-08-01
+  - id: notifications-db
+    resource: ../../lib/database/notifications_db.dart
+    title: NotificationsDb
+    last_modified: 2026-08-01
+  - id: consumption-db
+    resource: ../../lib/features/ai_consumption/database/consumption_database.dart
+    title: ConsumptionDatabase
+    last_modified: 2026-08-01
+  - id: day-processing-db
+    resource: ../../lib/features/daily_os_next/database/day_processing_db.dart
+    title: DayProcessingDb
+    last_modified: 2026-08-01
   - id: notifications
     resource: ../../lib/services/db_notification.dart
     title: UpdateNotifications token vocabulary
@@ -108,15 +124,23 @@ flowchart TD
   Anything not listed — including `sync.sqlite` — takes `openDbConnection`'s
   default of 0.
 
-  **A pool is not a free win.** Only reads outside a transaction reach it, so
-  adding one to a database whose callers do *check-then-act* changes an
-  invariant they were relying on: at 0, every read serialises behind the writer
-  on one executor, which implicitly protects a read that informs a later write.
-  Giving `sync.sqlite` a pool was attempted and abandoned for exactly this
-  (#3720) — it made four read-after-write races reachable in the outbox,
-  sequence-log and inbound-queue paths, none of which wrap their read and write
-  in a transaction. Audit those call sites before adding a pool to a database
-  that has them.
+  **A pool is not a free win, and `readPool: 0` is not a substitute for a
+  transaction.** A single executor serialises individual *statements*, not
+  *sequences*: a read, an `await`, and a later write can still interleave with
+  another caller's statements on the same executor. So a check-then-act pair
+  that is not wrapped in a transaction is **already racy at 0**.
+
+  What a pool changes is how easy the race is to hit. Pooled reads can also
+  serve a snapshot taken before a queued write commits, which widens the window
+  from "interleaved between statements" to "stale by a whole transaction".
+
+  Giving `sync.sqlite` a pool was attempted and abandoned on those grounds
+  (#3720): review surfaced four read-after-write pairs in the outbox,
+  sequence-log and inbound-queue paths — none inside a transaction — that the
+  pool would have made materially more likely to fire, without the PR
+  addressing any of them. The durable fix for those sites is a transaction
+  around the read and the write, which is worth doing whether or not a pool is
+  ever added.
 - **Pragmas are applied per connection** through the `setup` callback, so read-
   pool isolates inherit them:
 
