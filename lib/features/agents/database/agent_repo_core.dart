@@ -181,13 +181,22 @@ class AgentRepoCore {
   /// [type] (and optionally [subtype]). Shared batched read used by the
   /// state/head latest-per-agent lookups in this class and in
   /// [AgentRepoQueries].
+  /// [outerPredicate] is appended to the outer `WHERE rn = 1` — i.e. it filters
+  /// the *winning* row per agent, after ranking. Filtering inside the ranked
+  /// subquery instead would be a correctness bug: it could promote an older row
+  /// that satisfies the predicate over a newer one that does not, resurrecting
+  /// state the newest row had cleared.
   Future<List<AgentDomainEntity>> latestEntitiesByAgentIds({
     required Iterable<String> agentIds,
     required String type,
     String? subtype,
+    String outerPredicate = '',
   }) async {
     final result = <AgentDomainEntity>[];
-    for (final chunk in sqliteInClauseChunks(agentIds)) {
+    // Every chunk binds its own ids plus the type, the optional subtype, and
+    // whatever `outerPredicate` needs — all against one 999-variable budget.
+    final reserved = 1 + (subtype == null ? 0 : 1);
+    for (final chunk in sqliteInClauseChunks(agentIds, reserve: reserved)) {
       final placeholders = List.filled(chunk.length, '?').join(', ');
       final subtypePredicate = subtype == null ? '' : 'AND subtype = ? ';
       final rows = await _db
@@ -208,6 +217,7 @@ class AgentRepoCore {
                   AND deleted_at IS NULL
               )
               WHERE rn = 1
+                $outerPredicate
             ''',
             variables: [
               ...chunk.map(Variable.withString),
@@ -415,6 +425,59 @@ class AgentRepoCore {
       for (final entity in latestEntities)
         if (entity case final AgentStateEntity state) state.agentId: state,
     };
+  }
+
+  /// The latest [AgentStateEntity] per agent, **restricted to agents that
+  /// actually have a wake pending** — either a self-requested `nextWakeAt` or a
+  /// state-level `scheduledWakeAt`.
+  ///
+  /// [getAgentStatesByAgentIds] returns the latest state for every agent, and
+  /// the pending-wakes screen then discards the overwhelming majority of them.
+  /// On an install with ~900 agents that is ~900 rows decoded from JSON on
+  /// every agent-update notification; the 2026-06/07 slow-query logs show 2,050
+  /// full-population reads of this shape in 14 days (`args=901`), each around
+  /// 32 ms. The predicate is applied *after* ranking, so an agent whose newest
+  /// state cleared its wake is correctly excluded.
+  Future<Map<String, AgentStateEntity>> getAgentStatesWithPendingWakes(
+    List<String> agentIds, {
+    Iterable<String> alsoIncludeAgentIds = const <String>[],
+  }) async {
+    final withWakes = await latestEntitiesByAgentIds(
+      agentIds: agentIds,
+      type: AgentEntityTypes.agentState,
+      outerPredicate:
+          r"AND (json_extract(serialized, '$.nextWakeAt') IS NOT NULL "
+          r"OR json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL)",
+    );
+    final result = <String, AgentStateEntity>{
+      for (final entity in withWakes)
+        if (entity case final AgentStateEntity state) state.agentId: state,
+    };
+
+    // Agents whose wake lives in a separate `ScheduledWakeEntity` row rather
+    // than on the state itself still need their state hydrated. They are read
+    // as their own query rather than folded into the predicate above: an
+    // inclusion list bound into every chunk shares the statement's variable
+    // budget with the chunk itself, so a large enough list could overflow it
+    // on a platform built with SQLite's older 999-variable cap. A second,
+    // separately chunked query has no such interaction, and only runs when
+    // there is something to include.
+    final alsoInclude = alsoIncludeAgentIds
+        .toSet()
+        .where((id) => !result.containsKey(id))
+        .toList(growable: false);
+    if (alsoInclude.isEmpty) return result;
+
+    final named = await latestEntitiesByAgentIds(
+      agentIds: alsoInclude,
+      type: AgentEntityTypes.agentState,
+    );
+    for (final entity in named) {
+      if (entity case final AgentStateEntity state) {
+        result[state.agentId] = state;
+      }
+    }
+    return result;
   }
 
   /// Fetch the newest active agent identity of [kind] whose latest state has

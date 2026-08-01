@@ -30,8 +30,20 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
   final identitiesByAgentId = {
     for (final identity in identities) identity.agentId: identity,
   };
-  final statesByAgentId = await repository.getAgentStatesByAgentIds(
+  // Workspace-scoped scheduled wakes (the planner's day pre-warms, ADR 0022)
+  // live as their own records rather than on `AgentState.scheduledWakeAt`.
+  // Fetched before the state read so those agents can be named explicitly
+  // below — their state must be hydrated even though it carries no wake field.
+  final pendingScheduled = await repository.getPendingScheduledWakeRecords();
+
+  // Only agents that actually have a wake pending. Fetching every agent's
+  // latest state and discarding the rest meant ~900 rows decoded from JSON on
+  // every agent-update notification; the filter now runs in SQL, after the
+  // per-agent ranking so a cleared wake stays cleared. See
+  // `docs/perf/2026-08-01_slow-queries-investigation.md`.
+  final statesByAgentId = await repository.getAgentStatesWithPendingWakes(
     identities.map((identity) => identity.agentId).toList(),
+    alsoIncludeAgentIds: pendingScheduled.map((record) => record.agentId),
   );
 
   final records = <PendingWakeRecord>[];
@@ -66,12 +78,10 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
     }
   }
 
-  // Workspace-scoped scheduled wakes (the planner's day pre-warms, ADR 0022)
-  // live as their own records rather than on `AgentState.scheduledWakeAt`, so
-  // surface them here too. Their subject is the workspace id (the day), not a
-  // linked task/project — derived generically from `workspaceKey` so the
-  // agents layer stays free of any daily-OS coupling.
-  final pendingScheduled = await repository.getPendingScheduledWakeRecords();
+  // Surface the workspace-scoped scheduled wakes fetched above. Their subject
+  // is the workspace id (the day), not a linked task/project — derived
+  // generically from `workspaceKey` so the agents layer stays free of any
+  // daily-OS coupling.
   for (final record in pendingScheduled) {
     final identity = identitiesByAgentId[record.agentId];
     final state = statesByAgentId[record.agentId];

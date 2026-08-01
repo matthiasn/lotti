@@ -106,8 +106,10 @@ class AgentRepository {
 
   /// Test-only seam for `sqliteInClauseChunks`.
   @visibleForTesting
-  static Iterable<List<T>> debugSqliteInClauseChunks<T>(Iterable<T> values) =>
-      sqliteInClauseChunks(values);
+  static Iterable<List<T>> debugSqliteInClauseChunks<T>(
+    Iterable<T> values, {
+    int reserve = 0,
+  }) => sqliteInClauseChunks(values, reserve: reserve);
 
   // ── Core: entity CRUD + shared batched reads ───────────────────────────────
 
@@ -182,6 +184,16 @@ class AgentRepository {
   Future<Map<String, AgentStateEntity>> getAgentStatesByAgentIds(
     List<String> agentIds,
   ) => _core.getAgentStatesByAgentIds(agentIds);
+
+  /// Latest state per agent, restricted to agents with a pending wake.
+  /// See [AgentRepoCore.getAgentStatesWithPendingWakes].
+  Future<Map<String, AgentStateEntity>> getAgentStatesWithPendingWakes(
+    List<String> agentIds, {
+    Iterable<String> alsoIncludeAgentIds = const <String>[],
+  }) => _core.getAgentStatesWithPendingWakes(
+    agentIds,
+    alsoIncludeAgentIds: alsoIncludeAgentIds,
+  );
 
   Future<AgentIdentityEntity?> getActiveAgentByKindAndActiveDayId({
     required String kind,

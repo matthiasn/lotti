@@ -554,6 +554,52 @@ void main() {
         },
       );
 
+      test(
+        'reserve shrinks the chunk so extra bindings fit in the same statement',
+        () {
+          // Callers that bind variables beyond one-per-element (a type, a
+          // subtype, a second IN list) reserve them, so the statement stays as
+          // wide as the chunk size implies rather than chunk + extras.
+          final ids = [for (var i = 0; i < 2000; i++) 'id-$i'];
+
+          for (final reserve in [0, 1, 300, 899]) {
+            final chunks = AgentRepository.debugSqliteInClauseChunks(
+              ids,
+              reserve: reserve,
+            ).toList();
+
+            for (final chunk in chunks) {
+              expect(
+                chunk.length + reserve,
+                lessThanOrEqualTo(900),
+                reason: 'chunk + reserve must stay within the chunk budget',
+              );
+            }
+            expect(
+              chunks.expand((c) => c).toSet(),
+              ids.toSet(),
+              reason: 'reserving must not drop ids',
+            );
+          }
+        },
+      );
+
+      test(
+        'an oversized reserve still yields progress, never an empty chunk',
+        () {
+          // Guards the clamp: without it a reserve >= the chunk size would
+          // produce zero-length chunks and loop forever.
+          final chunks = AgentRepository.debugSqliteInClauseChunks(
+            ['a', 'b', 'c'],
+            reserve: 5000,
+          ).toList();
+
+          expect(chunks, hasLength(3));
+          expect(chunks.every((c) => c.length == 1), isTrue);
+          expect(chunks.expand((c) => c).toSet(), {'a', 'b', 'c'});
+        },
+      );
+
       // `_sqliteInClauseChunks` is the pure dedup-and-chunk iterator behind
       // every batched IN-list query; the example test above only exercises the
       // 1 800-id case. This property locks down the invariants across the whole
@@ -917,6 +963,77 @@ void main() {
 
         final state = await repo.getAgentState(testAgentId);
         expect(state, isNull);
+      });
+    });
+
+    group('getAgentStatesWithPendingWakes', () {
+      // Facade-level coverage for the filtered read the pending-wakes screen
+      // uses. The query semantics are pinned in agent_repo_core_test.dart;
+      // what matters here is that the delegator forwards both arguments.
+
+      test('returns only agents whose latest state carries a wake', () async {
+        await repo.upsertEntity(
+          AgentDomainEntity.agentState(
+            id: 'state-wake',
+            agentId: testAgentId,
+            revision: 1,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2026, 2, 20),
+            nextWakeAt: DateTime(2026, 2, 21),
+            vectorClock: const VectorClock({'node-1': 1}),
+          ),
+        );
+        await repo.upsertEntity(
+          AgentDomainEntity.agentState(
+            id: 'state-idle',
+            agentId: 'agent-idle',
+            revision: 1,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2026, 2, 20),
+            vectorClock: const VectorClock({'node-1': 1}),
+          ),
+        );
+
+        final result = await repo.getAgentStatesWithPendingWakes([
+          testAgentId,
+          'agent-idle',
+        ]);
+
+        expect(result.keys, [testAgentId]);
+      });
+
+      test('forwards alsoIncludeAgentIds through to the core read', () async {
+        await repo.upsertEntity(
+          AgentDomainEntity.agentState(
+            id: 'state-workspace',
+            agentId: 'agent-workspace',
+            revision: 1,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2026, 2, 20),
+            vectorClock: const VectorClock({'node-1': 1}),
+          ),
+        );
+
+        final without = await repo.getAgentStatesWithPendingWakes([
+          'agent-workspace',
+        ]);
+        final with_ = await repo.getAgentStatesWithPendingWakes(
+          ['agent-workspace'],
+          alsoIncludeAgentIds: ['agent-workspace'],
+        );
+
+        expect(
+          without,
+          isEmpty,
+          reason: 'no wake field, so it is filtered out by default',
+        );
+        expect(
+          with_.keys,
+          ['agent-workspace'],
+          reason:
+              'naming it explicitly must survive the filter — if the '
+              'delegator dropped the argument this would be empty too',
+        );
       });
     });
 
