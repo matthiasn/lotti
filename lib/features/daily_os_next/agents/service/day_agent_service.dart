@@ -702,6 +702,10 @@ class DayAgentService {
   }
 
   /// Restore in-memory runtime state for active day agents at app startup.
+  ///
+  /// The persisted states are loaded in one snapshot before runtime hydration,
+  /// so a database failure aborts this restoration pass before the per-agent
+  /// loop can amplify it.
   Future<void> restoreSubscriptions() async {
     domainLogger.log(
       LogDomain.agentRuntime,
@@ -712,23 +716,32 @@ class DayAgentService {
     final activeAgents = await agentService.listAgents(
       lifecycle: AgentLifecycle.active,
     );
+    // Legitimate active `day_agent` identities are the coordinator and
+    // ADR 0032 per-day agents. A stray bare legacy id (for example, one synced
+    // from a peer still on the pre-ADR-0022 build) has no restorable day
+    // context, so exclude it before taking the bounded state snapshot.
+    final dayAgents = activeAgents
+        .where(
+          (agent) =>
+              agent.kind == _agentKind &&
+              (agent.agentId == dailyOsPlannerAgentId ||
+                  isPerDayAgentId(agent.agentId)),
+        )
+        .toList(growable: false);
+    final agentIds = [for (final agent in dayAgents) agent.agentId];
+    final statesByAgentId = dayAgents.isEmpty
+        ? const <String, AgentStateEntity>{}
+        : await repository.getAgentStatesByAgentIds(agentIds);
 
     var count = 0;
     var sawCoordinator = false;
-    for (final agent in activeAgents) {
-      if (agent.kind != _agentKind) continue;
-      // Legitimate active `day_agent` identities are the coordinator and
-      // ADR 0032 per-day agents. A stray bare legacy id (e.g. one synced from
-      // a peer still on the pre-ADR-0022 build) carries no restorable day
-      // context, so restoring its wake would only produce a failing
-      // "no resolvable day" wake — skip it.
-      if (agent.agentId != dailyOsPlannerAgentId &&
-          !isPerDayAgentId(agent.agentId)) {
-        continue;
-      }
+    for (final agent in dayAgents) {
       sawCoordinator = sawCoordinator || agent.agentId == dailyOsPlannerAgentId;
       try {
-        await _hydrateThrottleDeadline(agent.agentId);
+        _hydrateThrottleDeadlineFromState(
+          agent.agentId,
+          statesByAgentId[agent.agentId],
+        );
         count++;
       } catch (e, s) {
         final msg =
@@ -801,8 +814,10 @@ class DayAgentService {
     );
   }
 
-  Future<void> _hydrateThrottleDeadline(String agentId) async {
-    final state = await repository.getAgentState(agentId);
+  void _hydrateThrottleDeadlineFromState(
+    String agentId,
+    AgentStateEntity? state,
+  ) {
     final deadline = state?.nextWakeAt;
     if (deadline != null) {
       orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);

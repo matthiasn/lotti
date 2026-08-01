@@ -978,11 +978,15 @@ void main() {
             ),
           ).thenAnswer((_) async => [projectAgent, otherAgent]);
           when(
-            () => mockRepository.getLinksFrom(
-              'pa-1',
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-1'],
               type: AgentLinkTypes.agentProject,
             ),
-          ).thenAnswer((_) async => [link]);
+          ).thenAnswer(
+            (_) async => {
+              'pa-1': [link],
+            },
+          );
           when(
             () => mockRepository.getAgentStatesByAgentIds(any()),
           ).thenAnswer(
@@ -1013,10 +1017,16 @@ void main() {
           ).called(1);
           verifyNever(
             () => mockRepository.getLinksFrom(
-              'other-1',
+              any(),
               type: any(named: 'type'),
             ),
           );
+          verify(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-1'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).called(1);
           final requestedAgentIds =
               verify(
                     () => mockRepository.getAgentStatesByAgentIds(captureAny()),
@@ -1026,6 +1036,34 @@ void main() {
           verifyNever(() => mockRepository.getAgentState('pa-1'));
         },
       );
+
+      test('aborts before per-agent work when state preload fails', () async {
+        final first = makeIdentity(agentId: 'pa-1');
+        final second = makeIdentity(agentId: 'pa-2');
+        when(
+          () => mockAgentService.listAgents(
+            lifecycle: AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => [first, second]);
+        when(
+          () => mockRepository.getAgentStatesByAgentIds(['pa-1', 'pa-2']),
+        ).thenThrow(StateError('database connection closed'));
+
+        await expectLater(
+          service.restoreSubscriptions(),
+          throwsA(isA<StateError>()),
+        );
+
+        verifyNever(
+          () => mockRepository.getLinksFromMultiple(
+            any(),
+            type: any(named: 'type'),
+          ),
+        );
+        verifyNever(() => mockRepository.getLinksFrom(any()));
+        verifyNever(() => mockRepository.getAgentState(any()));
+        verifyNever(() => mockOrchestrator.addSubscription(any()));
+      });
 
       test('handles empty agent list gracefully', () async {
         when(
@@ -1055,15 +1093,36 @@ void main() {
           );
 
           final failingAgent = makeIdentity(agentId: 'pa-fail');
+          final failingLink = AgentLink.agentProject(
+            id: 'link-fail',
+            fromId: 'pa-fail',
+            toId: 'project-fail',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
           when(
             () => mockAgentService.listAgents(
               lifecycle: AgentLifecycle.active,
             ),
           ).thenAnswer((_) async => [failingAgent]);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-fail'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-fail': [failingLink],
+            },
+          );
+          when(
+            () => mockOrchestrator.addSubscription(any()),
+          ).thenThrow(StateError('runtime registration failed'));
 
           await nullLoggerService.restoreSubscriptions();
 
-          verifyNever(() => mockOrchestrator.addSubscription(any()));
+          verify(() => mockOrchestrator.addSubscription(any())).called(1);
         },
       );
     });

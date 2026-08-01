@@ -11,7 +11,7 @@ sources:
   - id: agents-src
     resource: ../../../lib/features/agents
     title: Agents feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-01
   - id: constants
     resource: ../../../lib/features/agents/model/agent_constants.dart
     title: AgentKinds and AgentLinkTypes
@@ -90,7 +90,8 @@ flowchart TD
   Init --> Sched["ScheduledWakeManager.start() — hourly poll"]
   Init --> Activity["ProjectActivityMonitor.start()"]
   Init --> Seed["Seed templates, profiles, souls<br/>(skills are built-in code, not seeded)"]
-  Init --> Restore["Restore subscriptions and deferred wakes"]
+  Init --> Restore["Bulk-restore subscriptions and deferred wakes"]
+  Restore -->|snapshot failure| Abort["Stop restoration pass<br/>one agentRuntime diagnostic"]
   Init --> Sync["Wire SyncEventProcessor (if registered in GetIt)"]
 ```
 
@@ -103,6 +104,16 @@ future deadlines re-arm the deferred drain timer, overdue deadlines enqueue
 immediately and clear the persisted marker. A completed subscription wake only
 writes a new `nextWakeAt` when follow-up work is still queued, so the wake
 surfaces show pending work rather than a cooldown with nothing left to run.
+
+The startup coordinator invokes task, day and project restoration in parallel.
+Before any per-agent runtime work, task and project services bulk-load their
+states and typed links, while the day service bulk-loads its states after
+discarding identities with no valid day context. Event restoration follows the
+same bulk state-and-link boundary when invoked. A failed snapshot propagates
+before any service enters its agent loop; the coordinator records one
+`agentRuntime` error for the aborted pass. Failures in in-memory subscription or
+wake registration after a successful snapshot remain isolated to the affected
+agent, because the database is no longer being queried inside that loop.
 
 **Skills are not seeded.** They live as code in
 `lib/features/ai/skills/built_in_skills.dart` and are read from

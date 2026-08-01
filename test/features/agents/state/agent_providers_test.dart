@@ -634,6 +634,39 @@ void main() {
       },
     );
 
+    test('logs one error when runtime restoration aborts', () async {
+      final domainLogger = MockDomainLogger();
+      when(
+        () => domainLogger.error(
+          any(),
+          any(),
+          message: any(named: 'message'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+      when(
+        bench.mockTaskAgentService.restoreSubscriptions,
+      ).thenAnswer(
+        (_) async => throw StateError('database connection closed'),
+      );
+      final container = bench.createContainer(
+        testDomainLogger: domainLogger,
+      );
+
+      await bench.initAndSubscribe(container);
+
+      verify(
+        () => domainLogger.error(
+          LogDomain.agentRuntime,
+          any<Object>(that: isA<StateError>()),
+          message: 'agent runtime restoration aborted',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+      verifyNoMoreInteractions(domainLogger);
+    });
+
     test('starts scheduled wake manager when enabled', () async {
       final container = bench.createContainer();
       await bench.initAndSubscribe(container);

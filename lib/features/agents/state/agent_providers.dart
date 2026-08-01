@@ -507,9 +507,23 @@ Future<void> agentInitialization(Ref ref) async {
   await ref.read(soulDocumentServiceProvider).seedDefaults();
   // Backfill skill assignments on existing default profiles.
   await profileSeeder.upgradeExisting();
-  await Future.wait([
-    taskAgentService.restoreSubscriptions(),
-    ref.read(dayAgentServiceProvider).restoreSubscriptions(),
-    ref.read(projectAgentServiceProvider).restoreSubscriptions(),
-  ]);
+  // Each service bulk-loads its database inputs before entering an agent loop.
+  // A terminal preload failure therefore escapes here and produces one startup
+  // diagnostic instead of one full error per persisted agent.
+  try {
+    await Future.wait([
+      taskAgentService.restoreSubscriptions(),
+      ref.read(dayAgentServiceProvider).restoreSubscriptions(),
+      ref.read(projectAgentServiceProvider).restoreSubscriptions(),
+    ]);
+  } catch (error, stackTrace) {
+    ref
+        .read(domainLoggerProvider)
+        .error(
+          LogDomain.agentRuntime,
+          error,
+          message: 'agent runtime restoration aborted',
+          stackTrace: stackTrace,
+        );
+  }
 }
