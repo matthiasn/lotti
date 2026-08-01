@@ -4,17 +4,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0]
-### Changed
-- **The agent store starts reclaiming space.** Day-status events — the running
-  record of how each day was going — were kept indefinitely, so the database,
-  sync payload and backup grew every month with nothing ever released. They are
-  now kept for ninety days. **Nothing you wrote is ever affected**: check-ins,
-  plans, day summaries, directives, saved knowledge, reports and personalities
-  are kept for good, as are weekly totals, your run history and ratings, and the
-  record behind every suggestion you accepted or rejected. Tidying runs in the
-  background after start-up and can be interrupted safely.
-
 ## [1.0.1]
 ### Added
 - **A failed planning step now says so on the day it happened.** When Daily OS
@@ -50,6 +39,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   everything that happened since the last briefing it finished. If none ever
   finished — a new install, or a run of failures — it reaches back about two
   days rather than to the beginning.
+
+### Changed
+- **The agent store starts reclaiming space.** Day-status events — the running
+  record of how each day was going — were kept indefinitely, so the database,
+  sync payload and backup grew every month with nothing ever released. They are
+  now kept for ninety days. **Nothing you wrote is ever affected**: check-ins,
+  plans, day summaries, directives, saved knowledge, reports and personalities
+  are kept for good, as are weekly totals, your run history and ratings, and the
+  record behind every suggestion you accepted or rejected. Tidying runs in the
+  background after start-up and can be interrupted safely.
 
 ## [1.0.0]
 ### Changed
