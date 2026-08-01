@@ -92,6 +92,8 @@ DateTime recordedWallClock(DateTime start) => DateTime.utc(
   start.hour,
   start.minute,
   start.second,
+  start.millisecond,
+  start.microsecond,
 );
 
 /// The wall-clock length of a recorded interval, read from its own
@@ -108,7 +110,11 @@ DateTime recordedWallClock(DateTime start) => DateTime.utc(
 /// Reading both ends as zone-free calendar values gives the length the
 /// recorder's own clock showed, identically everywhere.
 Duration canonicalRecordedDuration(Metadata meta) =>
-    recordedWallClock(meta.dateTo).difference(recordedWallClock(meta.dateFrom));
+    canonicalWallClockDuration(meta.dateFrom, meta.dateTo);
+
+/// The wall-clock length between two zone-less timestamps.
+Duration canonicalWallClockDuration(DateTime from, DateTime to) =>
+    recordedWallClock(to).difference(recordedWallClock(from));
 
 /// Monday 00:00 of the ISO week containing [date], read from [date]'s own
 /// calendar components and returned UTC-typed — the zone-free week key that

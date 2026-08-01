@@ -199,6 +199,7 @@ class DayAgentWeekContextService {
   Future<List<RecordedSpan>> _recordedSpansInRange({
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    bool canonicalDurations = false,
   }) async {
     final entries = await journalDb.sortedCalendarEntries(
       rangeStart: rangeStart,
@@ -223,7 +224,13 @@ class DayAgentWeekContextService {
         RecordedSpan(
           categoryId: pair.categoryId,
           start: pair.start,
-          duration: canonicalRecordedDuration(pair.entry.meta),
+          // Canonical only for the synced rollup. The rendered week context is
+          // read on one device and shown beside a timeline that uses elapsed
+          // time, so switching it too would make a DST-crossing entry read as
+          // 120 minutes there and 60 in the timeline lane.
+          duration: canonicalDurations
+              ? canonicalRecordedDuration(pair.entry.meta)
+              : pair.duration,
           taskId: pair.taskId,
         ),
     ];
@@ -279,6 +286,15 @@ class DayAgentWeekContextService {
           continue;
         }
         if (legacy is WeekRollupEntity && legacy.deletedAt != null) {
+          // A peer that had not yet received the v1 tombstone can create and
+          // sync a live v2 row before it arrives. Skipping recomputation
+          // would leave that row live and rendered, so the deletion is
+          // carried onto v2 rather than merely honoured for creation.
+          if (existing is WeekRollupEntity && existing.deletedAt == null) {
+            await syncService.upsertEntity(
+              existing.copyWith(deletedAt: legacy.deletedAt, updatedAt: now),
+            );
+          }
           continue;
         }
         final prior = existing is WeekRollupEntity ? existing : null;
@@ -448,6 +464,7 @@ class DayAgentWeekContextService {
     // Widen by a day at each end so no span belonging to a covered week is
     // missed; the bucketing below discards whatever falls outside.
     final spans = await _recordedSpansInRange(
+      canonicalDurations: true,
       rangeStart: DateTime(oldest.year, oldest.month, oldest.day - 1),
       rangeEnd: DateTime(
         newest.year,

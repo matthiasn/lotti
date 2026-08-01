@@ -210,6 +210,12 @@ into a reader-relative instant, which was the bug.
 | Week key | `canonicalWeekStart` reads calendar **components** and returns a UTC-typed midnight; `weekRollupEntityId` hashes those, never a converted instant |
 | Week label | `isoCalendarDate` formats those components; a converting read renders the canonical Monday as the preceding Sunday west of UTC |
 | Recorded length | `canonicalRecordedDuration` subtracts the two ends' components. `dateTo - dateFrom` on the parsed values is reader-relative for the same reason the bucket was, so a DST-crossing interval is 60 minutes in one zone and 120 in another — and both would be stamped canonical |
+| Planned length | `canonicalWallClockDuration` over the block's `startTime`/`endTime`, which are zone-less for the same reason |
+
+**Canonical durations are confined to the rollup.** The rendered week context is
+read on one device, beside a timeline lane that uses elapsed time, so switching
+it too would make a DST-crossing entry read as 120 minutes in `<recent_days>`
+and 60 in the timeline.
 
 `Metadata.utcOffset` is deliberately **not** consulted. It records the offset at
 *creation*, not at `dateFrom`, so a backfilled or cross-DST entry carries an
@@ -241,9 +247,11 @@ with the old reader-local rule and writes it back unstamped; had both
 generations shared an id, the two builds would have overwritten each other for
 as long as the rollout lasted — the exact loop this change exists to end.
 Old-generation rows are inert with one exception: their **tombstones** are
-still read. A week the user deliberately deleted must not come back to life
+still read, and carried forward. A week the user deliberately deleted must not come back to life
 because the id generation changed underneath it, so `ensureWeekRollups` checks
-the v1 id's tombstone before creating a v2 register.
+the v1 id's tombstone before creating a v2 register — and, when a peer that had
+not yet received that tombstone already created a live v2 row, applies the
+deletion to it rather than merely skipping the recompute.
 
 `WeekRollupEntity.bucketingRule` records which rule produced a register:
 `recordedLocal` for canonical, null for legacy. The steady-state

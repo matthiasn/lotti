@@ -1261,6 +1261,35 @@ void main() {
       );
     });
 
+    test('a late v1 tombstone is carried onto a live v2 row', () async {
+      stubEntityReads(
+        rollups: {
+          // A peer that had not yet seen the v1 tombstone created this.
+          newestId: makeTestWeekRollup(
+            id: newestId,
+            weekStart: DateTime.utc(2026, 6),
+          ),
+          'week_rollup:2026-06-01': makeTestWeekRollup(
+            id: 'week_rollup:2026-06-01',
+            weekStart: DateTime.utc(2026, 6),
+            deletedAt: DateTime(2026, 6, 8),
+          ),
+        },
+      );
+
+      await withNow(() => service.ensureWeekRollups());
+
+      final rewritten =
+          upserted.firstWhere((e) => e.id == newestId) as WeekRollupEntity;
+      expect(
+        rewritten.deletedAt,
+        DateTime(2026, 6, 8),
+        reason:
+            'Honouring the tombstone only for creation would leave an already '
+            'synced v2 row live and rendered.',
+      );
+    });
+
     test('a tombstoned rollup is never resurrected', () async {
       stubEntityReads(
         rollups: {

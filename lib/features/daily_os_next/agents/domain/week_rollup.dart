@@ -46,7 +46,14 @@ computeWeekRollupAggregates({
     plannedDayIds.add(plan.dayId);
     for (final block in plan.data.plannedBlocks) {
       if (block.state == PlannedBlockState.dropped) continue;
-      final minutes = block.endTime.difference(block.startTime).inMinutes;
+      // Same reasoning as recorded time: a block's endpoints are zone-less, so
+      // subtracting the parsed instants makes a DST-crossing block 60 minutes
+      // on one reader and 120 on another, while the register is stamped
+      // canonical either way.
+      final minutes = canonicalWallClockDuration(
+        block.startTime,
+        block.endTime,
+      ).inMinutes;
       // A blank block category coincides with [uncategorizedRollupKey] and
       // buckets there by construction.
       planned.update(
