@@ -60,7 +60,10 @@ class DayPlanReadyNotifier {
   NotificationService get _notifications =>
       _notificationService ?? getIt<NotificationService>();
 
-  /// Handles one terminal job from the outbox processor.
+  /// Handles one attempt outcome from the outbox processor.
+  ///
+  /// Not only terminal ones: `failed` is not terminal, and this is the
+  /// listener that decides a failed plan job is worth reporting.
   ///
   /// Never throws: the hook is invoked fire-and-forget from the processor's
   /// completion path, so a delivery failure (service resolution, locale
