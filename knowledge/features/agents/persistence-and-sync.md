@@ -326,13 +326,7 @@ and a store where no digest has ever completed prunes nothing at all. Each day's
 how that day is presented, so clearing a day entirely would silently change what
 the user sees on scrolling back.
 
-The **ingest guard does not consult the watermark** and drops an inbound event
-purely on age. That is deliberate asymmetry: the guard exists to stop a
-returning peer re-inserting what every device already agreed to forget, and a
-row this device would immediately re-delete is not worth materializing. The
-consequence — a peer can deliver an old event this device has not consumed and
-it is dropped — is bounded by the same window the sweep protects, and the
-alternative is a per-row watermark read on the sync hot path.
+
 
 ## Why observations are classified but not swept
 
@@ -352,26 +346,25 @@ intent — while the sweep that honours it lands separately. `horizonFor` return
 null for them meanwhile: dropping them on ingest while never pruning locally
 would be divergence for no gain.
 
-## Hard delete, no tombstone
-
-```mermaid
-sequenceDiagram
-  participant A as Device A
-  participant B as Device B — offline for months
-  A->>A: sweep — derived rows past the horizon hard-deleted
-  Note over A: no tombstone written, nothing to sync
-  B->>A: reconnects, replays its old derived rows
-  A->>A: ingest guard drops them, records the receipt
-  Note over A,B: B's next sweep reaches the same conclusion locally
-```
+## Hard delete, no tombstone — and no inbound guard
 
 A tombstone per pruned row would grow the sync payload in the exact dimension
-retention exists to shrink, and there is nothing to converge on: the rule is a
-pure function of `(type, createdAt, now)`, so every device reaches the same
-conclusion independently. The apply path therefore drops an inbound derived row
-already past the local horizon instead of materializing it — otherwise every
-reconnect would hand the next sweep the same work again. The sequence receipt is
-still recorded, so no backfill is triggered for the dropped row.
+retention exists to shrink, and there is nothing to converge on: every device
+applies the same rule to the same synced rows and reaches the same conclusion
+independently.
+
+**Nothing is dropped on ingest.** An earlier version of this dropped inbound
+rows already past the local horizon, to stop a returning peer re-inserting what
+every device had agreed to forget. That guard is gone, because no rule here is a
+pure per-row age test any more: status events keep each day's newest, and
+observations are not swept at all. A single arriving row cannot be judged
+against a per-day property — and a guard that ignored it would drop precisely
+the event an old day is presented by, on a fresh device or a historical
+backfill, where the local store has nothing else for that day.
+
+The cost is churn: a peer replaying old rows re-materializes them, and the next
+sweep removes them again. That is a bounded, once-per-reconnect cost against a
+correctness one, and the sweep is idempotent by design.
 
 A row sitting exactly on the boundary may survive a few hours longer on one
 device than another. For observational data that is invisible, and it converges
@@ -396,10 +389,11 @@ use). Each is tiny and permanently cold, and merging or archiving them would
 cost the property that makes them worth having — a day's history stays
 addressable by its own id forever.
 
-The aged-corpus benchmark gates this: at six and twelve simulated months the
-swept type reads the same count after a sweep while day plans and captures keep
-growing — and observations are asserted to still grow, so their exclusion is
-visible rather than assumed.
+The aged-corpus benchmark gates this, and states the slope rather than claiming
+a flat one: between six and twelve simulated months the retained status events
+grow by **exactly one per additional day** — the day's preserved final event —
+against six per day unpruned. Observations are asserted to still grow at their
+full rate, so their exclusion is visible rather than assumed.
 
 # Diagnostics are content-free
 

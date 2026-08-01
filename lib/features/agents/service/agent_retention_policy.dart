@@ -116,35 +116,18 @@ class AgentRetentionPolicy {
     agentMessagePayload: (_) => AgentRetentionClass.keptDerived,
   );
 
-  /// The age horizon for [entity], or null when nothing bounds it by age
-  /// today.
+  /// The age horizon for [entity], or null when age does not bound it.
   ///
-  /// `observation` yields null deliberately: until the sweep exists, dropping
-  /// inbound observations at the horizon would delete rows this device never
-  /// prunes locally, which is divergence for no gain.
+  /// Read by the sweep only. There is deliberately **no inbound guard**: no
+  /// retention rule here is a pure per-row age test any more — status events
+  /// keep each day's newest, and observations are not swept at all — and a
+  /// single arriving row cannot be judged against a per-day or per-store
+  /// property. A guard that ignored those rules would drop the one event an
+  /// old day is presented by on a fresh device or a backfill.
   Duration? horizonFor(AgentDomainEntity entity) => switch (classify(entity)) {
     AgentRetentionClass.ageBounded => dayStatusEvents,
     AgentRetentionClass.observation ||
     AgentRetentionClass.userAuthored ||
     AgentRetentionClass.keptDerived => null,
   };
-
-  /// Whether an inbound synced [entity] is already past this device's horizon,
-  /// and so should not be materialized at all.
-  ///
-  /// Retention is a hard local delete with no tombstone, so without this a peer
-  /// returning from a long absence would re-insert exactly what every device
-  /// had agreed to forget, only for the next sweep to remove it again.
-  ///
-  /// Age is the only bound that exists today; see [horizonFor] for what is and
-  /// is not swept.
-  bool isBeyondHorizon({
-    required AgentDomainEntity entity,
-    required DateTime createdAt,
-    required DateTime now,
-  }) {
-    final horizon = horizonFor(entity);
-    if (horizon == null) return false;
-    return createdAt.isBefore(now.subtract(horizon));
-  }
 }

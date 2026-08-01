@@ -9,7 +9,6 @@ import '../test_data/entity_factories.dart';
 
 void main() {
   const policy = AgentRetentionPolicy();
-  final now = DateTime(2026, 8);
 
   group('what is never eligible', () {
     test("the user's own material has no horizon, however old", () {
@@ -27,14 +26,7 @@ void main() {
           AgentRetentionClass.userAuthored,
           reason: "${entity.runtimeType} is the user's own material.",
         );
-        expect(
-          policy.isBeyondHorizon(
-            entity: entity,
-            createdAt: DateTime(2015),
-            now: now,
-          ),
-          isFalse,
-        );
+        expect(policy.horizonFor(entity), isNull);
       }
     });
 
@@ -62,12 +54,8 @@ void main() {
 
       expect(policy.classify(summary), AgentRetentionClass.keptDerived);
       expect(
-        policy.isBeyondHorizon(
-          entity: summary,
-          createdAt: DateTime(2015),
-          now: now,
-        ),
-        isFalse,
+        policy.horizonFor(summary),
+        isNull,
         reason:
             'Compaction summaries are what the agent remembers after its raw '
             'log is folded away; ageing them out would erase that memory.',
@@ -91,36 +79,10 @@ void main() {
       );
     });
 
-    test('a day-status event past the horizon is dropped', () {
-      final event = makeTestDayStatusEvent();
-
+    test('a day-status event is bounded by age', () {
       expect(
-        policy.isBeyondHorizon(
-          entity: event,
-          createdAt: now.subtract(const Duration(days: 91)),
-          now: now,
-        ),
-        isTrue,
-      );
-      expect(
-        policy.isBeyondHorizon(
-          entity: event,
-          createdAt: now.subtract(const Duration(days: 89)),
-          now: now,
-        ),
-        isFalse,
-      );
-    });
-
-    test('the boundary itself is kept, not dropped', () {
-      expect(
-        policy.isBeyondHorizon(
-          entity: makeTestDayStatusEvent(),
-          createdAt: now.subtract(policy.dayStatusEvents),
-          now: now,
-        ),
-        isFalse,
-        reason: 'Strictly-before, so the horizon is inclusive of its edge.',
+        policy.horizonFor(makeTestDayStatusEvent()),
+        policy.dayStatusEvents,
       );
     });
   });
