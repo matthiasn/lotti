@@ -6005,6 +6005,60 @@ abstract class AppLocalizations {
   /// **'That action didn\'t finish. Your recording is still safe—try again.'**
   String get dailyOsNextActivityActionFailed;
 
+  /// Snackbar when retrying a stalled agent job fails.
+  ///
+  /// In en, this message translates to:
+  /// **'That action didn\'t finish. Nothing was lost—try again.'**
+  String get dailyOsNextActivityAgentActionFailed;
+
+  /// Activity row title for a stalled day-plan drafting job.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafting your day plan didn\'t finish.'**
+  String get dailyOsNextActivityAgentJobDraft;
+
+  /// Explains a stalled agent job the model could not complete.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI model couldn\'t finish this one.'**
+  String get dailyOsNextActivityAgentJobModelFailed;
+
+  /// Explains a refine job that stalled because the day has no plan yet.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no day plan to update yet.'**
+  String get dailyOsNextActivityAgentJobNoPlan;
+
+  /// Activity row title for a stalled capture-parsing job.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading your check-in didn\'t finish.'**
+  String get dailyOsNextActivityAgentJobParse;
+
+  /// Activity row title for a stalled day-plan refine job.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating your day plan didn\'t finish.'**
+  String get dailyOsNextActivityAgentJobRefine;
+
+  /// Reassurance shown under a stalled agent job in the Activity timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was lost. Retry when you\'re ready.'**
+  String get dailyOsNextActivityAgentJobRetryHint;
+
+  /// Explains a stalled agent job with no planning model configured.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI model is set up for planning yet.'**
+  String get dailyOsNextActivityAgentJobSetupRequired;
+
+  /// Explains a stalled agent job caused by a busy or unreachable provider.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI service was busy or unreachable.'**
+  String get dailyOsNextActivityAgentJobTemporary;
+
   /// No description provided for @dailyOsNextActivityDaySummary.
   ///
   /// In en, this message translates to:
@@ -6052,6 +6106,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs attention'**
   String get dailyOsNextActivityNeedsAttention;
+
+  /// Button on a stalled agent job that opens AI settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Daily OS setup'**
+  String get dailyOsNextActivityOpenAiSetup;
 
   /// No description provided for @dailyOsNextActivityOpenSetup.
   ///

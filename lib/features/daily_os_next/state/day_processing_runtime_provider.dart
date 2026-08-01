@@ -43,7 +43,7 @@ dayProcessingOutboxProcessorProvider = Provider((ref) {
     repository: ref.watch(dayProcessingOutboxRepositoryProvider),
     // ADR 0032 §5: event-driven completion surface for jobs that finish
     // while the app is backgrounded — "your plan is ready" as an OS banner.
-    onJobFinished: (job) => unawaited(planReadyNotifier.onJobFinished(job)),
+    onJobOutcome: (job) => unawaited(planReadyNotifier.onJobOutcome(job)),
     // Claim the day the user is actually looking at first. `ref.read`, not
     // `watch`: navigating between days must not tear down and rebuild the
     // long-lived runtime, and the resolver runs per claim so the current

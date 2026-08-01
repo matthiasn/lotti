@@ -2078,6 +2078,42 @@
   "customColor": "Custom Color",
   "dailyOsDayPlan": "Day Plan",
   "dailyOsNextActivityActionFailed": "That action didn't finish. Your recording is still safe—try again.",
+  "dailyOsNextActivityAgentActionFailed": "That action didn't finish. Nothing was lost—try again.",
+  "@dailyOsNextActivityAgentActionFailed": {
+    "description": "Snackbar when retrying a stalled agent job fails."
+  },
+  "dailyOsNextActivityAgentJobDraft": "Drafting your day plan didn't finish.",
+  "@dailyOsNextActivityAgentJobDraft": {
+    "description": "Activity row title for a stalled day-plan drafting job."
+  },
+  "dailyOsNextActivityAgentJobModelFailed": "The AI model couldn't finish this one.",
+  "@dailyOsNextActivityAgentJobModelFailed": {
+    "description": "Explains a stalled agent job the model could not complete."
+  },
+  "dailyOsNextActivityAgentJobNoPlan": "There's no day plan to update yet.",
+  "@dailyOsNextActivityAgentJobNoPlan": {
+    "description": "Explains a refine job that stalled because the day has no plan yet."
+  },
+  "dailyOsNextActivityAgentJobParse": "Reading your check-in didn't finish.",
+  "@dailyOsNextActivityAgentJobParse": {
+    "description": "Activity row title for a stalled capture-parsing job."
+  },
+  "dailyOsNextActivityAgentJobRefine": "Updating your day plan didn't finish.",
+  "@dailyOsNextActivityAgentJobRefine": {
+    "description": "Activity row title for a stalled day-plan refine job."
+  },
+  "dailyOsNextActivityAgentJobRetryHint": "Nothing was lost. Retry when you're ready.",
+  "@dailyOsNextActivityAgentJobRetryHint": {
+    "description": "Reassurance shown under a stalled agent job in the Activity timeline."
+  },
+  "dailyOsNextActivityAgentJobSetupRequired": "No AI model is set up for planning yet.",
+  "@dailyOsNextActivityAgentJobSetupRequired": {
+    "description": "Explains a stalled agent job with no planning model configured."
+  },
+  "dailyOsNextActivityAgentJobTemporary": "The AI service was busy or unreachable.",
+  "@dailyOsNextActivityAgentJobTemporary": {
+    "description": "Explains a stalled agent job caused by a busy or unreachable provider."
+  },
   "dailyOsNextActivityDaySummary": "Day summary",
   "dailyOsNextActivityDeleteDialogBody": "The audio and its pending transcription are removed from this day.",
   "dailyOsNextActivityDeleteDialogTitle": "Delete this recording?",
@@ -2086,6 +2122,10 @@
   "dailyOsNextActivityLoadFailed": "Your saved activity is still on this device, but it couldn't be loaded right now.",
   "dailyOsNextActivityMissingAudio": "This entry is retained, but its audio file isn't available on this device. Restore the file, then retry.",
   "dailyOsNextActivityNeedsAttention": "Needs attention",
+  "dailyOsNextActivityOpenAiSetup": "Open Daily OS setup",
+  "@dailyOsNextActivityOpenAiSetup": {
+    "description": "Button on a stalled agent job that opens AI settings."
+  },
   "dailyOsNextActivityOpenSetup": "Open transcription setup",
   "dailyOsNextActivityPlanAvailable": "Your day plan is available.",
   "dailyOsNextActivityPlanCreated": "Plan created",

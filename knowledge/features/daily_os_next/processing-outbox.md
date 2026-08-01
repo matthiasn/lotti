@@ -5,8 +5,8 @@ description: A device-local job table with viewer-relative claim priority, atomi
 resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
 tags: [daily-os, outbox, jobs, durability, adr-0044]
 status: stable
-generated: { by: codex/5, at: 2026-07-29T12:55:00Z }
-stale_after: 2026-10-26
+generated: { by: claude-code/opus-5, at: 2026-08-01T12:00:00Z }
+stale_after: 2026-11-01
 sources:
   - id: schema
     resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
@@ -65,6 +65,57 @@ everything are bounded: `DayActivityRepository.getForDay(dayId, kinds: …)`,
 `DayAudioReviewFence.getPendingByKind(transcribeAudio)`, and
 `DayProcessingRuntime.getSchedulable()`. Claim cost tracks outstanding work
 rather than install age.
+
+# What Activity shows, and how agent jobs join
+
+The Activity timeline is a projection over three sources — journal recordings,
+outbox jobs, and agent captures — and its join key is the **activity entry id**.
+Only `transcribeAudio` carries one, so it is the only kind that joins *to* a
+card.
+
+Agent jobs (`parseCapture` / `draftPlan` / `refinePlan`) carry no activity entry
+id by design: the recording they came from is not what they are about. They are
+projected as **rows of their own, keyed by the durable job id** — which the
+outbox already derives deterministically (`draft_<dayId>`, `parse_<captureId>`),
+so a retried job updates one row rather than accumulating a card per attempt.
+
+**Only stalled agent jobs earn a row.** `queued` and `running` are in flight and
+already visible through the plan surface's progress affordance; surfacing them
+here would be noise. Three states earn one — not because none of them recovers
+by itself, but because in each the day is waiting on something the user cannot
+otherwise see:
+
+| Status | Recovers alone? | Why it earns a row |
+|--------|-----------------|--------------------|
+| `failed` | No | Deterministic — nothing will retry it |
+| `waitingForUser` | No | Needs a prerequisite only the user can supply (e.g. a configured planning model) |
+| `waitingForNetwork` | **Yes** | The runtime probes it and re-queues on connectivity restore, but the wait is otherwise invisible; the row says what is pending and offers to force the attempt |
+
+**Notification coverage is narrower than the timeline's.** `DayPlanReadyNotifier`
+reacts only to `draftPlan`/`refinePlan` reaching `succeeded` or `failed`; it
+ignores `waitingForUser`, `waitingForNetwork`, and every `parseCapture` outcome.
+So Activity is the only surface that shows those — which is the gap it was added
+to close, not a duplicate of the notification.
+
+The row is placed at `requestedAt`, not `updatedAt`. While the device is offline
+the runtime probes each waiting job on a timer, re-queuing and re-parking it,
+and both transitions rewrite `updatedAt` — ordering by it made the row jump to
+the newest timeline position on every probe with no attempt having run.
+
+A failed `parseCapture` earns a row only while its capture is still **present
+and unparsed**. Nothing reschedules a failed job, so a capture that was since
+deleted — or parsed here or on a peer that synced the result — would otherwise
+keep offering Retry for an intent that no longer exists or work already done.
+
+Retries go through the existing `retryNow`, which re-queues the job and clears
+its error state — so retrying removes the row: the work is in flight again.
+
+**`onJobOutcome` fires for every outcome of a claimed attempt** — succeeded,
+failed, re-queued, or parked waiting for the network — not only terminal ones.
+`failed` is deliberately *not* terminal, since a retry can resurrect it, so the
+previous terminal-only contract (`onJobFinished`) withheld precisely the outcome
+the plan-failure notification exists to report. Delivery is not the place to
+decide what is worth saying; the listener filters, and the name now says so.
 
 # Claiming
 

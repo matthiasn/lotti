@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.1]
+### Added
+- **A failed planning step now says so on the day it happened.** When Daily OS
+  could not draft or update a plan, or could not read a check-in, it failed in
+  silence: no notification arrived, and the day showed no sign anything had
+  gone wrong. Work that has stopped now appears in that day's Activity
+  timeline, saying in plain words which step did not finish and why — the model
+  could not complete it, no planning model is set up, there is no plan to
+  update yet, or it is waiting for the network — and offering Retry in place.
+  Retrying puts the work back in flight and the entry disappears. Network waits
+  also resume on their own once you are back online. Steps still running are
+  not listed; the plan itself already shows those. Failed drafts and updates
+  now raise the notification they were always meant to.
+
 ### Fixed
 - **Weekly totals stop changing on their own.** Daily OS pools each past week's
   planned and recorded minutes into a shared summary the morning briefing reads.

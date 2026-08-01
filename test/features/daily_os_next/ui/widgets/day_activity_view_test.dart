@@ -699,4 +699,284 @@ void main() {
       () => journalRepository.deleteJournalEntity('audio-doomed'),
     ).called(1);
   });
+
+  testWidgets(
+    'a stalled draft explains itself and retries through the outbox',
+    (tester) async {
+      final outbox = MockDayProcessingOutboxRepository();
+      final runtime = MockDayProcessingRuntime();
+      when(() => outbox.retryNow(any())).thenAnswer((_) async => null);
+      when(runtime.nudge).thenAnswer((_) async {});
+      final stalled = DayActivityEntry(
+        id: 'draft_dayplan-2026-07-18',
+        kind: DayActivityEntryKind.agentJob,
+        createdAt: capturedAt,
+        activityEntryId: 'draft_dayplan-2026-07-18',
+        processingJob: DayProcessingJob(
+          id: 'draft_dayplan-2026-07-18',
+          status: DayProcessingJobStatus.failed,
+          dayId: 'dayplan-2026-07-18',
+          // ignore: avoid_redundant_argument_values
+          payload: const DraftPlanPayload(decidedTaskIds: []),
+          createdAt: capturedAt,
+          updatedAt: capturedAt,
+          requestedAt: capturedAt,
+          nextAttemptAt: capturedAt,
+          attempts: 2,
+          generation: 0,
+          lastFailureClass: DayProcessingFailureClass.deterministic,
+          lastError: 'the model returned no plan',
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          DayActivityView(
+            date: date,
+            hasPlan: false,
+            actualBlocks: const [],
+            onUseEntry: (_) {},
+          ),
+          overrides: [
+            dayActivityProvider.overrideWith((ref, date) async => [stalled]),
+            dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+            dayProcessingRuntimeProvider.overrideWithValue(runtime),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+      // What failed, in the user's terms — not "draftPlan" or a status name.
+      expect(
+        find.text(messages.dailyOsNextActivityAgentJobDraft),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(messages.dailyOsNextActivityAgentJobModelFailed),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(messages.dailyOsNextActivityAgentJobRetryHint),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextActivityNeedsAttention),
+        findsOneWidget,
+      );
+      // The provider's own message is hard-coded English written for a log;
+      // this card is localized everywhere else, so it never reaches the UI.
+      expect(find.text('the model returned no plan'), findsNothing);
+      // A failed agent job is not a recording: no delete, nothing to reuse.
+      expect(
+        find.text(messages.dailyOsNextActivityDeleteRecording),
+        findsNothing,
+      );
+      expect(find.text(messages.dailyOsNextActivityUseToPlan), findsNothing);
+
+      await tester.tap(find.text(messages.dailyOsNextActivityRetry));
+      await tester.pump();
+
+      verify(() => outbox.retryNow('draft_dayplan-2026-07-18')).called(1);
+      verify(runtime.nudge).called(1);
+    },
+  );
+
+  testWidgets('a refine with no plan yet is not blamed on the model', (
+    tester,
+  ) async {
+    final outbox = MockDayProcessingOutboxRepository();
+    final runtime = MockDayProcessingRuntime();
+    when(() => outbox.retryNow(any())).thenAnswer((_) async => null);
+    when(runtime.nudge).thenAnswer((_) async {});
+    final stalled = DayActivityEntry(
+      id: 'refine_dayplan-2026-07-18_abc',
+      kind: DayActivityEntryKind.agentJob,
+      createdAt: capturedAt,
+      activityEntryId: 'refine_dayplan-2026-07-18_abc',
+      processingJob: DayProcessingJob(
+        id: 'refine_dayplan-2026-07-18_abc',
+        status: DayProcessingJobStatus.failed,
+        dayId: 'dayplan-2026-07-18',
+        payload: const RefinePlanPayload(),
+        createdAt: capturedAt,
+        updatedAt: capturedAt,
+        requestedAt: capturedAt,
+        nextAttemptAt: capturedAt,
+        attempts: 1,
+        generation: 0,
+        lastFailureClass: DayProcessingFailureClass.deterministic,
+        lastError: 'No plan to refine — the day has no drafted plan',
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayActivityView(
+          date: date,
+          // No plan for the day: the prerequisite, not the model, is missing.
+          hasPlan: false,
+          actualBlocks: const [],
+          onUseEntry: (_) {},
+        ),
+        overrides: [
+          dayActivityProvider.overrideWith((ref, date) async => [stalled]),
+          dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+          dayProcessingRuntimeProvider.overrideWithValue(runtime),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final messages = tester.element(find.byType(DayActivityView)).messages;
+    expect(
+      find.textContaining(messages.dailyOsNextActivityAgentJobNoPlan),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(messages.dailyOsNextActivityAgentJobModelFailed),
+      findsNothing,
+      reason:
+          'The executor records this before any inference runs; Retry repeats '
+          'the same pre-check until a plan exists, so blaming the model sends '
+          'the user after the wrong thing.',
+    );
+  });
+
+  testWidgets('a stalled refine with no model configured offers Daily OS '
+      'setup', (
+    tester,
+  ) async {
+    final outbox = MockDayProcessingOutboxRepository();
+    final runtime = MockDayProcessingRuntime();
+    when(() => outbox.retryNow(any())).thenAnswer((_) async => null);
+    when(runtime.nudge).thenAnswer((_) async {});
+    String? routed;
+    nav_service.beamToNamedOverride = (route) => routed = route;
+    final stalled = DayActivityEntry(
+      id: 'refine_dayplan-2026-07-18_abc',
+      kind: DayActivityEntryKind.agentJob,
+      createdAt: capturedAt,
+      activityEntryId: 'refine_dayplan-2026-07-18_abc',
+      processingJob: DayProcessingJob(
+        id: 'refine_dayplan-2026-07-18_abc',
+        status: DayProcessingJobStatus.waitingForUser,
+        dayId: 'dayplan-2026-07-18',
+        payload: const RefinePlanPayload(),
+        createdAt: capturedAt,
+        updatedAt: capturedAt,
+        requestedAt: capturedAt,
+        nextAttemptAt: capturedAt,
+        attempts: 1,
+        generation: 0,
+        lastFailureClass: DayProcessingFailureClass.setupRequired,
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayActivityView(
+          date: date,
+          hasPlan: true,
+          actualBlocks: const [],
+          onUseEntry: (_) {},
+        ),
+        overrides: [
+          dayActivityProvider.overrideWith((ref, date) async => [stalled]),
+          dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+          dayProcessingRuntimeProvider.overrideWithValue(runtime),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final messages = tester.element(find.byType(DayActivityView)).messages;
+    expect(
+      find.text(messages.dailyOsNextActivityAgentJobRefine),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(messages.dailyOsNextActivityAgentJobSetupRequired),
+      findsOneWidget,
+    );
+    // The transcription wording would be wrong here — this job needs a
+    // planning model, not an audio one.
+    expect(find.text(messages.dailyOsNextActivityOpenSetup), findsNothing);
+
+    await tester.tap(find.text(messages.dailyOsNextActivityOpenAiSetup));
+    await tester.pump();
+
+    expect(
+      routed,
+      '/settings/daily-os',
+      reason:
+          'The generic AI list can create a profile but never binds one to '
+          'Daily OS, so it would leave the job exactly as blocked.',
+    );
+  });
+
+  testWidgets(
+    'a capture-parsing job parked offline says so instead of "needs '
+    'attention"',
+    (tester) async {
+      final outbox = MockDayProcessingOutboxRepository();
+      final runtime = MockDayProcessingRuntime();
+      when(() => outbox.retryNow(any())).thenAnswer((_) async => null);
+      when(runtime.nudge).thenAnswer((_) async {});
+      final stalled = DayActivityEntry(
+        id: 'parse_capture-1',
+        kind: DayActivityEntryKind.agentJob,
+        createdAt: capturedAt,
+        activityEntryId: 'parse_capture-1',
+        processingJob: DayProcessingJob(
+          id: 'parse_capture-1',
+          status: DayProcessingJobStatus.waitingForNetwork,
+          dayId: 'dayplan-2026-07-18',
+          payload: const ParseCapturePayload(captureId: 'capture-1'),
+          createdAt: capturedAt,
+          updatedAt: capturedAt,
+          requestedAt: capturedAt,
+          nextAttemptAt: capturedAt,
+          attempts: 1,
+          generation: 0,
+          lastFailureClass: DayProcessingFailureClass.network,
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          DayActivityView(
+            date: date,
+            hasPlan: false,
+            actualBlocks: const [],
+            onUseEntry: (_) {},
+          ),
+          overrides: [
+            dayActivityProvider.overrideWith((ref, date) async => [stalled]),
+            dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+            dayProcessingRuntimeProvider.overrideWithValue(runtime),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+      expect(
+        find.text(messages.dailyOsNextActivityAgentJobParse),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextActivityWaitingForNetwork),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextActivityNeedsAttention),
+        findsNothing,
+        reason:
+            'Waiting for the network is not something the user can act on; '
+            'calling it "needs attention" sends them looking for a fix that '
+            'does not exist.',
+      );
+    },
+  );
 }

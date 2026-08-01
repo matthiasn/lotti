@@ -329,6 +329,12 @@ class DayProcessingJob {
     _ => null,
   };
 
+  /// The capture a parse job was enqueued for, `null` for other kinds.
+  String? get parsedCaptureId => switch (payload) {
+    ParseCapturePayload(:final captureId) => captureId,
+    _ => null,
+  };
+
   /// The transcription payload's recording session id, `null` otherwise.
   String? get recordingSessionId => switch (payload) {
     TranscribeAudioPayload(:final recordingSessionId) => recordingSessionId,

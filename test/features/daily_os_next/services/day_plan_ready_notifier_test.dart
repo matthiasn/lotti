@@ -56,7 +56,7 @@ void main() {
     'a succeeded draft job while backgrounded raises the localized '
     'plan-ready banner with the day deep link',
     () async {
-      await makeNotifier().onJobFinished(
+      await makeNotifier().onJobOutcome(
         job(payload: const DraftPlanPayload()),
       );
 
@@ -76,7 +76,7 @@ void main() {
   test(
     'a succeeded refine job uses the plan-changes copy',
     () async {
-      await makeNotifier().onJobFinished(
+      await makeNotifier().onJobOutcome(
         job(payload: const RefinePlanPayload(transcriptCaptureId: 'cap-1')),
       );
 
@@ -94,7 +94,7 @@ void main() {
   );
 
   test('no banner while the app is in the foreground', () async {
-    await makeNotifier(foreground: true).onJobFinished(
+    await makeNotifier(foreground: true).onJobOutcome(
       job(payload: const DraftPlanPayload()),
     );
 
@@ -104,7 +104,7 @@ void main() {
   test('a cancelled job raises no banner', () async {
     // Cancellation is the user's own doing — telling them about it would be
     // reporting their own action back at them.
-    await makeNotifier().onJobFinished(
+    await makeNotifier().onJobOutcome(
       job(
         payload: const DraftPlanPayload(),
         status: DayProcessingJobStatus.cancelled,
@@ -117,7 +117,7 @@ void main() {
   test(
     'a failed draft job while backgrounded says so rather than staying silent',
     () async {
-      await makeNotifier().onJobFinished(
+      await makeNotifier().onJobOutcome(
         job(
           payload: const DraftPlanPayload(),
           status: DayProcessingJobStatus.failed,
@@ -140,7 +140,7 @@ void main() {
   );
 
   test('a failed refine job uses the plan-changes failure copy', () async {
-    await makeNotifier().onJobFinished(
+    await makeNotifier().onJobOutcome(
       job(
         payload: const RefinePlanPayload(transcriptCaptureId: 'cap-1'),
         status: DayProcessingJobStatus.failed,
@@ -162,7 +162,7 @@ void main() {
   test('a failure while the app is in the foreground stays quiet', () async {
     // The user is looking at the app; the Activity surface is where a
     // foreground failure belongs, not an OS banner over the top of it.
-    await makeNotifier(foreground: true).onJobFinished(
+    await makeNotifier(foreground: true).onJobOutcome(
       job(
         payload: const DraftPlanPayload(),
         status: DayProcessingJobStatus.failed,
@@ -181,7 +181,7 @@ void main() {
       DayProcessingJobStatus.waitingForUser,
       DayProcessingJobStatus.running,
     ]) {
-      await makeNotifier().onJobFinished(
+      await makeNotifier().onJobOutcome(
         job(payload: const DraftPlanPayload(), status: status),
       );
     }
@@ -205,7 +205,7 @@ void main() {
         binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
         binding.platformDispatcher.localeTestValue = const Locale('en', 'US');
 
-        await defaultNotifier().onJobFinished(
+        await defaultNotifier().onJobOutcome(
           job(payload: const DraftPlanPayload()),
         );
 
@@ -228,7 +228,7 @@ void main() {
         binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
         binding.platformDispatcher.localeTestValue = const Locale('xx');
 
-        await defaultNotifier().onJobFinished(
+        await defaultNotifier().onJobOutcome(
           job(payload: const DraftPlanPayload()),
         );
 
@@ -248,7 +248,7 @@ void main() {
     test('a resumed app counts as foreground — no banner', () async {
       binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
 
-      await defaultNotifier().onJobFinished(
+      await defaultNotifier().onJobOutcome(
         job(payload: const DraftPlanPayload()),
       );
 
@@ -258,7 +258,7 @@ void main() {
 
   group('delivery failures are contained (fire-and-forget contract)', () {
     test(
-      'a throwing notification service does not escape onJobFinished',
+      'a throwing notification service does not escape onJobOutcome',
       () async {
         when(
           () => notifications.showNotificationNow(
@@ -274,7 +274,7 @@ void main() {
         // Must complete normally: the hook runs unawaited from the outbox
         // processor's completion path, so a throw here would surface as an
         // unhandled async error on job completion.
-        await makeNotifier().onJobFinished(
+        await makeNotifier().onJobOutcome(
           job(payload: const DraftPlanPayload()),
         );
       },
@@ -299,7 +299,7 @@ void main() {
 
         // With a registered DomainLogger the catch block takes the logging
         // branch; the call must still complete normally.
-        await makeNotifier().onJobFinished(
+        await makeNotifier().onJobOutcome(
           job(payload: const DraftPlanPayload()),
         );
       },
@@ -307,7 +307,7 @@ void main() {
   });
 
   test('transcription and parse jobs raise no banner', () async {
-    await makeNotifier().onJobFinished(
+    await makeNotifier().onJobOutcome(
       job(
         payload: const TranscribeAudioPayload(
           activityEntryId: 'entry-1',
@@ -317,7 +317,7 @@ void main() {
         ),
       ),
     );
-    await makeNotifier().onJobFinished(
+    await makeNotifier().onJobOutcome(
       job(payload: const ParseCapturePayload(captureId: 'cap-1')),
     );
 

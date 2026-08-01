@@ -3609,6 +3609,42 @@ class AppLocalizationsIt extends AppLocalizations {
       'That action didn\'t finish. Your recording is still safe—try again.';
 
   @override
+  String get dailyOsNextActivityAgentActionFailed =>
+      'L’azione non è stata completata. Non è andato perso nulla: riprova.';
+
+  @override
+  String get dailyOsNextActivityAgentJobDraft =>
+      'La creazione del tuo piano della giornata non è stata completata.';
+
+  @override
+  String get dailyOsNextActivityAgentJobModelFailed =>
+      'Il modello IA non è riuscito a completarlo.';
+
+  @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Non c’è ancora un piano della giornata da aggiornare.';
+
+  @override
+  String get dailyOsNextActivityAgentJobParse =>
+      'La lettura del tuo check-in non è stata completata.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRefine =>
+      'L’aggiornamento del tuo piano della giornata non è stato completato.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRetryHint =>
+      'Non è andato perso nulla. Riprova quando vuoi.';
+
+  @override
+  String get dailyOsNextActivityAgentJobSetupRequired =>
+      'Non è ancora configurato nessun modello IA per la pianificazione.';
+
+  @override
+  String get dailyOsNextActivityAgentJobTemporary =>
+      'Il servizio IA era occupato o irraggiungibile.';
+
+  @override
   String get dailyOsNextActivityDaySummary => 'Day summary';
 
   @override
@@ -3634,6 +3670,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Needs attention';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup =>
+      'Apri la configurazione di Daily OS';
 
   @override
   String get dailyOsNextActivityOpenSetup => 'Open transcription setup';

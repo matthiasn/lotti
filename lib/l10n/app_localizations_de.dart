@@ -3590,6 +3590,42 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Aktion wurde nicht abgeschlossen. Deine Aufnahme ist weiterhin sicher — versuch es erneut.';
 
   @override
+  String get dailyOsNextActivityAgentActionFailed =>
+      'Die Aktion wurde nicht abgeschlossen. Es ist nichts verloren gegangen – versuch es erneut.';
+
+  @override
+  String get dailyOsNextActivityAgentJobDraft =>
+      'Der Entwurf deines Tagesplans wurde nicht fertig.';
+
+  @override
+  String get dailyOsNextActivityAgentJobModelFailed =>
+      'Das KI-Modell konnte das nicht abschließen.';
+
+  @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Es gibt noch keinen Tagesplan zum Aktualisieren.';
+
+  @override
+  String get dailyOsNextActivityAgentJobParse =>
+      'Das Auswerten deines Check-ins wurde nicht fertig.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRefine =>
+      'Die Aktualisierung deines Tagesplans wurde nicht fertig.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRetryHint =>
+      'Es ist nichts verloren gegangen. Versuch es erneut, wenn du so weit bist.';
+
+  @override
+  String get dailyOsNextActivityAgentJobSetupRequired =>
+      'Für die Planung ist noch kein KI-Modell eingerichtet.';
+
+  @override
+  String get dailyOsNextActivityAgentJobTemporary =>
+      'Der KI-Dienst war ausgelastet oder nicht erreichbar.';
+
+  @override
   String get dailyOsNextActivityDaySummary => 'Tageszusammenfassung';
 
   @override
@@ -3615,6 +3651,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Prüfung nötig';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup => 'Daily-OS-Einrichtung öffnen';
 
   @override
   String get dailyOsNextActivityOpenSetup => 'Transkription einrichten';

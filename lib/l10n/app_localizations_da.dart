@@ -3565,6 +3565,42 @@ class AppLocalizationsDa extends AppLocalizations {
       'That action didn\'t finish. Your recording is still safe—try again.';
 
   @override
+  String get dailyOsNextActivityAgentActionFailed =>
+      'Handlingen blev ikke færdig. Intet gik tabt – prøv igen.';
+
+  @override
+  String get dailyOsNextActivityAgentJobDraft =>
+      'Udkastet til din dagsplan blev ikke færdigt.';
+
+  @override
+  String get dailyOsNextActivityAgentJobModelFailed =>
+      'AI-modellen kunne ikke gøre det færdigt.';
+
+  @override
+  String get dailyOsNextActivityAgentJobNoPlan =>
+      'Der er endnu ingen dagsplan at opdatere.';
+
+  @override
+  String get dailyOsNextActivityAgentJobParse =>
+      'Læsningen af dit tjek-ind blev ikke færdig.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRefine =>
+      'Opdateringen af din dagsplan blev ikke færdig.';
+
+  @override
+  String get dailyOsNextActivityAgentJobRetryHint =>
+      'Intet gik tabt. Prøv igen, når du er klar.';
+
+  @override
+  String get dailyOsNextActivityAgentJobSetupRequired =>
+      'Der er endnu ikke opsat en AI-model til planlægning.';
+
+  @override
+  String get dailyOsNextActivityAgentJobTemporary =>
+      'AI-tjenesten var optaget eller kunne ikke nås.';
+
+  @override
   String get dailyOsNextActivityDaySummary => 'Day summary';
 
   @override
@@ -3590,6 +3626,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityNeedsAttention => 'Needs attention';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup => 'Åbn Daily OS-opsætning';
 
   @override
   String get dailyOsNextActivityOpenSetup => 'Open transcription setup';

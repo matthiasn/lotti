@@ -244,8 +244,11 @@ class _ActivityCard extends StatelessWidget {
                   DayActivityEntryKind.summary => Icons.summarize_rounded,
                   DayActivityEntryKind.checkIn => Icons.notes_rounded,
                   DayActivityEntryKind.recording => Icons.mic_none_rounded,
+                  DayActivityEntryKind.agentJob => Icons.error_outline_rounded,
                 },
-                color: tokens.colors.interactive.enabled,
+                color: entry.kind == DayActivityEntryKind.agentJob
+                    ? tokens.colors.text.lowEmphasis
+                    : tokens.colors.interactive.enabled,
               ),
               SizedBox(width: tokens.spacing.step3),
               Expanded(
@@ -265,20 +268,7 @@ class _ActivityCard extends StatelessWidget {
           if (!editorShowsText) ...[
             SizedBox(height: tokens.spacing.step3),
             Text(
-              entry.plan?.data.dayLabel ??
-                  entry.summary?.text ??
-                  (entry.kind == DayActivityEntryKind.plan
-                      ? context.messages.dailyOsNextActivityPlanAvailable
-                      : entry.processingJob?.lastFailureClass ==
-                            DayProcessingFailureClass.missingAsset
-                      ? context.messages.dailyOsNextActivityMissingAudio
-                      : entry.processingJob?.lastFailureClass ==
-                            DayProcessingFailureClass.setupRequired
-                      ? context.messages.dailyOsNextActivitySetupRequired
-                      : transcript ??
-                            context
-                                .messages
-                                .dailyOsNextActivityTranscriptPending),
+              _body(context, entry, transcript),
               style: tokens.typography.styles.body.bodyMedium.copyWith(
                 color: transcript == null
                     ? tokens.colors.text.lowEmphasis
@@ -286,8 +276,23 @@ class _ActivityCard extends StatelessWidget {
               ),
             ),
           ],
+          if (entry.kind == DayActivityEntryKind.agentJob) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              '${_agentFailureDetail(context, entry)} '
+              '${context.messages.dailyOsNextActivityAgentJobRetryHint}',
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
+          ],
+          // Agent rows deliberately omit the raw provider string: it is
+          // hard-coded English written for a log, and this card is fully
+          // localized everywhere else. The durable text stays on the job for
+          // diagnostics.
           if (entry.processingJob case final job?
-              when job.lastError != null &&
+              when entry.kind != DayActivityEntryKind.agentJob &&
+                  job.lastError != null &&
                   job.status != DayProcessingJobStatus.succeeded) ...[
             SizedBox(height: tokens.spacing.step2),
             Text(
@@ -325,14 +330,28 @@ class _ActivityCard extends StatelessWidget {
                   _AsyncActivityButton(
                     label: context.messages.dailyOsNextActivityRetry,
                     action: onRetry!,
+                    // A draft job has no recording to reassure the user about.
+                    failureMessage: entry.kind == DayActivityEntryKind.agentJob
+                        ? context.messages.dailyOsNextActivityAgentActionFailed
+                        : null,
                     variant: DesignSystemButtonVariant.secondary,
                     leadingIcon: Icons.refresh_rounded,
                   ),
                 if (entry.processingJob?.lastFailureClass ==
                     DayProcessingFailureClass.setupRequired)
                   DesignSystemButton(
-                    label: context.messages.dailyOsNextActivityOpenSetup,
-                    onPressed: () => nav_service.beamToNamed('/settings/ai'),
+                    // A planning job blocked on setup needs the Daily OS
+                    // profile binding, which lives in Daily OS settings — the
+                    // generic AI list can create a profile but never assigns
+                    // one, so it would leave the job just as blocked.
+                    label: entry.kind == DayActivityEntryKind.agentJob
+                        ? context.messages.dailyOsNextActivityOpenAiSetup
+                        : context.messages.dailyOsNextActivityOpenSetup,
+                    onPressed: () => nav_service.beamToNamed(
+                      entry.kind == DayActivityEntryKind.agentJob
+                          ? '/settings/daily-os'
+                          : '/settings/ai',
+                    ),
                     variant: DesignSystemButtonVariant.secondary,
                     leadingIcon: Icons.settings_rounded,
                   ),
@@ -359,6 +378,65 @@ class _ActivityCard extends StatelessWidget {
     );
   }
 
+  /// The card's main line: the entity's own wording when it has one, else an
+  /// explanation of what this row is waiting on, in the user's language.
+  String _body(
+    BuildContext context,
+    DayActivityEntry entry,
+    String? transcript,
+  ) {
+    final dayLabel = entry.plan?.data.dayLabel;
+    if (dayLabel != null) return dayLabel;
+    final summary = entry.summary?.text;
+    if (summary != null) return summary;
+    if (entry.kind == DayActivityEntryKind.agentJob) {
+      // Named by what the user asked for, not by the job kind's identifier —
+      // "refinePlan failed" is a log line, not an explanation.
+      return switch (entry.processingJob?.kind) {
+        DayProcessingJobKind.draftPlan =>
+          context.messages.dailyOsNextActivityAgentJobDraft,
+        DayProcessingJobKind.refinePlan =>
+          context.messages.dailyOsNextActivityAgentJobRefine,
+        _ => context.messages.dailyOsNextActivityAgentJobParse,
+      };
+    }
+    if (entry.kind == DayActivityEntryKind.plan) {
+      return context.messages.dailyOsNextActivityPlanAvailable;
+    }
+    return switch (entry.processingJob?.lastFailureClass) {
+      DayProcessingFailureClass.missingAsset =>
+        context.messages.dailyOsNextActivityMissingAudio,
+      DayProcessingFailureClass.setupRequired =>
+        context.messages.dailyOsNextActivitySetupRequired,
+      _ => transcript ?? context.messages.dailyOsNextActivityTranscriptPending,
+    };
+  }
+
+  /// Why a stalled agent job stopped, in the user's language.
+  ///
+  /// Mapped from the durable failure class rather than from the provider's
+  /// own message, which is hard-coded English meant for a log.
+  String _agentFailureDetail(BuildContext context, DayActivityEntry entry) {
+    // A refine that stalled with no plan to act on is a missing prerequisite,
+    // not a model that failed. The executor records it deterministically
+    // before any inference, and Retry repeats that same pre-check until a plan
+    // exists — so saying "the model couldn't finish" points the user at the
+    // wrong thing entirely.
+    if (entry.processingJob?.kind == DayProcessingJobKind.refinePlan &&
+        !hasPlan) {
+      return context.messages.dailyOsNextActivityAgentJobNoPlan;
+    }
+    return switch (entry.processingJob?.lastFailureClass) {
+      DayProcessingFailureClass.setupRequired =>
+        context.messages.dailyOsNextActivityAgentJobSetupRequired,
+      DayProcessingFailureClass.network ||
+      DayProcessingFailureClass.timeout ||
+      DayProcessingFailureClass.providerBusy =>
+        context.messages.dailyOsNextActivityAgentJobTemporary,
+      _ => context.messages.dailyOsNextActivityAgentJobModelFailed,
+    };
+  }
+
   bool _canRetry(DayActivityEntry entry) {
     // Queued jobs sit under exponential backoff; the user must always be
     // able to force the next attempt instead of waiting it out.
@@ -380,6 +458,16 @@ class _ActivityCard extends StatelessWidget {
     }
     if (entry.isSubmitted) {
       return context.messages.dailyOsNextActivitySubmitted;
+    }
+    // An agent row exists only because its work stalled, so it never reports
+    // the "Saved" resting state a recording falls back to.
+    if (entry.kind == DayActivityEntryKind.agentJob &&
+        entry.processingJob?.status ==
+            DayProcessingJobStatus.waitingForNetwork) {
+      return context.messages.dailyOsNextActivityWaitingForNetwork;
+    }
+    if (entry.kind == DayActivityEntryKind.agentJob) {
+      return context.messages.dailyOsNextActivityNeedsAttention;
     }
     return switch (entry.processingJob?.status) {
       DayProcessingJobStatus.running =>
@@ -406,12 +494,17 @@ class _AsyncActivityButton extends StatefulWidget {
     required this.action,
     required this.variant,
     required this.leadingIcon,
+    this.failureMessage,
   });
 
   final String label;
   final Future<void> Function() action;
   final DesignSystemButtonVariant variant;
   final IconData leadingIcon;
+
+  /// Snackbar shown when [action] throws. Defaults to the recording-oriented
+  /// copy, which is wrong on a row that has no recording behind it.
+  final String? failureMessage;
 
   @override
   State<_AsyncActivityButton> createState() => _AsyncActivityButtonState();
@@ -438,7 +531,10 @@ class _AsyncActivityButtonState extends State<_AsyncActivityButton> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.messages.dailyOsNextActivityActionFailed),
+            content: Text(
+              widget.failureMessage ??
+                  context.messages.dailyOsNextActivityActionFailed,
+            ),
           ),
         );
       }
