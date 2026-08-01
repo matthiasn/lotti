@@ -11457,45 +11457,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get customColor => 'Custom Colour';
 
   @override
-  String get dailyOsNextActivityAgentActionFailed =>
-      'That action didn\'t finish. Nothing was lost—try again.';
-
-  @override
-  String get dailyOsNextActivityAgentJobDraft =>
-      'Drafting your day plan didn\'t finish.';
-
-  @override
-  String get dailyOsNextActivityAgentJobModelFailed =>
-      'The AI model couldn\'t finish this one.';
-
-  @override
-  String get dailyOsNextActivityAgentJobNoPlan =>
-      'There\'s no day plan to update yet.';
-
-  @override
-  String get dailyOsNextActivityAgentJobParse =>
-      'Reading your check-in didn\'t finish.';
-
-  @override
-  String get dailyOsNextActivityAgentJobRefine =>
-      'Updating your day plan didn\'t finish.';
-
-  @override
-  String get dailyOsNextActivityAgentJobRetryHint =>
-      'Nothing was lost. Retry when you\'re ready.';
-
-  @override
-  String get dailyOsNextActivityAgentJobSetupRequired =>
-      'No AI model is set up for planning yet.';
-
-  @override
-  String get dailyOsNextActivityAgentJobTemporary =>
-      'The AI service was busy or unreachable.';
-
-  @override
-  String get dailyOsNextActivityOpenAiSetup => 'Open Daily OS setup';
-
-  @override
   String get dashboardActiveLabel => 'Active';
 
   @override

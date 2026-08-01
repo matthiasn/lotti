@@ -9,8 +9,9 @@ import 'package:lotti/services/notification_service.dart';
 /// Raises the ADR 0032 §5 "your plan is ready" OS notification when a durable
 /// draft/refine job completes while the app is not in the foreground.
 ///
-/// Wired as `DayProcessingOutboxProcessor.onJobFinished`: the processor fires
-/// it once per terminal job, so the notification path is event-driven — no
+/// Wired as `DayProcessingOutboxProcessor.onJobOutcome`: the processor fires
+/// it once per attempt outcome and this filters, so the path is event-driven —
+/// no
 /// polling, and a job that completes after the user backgrounded the app (or
 /// closed the drafting modal) still surfaces its result.
 class DayPlanReadyNotifier {
@@ -65,7 +66,7 @@ class DayPlanReadyNotifier {
   /// completion path, so a delivery failure (service resolution, locale
   /// lookup, platform plugin) must stay a contained best-effort miss instead
   /// of surfacing as an unhandled async error on job completion.
-  Future<void> onJobFinished(DayProcessingJob job) async {
+  Future<void> onJobOutcome(DayProcessingJob job) async {
     final succeeded = job.status == DayProcessingJobStatus.succeeded;
     // A job that exhausted its retries is exactly as worth saying out loud as
     // one that worked: the user asked for a plan and is otherwise left with a

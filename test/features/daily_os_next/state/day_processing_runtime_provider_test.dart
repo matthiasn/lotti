@@ -111,7 +111,7 @@ void main() {
       final processor = container.read(dayProcessingOutboxProcessorProvider);
 
       expect(
-        processor.onJobFinished,
+        processor.onJobOutcome,
         isNotNull,
         reason:
             'The "your plan is ready" notification hangs off this hook — '
@@ -120,7 +120,7 @@ void main() {
       // Invoke the wired closure with a non-succeeded job: it must absorb
       // the call without side effects (the notifier reacts to successes
       // only), proving the hook is callable as wired in production.
-      processor.onJobFinished!(
+      processor.onJobOutcome!(
         DayProcessingJob(
           id: 'draft_dayplan-2026-07-21',
           status: DayProcessingJobStatus.cancelled,

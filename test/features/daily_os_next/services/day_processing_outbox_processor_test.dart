@@ -467,7 +467,7 @@ void main() {
           repository: repository,
           transcribe: (_) async => 'unused',
           attachTranscript: (_, _) async => true,
-          onJobFinished: finished.add,
+          onJobOutcome: finished.add,
           agentJobExecutor: (job) async =>
               throw StateError('ambiguous day resolution'),
         );
@@ -519,13 +519,13 @@ void main() {
       },
     );
 
-    test('onJobFinished fires for every observed outcome', () async {
+    test('onJobOutcome fires for every observed outcome', () async {
       final finished = <DayProcessingJob>[];
       final processor = DayProcessingOutboxProcessor(
         repository: repository,
         transcribe: (_) async => 'unused',
         attachTranscript: (_, _) async => true,
-        onJobFinished: finished.add,
+        onJobOutcome: finished.add,
         agentJobExecutor: (job) async => const DayAgentJobFailed(
           failureClass: DayProcessingFailureClass.providerBusy,
           error: 'retryable',

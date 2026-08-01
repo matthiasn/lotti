@@ -5,8 +5,8 @@ description: A device-local job table with viewer-relative claim priority, atomi
 resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
 tags: [daily-os, outbox, jobs, durability, adr-0044]
 status: stable
-generated: { by: codex/5, at: 2026-07-29T12:55:00Z }
-stale_after: 2026-10-26
+generated: { by: claude-code/opus-5, at: 2026-08-01T12:00:00Z }
+stale_after: 2026-11-01
 sources:
   - id: schema
     resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
@@ -103,11 +103,12 @@ its own.
 Retries go through the existing `retryNow`, which re-queues the job and clears
 its error state — so retrying removes the row: the work is in flight again.
 
-**`onJobFinished` fires for every observed outcome, not only terminal ones.**
-`failed` is deliberately *not* terminal — a retry can resurrect it — so gating
-delivery on `isTerminal` meant the plan-failure notification could never reach
-`DayPlanReadyNotifier`. Delivery is not the place to decide what is worth
-saying; the listener filters.
+**`onJobOutcome` fires for every outcome of a claimed attempt** — succeeded,
+failed, re-queued, or parked waiting for the network — not only terminal ones.
+`failed` is deliberately *not* terminal, since a retry can resurrect it, so the
+previous terminal-only contract (`onJobFinished`) withheld precisely the outcome
+the plan-failure notification exists to report. Delivery is not the place to
+decide what is worth saying; the listener filters, and the name now says so.
 
 # Claiming
 

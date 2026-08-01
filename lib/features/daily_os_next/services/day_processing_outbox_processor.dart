@@ -31,7 +31,7 @@ class DayProcessingOutboxProcessor {
     required this.transcribe,
     required this.attachTranscript,
     this.agentJobExecutor,
-    this.onJobFinished,
+    this.onJobOutcome,
     this.priority,
     Future<bool> Function()? isOnline,
     double Function()? randomUnit,
@@ -48,10 +48,16 @@ class DayProcessingOutboxProcessor {
   final Future<DayAgentJobOutcome> Function(DayProcessingJob job)?
   agentJobExecutor;
 
-  /// Fired once a claimed job reaches a terminal status, for callers that
-  /// want to react to completion without polling (e.g. a background-app
-  /// "your plan is ready" notification).
-  final void Function(DayProcessingJob terminalJob)? onJobFinished;
+  /// Fired for **every outcome** of a claimed attempt — succeeded, failed,
+  /// re-queued for retry, or parked waiting for the network — carrying the job
+  /// in the status that attempt produced.
+  ///
+  /// Deliberately not restricted to terminal statuses. `failed` is not
+  /// terminal (a retry can resurrect it), so a terminal-only contract silently
+  /// withheld exactly the outcome the plan-failure notification exists to
+  /// report. Filtering is the listener's job: see `DayPlanReadyNotifier`,
+  /// which reacts to succeeded/failed plan jobs and ignores the rest.
+  final void Function(DayProcessingJob job)? onJobOutcome;
 
   /// Supplies the current day-ordering preference, re-evaluated per claim so
   /// navigating to another day takes effect on the very next job rather than
@@ -91,7 +97,7 @@ class DayProcessingOutboxProcessor {
           failureClass: DayProcessingFailureClass.missingAsset,
           error: 'Saved audio is not available locally yet',
         );
-        _finished(job.copyWith(status: DayProcessingJobStatus.queued));
+        _onOutcome(job.copyWith(status: DayProcessingJobStatus.queued));
         return DayProcessingRunResult.deferred;
       }
       if (!await _isOnline()) {
@@ -101,7 +107,7 @@ class DayProcessingOutboxProcessor {
           failureClass: DayProcessingFailureClass.network,
           error: 'Offline',
         );
-        _finished(
+        _onOutcome(
           job.copyWith(status: DayProcessingJobStatus.waitingForNetwork),
         );
         return DayProcessingRunResult.deferred;
@@ -129,14 +135,14 @@ class DayProcessingOutboxProcessor {
           error: 'Journal transcript commit was not accepted',
           retryDelay: const Duration(seconds: 1),
         );
-        _finished(job.copyWith(status: DayProcessingJobStatus.queued));
+        _onOutcome(job.copyWith(status: DayProcessingJobStatus.queued));
         return DayProcessingRunResult.deferred;
       }
       final succeeded = await repository.markSucceeded(
         jobId: job.id,
         claimToken: claim.token,
       );
-      _finished(succeeded);
+      _onOutcome(succeeded);
       return DayProcessingRunResult.succeeded;
     } catch (error) {
       final failure = classifyDayProcessingFailure(error);
@@ -149,7 +155,7 @@ class DayProcessingOutboxProcessor {
           retryAfter: failure.retryAfter,
           retryDelay: _retryDelay(job.attempts),
         );
-        _finished(failed);
+        _onOutcome(failed);
       } on DayProcessingClaimRevokedException {
         // User-reviewed text satisfied the job, or the recording was deleted
         // and the job cancelled, while this attempt ran. The durable terminal
@@ -188,7 +194,7 @@ class DayProcessingOutboxProcessor {
         failureClass: DayProcessingFailureClass.network,
         error: 'Offline',
       );
-      _finished(
+      _onOutcome(
         job.copyWith(status: DayProcessingJobStatus.waitingForNetwork),
       );
       return DayProcessingRunResult.deferred;
@@ -202,7 +208,7 @@ class DayProcessingOutboxProcessor {
             claimToken: claim.token,
             resultEntityId: resultEntityId,
           );
-          _finished(succeeded);
+          _onOutcome(succeeded);
           return DayProcessingRunResult.succeeded;
         case DayAgentJobFailed(
           :final failureClass,
@@ -217,7 +223,7 @@ class DayProcessingOutboxProcessor {
             retryAfter: retryAfter,
             retryDelay: _retryDelay(job.attempts),
           );
-          _finished(failed);
+          _onOutcome(failed);
           return failureClass == DayProcessingFailureClass.deterministic ||
                   failureClass == DayProcessingFailureClass.setupRequired
               ? DayProcessingRunResult.failed
@@ -235,7 +241,7 @@ class DayProcessingOutboxProcessor {
           error: error.toString(),
           retryDelay: _retryDelay(job.attempts),
         );
-        _finished(failed);
+        _onOutcome(failed);
       } on DayProcessingClaimRevokedException {
         return DayProcessingRunResult.deferred;
       }
@@ -246,13 +252,13 @@ class DayProcessingOutboxProcessor {
     }
   }
 
-  void _finished(DayProcessingJob job) {
+  void _onOutcome(DayProcessingJob job) {
     // Every observed state, not only the terminal ones. `failed` is not
     // terminal — a retry can still resurrect it — so gating on `isTerminal`
     // meant the plan-failure notification added for lotti3-hkb.10 could never
     // fire, which is exactly the silence it was written to end. The listener
     // decides what is worth saying; this is only the delivery point.
-    onJobFinished?.call(job);
+    onJobOutcome?.call(job);
   }
 
   /// Drains due jobs of [kinds] (or every kind when omitted) up to
