@@ -5,7 +5,7 @@ description: The Day page, the anchored voice template, timeline editing, the ca
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
-generated: { by: codex/5, at: 2026-07-29T19:06:26+02:00 }
+generated: { by: codex/5, at: 2026-08-01T17:20:39+02:00 }
 stale_after: 2026-10-26
 sources:
   - id: ui
@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/daily_os_next/state
     title: Onboarding session and trigger services
     last_modified: 2026-07-28
+  - id: onboarding-events
+    resource: ../../../lib/features/onboarding/model/onboarding_event.dart
+    title: Shared onboarding event vocabulary
+    last_modified: 2026-08-01
 ---
 
 # The planning modal
@@ -258,7 +262,7 @@ completion celebration beat and the Settings replay entry.
 | `dailyOsOnboardingProviderReadyProvider` + `hasResolvableDailyOsPlannerThinkingRoute` | The readiness seam: waits for agent initialization so the default template/version are seeded, then resolves **the exact thinking route a drafting wake would use** — read-only, never creating the planner. Its own library because both this gate and the independent Welcome backfill consume it |
 | `DailyOsOnboardingCadence` | `recordShown()` / `markCompleted()`, persisted under a private `SettingsDb` key prefix (four shows within fourteen days) |
 | `AgentRepository.countEntitiesByAgentAndType` | The "has a plan ever existed" query. Deliberately **includes soft-deleted tombstones**, so a returning user who deleted their only plan is not mistaken for a new user |
-| Daily OS event vocabulary + `DailyOsOnboardingFunnelState` | Six `dailyOs*` events reuse the shared metrics DB, but the two funnel derivations are **partitioned by vocabulary** so Daily OS events never shift the general FTUE metrics |
+| Daily OS event vocabulary | Six `dailyOs*` events reuse the shared metrics DB but are excluded from `OnboardingFunnelState`, so they never shift the general FTUE metrics |
 | `DayPlanningResult` + `attributeCreatedTaskIds` | `showDayPlanningModal` resolves to a typed result: `DayPlanningCreated`, `DayPlanningAdapted`, or `null`. Attribution reconstructs created task ids from `ParsedItem.matchedTaskId` transitions — best-effort, empty when it cannot be established |
 | `DailyOsOnboardingSession` / `…SessionController` | Stable id, target date, `auto`/`replay` origin, tips-visible state, exactly-once guards for stage and skip events. The `replay` origin is defined but not yet constructed |
 | `DailyOsOnboardingSpotlight` | Presentational full-screen overlay: dims the surface, cuts a highlight hole around a measured target rect, floats a glass card with one primary action. Attention ring pulses under normal motion, static under reduced motion. Copy, callbacks and rect all injected |

@@ -242,16 +242,16 @@ Add a Daily OS vocabulary:
 Use `reason: auto|replay` where the origin matters. Never record transcript,
 task title, category name, or plan content.
 
-Refactor repository derivation into two explicit projections:
+Keep the general FTUE projection explicitly partitioned:
 
 - `OnboardingFunnelState` filters to the existing general-FTUE event set before
   deriving its counts and active-day metrics.
-- `DailyOsOnboardingFunnelState` filters to the Daily OS event set and exposes
-  shown/skipped/reconcile/drafting/task/completion counts.
+- Daily OS events remain in the shared event store without retaining an unused
+  aggregate projection.
 
-Unknown/future event names may remain stored, but neither projection treats
-them as activity unless they belong to its declared vocabulary. Add regression
-tests proving Daily OS events do not change the general FTUE active-day values.
+Unknown/future event names may remain stored, but `OnboardingFunnelState` does
+not treat them as activity. Add regression tests proving Daily OS events do not
+change the general FTUE active-day values.
 
 ### 7. Replay is armed guidance for a real no-plan day
 
@@ -418,9 +418,8 @@ Freezed, and Riverpod files are regenerated, never edited directly.
   soft-deleted plan rows; no mocked SQL behavior.
 - **Arbitration:** provider/unit tests for the full priority matrix and a widget
   test proving cadence is not recorded while another modal owns the slot.
-- **Metrics:** repository tests proving Daily OS events populate only
-  `DailyOsOnboardingFunnelState` and never change general FTUE active-day or
-  real-aha derivation.
+- **Metrics:** repository tests proving Daily OS events never change general
+  FTUE active-day or real-aha derivation.
 - **Modal result:** targeted `day_planning_modal_test.dart` coverage for every
   dismissal/success result and created-task attribution branch.
 - **Widgets:** meaningful interaction assertions for spotlight and coach strip,
