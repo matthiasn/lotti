@@ -1500,6 +1500,42 @@ void main() {
           expect(map['chunk-500']!.entryText?.plainText, 'entry 500');
         },
       );
+
+      test(
+        'outbound bulk lookup includes soft-deleted tombstones only on the '
+        'explicit sync path',
+        () async {
+          final deletedAt = DateTime.utc(2026, 8);
+          final active = buildTextEntry(
+            id: 'outbound-active',
+            timestamp: deletedAt.subtract(const Duration(minutes: 1)),
+            text: 'active',
+          );
+          final tombstone = buildTextEntry(
+            id: 'outbound-deleted',
+            timestamp: deletedAt.subtract(const Duration(minutes: 2)),
+            text: 'deleted',
+            deletedAt: deletedAt,
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(active));
+          await db!.upsertJournalDbEntity(toDbEntity(tombstone));
+
+          final ordinary = await db!.journalEntityMapForIds({
+            active.meta.id,
+            tombstone.meta.id,
+          });
+          final outbound = await db!.journalEntityMapForIdsIncludingDeleted({
+            active.meta.id,
+            tombstone.meta.id,
+            'missing',
+          });
+
+          expect(ordinary.keys, contains(active.meta.id));
+          expect(ordinary.keys, isNot(contains(tombstone.meta.id)));
+          expect(outbound.keys.toSet(), {active.meta.id, tombstone.meta.id});
+          expect(outbound[tombstone.meta.id]!.meta.deletedAt, deletedAt);
+        },
+      );
     });
   });
 

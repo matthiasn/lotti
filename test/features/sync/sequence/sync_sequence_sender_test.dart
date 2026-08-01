@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -103,6 +104,68 @@ void main() {
 
       final key = cache.lastSentCacheKey(myHost, 'e1');
       expect(cache.getLastSent(key), 7);
+    },
+  );
+
+  test(
+    'skips an exact duplicate binding but reports the duplicate count',
+    () async {
+      const vectorClock = VectorClock({myHost: 7});
+
+      await sender.recordSentEntry(entryId: 'e1', vectorClock: vectorClock);
+      await sender.recordSentEntry(entryId: 'e1', vectorClock: vectorClock);
+
+      verify(() => db.recordSequenceEntry(any())).called(1);
+      verify(
+        () => logging.logSampled(
+          LogDomain.sync,
+          any<String>(that: contains('duplicateSkipped')),
+          sampleKey: 'sequence.recordSent.duplicate.journalEntity',
+          subDomain: 'sequence.recordSent.duplicate',
+          // ignore: avoid_redundant_argument_values
+          every: 100,
+        ),
+      ).called(1);
+    },
+  );
+
+  test('does not collapse distinct counters or payload types', () async {
+    await sender.recordSentEntry(
+      entryId: 'shared-id',
+      vectorClock: const VectorClock({myHost: 1}),
+    );
+    await sender.recordSentEntry(
+      entryId: 'shared-id',
+      vectorClock: const VectorClock({myHost: 2}),
+    );
+    await sender.recordSentEntry(
+      entryId: 'shared-id',
+      vectorClock: const VectorClock({myHost: 2}),
+      payloadType: SyncSequencePayloadType.entryLink,
+    );
+
+    verify(() => db.recordSequenceEntry(any())).called(3);
+  });
+
+  test(
+    'rechecks an exact binding after the duplicate window expires',
+    () async {
+      var now = DateTime.utc(2026, 8);
+
+      await withClock(Clock(() => now), () async {
+        await sender.recordSentEntry(
+          entryId: 'e1',
+          vectorClock: const VectorClock({myHost: 7}),
+        );
+        now = now.add(SyncSequenceCache.sentBindingCacheTtl);
+        now = now.add(const Duration(microseconds: 1));
+        await sender.recordSentEntry(
+          entryId: 'e1',
+          vectorClock: const VectorClock({myHost: 7}),
+        );
+      });
+
+      verify(() => db.recordSequenceEntry(any())).called(2);
     },
   );
 

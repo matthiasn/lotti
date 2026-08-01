@@ -29,6 +29,7 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 enum _GeneratedSendMessageKind {
@@ -444,6 +445,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(
       MatrixFile(bytes: Uint8List(0), name: 'fallback'),
     );
@@ -478,6 +480,25 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) {});
+    // Keep the existing payload-content assertions independent of the
+    // high-volume sampling policy, which is covered by domain_logging_test.
+    when(
+      () => loggingService.logSampled(
+        any<LogDomain>(),
+        any<String>(),
+        sampleKey: any<String>(named: 'sampleKey'),
+        subDomain: any<String?>(named: 'subDomain'),
+        level: any(named: 'level'),
+        every: any<int>(named: 'every'),
+        maxInterval: any<Duration>(named: 'maxInterval'),
+      ),
+    ).thenAnswer((invocation) {
+      loggingService.log(
+        invocation.positionalArguments[0] as LogDomain,
+        invocation.positionalArguments[1] as String,
+        subDomain: invocation.namedArguments[#subDomain] as String?,
+      );
+    });
     when(
       () => loggingService.error(
         any<LogDomain>(),
@@ -3001,7 +3022,9 @@ void main() {
       // invocation fails loudly via the assertion below rather than a
       // mocktail "missing stub" surprise.
       when(
-        () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+        () => journalDb.journalEntityMapForIdsIncludingDeleted(
+          any<Iterable<String>>(),
+        ),
       ).thenAnswer((_) async => const <String, JournalEntity>{});
     });
 
@@ -3032,7 +3055,9 @@ void main() {
 
         var journalLookupCalls = 0;
         when(
-          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
         ).thenAnswer((inv) async {
           journalLookupCalls++;
           final ids = (inv.positionalArguments.single as Iterable<String>)
@@ -3269,7 +3294,9 @@ void main() {
           entryText: const EntryText(plainText: 'from db'),
         );
         when(
-          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
         ).thenAnswer((inv) async {
           final ids = (inv.positionalArguments.first as Iterable<String>)
               .toSet();
@@ -3306,7 +3333,9 @@ void main() {
 
         expect(stripped, isNotNull);
         verify(
-          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
         ).called(1);
 
         final manifest = decodeManifestFromUpload(capturedFile!);
@@ -3513,7 +3542,9 @@ void main() {
       'data loss); the failed bundle drops to the standard retry/cap path',
       () async {
         when(
-          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
         ).thenAnswer((_) async => const <String, JournalEntity>{});
 
         final bundle = SyncOutboxBundle(
@@ -3718,7 +3749,9 @@ void main() {
           entryText: EntryText(plainText: blob),
         );
         when(
-          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
         ).thenAnswer((_) async => {'huge-entry': entity});
 
         final result = await sender.sendOutboxBundlePayloadForTesting(
@@ -3765,7 +3798,9 @@ void main() {
       'metadata location',
       () async {
         when(
-          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
         ).thenAnswer((_) async => const <String, JournalEntity>{});
 
         final stripped = await sender.sendOutboxBundlePayloadForTesting(
@@ -4329,7 +4364,9 @@ void main() {
           entryText: const EntryText(plainText: 'no msg vc'),
         );
         when(
-          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
         ).thenAnswer(
           (_) async => {'bundle-null-msgvc': entity},
         );
@@ -4383,7 +4420,7 @@ void main() {
 
         // logVectorClockAssignment must have been called for reason=message_missing
         verify(
-          () => loggingService.log(
+          () => loggingService.logSampled(
             LogDomain.sync,
             any<String>(
               that: allOf(
@@ -4391,6 +4428,9 @@ void main() {
                 contains('assigned={host-A: 99}'),
               ),
             ),
+            sampleKey:
+                'vectorClock.send.outboxBundle.adoptDb.assign.'
+                'SyncJournalEntity.message_missing',
             subDomain: 'send.outboxBundle.adoptDb',
           ),
         ).called(1);

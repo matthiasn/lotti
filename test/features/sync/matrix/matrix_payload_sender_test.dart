@@ -296,6 +296,71 @@ void main() {
   });
 
   group('sendOutboxBundlePayload attachments', () {
+    test('embeds a soft-deleted journal tombstone in the manifest', () async {
+      final deletedAt = DateTime.utc(2026, 8);
+      final tombstone = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'deleted-child',
+          createdAt: deletedAt.subtract(const Duration(minutes: 2)),
+          updatedAt: deletedAt,
+          dateFrom: deletedAt.subtract(const Duration(minutes: 2)),
+          dateTo: deletedAt.subtract(const Duration(minutes: 1)),
+          deletedAt: deletedAt,
+        ),
+        entryText: const EntryText(plainText: 'deleted payload'),
+      );
+      when(
+        () => journalDb.journalEntityMapForIdsIncludingDeleted(
+          any<Iterable<String>>(),
+        ),
+      ).thenAnswer((_) async => {'deleted-child': tombstone});
+
+      MatrixFile? uploadedManifest;
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((invocation) async {
+        uploadedManifest = invocation.positionalArguments.first as MatrixFile;
+        return 'manifest-event';
+      });
+
+      final result = await payloadSender.sendOutboxBundlePayload(
+        room: room,
+        message: const SyncOutboxBundle(
+          children: [
+            SyncMessage.journalEntity(
+              id: 'deleted-child',
+              jsonPath: '/journal/deleted-child.json',
+              vectorClock: null,
+              status: SyncEntryStatus.update,
+            ),
+          ],
+          jsonPath: '/outbox_bundles/deleted-child.json',
+        ),
+      );
+
+      expect(result, isNotNull);
+      final manifest =
+          json.decode(
+                utf8.decode(gzip.decode(uploadedManifest!.bytes)),
+              )
+              as Map<String, dynamic>;
+      final record =
+          (manifest['entries'] as List).single as Map<String, dynamic>;
+      final payload = JournalEntity.fromJson(
+        record['payload'] as Map<String, dynamic>,
+      );
+      expect(payload.meta.id, 'deleted-child');
+      expect(payload.meta.deletedAt, deletedAt);
+      verify(
+        () => journalDb.journalEntityMapForIdsIncludingDeleted(
+          any<Iterable<String>>(),
+        ),
+      ).called(1);
+    });
+
     // Media rows are supposed to be excluded from bundles at claim time
     // (`filePath != null` makes a row travel alone), so this path is defence
     // in depth for rows enqueued by a build that had not yet moved the
@@ -362,7 +427,9 @@ void main() {
         ..writeAsBytesSync(List<int>.filled(9, 2));
 
       when(
-        () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+        () => journalDb.journalEntityMapForIdsIncludingDeleted(
+          any<Iterable<String>>(),
+        ),
       ).thenAnswer(
         (_) async => {
           'img-child': image,

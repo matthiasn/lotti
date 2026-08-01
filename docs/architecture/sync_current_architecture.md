@@ -57,6 +57,44 @@ It is a feedback system:
 
 That makes it powerful, but also very easy to amplify mistakes.
 
+## 2026-08-01 Sync Log Volume Update
+
+A 17-day capture from `logs/` contained 377,795 timestamped entries and
+82.55 MB of sync logs (about 22,400 entries/day). This was primarily telemetry
+amplification, not a send loop:
+
+| Category | Entries | Size | Share of bytes |
+| --- | ---: | ---: | ---: |
+| Outbound per-record bookkeeping | 267,789 | 65.22 MB | 79.2% |
+| Gap detection and backfill | 41,497 | 7.63 MB | 9.3% |
+| Inbound processing | 36,652 | 5.39 MB | 6.5% |
+| Network send, retry and errors | 26,454 | 3.26 MB | 4.0% |
+
+The five largest families were `sequence.recordSent`,
+`prepare.ensureCovered`, `enqueueMessage`, `enqueue.merge` and
+`outbox.enqueue`. Together they were repetitive per-record bookkeeping. They
+now use counted sampling: a representative first line followed by summaries
+with observed/suppressed/cumulative totals. This preserves comparisons between
+enqueue inserts and merges, and between sequence writes and duplicate skips.
+
+Two real work defects were separate from verbosity:
+
+- Persistence and outbox bookkeeping attempted the same sequence binding
+  49,406 extra times in the capture. A five-minute exact-binding LRU now skips
+  the immediate duplicate database upsert while reporting it as a counted
+  diagnostic.
+- 213 of 223 bundle failures immediately followed `missingEntity`. The
+  outbound bulk query had excluded soft-deleted journal rows, so legitimate
+  tombstones looked absent and retried the whole bundle. Outbound lookup now
+  includes deleted rows; a truly hard-purged child still aborts and remains
+  visible through the retry/error path.
+
+Backfill signal is intentionally retained. Actionable gaps, ranges, filtered
+queued counts and request sends remain one-line-per-event. Only the repeated
+no-work outcomes are counted samples (50 observations or 15 minutes), which
+keeps initial-sync/backfill amplification diagnosable while removing routine
+poll noise.
+
 ## Recent Fix Timeline
 
 These PRs matter directly for the current behavior:

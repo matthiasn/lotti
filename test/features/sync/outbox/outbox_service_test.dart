@@ -226,6 +226,26 @@ void main() {
   setUp(() async {
     syncDatabase = MockSyncDatabase();
     loggingService = MockDomainLogger();
+    // Preserve the existing content-focused assertions while production now
+    // routes hot-path enqueue diagnostics through counted sampling. The
+    // sampling policy itself is covered by domain_logging_test.dart.
+    when(
+      () => loggingService.logSampled(
+        any<LogDomain>(),
+        any<String>(),
+        sampleKey: any<String>(named: 'sampleKey'),
+        subDomain: any<String?>(named: 'subDomain'),
+        level: any(named: 'level'),
+        every: any<int>(named: 'every'),
+        maxInterval: any<Duration>(named: 'maxInterval'),
+      ),
+    ).thenAnswer((invocation) {
+      loggingService.log(
+        invocation.positionalArguments[0] as LogDomain,
+        invocation.positionalArguments[1] as String,
+        subDomain: invocation.namedArguments[#subDomain] as String?,
+      );
+    });
     repository = MockOutboxRepository();
     messageSender = MockOutboxMessageSender();
     processor = MockOutboxProcessor();

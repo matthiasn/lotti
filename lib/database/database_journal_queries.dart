@@ -140,6 +140,34 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
     return result;
   }
 
+  /// Bulk-fetches journal entities for outbound sync, including soft-deleted
+  /// rows so deletion tombstones can be serialized and delivered to peers.
+  ///
+  /// Most application reads intentionally hide deleted rows and should use
+  /// [journalEntityMapForIds]. The outbox is different: a locally deleted
+  /// entity is still a real sync payload. Treating it as absent makes a whole
+  /// bundle retry until its cap and increments retries for valid siblings.
+  Future<Map<String, JournalEntity>> journalEntityMapForIdsIncludingDeleted(
+    Iterable<String> ids,
+  ) async {
+    final idList = ids.toSet().toList(growable: false);
+    if (idList.isEmpty) {
+      return const <String, JournalEntity>{};
+    }
+    final result = <String, JournalEntity>{};
+    for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
+      final end = (i + _sqliteInListChunk).clamp(0, idList.length);
+      final chunk = idList.sublist(i, end);
+      final dbEntities = await (select(
+        journal,
+      )..where((row) => row.id.isIn(chunk))).get();
+      for (final dbEntity in dbEntities) {
+        result[dbEntity.id] = fromDbEntity(dbEntity);
+      }
+    }
+    return result;
+  }
+
   Future<List<JournalEntity>> getJournalEntities({
     required List<String> types,
     required List<bool> starredStatuses,

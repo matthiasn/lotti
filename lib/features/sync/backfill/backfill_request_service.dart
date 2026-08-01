@@ -103,6 +103,21 @@ class BackfillRequestService {
     );
   }
 
+  void _traceSampled(
+    String message, {
+    required String sampleKey,
+    String? subDomain,
+  }) {
+    _domainLogger?.logSampled(
+      LogDomain.sync,
+      message,
+      sampleKey: sampleKey,
+      subDomain: subDomain ?? 'backfill',
+      every: 50,
+      maxInterval: const Duration(minutes: 15),
+    );
+  }
+
   /// Start the periodic backfill request processing.
   /// Uses bounded limits (age and per-host) for automatic backfill.
   void start() {
@@ -337,9 +352,12 @@ class BackfillRequestService {
       // that index regardless of the historical log size.
       final hasActionable = await _sequenceLogService.hasActionableEntries();
       if (!hasActionable) {
-        _trace(
+        _traceSampled(
           'processBackfillRequests: no actionable entries '
           '(useLimits=$useLimits bypassDebounce=$bypassDebounce)',
+          sampleKey:
+              'backfill.process.noActionable.$useLimits.'
+              '$bypassDebounce',
           subDomain: 'backfill.process',
         );
         return 0;
@@ -372,9 +390,12 @@ class BackfillRequestService {
       );
 
       if (missing.isEmpty) {
-        _trace(
+        _traceSampled(
           'processBackfillRequests: no missing entries '
           '(useLimits=$useLimits bypassDebounce=$bypassDebounce)',
+          sampleKey:
+              'backfill.process.noMissing.$useLimits.'
+              '$bypassDebounce',
           subDomain: 'backfill.process',
         );
         return 0;

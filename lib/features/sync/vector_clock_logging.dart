@@ -42,9 +42,12 @@ void logVectorClockAssignment(
       if (entry.value != null) '${entry.key}=${entry.value}',
   ];
 
-  loggingService.log(
+  loggingService.logSampled(
     LogDomain.sync,
     parts.join(' '),
+    sampleKey:
+        'vectorClock.$subDomain.$action.${type ?? 'unknown'}.'
+        '${reason ?? 'unspecified'}',
     subDomain: subDomain,
   );
 }

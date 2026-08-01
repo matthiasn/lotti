@@ -25,9 +25,10 @@ void main() {
       // carrying the action plus the always-present clock fields.
       final message =
           verify(
-                () => loggingService.log(
+                () => loggingService.logSampled(
                   LogDomain.sync,
                   captureAny(),
+                  sampleKey: 'vectorClock.test.ASSIGN.unknown.unspecified',
                   subDomain: 'test',
                 ),
               ).captured.single
@@ -54,9 +55,10 @@ void main() {
 
       final message =
           verify(
-                () => loggingService.log(
+                () => loggingService.logSampled(
                   LogDomain.sync,
                   captureAny(),
+                  sampleKey: 'vectorClock.apply.ASSIGN.JournalEntry.sync',
                   subDomain: 'apply',
                 ),
               ).captured.single
@@ -80,9 +82,10 @@ void main() {
 
       final message =
           verify(
-                () => loggingService.log(
+                () => loggingService.logSampled(
                   LogDomain.sync,
                   captureAny(),
+                  sampleKey: 'vectorClock.test.ASSIGN.unknown.unspecified',
                   subDomain: 'test',
                 ),
               ).captured.single
@@ -101,9 +104,10 @@ void main() {
 
       final message =
           verify(
-                () => loggingService.log(
+                () => loggingService.logSampled(
                   LogDomain.sync,
                   captureAny(),
+                  sampleKey: 'vectorClock.test.CHECK.unknown.unspecified',
                   subDomain: 'test',
                 ),
               ).captured.single

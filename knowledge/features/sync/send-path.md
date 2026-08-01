@@ -11,11 +11,11 @@ sources:
   - id: outbox
     resource: ../../../lib/features/sync/outbox
     title: Outbox service, processor, repository
-    last_modified: 2026-07-14
+    last_modified: 2026-08-01
   - id: payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding
-    last_modified: 2026-06-16
+    last_modified: 2026-08-01
   - id: media-repair
     resource: ../../../lib/features/sync/media
     title: Media self-healing — request and response
@@ -207,7 +207,7 @@ sequenceDiagram
   Proc->>Repo: claimNextBatch(maxSize: 50)
   Repo-->>Proc: List<OutboxItem>
   Proc->>Sender: send(SyncOutboxBundle)
-  Sender->>DB: journalEntityMapForIds(ids)
+  Sender->>DB: journalEntityMapForIdsIncludingDeleted(ids)
   DB-->>Sender: {id: JournalEntity, …}
   Sender->>Sender: build manifest + gzip
   Sender->>Room: m.file (manifest, encoding=gzip)
@@ -220,9 +220,11 @@ sequenceDiagram
 `MatrixPayloadSender.sendOutboxBundlePayload` builds the wire form:
 
 1. **Bulk-load** every `SyncJournalEntity` child's `JournalEntity` via
-   `JournalDb.journalEntityMapForIds` in one `WHERE id IN (…)` query. The
-   database is the system of record — the sender never reads per-child JSON
-   files from disk.
+   `JournalDb.journalEntityMapForIdsIncludingDeleted` in one `WHERE id IN (…)`
+   query. This outbound-only read includes soft-deleted rows because their
+   tombstones must reach peers; ordinary application bulk reads still hide
+   them. The database is the system of record — the sender never reads
+   per-child JSON files from disk.
 2. **Reconcile** each child envelope's `vectorClock` against the DB version.
 3. **Emit one manifest**:
    `{version: 1, entries: [{envelope: <SyncMessage>, payload: <JournalEntity?>}]}`.
@@ -247,6 +249,12 @@ send-side guard only. When the gzipped manifest exceeds it,
 Rows stay pending until acknowledged, so a failed manifest send simply
 re-bundles from outbox state next drain — no on-disk artifact survives across
 attempts.
+
+A journal child absent even from the including-deleted lookup was hard-purged,
+not merely soft-deleted. The sender aborts that bundle rather than silently
+acknowledging a manifest that omitted the child. Soft deletion therefore no
+longer sends every valid sibling through the retry loop; genuinely missing
+payloads still surface through the existing retry/error diagnostics.
 
 ## Receiver side
 

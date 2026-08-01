@@ -11,7 +11,7 @@ sources:
   - id: sync-src
     resource: ../../../lib/features/sync
     title: Sync feature source
-    last_modified: 2026-07-29
+    last_modified: 2026-08-01
   - id: get-it
     resource: ../../../lib/get_it.dart
     title: Default bootstrap wiring
@@ -24,6 +24,10 @@ sources:
     resource: ../../../docs/architecture/sync_current_architecture.md
     title: Failure history, log-backed investigations, tuning context
     last_modified: 2026-07-26
+  - id: domain-logging
+    resource: ../../../lib/services/domain_logging.dart
+    title: DomainLogger counted sampling
+    last_modified: 2026-08-01
 ---
 
 Sync replicates **one user's data across that user's own devices** over Matrix.
@@ -72,6 +76,26 @@ The default bootstrap in `lib/get_it.dart` wires `MatrixService`,
 `BackfillRequestService` and `BackfillResponseHandler`. That is the path these
 concepts describe. Construction order matters and is documented in
 [bootstrap and dependency injection](../../architecture/bootstrap-and-di.md).
+
+# Diagnostic logging policy
+
+The `sync` log domain remains disabled by default and is intended for bounded
+diagnostic captures. When enabled, failures, retries, gap detections, actionable
+backfill sends and repair lifecycle transitions are emitted individually. These
+are the events needed to explain non-convergence or an initial-sync backfill.
+
+High-frequency bookkeeping uses `DomainLogger.logSampled`: the first event is
+emitted immediately, followed by a counted summary every 100 observations or
+five minutes. Every summary carries `sampleKey`, `observed`, `suppressed` and
+cumulative `total`, so amplification remains measurable without one line per
+record. The sampled families are enqueue insert/merge outcomes, sequence
+binding writes and duplicate skips, vector-clock assignments, and embedded-link
+preparation. Backfill's two no-work outcomes use the same scheme with a
+50-observation / 15-minute window; actual requests remain unsampled.
+
+Sample keys are bounded categories, never entry IDs. Representative lines may
+carry IDs and vector clocks for diagnosis, but sync logging does not serialize
+full journal, agent or attachment payloads.
 
 # Code map
 

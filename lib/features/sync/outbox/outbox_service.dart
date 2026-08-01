@@ -277,10 +277,6 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   int? _lastLoggedDbNudgeCount;
   DateTime? _lastLoggedDbNudgeAt;
 
-  void _syncLog(String message, {String? subDomain}) {
-    _domainLogger?.log(LogDomain.sync, message, subDomain: subDomain);
-  }
-
   /// Persists [entity]'s JSON payload under the documents directory and
   /// enqueues a `SyncMessage.notification` referencing it. Skips enqueue (and
   /// logs) if the derived payload path escapes the documents root.
@@ -505,8 +501,13 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
         ),
       };
 
-      _syncLog(
-        'enqueue type=${messageToEnqueue.runtimeType} priority=$priority',
+      _loggingService.logSampled(
+        LogDomain.sync,
+        'enqueue type=${messageToEnqueue.runtimeType} priority=$priority '
+        'outcome=${merged ? 'merged' : 'inserted'}',
+        sampleKey:
+            'outbox.enqueue.${messageToEnqueue.runtimeType}.'
+            '${merged ? 'merged' : 'inserted'}',
         subDomain: 'outbox.enqueue',
       );
 

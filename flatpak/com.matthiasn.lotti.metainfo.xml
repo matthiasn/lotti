@@ -37,6 +37,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.0" date="2026-08-01">
+      <description>
+        <p>Fixed: deleting an entry no longer traps an otherwise healthy sync batch in retries. Bundled sends mistook a soft-deleted entry for a missing database row, retried every valid sibling with it, and eventually left the whole batch as failed. Deletion tombstones now travel in the bundle like every other journal update.</p>
+        <p>Fixed: detailed sync diagnostics stay useful without growing by tens of megabytes a day. Repetitive per-record bookkeeping is represented by counted samples, with separate totals for inserted versus merged outbox work and sequence writes versus duplicate skips. Gap detections, actual backfill requests, retries and errors remain complete so initial-sync and repair work can still be investigated.</p>
+      </description>
+    </release>
     <release version="0.9.1074" date="2026-07-31">
       <description>
         <p>Changed: the task-list header gets out of the way while you read. On a small phone the Tasks header — title, search field, saved-filter rail and active filter chips — took up to half the screen before the first task appeared. Scrolling down now folds it into a slim bar with the title and two buttons, so the reclaimed space shows two to three more tasks; a deliberate upward scroll (or a tap on the bar's title) brings the full header back. The same fold applies wherever the list is narrow, including the desktop split view's list pane. The slim bar still says what is narrowing the list: an ad-hoc filter is named as a count of its clauses, an active saved view shows its name next to the title, and an active search shows the query in quotes. Typed search text survives the fold, a list too short to scroll never collapses, and with reduced motion enabled the switch is instant instead of animated.</p>
