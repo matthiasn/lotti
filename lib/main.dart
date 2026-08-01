@@ -332,7 +332,15 @@ class _FrameworkErrorLimiter {
         );
     _states[fingerprint] = state;
     while (_states.length > _frameworkErrorFingerprintCapacity) {
-      _states.remove(_states.keys.first)?.summaryTimer?.cancel();
+      final evicted = _states.remove(_states.keys.first)!;
+      if (evicted.pending > 0) {
+        _emitFrameworkErrorSummary(
+          _takePendingSummary(evicted, now),
+          evicted.library,
+        );
+      } else {
+        evicted.summaryTimer?.cancel();
+      }
     }
 
     state.total++;

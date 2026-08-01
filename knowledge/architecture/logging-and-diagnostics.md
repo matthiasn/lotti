@@ -111,12 +111,14 @@ diagnostics. The first observation keeps Flutter's full console presentation,
 durable stack, and collected widget/render-object diagnostics; identical
 repeats emit only a counted, stack-free summary every 100 observations. A timer
 flushes any smaller pending burst after at most one minute even when the error
-stops recurring. Orderly shutdown drains pending counts before the final log
-flush, so a short burst is not lost when the app closes inside that minute.
-Distinct fingerprints remain independent, and an LRU cap of 256 signatures
-bounds the in-memory sampler itself. This preserves both the diagnostic context
-and evidence of a rebuild loop without allowing one framework exception to
-generate an unbounded error file.
+stops recurring. Orderly shutdown drains pending counts after service and
+player teardown, immediately before the final log flush, so a short burst from
+either normal operation or teardown is not lost when the app closes inside
+that minute. Distinct fingerprints remain independent, and an LRU cap of 256
+signatures bounds the in-memory sampler itself. Evicting a fingerprint emits
+its pending count before removing the state. This preserves both the diagnostic
+context and evidence of a rebuild loop without allowing one framework
+exception to generate an unbounded error file.
 
 **`sync` is the one domain that routes to its own file.** It is off by default
 and far noisier than everything else — a catch-up can produce thousands of lines
