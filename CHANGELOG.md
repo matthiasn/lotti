@@ -20,13 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1074]
 ### Changed
-- **Sync stops freezing the app while it catches up.** During a busy sync the
-  sync database ran every read on a single background thread, so any read had to
-  wait behind whatever was being written. Reads that normally take milliseconds
-  were finishing after 3–25 seconds, and anything waiting on them — the outbox
-  badge, the sync status panel, a screen that needed a synced entry — stalled
-  with them. Reads now run on their own threads and no longer queue behind the
-  writer.
+- **Sync stops freezing the app while it catches up.** During a busy sync every
+  read from the sync database had to wait its turn behind whatever was being
+  written. Reads that normally take milliseconds were finishing after 3–25
+  seconds, and anything waiting on them — the outbox badge, the sync status
+  panel, a screen that needed a synced entry — stalled with them. Reads no
+  longer queue behind the writer.
 - **The task-list header gets out of the way while you read.** On a small
   phone the Tasks header — title, search field, saved-filter rail and active
   filter chips — took up to half the screen before the first task appeared.
