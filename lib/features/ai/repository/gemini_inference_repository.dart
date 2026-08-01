@@ -117,8 +117,8 @@ class GeminiInferenceRepository {
     final uri = GeminiUtils.buildStreamGenerateContentUri(
       baseUrl: provider.baseUrl,
       model: model,
-      apiKey: provider.apiKey,
     );
+    final endpoint = GeminiUtils.redactedEndpoint(uri);
 
     final body = GeminiUtils.buildRequestBody(
       prompt: prompt,
@@ -132,28 +132,32 @@ class GeminiInferenceRepository {
     );
 
     developer.log(
-      'Gemini streamGenerateContent request to: $uri',
+      'Gemini streamGenerateContent request to: $endpoint',
       name: 'GeminiInferenceRepository',
     );
 
     http.Request buildStreamRequest() {
       return http.Request('POST', uri)
-        ..headers['Content-Type'] = 'application/json'
-        ..headers['Accept'] =
-            'application/x-ndjson, application/json, text/event-stream'
+        ..headers.addAll(
+          GeminiUtils.buildRequestHeaders(
+            apiKey: provider.apiKey,
+            accept: 'application/x-ndjson, application/json, text/event-stream',
+          ),
+        )
         ..body = jsonEncode(body);
     }
 
     final streamed = await _streamSender.send(
       buildRequest: buildStreamRequest,
       context:
-          'Gemini streamGenerateContent (model=$model, baseUrl=${provider.baseUrl})',
+          'Gemini streamGenerateContent (model=$model, endpoint=$endpoint)',
     );
     if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
       final bytes = await streamed.stream.toBytes();
       final reason = utf8.decode(bytes);
       throw Exception(
-        'Gemini streaming error ${streamed.statusCode} for model "$model" at ${provider.baseUrl}: $reason. '
+        'Gemini streaming error ${streamed.statusCode} for model "$model" at '
+        '$endpoint: $reason. '
         'If rate-limited (429), wait and retry.',
       );
     }
@@ -341,15 +345,17 @@ class GeminiInferenceRepository {
       final nonStreamingUri = GeminiUtils.buildGenerateContentUri(
         baseUrl: provider.baseUrl,
         model: model,
-        apiKey: provider.apiKey,
+      );
+      final nonStreamingEndpoint = GeminiUtils.redactedEndpoint(
+        nonStreamingUri,
       );
       final fallbackResp = await _httpClient
           .post(
             nonStreamingUri,
-            headers: const {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
+            headers: GeminiUtils.buildRequestHeaders(
+              apiKey: provider.apiKey,
+              accept: 'application/json',
+            ),
             body: jsonEncode(body),
           )
           .timeout(kNonStreamingTimeout);
@@ -410,7 +416,8 @@ class GeminiInferenceRepository {
         }
       } else {
         developer.log(
-          'Gemini non-stream fallback failed: HTTP ${fallbackResp.statusCode} for model "$model" at ${provider.baseUrl}. '
+          'Gemini non-stream fallback failed: HTTP ${fallbackResp.statusCode} '
+          'for model "$model" at $nonStreamingEndpoint. '
           'Body preview: ${fallbackResp.body.substring(0, fallbackResp.body.length > kPreviewLength ? kPreviewLength : fallbackResp.body.length)}. '
           'If this is a transient error or rate limit, please try again.',
           name: 'GeminiInferenceRepository',

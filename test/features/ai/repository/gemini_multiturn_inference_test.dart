@@ -26,10 +26,14 @@ class _RecordingStreamClient extends http.BaseClient {
   final int statusCode;
   String? path;
   String? body;
+  Uri? url;
+  Map<String, String>? headers;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     path = request.url.path;
+    url = request.url;
+    headers = request.headers;
     if (request is http.Request) body = request.body;
     final data = _lines.map((l) => utf8.encode('$l\n') as List<int>);
     return http.StreamedResponse(
@@ -76,6 +80,9 @@ void main() {
         ).toList();
 
         expect(client.path, endsWith(':streamGenerateContent'));
+        expect(client.url!.queryParameters, isEmpty);
+        expect(client.url.toString(), isNot(contains(_provider().apiKey)));
+        expect(client.headers!['x-goog-api-key'], _provider().apiKey);
         expect(
           events.map((e) => e.choices?.first.delta?.content).join(),
           'Hello back',

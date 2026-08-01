@@ -53,8 +53,8 @@ Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
   final uri = GeminiUtils.buildStreamGenerateContentUri(
     baseUrl: provider.baseUrl,
     model: model,
-    apiKey: provider.apiKey,
   );
+  final endpoint = GeminiUtils.redactedEndpoint(uri);
 
   final body = GeminiUtils.buildMultiTurnRequestBody(
     messages: messages,
@@ -69,16 +69,19 @@ Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
   );
 
   developer.log(
-    'Gemini multi-turn streamGenerateContent request to: $uri with '
+    'Gemini multi-turn streamGenerateContent request to: $endpoint with '
     '${messages.length} messages',
     name: 'GeminiInferenceRepository',
   );
 
   http.Request buildStreamRequest() {
     return http.Request('POST', uri)
-      ..headers['Content-Type'] = 'application/json'
-      ..headers['Accept'] =
-          'application/x-ndjson, application/json, text/event-stream'
+      ..headers.addAll(
+        GeminiUtils.buildRequestHeaders(
+          apiKey: provider.apiKey,
+          accept: 'application/x-ndjson, application/json, text/event-stream',
+        ),
+      )
       ..body = jsonEncode(body);
   }
 
@@ -86,7 +89,7 @@ Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
     buildRequest: buildStreamRequest,
     context:
         'Gemini multi-turn streamGenerateContent (model=$model, '
-        'baseUrl=${provider.baseUrl})',
+        'endpoint=$endpoint)',
   );
 
   if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
@@ -94,7 +97,7 @@ Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
     final reason = utf8.decode(bytes);
     throw Exception(
       'Gemini streaming error ${streamed.statusCode} for model "$model" at '
-      '${provider.baseUrl}: $reason. '
+      '$endpoint: $reason. '
       'If rate-limited (429), wait and retry.',
     );
   }

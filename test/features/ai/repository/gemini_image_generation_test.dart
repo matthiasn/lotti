@@ -420,6 +420,15 @@ void main() {
           endsWith(':generateContent'),
         );
         expect(client.lastRequest!.method, 'POST');
+        expect(client.lastRequest!.url.queryParameters, isEmpty);
+        expect(
+          client.lastRequest!.url.toString(),
+          isNot(contains(_provider().apiKey)),
+        );
+        expect(
+          client.lastRequest!.headers['x-goog-api-key'],
+          _provider().apiKey,
+        );
       },
     );
 

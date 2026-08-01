@@ -35,7 +35,6 @@ Future<GeneratedImage> generateGeminiImage({
   final uri = GeminiUtils.buildGenerateContentUri(
     baseUrl: provider.baseUrl,
     model: model,
-    apiKey: provider.apiKey,
   );
 
   final body = GeminiUtils.buildImageGenerationRequestBody(
@@ -45,17 +44,17 @@ Future<GeneratedImage> generateGeminiImage({
   );
 
   developer.log(
-    'Gemini generateImage request to: $uri',
+    'Gemini generateImage request to: ${GeminiUtils.redactedEndpoint(uri)}',
     name: 'GeminiInferenceRepository',
   );
 
   final response = await httpClient
       .post(
         uri,
-        headers: const {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: GeminiUtils.buildRequestHeaders(
+          apiKey: provider.apiKey,
+          accept: 'application/json',
+        ),
         body: jsonEncode(body),
       )
       .timeout(const Duration(seconds: 120));
