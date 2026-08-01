@@ -286,14 +286,18 @@ void main() {
           .toList(),
       ['first widget', 'second widget'],
     );
-    verify(
-      () => domainLogger.error(
+    final capturedDiagnostics = verify(
+      () => domainLogger.errorWithDiagnostics(
         LogDomain.general,
         exception,
         stackTrace: stack,
         subDomain: 'widgets library',
+        diagnostics: captureAny<String>(named: 'diagnostics'),
       ),
-    ).called(2);
+    ).captured;
+    expect(capturedDiagnostics, hasLength(2));
+    expect(capturedDiagnostics.first, contains('first widget'));
+    expect(capturedDiagnostics.last, contains('second widget'));
   });
 
   test('framework error fingerprints evict the least recently used entry', () {

@@ -5,7 +5,7 @@ description: How the app starts, which singletons GetIt owns, and why registrati
 resource: ../../lib/get_it.dart
 tags: [architecture, startup, dependency-injection, get-it, riverpod]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T16:08:05Z }
 stale_after: 2027-01-11
 sources:
   - id: main
@@ -93,12 +93,9 @@ Three details in that sequence are deliberate and easy to break:
   `getIt.isRegistered<DomainLogger>()`. An error thrown before the logger
   exists must surface as itself, not as a GetIt lookup failure inside the
   handler.
-- **The Flutter framework hook deduplicates identical diagnostics.** It keeps
-  the first full console and file stack, then replaces repeated copies with
-  periodic counted summaries. The fingerprint includes the complete stack and
-  collected diagnostics, so exceptions from different call sites or widget and
-  render-object contexts remain separately diagnosable. A pending sub-threshold
-  burst is flushed after one minute even if no later occurrence arrives.
+- **The Flutter framework hook bounds repeated diagnostics before they reach
+  durable logging.** The fingerprinting and sampling contract lives in
+  [Logging and diagnostics](logging-and-diagnostics.md#the-gate-and-what-bypasses-it).
 
 # Registration order inside `registerSingletons()`
 

@@ -142,8 +142,52 @@ class DomainLogger {
     String? subDomain,
     String? message,
   }) {
+    _writeError(
+      domain,
+      error,
+      stackTrace: stackTrace,
+      subDomain: subDomain,
+      message: message,
+    );
+  }
+
+  /// Logs an [error] plus sensitive [diagnostics] to full destinations only.
+  ///
+  /// Unlike [message], [diagnostics] never reaches the PII-safe log. Use this
+  /// for widget trees, framework collectors, and similar diagnostic context
+  /// that may contain user-authored content.
+  void errorWithDiagnostics(
+    LogDomain domain,
+    Object error, {
+    required String diagnostics,
+    StackTrace? stackTrace,
+    String? subDomain,
+    String? message,
+  }) {
+    _writeError(
+      domain,
+      error,
+      stackTrace: stackTrace,
+      subDomain: subDomain,
+      message: message,
+      diagnostics: diagnostics,
+    );
+  }
+
+  void _writeError(
+    LogDomain domain,
+    Object error, {
+    StackTrace? stackTrace,
+    String? subDomain,
+    String? message,
+    String? diagnostics,
+  }) {
     // Full, diagnostic description for the general + daily full error log.
-    final fullDescription = fullErrorDescription(error, message);
+    final fullDescription = fullErrorDescription(
+      error,
+      message,
+      diagnostics: diagnostics,
+    );
     _loggingService.captureException(
       fullDescription,
       domain: domain.wireName,
@@ -177,9 +221,15 @@ class DomainLogger {
   /// Full, diagnostic description of an error: `'<message>: <error>'`, or just
   /// `'<error>'` when no message is given. Includes the raw error string and is
   /// only written to the general + daily **full** error log.
-  static String fullErrorDescription(Object error, String? message) {
+  static String fullErrorDescription(
+    Object error,
+    String? message, {
+    String? diagnostics,
+  }) {
     final hasMessage = message != null && message.isNotEmpty;
-    return hasMessage ? '$message: $error' : '$error';
+    final description = hasMessage ? '$message: $error' : '$error';
+    final hasDiagnostics = diagnostics != null && diagnostics.isNotEmpty;
+    return hasDiagnostics ? '$description\n$diagnostics' : description;
   }
 
   /// PII-safe description of an error: `'<message> (errorType=<Type>)'`, or just

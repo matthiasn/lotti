@@ -162,22 +162,41 @@ Future<void> main() async {
 /// thousands of copies of the same stack trace.
 @visibleForTesting
 void handleFlutterFrameworkError(FlutterErrorDetails details) {
-  final report = _frameworkErrorLimiter.observe(details);
+  final diagnostics = _renderFrameworkErrorDiagnostics(details);
+  final report = _frameworkErrorLimiter.observe(details, diagnostics);
   switch (report.kind) {
     case _FrameworkErrorReportKind.full:
       FlutterError.presentError(details);
-      getIt<DomainLogger>().error(
-        LogDomain.general,
-        details.exception,
-        stackTrace: details.stack,
-        subDomain: details.library,
-      );
+      final logger = getIt<DomainLogger>();
+      if (diagnostics.isEmpty) {
+        logger.error(
+          LogDomain.general,
+          details.exception,
+          stackTrace: details.stack,
+          subDomain: details.library,
+        );
+      } else {
+        logger.errorWithDiagnostics(
+          LogDomain.general,
+          details.exception,
+          stackTrace: details.stack,
+          subDomain: details.library,
+          diagnostics: 'Collected diagnostics:\n${diagnostics.join('\n')}',
+        );
+      }
     case _FrameworkErrorReportKind.summary:
       _emitFrameworkErrorSummary(report, details.library);
     case _FrameworkErrorReportKind.suppressed:
       return;
   }
 }
+
+List<String> _renderFrameworkErrorDiagnostics(FlutterErrorDetails details) =>
+    <String>[
+      ...?details.informationCollector?.call().map(
+        (node) => node.toStringDeep(),
+      ),
+    ];
 
 void _emitFrameworkErrorSummary(_FrameworkErrorReport report, String? library) {
   final summary =
@@ -263,9 +282,12 @@ class _FrameworkErrorLimiter {
   final LinkedHashMap<String, _FrameworkErrorState> _states =
       LinkedHashMap<String, _FrameworkErrorState>();
 
-  _FrameworkErrorReport observe(FlutterErrorDetails details) {
+  _FrameworkErrorReport observe(
+    FlutterErrorDetails details,
+    List<String> diagnostics,
+  ) {
     final now = clock.now();
-    final fingerprint = _fingerprint(details);
+    final fingerprint = _fingerprint(details, diagnostics);
     final errorType = details.exception.runtimeType.toString();
     final library = details.library;
     final state = _states.remove(fingerprint) ?? _FrameworkErrorState(now);
@@ -332,16 +354,17 @@ class _FrameworkErrorLimiter {
     );
   }
 
-  String _fingerprint(FlutterErrorDetails details) {
+  String _fingerprint(
+    FlutterErrorDetails details,
+    List<String> diagnostics,
+  ) {
     final signature = jsonEncode(<String>[
       details.exception.runtimeType.toString(),
       details.exceptionAsString(),
       details.library ?? '',
       details.context?.toDescription() ?? '',
       details.stack?.toString() ?? '',
-      ...?details.informationCollector?.call().map(
-        (node) => node.toStringDeep(),
-      ),
+      ...diagnostics,
     ]);
     return sha256.convert(utf8.encode(signature)).toString().substring(0, 16);
   }
