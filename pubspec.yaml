@@ -23,7 +23,6 @@ dependencies:
   audio_decoder: ^0.8.1
   beamer: ^1.5.2
   cached_network_image: ^3.2.0
-  calendar_view: ^2.0.0
   clock: ^1.1.1
   collection: ^1.18.0
   connectivity_plus: ^7.0.0
@@ -41,7 +40,6 @@ dependencies:
   enum_to_string: ^2.0.1
   equatable: ^2.0.3
   exif: ^3.3.0
-  extended_sliver: ^2.1.3
   file_selector: ^1.0.3
   fl_chart: ^1.0.0
   flex_color_picker: ^3.4.1
@@ -76,13 +74,11 @@ dependencies:
   glass_kit: ^4.0.1
   google_fonts: ^8.1.0
   gpt_markdown: ^1.0.20
-  graphic: ^2.3.0
   health: ^13.3.1
   http: ^1.2.0
   infinite_scroll_pagination: ^5.0.0
   intersperse: ^2.0.0
   intl: ^0.20.3
-  ionicons: ^0.2.2
   json_annotation: ^4.12.0
   json_schema_builder: ^0.1.3
   just_waveform: ^0.0.7
@@ -102,7 +98,6 @@ dependencies:
   path_provider: ^2.0.12
   permission_handler: ^12.0.0+1
   photo_view: ^0.15.0
-  pie_chart: ^5.3.2
   qr_flutter: ^4.0.0
   quiver: ^3.2.1
   record: ^7.1.0
@@ -123,8 +118,6 @@ dependencies:
   tinycolor2: ^3.0.0
   url_launcher: ^6.1.2
   uuid: ^4.3.3
-  vector_math: any
-  web_socket_channel: ^3.0.0
   wechat_assets_picker: ^10.1.0
   widgetbook: ^3.7.1
   window_manager: ^0.5.0
