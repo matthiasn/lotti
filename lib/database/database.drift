@@ -513,12 +513,14 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND journal.id IN (
-        SELECT labeled.journal_id FROM labeled
-          WHERE labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND journal.id NOT IN (
-        SELECT labeled.journal_id FROM labeled
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
       ))
     )
   )
@@ -597,12 +599,14 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND journal.id IN (
-        SELECT labeled.journal_id FROM labeled
-          WHERE labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND journal.id NOT IN (
-        SELECT labeled.journal_id FROM labeled
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
       ))
     )
   )
@@ -625,12 +629,14 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND journal.id IN (
-        SELECT labeled.journal_id FROM labeled
-          WHERE labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND journal.id NOT IN (
-        SELECT labeled.journal_id FROM labeled
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
       ))
     )
   )
@@ -656,12 +662,14 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND journal.id IN (
-        SELECT labeled.journal_id FROM labeled
-          WHERE labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND journal.id NOT IN (
-        SELECT labeled.journal_id FROM labeled
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
       ))
     )
   )
@@ -684,12 +692,14 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND journal.id IN (
-        SELECT labeled.journal_id FROM labeled
-          WHERE labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND journal.id NOT IN (
-        SELECT labeled.journal_id FROM labeled
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
       ))
     )
   )
@@ -765,12 +775,14 @@ SELECT * FROM journal
   AND (
     NOT :filterByLabels
     OR (
-      (:labelFilterCount > 0 AND journal.id IN (
-        SELECT labeled.journal_id FROM labeled
-          WHERE labeled.label_id IN :labelIds
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
       ))
-      OR (:includeUnlabeled AND journal.id NOT IN (
-        SELECT labeled.journal_id FROM labeled
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
       ))
     )
   )
@@ -956,13 +968,22 @@ SELECT category, COUNT(*) AS task_count FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   GROUP BY category;
 
--- Label predicates use `journal.id IN (SELECT journal_id FROM labeled …)`
--- rather than a correlated `EXISTS`. Both are correct; the correlated form
--- re-runs an index seek for every candidate task, while the IN-form lets SQLite
--- build the matching id set once. Measured on 20 000 tasks with 30% labelled:
--- 6–7 ms correlated vs ~1 ms, same result. `NOT IN` is safe here because
--- `labeled.journal_id` is NOT NULL, so it cannot produce the NULL-swallowing
--- behaviour `NOT IN` is usually warned about.
+-- Label predicates: the aggregate queries below use
+-- `journal.id IN (SELECT journal_id FROM labeled …)`; the paginated list
+-- queries above keep the correlated `EXISTS`. Both are correct — the choice is
+-- purely which one the planner can execute better, and it differs by shape:
+--
+--   * No ORDER BY / LIMIT (these aggregates): the IN-form lets SQLite build the
+--     matching id set once instead of re-probing per candidate row. Measured on
+--     20 000 tasks, 30% labelled, 3-label filter: ~1 ms vs 6-7 ms.
+--   * ORDER BY + LIMIT (the list queries): `EXISTS` lets SQLite stream from the
+--     ordered index and stop at LIMIT. The IN-form forces the full label
+--     membership set plus a sort. Measured on 120 000 tasks with a label on 80%
+--     of them, LIMIT 500: 19 ms with EXISTS vs 78 ms with IN — so the rewrite
+--     is a 4x regression there and is deliberately not applied.
+--
+-- `NOT IN` is safe here because `labeled.journal_id` is NOT NULL, so it cannot
+-- produce the NULL-swallowing behaviour `NOT IN` is usually warned about.
 -- See docs/perf/2026-08-01_slow-queries-investigation.md.
 
 -- COUNT(*) variant used for saved-filter sidebar counts. Predicates:
