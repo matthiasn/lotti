@@ -106,15 +106,38 @@ class AgentEntityByIdCoalescer {
           waiter.complete(entity);
         }
       }
-    } catch (error, stackTrace) {
-      // One failed batch fails exactly the callers that joined it. Callers see
-      // the same error they would have seen issuing the read themselves.
-      for (final waiters in waitersById.values) {
-        for (final waiter in waiters) {
-          waiter.completeError(error, stackTrace);
-        }
-      }
+    } catch (_) {
+      // A batch can fail for a reason that belongs to ONE id — most commonly a
+      // row whose `serialized` payload fails to decode, which throws while
+      // mapping the whole result set. Before coalescing, such a row failed only
+      // its own `getEntity` call and every other id still resolved.
+      //
+      // Preserve that: fall back to loading each id on its own, so exactly the
+      // offending ids see the error. This runs only on the error path, and it
+      // is no more expensive than the pre-coalescing behaviour it restores.
+      await _completeIndividually(waitersById);
     }
+  }
+
+  /// Error-path fallback: resolve each id with its own single-id load so one
+  /// failing row cannot poison unrelated waiters in the same batch.
+  Future<void> _completeIndividually(
+    Map<String, List<Completer<AgentDomainEntity?>>> waitersById,
+  ) async {
+    await Future.wait(
+      waitersById.entries.map((entry) async {
+        try {
+          final found = await _loadByIds(<String>[entry.key]);
+          for (final waiter in entry.value) {
+            waiter.complete(found[entry.key]);
+          }
+        } catch (error, stackTrace) {
+          for (final waiter in entry.value) {
+            waiter.completeError(error, stackTrace);
+          }
+        }
+      }),
+    );
   }
 }
 
