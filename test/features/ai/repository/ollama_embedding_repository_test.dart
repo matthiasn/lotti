@@ -429,6 +429,14 @@ void main() {
                       (error) => error.shouldLogSummary,
                       'summary boundary',
                       isTrue,
+                    )
+                    .having(
+                      (error) => error.toString(),
+                      'diagnostic summary',
+                      allOf(
+                        contains('count=1'),
+                        contains('2026-08-01T12:05:00.000Z'),
+                      ),
                     ),
               ),
             );
