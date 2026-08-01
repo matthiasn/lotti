@@ -28,7 +28,13 @@ class HabitCompletionRecord {
   /// `json_extract(serialized, '$.data.habitId')`.
   final String habitId;
 
-  /// The completion's `date_from`, which is the day it counts towards.
+  /// The recorded wall-clock timestamp, from the serialized
+  /// `meta.dateFrom` — **not** the `date_from` column.
+  ///
+  /// Same instant, different day: the column is a Unix epoch reconstructed in
+  /// the reader's zone, so a completion entered at 23:30 in Berlin reads back
+  /// as the next day in Auckland. The day this carries is the one it was
+  /// recorded on, which is what every consumer means by "that day".
   final DateTime dateFrom;
 
   /// `json_extract(serialized, '$.data.completionType')`.

@@ -36,8 +36,10 @@ void main() {
   });
 
   test('a null completion type is a value, not an absence', () {
-    // Null means "counts as success" to every consumer, so two null-typed
-    // records must still compare equal to each other.
+    // Null is a real value, not missing data — legacy entries carry it, and so
+    // does any completion type this build cannot decode. (It means "recorded
+    // and streak-extending, but not a success"; see the field docs.) Two
+    // null-typed records must therefore compare equal to each other.
     expect(record(completionType: null), record(completionType: null));
   });
 
