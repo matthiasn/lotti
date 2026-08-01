@@ -123,12 +123,6 @@ class EntryDiff {
   /// noise and focus on what actually diverged.
   final int identicalFieldCount;
 
-  bool get isIdentical => shape == ConflictShape.identical;
-
-  /// True when the entities differ in a field not individually modelled.
-  bool get hasOtherDifferences =>
-      fields.any((f) => f.field == EntryField.other);
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

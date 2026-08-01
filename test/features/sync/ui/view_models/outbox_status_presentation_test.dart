@@ -39,15 +39,6 @@ void main() {
     });
   });
 
-  group('retryCapReached', () {
-    test('is false below the cap and true at or above it', () {
-      expect(retryCapReached(9), isFalse);
-      expect(retryCapReached(10), isTrue);
-      expect(retryCapReached(11), isTrue);
-      expect(retryCapReached(3, maxRetries: 3), isTrue);
-    });
-  });
-
   group('summarizeOutbox', () {
     test('an empty queue is synced', () {
       final s = _summary();

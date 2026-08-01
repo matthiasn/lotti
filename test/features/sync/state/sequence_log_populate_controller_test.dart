@@ -30,7 +30,6 @@ void main() {
       expect(state.populatedLinksCount, isNull);
       expect(state.populatedAgentEntitiesCount, isNull);
       expect(state.populatedAgentLinksCount, isNull);
-      expect(state.totalCount, isNull);
       expect(state.error, isNull);
     });
 
@@ -42,7 +41,6 @@ void main() {
         populatedLinksCount: 50,
         populatedAgentEntitiesCount: 30,
         populatedAgentLinksCount: 20,
-        totalCount: 200,
         error: 'some error',
       );
 
@@ -54,7 +52,6 @@ void main() {
       expect(copied.populatedLinksCount, 50);
       expect(copied.populatedAgentEntitiesCount, 30);
       expect(copied.populatedAgentLinksCount, 20);
-      expect(copied.totalCount, 200);
       expect(copied.error, 'some error');
     });
 
@@ -68,7 +65,6 @@ void main() {
         populatedLinksCount: 25,
         populatedAgentEntitiesCount: 15,
         populatedAgentLinksCount: 10,
-        totalCount: 100,
         error: 'new error',
       );
 
@@ -78,7 +74,6 @@ void main() {
       expect(copied.populatedLinksCount, 25);
       expect(copied.populatedAgentEntitiesCount, 15);
       expect(copied.populatedAgentLinksCount, 10);
-      expect(copied.totalCount, 100);
       expect(copied.error, 'new error');
     });
 
@@ -96,7 +91,6 @@ void main() {
         populatedLinksCount: 50,
         populatedAgentEntitiesCount: 30,
         populatedAgentLinksCount: 20,
-        totalCount: 200,
       );
 
       final copied = state.copyWith(clearCount: true);
@@ -105,7 +99,6 @@ void main() {
       expect(copied.populatedLinksCount, isNull);
       expect(copied.populatedAgentEntitiesCount, isNull);
       expect(copied.populatedAgentLinksCount, isNull);
-      expect(copied.totalCount, isNull);
     });
 
     test('copyWith clearError takes precedence over new error', () {
@@ -123,7 +116,6 @@ void main() {
         populatedLinksCount: 50,
         populatedAgentEntitiesCount: 30,
         populatedAgentLinksCount: 20,
-        totalCount: 200,
       );
 
       final copied = state.copyWith(
@@ -132,7 +124,6 @@ void main() {
         populatedLinksCount: 150,
         populatedAgentEntitiesCount: 90,
         populatedAgentLinksCount: 60,
-        totalCount: 400,
       );
 
       // clearCount should take precedence
@@ -140,7 +131,6 @@ void main() {
       expect(copied.populatedLinksCount, isNull);
       expect(copied.populatedAgentEntitiesCount, isNull);
       expect(copied.populatedAgentLinksCount, isNull);
-      expect(copied.totalCount, isNull);
     });
   });
 

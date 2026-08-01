@@ -26,9 +26,7 @@ void main() {
         );
 
         expect(diff.shape, ConflictShape.identical);
-        expect(diff.isIdentical, isTrue);
         expect(diff.fields, isEmpty);
-        expect(diff.hasOtherDifferences, isFalse);
         // body + dateFrom + dateTo present and equal on both sides.
         expect(diff.identicalFieldCount, 3);
       },
@@ -48,7 +46,6 @@ void main() {
       );
       expect(diff.shape, ConflictShape.deletedOnRemote);
       expect(diff.fields, isEmpty);
-      expect(diff.hasOtherDifferences, isFalse);
     });
 
     test('soft-delete on the local side is classified, not diffed', () {
@@ -99,7 +96,6 @@ void main() {
       expect(title.localValue, 'My task');
       expect(title.remoteValue, 'My new task');
       expect(title.wordDiff, isNotNull);
-      expect(diff.hasOtherDifferences, isFalse);
     });
   });
 
@@ -187,7 +183,6 @@ void main() {
       final field = _fieldFor(diff, EntryField.audioDuration);
       expect(field.localValue, '1:00');
       expect(field.remoteValue, '1:30');
-      expect(diff.hasOtherDifferences, isFalse);
     });
   });
 
@@ -199,7 +194,6 @@ void main() {
       );
       expect(diff.shape, ConflictShape.edited);
       expect(diff.fields.map((f) => f.field), [EntryField.other]);
-      expect(diff.hasOtherDifferences, isTrue);
     });
 
     test('other is appended after modelled fields', () {
@@ -254,9 +248,8 @@ void main() {
           entryOf(text: text, vectorClock: const VectorClock({'a': 1})),
           entryOf(text: text, vectorClock: const VectorClock({'b': 9})),
         );
-        expect(diff.isIdentical, isTrue);
+        expect(diff.shape, ConflictShape.identical);
         expect(diff.fields, isEmpty);
-        expect(diff.hasOtherDifferences, isFalse);
       },
       tags: 'glados',
     );

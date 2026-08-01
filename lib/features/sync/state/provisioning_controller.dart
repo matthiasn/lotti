@@ -229,13 +229,6 @@ class ProvisioningController extends Notifier<ProvisioningState> {
     }
   }
 
-  /// Whether the bundle being consumed rotates the account password, which is
-  /// what makes provisioning three steps instead of two.
-  ///
-  /// It is a property of [SyncBundleKind], not of the platform: a mobile
-  /// device consuming a fresh CLI bundle rotates just as a desktop does.
-  bool get rotatesPassword => _lastBundle?.kind == SyncBundleKind.provisioned;
-
   /// Resets the controller to its initial state.
   void reset() {
     _lastBundle = null;

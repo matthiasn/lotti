@@ -75,12 +75,6 @@ class SyncNodeProfileRepository {
     });
   }
 
-  /// Looks up a peer profile by host id.
-  Future<SyncNodeProfile?> getNode(String hostId) async {
-    final directory = await _readDirectory();
-    return directory[hostId];
-  }
-
   /// Upserts a peer profile into the directory.
   ///
   /// Last-write-wins by [SyncNodeProfile.updatedAt]: an incoming snapshot with

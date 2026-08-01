@@ -14,14 +14,6 @@ OutboxPresentationStatus presentationStatusOf(OutboxStatus status) =>
       OutboxStatus.sent => OutboxPresentationStatus.sent,
     };
 
-/// Default automatic-retry cap (mirrors `SyncTuning.outboxMaxRetriesDiagnostics`).
-const int kOutboxMaxRetries = 10;
-
-/// Whether a failed row has exhausted its automatic retries, so only a manual
-/// retry will move it again.
-bool retryCapReached(int retries, {int maxRetries = kOutboxMaxRetries}) =>
-    retries >= maxRetries;
-
 /// The single, plain-language state of the whole outbox — drives the summary
 /// header so the user sees "Everything's synced" / "Sending…" / "Couldn't
 /// send" / "Not signed in" instead of having to read the raw queue.

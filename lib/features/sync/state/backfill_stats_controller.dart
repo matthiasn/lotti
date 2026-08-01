@@ -17,11 +17,6 @@ class BackfillStatsState {
     this.isResetting = false,
     this.isRetiringStuck = false,
     this.isResettingAllUnresolvable = false,
-    this.lastProcessedCount,
-    this.lastReRequestedCount,
-    this.lastResetCount,
-    this.lastRetiredStuckCount,
-    this.lastResetAllUnresolvableCount,
     this.error,
   });
 
@@ -32,11 +27,6 @@ class BackfillStatsState {
   final bool isResetting;
   final bool isRetiringStuck;
   final bool isResettingAllUnresolvable;
-  final int? lastProcessedCount;
-  final int? lastReRequestedCount;
-  final int? lastResetCount;
-  final int? lastRetiredStuckCount;
-  final int? lastResetAllUnresolvableCount;
   final String? error;
 
   BackfillStatsState copyWith({
@@ -47,18 +37,8 @@ class BackfillStatsState {
     bool? isResetting,
     bool? isRetiringStuck,
     bool? isResettingAllUnresolvable,
-    int? lastProcessedCount,
-    int? lastReRequestedCount,
-    int? lastResetCount,
-    int? lastRetiredStuckCount,
-    int? lastResetAllUnresolvableCount,
     String? error,
     bool clearError = false,
-    bool clearLastProcessed = false,
-    bool clearLastReRequested = false,
-    bool clearLastReset = false,
-    bool clearLastRetiredStuck = false,
-    bool clearLastResetAllUnresolvable = false,
   }) {
     return BackfillStatsState(
       stats: stats ?? this.stats,
@@ -69,21 +49,6 @@ class BackfillStatsState {
       isRetiringStuck: isRetiringStuck ?? this.isRetiringStuck,
       isResettingAllUnresolvable:
           isResettingAllUnresolvable ?? this.isResettingAllUnresolvable,
-      lastProcessedCount: clearLastProcessed
-          ? null
-          : lastProcessedCount ?? this.lastProcessedCount,
-      lastReRequestedCount: clearLastReRequested
-          ? null
-          : lastReRequestedCount ?? this.lastReRequestedCount,
-      lastResetCount: clearLastReset
-          ? null
-          : lastResetCount ?? this.lastResetCount,
-      lastRetiredStuckCount: clearLastRetiredStuck
-          ? null
-          : lastRetiredStuckCount ?? this.lastRetiredStuckCount,
-      lastResetAllUnresolvableCount: clearLastResetAllUnresolvable
-          ? null
-          : lastResetAllUnresolvableCount ?? this.lastResetAllUnresolvableCount,
       error: clearError ? null : error ?? this.error,
     );
   }
@@ -121,8 +86,8 @@ final StreamProvider<int> backfillMissingCountProvider =
 /// Backs the Backfill Settings page: loads and auto-refreshes [BackfillStats]
 /// (throttled, foreground-only — see [_autoRefreshInterval]) and exposes the
 /// manual operations (full backfill, re-request, reset/retire of stuck and
-/// unresolvable entries), reflecting each as in-progress/last-count flags on
-/// [BackfillStatsState].
+/// unresolvable entries), reflecting each operation's in-progress state on
+/// [BackfillStatsState] and refreshing the aggregate afterward.
 final NotifierProvider<BackfillStatsController, BackfillStatsState>
 backfillStatsControllerProvider =
     NotifierProvider.autoDispose<BackfillStatsController, BackfillStatsState>(
@@ -261,18 +226,14 @@ class BackfillStatsController extends Notifier<BackfillStatsState> {
     state = state.copyWith(
       isProcessing: true,
       clearError: true,
-      clearLastProcessed: true,
     );
 
     try {
       final backfillService = getIt<BackfillRequestService>();
-      final count = await backfillService.processFullBackfill();
+      await backfillService.processFullBackfill();
 
       if (!ref.mounted) return;
-      state = state.copyWith(
-        isProcessing: false,
-        lastProcessedCount: count,
-      );
+      state = state.copyWith(isProcessing: false);
 
       // Refresh stats after processing
       await _loadStats();
@@ -299,18 +260,14 @@ class BackfillStatsController extends Notifier<BackfillStatsState> {
     state = state.copyWith(
       isResetting: true,
       clearError: true,
-      clearLastReset: true,
     );
 
     try {
       final sequenceLogService = getIt<SyncSequenceLogService>();
-      final count = await sequenceLogService.resetUnresolvableEntries();
+      await sequenceLogService.resetUnresolvableEntries();
 
       if (!ref.mounted) return;
-      state = state.copyWith(
-        isResetting: false,
-        lastResetCount: count,
-      );
+      state = state.copyWith(isResetting: false);
 
       // Refresh stats after reset
       await _loadStats();
@@ -346,20 +303,16 @@ class BackfillStatsController extends Notifier<BackfillStatsState> {
     state = state.copyWith(
       isRetiringStuck: true,
       clearError: true,
-      clearLastRetiredStuck: true,
     );
 
     try {
       final sequenceLogService = getIt<SyncSequenceLogService>();
-      final count = await sequenceLogService.retireAgedOutRequestedEntries(
+      await sequenceLogService.retireAgedOutRequestedEntries(
         amnestyWindow: Duration.zero,
       );
 
       if (!ref.mounted) return;
-      state = state.copyWith(
-        isRetiringStuck: false,
-        lastRetiredStuckCount: count,
-      );
+      state = state.copyWith(isRetiringStuck: false);
 
       // Refresh stats after retirement
       await _loadStats();
@@ -391,18 +344,14 @@ class BackfillStatsController extends Notifier<BackfillStatsState> {
     state = state.copyWith(
       isResettingAllUnresolvable: true,
       clearError: true,
-      clearLastResetAllUnresolvable: true,
     );
 
     try {
       final sequenceLogService = getIt<SyncSequenceLogService>();
-      final count = await sequenceLogService.resetAllUnresolvableEntries();
+      await sequenceLogService.resetAllUnresolvableEntries();
 
       if (!ref.mounted) return;
-      state = state.copyWith(
-        isResettingAllUnresolvable: false,
-        lastResetAllUnresolvableCount: count,
-      );
+      state = state.copyWith(isResettingAllUnresolvable: false);
 
       await _loadStats();
     } catch (e) {
@@ -428,18 +377,14 @@ class BackfillStatsController extends Notifier<BackfillStatsState> {
     state = state.copyWith(
       isReRequesting: true,
       clearError: true,
-      clearLastReRequested: true,
     );
 
     try {
       final backfillService = getIt<BackfillRequestService>();
-      final count = await backfillService.processReRequest();
+      await backfillService.processReRequest();
 
       if (!ref.mounted) return;
-      state = state.copyWith(
-        isReRequesting: false,
-        lastReRequestedCount: count,
-      );
+      state = state.copyWith(isReRequesting: false);
 
       // Refresh stats after processing
       await _loadStats();

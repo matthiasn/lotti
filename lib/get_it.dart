@@ -108,7 +108,10 @@ Future<void> registerSingletons() async {
       ),
     )
     ..registerSingleton<UpdateNotifications>(UpdateNotifications())
-    ..registerSingleton<SyncActivitySignaler>(SyncActivitySignaler())
+    ..registerSingleton<SyncActivitySignaler>(
+      SyncActivitySignaler(),
+      dispose: (signaler) => signaler.dispose(),
+    )
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<AgentDatabase>(AgentDatabase())
     ..registerSingleton<ConsumptionDatabase>(ConsumptionDatabase())
@@ -143,6 +146,7 @@ Future<void> registerSingletons() async {
   // user doesn't have to discover them by browsing settings.
   getIt.registerSingleton<ConflictNotificationObserver>(
     ConflictNotificationObserver()..start(),
+    dispose: (observer) => observer.dispose(),
   );
 
   final entitiesCacheService = EntitiesCacheService(
@@ -192,6 +196,7 @@ Future<void> registerSingletons() async {
   );
   getIt.registerSingleton<SyncNodeProfileRepository>(
     syncNodeProfileRepository,
+    dispose: (repository) => repository.dispose(),
   );
   final syncDatabase = getIt<SyncDatabase>();
   final vectorClockService = getIt<VectorClockService>();
@@ -388,7 +393,10 @@ Future<void> registerSingletons() async {
     ..registerSingleton<MatrixSyncGateway>(matrixGateway)
     ..registerSingleton<MatrixMessageSender>(matrixMessageSender)
     ..registerSingleton<SentEventRegistry>(sentEventRegistry)
-    ..registerSingleton<AttachmentIndex>(attachmentIndex)
+    ..registerSingleton<AttachmentIndex>(
+      attachmentIndex,
+      dispose: (index) => index.dispose(),
+    )
     ..registerSingleton<SyncReadMarkerService>(readMarkerService)
     ..registerSingleton<SyncEventProcessor>(syncEventProcessor)
     ..registerSingleton<MatrixService>(matrixService)
@@ -696,7 +704,10 @@ Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
     ..registerSingleton<BackfillRequestService>(backfillRequestService)
-    ..registerSingleton<MediaRepairService>(mediaRepairService)
+    ..registerSingleton<MediaRepairService>(
+      mediaRepairService,
+      dispose: (service) => service.dispose(),
+    )
     ..registerSingleton<MetadataService>(
       MetadataService(vectorClockService: vectorClockService),
     )

@@ -22,44 +22,28 @@ import '../../../widget_test_utils.dart';
 // ---------------------------------------------------------------------------
 
 extension _AnyBackfillStatsState on glados.Any {
-  glados.Generator<int?> get _optionalCount =>
-      glados.CombinableAny(this).combine2(
-        glados.any.bool,
-        glados.IntAnys(this).intInRange(0, 1000),
-        (bool hasValue, int value) => hasValue ? value : null,
-      );
-
   glados.Generator<BackfillStatsState> get backfillStatsState =>
-      glados.CombinableAny(this).combine9(
+      glados.CombinableAny(this).combine6(
         glados.any.bool,
         glados.any.bool,
         glados.any.bool,
         glados.any.bool,
         glados.any.bool,
-        _optionalCount,
-        _optionalCount,
-        _optionalCount,
-        _optionalCount,
+        glados.any.bool,
         (
           bool isLoading,
           bool isProcessing,
           bool isReRequesting,
           bool isResetting,
           bool isRetiringStuck,
-          int? lastProcessedCount,
-          int? lastReRequestedCount,
-          int? lastResetCount,
-          int? lastRetiredStuckCount,
+          bool isResettingAllUnresolvable,
         ) => BackfillStatsState(
           isLoading: isLoading,
           isProcessing: isProcessing,
           isReRequesting: isReRequesting,
           isResetting: isResetting,
           isRetiringStuck: isRetiringStuck,
-          lastProcessedCount: lastProcessedCount,
-          lastReRequestedCount: lastReRequestedCount,
-          lastResetCount: lastResetCount,
-          lastRetiredStuckCount: lastRetiredStuckCount,
+          isResettingAllUnresolvable: isResettingAllUnresolvable,
         ),
       );
 }
@@ -204,7 +188,6 @@ void main() {
 
         final state = container.read(backfillStatsControllerProvider);
         expect(state.isProcessing, isFalse);
-        expect(state.lastProcessedCount, 10);
       });
     });
 
@@ -304,7 +287,6 @@ void main() {
 
         final state = container.read(backfillStatsControllerProvider);
         expect(state.isReRequesting, isFalse);
-        expect(state.lastReRequestedCount, 15);
       });
     });
 
@@ -423,7 +405,6 @@ void main() {
 
         final state = container.read(backfillStatsControllerProvider);
         expect(state.isResetting, isFalse);
-        expect(state.lastResetCount, 42);
       });
     });
 
@@ -544,7 +525,6 @@ void main() {
 
           final state = container.read(backfillStatsControllerProvider);
           expect(state.isRetiringStuck, isFalse);
-          expect(state.lastRetiredStuckCount, 7);
         });
       },
     );
@@ -625,7 +605,6 @@ void main() {
 
           final state = container.read(backfillStatsControllerProvider);
           expect(state.isResettingAllUnresolvable, isFalse);
-          expect(state.lastResetAllUnresolvableCount, 144087);
         });
       },
     );
@@ -1280,7 +1259,6 @@ void main() {
       final state = BackfillStatsState(
         stats: testStats,
         isProcessing: true,
-        lastProcessedCount: 5,
         error: 'some error',
       );
 
@@ -1289,7 +1267,6 @@ void main() {
       expect(copied.stats, testStats);
       expect(copied.isLoading, isFalse);
       expect(copied.isProcessing, isTrue);
-      expect(copied.lastProcessedCount, 5);
       expect(copied.error, 'some error');
     });
 
@@ -1299,13 +1276,11 @@ void main() {
       final copied = state.copyWith(
         isLoading: true,
         isProcessing: true,
-        lastProcessedCount: 10,
         error: 'new error',
       );
 
       expect(copied.isLoading, isTrue);
       expect(copied.isProcessing, isTrue);
-      expect(copied.lastProcessedCount, 10);
       expect(copied.error, 'new error');
     });
 
@@ -1315,22 +1290,6 @@ void main() {
       final copied = state.copyWith(clearError: true);
 
       expect(copied.error, isNull);
-    });
-
-    test('copyWith clearLastProcessed removes lastProcessedCount', () {
-      const state = BackfillStatsState(lastProcessedCount: 10);
-
-      final copied = state.copyWith(clearLastProcessed: true);
-
-      expect(copied.lastProcessedCount, isNull);
-    });
-
-    test('copyWith clearLastReRequested removes lastReRequestedCount', () {
-      const state = BackfillStatsState(lastReRequestedCount: 25);
-
-      final copied = state.copyWith(clearLastReRequested: true);
-
-      expect(copied.lastReRequestedCount, isNull);
     });
 
     test('copyWith preserves isReRequesting when not overridden', () {
@@ -1349,14 +1308,6 @@ void main() {
       expect(copied.isReRequesting, isTrue);
     });
 
-    test('copyWith overrides lastReRequestedCount', () {
-      const state = BackfillStatsState();
-
-      final copied = state.copyWith(lastReRequestedCount: 42);
-
-      expect(copied.lastReRequestedCount, 42);
-    });
-
     test('copyWith preserves isResetting when not overridden', () {
       const state = BackfillStatsState(isResetting: true);
 
@@ -1371,22 +1322,6 @@ void main() {
       final copied = state.copyWith(isResetting: true);
 
       expect(copied.isResetting, isTrue);
-    });
-
-    test('copyWith overrides lastResetCount', () {
-      const state = BackfillStatsState();
-
-      final copied = state.copyWith(lastResetCount: 99);
-
-      expect(copied.lastResetCount, 99);
-    });
-
-    test('copyWith clearLastReset removes lastResetCount', () {
-      const state = BackfillStatsState(lastResetCount: 10);
-
-      final copied = state.copyWith(clearLastReset: true);
-
-      expect(copied.lastResetCount, isNull);
     });
   });
 
@@ -1428,24 +1363,10 @@ void main() {
         reason: 'isRetiringStuck must be preserved by no-arg copyWith',
       );
       expect(
-        copied.lastProcessedCount,
-        state.lastProcessedCount,
-        reason: 'lastProcessedCount must be preserved by no-arg copyWith',
-      );
-      expect(
-        copied.lastReRequestedCount,
-        state.lastReRequestedCount,
-        reason: 'lastReRequestedCount must be preserved by no-arg copyWith',
-      );
-      expect(
-        copied.lastResetCount,
-        state.lastResetCount,
-        reason: 'lastResetCount must be preserved by no-arg copyWith',
-      );
-      expect(
-        copied.lastRetiredStuckCount,
-        state.lastRetiredStuckCount,
-        reason: 'lastRetiredStuckCount must be preserved by no-arg copyWith',
+        copied.isResettingAllUnresolvable,
+        state.isResettingAllUnresolvable,
+        reason:
+            'isResettingAllUnresolvable must be preserved by no-arg copyWith',
       );
     },
     tags: 'glados',
@@ -1465,72 +1386,16 @@ void main() {
         isNull,
         reason: 'clearError must null the error field',
       );
-      // All boolean flags and counts must remain intact.
+      // All operation flags must remain intact.
       expect(cleared.isLoading, withError.isLoading);
       expect(cleared.isProcessing, withError.isProcessing);
       expect(cleared.isReRequesting, withError.isReRequesting);
       expect(cleared.isResetting, withError.isResetting);
-      expect(cleared.lastProcessedCount, withError.lastProcessedCount);
-    },
-    tags: 'glados',
-  );
-
-  glados.Glados2(
-    glados.any.backfillStatsState,
-    glados.any.intInRange(0, 6),
-    glados.ExploreConfig(numRuns: 120),
-  ).test(
-    'each clear flag nulls exactly its own field and leaves every other '
-    'field untouched',
-    (base, flagIndex) {
-      // Fully populate the nullable fields so "cleared" is distinguishable
-      // from "was already null".
-      final state = base.copyWith(
-        lastProcessedCount: base.lastProcessedCount ?? 11,
-        lastReRequestedCount: base.lastReRequestedCount ?? 12,
-        lastResetCount: base.lastResetCount ?? 13,
-        lastRetiredStuckCount: base.lastRetiredStuckCount ?? 14,
-        lastResetAllUnresolvableCount: 15,
-        error: 'boom',
-      );
-
-      final cleared = state.copyWith(
-        clearError: flagIndex == 0,
-        clearLastProcessed: flagIndex == 1,
-        clearLastReRequested: flagIndex == 2,
-        clearLastReset: flagIndex == 3,
-        clearLastRetiredStuck: flagIndex == 4,
-        clearLastResetAllUnresolvable: flagIndex == 5,
-      );
-
-      // Oracle: field i is null iff its flag was set; all else preserved.
-      expect(cleared.error, flagIndex == 0 ? isNull : 'boom');
+      expect(cleared.isRetiringStuck, withError.isRetiringStuck);
       expect(
-        cleared.lastProcessedCount,
-        flagIndex == 1 ? isNull : state.lastProcessedCount,
+        cleared.isResettingAllUnresolvable,
+        withError.isResettingAllUnresolvable,
       );
-      expect(
-        cleared.lastReRequestedCount,
-        flagIndex == 2 ? isNull : state.lastReRequestedCount,
-      );
-      expect(
-        cleared.lastResetCount,
-        flagIndex == 3 ? isNull : state.lastResetCount,
-      );
-      expect(
-        cleared.lastRetiredStuckCount,
-        flagIndex == 4 ? isNull : state.lastRetiredStuckCount,
-      );
-      expect(
-        cleared.lastResetAllUnresolvableCount,
-        flagIndex == 5 ? isNull : 15,
-      );
-      // Booleans are never touched by clear flags.
-      expect(cleared.isLoading, state.isLoading);
-      expect(cleared.isProcessing, state.isProcessing);
-      expect(cleared.isReRequesting, state.isReRequesting);
-      expect(cleared.isResetting, state.isResetting);
-      expect(cleared.isRetiringStuck, state.isRetiringStuck);
     },
     tags: 'glados',
   );

@@ -195,7 +195,7 @@ void main() {
 
     await _pump(tester, diff);
 
-    expect(diff.hasOtherDifferences, isTrue);
+    expect(diff.fields.map((field) => field.field), [EntryField.other]);
     expect(find.text('Other details'), findsOneWidget);
     expect(find.textContaining('differ in details'), findsOneWidget);
   });

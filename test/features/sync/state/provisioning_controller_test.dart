@@ -779,50 +779,6 @@ void main() {
       });
     });
 
-    group('rotatesPassword', () {
-      test('is false before any bundle is consumed', () {
-        expect(
-          container
-              .read(provisioningControllerProvider.notifier)
-              .rotatesPassword,
-          isFalse,
-        );
-      });
-
-      test('is true for a provisioned bundle', () async {
-        final controller = container.read(
-          provisioningControllerProvider.notifier,
-        );
-        await controller.configureFromBundle(provisionedBundle);
-
-        // Drives the "1 / 3, 2 / 3, 3 / 3" progress count. It follows the
-        // bundle kind, not the platform — the old platform-keyed count made a
-        // rotating run on mobile read "1 / 2, 2 / 2, 3 / 3".
-        expect(controller.rotatesPassword, isTrue);
-      });
-
-      test('is false for a handover bundle', () async {
-        final controller = container.read(
-          provisioningControllerProvider.notifier,
-        );
-        await controller.configureFromBundle(handoverBundle);
-
-        expect(controller.rotatesPassword, isFalse);
-      });
-
-      test('resets with the controller', () async {
-        final controller = container.read(
-          provisioningControllerProvider.notifier,
-        );
-        await controller.configureFromBundle(provisionedBundle);
-        expect(controller.rotatesPassword, isTrue);
-
-        controller.reset();
-
-        expect(controller.rotatesPassword, isFalse);
-      });
-    });
-
     group('reset', () {
       test('resets to initial state', () {
         final controller = container.read(
