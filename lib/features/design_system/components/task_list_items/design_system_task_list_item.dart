@@ -270,9 +270,6 @@ class _StatusIndicator extends StatelessWidget {
 
 class _TaskListItemSpec {
   const _TaskListItemSpec({
-    required this.horizontalPadding,
-    required this.verticalPadding,
-    required this.rowGap,
     required this.itemGap,
     required this.metaGap,
     required this.metaIconGap,
@@ -287,9 +284,6 @@ class _TaskListItemSpec {
 
   factory _TaskListItemSpec.fromTokens(DsTokens tokens) {
     return _TaskListItemSpec(
-      horizontalPadding: tokens.spacing.step5,
-      verticalPadding: tokens.spacing.step4,
-      rowGap: tokens.spacing.step2,
       itemGap: tokens.spacing.step3,
       metaGap: tokens.spacing.step5,
       metaIconGap: tokens.spacing.step1,
@@ -309,9 +303,6 @@ class _TaskListItemSpec {
     );
   }
 
-  final double horizontalPadding;
-  final double verticalPadding;
-  final double rowGap;
   final double itemGap;
   final double metaGap;
   final double metaIconGap;

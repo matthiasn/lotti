@@ -43,7 +43,6 @@ class TimeCalendarGeometry {
     required this.sectionGap,
     required this.labelDisclosureGap,
     required this.labelTapRadius,
-    required this.headerIconClusterWidth,
     required this.headerIconSize,
     required this.headerIconConstraint,
     required this.headerIconSplashRadius,
@@ -88,7 +87,6 @@ class TimeCalendarGeometry {
       sectionGap: tokens.spacing.step3,
       labelDisclosureGap: tokens.spacing.step2,
       labelTapRadius: tokens.radii.badgesPills,
-      headerIconClusterWidth: tokens.spacing.step10 + tokens.spacing.step2,
       headerIconSize: 28,
       headerIconConstraint: tokens.spacing.step9,
       headerIconSplashRadius: tokens.spacing.step6,
@@ -116,7 +114,6 @@ class TimeCalendarGeometry {
   final double sectionGap;
   final double labelDisclosureGap;
   final double labelTapRadius;
-  final double headerIconClusterWidth;
   final double headerIconSize;
   final double headerIconConstraint;
   final double headerIconSplashRadius;

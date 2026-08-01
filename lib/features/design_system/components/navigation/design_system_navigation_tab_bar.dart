@@ -35,7 +35,6 @@ class DesignSystemNavigationTabBar extends StatelessWidget {
     super.key,
   });
 
-  static const double defaultItemMinHeight = 52;
   static const double defaultIconSize = 20;
 
   final List<DesignSystemNavigationTabBarItem> items;

@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../../lib/features/design_system/components/celebration
     title: Completion celebration source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-01
 ---
 
 What the celebration *is* belongs to

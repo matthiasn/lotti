@@ -9,7 +9,7 @@
 /// the single source of truth for animation timing across the app.
 ///
 /// Durations follow the Material 3 duration scale; curves follow the M3
-/// easing family (standard / emphasized-decelerate / emphasized-accelerate).
+/// easing family (standard / emphasized-decelerate).
 library;
 
 import 'package:flutter/animation.dart';
@@ -46,8 +46,7 @@ abstract final class MotionDurations {
 /// The Material-3 easing family.
 ///
 /// Rule of thumb: **entering / settling** elements *decelerate* into rest
-/// (long soft tail, no hard stop); **exiting** elements *accelerate* away;
-/// supporting motion uses [standard].
+/// (long soft tail, no hard stop); supporting motion uses [standard].
 abstract final class MotionCurves {
   /// Symmetric emphasized / standard easing for supporting motion.
   static const Curve standard = Cubic(0.2, 0, 0, 1);
@@ -56,9 +55,6 @@ abstract final class MotionCurves {
   /// the motion *arrives* at rest instead of stopping. This is the curve the
   /// user actually watches when a gap closes, so the soft landing matters most.
   static const Curve emphasizedDecelerate = Cubic(0.05, 0.7, 0.1, 1);
-
-  /// Exiting elements — eases in, accelerates away.
-  static const Curve emphasizedAccelerate = Cubic(0.3, 0, 0.8, 0.15);
 }
 
 /// The one shared "resolve → collapse" choreography for an accepted/rejected
@@ -66,8 +62,8 @@ abstract final class MotionCurves {
 /// badge, and the residual scroll stabiliser all read a single timeline.
 ///
 /// The two beats **overlap**: the collapse begins while the resolve beat is in
-/// its tail, so contact → rest stays crisp (~[total]) instead of the two
-/// durations summing. Within the collapse the content opacity leads the height
+/// its tail, so contact → rest stays crisp instead of the two durations
+/// summing. Within the collapse the content opacity leads the height
 /// (the row is visually gone before the gap finishes closing) so the gap reads
 /// as space *healing* rather than a thing deflating.
 abstract final class ProposalMotion {
@@ -88,9 +84,6 @@ abstract final class ProposalMotion {
 
   /// The collapse / reflow is what the user watches — decelerate into stillness.
   static const Curve collapseCurve = MotionCurves.emphasizedDecelerate;
-
-  /// Total perceived contact → rest, accounting for the beat overlap.
-  static const Duration total = Duration(milliseconds: 440);
 
   /// Per-row stagger for the confirm-all sweep (clamp the index, see usage).
   static const Duration staggerStep = Duration(milliseconds: 55);

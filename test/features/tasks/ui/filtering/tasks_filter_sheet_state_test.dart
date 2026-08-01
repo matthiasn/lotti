@@ -285,7 +285,7 @@ void main() {
 
       expect(result.hasSortSection, isTrue);
       expect(result.selectedSortId, 'byDueDate');
-      expect(result.hasStatusField, isTrue);
+      expect(result.statusField, isNotNull);
       expect(result.statusField!.selectedIds, {'OPEN', 'IN PROGRESS'});
       expect(result.statusField!.options, hasLength(7));
       expect(result.hasPrioritySection, isTrue);
@@ -293,11 +293,11 @@ void main() {
       // multi-select set. The legacy single getter picks that same value.
       expect(result.selectedPriorityIds, {'p1'});
       expect(result.selectedPriorityId, 'p1');
-      expect(result.hasCategoryField, isTrue);
+      expect(result.categoryField, isNotNull);
       expect(result.categoryField!.selectedIds, {'cat-1'});
       expect(result.categoryField!.options, hasLength(3));
       expect(result.categoryField!.options.first.label, 'Unassigned');
-      expect(result.hasLabelField, isTrue);
+      expect(result.labelField, isNotNull);
       expect(result.labelField!.selectedIds, {'label-1'});
       expect(result.labelField!.options.first.label, 'Unassigned');
       expect(result.hasAgentFilter, isTrue);
@@ -476,7 +476,7 @@ void main() {
         ),
       );
 
-      expect(result.hasProjectField, isTrue);
+      expect(result.projectField, isNotNull);
       expect(result.projectField!.options, hasLength(2));
       expect(result.projectField!.options[0].label, 'Alpha');
       expect(result.projectField!.options[1].label, 'Beta');
@@ -507,7 +507,7 @@ void main() {
         ),
       );
 
-      expect(result.hasProjectField, isTrue);
+      expect(result.projectField, isNotNull);
       expect(result.projectField!.options, isEmpty);
     });
 
@@ -542,7 +542,7 @@ void main() {
         ),
       );
 
-      expect(result.hasProjectField, isFalse);
+      expect(result.projectField, isNull);
     });
   });
 }

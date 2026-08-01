@@ -17,44 +17,6 @@ void main() {
       expect(CelebrationVariant.defaultVariant, CelebrationVariant.sparks);
     });
 
-    group('fromStorage', () {
-      test('round-trips every variant through its name', () {
-        for (final variant in CelebrationVariant.values) {
-          expect(CelebrationVariant.fromStorage(variant.name), variant);
-        }
-      });
-
-      test('falls back to the default for null', () {
-        expect(
-          CelebrationVariant.fromStorage(null),
-          CelebrationVariant.defaultVariant,
-        );
-      });
-
-      test('falls back to the default for an empty string', () {
-        expect(
-          CelebrationVariant.fromStorage(''),
-          CelebrationVariant.defaultVariant,
-        );
-      });
-
-      test('falls back to the default for an unrecognised value', () {
-        expect(
-          CelebrationVariant.fromStorage('supernova'),
-          CelebrationVariant.defaultVariant,
-        );
-      });
-
-      test('is case-sensitive — a wrong case does not match', () {
-        // `name` is lower-case; an upper-case persisted value should not match
-        // and must fall back rather than throw.
-        expect(
-          CelebrationVariant.fromStorage('SPARKS'),
-          CelebrationVariant.defaultVariant,
-        );
-      });
-    });
-
     group('tryFromStorage', () {
       test('round-trips every variant through its name', () {
         for (final variant in CelebrationVariant.values) {

@@ -72,7 +72,6 @@ void main() {
       const combine = CombineSelection();
       for (var seed = 0; seed < 40; seed++) {
         final resolved = combine.resolve(seed: seed);
-        expect(resolved.isCombined, isTrue);
         expect(resolved.secondary, isNotNull);
         expect(
           resolved.secondary,

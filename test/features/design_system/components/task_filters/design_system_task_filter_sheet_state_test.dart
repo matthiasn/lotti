@@ -6,7 +6,7 @@
 // Worked examples for the same API live in
 // design_system_task_filter_sheet_test.dart; this file pins the algebraic
 // invariants (double-toggle identity, clearAll → appliedCount == 0,
-// removeSelection idempotency, JSON round-trips) over generated states.
+// removeSelection idempotency) over generated states.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -205,36 +205,6 @@ void main() {
     glados.any.filterStateScenario,
     glados.ExploreConfig(numRuns: 160),
   ).test(
-    'togglePriority(all) and selectPriority semantics',
-    (scenario) {
-      final state = scenario.build();
-      if (scenario.concretePriorityId == null) return;
-
-      // The sentinel always clears the whole selection.
-      expect(
-        state
-            .togglePriority(DesignSystemTaskFilterState.allPriorityId)
-            .selectedPriorityIds,
-        isEmpty,
-      );
-
-      // selectPriority replaces the selection with exactly one id.
-      final id = scenario.concretePriorityId!;
-      expect(state.selectPriority(id).selectedPriorityIds, {id});
-      expect(
-        state
-            .selectPriority(DesignSystemTaskFilterState.allPriorityId)
-            .selectedPriorityIds,
-        isEmpty,
-      );
-    },
-    tags: 'glados',
-  );
-
-  glados.Glados<_FilterStateScenario>(
-    glados.any.filterStateScenario,
-    glados.ExploreConfig(numRuns: 160),
-  ).test(
     'clearAll always drops appliedCount to zero',
     (scenario) {
       final state = scenario.build();
@@ -280,79 +250,6 @@ void main() {
       } else {
         expect(afterOnce.length, before.length - 1);
       }
-    },
-    tags: 'glados',
-  );
-
-  glados.Glados<_FilterStateScenario>(
-    glados.any.filterStateScenario,
-    glados.ExploreConfig(numRuns: 160),
-  ).test(
-    'fromJson(toJson()) preserves every serialized projection',
-    (scenario) {
-      final state = scenario.build();
-      final roundTrip = DesignSystemTaskFilterState.fromJson(state.toJson());
-
-      expect(roundTrip.title, state.title);
-      expect(roundTrip.clearAllLabel, state.clearAllLabel);
-      expect(roundTrip.applyLabel, state.applyLabel);
-      expect(roundTrip.sortLabel, state.sortLabel);
-      expect(roundTrip.selectedSortId, state.selectedSortId);
-      expect(
-        roundTrip.sortOptions.map((o) => o.id),
-        state.sortOptions.map((o) => o.id),
-      );
-      expect(roundTrip.selectedPriorityIds, state.selectedPriorityIds);
-      expect(
-        roundTrip.priorityOptions.map((o) => o.id),
-        state.priorityOptions.map((o) => o.id),
-      );
-      for (final section in _sections) {
-        expect(
-          _fieldSelection(roundTrip, section),
-          _fieldSelection(state, section),
-          reason: section.name,
-        );
-      }
-      expect(roundTrip.agentFilterLabel, state.agentFilterLabel);
-      expect(roundTrip.selectedAgentFilterId, state.selectedAgentFilterId);
-      expect(roundTrip.selectedSearchModeId, state.selectedSearchModeId);
-      expect(
-        roundTrip.toggles.map((t) => (t.id, t.value)),
-        state.toggles.map((t) => (t.id, t.value)),
-      );
-      // The derived count survives serialization too.
-      expect(roundTrip.appliedCount, state.appliedCount);
-    },
-    tags: 'glados',
-  );
-
-  // DesignSystemTaskFilterOption.toJson serializes exactly id/label/glyph, and
-  // fromJson restores those three. The state-level round-trip above only checks
-  // option ids, so this property exercises the option round-trip directly over
-  // every glyph value (the wider scenario builder never sets a non-default
-  // glyph).
-  const glyphs = DesignSystemTaskFilterGlyph.values;
-  glados.Glados3<int, String, String>(
-    glados.any.intInRange(0, glyphs.length),
-    glados.any.letterOrDigits,
-    glados.any.letterOrDigits,
-    glados.ExploreConfig(numRuns: 120),
-  ).test(
-    'DesignSystemTaskFilterOption fromJson(toJson()) preserves id/label/glyph '
-    'for every glyph',
-    (glyphIndex, id, label) {
-      final option = DesignSystemTaskFilterOption(
-        id: id,
-        label: label,
-        glyph: glyphs[glyphIndex % glyphs.length],
-      );
-
-      final restored = DesignSystemTaskFilterOption.fromJson(option.toJson());
-
-      expect(restored.id, option.id);
-      expect(restored.label, option.label);
-      expect(restored.glyph, option.glyph);
     },
     tags: 'glados',
   );

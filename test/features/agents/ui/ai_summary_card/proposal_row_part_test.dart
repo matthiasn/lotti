@@ -113,7 +113,9 @@ void main() {
 
         // A failed write must NOT collapse the row away: the resolve beat
         // rewinds and the proposal stays put so the user can retry.
-        await tester.pump(ProposalMotion.total);
+        await tester.pump(
+          ProposalMotion.resolveHold + ProposalMotion.collapse,
+        );
         await tester.pump(ProposalMotion.collapse);
         expect(find.byType(ProposalRow), findsOneWidget);
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);

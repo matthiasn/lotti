@@ -119,7 +119,6 @@ class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
               selected: widget.selected,
               label: widget.semanticsLabel ?? widget.label,
               child: _RadioButtonContent(
-                selected: widget.selected,
                 showInnerDot: showInnerDot,
                 sizeSpec: sizeSpec,
                 colorSpec: colorSpec,
@@ -158,7 +157,6 @@ class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
 
 class _RadioButtonContent extends StatelessWidget {
   const _RadioButtonContent({
-    required this.selected,
     required this.showInnerDot,
     required this.sizeSpec,
     required this.colorSpec,
@@ -167,7 +165,6 @@ class _RadioButtonContent extends StatelessWidget {
     this.tooltipMessage,
   });
 
-  final bool selected;
   final bool showInnerDot;
   final _RadioButtonSizeSpec sizeSpec;
   final _RadioButtonColorSpec colorSpec;

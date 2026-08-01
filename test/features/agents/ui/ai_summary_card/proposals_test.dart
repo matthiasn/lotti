@@ -1389,7 +1389,9 @@ void main() {
 
         completer.complete(const []);
         await tester.pump();
-        await tester.pump(ProposalMotion.total);
+        await tester.pump(
+          ProposalMotion.resolveHold + ProposalMotion.collapse,
+        );
         await tester.pump(ProposalMotion.collapse);
         await tester.pump(ProposalMotion.staggerStep * 8);
         await tester.pump();
@@ -1580,7 +1582,9 @@ void main() {
         // the still-pending writes) and leave one after another.
         completer.complete(const []);
         await tester.pump();
-        await tester.pump(ProposalMotion.total);
+        await tester.pump(
+          ProposalMotion.resolveHold + ProposalMotion.collapse,
+        );
         await tester.pump(ProposalMotion.collapse);
         await tester.pump(ProposalMotion.staggerStep * 8);
         await tester.pump();
