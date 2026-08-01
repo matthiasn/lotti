@@ -5,13 +5,13 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2026-10-26
+generated: { by: claude-code/opus-5, at: 2026-08-01T12:00:00Z }
+stale_after: 2026-11-01
 sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Directive, status and digest services
-    last_modified: 2026-07-26
+    last_modified: 2026-08-01
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination
@@ -103,6 +103,47 @@ Completion writes the watermark milestone and deterministically re-arms
 tomorrow's digest record. `DayAgentService.restoreSubscriptions` bootstraps the
 first record, and recovers a missed re-arm, whenever the coordinator identity is
 active.
+
+## A digest anchors to the day it runs on, not the day it was scheduled for
+
+The record's `digest:<dayId>` token is minted when the *next* digest is armed, so
+a record that stays pending through its slot — device asleep, offline, or the app
+not running — fires carrying a day that may already be over. `resolvePlannerWakeDay`
+would then hand the wake a dead workspace and the coordinator would issue
+directives for a day nobody can act on.
+
+`reanchorDigestTriggerTokens` rewrites a stale `digest:` token to today's day id
+before the workspace is resolved. A current or future token is left alone: firing
+early is clock skew, not staleness, and pulling the anchor backwards would digest
+a day twice.
+
+**Missed windows collapse into one run rather than replaying one digest per
+skipped day.** The catch-up still sees everything back to its watermark, so a
+week offline surfaces that week's escalations in the single catch-up digest —
+*provided a previous digest completed*. With no `dailyWakeCompleted` milestone
+at all (a fresh install, or every prior attempt failed), the watermark falls
+back to 48 hours plus the 12-hour sync slack, and escalations older than that
+are not rendered before the watermark advances past them. That bound belongs to
+the watermark fallback, not to re-anchoring.
+
+The re-arm is bounded by the day just digested (`nextDigestTimeAfterDay`), not
+merely by `now`. A catch-up that runs at 03:00 re-anchors to today, and the plain
+next slot would be *today* at 06:00 — a second digest for the day just digested.
+
+**Only a run that actually digested applies that bound** — which is not the same
+as a run that reported success. `AgentSyncService` rethrows a buffered outbox
+failure *after* its transaction commits, so a digest can be durably complete and
+still be reported as failed; the failure path therefore reads the
+`dailyWakeCompleted` milestone back from the log for its own run key rather than
+trusting the result. When nothing committed it re-arms unbounded and keeps
+today's 06:00 retry, because skipping to tomorrow would cost the user today's
+briefing over a transient error.
+
+The resulting invariant is **at most one digest per day per record history** —
+it is enforced by one device consuming and re-arming the record in sequence, and
+says nothing about two devices holding the same pending record before either
+`consumed` flip has synced. Cross-device exclusion is a separate concern with
+its own mechanism, tracked as `lotti3-hkb.11`.
 
 ## Severity ranking, not arrival order
 

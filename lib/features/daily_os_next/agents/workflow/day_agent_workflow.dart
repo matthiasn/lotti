@@ -202,12 +202,25 @@ class DayAgentWorkflow {
     final maintainsDigestCadence =
         agentId == dailyOsPlannerAgentId &&
         triggerTokens.any((token) => token.startsWith(dayAgentDigestPrefix));
+    // A digest record that stayed pending through its slot (device asleep,
+    // offline, app not running) fires with the day it was scheduled for, which
+    // may be over. Anchor it to the day it actually runs on before the day
+    // workspace is resolved from the tokens.
+    final effectiveTokens = maintainsDigestCadence
+        ? reanchorDigestTriggerTokens(triggerTokens, now)
+        : triggerTokens;
+    if (!identical(effectiveTokens, triggerTokens)) {
+      _log(
+        're-anchored stale digest wake to ${dayAgentIdForDate(now)}',
+        subDomain: 'execute',
+      );
+    }
     var succeeded = false;
     try {
       final result = await _execute(
         agentIdentity: agentIdentity,
         runKey: runKey,
-        triggerTokens: triggerTokens,
+        triggerTokens: effectiveTokens,
         threadId: threadId,
         now: now,
       );
@@ -220,7 +233,31 @@ class DayAgentWorkflow {
       // occur before inference setup reaches its own failure handling.
       if (maintainsDigestCadence && !succeeded) {
         try {
-          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
+          // Whether this wake actually completed a digest is a different
+          // question from whether it returned success: the sync service
+          // rethrows a buffered outbox failure only AFTER its transaction
+          // commits, so a digest can be durably complete and still be reported
+          // as failed. Re-arming unbounded in that case would overwrite the
+          // committed next-day record with today's slot and digest the day
+          // twice, so the store is asked rather than the result.
+          final committed = await _digestCommitted(
+            agentId: agentId,
+            runKey: runKey,
+          );
+          await _scheduleNextCoordinatorDigest(
+            agentId: agentId,
+            now: now,
+            // The day the wake DIGESTED, taken from its own token rather than
+            // from when the milestone happened to be written. An early wake
+            // holding a future-day token commits a re-arm for the day after
+            // that, and reading the milestone's date instead would pull the
+            // anchor back to the run day and overwrite it.
+            completedDay: committed
+                ? dateFromDayId(
+                    resolvePlannerWakeDay(effectiveTokens).dayId ?? '',
+                  )
+                : null,
+          );
         } catch (scheduleError, stackTrace) {
           _logError(
             'failed to re-arm coordinator digest wake',
@@ -735,7 +772,11 @@ class DayAgentWorkflow {
             threadId: threadId,
             runKey: runKey,
           );
-          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
+          await _scheduleNextCoordinatorDigest(
+            agentId: agentId,
+            now: now,
+            completedDay: dayDate,
+          );
         }
       });
       onPersistedStateChanged
@@ -770,13 +811,58 @@ class DayAgentWorkflow {
     }
   }
 
+  /// Whether this wake's `dailyWakeCompleted` milestone durably committed.
+  ///
+  /// Read rather than remembered: a flag set beside the append would be wrong
+  /// whenever the transaction rolled back, which is the case where today's
+  /// retry must survive. Fail-soft — an unreadable log answers "no", which
+  /// keeps the retry rather than suppressing it.
+  Future<bool> _digestCommitted({
+    required String agentId,
+    required String runKey,
+  }) async {
+    try {
+      // Unbounded on purpose. The page is ordered by `created_at DESC`, so a
+      // backward clock correction — or synced history carrying future-dated
+      // system messages — can push the marker this run just wrote off a capped
+      // newest page. Answering "no" then overwrites an already-correct
+      // next-day re-arm with today's slot, which is the duplicate this whole
+      // path exists to prevent. System messages are milestones, not a
+      // high-volume kind.
+      final milestones = await agentRepository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.system,
+      );
+      for (final message in milestones) {
+        if (message.metadata.milestone == AgentMilestone.dailyWakeCompleted &&
+            message.metadata.runKey == runKey) {
+          return true;
+        }
+      }
+    } catch (e, s) {
+      _logError('failed to read digest completion', error: e, stackTrace: s);
+    }
+    return false;
+  }
+
   /// Schedules the coordinator's next morning digest after either success or
   /// failure, because the current scheduled-wake record is consumed first.
+  ///
+  /// [completedDay] is the day this wake actually digested, and bounds the
+  /// next slot so a catch-up that ran before the digest hour cannot re-arm a
+  /// second digest for the day it just covered. It is null when the wake
+  /// FAILED: nothing was digested, no `dailyWakeCompleted` watermark was
+  /// written, and skipping today's slot would cost the user today's briefing
+  /// over a transient error. A failed run therefore re-arms unbounded, which
+  /// restores the same-day retry.
   Future<void> _scheduleNextCoordinatorDigest({
     required String agentId,
     required DateTime now,
+    DateTime? completedDay,
   }) async {
-    final next = nextDigestTime(now);
+    final next = completedDay == null
+        ? nextDigestTime(now)
+        : nextDigestTimeAfterDay(now, completedDay);
     await syncService.upsertEntity(
       AgentDomainEntity.scheduledWake(
         id: scheduledWakeRecordId(
