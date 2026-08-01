@@ -1,6 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_retention_policy.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Outcome of one retention sweep, per source.
@@ -30,6 +32,10 @@ class AgentRetentionResult {
 /// a sweep cut short by a process kill simply leaves rows for the next start,
 /// and a sweep that runs twice removes nothing the second time. Work happens in
 /// bounded batches off the UI's path.
+/// Mirrors the digest's own sync-lag overlap when reading its watermark, so
+/// retention never trims inside the window the digest still re-reads.
+const _digestSyncLagSlack = Duration(hours: 12);
+
 class AgentRetentionService {
   AgentRetentionService({
     required this.repository,
@@ -41,6 +47,38 @@ class AgentRetentionService {
   final DomainLogger domainLogger;
   final AgentRetentionPolicy policy;
 
+  /// The digest's unconsumed backlog is never eligible: returns the earlier of
+  /// [cutoff] and the coordinator's watermark, so a stalled digest holds
+  /// retention back rather than losing the events it has yet to read.
+  ///
+  /// Fail-soft in the safe direction — an unreadable log yields the epoch,
+  /// which prunes nothing.
+  Future<DateTime> _watermarkFloored(DateTime cutoff) async {
+    try {
+      final markers = await repository.getMessagesByKind(
+        dailyOsPlannerAgentId,
+        AgentMessageKind.system,
+        limit: 50,
+      );
+      for (final marker in markers) {
+        if (marker.metadata.milestone == AgentMilestone.dailyWakeCompleted) {
+          final watermark = marker.createdAt.subtract(_digestSyncLagSlack);
+          return watermark.isBefore(cutoff) ? watermark : cutoff;
+        }
+      }
+      // No digest has ever completed, so nothing has been consumed.
+      return DateTime.fromMillisecondsSinceEpoch(0);
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'failed to read the digest watermark; skipping status events',
+        stackTrace: s,
+      );
+      return DateTime.fromMillisecondsSinceEpoch(0);
+    }
+  }
+
   /// Sweeps every retention-eligible source once.
   ///
   /// Fail-soft: retention is housekeeping and must never keep the app from
@@ -49,8 +87,17 @@ class AgentRetentionService {
     final now = clock.now();
     var result = const AgentRetentionResult();
     try {
-      final dayStatusEvents = await repository.pruneDayStatusEventsBefore(
+      // Never past what the digest has actually consumed. Its watermark is the
+      // newest `dailyWakeCompleted` milestone (minus a 12h sync-lag slack),
+      // and a digest that has failed or stayed pending for longer than the
+      // retention window would otherwise find its backlog already deleted —
+      // silently, and precisely in the "came back after a break" case the
+      // collapse-into-one-catch-up behaviour exists to serve.
+      final cutoff = await _watermarkFloored(
         now.subtract(policy.dayStatusEvents),
+      );
+      final dayStatusEvents = await repository.pruneDayStatusEventsBefore(
+        cutoff,
         batchSize: policy.batchSize,
         maxBatches: policy.maxBatchesPerSweep,
       );

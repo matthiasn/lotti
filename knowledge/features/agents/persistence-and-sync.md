@@ -303,13 +303,25 @@ SQL, so a new entity type forces a decision instead of silently inheriting one.
 | Change sets, decisions, attention claims | Forever | Audit trail behind proposals the user accepted or rejected |
 | `saga_log` | n/a | No writer exists yet; it earns a policy when it earns a writer |
 | Observations | **Classified, not yet swept** | See below |
-| `dayStatusEvent` | **90 days** | The digest reads from its watermark plus 12h slack — months of headroom |
+| `dayStatusEvent` | **90 days, floored at the digest watermark** | See below |
 
 **The classification is exhaustive over the entity union.** `classify` is a
 freezed `map` with no fallback branch, so adding an `AgentDomainEntity` variant
 is a compile error until someone decides what retention does with it. A wildcard
 would have let a new machine-derived row accumulate forever with neither a test
 nor a compiler failure to say so.
+
+## Age alone is not the bound for status events
+
+The digest reads status events from its `dailyWakeCompleted` watermark minus a
+12-hour sync-lag slack, and a stale digest window deliberately collapses into a
+single catch-up run. So a digest that fails, or stays pending, for longer than
+the retention window would find its backlog **already deleted** — silently, and
+precisely in the came-back-after-a-break case the collapse exists to serve.
+
+The sweep therefore takes the *earlier* of the age cutoff and that watermark. A
+stalled digest holds retention back rather than losing what it has yet to read,
+and a store where no digest has ever completed prunes nothing at all.
 
 ## Why observations are classified but not swept
 

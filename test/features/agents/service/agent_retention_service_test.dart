@@ -1,10 +1,14 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_retention_policy.dart';
 import 'package:lotti/features/agents/service/agent_retention_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../test_data/entity_factories.dart';
 
 void main() {
   late MockAgentRepository repository;
@@ -33,6 +37,23 @@ void main() {
       ),
     ).thenReturn(null);
     when(
+      () => repository.getMessagesByKind(
+        dailyOsPlannerAgentId,
+        AgentMessageKind.system,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        makeTestMessage(
+          kind: AgentMessageKind.system,
+          createdAt: now,
+          metadata: const AgentMessageMetadata(
+            milestone: AgentMilestone.dailyWakeCompleted,
+          ),
+        ),
+      ],
+    );
+    when(
       () => repository.pruneDayStatusEventsBefore(
         any(),
         batchSize: any(named: 'batchSize'),
@@ -54,6 +75,60 @@ void main() {
         now.subtract(policy.dayStatusEvents),
         batchSize: policy.batchSize,
         maxBatches: policy.maxBatchesPerSweep,
+      ),
+    ).called(1);
+  });
+
+  test('never prunes past what the digest has consumed', () async {
+    // A digest that failed or stayed pending for longer than the retention
+    // window would otherwise find its backlog already deleted — silently, and
+    // exactly in the came-back-after-a-break case the catch-up exists for.
+    final staleWatermark = now.subtract(const Duration(days: 200));
+    when(
+      () => repository.getMessagesByKind(
+        dailyOsPlannerAgentId,
+        AgentMessageKind.system,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        makeTestMessage(
+          kind: AgentMessageKind.system,
+          createdAt: staleWatermark,
+          metadata: const AgentMessageMetadata(
+            milestone: AgentMilestone.dailyWakeCompleted,
+          ),
+        ),
+      ],
+    );
+
+    await withClock(Clock.fixed(now), service.sweep);
+
+    verify(
+      () => repository.pruneDayStatusEventsBefore(
+        staleWatermark.subtract(const Duration(hours: 12)),
+        batchSize: any(named: 'batchSize'),
+        maxBatches: any(named: 'maxBatches'),
+      ),
+    ).called(1);
+  });
+
+  test('prunes nothing when no digest has ever completed', () async {
+    when(
+      () => repository.getMessagesByKind(
+        dailyOsPlannerAgentId,
+        AgentMessageKind.system,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+
+    await withClock(Clock.fixed(now), service.sweep);
+
+    verify(
+      () => repository.pruneDayStatusEventsBefore(
+        DateTime.fromMillisecondsSinceEpoch(0),
+        batchSize: any(named: 'batchSize'),
+        maxBatches: any(named: 'maxBatches'),
       ),
     ).called(1);
   });
