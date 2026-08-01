@@ -202,12 +202,25 @@ class DayAgentWorkflow {
     final maintainsDigestCadence =
         agentId == dailyOsPlannerAgentId &&
         triggerTokens.any((token) => token.startsWith(dayAgentDigestPrefix));
+    // A digest record that stayed pending through its slot (device asleep,
+    // offline, app not running) fires with the day it was scheduled for, which
+    // may be over. Anchor it to the day it actually runs on before the day
+    // workspace is resolved from the tokens.
+    final effectiveTokens = maintainsDigestCadence
+        ? reanchorDigestTriggerTokens(triggerTokens, now)
+        : triggerTokens;
+    if (!identical(effectiveTokens, triggerTokens)) {
+      _log(
+        're-anchored stale digest wake to ${dayAgentIdForDate(now)}',
+        subDomain: 'execute',
+      );
+    }
     var succeeded = false;
     try {
       final result = await _execute(
         agentIdentity: agentIdentity,
         runKey: runKey,
-        triggerTokens: triggerTokens,
+        triggerTokens: effectiveTokens,
         threadId: threadId,
         now: now,
       );
@@ -220,7 +233,11 @@ class DayAgentWorkflow {
       // occur before inference setup reaches its own failure handling.
       if (maintainsDigestCadence && !succeeded) {
         try {
-          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
+          await _scheduleNextCoordinatorDigest(
+            agentId: agentId,
+            now: now,
+            anchoredDay: digestAnchorDay(effectiveTokens),
+          );
         } catch (scheduleError, stackTrace) {
           _logError(
             'failed to re-arm coordinator digest wake',
@@ -735,7 +752,11 @@ class DayAgentWorkflow {
             threadId: threadId,
             runKey: runKey,
           );
-          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
+          await _scheduleNextCoordinatorDigest(
+            agentId: agentId,
+            now: now,
+            anchoredDay: dayDate,
+          );
         }
       });
       onPersistedStateChanged
@@ -775,8 +796,11 @@ class DayAgentWorkflow {
   Future<void> _scheduleNextCoordinatorDigest({
     required String agentId,
     required DateTime now,
+    DateTime? anchoredDay,
   }) async {
-    final next = nextDigestTime(now);
+    final next = anchoredDay == null
+        ? nextDigestTime(now)
+        : nextDigestTimeAfterDay(now, anchoredDay);
     await syncService.upsertEntity(
       AgentDomainEntity.scheduledWake(
         id: scheduledWakeRecordId(

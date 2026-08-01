@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -41,6 +42,137 @@ void main() {
     test('rolls over month boundaries via day arithmetic', () {
       expect(
         nextDigestTime(DateTime(2026, 7, 31, 9)),
+        DateTime(2026, 8, 1, 6),
+      );
+    });
+  });
+
+  group('reanchorDigestTriggerTokens', () {
+    test('rewrites a digest token whose day has already passed', () {
+      final tokens = reanchorDigestTriggerTokens(
+        {dayAgentDigestToken('dayplan-2026-07-20')},
+        DateTime(2026, 7, 23, 9),
+      );
+
+      expect(tokens, {dayAgentDigestToken('dayplan-2026-07-23')});
+    });
+
+    test('preserves the non-digest tokens riding along', () {
+      final tokens = reanchorDigestTriggerTokens({
+        dayAgentDigestToken('dayplan-2026-07-20'),
+        dayAgentProcessingJobToken(
+          'job-1',
+          requestedAt: DateTime(2026, 7, 20, 6),
+        ),
+      }, DateTime(2026, 7, 23, 9));
+
+      expect(tokens, {
+        dayAgentProcessingJobToken(
+          'job-1',
+          requestedAt: DateTime(2026, 7, 20, 6),
+        ),
+        dayAgentDigestToken('dayplan-2026-07-23'),
+      });
+    });
+
+    test('leaves an on-time wake untouched', () {
+      final original = {dayAgentDigestToken('dayplan-2026-07-23')};
+
+      expect(
+        identical(
+          reanchorDigestTriggerTokens(original, DateTime(2026, 7, 23, 6, 2)),
+          original,
+        ),
+        isTrue,
+        reason: 'No rewrite means the caller keeps the exact token identity.',
+      );
+    });
+
+    test('leaves a wake that fires early for a future day untouched', () {
+      final original = {dayAgentDigestToken('dayplan-2026-07-24')};
+
+      expect(
+        reanchorDigestTriggerTokens(original, DateTime(2026, 7, 23, 23, 58)),
+        original,
+        reason:
+            'Firing before the anchored day is clock skew, not staleness — '
+            'pulling the anchor backwards would digest a day twice.',
+      );
+    });
+
+    test('leaves a non-digest token set untouched', () {
+      final original = {
+        dayAgentDraftingToken('dayplan-2026-07-20'),
+        dayAgentPlanningDayToken('dayplan-2026-07-20'),
+      };
+
+      expect(
+        reanchorDigestTriggerTokens(original, DateTime(2026, 7, 23, 9)),
+        original,
+        reason: 'Only the coordinator digest re-anchors; day work does not.',
+      );
+    });
+
+    test('ignores an unparseable digest day rather than rewriting it', () {
+      final original = {'${dayAgentDigestPrefix}not-a-day'};
+
+      expect(
+        reanchorDigestTriggerTokens(original, DateTime(2026, 7, 23, 9)),
+        original,
+      );
+    });
+  });
+
+  group('digestAnchorDay', () {
+    test('returns the digest token day', () {
+      expect(
+        digestAnchorDay({dayAgentDigestToken('dayplan-2026-07-23')}),
+        DateTime(2026, 7, 23),
+      );
+    });
+
+    test('returns null without a digest token', () {
+      expect(
+        digestAnchorDay({dayAgentDraftingToken('dayplan-2026-07-23')}),
+        isNull,
+      );
+    });
+
+    test('resolves a merged set to its latest day', () {
+      expect(
+        digestAnchorDay({
+          dayAgentDigestToken('dayplan-2026-07-21'),
+          dayAgentDigestToken('dayplan-2026-07-23'),
+        }),
+        DateTime(2026, 7, 23),
+      );
+    });
+  });
+
+  group('nextDigestTimeAfterDay', () {
+    test('keeps the plain next slot when it clears the anchored day', () {
+      expect(
+        nextDigestTimeAfterDay(
+          DateTime(2026, 7, 23, 6, 5),
+          DateTime(2026, 7, 23),
+        ),
+        DateTime(2026, 7, 24, 6),
+      );
+    });
+
+    test('skips a slot that would digest the anchored day twice', () {
+      expect(
+        nextDigestTimeAfterDay(DateTime(2026, 7, 23, 3), DateTime(2026, 7, 23)),
+        DateTime(2026, 7, 24, 6),
+        reason:
+            'A stale wake re-anchored to today at 03:00 must not be followed '
+            'by today 06:00 — that is a second digest for the same day.',
+      );
+    });
+
+    test('rolls over a month boundary while skipping', () {
+      expect(
+        nextDigestTimeAfterDay(DateTime(2026, 7, 31, 3), DateTime(2026, 7, 31)),
         DateTime(2026, 8, 1, 6),
       );
     });

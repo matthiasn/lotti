@@ -104,6 +104,30 @@ tomorrow's digest record. `DayAgentService.restoreSubscriptions` bootstraps the
 first record, and recovers a missed re-arm, whenever the coordinator identity is
 active.
 
+## A digest anchors to the day it runs on, not the day it was scheduled for
+
+The record's `digest:<dayId>` token is minted when the *next* digest is armed, so
+a record that stays pending through its slot — device asleep, offline, or the app
+not running — fires carrying a day that may already be over. `resolvePlannerWakeDay`
+would then hand the wake a dead workspace and the coordinator would issue
+directives for a day nobody can act on.
+
+`reanchorDigestTriggerTokens` rewrites a stale `digest:` token to today's day id
+before the workspace is resolved. A current or future token is left alone: firing
+early is clock skew, not staleness, and pulling the anchor backwards would digest
+a day twice.
+
+**Missed windows collapse into one run rather than replaying one digest per
+skipped day.** Nothing is lost — the digest reads status events from its
+watermark, not from its day token, so a week offline still surfaces that week's
+escalations in the single catch-up digest.
+
+The re-arm is bounded by the anchored day (`nextDigestTimeAfterDay`), not merely
+by `now`. A catch-up that runs at 03:00 re-anchors to today, and the plain next
+slot would be *today* at 06:00 — a second digest for the day just digested. Both
+the success and the failure re-arm path use the bounded computation, so the
+invariant holds at most one digest per day either way.
+
 ## Severity ranking, not arrival order
 
 When more events exist than the digest renders (50), selection is severity-ranked

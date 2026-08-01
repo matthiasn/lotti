@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -772,6 +774,91 @@ DateTime nextDigestTime(DateTime now) {
           now.day + 1,
           AgentSchedules.dayAgentDigestHour,
         );
+}
+
+/// The next coordinator digest instant strictly after [now] that also falls on
+/// a calendar day strictly after [anchoredDay].
+///
+/// [nextDigestTime] alone is not enough once a stale digest re-anchors
+/// ([reanchorDigestTriggerTokens]): a wake that was days overdue and fires at,
+/// say, 03:00 anchors to today, and the plain next slot would be *today* at the
+/// digest hour — a second digest for the day just digested. Bounding the next
+/// slot by the anchored day keeps the invariant of at most one digest per day.
+DateTime nextDigestTimeAfterDay(DateTime now, DateTime anchoredDay) {
+  final anchorSlot = DateTime(
+    anchoredDay.year,
+    anchoredDay.month,
+    anchoredDay.day,
+    AgentSchedules.dayAgentDigestHour,
+  );
+  var next = nextDigestTime(now);
+  while (!next.isAfter(anchorSlot)) {
+    next = DateTime(
+      next.year,
+      next.month,
+      next.day + 1,
+      AgentSchedules.dayAgentDigestHour,
+    );
+  }
+  return next;
+}
+
+/// The calendar day a digest wake is anchored to, or `null` when [triggerTokens]
+/// carries no parseable digest token.
+///
+/// Ambiguity is not possible in practice — the digest workspace is a single
+/// lane whose records carry exactly one digest token — but a merged set is
+/// resolved to its latest day so the re-arm bound in [nextDigestTimeAfterDay]
+/// can never schedule a duplicate for a day already covered.
+DateTime? digestAnchorDay(Set<String> triggerTokens) {
+  DateTime? latest;
+  for (final token in triggerTokens) {
+    if (!token.startsWith(dayAgentDigestPrefix)) continue;
+    final date = dateFromDayId(
+      token.substring(dayAgentDigestPrefix.length).trim(),
+    );
+    if (date == null) continue;
+    if (latest == null || date.isAfter(latest)) latest = date;
+  }
+  return latest;
+}
+
+/// Re-anchors a coordinator digest wake to the day it actually runs on.
+///
+/// A digest `ScheduledWakeEntity` carries `digest:<dayId>` for the day it was
+/// *scheduled* for. When the device is asleep, offline, or the app is not
+/// running through the slot, the record stays pending and fires later — with a
+/// day token that may already be in the past, making the digest reason about
+/// and issue directives for a day that is over.
+///
+/// The rule: **a digest anchors to the calendar day on which it runs.** A stale
+/// token is rewritten to today's day id; a current or future token is left
+/// alone (an early fire is not evidence of staleness). Missed digest windows
+/// collapse into this single run rather than replaying one digest per skipped
+/// day — nothing is lost, because the digest reads status events from its
+/// watermark rather than from its day token.
+///
+/// Non-digest token sets are returned unchanged.
+Set<String> reanchorDigestTriggerTokens(
+  Set<String> triggerTokens,
+  DateTime now,
+) {
+  final todayId = dayAgentIdForDate(now);
+  final stale = <String>[];
+  for (final token in triggerTokens) {
+    if (!token.startsWith(dayAgentDigestPrefix)) continue;
+    final dayId = token.substring(dayAgentDigestPrefix.length).trim();
+    if (dayId.isEmpty || dayId == todayId) continue;
+    final date = dateFromDayId(dayId);
+    if (date == null || !date.isBefore(localDay(now))) continue;
+    stale.add(token);
+  }
+  if (stale.isEmpty) return triggerTokens;
+  return {
+    for (final token in triggerTokens)
+      if (!stale.contains(token)) token,
+    dayAgentDigestToken(todayId),
+  };
 }
 
 /// Severity-ranked selection of status events for one digest (ADR 0032):

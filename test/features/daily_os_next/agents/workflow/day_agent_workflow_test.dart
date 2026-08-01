@@ -257,10 +257,11 @@ void main() {
   Future<WakeResult> executeAsCoordinator(
     DayAgentWorkflow sut, {
     Set<String>? triggerTokens,
+    DateTime? at,
   }) {
     stubCoordinatorReads();
     return withClock(
-      Clock.fixed(now),
+      Clock.fixed(at ?? now),
       () => sut.execute(
         agentIdentity: makeTestIdentity(
           id: dailyOsPlannerAgentId,
@@ -2132,6 +2133,132 @@ void main() {
           triggerTokens: {dayAgentDigestToken(dayId)},
         );
       }
+
+      group('a digest wake that fires late re-anchors to the day it runs on', () {
+        setUp(() {
+          // The `<digest>` section only renders when its context loads; these
+          // are the reads the shared coordinator stubs do not cover.
+          when(
+            () => repository.getMessagesByKind(
+              dailyOsPlannerAgentId,
+              AgentMessageKind.system,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => repository.getAttentionPlanningInputsForWindow(
+              start: any(named: 'start'),
+              end: any(named: 'end'),
+            ),
+          ).thenAnswer(
+            (_) async => const AttentionPlanningInputs(
+              claims: [],
+              standingAgreements: [],
+            ),
+          );
+        });
+
+        test('reasons about today, not the day it was scheduled for', () async {
+          // Pending since the 20th — device asleep/offline through four slots.
+          final result = await executeAsCoordinator(
+            workflow(directiveService: directiveService),
+            triggerTokens: {dayAgentDigestToken('dayplan-2026-05-20')},
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          final digest = sentPrompt().json('digest')! as Map;
+          expect(
+            digest['todayDayId'],
+            dayId,
+            reason:
+                'The digest plans the day it runs on. Anchoring to 05-20 '
+                'would issue directives for a day that is already over.',
+          );
+          expect(digest['tomorrowDayId'], 'dayplan-2026-05-26');
+          expect(sentPrompt().json('trigger_tokens'), [
+            dayAgentDigestToken(dayId),
+          ]);
+          expect(
+            upsertedEntities
+                .whereType<ScheduledWakeEntity>()
+                .single
+                .scheduledAt,
+            DateTime(2026, 5, 26, 6),
+            reason: 'Missed slots collapse into this run; cadence resumes.',
+          );
+        });
+
+        test(
+          'a re-anchored wake before the digest hour does not re-arm a second '
+          'digest for the same day',
+          () async {
+            final result = await executeAsCoordinator(
+              workflow(directiveService: directiveService),
+              triggerTokens: {dayAgentDigestToken('dayplan-2026-05-20')},
+              at: DateTime(2026, 5, 25, 3),
+            );
+
+            expect(result.success, isTrue, reason: result.error);
+            expect((sentPrompt().json('digest')! as Map)['todayDayId'], dayId);
+            final rearmed = upsertedEntities
+                .whereType<ScheduledWakeEntity>()
+                .single;
+            expect(
+              rearmed.scheduledAt,
+              DateTime(2026, 5, 26, 6),
+              reason:
+                  'Today 06:00 is still ahead of 03:00, but this run already '
+                  'digested today — re-arming it would digest today twice.',
+            );
+            expect(rearmed.triggerTokens, [
+              dayAgentDigestToken('dayplan-2026-05-26'),
+            ]);
+          },
+        );
+
+        test('an on-time wake keeps its scheduled anchor', () async {
+          final result = await executeAsCoordinator(
+            workflow(directiveService: directiveService),
+            triggerTokens: {dayAgentDigestToken(dayId)},
+            at: DateTime(2026, 5, 25, 6, 4),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          expect((sentPrompt().json('digest')! as Map)['todayDayId'], dayId);
+          expect(
+            upsertedEntities
+                .whereType<ScheduledWakeEntity>()
+                .single
+                .scheduledAt,
+            DateTime(2026, 5, 26, 6),
+          );
+        });
+
+        test('a late wake that fails still re-arms from the run day', () async {
+          conversationRepository.errorToThrow = Exception('model failed');
+
+          final result = await executeAsCoordinator(
+            workflow(directiveService: directiveService),
+            triggerTokens: {dayAgentDigestToken('dayplan-2026-05-20')},
+            at: DateTime(2026, 5, 25, 3),
+          );
+
+          expect(result.success, isFalse);
+          final rearmed = upsertedEntities
+              .whereType<ScheduledWakeEntity>()
+              .single;
+          expect(
+            rearmed.scheduledAt,
+            DateTime(2026, 5, 26, 6),
+            reason:
+                'The failure path re-arms off the re-anchored day too, so a '
+                'failed catch-up cannot leave a same-day duplicate behind.',
+          );
+          expect(rearmed.triggerTokens, [
+            dayAgentDigestToken('dayplan-2026-05-26'),
+          ]);
+        });
+      });
 
       test('uses the configured digest output ceiling', () async {
         final result = await executeDigest(

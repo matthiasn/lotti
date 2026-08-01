@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0]
 ### Fixed
+- **The morning briefing plans the day you came back on, not the day you
+  left.** Daily OS arms its next morning digest ahead of time, tagged with the
+  day it was meant to run. If the device was asleep, offline, or the app simply
+  was not running through that slot, the digest still fired later carrying the
+  old day — so after a weekend away it would reason about, and issue plans for,
+  a day that was already over. A digest now anchors to the day it actually runs
+  on. Windows missed while you were away collapse into that single catch-up run
+  rather than replaying one briefing per skipped day, and nothing is dropped:
+  the digest still reads everything that happened since the last one it
+  completed.
 - **Agent startup no longer floods diagnostic storage when its database has
   already shut down.** Runtime restoration now bulk-loads the required state
   and links, then aborts the pass with one diagnostic if that snapshot fails
