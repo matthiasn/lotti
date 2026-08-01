@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   old day — so after a weekend away it would reason about, and issue plans for,
   a day that was already over. A digest now anchors to the day it actually runs
   on. Windows missed while you were away collapse into that single catch-up run
+<<<<<<< HEAD
   rather than replaying one briefing per skipped day, and nothing is dropped:
   the digest still reads everything that happened since the last one it
   completed.
@@ -42,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sequence writes versus duplicate skips. Gap detections, actual backfill
   requests, retries and errors remain complete so initial-sync and repair work
   can still be investigated.
+=======
+  rather than replaying one briefing per skipped day, and it still reads
+  everything that happened since the last briefing it finished. If none ever
+  finished — a new install, or a run of failures — it reaches back about two
+  days rather than to the beginning.
+>>>>>>> fa6baf333 (fix(daily-os): read digest completion from the log, drop a dead helper)
 
 ## [0.9.1074]
 ### Changed

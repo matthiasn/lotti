@@ -123,32 +123,6 @@ void main() {
     });
   });
 
-  group('digestAnchorDay', () {
-    test('returns the digest token day', () {
-      expect(
-        digestAnchorDay({dayAgentDigestToken('dayplan-2026-07-23')}),
-        DateTime(2026, 7, 23),
-      );
-    });
-
-    test('returns null without a digest token', () {
-      expect(
-        digestAnchorDay({dayAgentDraftingToken('dayplan-2026-07-23')}),
-        isNull,
-      );
-    });
-
-    test('resolves a merged set to its latest day', () {
-      expect(
-        digestAnchorDay({
-          dayAgentDigestToken('dayplan-2026-07-21'),
-          dayAgentDigestToken('dayplan-2026-07-23'),
-        }),
-        DateTime(2026, 7, 23),
-      );
-    });
-  });
-
   group('nextDigestTimeAfterDay', () {
     test('keeps the plain next slot when it clears the anchored day', () {
       expect(

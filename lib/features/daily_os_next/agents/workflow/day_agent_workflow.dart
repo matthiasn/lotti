@@ -233,8 +233,21 @@ class DayAgentWorkflow {
       // occur before inference setup reaches its own failure handling.
       if (maintainsDigestCadence && !succeeded) {
         try {
-          // No completedDay: this path runs only when the wake failed.
-          await _scheduleNextCoordinatorDigest(agentId: agentId, now: now);
+          // Whether this wake actually completed a digest is a different
+          // question from whether it returned success: the sync service
+          // rethrows a buffered outbox failure only AFTER its transaction
+          // commits, so a digest can be durably complete and still be reported
+          // as failed. Re-arming unbounded in that case would overwrite the
+          // committed next-day record with today's slot and digest the day
+          // twice, so the store is asked rather than the result.
+          await _scheduleNextCoordinatorDigest(
+            agentId: agentId,
+            now: now,
+            completedDay: await _committedDigestDay(
+              agentId: agentId,
+              runKey: runKey,
+            ),
+          );
         } catch (scheduleError, stackTrace) {
           _logError(
             'failed to re-arm coordinator digest wake',
@@ -786,6 +799,35 @@ class DayAgentWorkflow {
       await inferenceRepo?.dispose();
       conversationRepository.deleteConversation(conversationId);
     }
+  }
+
+  /// The day this wake durably digested, read back from the log, or null when
+  /// no `dailyWakeCompleted` milestone for [runKey] committed.
+  ///
+  /// Read rather than remembered: a flag set beside the append would be wrong
+  /// whenever the transaction rolled back, which is the case where today's
+  /// retry must survive. Fail-soft — an unreadable log falls back to "nothing
+  /// completed", which keeps the retry rather than suppressing it.
+  Future<DateTime?> _committedDigestDay({
+    required String agentId,
+    required String runKey,
+  }) async {
+    try {
+      final milestones = await agentRepository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.system,
+        limit: 20,
+      );
+      for (final message in milestones) {
+        if (message.metadata.milestone == AgentMilestone.dailyWakeCompleted &&
+            message.metadata.runKey == runKey) {
+          return localDay(message.createdAt);
+        }
+      }
+    } catch (e, s) {
+      _logError('failed to read digest completion', error: e, stackTrace: s);
+    }
+    return null;
   }
 
   /// Schedules the coordinator's next morning digest after either success or

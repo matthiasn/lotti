@@ -803,26 +803,6 @@ DateTime nextDigestTimeAfterDay(DateTime now, DateTime anchoredDay) {
   return next;
 }
 
-/// The calendar day a digest wake is anchored to, or `null` when [triggerTokens]
-/// carries no parseable digest token.
-///
-/// Ambiguity is not possible in practice — the digest workspace is a single
-/// lane whose records carry exactly one digest token — but a merged set is
-/// resolved to its latest day so the re-arm bound in [nextDigestTimeAfterDay]
-/// can never schedule a duplicate for a day already covered.
-DateTime? digestAnchorDay(Set<String> triggerTokens) {
-  DateTime? latest;
-  for (final token in triggerTokens) {
-    if (!token.startsWith(dayAgentDigestPrefix)) continue;
-    final date = dateFromDayId(
-      token.substring(dayAgentDigestPrefix.length).trim(),
-    );
-    if (date == null) continue;
-    if (latest == null || date.isAfter(latest)) latest = date;
-  }
-  return latest;
-}
-
 /// Re-anchors a coordinator digest wake to the day it actually runs on.
 ///
 /// A digest `ScheduledWakeEntity` carries `digest:<dayId>` for the day it was
