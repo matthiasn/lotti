@@ -977,6 +977,37 @@ void main() {
       );
     });
 
+    test('a DST-crossing interval contributes its wall-clock length', () async {
+      stubEntityReads();
+      when(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: DateTime(2026, 5, 10),
+          rangeEnd: DateTime(2026, 6, 9),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          // Both ends arrive without a zone suffix, so subtracting the parsed
+          // values is reader-relative across a DST boundary — 60 minutes in
+          // one zone, 120 in another, both stamped canonical. Reading the
+          // components gives the length the recorder's own clock showed.
+          timeEntry(
+            id: 'dst-crossing',
+            start: DateTime(2026, 5, 27, 1, 30),
+            minutes: 120,
+            categoryId: 'cat-work',
+          ),
+        ],
+      );
+
+      await withNow(() => service.ensureWeekRollups());
+
+      final byId = {for (final e in upserted) e.id: e as WeekRollupEntity};
+      expect(
+        byId['week_rollup_v2:2026-05-25']!.recordedMinutesByCategory,
+        {'cat-work': 120},
+      );
+    });
+
     test('a UTC-typed timestamp buckets by its own components too', () async {
       stubEntityReads();
       when(
@@ -1207,6 +1238,28 @@ void main() {
         );
       },
     );
+
+    test('a v1 tombstone is honoured by the v2 generation', () async {
+      stubEntityReads(
+        rollups: {
+          'week_rollup:2026-06-01': makeTestWeekRollup(
+            id: 'week_rollup:2026-06-01',
+            weekStart: DateTime.utc(2026, 6),
+            deletedAt: DateTime(2026, 6, 8),
+          ),
+        },
+      );
+
+      await withNow(() => service.ensureWeekRollups());
+
+      expect(
+        [for (final e in upserted) e.id],
+        isNot(contains(newestId)),
+        reason:
+            'A week the user deliberately deleted must not come back to life '
+            'because the id generation changed underneath it.',
+      );
+    });
 
     test('a tombstoned rollup is never resurrected', () async {
       stubEntityReads(

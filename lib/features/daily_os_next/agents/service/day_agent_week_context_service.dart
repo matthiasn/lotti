@@ -223,7 +223,7 @@ class DayAgentWeekContextService {
         RecordedSpan(
           categoryId: pair.categoryId,
           start: pair.start,
-          duration: pair.duration,
+          duration: canonicalRecordedDuration(pair.entry.meta),
           taskId: pair.taskId,
         ),
     ];
@@ -262,13 +262,23 @@ class DayAgentWeekContextService {
       // deliberately deleted rollup on the next digest.
       final existingById = await agentRepository
           .getEntitiesByIdsIncludingDeleted({
-            for (final weekStart in weekStarts) weekRollupEntityId(weekStart),
+            for (final weekStart in weekStarts) ...[
+              weekRollupEntityId(weekStart),
+              // The previous generation is read for its tombstone only. A week
+              // the user deliberately deleted under v1 must not come back to
+              // life because the id generation changed underneath it.
+              legacyWeekRollupEntityId(weekStart),
+            ],
           });
       final aggregatesByWeek = await _computeAggregatesForWeeks(weekStarts);
       for (final weekStart in weekStarts) {
         final id = weekRollupEntityId(weekStart);
         final existing = existingById[id];
+        final legacy = existingById[legacyWeekRollupEntityId(weekStart)];
         if (existing is WeekRollupEntity && existing.deletedAt != null) {
+          continue;
+        }
+        if (legacy is WeekRollupEntity && legacy.deletedAt != null) {
           continue;
         }
         final prior = existing is WeekRollupEntity ? existing : null;

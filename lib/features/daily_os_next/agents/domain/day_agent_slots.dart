@@ -1,4 +1,6 @@
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 
 // Re-exported so the many Daily OS call sites that reach for these through
@@ -92,6 +94,22 @@ DateTime recordedWallClock(DateTime start) => DateTime.utc(
   start.second,
 );
 
+/// The wall-clock length of a recorded interval, read from its own
+/// components.
+///
+/// `dateTo - dateFrom` on the parsed values is reader-relative for the same
+/// reason the bucket was: both strings arrive without a zone suffix and are
+/// resolved in the reader's zone, so an interval that crosses a DST boundary
+/// subtracts to a different number of minutes on different devices. A New York
+/// 01:30–03:30 on the spring-forward day is 60 minutes there and 120 on a UTC
+/// reader — and both would be stamped canonical, leaving the register free to
+/// flap between them.
+///
+/// Reading both ends as zone-free calendar values gives the length the
+/// recorder's own clock showed, identically everywhere.
+Duration canonicalRecordedDuration(Metadata meta) =>
+    recordedWallClock(meta.dateTo).difference(recordedWallClock(meta.dateFrom));
+
 /// Monday 00:00 of the ISO week containing [date], read from [date]'s own
 /// calendar components and returned UTC-typed — the zone-free week key that
 /// [weekRollupEntityId] hashes.
@@ -129,6 +147,14 @@ DateTime canonicalWeekStart(DateTime date) {
 /// exists to end. Old-generation rows are inert: nothing reads them again.
 String weekRollupEntityId(DateTime weekStart) =>
     'week_rollup_v2:${isoCalendarDate(weekStart)}';
+
+/// The previous generation's id for the same week.
+///
+/// Read only to carry a deliberate deletion forward: a week the user
+/// tombstoned under v1 must not come back to life because the generation
+/// changed underneath it.
+String legacyWeekRollupEntityId(DateTime weekStart) =>
+    'week_rollup:${isoCalendarDate(weekStart)}';
 
 /// `yyyy-MM-dd` read from [date]'s own calendar components.
 ///
