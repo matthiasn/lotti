@@ -11,6 +11,8 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
@@ -34,6 +36,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
@@ -2174,6 +2177,59 @@ void main() {
 
       final manager = container.read(scheduledWakeManagerProvider);
       expect(manager, isA<ScheduledWakeManager>());
+    });
+
+    test('leases the coordinator digest and nothing else', () async {
+      final mockRepo = MockAgentRepository();
+      final mockOrchestrator = MockWakeOrchestrator();
+      final mockSyncService = MockAgentSyncService();
+      final notifications = UpdateNotifications();
+      final vectorClockService = MockVectorClockService();
+      when(vectorClockService.getHost).thenAnswer((_) async => 'host-a');
+      if (getIt.isRegistered<VectorClockService>()) {
+        getIt.unregister<VectorClockService>();
+      }
+      getIt.registerSingleton<VectorClockService>(vectorClockService);
+      addTearDown(() => getIt.unregister<VectorClockService>());
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          updateNotificationsProvider.overrideWithValue(notifications),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final manager = container.read(scheduledWakeManagerProvider);
+
+      ScheduledWakeEntity recordOn(String? workspaceKey) =>
+          AgentDomainEntity.scheduledWake(
+                id: 'wake-1',
+                agentId: 'agent-1',
+                scheduledAt: DateTime(2026, 5, 20, 6),
+                status: ScheduledWakeStatus.pending,
+                reason: 'digest',
+                updatedAt: DateTime(2026, 5, 20, 6),
+                vectorClock: null,
+                workspaceKey: workspaceKey,
+              )
+              as ScheduledWakeEntity;
+
+      // Shared work: one inference billed per device for a single result.
+      expect(
+        manager.requiresLease!(recordOn(coordinatorDigestWorkspaceKey)),
+        isTrue,
+      );
+      // Everything else is device-local, where each device firing is correct.
+      expect(
+        manager.requiresLease!(recordOn('day:dayplan-2026-05-20')),
+        isFalse,
+      );
+      expect(manager.requiresLease!(recordOn(null)), isFalse);
+      expect(await manager.localHostId!(), 'host-a');
     });
   });
 
