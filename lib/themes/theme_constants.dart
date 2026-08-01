@@ -38,9 +38,6 @@ class AppTheme {
   static const double spacingMedium = 12; // Increased
   static const double spacingLarge = 16; // Increased
 
-  // Chevron icon size
-  static const double chevronSize = 22; // Slightly larger
-
   // Collapse animation durations
   static const Duration chevronRotationDuration = Duration(milliseconds: 500);
   static const Duration collapseAnimationDuration = Duration(milliseconds: 600);
@@ -52,23 +49,15 @@ class AppTheme {
   static const double previewIconSize = 24;
 
   // Typography constants - Modern typography scale
-  static const double titleFontSize = 18; // Increased
   static const double subtitleFontSize = 13; // Increased
-  static const double letterSpacingTitle = 0.15; // Increased letter spacing
-  static const double letterSpacingSubtitle = 0.05;
-  static const double lineHeightSubtitle = 1.5; // Better line height
 
   // Enhanced alpha values for colors - tuned for polished look
   static const double alphaOutline = 0.08; // Very subtle borders in light mode
-  static const double alphaPrimaryContainer = 0.08; // Subtle container tints
   static const double alphaShadowLight = 0.04; // Minimal shadows for clean look
   static const double alphaShadowDark = 0.15; // Subtle shadows in dark mode
   static const double alphaPrimary = 0.08; // More subtle
   static const double alphaPrimaryHighlight = 0.04;
-  static const double alphaPrimaryBorder = 0.12;
   static const double alphaPrimaryIcon = 0.95; // More vibrant
-  static const double alphaSurfaceVariant = 0.85; // Better contrast
-  static const double alphaSurfaceVariantChevron = 0.7;
 
   // List item alpha values
   static const double alphaDisabled = 0.38; // Material Design disabled state
@@ -100,11 +89,6 @@ class AppTheme {
   static const Curve animationCurve =
       Curves.easeOutQuart; // More sophisticated curve
 
-  // Spacing between elements
-  static const double spacingBetweenTitleAndSubtitle = 6; // Increased
-  static const double spacingBetweenTitleAndSubtitleCompact = 4;
-  static const double spacingBetweenElements = 8; // Increased
-
   // Clean shadow offset - subtle and modern
   static const Offset shadowOffset = Offset(
     0,
@@ -116,9 +100,7 @@ class AppTheme {
   static const double statusIndicatorPaddingVertical = 3; // Increased
   static const double statusIndicatorBorderRadius = 8; // More rounded
   static const double statusIndicatorBorderRadiusSmall = 6;
-  static const double statusIndicatorBorderRadiusTiny = 5;
   static const double statusIndicatorBorderWidth = 0.8; // Slightly thicker
-  static const double statusIndicatorSize = 26; // Slightly larger
   static const double statusIndicatorIconSize = 16; // Larger icons
 
   // Label chip padding (Linear-style)
@@ -133,15 +115,9 @@ class AppTheme {
   static const double alphaPrimaryContainerLight = 0.3; // Enhanced
   static const double alphaPrimaryContainerDark = 0.2;
   static const double alphaStatusIndicatorBorder = 0.15;
-  static const double alphaSurfaceContainerHighest = 0.35;
-  static const double alphaSurfaceVariantDim = 0.6;
-  static const double alphaErrorContainer = 0.6;
-  static const double alphaErrorText = 0.9;
-  static const double alphaPrimaryContainerActive = 0.8;
 
   // Font sizes for status indicators
   static const double statusIndicatorFontSize = 12; // Increased
-  static const double statusIndicatorFontSizeCompact = 11;
 
   // Modal item spacer widths
   static const double modalChevronSpacerWidth = spacingLarge;

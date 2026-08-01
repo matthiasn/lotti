@@ -113,10 +113,8 @@ ProjectRecord makeTestProjectRecord({
   int blockedTaskCount = 1,
   String aiSummary = 'Test AI summary.',
   String? reportContent,
-  List<String> recommendations = const ['Recommendation A'],
   DateTime? reportUpdatedAt,
   List<TaskSummary> highlightedTaskSummaries = const [],
-  List<ReviewSession> reviewSessions = const [],
   Duration highlightedTasksTotalDuration = Duration.zero,
 }) {
   final cat =
@@ -142,10 +140,8 @@ ProjectRecord makeTestProjectRecord({
     blockedTaskCount: blockedTaskCount,
     aiSummary: aiSummary,
     reportContent: reportContent ?? aiSummary,
-    recommendations: recommendations,
     reportUpdatedAt: reportUpdatedAt ?? DateTime(2026, 4, 2, 7, 30),
     highlightedTaskSummaries: highlightedTaskSummaries,
-    reviewSessions: reviewSessions,
     highlightedTasksTotalDuration: highlightedTasksTotalDuration,
   );
 }
@@ -178,25 +174,6 @@ TaskSummary makeTestTaskSummary({
     task: task ?? makeTestTask(id: 'task-1'),
     estimatedDuration: estimatedDuration,
     oneLiner: oneLiner,
-  );
-}
-
-/// Creates a [ReviewSession] for testing.
-ReviewSession makeTestReviewSession({
-  String id = 'review-1',
-  String summaryLabel = 'Week 11 · Mar 10',
-  int rating = 4,
-  List<ReviewMetric> metrics = const [],
-  String? note,
-  bool expanded = false,
-}) {
-  return ReviewSession(
-    id: id,
-    summaryLabel: summaryLabel,
-    rating: rating,
-    metrics: metrics,
-    note: note,
-    expanded: expanded,
   );
 }
 

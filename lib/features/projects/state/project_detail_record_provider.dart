@@ -6,7 +6,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
@@ -46,10 +45,9 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
               linkedTasks.map((task) => task.id).toList(growable: false),
             );
 
-      final (metrics, agent, recommendations, taskReportsByTaskId) = await (
+      final (metrics, agent, taskReportsByTaskId) = await (
         ref.watch(projectHealthMetricsProvider(projectId).future),
         ref.watch(projectAgentProvider(projectId).future),
-        ref.watch(projectRecommendationsProvider(projectId).future),
         taskReportsFuture,
       ).wait;
 
@@ -81,7 +79,6 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
         blockedTaskCount: blockedTaskCount,
         aiSummary: aiSummary,
         reportContent: report?.content.trim() ?? aiSummary,
-        recommendations: recommendations.map((item) => item.title).toList(),
         reportUpdatedAt: report?.createdAt ?? project.meta.updatedAt,
         highlightedTaskSummaries: linkedTasks
             .map(
@@ -96,7 +93,6 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
               ),
             )
             .toList(growable: false),
-        reviewSessions: const [],
         highlightedTasksTotalDuration: linkedTasks.fold(
           Duration.zero,
           (sum, task) => sum + (task.data.estimate ?? Duration.zero),

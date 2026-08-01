@@ -32,15 +32,11 @@ bool isValidDueDateWireValue(String value) {
 
 /// Result of processing a due date update tool call.
 ///
-/// Contains detailed information about the outcome for testing and logging.
+/// Reports whether processing succeeded and whether it changed persisted data.
 class TaskDueDateResult {
   const TaskDueDateResult({
     required this.success,
     required this.message,
-    this.updatedTask,
-    this.requestedDate,
-    this.reason,
-    this.confidence,
     this.error,
     this.didWrite = false,
   });
@@ -51,29 +47,11 @@ class TaskDueDateResult {
   /// Human-readable message describing the outcome.
   final String message;
 
-  /// The updated task if successful, null otherwise.
-  final Task? updatedTask;
-
-  /// The date value requested by the AI (parsed from ISO 8601 string).
-  final DateTime? requestedDate;
-
-  /// The AI's explanation for why this due date was detected.
-  final String? reason;
-
-  /// The AI's confidence level ('high', 'medium', 'low').
-  final String? confidence;
-
   /// Error message if the operation failed.
   final String? error;
 
   /// Whether a database write actually occurred.
   final bool didWrite;
-
-  /// Whether the update was skipped (not an error, just not applied).
-  bool get wasSkipped => !success && error == null;
-
-  /// Whether this was a no-op (success without DB write).
-  bool get wasNoOp => success && !didWrite;
 }
 
 /// Handler for updating task due dates via AI function calls.
@@ -114,7 +92,7 @@ class TaskDueDateResult {
 ///
 /// final result = await handler.processToolCall(toolCall, manager);
 /// if (result.success) {
-///   print('Due date set to ${result.requestedDate}');
+///   print('Due date is now ${handler.task.data.due}');
 /// }
 /// ```
 ///
@@ -122,7 +100,7 @@ class TaskDueDateResult {
 ///
 /// The handler is designed for easy unit testing:
 /// - Constructor injection of all dependencies
-/// - Pure result object with detailed outcome information
+/// - Small result object describing success, errors, and writes
 /// - Optional [ConversationManager] for response handling
 ///
 /// See also:
@@ -168,7 +146,7 @@ class TaskDueDateHandler {
   /// - [manager]: Optional conversation manager for sending tool responses
   ///   back to the AI. If null, responses are not sent (useful for testing).
   ///
-  /// Returns a [TaskDueDateResult] with detailed outcome information.
+  /// Returns a [TaskDueDateResult] describing the outcome.
   ///
   /// The method handles these cases:
   /// 1. **Invalid JSON**: Returns error result
@@ -199,11 +177,9 @@ class TaskDueDateHandler {
       if (dueDateStr == null || dueDateStr.isEmpty) {
         const message = 'Invalid due date: date string is required.';
         _sendResponse(call.id, message, manager);
-        return TaskDueDateResult(
+        return const TaskDueDateResult(
           success: false,
           message: message,
-          reason: reason,
-          confidence: confidence,
           error: message,
         );
       }
@@ -217,8 +193,6 @@ class TaskDueDateHandler {
         return TaskDueDateResult(
           success: false,
           message: message,
-          reason: reason,
-          confidence: confidence,
           error: message,
         );
       }
@@ -240,9 +214,6 @@ class TaskDueDateHandler {
         return TaskDueDateResult(
           success: true,
           message: message,
-          requestedDate: dueDate,
-          reason: reason,
-          confidence: confidence,
         );
       }
 
@@ -261,12 +232,9 @@ class TaskDueDateHandler {
               'Failed to update due date: repository returned false.';
           developer.log(message, name: 'TaskDueDateHandler');
           _sendResponse(call.id, message, manager);
-          return TaskDueDateResult(
+          return const TaskDueDateResult(
             success: false,
             message: message,
-            requestedDate: dueDate,
-            reason: reason,
-            confidence: confidence,
             error: message,
           );
         }
@@ -285,10 +253,6 @@ class TaskDueDateHandler {
         return TaskDueDateResult(
           success: true,
           message: message,
-          updatedTask: updatedTask,
-          requestedDate: dueDate,
-          reason: reason,
-          confidence: confidence,
           didWrite: true,
         );
       } catch (e, s) {
@@ -304,9 +268,6 @@ class TaskDueDateHandler {
         return TaskDueDateResult(
           success: false,
           message: message,
-          requestedDate: dueDate,
-          reason: reason,
-          confidence: confidence,
           error: e.toString(),
         );
       }

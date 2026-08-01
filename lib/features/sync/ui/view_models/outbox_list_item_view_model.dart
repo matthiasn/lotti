@@ -5,22 +5,15 @@ import 'package:intl/intl.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 class OutboxListItemViewModel {
   const OutboxListItemViewModel({
     required this.timestampLabel,
-    required this.statusLabel,
-    required this.statusColor,
-    required this.statusIcon,
-    required this.statusChipIcon,
     required this.payloadKindLabel,
     required this.retriesLabel,
     required this.attachmentValue,
-    required this.attachmentIcon,
-    required this.semanticsLabel,
     this.subjectValue,
     this.payloadSizeLabel,
   });
@@ -29,44 +22,9 @@ class OutboxListItemViewModel {
     required OutboxItem item,
   }) {
     final locale = Localizations.localeOf(context).toString();
-    final theme = Theme.of(context);
-    final statusIndex = item.status;
-    final status = statusIndex >= 0 && statusIndex < OutboxStatus.values.length
-        ? OutboxStatus.values[statusIndex]
-        : OutboxStatus.values.first;
     final messages = context.messages;
 
     final timestamp = df.format(item.createdAt);
-    final statusLabel = _titleCase(
-      switch (status) {
-        OutboxStatus.pending => messages.outboxMonitorLabelPending,
-        OutboxStatus.sent => messages.outboxMonitorLabelSent,
-        OutboxStatus.error => messages.outboxMonitorLabelError,
-        OutboxStatus.sending => messages.outboxMonitorLabelPending,
-      },
-      locale,
-    );
-
-    final statusColor = switch (status) {
-      OutboxStatus.pending => theme.colorScheme.tertiary,
-      OutboxStatus.sent => theme.colorScheme.primary,
-      OutboxStatus.error => theme.colorScheme.error,
-      OutboxStatus.sending => theme.colorScheme.tertiary,
-    };
-
-    final statusIcon = switch (status) {
-      OutboxStatus.pending => Icons.schedule_rounded,
-      OutboxStatus.sent => Icons.check_circle_outline_rounded,
-      OutboxStatus.error => Icons.error_outline_rounded,
-      OutboxStatus.sending => Icons.sync_rounded,
-    };
-
-    final statusChipIcon = switch (status) {
-      OutboxStatus.pending => Icons.pending_actions_rounded,
-      OutboxStatus.sent => Icons.outbox_rounded,
-      OutboxStatus.error => Icons.report_rounded,
-      OutboxStatus.sending => Icons.sync_rounded,
-    };
 
     final retriesLabel = _buildRetriesLabel(
       retryCount: item.retries,
@@ -89,39 +47,20 @@ class OutboxListItemViewModel {
         ? trimmedAttachment
         : _titleCase(messages.outboxMonitorNoAttachment, locale);
 
-    final attachmentIcon = hasAttachment
-        ? Icons.attachment_rounded
-        : Icons.block_outlined;
-
-    final semanticsLabel =
-        '$statusLabel, $timestamp, ${payloadKind.toLowerCase()}';
-
     return OutboxListItemViewModel(
       timestampLabel: timestamp,
-      statusLabel: statusLabel,
-      statusColor: statusColor,
-      statusIcon: statusIcon,
-      statusChipIcon: statusChipIcon,
       payloadKindLabel: payloadKind,
       retriesLabel: retriesLabel,
       subjectValue: subjectValue,
       attachmentValue: attachmentValue,
-      attachmentIcon: attachmentIcon,
-      semanticsLabel: semanticsLabel,
       payloadSizeLabel: formatBytes(item.payloadSize),
     );
   }
 
   final String timestampLabel;
-  final String statusLabel;
-  final Color statusColor;
-  final IconData statusIcon;
-  final IconData statusChipIcon;
   final String payloadKindLabel;
   final String retriesLabel;
   final String attachmentValue;
-  final IconData attachmentIcon;
-  final String semanticsLabel;
   final String? subjectValue;
   final String? payloadSizeLabel;
 

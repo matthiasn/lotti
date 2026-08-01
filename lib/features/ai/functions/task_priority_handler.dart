@@ -10,15 +10,11 @@ import 'package:openai_dart/openai_dart.dart';
 
 /// Result of processing a priority update tool call.
 ///
-/// Contains detailed information about the outcome for testing and logging.
+/// Reports whether processing succeeded and whether it changed persisted data.
 class TaskPriorityResult {
   const TaskPriorityResult({
     required this.success,
     required this.message,
-    this.updatedTask,
-    this.requestedPriority,
-    this.reason,
-    this.confidence,
     this.error,
     this.didWrite = false,
   });
@@ -29,18 +25,6 @@ class TaskPriorityResult {
   /// Human-readable message describing the outcome.
   final String message;
 
-  /// The updated task if successful, null otherwise.
-  final Task? updatedTask;
-
-  /// The priority value requested by the AI.
-  final TaskPriority? requestedPriority;
-
-  /// The AI's explanation for why this priority was detected.
-  final String? reason;
-
-  /// The AI's confidence level ('high', 'medium', 'low').
-  final String? confidence;
-
   /// Error message if the operation failed.
   final String? error;
 
@@ -50,18 +34,6 @@ class TaskPriorityResult {
   /// already has P2 as the default). This allows callers to distinguish
   /// between "success with actual change" and "success with no change needed".
   final bool didWrite;
-
-  /// Whether the update was skipped (not an error, just not applied).
-  ///
-  /// True when the update was not applied because the task already had an
-  /// explicit priority set (non-default value).
-  bool get wasSkipped => !success && error == null;
-
-  /// Whether this was a no-op (success without DB write).
-  ///
-  /// True when the requested priority equals the current priority,
-  /// so no actual change was needed.
-  bool get wasNoOp => success && !didWrite;
 }
 
 /// Handler for updating task priority via AI function calls.
@@ -143,7 +115,7 @@ class TaskPriorityHandler {
   /// - [manager]: Optional conversation manager for sending tool responses
   ///   back to the AI. If null, responses are not sent (useful for testing).
   ///
-  /// Returns a [TaskPriorityResult] with detailed outcome information.
+  /// Returns a [TaskPriorityResult] describing the outcome.
   ///
   /// The method handles these cases:
   /// 1. **Invalid JSON**: Returns error result
@@ -180,8 +152,6 @@ class TaskPriorityHandler {
         return TaskPriorityResult(
           success: false,
           message: message,
-          reason: reason,
-          confidence: confidence,
           error: message,
         );
       }
@@ -198,10 +168,6 @@ class TaskPriorityHandler {
         return TaskPriorityResult(
           success: true,
           message: message,
-          updatedTask: task,
-          requestedPriority: priority,
-          reason: reason,
-          confidence: confidence,
         );
       }
 
@@ -220,12 +186,9 @@ class TaskPriorityHandler {
               'Failed to update priority: repository returned false.';
           developer.log(message, name: 'TaskPriorityHandler');
           _sendResponse(call.id, message, manager);
-          return TaskPriorityResult(
+          return const TaskPriorityResult(
             success: false,
             message: message,
-            requestedPriority: priority,
-            reason: reason,
-            confidence: confidence,
             error: message,
           );
         }
@@ -244,10 +207,6 @@ class TaskPriorityHandler {
         return TaskPriorityResult(
           success: true,
           message: message,
-          updatedTask: updatedTask,
-          requestedPriority: priority,
-          reason: reason,
-          confidence: confidence,
           didWrite: true,
         );
       } catch (e, s) {
@@ -263,9 +222,6 @@ class TaskPriorityHandler {
         return TaskPriorityResult(
           success: false,
           message: message,
-          requestedPriority: priority,
-          reason: reason,
-          confidence: confidence,
           error: e.toString(),
         );
       }

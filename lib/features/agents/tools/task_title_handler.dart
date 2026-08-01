@@ -5,13 +5,11 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 
 /// Result of processing a task title update.
 ///
-/// Contains detailed information about the outcome for testing and logging.
+/// Reports whether processing succeeded and whether it changed persisted data.
 class TaskTitleResult {
   const TaskTitleResult({
     required this.success,
     required this.message,
-    this.updatedTask,
-    this.requestedTitle,
     this.error,
     this.didWrite = false,
   });
@@ -22,12 +20,6 @@ class TaskTitleResult {
   /// Human-readable message describing the outcome.
   final String message;
 
-  /// The updated task if the operation succeeded, null otherwise.
-  final Task? updatedTask;
-
-  /// The title string requested by the caller.
-  final String? requestedTitle;
-
   /// Error message if the operation failed.
   final String? error;
 
@@ -36,9 +28,6 @@ class TaskTitleResult {
   /// False when the operation was a no-op (requested title equals current
   /// title) or when it failed before reaching the repository.
   final bool didWrite;
-
-  /// Whether this was a no-op (success without a DB write).
-  bool get wasNoOp => success && !didWrite;
 }
 
 /// Handler for updating the title of a task.
@@ -145,8 +134,6 @@ class TaskTitleHandler {
       return TaskTitleResult(
         success: true,
         message: message,
-        updatedTask: task,
-        requestedTitle: trimmed,
       );
     }
 
@@ -161,10 +148,9 @@ class TaskTitleHandler {
       if (!success) {
         const message = 'Failed to update title: repository returned false.';
         developer.log(message, name: 'TaskTitleHandler');
-        return TaskTitleResult(
+        return const TaskTitleResult(
           success: false,
           message: message,
-          requestedTitle: trimmed,
           error: message,
         );
       }
@@ -182,8 +168,6 @@ class TaskTitleHandler {
       return TaskTitleResult(
         success: true,
         message: message,
-        updatedTask: updatedTask,
-        requestedTitle: trimmed,
         didWrite: true,
       );
     } catch (e, s) {
@@ -199,7 +183,6 @@ class TaskTitleHandler {
       return TaskTitleResult(
         success: false,
         message: message,
-        requestedTitle: trimmed,
         error: e.toString(),
       );
     }

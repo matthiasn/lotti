@@ -17,10 +17,8 @@ class ProjectRecord {
     required this.blockedTaskCount,
     required this.aiSummary,
     required this.reportContent,
-    required this.recommendations,
     required this.reportUpdatedAt,
     required this.highlightedTaskSummaries,
-    required this.reviewSessions,
     required this.highlightedTasksTotalDuration,
   });
 
@@ -34,10 +32,8 @@ class ProjectRecord {
   final int blockedTaskCount;
   final String aiSummary;
   final String reportContent;
-  final List<String> recommendations;
   final DateTime reportUpdatedAt;
   final List<TaskSummary> highlightedTaskSummaries;
-  final List<ReviewSession> reviewSessions;
   final Duration highlightedTasksTotalDuration;
 
   ProjectListItemData get overviewListItem => ProjectListItemData(
@@ -62,44 +58,6 @@ class TaskSummary {
   final Task task;
   final Duration estimatedDuration;
   final String? oneLiner;
-}
-
-/// The type of metric recorded in a review session.
-enum ReviewMetricType {
-  communication,
-  usefulness,
-  accuracy,
-}
-
-/// A single rated metric inside a [ReviewSession].
-class ReviewMetric {
-  const ReviewMetric({
-    required this.type,
-    required this.rating,
-  });
-
-  final ReviewMetricType type;
-  final int rating;
-}
-
-/// A review session with an overall rating, optional per-metric breakdown,
-/// and an optional note.
-class ReviewSession {
-  const ReviewSession({
-    required this.id,
-    required this.summaryLabel,
-    required this.rating,
-    this.metrics = const [],
-    this.note,
-    this.expanded = false,
-  });
-
-  final String id;
-  final String summaryLabel;
-  final int rating;
-  final List<ReviewMetric> metrics;
-  final String? note;
-  final bool expanded;
 }
 
 /// Top-level container for the data powering the project list/detail layout.

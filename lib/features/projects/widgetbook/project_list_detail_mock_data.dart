@@ -122,11 +122,6 @@ Device Sync is progressing well. The sync engine core is complete and conflict r
 - Schedule sync protocol review with the backend team.
 - Add integration tests for conflict resolution.
 ''',
-        recommendations: const [
-          'Prioritize offline cache implementation',
-          'Schedule sync protocol review with backend team',
-          'Add integration tests for conflict resolution',
-        ],
         reportUpdatedAt: DateTime(2026, 4, 2, 7, 30),
         highlightedTasksTotalDuration: const Duration(minutes: 11, seconds: 38),
         highlightedTaskSummaries: [
@@ -154,35 +149,6 @@ Device Sync is progressing well. The sync engine core is complete and conflict r
             estimatedDuration: const Duration(hours: 1, minutes: 10),
           ),
         ],
-        reviewSessions: const [
-          ReviewSession(
-            id: 'review-1',
-            summaryLabel: 'Week 11 · Mar 10',
-            rating: 4,
-            expanded: true,
-            metrics: [
-              ReviewMetric(
-                type: ReviewMetricType.communication,
-                rating: 4,
-              ),
-              ReviewMetric(
-                type: ReviewMetricType.usefulness,
-                rating: 4,
-              ),
-              ReviewMetric(
-                type: ReviewMetricType.accuracy,
-                rating: 4,
-              ),
-            ],
-            note:
-                '"Good week overall. Offline cache work needs prioritising next sprint."',
-          ),
-          ReviewSession(
-            id: 'review-2',
-            summaryLabel: 'Week 10 · Mar 3',
-            rating: 5,
-          ),
-        ],
       ),
       ProjectRecord(
         project: apiMigration,
@@ -206,12 +172,8 @@ API Migration is on track after the auth adapter landed.
 ## Focus
 - Deprecate the legacy webhook bridge.
 ''',
-        recommendations: const [
-          'Finalize the webhook bridge migration plan',
-        ],
         reportUpdatedAt: DateTime(2026, 4, 1, 16),
         highlightedTaskSummaries: const [],
-        reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
       ),
       ProjectRecord(
@@ -230,10 +192,8 @@ API Migration is on track after the auth adapter landed.
             'The refreshed pipeline is stable. Release signing, smoke tests, and notarization all run automatically now.',
         reportContent:
             'The refreshed pipeline is stable. Release signing, smoke tests, and notarization all run automatically now.',
-        recommendations: const [],
         reportUpdatedAt: DateTime(2026, 3, 20, 18),
         highlightedTaskSummaries: const [],
-        reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
       ),
       ProjectRecord(
@@ -253,12 +213,8 @@ API Migration is on track after the auth adapter landed.
             'Weekly Meal Prep is active but drifting because shopping and prep windows keep slipping into evenings.',
         reportContent:
             'Weekly Meal Prep is active but drifting because shopping and prep windows keep slipping into evenings.',
-        recommendations: const [
-          'Lock the shopping list 24 hours earlier',
-        ],
         reportUpdatedAt: DateTime(2026, 4, 2, 8),
         highlightedTaskSummaries: const [],
-        reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
       ),
       ProjectRecord(
@@ -278,10 +234,8 @@ API Migration is on track after the auth adapter landed.
             'React Course is archived after priorities shifted to delivery work.',
         reportContent:
             'React Course is archived after priorities shifted to delivery work.',
-        recommendations: const [],
         reportUpdatedAt: DateTime(2026, 3, 30, 21),
         highlightedTaskSummaries: const [],
-        reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
       ),
       ProjectRecord(
@@ -301,10 +255,8 @@ API Migration is on track after the auth adapter landed.
             'Design System Book is complete and the main takeaways have already been folded into current UI work.',
         reportContent:
             'Design System Book is complete and the main takeaways have already been folded into current UI work.',
-        recommendations: const [],
         reportUpdatedAt: DateTime(2026, 3, 28, 21),
         highlightedTaskSummaries: const [],
-        reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
       ),
     ],

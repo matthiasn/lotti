@@ -266,11 +266,7 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedDate, DateTime(2024, 1, 19));
-        expect(result.reason, 'User said Friday');
-        expect(result.confidence, 'high');
-        expect(result.updatedTask, isNotNull);
-        expect(result.updatedTask!.data.due, DateTime(2024, 1, 19));
+        expect(handler.task.data.due, DateTime(2024, 1, 19));
         expect(result.error, isNull);
 
         expect(capturedTask, isNotNull);
@@ -324,7 +320,7 @@ void main() {
           final result = await handler.processToolCall(toolCall);
 
           expect(result.success, isTrue);
-          expect(result.requestedDate, DateTime(2024, 3, 15));
+          expect(handler.task.data.due, DateTime(2024, 3, 15));
           verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
           // Manager methods should not be called
           verifyNever(
@@ -356,8 +352,8 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedDate, DateTime(2024, 1, 10));
-        expect(result.updatedTask!.data.due, DateTime(2024, 1, 10));
+        expect(handler.task.data.due, DateTime(2024, 1, 10));
+        expect(handler.task.data.due, DateTime(2024, 1, 10));
       });
     });
 
@@ -378,8 +374,8 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.wasNoOp, isTrue);
-        expect(result.requestedDate, DateTime(2024, 1, 20));
+        expect(result.didWrite, isFalse);
+        expect(handler.task.data.due, DateTime(2024, 1, 20));
         expect(result.message, contains('No change needed'));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -424,8 +420,8 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.requestedDate, DateTime(2024, 1, 25));
-        expect(result.updatedTask!.data.due, DateTime(2024, 1, 25));
+        expect(handler.task.data.due, DateTime(2024, 1, 25));
+        expect(handler.task.data.due, DateTime(2024, 1, 25));
 
         verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
       });
@@ -471,10 +467,9 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('date string is required'));
-        expect(result.requestedDate, isNull);
+        expect(handler.task.data.due, isNull);
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
@@ -491,7 +486,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('date string is required'));
 
@@ -520,10 +514,9 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('YYYY-MM-DD'));
-        expect(result.requestedDate, isNull);
+        expect(handler.task.data.due, isNull);
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
@@ -565,7 +558,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -595,11 +587,9 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('Database connection lost'));
-        expect(result.requestedDate, DateTime(2024, 1, 25));
-        expect(result.updatedTask, isNull);
+        expect(handler.task, same(task));
 
         verify(
           () => mockManager.addToolResponse(
@@ -679,7 +669,7 @@ void main() {
         if (scenario.isInvalid) {
           expect(result.success, isFalse, reason: '$scenario');
           expect(result.didWrite, isFalse, reason: '$scenario');
-          expect(result.requestedDate, isNull, reason: '$scenario');
+          expect(handler.task.data.due, isNull, reason: '$scenario');
           expect(
             result.error,
             scenario.isMissingOrEmpty
@@ -693,15 +683,9 @@ void main() {
           return;
         }
 
-        expect(result.requestedDate, scenario.parsedDate);
-        expect(result.reason, 'Generated reason ${scenario.seed}');
-        expect(result.confidence, scenario.seed.isEven ? 'high' : 'medium');
-
         if (scenario.isNoOp) {
           expect(result.success, isTrue, reason: '$scenario');
           expect(result.didWrite, isFalse, reason: '$scenario');
-          expect(result.wasNoOp, isTrue, reason: '$scenario');
-          expect(result.updatedTask, isNull, reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
           verifyNever(() => repo.updateJournalEntity(any()));
@@ -720,7 +704,6 @@ void main() {
           expect(result.success, isFalse, reason: '$scenario');
           expect(result.didWrite, isFalse, reason: '$scenario');
           expect(result.error, contains('repository returned false'));
-          expect(result.updatedTask, isNull, reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
           return;
@@ -728,44 +711,11 @@ void main() {
 
         expect(result.success, isTrue, reason: '$scenario');
         expect(result.didWrite, isTrue, reason: '$scenario');
-        expect(result.wasNoOp, isFalse, reason: '$scenario');
-        expect(result.updatedTask, captured, reason: '$scenario');
         expect(handler.task, captured, reason: '$scenario');
         expect(callbackTask, captured, reason: '$scenario');
       },
       tags: 'glados',
     );
-
-    group('TaskDueDateResult', () {
-      test('wasSkipped returns true for non-error failures', () {
-        const result = TaskDueDateResult(
-          success: false,
-          message: 'Already set',
-        );
-
-        expect(result.wasSkipped, isTrue);
-      });
-
-      test('wasSkipped returns false when error is present', () {
-        const result = TaskDueDateResult(
-          success: false,
-          message: 'Invalid input',
-          error: 'date format invalid',
-        );
-
-        expect(result.wasSkipped, isFalse);
-      });
-
-      test('wasSkipped returns false when success is true', () {
-        final result = TaskDueDateResult(
-          success: true,
-          message: 'Updated',
-          requestedDate: DateTime(2024, 1, 25),
-        );
-
-        expect(result.wasSkipped, isFalse);
-      });
-    });
 
     group('date format variations', () {
       test(
@@ -831,7 +781,7 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedDate, DateTime(2024, 12, 31));
+        expect(handler.task.data.due, DateTime(2024, 12, 31));
       });
 
       test('should handle leap year date', () async {
@@ -850,7 +800,7 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedDate, DateTime(2024, 2, 29));
+        expect(handler.task.data.due, DateTime(2024, 2, 29));
       });
 
       test('should normalize to midnight', () async {
@@ -870,10 +820,10 @@ void main() {
 
         expect(result.success, isTrue);
         // Date should be normalized to midnight (00:00:00)
-        expect(result.requestedDate, DateTime(2024, 1, 19));
-        expect(result.requestedDate!.hour, 0);
-        expect(result.requestedDate!.minute, 0);
-        expect(result.requestedDate!.second, 0);
+        expect(handler.task.data.due, DateTime(2024, 1, 19));
+        expect(handler.task.data.due!.hour, 0);
+        expect(handler.task.data.due!.minute, 0);
+        expect(handler.task.data.due!.second, 0);
       });
     });
 
@@ -918,7 +868,7 @@ void main() {
           final result = await handler.processToolCall(toolCall, mockManager);
 
           expect(result.success, isTrue);
-          final updated = result.updatedTask!;
+          final updated = handler.task;
           expect(updated.data.title, 'Important Task');
           expect(updated.data.status.id, 'status-2');
           expect(updated.data.estimate, const Duration(minutes: 60));
@@ -943,7 +893,7 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedDate, DateTime(2030, 12, 31));
+        expect(handler.task.data.due, DateTime(2030, 12, 31));
       });
     });
   });

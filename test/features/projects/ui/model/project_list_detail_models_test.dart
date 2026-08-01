@@ -1,6 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
-
 import '../../test_utils.dart';
 
 void main() {
@@ -12,7 +10,6 @@ void main() {
         totalTaskCount: 10,
         blockedTaskCount: 2,
         aiSummary: 'Custom summary',
-        recommendations: ['Do A', 'Do B'],
       );
 
       expect(record.healthScore, 85);
@@ -20,7 +17,6 @@ void main() {
       expect(record.totalTaskCount, 10);
       expect(record.blockedTaskCount, 2);
       expect(record.aiSummary, 'Custom summary');
-      expect(record.recommendations, ['Do A', 'Do B']);
       // Derived computation, not just constructor echo: 5 of 10 done.
       expect(record.overviewListItem.taskRollup.completionRatio, 0.5);
     });
@@ -52,54 +48,6 @@ void main() {
       expect(summary.task.data.title, 'Test Task');
       expect(summary.oneLiner, 'Implementation done, release next');
       expect(summary.estimatedDuration, const Duration(hours: 1, minutes: 30));
-    });
-  });
-
-  group('ReviewSession', () {
-    test('has sensible defaults', () {
-      const session = ReviewSession(
-        id: 'r1',
-        summaryLabel: 'Week 1',
-        rating: 3,
-      );
-
-      expect(session.metrics, isEmpty);
-      expect(session.note, isNull);
-      expect(session.expanded, isFalse);
-    });
-
-    test('stores all fields when provided', () {
-      final session = makeTestReviewSession(
-        id: 'r2',
-        summaryLabel: 'Week 2',
-        rating: 5,
-        metrics: const [
-          ReviewMetric(type: ReviewMetricType.accuracy, rating: 5),
-        ],
-        note: 'Great week',
-        expanded: true,
-      );
-
-      expect(session.id, 'r2');
-      expect(session.summaryLabel, 'Week 2');
-      expect(session.rating, 5);
-      expect(session.metrics, hasLength(1));
-      expect(session.metrics.first.type, ReviewMetricType.accuracy);
-      expect(session.note, 'Great week');
-      expect(session.expanded, isTrue);
-    });
-  });
-
-  group('ReviewMetricType', () {
-    test('has all expected values', () {
-      expect(
-        ReviewMetricType.values,
-        containsAll([
-          ReviewMetricType.communication,
-          ReviewMetricType.usefulness,
-          ReviewMetricType.accuracy,
-        ]),
-      );
     });
   });
 

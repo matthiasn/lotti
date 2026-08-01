@@ -11,17 +11,14 @@ class TaskLabelResult {
   const TaskLabelResult({
     required this.success,
     required this.message,
-    this.assigned = const [],
     this.error,
     this.didWrite = false,
   });
 
   final bool success;
   final String message;
-  final List<String> assigned;
   final String? error;
   final bool didWrite;
-  bool get wasNoOp => success && !didWrite;
 }
 
 /// Handler for assigning labels to a task via the agent tool system.
@@ -100,7 +97,6 @@ class TaskLabelHandler {
       return TaskLabelResult(
         success: true,
         message: message,
-        assigned: result.assigned,
         didWrite: didAssign,
       );
     } catch (e, s) {

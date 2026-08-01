@@ -382,10 +382,8 @@ ProjectRecord _makeRecordWithNoCategory() {
     blockedTaskCount: 0,
     aiSummary: 'Test AI summary.',
     reportContent: 'Test AI summary.',
-    recommendations: const [],
     reportUpdatedAt: DateTime(2026, 4, 2, 7, 30),
     highlightedTaskSummaries: const [],
-    reviewSessions: const [],
     highlightedTasksTotalDuration: Duration.zero,
   );
 }

@@ -623,8 +623,6 @@ void main() {
       (_) async => OnboardingCaptureResult(
         task: MockTask(id: 'task-1'),
         title: 'Plan the week',
-        checklistItems: const ['Monday'],
-        isRealAha: true,
       ),
     );
     await tester.tap(find.text('Plan my week'), warnIfMissed: false);
@@ -691,8 +689,6 @@ void main() {
       (_) async => const OnboardingCaptureResult(
         task: null,
         title: '',
-        checklistItems: [],
-        isRealAha: false,
       ),
     );
     await tester.tap(find.text('Plan my week'), warnIfMissed: false);
@@ -778,8 +774,6 @@ void main() {
       (_) async => OnboardingCaptureResult(
         task: MockTask(id: 'task-2'),
         title: 'Planned',
-        checklistItems: const [],
-        isRealAha: true,
       ),
     );
     await tester.tap(find.text('Plan my week'), warnIfMissed: false);

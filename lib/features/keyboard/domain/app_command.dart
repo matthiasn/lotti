@@ -59,20 +59,6 @@ enum AppCommandCategory {
   listsAndControls,
 }
 
-/// The kind of focused surface in which a command is meaningful.
-enum AppCommandContext {
-  global,
-  currentSurface,
-  navigation,
-  list,
-  tree,
-  editor,
-  modal,
-  calendar,
-  imageViewer,
-  resizablePane,
-}
-
 /// Whether a command should be offered by the command palette.
 enum AppCommandPaletteVisibility {
   /// The command is supplied by the app-global scope.
@@ -98,37 +84,19 @@ class AppCommandDefinition {
   const AppCommandDefinition({
     required this.id,
     required this.category,
-    required this.context,
     required this.bindings,
     required this.paletteVisibility,
-    this.destructive = false,
     this.allowRepeat = false,
   });
 
   final AppCommandId id;
   final AppCommandCategory category;
-  final AppCommandContext context;
   final List<AppShortcutBinding> bindings;
   final AppCommandPaletteVisibility paletteVisibility;
-  final bool destructive;
 
   /// Whether holding the shortcut may invoke the command repeatedly.
   ///
   /// One-shot commands such as create/save keep the default `false`; zoom,
   /// resize, and movement commands opt in explicitly.
   final bool allowRepeat;
-}
-
-/// A duplicate platform binding in a set of simultaneously active commands.
-@immutable
-class AppCommandBindingConflict {
-  const AppCommandBindingConflict({
-    required this.activator,
-    required this.first,
-    required this.second,
-  });
-
-  final Object activator;
-  final AppCommandId first;
-  final AppCommandId second;
 }

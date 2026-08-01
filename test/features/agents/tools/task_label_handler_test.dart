@@ -246,8 +246,6 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.wasNoOp, isFalse);
-        expect(result.assigned, equals(['label-a', 'label-b']));
         expect(result.error, isNull);
 
         verify(
@@ -304,8 +302,6 @@ void main() {
 
           expect(result.success, isTrue);
           expect(result.didWrite, isTrue);
-          expect(result.wasNoOp, isFalse);
-          expect(result.assigned, equals(['label-a']));
 
           // The pre-existing labels are forwarded so the processor can skip
           // already-assigned IDs, but they no longer gate the assignment.
@@ -390,7 +386,6 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isFalse);
-        expect(result.wasNoOp, isTrue);
         expect(result.message, contains('No valid labels'));
 
         verifyNever(
@@ -414,7 +409,6 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isFalse);
-        expect(result.wasNoOp, isTrue);
       });
 
       test('handles processor exception', () async {
@@ -627,7 +621,6 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isFalse);
-        expect(result.wasNoOp, isTrue);
       });
 
       glados.Glados(
@@ -669,7 +662,6 @@ void main() {
           if (!scenario.shouldCallProcessor) {
             expect(result.success, isTrue, reason: '$scenario');
             expect(result.didWrite, isFalse, reason: '$scenario');
-            expect(result.wasNoOp, isTrue, reason: '$scenario');
             verifyNever(
               () => localProcessor.processAssignment(
                 taskId: any(named: 'taskId'),
@@ -708,7 +700,6 @@ void main() {
           expect(captured[5], parseResult.totalCandidates, reason: '$scenario');
 
           expect(result.success, isTrue, reason: '$scenario');
-          expect(result.assigned, scenario.assignedByProcessor);
           expect(
             result.didWrite,
             scenario.assignedByProcessor.isNotEmpty,
@@ -729,7 +720,6 @@ void main() {
         const labelResult = TaskLabelResult(
           success: true,
           message: 'Assigned 2 labels',
-          assigned: ['l1', 'l2'],
           didWrite: true,
         );
 
@@ -782,33 +772,6 @@ void main() {
         expect(toolResult.success, isFalse);
         expect(toolResult.errorMessage, 'DB error');
         expect(toolResult.mutatedEntityId, isNull);
-      });
-    });
-
-    group('TaskLabelResult', () {
-      test('wasNoOp is true when success=true and didWrite=false', () {
-        const result = TaskLabelResult(
-          success: true,
-          message: 'no-op',
-        );
-        expect(result.wasNoOp, isTrue);
-      });
-
-      test('wasNoOp is false when didWrite=true', () {
-        const result = TaskLabelResult(
-          success: true,
-          message: 'wrote',
-          didWrite: true,
-        );
-        expect(result.wasNoOp, isFalse);
-      });
-
-      test('wasNoOp is false when success=false', () {
-        const result = TaskLabelResult(
-          success: false,
-          message: 'error',
-        );
-        expect(result.wasNoOp, isFalse);
       });
     });
 

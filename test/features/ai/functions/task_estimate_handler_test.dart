@@ -257,11 +257,7 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedMinutes, 120);
-        expect(result.reason, 'User mentioned 2 hours');
-        expect(result.confidence, 'high');
-        expect(result.updatedTask, isNotNull);
-        expect(result.updatedTask!.data.estimate, const Duration(minutes: 120));
+        expect(handler.task.data.estimate?.inMinutes, 120);
         expect(result.error, isNull);
 
         expect(capturedTask, isNotNull);
@@ -294,9 +290,9 @@ void main() {
           final result = await handler.processToolCall(toolCall, mockManager);
 
           expect(result.success, isTrue);
-          expect(result.requestedMinutes, 60);
+          expect(handler.task.data.estimate?.inMinutes, 60);
           expect(
-            result.updatedTask!.data.estimate,
+            handler.task.data.estimate,
             const Duration(minutes: 60),
           );
 
@@ -343,7 +339,7 @@ void main() {
           final result = await handler.processToolCall(toolCall);
 
           expect(result.success, isTrue);
-          expect(result.requestedMinutes, 45);
+          expect(handler.task.data.estimate?.inMinutes, 45);
           verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
           // Manager methods should not be called
           verifyNever(
@@ -373,8 +369,8 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.wasNoOp, isTrue);
-        expect(result.requestedMinutes, 60);
+        expect(result.didWrite, isFalse);
+        expect(handler.task.data.estimate?.inMinutes, 60);
         expect(result.message, contains('No change needed'));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -419,9 +415,9 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
-        expect(result.requestedMinutes, 120);
+        expect(handler.task.data.estimate?.inMinutes, 120);
         expect(
-          result.updatedTask!.data.estimate,
+          handler.task.data.estimate,
           const Duration(minutes: 120),
         );
 
@@ -449,10 +445,9 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('positive integer'));
-        expect(result.requestedMinutes, isNull);
+        expect(handler.task.data.estimate?.inMinutes, isNull);
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
@@ -469,7 +464,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('positive integer'));
 
@@ -488,7 +482,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('positive integer'));
 
@@ -515,7 +508,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('1440'));
 
@@ -541,7 +533,6 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -571,11 +562,9 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('Database connection lost'));
-        expect(result.requestedMinutes, 90);
-        expect(result.updatedTask, isNull);
+        expect(handler.task, same(task));
 
         verify(
           () => mockManager.addToolResponse(
@@ -656,11 +645,6 @@ void main() {
           expect(result.success, isFalse, reason: '$scenario');
           expect(result.didWrite, isFalse, reason: '$scenario');
           expect(
-            result.requestedMinutes,
-            scenario.rawMinutes is int ? scenario.rawMinutes : null,
-            reason: '$scenario',
-          );
-          expect(
             result.error,
             contains('positive integer'),
             reason: '$scenario',
@@ -671,15 +655,9 @@ void main() {
           return;
         }
 
-        expect(result.requestedMinutes, scenario.parsedMinutes);
-        expect(result.reason, 'Generated reason ${scenario.seed}');
-        expect(result.confidence, scenario.seed.isEven ? 'high' : 'medium');
-
         if (scenario.isNoOp) {
           expect(result.success, isTrue, reason: '$scenario');
           expect(result.didWrite, isFalse, reason: '$scenario');
-          expect(result.wasNoOp, isTrue, reason: '$scenario');
-          expect(result.updatedTask, isNull, reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
           verifyNever(() => repo.updateJournalEntity(any()));
@@ -702,7 +680,6 @@ void main() {
           expect(result.success, isFalse, reason: '$scenario');
           expect(result.didWrite, isFalse, reason: '$scenario');
           expect(result.error, contains('repository returned false'));
-          expect(result.updatedTask, isNull, reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
           return;
@@ -710,45 +687,11 @@ void main() {
 
         expect(result.success, isTrue, reason: '$scenario');
         expect(result.didWrite, isTrue, reason: '$scenario');
-        expect(result.wasNoOp, isFalse, reason: '$scenario');
-        expect(result.updatedTask, captured, reason: '$scenario');
         expect(handler.task, captured, reason: '$scenario');
         expect(callbackTask, captured, reason: '$scenario');
       },
       tags: 'glados',
     );
-
-    group('TaskEstimateResult', () {
-      test('wasSkipped returns true for non-error failures', () {
-        const result = TaskEstimateResult(
-          success: false,
-          message: 'Already set',
-          requestedMinutes: 60,
-        );
-
-        expect(result.wasSkipped, isTrue);
-      });
-
-      test('wasSkipped returns false when error is present', () {
-        const result = TaskEstimateResult(
-          success: false,
-          message: 'Invalid input',
-          error: 'minutes must be positive',
-        );
-
-        expect(result.wasSkipped, isFalse);
-      });
-
-      test('wasSkipped returns false when success is true', () {
-        const result = TaskEstimateResult(
-          success: true,
-          message: 'Updated',
-          requestedMinutes: 60,
-        );
-
-        expect(result.wasSkipped, isFalse);
-      });
-    });
 
     group('edge cases', () {
       test('should handle max allowed minute value (24 hours)', () async {
@@ -768,9 +711,9 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedMinutes, 1440);
+        expect(handler.task.data.estimate?.inMinutes, 1440);
         expect(
-          result.updatedTask!.data.estimate,
+          handler.task.data.estimate,
           const Duration(minutes: 1440),
         );
       });
@@ -791,8 +734,8 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedMinutes, 1);
-        expect(result.updatedTask!.data.estimate, const Duration(minutes: 1));
+        expect(handler.task.data.estimate?.inMinutes, 1);
+        expect(handler.task.data.estimate, const Duration(minutes: 1));
       });
 
       test(
@@ -835,7 +778,7 @@ void main() {
           final result = await handler.processToolCall(toolCall, mockManager);
 
           expect(result.success, isTrue);
-          final updated = result.updatedTask!;
+          final updated = handler.task;
           expect(updated.data.title, 'Important Task');
           expect(updated.data.status.id, 'status-2');
           expect(updated.data.due, DateTime(2024, 1, 25));
@@ -868,9 +811,12 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedMinutes, 121); // rounded from 120.5
         expect(
-          result.updatedTask!.data.estimate,
+          handler.task.data.estimate?.inMinutes,
+          121,
+        ); // rounded from 120.5
+        expect(
+          handler.task.data.estimate,
           const Duration(minutes: 121),
         );
       });
@@ -899,8 +845,8 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedMinutes, 90);
-        expect(result.updatedTask!.data.estimate, const Duration(minutes: 90));
+        expect(handler.task.data.estimate?.inMinutes, 90);
+        expect(handler.task.data.estimate, const Duration(minutes: 90));
       });
 
       test('should reject non-numeric string minutes', () async {

@@ -260,12 +260,6 @@ void main() {
       (_) async => OnboardingCaptureResult(
         task: MockTask(id: 'europa-sardine-relay'),
         title: _createdTaskTitle,
-        checklistItems: [
-          _t('Verify relay pressure', 'Relaisdruck prüfen'),
-          _t('Count all emperor penguins', 'Alle Kaiserpinguine zählen'),
-          _t('Route the sardine cargo pods', 'Sardinen-Frachtkapseln routen'),
-        ],
-        isRealAha: true,
       ),
     );
 

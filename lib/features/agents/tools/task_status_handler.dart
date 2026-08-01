@@ -11,17 +11,14 @@ class TaskStatusResult {
   const TaskStatusResult({
     required this.success,
     required this.message,
-    this.updatedTask,
     this.error,
     this.didWrite = false,
   });
 
   final bool success;
   final String message;
-  final Task? updatedTask;
   final String? error;
   final bool didWrite;
-  bool get wasNoOp => success && !didWrite;
 }
 
 /// Handler for transitioning the status of a task.
@@ -129,7 +126,6 @@ class TaskStatusHandler {
       return TaskStatusResult(
         success: true,
         message: message,
-        updatedTask: task,
       );
     }
 
@@ -173,7 +169,6 @@ class TaskStatusHandler {
       return TaskStatusResult(
         success: true,
         message: message,
-        updatedTask: updatedTask,
         didWrite: true,
       );
     } catch (e, s) {

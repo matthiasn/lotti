@@ -77,23 +77,6 @@ void main() {
       expect(find.text('Project is on track.'), findsOneWidget);
     });
 
-    testWidgets('does not render recommendations in the report section', (
-      tester,
-    ) async {
-      final record = makeTestProjectRecord(
-        recommendations: ['Fix bug A', 'Add test B'],
-      );
-
-      await tester.pumpWidget(
-        wrap(ProjectDetailPane(record: record, currentTime: testCurrentTime)),
-      );
-      await tester.pump();
-
-      expect(find.text('Recommendations'), findsNothing);
-      expect(find.text('Fix bug A'), findsNothing);
-      expect(find.text('Add test B'), findsNothing);
-    });
-
     testWidgets('renders project tasks panel', (tester) async {
       final record = makeTestProjectRecord(
         highlightedTaskSummaries: [makeTestTaskSummary()],
@@ -219,24 +202,6 @@ void main() {
 
       expect(find.text('Description'), findsOneWidget);
     });
-
-    testWidgets(
-      'does not render AI report recommendations',
-      (tester) async {
-        final record = makeTestProjectRecord(
-          aiSummary: 'Project is on track.',
-          recommendations: const ['Fix bug A'],
-        );
-
-        await tester.pumpWidget(
-          wrap(ProjectDetailPane(record: record, currentTime: testCurrentTime)),
-        );
-        await tester.pump();
-
-        expect(find.text('Fix bug A'), findsNothing);
-        expect(find.text('Recommendations'), findsNothing);
-      },
-    );
 
     testWidgets('does not overflow with long project titles', (tester) async {
       final record = makeTestProjectRecord(
