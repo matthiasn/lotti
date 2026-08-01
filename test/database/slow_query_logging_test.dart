@@ -112,13 +112,105 @@ void main() {
 
     SlowQueryInterceptor createInterceptor({
       Duration threshold = Duration.zero,
+      DateTime Function()? now,
     }) {
       return SlowQueryInterceptor(
         databaseName: 'test_db',
         threshold: threshold,
         reporter: reportedEntries.add,
+        now: now,
       );
     }
+
+    /// A wall clock the test advances by hand, so the suspend-detection branch
+    /// is driven deterministically rather than with a real delay.
+    ({DateTime Function() clock, void Function(Duration) advance}) fakeClock() {
+      var current = DateTime(2026, 8);
+      return (
+        clock: () => current,
+        advance: (d) => current = current.add(d),
+      );
+    }
+
+    group('suspend detection (wall clock vs monotonic)', () {
+      // Stopwatch uses CLOCK_MONOTONIC, which does not advance while the host
+      // is asleep; wall clock does. A large divergence is therefore evidence
+      // the process was frozen, not that the database was slow. Two entries in
+      // the 2026-06/07 corpus (909,870ms and 446,318ms) had zero overlapping
+      // writes, which is what motivated recording both clocks.
+
+      setUp(() {
+        SlowQueryLoggingGate.isEnabled = true;
+      });
+
+      test(
+        'reports no skew when wall clock tracks the monotonic timer',
+        () async {
+          final fake = fakeClock();
+          interceptor = createInterceptor(now: fake.clock);
+          when(
+            () => mockExecutor.runSelect(any(), any()),
+          ).thenAnswer((_) async => []);
+
+          await interceptor.runSelect(mockExecutor, 'SELECT 1', []);
+
+          expect(reportedEntries, hasLength(1));
+          expect(
+            reportedEntries.single.suspensionSkew,
+            Duration.zero,
+            reason: 'an un-suspended span must not be flagged',
+          );
+        },
+      );
+
+      test('reports the skew when the host slept during the query', () async {
+        final fake = fakeClock();
+        interceptor = createInterceptor(now: fake.clock);
+        when(() => mockExecutor.runSelect(any(), any())).thenAnswer((_) async {
+          // The machine sleeps for 15 minutes mid-query: wall clock jumps,
+          // the Stopwatch barely moves.
+          fake.advance(const Duration(minutes: 15));
+          return [];
+        });
+
+        await interceptor.runSelect(mockExecutor, 'SELECT 1', []);
+
+        final entry = reportedEntries.single;
+        expect(entry.suspensionSkew, greaterThan(const Duration(minutes: 14)));
+        expect(
+          entry.elapsed,
+          lessThan(const Duration(minutes: 1)),
+          reason: 'the monotonic timer must not have advanced with the sleep',
+        );
+      });
+
+      test('suspensionSkew is null when no wall clock was recorded', () {
+        const entry = SlowQueryLogEntry(
+          databaseName: 'db',
+          operation: 'select',
+          statement: 'SELECT 1',
+          arguments: [],
+          elapsed: Duration(seconds: 1),
+        );
+
+        expect(entry.suspensionSkew, isNull);
+      });
+
+      test('a backwards wall-clock jump clamps to zero, never negative', () {
+        // NTP correction or a manual clock change can move wall time
+        // backwards; that is not negative suspension.
+        const entry = SlowQueryLogEntry(
+          databaseName: 'db',
+          operation: 'select',
+          statement: 'SELECT 1',
+          arguments: [],
+          elapsed: Duration(seconds: 10),
+          wallElapsed: Duration(seconds: 2),
+        );
+
+        expect(entry.suspensionSkew, Duration.zero);
+      });
+    });
 
     group('gate disabled - no reporter calls', () {
       setUp(() {
@@ -780,6 +872,58 @@ void main() {
       if (tempDir.existsSync()) {
         tempDir.deleteSync(recursive: true);
       }
+    });
+
+    test('annotates a suspended entry, and leaves normal ones alone', () async {
+      // The marker is what lets log aggregation drop suspend artefacts instead
+      // of ranking them as the slowest queries in the corpus.
+      final reporter = SlowQueryInterceptor.fileReporter(
+        documentsDirectoryPath: tempDir.path,
+      );
+
+      reporter(
+        const SlowQueryLogEntry(
+          databaseName: 'test_db',
+          operation: 'select',
+          statement: 'SELECT 1',
+          arguments: <Object?>[],
+          elapsed: Duration(milliseconds: 40),
+          wallElapsed: Duration(minutes: 15),
+        ),
+      );
+      reporter(
+        const SlowQueryLogEntry(
+          databaseName: 'test_db',
+          operation: 'select',
+          statement: 'SELECT 2',
+          arguments: <Object?>[],
+          elapsed: Duration(milliseconds: 40),
+          wallElapsed: Duration(milliseconds: 41),
+        ),
+      );
+      await SlowQueryInterceptor.flushFileSinkForTest();
+
+      final logFile = Directory(
+        '${tempDir.path}/logs',
+      ).listSync().whereType<File>().single;
+      final lines = logFile
+          .readAsStringSync()
+          .trim()
+          .split('\n')
+          .where((l) => l.isNotEmpty)
+          .toList();
+
+      expect(lines, hasLength(2));
+      expect(
+        lines.firstWhere((l) => l.contains('SELECT 1')),
+        contains('suspended='),
+        reason: '15 minutes of wall time against 40ms monotonic is a suspend',
+      );
+      expect(
+        lines.firstWhere((l) => l.contains('SELECT 2')),
+        isNot(contains('suspended=')),
+        reason: '1ms of jitter must not be annotated',
+      );
     });
 
     test('writes log line to a dated file in logs subdirectory', () async {

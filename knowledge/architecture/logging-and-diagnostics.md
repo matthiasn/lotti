@@ -134,3 +134,19 @@ each tier is for are in [persistence](persistence.md).
 | Buffering, files, flag subscription | [`lib/services/logging_service.dart`](../../lib/services/logging_service.dart) |
 | Developer-only console helper | [`lib/services/dev_logger.dart`](../../lib/services/dev_logger.dart) |
 | Slow-query interceptor | [`lib/database/slow_query_logging.dart`](../../lib/database/slow_query_logging.dart) |
+
+# Suspend artefacts in the slow-query log
+
+Every slow-query entry records **two** clocks: `elapsed` from a monotonic
+`Stopwatch`, and `wallElapsed` from wall time across the same span. They only
+disagree when the host suspends — `CLOCK_MONOTONIC` does not advance while the
+machine sleeps, wall clock does.
+
+When wall time runs more than 250 ms ahead, the log line carries
+`suspended=<ms>`. Entries so marked are **not** database stalls and must be
+excluded from any "slowest query" aggregation.
+
+This exists because the 2026-06/07 corpus contained two entries — 909,870 ms and
+446,318 ms — that dwarfed everything else, had zero overlapping writes and
+almost no overlapping queries (so not lock contention), and between them made a
+query with no callers rank #1 across the whole corpus by total time.

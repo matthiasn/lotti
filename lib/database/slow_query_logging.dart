@@ -9,6 +9,11 @@ import 'package:path/path.dart' as p;
 
 typedef SlowQueryReporter = void Function(SlowQueryLogEntry entry);
 
+/// Minimum wall-vs-monotonic divergence before an entry is annotated as
+/// suspended. Scheduling jitter and clock granularity produce a few
+/// milliseconds of noise on any span; a host suspend produces seconds.
+const Duration _suspensionReportingThreshold = Duration(milliseconds: 250);
+
 /// Runtime gate for slow-query file logging.
 ///
 /// The interceptor is installed on every Drift connection, but the actual
@@ -60,6 +65,7 @@ class SlowQueryLogEntry {
     required this.statement,
     required this.arguments,
     required this.elapsed,
+    this.wallElapsed,
     this.isSuperSlow = false,
     this.queryPlan,
     this.callerStack,
@@ -70,6 +76,35 @@ class SlowQueryLogEntry {
   final String statement;
   final List<Object?> arguments;
   final Duration elapsed;
+
+  /// Wall-clock time across the same span that [elapsed] measured with a
+  /// monotonic [Stopwatch].
+  ///
+  /// The two disagree when the host suspends: `Stopwatch` uses
+  /// `CLOCK_MONOTONIC`, which does not advance while the machine is asleep,
+  /// while wall clock does. A large positive divergence is therefore evidence
+  /// that the process was frozen, not that the database was slow.
+  ///
+  /// This exists because the 2026-06/07 corpus contained two entries — 909,870
+  /// ms and 446,318 ms — that dwarfed everything else and had **zero**
+  /// overlapping writes and almost no overlapping queries, which rules out lock
+  /// contention. They made a dead query rank #1 across the whole corpus. Rather
+  /// than re-litigate that every time, record both clocks and let aggregation
+  /// filter on the divergence.
+  final Duration? wallElapsed;
+
+  /// How far wall clock ran ahead of the monotonic timer, or `null` when wall
+  /// time was not captured.
+  ///
+  /// Near zero means the elapsed time was really spent in the query or its
+  /// queue — a genuine stall worth investigating. A value close to [elapsed]
+  /// means the process was suspended for essentially the whole span.
+  Duration? get suspensionSkew {
+    final wall = wallElapsed;
+    if (wall == null) return null;
+    final skew = wall - elapsed;
+    return skew.isNegative ? Duration.zero : skew;
+  }
 
   /// True when the query exceeded the interceptor's super-slow threshold and
   /// should be replicated to the dedicated super-slow log file.
@@ -104,7 +139,8 @@ class SlowQueryInterceptor extends QueryInterceptor {
     required this.threshold,
     required this.reporter,
     this.superSlowThreshold = SlowQueryLoggingGate.defaultSuperSlowThreshold,
-  });
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
 
   final String databaseName;
   final Duration threshold;
@@ -115,6 +151,10 @@ class SlowQueryInterceptor extends QueryInterceptor {
   /// super-slow log file. Set to `Duration.zero` from tests to force every
   /// reported query down the super-slow path.
   final Duration superSlowThreshold;
+
+  /// Wall clock source. Injectable so the suspend-detection branch can be
+  /// driven deterministically instead of with a real delay.
+  final DateTime Function() _now;
 
   static SlowQueryReporter fileReporter({
     required String documentsDirectoryPath,
@@ -128,10 +168,21 @@ class SlowQueryInterceptor extends QueryInterceptor {
       final logFile = File(
         p.join(documentsDirectoryPath, 'logs', '$fileStem-$date.log'),
       );
+      // `suspended=<ms>` is appended only when wall clock ran meaningfully
+      // ahead of the monotonic timer, i.e. the host was asleep for part of the
+      // span. Its absence is the common case and keeps the line format
+      // unchanged for every normal entry; its presence marks an entry that
+      // should be excluded from any "slowest query" aggregation.
+      final skew = entry.suspensionSkew;
+      final suspendedSuffix =
+          skew != null && skew >= _suspensionReportingThreshold
+          ? 'suspended=${(skew.inMicroseconds / Duration.microsecondsPerMillisecond).toStringAsFixed(3)}ms '
+          : '';
       final line =
           '${DateTime.now().toIso8601String()} '
           '[${entry.databaseName}] ${entry.operation} '
           '${elapsedMs.toStringAsFixed(3)}ms '
+          '$suspendedSuffix'
           'args=${entry.arguments.length} '
           '${entry.formattedStatement}';
       _SlowQueryFileSink.instance.append(logFile, line);
@@ -232,11 +283,15 @@ class SlowQueryInterceptor extends QueryInterceptor {
       callerStack = StackTrace.current;
     }
     final stopwatch = Stopwatch()..start();
+    final startedAt = _now();
     try {
       return await run();
     } finally {
       stopwatch.stop();
       final elapsed = stopwatch.elapsed;
+      // Wall clock across the same span. It only differs from the monotonic
+      // `elapsed` if the host suspended — see [SlowQueryLogEntry.wallElapsed].
+      final wallElapsed = _now().difference(startedAt);
       if (SlowQueryLoggingGate.isEnabled && elapsed >= threshold) {
         final isSuperSlow = elapsed >= superSlowThreshold;
         List<String>? queryPlan;
@@ -260,6 +315,7 @@ class SlowQueryInterceptor extends QueryInterceptor {
             statement: statement,
             arguments: arguments,
             elapsed: elapsed,
+            wallElapsed: wallElapsed,
             isSuperSlow: isSuperSlow,
             queryPlan: queryPlan,
             callerStack: callerStack,
