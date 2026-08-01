@@ -7,8 +7,8 @@ typedef LinkedEntityTimeSpan = ({
 });
 
 /// Entry-link and rating query surface for [JournalDb], including the
-/// microtask coalescers for basic links and rating-id lookups, and the
-/// guarded [upsertEntryLink] write path.
+/// microtask coalescer for basic-link lookups and the guarded
+/// [upsertEntryLink] write path.
 mixin _JournalDbLinksRatings
     on _$JournalDb, _JournalDbConfigFlags, _JournalDbJournalQueries {
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {

@@ -370,8 +370,8 @@ CREATE INDEX idx_linked_entries_to_id_type ON linked_entries(
   to_id COLLATE BINARY ASC,
   type COLLATE BINARY ASC
 );
--- Hot-path partial for `ratingsForTimeEntries` and the per-target
--- rating queries: filters `to_id IN (...) AND type='RatingLink' AND
+-- Hot-path partial for per-target rating queries: filters
+-- `to_id = ? AND type='RatingLink' AND
 -- COALESCE(hidden, FALSE) = FALSE`. The non-partial composite above
 -- still serves general (to_id, type) lookups; this partial keeps the
 -- rating reverse-link reads index-only and trivially small even on
