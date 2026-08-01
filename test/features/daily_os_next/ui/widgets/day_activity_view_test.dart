@@ -837,4 +837,69 @@ void main() {
 
     expect(routed, '/settings/ai');
   });
+
+  testWidgets(
+    'a capture-parsing job parked offline says so instead of "needs '
+    'attention"',
+    (tester) async {
+      final outbox = MockDayProcessingOutboxRepository();
+      final runtime = MockDayProcessingRuntime();
+      when(() => outbox.retryNow(any())).thenAnswer((_) async => null);
+      when(runtime.nudge).thenAnswer((_) async {});
+      final stalled = DayActivityEntry(
+        id: 'parse_capture-1',
+        kind: DayActivityEntryKind.agentJob,
+        createdAt: capturedAt,
+        activityEntryId: 'parse_capture-1',
+        processingJob: DayProcessingJob(
+          id: 'parse_capture-1',
+          status: DayProcessingJobStatus.waitingForNetwork,
+          dayId: 'dayplan-2026-07-18',
+          payload: const ParseCapturePayload(captureId: 'capture-1'),
+          createdAt: capturedAt,
+          updatedAt: capturedAt,
+          requestedAt: capturedAt,
+          nextAttemptAt: capturedAt,
+          attempts: 1,
+          generation: 0,
+          lastFailureClass: DayProcessingFailureClass.network,
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          DayActivityView(
+            date: date,
+            hasPlan: false,
+            actualBlocks: const [],
+            onUseEntry: (_) {},
+          ),
+          overrides: [
+            dayActivityProvider.overrideWith((ref, date) async => [stalled]),
+            dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+            dayProcessingRuntimeProvider.overrideWithValue(runtime),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+      expect(
+        find.text(messages.dailyOsNextActivityAgentJobParse),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextActivityWaitingForNetwork),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextActivityNeedsAttention),
+        findsNothing,
+        reason:
+            'Waiting for the network is not something the user can act on; '
+            'calling it "needs attention" sends them looking for a fix that '
+            'does not exist.',
+      );
+    },
+  );
 }
