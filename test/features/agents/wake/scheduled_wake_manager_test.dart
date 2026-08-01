@@ -775,8 +775,9 @@ void main() {
             // The periodic tick is hourly, so without a timer of its own a
             // crashed claimant would hold the window for the rest of the hour
             // on top of its lease.
-            async.elapse(const Duration(minutes: 10, seconds: 1));
-            async.flushMicrotasks();
+            async
+              ..elapse(const Duration(minutes: 10, seconds: 1))
+              ..flushMicrotasks();
 
             verify(() => syncService.upsertEntity(any())).called(1);
             manager.stop();
@@ -803,12 +804,14 @@ void main() {
             // The restart lost the original settle timer. Without a
             // replacement the next check is the hourly tick, by which point
             // the lease has expired and the device reclaims its own record.
-            async.elapse(const Duration(minutes: 1, seconds: 59));
-            async.flushMicrotasks();
+            async
+              ..elapse(const Duration(minutes: 1, seconds: 59))
+              ..flushMicrotasks();
             expectNoWake();
 
-            async.elapse(const Duration(seconds: 2));
-            async.flushMicrotasks();
+            async
+              ..elapse(const Duration(seconds: 2))
+              ..flushMicrotasks();
             verify(
               () => orchestrator.enqueueManualWake(
                 agentId: 'daily_os_planner',
@@ -834,10 +837,12 @@ void main() {
             // continuation reaches the line that arms the settle timer. Only
             // then is there a timer for stop() to have missed; flushing first
             // would let stop() cancel an already-armed one and prove nothing.
+            // ignore: cascade_invocations
             manager.stop();
-            async.flushMicrotasks();
-            async.elapse(const Duration(minutes: 10));
-            async.flushMicrotasks();
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(minutes: 10))
+              ..flushMicrotasks();
 
             // The in-flight pass writes its claim; nothing after it should.
             // Otherwise a disposed manager keeps re-claiming on a timer stop()
