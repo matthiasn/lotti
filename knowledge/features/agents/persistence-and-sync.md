@@ -51,6 +51,14 @@ sources:
     resource: ../../../lib/features/agents/service/agent_retention_policy.dart
     title: AgentRetentionPolicy
     last_modified: 2026-08-01
+  - id: observation-prune-plan
+    resource: ../../../lib/features/agents/service/observation_prune_plan.dart
+    title: planObservationPrune
+    last_modified: 2026-08-02
+  - id: observation-retention
+    resource: ../../../lib/features/agents/database/agent_repo_observation_retention.dart
+    title: AgentRepoObservationRetention
+    last_modified: 2026-08-02
   - id: adr-0007
     resource: ../../../docs/adr/0007-token-usage-wake-run-log-storage.md
     title: ADR 0007 — Token usage and wake run log storage
@@ -302,7 +310,7 @@ SQL, so a new entity type forces a decision instead of silently inheriting one.
 | `wake_run_log` | Forever | `getLifetimeWakeCount` aggregates the whole table for a figure the evolution UI displays, and the rows carry the user's `user_rating` |
 | Change sets, decisions, attention claims | Forever | Audit trail behind proposals the user accepted or rejected |
 | `saga_log` | n/a | No writer exists yet; it earns a policy when it earns a writer |
-| Observations | **Classified, not yet swept** | See below |
+| Observations | **180 days, in ancestor-closed sets only** | See below |
 | `dayStatusEvent` | **90 days, floored at the digest watermark** | See below |
 
 **The classification is exhaustive over the entity union.** `classify` is a
@@ -328,23 +336,29 @@ the user sees on scrolling back.
 
 
 
-## Why observations are classified but not swept
+## Why observations need more than a `DELETE`
 
 They are the fastest-growing derived type and the obvious target — and they sit
 inside the agent's causal message DAG, which is where a naive sweep does damage:
 
-| Entanglement | What a plain delete breaks |
-|---|---|
-| `message_prev` edges | Deleting a mid-chain observation cuts the chain in two. `ForkHealer` treats every unreferenced fragment tip as a head, so the next wake mistakes a retention cut for a real multi-device fork and persists a join |
-| `AgentStateEntity.recentHeadMessageId` | A head pointing at a deleted message is trusted on the next append, creating a permanent dangling parent |
-| `agentMessagePayload` | Payloads written by `AgentInputCaptureService` are **user content**, content-addressed under `sharedContentAgentId` and referenced by `messagePayload` **links** — not by any message's `contentEntryId`. An ownership check based on `contentEntryId` reads them as orphans and deletes them |
-| Replayed links | A peer can re-sync a `message_prev` edge for an observation this device pruned, so the link table repopulates from outside |
+| Entanglement | What a plain delete breaks | How the sweep answers it |
+|---|---|---|
+| `message_prev` edges | Deleting a *mid-chain* observation cuts the chain in two. `project()` calls every unreferenced event a head, so the deleted row's parent becomes a second head and the next wake mistakes a retention cut for a real multi-device fork | Only **ancestor-closed** sets are pruned: if a message goes, so does every one of its parents, so no survivor can lose a child |
+| `viewComplete` | A survivor still pointing at a pruned parent leaves a permanent dangling parent, and `planJoin` is gated on `danglingParentIds.isEmpty` — fork healing would switch off for good, unbounding the very context retention exists to bound | Every `message_prev` edge **into** the pruned set is deleted with it, leaving the oldest survivor a parentless root |
+| `AgentStateEntity.recentHeadMessageId` | A head pointing at a deleted message is trusted on the next append, creating a permanent dangling parent | `recentHeadMessageId` and `latestSummaryMessageId` are protected, and nothing downstream of them is prunable either |
+| `agentMessagePayload` | Payloads written by `AgentInputCaptureService` are **user content**, content-addressed under `sharedContentAgentId` and referenced by `messagePayload` **links** — not by any message's `contentEntryId`. An ownership check based on `contentEntryId` reads them as orphans and deletes them | Payload rows are never deleted. Only the pruned message's own edge to one goes |
+| Replayed links | A peer can re-sync a `message_prev` edge for an observation this device pruned, so the link table repopulates from outside | A re-sent edge without its node is a transient dangling parent — exactly the partially-synced view `planJoin` already defers on — and it clears once that peer runs its own sweep |
 
-Each has an answer; together they are a subsystem's worth of invariants rather
-than another `DELETE`, so observations keep their classification — recording the
-intent — while the sweep that honours it lands separately. `horizonFor` returns
-null for them meanwhile: dropping them on ingest while never pruning locally
-would be divergence for no gain.
+`planObservationPrune` is a pure function of the thread's shape, so those
+invariants are testable without a database; `AgentRepoObservationRetention`
+only supplies the rows and executes the plan.
+
+**Age alone never decides.** Causal and wall-clock order diverge across devices,
+so the cutoff only marks *candidates* — a message is prunable when it is an old
+observation **and every parent of it is prunable**, which stops dead at the first
+summary or still-young message. A thread longer than `maxThreadMessages` is
+skipped rather than partially pruned: ancestor-closure is a property of the chain
+from its root, and a truncated read would hide the parents that block a delete.
 
 ## Hard delete, no tombstone — and no inbound guard
 
@@ -356,8 +370,9 @@ independently.
 **Nothing is dropped on ingest.** An earlier version of this dropped inbound
 rows already past the local horizon, to stop a returning peer re-inserting what
 every device had agreed to forget. That guard is gone, because no rule here is a
-pure per-row age test any more: status events keep each day's newest, and
-observations are not swept at all. A single arriving row cannot be judged
+pure per-row age test: status events keep each day's newest, and an
+observation's fate depends on whether its ancestors may go. A single arriving
+row cannot be judged
 against a per-day property — and a guard that ignored it would drop precisely
 the event an old day is presented by, on a fresh device or a historical
 backfill, where the local store has nothing else for that day.

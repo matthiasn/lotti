@@ -8,14 +8,22 @@ import 'package:lotti/services/domain_logging.dart';
 
 /// Outcome of one retention sweep, per source.
 class AgentRetentionResult {
-  const AgentRetentionResult({this.dayStatusEvents = 0});
+  const AgentRetentionResult({this.dayStatusEvents = 0, this.observations = 0});
 
   final int dayStatusEvents;
+  final int observations;
 
-  int get total => dayStatusEvents;
+  int get total => dayStatusEvents + observations;
+
+  AgentRetentionResult copyWith({int? dayStatusEvents, int? observations}) =>
+      AgentRetentionResult(
+        dayStatusEvents: dayStatusEvents ?? this.dayStatusEvents,
+        observations: observations ?? this.observations,
+      );
 
   @override
-  String toString() => 'dayStatusEvents=$dayStatusEvents';
+  String toString() =>
+      'dayStatusEvents=$dayStatusEvents, observations=$observations';
 }
 
 /// Forgets the derived rows the agent store no longer needs.
@@ -97,6 +105,48 @@ class AgentRetentionService {
     }
   }
 
+  /// Prunes aged observations thread by thread.
+  ///
+  /// Each thread is its own transaction, so a sweep cut short leaves a
+  /// consistent DAG behind and the next start resumes where this one stopped.
+  /// A thread that fails is logged and skipped rather than aborting the pass —
+  /// one malformed log must not stop every other agent from being collected.
+  Future<int> _sweepObservations(DateTime now) async {
+    final cutoff = now.subtract(policy.observations);
+    final threads = await repository.threadsWithAgedObservations(
+      cutoff,
+      limit: policy.threadsPerSweep,
+    );
+    var pruned = 0;
+    for (final thread in threads) {
+      try {
+        final swept = await repository.pruneThreadObservations(
+          agentId: thread.agentId,
+          threadId: thread.threadId,
+          cutoff: cutoff,
+          limit: policy.batchSize,
+          maxMessages: policy.maxThreadMessages,
+        );
+        if (swept.isEmpty) continue;
+        sidecarReclaimer?.reclaim(
+          entityIds: swept.messageIds,
+          linkIds: swept.linkIds,
+        );
+        pruned += swept.messageIds.length;
+      } catch (e, s) {
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message:
+              'observation retention failed for thread ${thread.threadId}; '
+              'skipping it',
+          stackTrace: s,
+        );
+      }
+    }
+    return pruned;
+  }
+
   /// Sweeps every retention-eligible source once.
   ///
   /// Fail-soft: retention is housekeeping and must never keep the app from
@@ -123,6 +173,7 @@ class AgentRetentionService {
       // this the database shrinks while the documents directory does not.
       await sidecarReclaimer?.reclaim(entityIds: pruned);
       result = AgentRetentionResult(dayStatusEvents: pruned.length);
+      result = result.copyWith(observations: await _sweepObservations(now));
     } catch (e, s) {
       domainLogger.error(
         LogDomain.agentRuntime,

@@ -13,15 +13,12 @@ enum AgentRetentionClass {
   /// Derived and bounded by age.
   ageBounded,
 
-  /// Derived, and *intended* to be bounded — but not yet swept.
+  /// Derived, bounded by age, and pruned only in causally-safe sets.
   ///
-  /// Observations sit inside the agent's causal message DAG: `message_prev`
-  /// edges, agent-state heads, and content-addressed payloads shared through
-  /// `messagePayload` links (which are user content, and referenced by link
-  /// rather than by `contentEntryId`). Deleting one safely means answering
-  /// what happens to each of those. That is a subsystem's worth of invariants
-  /// and gets its own change; classifying them here records the intent without
-  /// pretending the sweep exists.
+  /// Observations sit inside the agent's `messagePrev` DAG, so they cannot be
+  /// deleted row-by-row like a status event: the sweep prunes an
+  /// ancestor-closed set and the edges pointing into it, leaving the head set
+  /// and `viewComplete` untouched. `planObservationPrune` holds the reasoning.
   observation,
 }
 
@@ -40,6 +37,9 @@ enum AgentRetentionClass {
 class AgentRetentionPolicy {
   const AgentRetentionPolicy({
     this.dayStatusEvents = const Duration(days: 90),
+    this.observations = const Duration(days: 180),
+    this.threadsPerSweep = 25,
+    this.maxThreadMessages = 5000,
     this.batchSize = 500,
     this.maxBatchesPerSweep = 20,
   });
@@ -49,6 +49,22 @@ class AgentRetentionPolicy {
   /// The digest reads them from its watermark (plus 12h sync-lag slack), so a
   /// window measured in months is far beyond any read that exists.
   final Duration dayStatusEvents;
+
+  /// How long an agent's own observations are kept.
+  ///
+  /// Twice the status-event window: observations are the agent's working notes
+  /// about itself, and a wake may still summarise several months back. Nothing
+  /// reads them by age after that, but the cost of keeping them a while longer
+  /// is one row, whereas deleting one early loses context permanently.
+  final Duration observations;
+
+  /// Threads visited per sweep, so one start-up pass stays bounded.
+  final int threadsPerSweep;
+
+  /// A thread longer than this is skipped rather than partially pruned —
+  /// ancestor-closure needs the chain from its root, and a truncated view
+  /// would hide the parents that block a delete.
+  final int maxThreadMessages;
 
   /// Rows deleted per statement. Each batch commits on its own.
   final int batchSize;
@@ -119,15 +135,15 @@ class AgentRetentionPolicy {
   /// The age horizon for [entity], or null when age does not bound it.
   ///
   /// Read by the sweep only. There is deliberately **no inbound guard**: no
-  /// retention rule here is a pure per-row age test any more — status events
-  /// keep each day's newest, and observations are not swept at all — and a
-  /// single arriving row cannot be judged against a per-day or per-store
-  /// property. A guard that ignored those rules would drop the one event an
-  /// old day is presented by on a fresh device or a backfill.
+  /// retention rule here is a pure per-row age test — status events keep each
+  /// day's newest, and an observation's fate depends on whether its ancestors
+  /// may go — so a single arriving row cannot be judged against what is really
+  /// a per-day or per-thread property. A guard that ignored those rules would
+  /// drop the one event an old day is presented by on a fresh device or a
+  /// backfill, and would delete an observation out of the middle of a chain.
   Duration? horizonFor(AgentDomainEntity entity) => switch (classify(entity)) {
     AgentRetentionClass.ageBounded => dayStatusEvents,
-    AgentRetentionClass.observation ||
-    AgentRetentionClass.userAuthored ||
-    AgentRetentionClass.keptDerived => null,
+    AgentRetentionClass.observation => observations,
+    AgentRetentionClass.userAuthored || AgentRetentionClass.keptDerived => null,
   };
 }

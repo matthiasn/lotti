@@ -77,7 +77,7 @@ pipeline kept on disk — previously those files outlived the delete. Tidying ru
 in the background after start-up and is safe to interrupt.
 
 The policy, what is deliberately kept and why, how it behaves across devices,
-and what is still classified but not yet swept are in
+and why pruning the agent's own observations takes more than a `DELETE` are in
 [agent persistence and sync](../../../knowledge/features/agents/persistence-and-sync.md).
 
 ## How it works

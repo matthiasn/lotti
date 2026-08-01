@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/database/agent_repo_observation_retention.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_retention_policy.dart';
@@ -60,6 +61,21 @@ void main() {
         maxBatches: any(named: 'maxBatches'),
       ),
     ).thenAnswer((_) async => <String>[]);
+    when(
+      () => repository.threadsWithAgedObservations(
+        any(),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.pruneThreadObservations(
+        agentId: any(named: 'agentId'),
+        threadId: any(named: 'threadId'),
+        cutoff: any(named: 'cutoff'),
+        limit: any(named: 'limit'),
+        maxMessages: any(named: 'maxMessages'),
+      ),
+    ).thenAnswer((_) async => const ObservationSweepResult.empty());
     service = AgentRetentionService(
       repository: repository,
       domainLogger: domainLogger,
@@ -78,6 +94,150 @@ void main() {
       ),
     ).called(1);
   });
+
+  group('observations', () {
+    void seedThreads(List<({String agentId, String threadId})> threads) {
+      when(
+        () => repository.threadsWithAgedObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => threads);
+    }
+
+    test('sweeps each aged thread on the observation horizon', () async {
+      seedThreads([
+        (agentId: 'agent-1', threadId: 'thread-1'),
+        (agentId: 'agent-2', threadId: 'thread-2'),
+      ]);
+      when(
+        () => repository.pruneThreadObservations(
+          agentId: any(named: 'agentId'),
+          threadId: any(named: 'threadId'),
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenAnswer(
+        (_) async => const ObservationSweepResult(
+          messageIds: ['m1', 'm2'],
+          linkIds: ['l1'],
+        ),
+      );
+
+      final result = await withClock(Clock.fixed(now), service.sweep);
+
+      const policy = AgentRetentionPolicy();
+      expect(result.observations, 4);
+      verify(
+        () => repository.pruneThreadObservations(
+          agentId: 'agent-1',
+          threadId: 'thread-1',
+          cutoff: now.subtract(policy.observations),
+          limit: policy.batchSize,
+          maxMessages: policy.maxThreadMessages,
+        ),
+      ).called(1);
+    });
+
+    test('the observation horizon is not the status-event one', () async {
+      seedThreads([]);
+
+      await withClock(Clock.fixed(now), service.sweep);
+
+      const policy = AgentRetentionPolicy();
+      verify(
+        () => repository.threadsWithAgedObservations(
+          now.subtract(policy.observations),
+          limit: policy.threadsPerSweep,
+        ),
+      ).called(1);
+    });
+
+    test('one failing thread does not stop the others', () async {
+      seedThreads([
+        (agentId: 'agent-1', threadId: 'boom'),
+        (agentId: 'agent-2', threadId: 'fine'),
+      ]);
+      when(
+        () => repository.pruneThreadObservations(
+          agentId: any(named: 'agentId'),
+          threadId: 'boom',
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenThrow(Exception('malformed log'));
+      when(
+        () => repository.pruneThreadObservations(
+          agentId: any(named: 'agentId'),
+          threadId: 'fine',
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenAnswer(
+        (_) async => const ObservationSweepResult(
+          messageIds: ['m1'],
+          linkIds: [],
+        ),
+      );
+
+      final result = await withClock(Clock.fixed(now), service.sweep);
+
+      expect(
+        result.observations,
+        1,
+        reason:
+            'One malformed log must not stop every other agent from being '
+            'collected.',
+      );
+      verify(
+        () => domainLogger.error(
+          any(),
+          any(),
+          message: any(named: 'message'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    });
+
+    test('reclaims the sidecars of pruned messages and links', () async {
+      seedThreads([(agentId: 'agent-1', threadId: 'thread-1')]);
+      when(
+        () => repository.pruneThreadObservations(
+          agentId: any(named: 'agentId'),
+          threadId: any(named: 'threadId'),
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenAnswer(
+        (_) async => const ObservationSweepResult(
+          messageIds: ['m1'],
+          linkIds: ['l1'],
+        ),
+      );
+      final reclaimer = MockAgentSidecarReclaimer();
+      when(
+        () => reclaimer.reclaim(
+          entityIds: any(named: 'entityIds'),
+          linkIds: any(named: 'linkIds'),
+        ),
+      ).thenReturn(1);
+      service = AgentRetentionService(
+        repository: repository,
+        domainLogger: domainLogger,
+        sidecarReclaimer: reclaimer,
+      );
+
+      await withClock(Clock.fixed(now), service.sweep);
+
+      verify(
+        () => reclaimer.reclaim(entityIds: ['m1'], linkIds: ['l1']),
+      ).called(1);
+    });
 
   test('takes the newest marker regardless of the order returned', () async {
     // Nothing in getMessagesByKind promises newest-first, and depending on it
