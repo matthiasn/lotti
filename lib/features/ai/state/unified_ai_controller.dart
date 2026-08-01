@@ -283,10 +283,7 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
       );
     } catch (e, stackTrace) {
       // Categorize the error for better user feedback
-      final inferenceError = AiErrorUtils.categorizeError(
-        e,
-        stackTrace: stackTrace,
-      );
+      final inferenceError = AiErrorUtils.categorizeError(e);
 
       developer.log(
         'Controller caught exception: ${e.runtimeType}, isException: ${e is Exception}',

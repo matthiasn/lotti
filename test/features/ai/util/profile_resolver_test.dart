@@ -134,7 +134,6 @@ void main() {
       expect(result.status, AgentSetupResolutionStatus.resolved);
       expect(result.source, AgentSetupResolutionSource.directModel);
       expect(result.profile?.thinkingModelId, 'provider-model-id');
-      expect(result.brokenSelectionId, 'missing-profile');
     });
 
     test('typed direct model replaces only the base thinking slot', () async {
@@ -189,7 +188,6 @@ void main() {
       expect(result.profile?.thinkingModelId, 'override-thinking');
       expect(result.profile?.transcriptionModelId, 'transcription');
       expect(result.setupOrigin, AgentInferenceSetupOrigin.categorySnapshot);
-      expect(result.brokenSelectionId, isNull);
     });
 
     test('broken direct model visibly falls back to configured base', () async {
@@ -215,7 +213,6 @@ void main() {
 
       expect(result.status, AgentSetupResolutionStatus.resolved);
       expect(result.source, AgentSetupResolutionSource.baseProfile);
-      expect(result.brokenSelectionId, 'missing-override');
     });
 
     test(
@@ -239,7 +236,6 @@ void main() {
 
         expect(result.status, AgentSetupResolutionStatus.broken);
         expect(result.profile, isNull);
-        expect(result.brokenSelectionId, 'missing-profile');
         verifyNever(() => mockAiConfig.getConfigsByType(AiConfigType.model));
       },
     );

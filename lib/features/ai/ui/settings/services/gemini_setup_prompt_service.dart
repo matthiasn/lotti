@@ -82,13 +82,6 @@ class GeminiSetupPromptService extends AsyncNotifier<bool> {
     return value == 'true';
   }
 
-  /// Marks the prompt as dismissed so it won't show again.
-  Future<void> dismissPrompt() async {
-    final settingsDb = getIt<SettingsDb>();
-    await settingsDb.saveSettingsItem(_dismissedKey, 'true');
-    state = const AsyncValue.data(false);
-  }
-
   /// Resets the dismissal state (useful for testing or user preference reset).
   Future<void> resetDismissal() async {
     final settingsDb = getIt<SettingsDb>();

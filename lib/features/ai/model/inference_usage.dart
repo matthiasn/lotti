@@ -13,16 +13,6 @@ class InferenceUsage {
     this.cachedInputTokens,
   });
 
-  /// Creates an [InferenceUsage] from a JSON map.
-  factory InferenceUsage.fromJson(Map<String, dynamic> json) {
-    return InferenceUsage(
-      inputTokens: (json['inputTokens'] as num?)?.toInt(),
-      outputTokens: (json['outputTokens'] as num?)?.toInt(),
-      thoughtsTokens: (json['thoughtsTokens'] as num?)?.toInt(),
-      cachedInputTokens: (json['cachedInputTokens'] as num?)?.toInt(),
-    );
-  }
-
   /// Empty usage when no data is available
   static const empty = InferenceUsage();
 
@@ -60,16 +50,6 @@ class InferenceUsage {
         other.cachedInputTokens,
       ),
     );
-  }
-
-  /// Serializes this usage to a JSON map.
-  Map<String, dynamic> toJson() {
-    return {
-      if (inputTokens != null) 'inputTokens': inputTokens,
-      if (outputTokens != null) 'outputTokens': outputTokens,
-      if (thoughtsTokens != null) 'thoughtsTokens': thoughtsTokens,
-      if (cachedInputTokens != null) 'cachedInputTokens': cachedInputTokens,
-    };
   }
 
   static int? _addNullable(int? a, int? b) {

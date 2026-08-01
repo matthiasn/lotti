@@ -39,13 +39,6 @@ class AiProviderSetupPreviewModal extends StatefulWidget {
   final AiProviderSetupPreviewPreset preset;
   final List<AiConfigModel> existingModels;
 
-  /// True for providers that ship no FTUE preset (Ollama in PR-1) — the
-  /// caller should run setup directly and jump to the result modal,
-  /// because there are no rows to review.
-  static bool skipsPreviewFor(InferenceProviderType type) {
-    return presetFor(type)?.models.isEmpty ?? true;
-  }
-
   /// Returns the FTUE preset for [type], or null if the provider has no
   /// preset wired in.
   static AiProviderSetupPreviewPreset? presetFor(InferenceProviderType type) {

@@ -7,13 +7,11 @@ class InferenceError implements Exception {
     required this.message,
     required this.type,
     this.originalError,
-    this.stackTrace,
   });
 
   final String message;
   final InferenceErrorType type;
   final dynamic originalError;
-  final StackTrace? stackTrace;
 
   @override
   String toString() => message;

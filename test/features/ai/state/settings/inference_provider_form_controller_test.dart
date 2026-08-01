@@ -17,7 +17,6 @@ enum _GeneratedProviderFormOperationKind {
   name,
   apiKey,
   baseUrl,
-  description,
   providerType,
 }
 
@@ -117,7 +116,6 @@ class _ExpectedProviderFormState {
   String name = '';
   String apiKey = '';
   String baseUrl = '';
-  String description = '';
   InferenceProviderType providerType = InferenceProviderType.genericOpenAi;
 
   void apply(_GeneratedProviderFormOperation operation) {
@@ -128,8 +126,6 @@ class _ExpectedProviderFormState {
         apiKey = operation.text;
       case _GeneratedProviderFormOperationKind.baseUrl:
         baseUrl = operation.text;
-      case _GeneratedProviderFormOperationKind.description:
-        description = operation.text;
       case _GeneratedProviderFormOperationKind.providerType:
         final nextType = operation.providerType;
         if (nextType == providerType) {
@@ -934,8 +930,6 @@ void main() {
               controller.apiKeyChanged(operation.text);
             case _GeneratedProviderFormOperationKind.baseUrl:
               controller.baseUrlChanged(operation.text);
-            case _GeneratedProviderFormOperationKind.description:
-              controller.descriptionChanged(operation.text);
             case _GeneratedProviderFormOperationKind.providerType:
               controller.inferenceProviderTypeChanged(operation.providerType);
           }
@@ -955,12 +949,6 @@ void main() {
             reason: '$scenario after $operation',
           );
           expect(controller.baseUrlController.text, expected.baseUrl);
-          expect(
-            formState.description.value,
-            expected.description,
-            reason: '$scenario',
-          );
-          expect(controller.descriptionController.text, expected.description);
           expect(formState.inferenceProviderType, expected.providerType);
           expect(
             formState.apiKey.isValid,

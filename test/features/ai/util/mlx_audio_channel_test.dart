@@ -91,34 +91,9 @@ void main() {
           () => channel.transcribeBase64Audio(audioBase64: 'ab', modelId: 'm'),
           throwsA(unsupported()),
         );
-        await expectLater(
-          () => channel.speakText(text: 'hi', modelId: 'tts'),
-          throwsA(unsupported()),
-        );
         expect(invocations, 0);
       },
     );
-
-    test('no-op methods complete silently on non-macOS', () async {
-      platform.isMacOS = false;
-      const methodChannel = MethodChannel('test_mlx_audio_gate_noop');
-      final messenger =
-          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-      var invocations = 0;
-      addTearDown(
-        () => messenger.setMockMethodCallHandler(methodChannel, null),
-      );
-      messenger.setMockMethodCallHandler(methodChannel, (_) async {
-        invocations += 1;
-        return null;
-      });
-
-      final channel = MlxAudioChannel(methodChannel: methodChannel);
-
-      await channel.stopSpeaking();
-
-      expect(invocations, 0);
-    });
 
     test('event streams emit no events on non-macOS', () async {
       platform.isMacOS = false;
@@ -234,13 +209,6 @@ void main() {
           audioBase64: 'abc123',
           modelId: 'model-a',
         );
-        await channel.speakText(
-          text: 'summary',
-          modelId: 'tts-model',
-          language: 'English',
-        );
-        await channel.stopSpeaking();
-
         expect(fileResult.text, 'local transcript');
         expect(base64Result.text, 'local transcript');
         expect(
@@ -249,8 +217,6 @@ void main() {
             'installModel',
             'transcribeFile',
             'transcribeBase64Audio',
-            'speakText',
-            'stopSpeaking',
           ],
         );
         final fileArgs = calls[1].arguments! as Map<Object?, Object?>;

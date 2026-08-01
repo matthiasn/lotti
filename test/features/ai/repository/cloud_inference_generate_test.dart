@@ -219,7 +219,6 @@ void main() {
   tearDown(() {
     meliousRepo.close();
     mistralRepo.close();
-    mistralOcrRepo.close();
   });
 
   group('generate', () {

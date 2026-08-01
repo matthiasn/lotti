@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 
 const taskSummaryConst = 'TaskSummary';
 const imageAnalysisConst = 'ImageAnalysis';
@@ -62,28 +61,6 @@ enum AiResponseType {
 }
 
 extension AiResponseTypeDisplay on AiResponseType {
-  String localizedName(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    switch (this) {
-      // ignore: deprecated_member_use_from_same_package
-      case AiResponseType.taskSummary:
-        return l10n.aiResponseTypeTaskSummary;
-      case AiResponseType.imageAnalysis:
-        return l10n.aiResponseTypeImageAnalysis;
-      case AiResponseType.audioTranscription:
-        return l10n.aiResponseTypeAudioTranscription;
-      // ignore: deprecated_member_use_from_same_package
-      case AiResponseType.checklistUpdates:
-        return l10n.aiResponseTypeChecklistUpdates;
-      case AiResponseType.promptGeneration:
-        return l10n.aiResponseTypePromptGeneration;
-      case AiResponseType.imagePromptGeneration:
-        return l10n.aiResponseTypeImagePromptGeneration;
-      case AiResponseType.imageGeneration:
-        return l10n.generateCoverArt;
-    }
-  }
-
   /// Returns the appropriate icon for this response type
   IconData get icon {
     switch (this) {

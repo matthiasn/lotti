@@ -320,17 +320,6 @@ void main() {
         expect(result.message, contains('Authentication failed'));
       });
 
-      test('preserves stack trace when provided', () {
-        const error = 'Test error';
-        final stackTrace = StackTrace.current;
-        final result = AiErrorUtils.categorizeError(
-          error,
-          stackTrace: stackTrace,
-        );
-
-        expect(result.stackTrace, stackTrace);
-      });
-
       test('preserves original error', () {
         const error = 'Test error';
         final result = AiErrorUtils.categorizeError(error);
@@ -342,11 +331,7 @@ void main() {
         glados.any.categorizedError,
         glados.ExploreConfig(numRuns: 180),
       ).test('matches generated string categorization semantics', (scenario) {
-        final stackTrace = StackTrace.current;
-        final result = AiErrorUtils.categorizeError(
-          scenario.raw,
-          stackTrace: stackTrace,
-        );
+        final result = AiErrorUtils.categorizeError(scenario.raw);
 
         expect(result.type, scenario.expectedType, reason: '$scenario');
         expect(
@@ -355,7 +340,6 @@ void main() {
           reason: '$scenario',
         );
         expect(result.originalError, scenario.raw, reason: '$scenario');
-        expect(result.stackTrace, stackTrace, reason: '$scenario');
       }, tags: 'glados');
 
       test('handles Ollama model not found error', () {

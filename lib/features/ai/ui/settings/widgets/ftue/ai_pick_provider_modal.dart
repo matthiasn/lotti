@@ -41,7 +41,6 @@ class AiPickProviderResult {
   final InferenceProviderType? providerType;
 
   bool get isConfirmed => kind == AiPickProviderResultKind.confirmed;
-  bool get isDontShowAgain => kind == AiPickProviderResultKind.dontShowAgain;
 }
 
 /// Per-row metadata describing one tile rendered inside the modal.
@@ -238,7 +237,7 @@ class AiPickProviderModal extends StatefulWidget {
     // this entry point, the suppression intent would otherwise be
     // silently dropped.
     assert(
-      !result.isDontShowAgain,
+      result.kind != AiPickProviderResultKind.dontShowAgain,
       'showAllTypes received dontShowAgain — chrome should hide that button',
     );
     return result.isConfirmed ? result.providerType : null;

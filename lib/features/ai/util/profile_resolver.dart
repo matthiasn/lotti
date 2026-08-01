@@ -125,9 +125,6 @@ class ProfileResolver {
         profile: profile,
         source: AgentSetupResolutionSource.directModel,
         setupOrigin: setup.origin,
-        brokenSelectionId: setup.baseProfileId != null && baseProfile == null
-            ? setup.baseProfileId
-            : null,
       );
     }
 
@@ -136,14 +133,12 @@ class ProfileResolver {
         profile: baseProfile,
         source: AgentSetupResolutionSource.baseProfile,
         setupOrigin: setup.origin,
-        brokenSelectionId: overrideId,
       );
     }
 
     return ResolvedAgentSetup(
       status: AgentSetupResolutionStatus.broken,
       setupOrigin: setup.origin,
-      brokenSelectionId: overrideId ?? setup.baseProfileId,
     );
   }
 
@@ -183,14 +178,12 @@ class ProfileResolver {
       return _resolvedDetails(
         profile: legacy,
         source: AgentSetupResolutionSource.legacyModel,
-        brokenSelectionId: profileId,
       );
     }
 
-    return ResolvedAgentSetup(
+    return const ResolvedAgentSetup(
       status: AgentSetupResolutionStatus.legacyUnknown,
       source: AgentSetupResolutionSource.legacyModel,
-      brokenSelectionId: profileId ?? version.modelId ?? template.modelId,
     );
   }
 
@@ -198,14 +191,12 @@ class ProfileResolver {
     required ResolvedProfile profile,
     required AgentSetupResolutionSource source,
     AgentInferenceSetupOrigin? setupOrigin,
-    String? brokenSelectionId,
   }) {
     return ResolvedAgentSetup(
       status: AgentSetupResolutionStatus.resolved,
       profile: profile,
       source: source,
       setupOrigin: setupOrigin,
-      brokenSelectionId: brokenSelectionId,
     );
   }
 

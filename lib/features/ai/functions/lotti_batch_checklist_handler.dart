@@ -25,8 +25,6 @@ class LottiBatchChecklistHandler extends FunctionHandler {
   final ChecklistRepository checklistRepository;
   final void Function(Task)? onTaskUpdated;
 
-  final Set<String> _createdDescriptions = {};
-  final List<String> _successfulItems = [];
   final List<Map<String, dynamic>> _createdDetails = [];
   final List<FailedItemDetail> _failedItems = [];
 
@@ -226,8 +224,6 @@ Do NOT recreate the items that were already successful.''';
             successCount = createResult.createdItems!.length;
             // Use the returned items directly - no need for fragile mapping
             for (final item in createResult.createdItems!) {
-              _successfulItems.add(item.title);
-              _createdDescriptions.add(item.title.toLowerCase().trim());
               _createdDetails.add({
                 'id': item.id,
                 'title': item.title,
@@ -273,8 +269,6 @@ Do NOT recreate the items that were already successful.''';
 
           if (newItem != null) {
             successCount++;
-            _successfulItems.add(title);
-            _createdDescriptions.add(title.toLowerCase().trim());
             _createdDetails.add({
               'id': newItem.id,
               'title': title,
@@ -317,8 +311,6 @@ Do NOT recreate the items that were already successful.''';
 
     return successCount;
   }
-
-  List<String> get successfulItems => List.unmodifiable(_successfulItems);
 
   /// Items that failed to be created during [createBatchItems].
   List<FailedItemDetail> get failedItems => List.unmodifiable(_failedItems);

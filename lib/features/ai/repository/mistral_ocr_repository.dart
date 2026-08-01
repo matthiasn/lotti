@@ -17,16 +17,9 @@ import 'package:uuid/uuid.dart';
 /// to the image entry instead of a 400.
 class MistralOcrRepository {
   MistralOcrRepository({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client(),
-      _shouldCloseClient = httpClient == null;
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
-
-  /// Whether this repository created [_httpClient] itself. An injected client
-  /// (e.g. the one shared across the sibling repositories in
-  /// `CloudInferenceRepository`) is owned by the caller and must not be closed
-  /// here.
-  final bool _shouldCloseClient;
 
   static const _providerName = 'MistralOcrRepository';
   static const _uuid = Uuid();
@@ -37,14 +30,6 @@ class MistralOcrRepository {
   /// a single image; a multi-image entry runs its requests concurrently, so the
   /// worst-case wall time is a single `timeout` rather than the sum.
   static const defaultTimeout = Duration(seconds: 120);
-
-  /// Closes [_httpClient], but only when this repository created it. An
-  /// injected client is the caller's to dispose.
-  void close() {
-    if (_shouldCloseClient) {
-      _httpClient.close();
-    }
-  }
 
   /// Whether [model] is a Mistral OCR model that must use `/v1/ocr` rather than
   /// chat completions. The caller also gates on `InferenceProviderType.mistral`,

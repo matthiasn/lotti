@@ -555,9 +555,11 @@ void main() {
               status: 401,
             ).listModels(baseUrl: baseUrl, apiKey: apiKey),
             throwsA(
-              isA<MistralInferenceException>()
-                  .having((e) => e.message, 'message', 'Unauthorized')
-                  .having((e) => e.statusCode, 'statusCode', 401),
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                'Unauthorized',
+              ),
             ),
           );
         });
@@ -1095,9 +1097,11 @@ void main() {
         expect(
           responseStream.toList(),
           throwsA(
-            isA<MistralInferenceException>()
-                .having((e) => e.message, 'message', contains('HTTP 401'))
-                .having((e) => e.statusCode, 'statusCode', 401),
+            isA<MistralInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('HTTP 401'),
+            ),
           ),
         );
       });
@@ -1123,9 +1127,9 @@ void main() {
           responseStream.toList(),
           throwsA(
             isA<MistralInferenceException>().having(
-              (e) => e.statusCode,
-              'statusCode',
-              404,
+              (e) => e.message,
+              'message',
+              contains('HTTP 404'),
             ),
           ),
         );
@@ -1923,13 +1927,11 @@ data: not valid json 5
         await expectLater(
           responseStream.toList(),
           throwsA(
-            isA<MistralInferenceException>()
-                .having(
-                  (e) => e.message,
-                  'message',
-                  contains('Too many parse errors'),
-                )
-                .having((e) => e.originalError, 'originalError', isNotNull),
+            isA<MistralInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('Too many parse errors'),
+            ),
           ),
         );
 
@@ -2485,27 +2487,19 @@ data: not valid json 5
 
     group('MistralInferenceException', () {
       test('should format toString correctly', () {
-        final exception = MistralInferenceException(
-          'Test error',
-          statusCode: 404,
-          originalError: Exception('Original'),
-        );
+        final exception = MistralInferenceException('Test error');
 
         expect(
           exception.toString(),
           equals('MistralInferenceException: Test error'),
         );
         expect(exception.message, equals('Test error'));
-        expect(exception.statusCode, equals(404));
-        expect(exception.originalError, isA<Exception>());
       });
 
       test('should work without optional parameters', () {
         final exception = MistralInferenceException('Simple error');
 
         expect(exception.message, equals('Simple error'));
-        expect(exception.statusCode, isNull);
-        expect(exception.originalError, isNull);
       });
     });
 

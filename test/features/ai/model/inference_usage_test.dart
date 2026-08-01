@@ -280,53 +280,7 @@ void main() {
         );
         expect(left.hasData, scenario.left.hasData, reason: '$scenario');
         expect(right.hasData, scenario.right.hasData, reason: '$scenario');
-        expect(InferenceUsage.fromJson(merged.toJson()), merged);
       }, tags: 'glados');
-    });
-
-    group('toJson / fromJson', () {
-      test('round-trips with all fields', () {
-        const usage = InferenceUsage(
-          inputTokens: 100,
-          outputTokens: 50,
-          thoughtsTokens: 25,
-          cachedInputTokens: 10,
-        );
-
-        final json = usage.toJson();
-        final restored = InferenceUsage.fromJson(json);
-
-        expect(restored, usage);
-        expect(json['inputTokens'], 100);
-        expect(json['outputTokens'], 50);
-        expect(json['thoughtsTokens'], 25);
-        expect(json['cachedInputTokens'], 10);
-      });
-
-      test('round-trips with partial fields', () {
-        const usage = InferenceUsage(inputTokens: 42);
-
-        final json = usage.toJson();
-        final restored = InferenceUsage.fromJson(json);
-
-        expect(restored, usage);
-        expect(json.containsKey('outputTokens'), isFalse);
-      });
-
-      test('round-trips empty usage', () {
-        final json = InferenceUsage.empty.toJson();
-        final restored = InferenceUsage.fromJson(json);
-
-        expect(restored, InferenceUsage.empty);
-        expect(json, isEmpty);
-      });
-
-      test('fromJson handles missing keys as null', () {
-        final usage = InferenceUsage.fromJson(const <String, dynamic>{});
-        expect(usage.inputTokens, isNull);
-        expect(usage.outputTokens, isNull);
-        expect(usage.hasData, isFalse);
-      });
     });
 
     group('equality', () {

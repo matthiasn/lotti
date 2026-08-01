@@ -2439,7 +2439,7 @@ void main() {
     });
   });
   // ---------------------------------------------------------------------------
-  // Glados property for the PII-safe arg formatter (via debug seam).
+  // Glados property for the PII-safe arg formatter (via public helper).
   // ---------------------------------------------------------------------------
   group('describeArgsForLog — properties', () {
     const safeNames = ['id', 'items', 'labels', 'minutes', 'priority'];

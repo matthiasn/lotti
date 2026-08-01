@@ -225,12 +225,10 @@ class ResolvedAgentSetup {
     this.profile,
     this.source,
     this.setupOrigin,
-    this.brokenSelectionId,
   });
 
   final AgentSetupResolutionStatus status;
   final ResolvedProfile? profile;
   final AgentSetupResolutionSource? source;
   final AgentInferenceSetupOrigin? setupOrigin;
-  final String? brokenSelectionId;
 }

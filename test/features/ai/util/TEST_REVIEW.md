@@ -74,7 +74,7 @@
 
 - [x] **[MED]** `lib/features/ai/util/preconfigured_prompts.dart` — `preconfiguredPrompts` map lookup is pure. A small Glados property (any known ID round-trips through the map) would replace the two static existence checks and guard against future map-key drift. **RESOLVED:** Stale — the test file already iterates ALL map entries asserting `entry.value.id == entry.key`, which is strictly stronger than sampling known IDs.
 
-- [x] **[MED]** `lib/features/ai/util/mlx_audio_channel.dart` — `MlxAudioRealtimeEvent.fromMap` and `MlxAudioModelDownloadProgress.fromMap` are pure deserializers with enum dispatch. The existing Glados `downloadProgressScenario` (in `mlx_audio_channel_test.dart`) covers `normalizedProgress` / `percentComplete` / `hasMeasuredProgress` thoroughly. ✓   **RESOLVED:** Stale — the item itself marks the coverage as complete (✓).
+- [x] **[MED]** `lib/features/ai/util/mlx_audio_channel.dart` — `MlxAudioRealtimeEvent.fromMap` and `MlxAudioModelDownloadProgress.fromMap` are pure deserializers with enum dispatch. The existing Glados `downloadProgressScenario` covers `normalizedProgress` and `percentComplete` thoroughly. ✓   **RESOLVED:** Stale — the item itself marks the coverage as complete (✓).
   `MlxAudioRealtimeEvent._typeFromString` has a `_` catch-all mapped to `.error` but no Glados coverage for arbitrary unknown strings. A small property (any non-canonical string returns `.error`) would tighten the contract.
   **RESOLVED:** added a `glados.Glados<String>` property (`any.letterOrDigits`, numRuns 120) in the `MlxAudioRealtimeEvent` group asserting any non-canonical type string falls through to `MlxAudioRealtimeEventType.error`; canonical strings (all dotted, unreachable by `letterOrDigits`) are guard-skipped for safety.
 

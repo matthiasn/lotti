@@ -1997,7 +1997,7 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Glados properties for the pure helpers (via the debug seams).
+  // Glados properties exercising the pure production helpers directly.
   // ---------------------------------------------------------------------------
   group('isImplicitApprovalMessage — properties', () {
     const approvalKeywords = [

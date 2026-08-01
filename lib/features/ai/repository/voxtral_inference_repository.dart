@@ -4,7 +4,6 @@ import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -19,9 +18,6 @@ class VoxtralInferenceRepository {
     : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
-
-  /// Default base URL for local Voxtral server
-  static const String defaultBaseUrl = 'http://127.0.0.1:11344/';
 
   /// Safely log exception to LoggingService if available
   void _logException(
@@ -58,8 +54,6 @@ class VoxtralInferenceRepository {
       );
       final exception = VoxtralModelNotAvailableException(
         'Voxtral model is not available. Please download it first.',
-        modelName: model,
-        statusCode: statusCode,
       );
       if (logException) {
         _logException(exception, subDomain: 'model_not_available');
@@ -75,7 +69,6 @@ class VoxtralInferenceRepository {
     final exception = VoxtralInferenceException(
       'Failed to transcribe audio (HTTP $statusCode). '
       'Please check your audio file and try again.',
-      statusCode: statusCode,
     );
     if (logException) {
       _logException(exception, subDomain: 'http_error');
@@ -194,7 +187,6 @@ class VoxtralInferenceRepository {
               requestTimeout,
               onTimeout: () => throw VoxtralInferenceException(
                 timeoutErrorMessage,
-                statusCode: httpStatusRequestTimeout,
               ),
             );
 
@@ -264,7 +256,6 @@ class VoxtralInferenceRepository {
             onTimeout: () {
               throw VoxtralInferenceException(
                 timeoutErrorMessage,
-                statusCode: httpStatusRequestTimeout,
               );
             },
           );
@@ -398,8 +389,6 @@ class VoxtralInferenceRepository {
       _logException(e, subDomain: 'timeout', stackTrace: stackTrace);
       throw VoxtralInferenceException(
         timeoutErrorMessage,
-        statusCode: httpStatusRequestTimeout,
-        originalError: e,
       );
     } on FormatException catch (e, stackTrace) {
       developer.log(
@@ -410,7 +399,6 @@ class VoxtralInferenceRepository {
       _logException(e, subDomain: 'format_error', stackTrace: stackTrace);
       throw VoxtralInferenceException(
         'Invalid response format from transcription service',
-        originalError: e,
       );
     } catch (e, stackTrace) {
       developer.log(
@@ -421,7 +409,6 @@ class VoxtralInferenceRepository {
       _logException(e, subDomain: 'unexpected', stackTrace: stackTrace);
       throw VoxtralInferenceException(
         'Failed to transcribe audio: $e',
-        originalError: e,
       );
     }
   }
@@ -440,15 +427,9 @@ ChatCompletionFinishReason _chatFinishReasonFromApi(String finishReason) {
 
 /// Exception thrown when Voxtral operations fail
 class VoxtralInferenceException implements Exception {
-  VoxtralInferenceException(
-    this.message, {
-    this.statusCode,
-    this.originalError,
-  });
+  VoxtralInferenceException(this.message);
 
   final String message;
-  final int? statusCode;
-  final Object? originalError;
 
   @override
   String toString() => 'VoxtralInferenceException: $message';
@@ -456,14 +437,7 @@ class VoxtralInferenceException implements Exception {
 
 /// Exception thrown when Voxtral model is not available
 class VoxtralModelNotAvailableException extends VoxtralInferenceException {
-  VoxtralModelNotAvailableException(
-    super.message, {
-    required this.modelName,
-    super.statusCode,
-    super.originalError,
-  });
-
-  final String modelName;
+  VoxtralModelNotAvailableException(super.message);
 
   @override
   String toString() => 'VoxtralModelNotAvailableException: $message';

@@ -110,13 +110,11 @@ void main() {
       expect(result.kind, AiPickProviderResultKind.confirmed);
       expect(result.isConfirmed, isTrue);
       expect(result.providerType, InferenceProviderType.anthropic);
-      expect(result.isDontShowAgain, isFalse);
     });
 
-    test('dontShowAgain has no providerType and isDontShowAgain=true', () {
+    test('dontShowAgain has no providerType', () {
       const result = AiPickProviderResult.dontShowAgain();
       expect(result.kind, AiPickProviderResultKind.dontShowAgain);
-      expect(result.isDontShowAgain, isTrue);
       expect(result.providerType, isNull);
       expect(result.isConfirmed, isFalse);
     });
@@ -126,7 +124,6 @@ void main() {
       expect(result.kind, AiPickProviderResultKind.cancelled);
       expect(result.providerType, isNull);
       expect(result.isConfirmed, isFalse);
-      expect(result.isDontShowAgain, isFalse);
     });
   });
 
@@ -327,7 +324,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(captured!.isDontShowAgain, isTrue);
+        expect(captured!.kind, AiPickProviderResultKind.dontShowAgain);
         expect(captured!.providerType, isNull);
       },
     );

@@ -3,8 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/state/consts.dart';
 
-import '../../../test_helper.dart';
-
 extension _AnyGeneratedAiConsts on glados.Any {
   glados.Generator<SkillType> get skillType =>
       glados.AnyUtils(this).choose(SkillType.values);
@@ -41,74 +39,25 @@ void main() {
       expect(AiResponseType.values, contains(AiResponseType.imageGeneration));
     });
 
-    // Expected (label, icon) per enum value — one table drives both the
-    // direct-l10n check and the icon mapping.
-    const expectedByType = <AiResponseType, ({String label, IconData icon})>{
+    const expectedIcons = <AiResponseType, IconData>{
       // ignore: deprecated_member_use_from_same_package
-      AiResponseType.taskSummary: (
-        label: 'Task Summary',
-        icon: Icons.summarize_outlined,
-      ),
-      AiResponseType.imageAnalysis: (
-        label: 'Image Analysis',
-        icon: Icons.image_outlined,
-      ),
-      AiResponseType.audioTranscription: (
-        label: 'Audio Transcription',
-        icon: Icons.mic_outlined,
-      ),
+      AiResponseType.taskSummary: Icons.summarize_outlined,
+      AiResponseType.imageAnalysis: Icons.image_outlined,
+      AiResponseType.audioTranscription: Icons.mic_outlined,
       // ignore: deprecated_member_use_from_same_package
-      AiResponseType.checklistUpdates: (
-        label: 'Checklist Updates',
-        icon: Icons.checklist_rtl_outlined,
-      ),
-      AiResponseType.promptGeneration: (
-        label: 'Generated Prompt',
-        icon: Icons.auto_fix_high_outlined,
-      ),
-      AiResponseType.imagePromptGeneration: (
-        label: 'Image Prompt',
-        icon: Icons.palette_outlined,
-      ),
-      AiResponseType.imageGeneration: (
-        label: 'Generate Cover Art',
-        icon: Icons.auto_awesome_outlined,
-      ),
+      AiResponseType.checklistUpdates: Icons.checklist_rtl_outlined,
+      AiResponseType.promptGeneration: Icons.auto_fix_high_outlined,
+      AiResponseType.imagePromptGeneration: Icons.palette_outlined,
+      AiResponseType.imageGeneration: Icons.auto_awesome_outlined,
     };
 
     test('expectation table covers every enum value', () {
-      expect(expectedByType.keys, containsAll(AiResponseType.values));
+      expect(expectedIcons.keys, containsAll(AiResponseType.values));
     });
 
     test('icon returns the mapped icon for each type', () {
-      for (final entry in expectedByType.entries) {
-        expect(entry.key.icon, entry.value.icon, reason: '${entry.key}');
-      }
-    });
-
-    testWidgets('localizedName returns correct strings with BuildContext', (
-      tester,
-    ) async {
-      late BuildContext capturedContext;
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: Builder(
-            builder: (context) {
-              capturedContext = context;
-              return const SizedBox();
-            },
-          ),
-        ),
-      );
-
-      // Every enum value resolves its localized label through the context.
-      for (final entry in expectedByType.entries) {
-        expect(
-          entry.key.localizedName(capturedContext),
-          entry.value.label,
-          reason: '${entry.key}',
-        );
+      for (final entry in expectedIcons.entries) {
+        expect(entry.key.icon, entry.value, reason: '${entry.key}');
       }
     });
 

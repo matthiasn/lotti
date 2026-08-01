@@ -40,41 +40,6 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
     }
   }
 
-  /// Localized one-line description of this provider, shown under the name in
-  /// the provider picker / setup flows.
-  String description(BuildContext context) {
-    switch (this) {
-      case InferenceProviderType.alibaba:
-        return context.messages.aiProviderAlibabaDescription;
-      case InferenceProviderType.anthropic:
-        return context.messages.aiProviderAnthropicDescription;
-      case InferenceProviderType.gemini:
-        return context.messages.aiProviderGeminiDescription;
-      case InferenceProviderType.genericOpenAi:
-        return context.messages.aiProviderGenericOpenAiDescription;
-      case InferenceProviderType.melious:
-        return context.messages.aiProviderMeliousDescription;
-      case InferenceProviderType.mistral:
-        return context.messages.aiProviderMistralDescription;
-      case InferenceProviderType.mlxAudio:
-        return context.messages.aiProviderMlxAudioDescription;
-      case InferenceProviderType.omlx:
-        return context.messages.aiProviderOmlxDescription;
-      case InferenceProviderType.openAi:
-        return context.messages.aiProviderOpenAiDescription;
-      case InferenceProviderType.nebiusAiStudio:
-        return context.messages.aiProviderNebiusAiStudioDescription;
-      case InferenceProviderType.openRouter:
-        return context.messages.aiProviderOpenRouterDescription;
-      case InferenceProviderType.ollama:
-        return context.messages.aiProviderOllamaDescription;
-      case InferenceProviderType.whisper:
-        return context.messages.aiProviderWhisperDescription;
-      case InferenceProviderType.voxtral:
-        return context.messages.aiProviderVoxtralDescription;
-    }
-  }
-
   /// Material icon used to represent this provider in legacy settings rows.
   /// (The v2 cards use `aiProviderIcon` from `ai_provider_visual.dart`.)
   IconData get icon {

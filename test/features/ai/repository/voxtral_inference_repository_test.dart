@@ -413,9 +413,11 @@ void main() {
         expect(
           transcriptionStream.toList(),
           throwsA(
-            isA<VoxtralInferenceException>()
-                .having((e) => e.message, 'message', contains('HTTP 500'))
-                .having((e) => e.statusCode, 'statusCode', 500),
+            isA<VoxtralInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('HTTP 500'),
+            ),
           ),
         );
       });
@@ -437,9 +439,7 @@ void main() {
           expect(
             transcriptionStream.toList(),
             throwsA(
-              isA<VoxtralModelNotAvailableException>()
-                  .having((e) => e.modelName, 'modelName', model)
-                  .having((e) => e.statusCode, 'statusCode', 404),
+              isA<VoxtralModelNotAvailableException>(),
             ),
           );
         },
@@ -483,11 +483,14 @@ void main() {
           async.elapseRetryPlan(plan);
 
           expect(completed, isTrue);
-          final err = error;
-          expect(err, isA<VoxtralInferenceException>());
-          if (err is VoxtralInferenceException) {
-            expect(err.statusCode, 408);
-          }
+          expect(
+            error,
+            isA<VoxtralInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('timed out'),
+            ),
+          );
         });
       });
 
@@ -513,9 +516,9 @@ void main() {
             transcriptionStream.toList(),
             throwsA(
               isA<VoxtralInferenceException>().having(
-                (e) => e.statusCode,
-                'statusCode',
-                400,
+                (e) => e.message,
+                'message',
+                contains('HTTP 400'),
               ),
             ),
           );
@@ -702,11 +705,7 @@ data: [DONE]
           expect(
             stream.toList(),
             throwsA(
-              isA<VoxtralModelNotAvailableException>().having(
-                (e) => e.statusCode,
-                'statusCode',
-                404,
-              ),
+              isA<VoxtralModelNotAvailableException>(),
             ),
           );
         });
@@ -733,9 +732,9 @@ data: [DONE]
             stream.toList(),
             throwsA(
               isA<VoxtralInferenceException>().having(
-                (e) => e.statusCode,
-                'statusCode',
-                500,
+                (e) => e.message,
+                'message',
+                contains('HTTP 500'),
               ),
             ),
           );
@@ -889,11 +888,14 @@ data: [DONE]
             async.elapseRetryPlan(plan);
 
             expect(completed, isTrue);
-            final err = error;
-            expect(err, isA<VoxtralInferenceException>());
-            if (err is VoxtralInferenceException) {
-              expect(err.statusCode, 408);
-            }
+            expect(
+              error,
+              isA<VoxtralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                contains('timed out'),
+              ),
+            );
           });
         });
       });
@@ -901,19 +903,13 @@ data: [DONE]
 
     group('VoxtralInferenceException', () {
       test('should format toString correctly', () {
-        final exception = VoxtralInferenceException(
-          'Test error',
-          statusCode: 404,
-          originalError: Exception('Original'),
-        );
+        final exception = VoxtralInferenceException('Test error');
 
         expect(
           exception.toString(),
           equals('VoxtralInferenceException: Test error'),
         );
         expect(exception.message, equals('Test error'));
-        expect(exception.statusCode, equals(404));
-        expect(exception.originalError, isA<Exception>());
       });
     });
 
@@ -921,16 +917,12 @@ data: [DONE]
       test('should format toString correctly', () {
         final exception = VoxtralModelNotAvailableException(
           'Model not available',
-          modelName: 'voxtral-mini',
-          statusCode: 404,
         );
 
         expect(
           exception.toString(),
           equals('VoxtralModelNotAvailableException: Model not available'),
         );
-        expect(exception.modelName, equals('voxtral-mini'));
-        expect(exception.statusCode, equals(404));
       });
     });
 
@@ -1102,18 +1094,11 @@ data: [DONE]
         await expectLater(
           transcriptionStream.toList(),
           throwsA(
-            isA<VoxtralInferenceException>()
-                .having(
-                  (e) => e.message,
-                  'message',
-                  contains('timed out'),
-                )
-                .having((e) => e.statusCode, 'statusCode', 408)
-                .having(
-                  (e) => e.originalError,
-                  'originalError',
-                  isA<TimeoutException>(),
-                ),
+            isA<VoxtralInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('timed out'),
+            ),
           ),
         );
 
@@ -1156,18 +1141,11 @@ data: [DONE]
         await expectLater(
           transcriptionStream.toList(),
           throwsA(
-            isA<VoxtralInferenceException>()
-                .having(
-                  (e) => e.message,
-                  'message',
-                  'Invalid response format from transcription service',
-                )
-                .having((e) => e.statusCode, 'statusCode', isNull)
-                .having(
-                  (e) => e.originalError,
-                  'originalError',
-                  isA<FormatException>(),
-                ),
+            isA<VoxtralInferenceException>().having(
+              (e) => e.message,
+              'message',
+              'Invalid response format from transcription service',
+            ),
           ),
         );
 

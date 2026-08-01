@@ -226,7 +226,6 @@ void main() {
           taskAgentResolvedSetupProvider.overrideWith(
             (ref, agentId) async => const ResolvedAgentSetup(
               status: AgentSetupResolutionStatus.broken,
-              brokenSelectionId: 'missing-profile',
             ),
           ),
         ],

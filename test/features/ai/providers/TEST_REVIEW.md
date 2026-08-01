@@ -24,10 +24,8 @@
 
 ## Test quality improvements
 
-- [x] **[MED]** `test/features/ai/providers/ollama_inference_repository_provider_test.dart:32–56` — the `'builds an OllamaInferenceRepository wired to the http client'` test is the best test in this directory: it actually drives `warmUpModel` through the injected mock and captures the outbound request. The `MockHttpClient` stub uses `thenAnswer((_) async => http.Response('{"done":true}', 200))`. This is a concrete, meaningful assertion. No issue here.
-  **RESOLVED:** Verified at `ollama_inference_repository_provider_test.dart:33–72`. The test stubs `mockClient.post` with `http.Response('{"done":true}', 200)`, drives `warmUpModel('gemma:2b', 'http://localhost:11434')`, and `verify`/`captureAny`s the outbound request, asserting `uri == 'http://localhost:11434/api/chat'` and `body contains 'gemma:2b'`. Concrete, meaningful, mocked I/O. Non-actionable observation, no change.
-- [x] **[LOW]** `ollama_inference_repository_provider_test.dart:73–85` — `'returns the cached repository instance on repeated reads'` checks `identical(first, second)`. This is a provider caching smoke test. It is valuable and not a smoke-only test because the identity check confirms memoization. Keep.
-  **RESOLVED:** Verified at `ollama_inference_repository_provider_test.dart:74–85`. `identical(first, second)` proves the `Provider` memoizes its built repository across reads — a real behavioral guarantee, not a build-only smoke check. Non-actionable observation, no change.
+- [x] **[LOW]** `ollama_inference_repository_provider_test.dart` — `'returns the cached repository instance on repeated reads'` checks `identical(first, second)`. This confirms provider memoization; HTTP behavior belongs to the repository tests rather than a dead public warm-up wrapper.
+  **RESOLVED:** The provider test now focuses on its actual contract: client lifetime and cached repository identity. Request wiring remains covered through live generation paths in `ollama_inference_repository_test.dart`.
 
 ---
 

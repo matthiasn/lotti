@@ -12,20 +12,6 @@ class _TransportFailure implements Exception {
   const _TransportFailure();
 }
 
-/// A client that records whether [close] was called, to assert that an
-/// injected client is never closed by the repository.
-class _RecordingClient extends http.BaseClient {
-  bool closed = false;
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    throw UnimplementedError();
-  }
-
-  @override
-  void close() => closed = true;
-}
-
 void main() {
   group('MistralOcrRepository', () {
     const baseUrl = 'https://api.mistral.ai/v1';
@@ -35,9 +21,7 @@ void main() {
     MistralOcrRepository repoWithHandler(
       Future<http.Response> Function(http.Request request) handler,
     ) {
-      final repo = MistralOcrRepository(httpClient: MockClient(handler));
-      addTearDown(repo.close);
-      return repo;
+      return MistralOcrRepository(httpClient: MockClient(handler));
     }
 
     MistralOcrRepository repoReturning(Object? body, {int status = 200}) {
@@ -479,18 +463,6 @@ void main() {
             ),
           ),
         );
-      });
-    });
-
-    group('client ownership', () {
-      test('close does not close an injected (caller-owned) client', () {
-        final injected = _RecordingClient();
-        MistralOcrRepository(httpClient: injected).close();
-        expect(injected.closed, isFalse);
-      });
-
-      test('close on a self-created client does not throw', () {
-        expect(MistralOcrRepository().close, returnsNormally);
       });
     });
 

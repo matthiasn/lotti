@@ -126,37 +126,6 @@ void main() {
       },
     );
 
-    test('dismissPrompt persists dismissal and updates state', () async {
-      when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
-      ).thenAnswer((_) async => []);
-
-      final container = createContainer();
-
-      // Initially should show prompt
-      final initialResult = await container.read(
-        geminiSetupPromptServiceProvider.future,
-      );
-      expect(initialResult, isTrue);
-
-      // Dismiss the prompt
-      await container
-          .read(geminiSetupPromptServiceProvider.notifier)
-          .dismissPrompt();
-
-      // Now state should be false
-      final afterDismiss = await container.read(
-        geminiSetupPromptServiceProvider.future,
-      );
-      expect(afterDismiss, isFalse);
-
-      // Check that setting was persisted
-      final storedValue = await settingsDb.itemByKey(
-        'gemini_setup_prompt_dismissed',
-      );
-      expect(storedValue, 'true');
-    });
-
     test('resetDismissal clears persisted state', () async {
       // Start with dismissed state
       await settingsDb.saveSettingsItem(

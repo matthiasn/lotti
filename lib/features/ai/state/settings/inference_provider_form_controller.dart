@@ -184,13 +184,6 @@ class InferenceProviderFormController
     _setAllFields(baseUrl: value);
   }
 
-  void descriptionChanged(String value) {
-    if (descriptionController.text != value) {
-      descriptionController.text = value;
-    }
-    _setAllFields(description: value);
-  }
-
   void inferenceProviderTypeChanged(InferenceProviderType value) {
     final prev = state.value;
 

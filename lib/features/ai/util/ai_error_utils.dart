@@ -125,16 +125,12 @@ class AiErrorUtils {
   }
 
   /// Converts various error types into InferenceError with appropriate categorization
-  static InferenceError categorizeError(
-    dynamic error, {
-    StackTrace? stackTrace,
-  }) {
+  static InferenceError categorizeError(dynamic error) {
     // Handle null error
     if (error == null) {
       return InferenceError(
         message: 'An unknown error occurred',
         type: InferenceErrorType.unknown,
-        stackTrace: stackTrace,
       );
     }
 
@@ -149,7 +145,6 @@ class AiErrorUtils {
         message: _getNetworkErrorMessage(error),
         type: InferenceErrorType.networkConnection,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -162,7 +157,6 @@ class AiErrorUtils {
             'The request timed out. The server might be slow or unresponsive.',
         type: InferenceErrorType.timeout,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -172,7 +166,7 @@ class AiErrorUtils {
     // This approach is brittle but necessary given the current library constraints.
     if (error.runtimeType.toString().contains('OpenAI') ||
         error.runtimeType.toString().contains('RequestException')) {
-      return _handleApiError(error, stackTrace);
+      return _handleApiError(error);
     }
 
     // Check for ModelNotInstalledException first (most specific)
@@ -181,7 +175,6 @@ class AiErrorUtils {
         message: error.toString(),
         type: InferenceErrorType.invalidRequest,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -196,7 +189,6 @@ class AiErrorUtils {
           message: detailedMessage,
           type: InferenceErrorType.invalidRequest,
           originalError: error,
-          stackTrace: stackTrace,
         );
       }
     }
@@ -207,7 +199,6 @@ class AiErrorUtils {
         message: 'Authentication failed. Please check your API key.',
         type: InferenceErrorType.authentication,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -217,7 +208,6 @@ class AiErrorUtils {
             'Rate limit exceeded. Please wait before making more requests.',
         type: InferenceErrorType.rateLimit,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -229,7 +219,6 @@ class AiErrorUtils {
         ),
         type: InferenceErrorType.invalidRequest,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -245,7 +234,6 @@ class AiErrorUtils {
             'The AI service is experiencing issues. Please try again later.',
         type: InferenceErrorType.serverError,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -254,7 +242,6 @@ class AiErrorUtils {
       message: extractDetailedErrorMessage(error),
       type: InferenceErrorType.unknown,
       originalError: error,
-      stackTrace: stackTrace,
     );
   }
 
@@ -277,10 +264,7 @@ class AiErrorUtils {
     return 'Unable to connect to the AI service. Please check your internet connection and try again.';
   }
 
-  static InferenceError _handleApiError(
-    dynamic error,
-    StackTrace? stackTrace,
-  ) {
+  static InferenceError _handleApiError(dynamic error) {
     // Try to extract status code from error
     final errorString = error.toString();
 
@@ -294,7 +278,6 @@ class AiErrorUtils {
           message: detailedMessage,
           type: InferenceErrorType.invalidRequest,
           originalError: error,
-          stackTrace: stackTrace,
         );
       }
       return InferenceError(
@@ -304,7 +287,6 @@ class AiErrorUtils {
         ),
         type: InferenceErrorType.invalidRequest,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -313,7 +295,6 @@ class AiErrorUtils {
         message: 'Invalid API key. Please check your API key configuration.',
         type: InferenceErrorType.authentication,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -323,7 +304,6 @@ class AiErrorUtils {
             'Rate limit exceeded. Please wait before making more requests.',
         type: InferenceErrorType.rateLimit,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -332,7 +312,6 @@ class AiErrorUtils {
         message: extractDetailedErrorMessage(error),
         type: InferenceErrorType.invalidRequest,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -348,7 +327,6 @@ class AiErrorUtils {
             'The AI service is experiencing issues. Please try again later.',
         type: InferenceErrorType.serverError,
         originalError: error,
-        stackTrace: stackTrace,
       );
     }
 
@@ -356,7 +334,6 @@ class AiErrorUtils {
       message: extractDetailedErrorMessage(error),
       type: InferenceErrorType.unknown,
       originalError: error,
-      stackTrace: stackTrace,
     );
   }
 }
