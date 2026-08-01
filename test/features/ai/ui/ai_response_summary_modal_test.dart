@@ -46,7 +46,6 @@ void main() {
           WidgetTestBench(
             child: AiResponseSummaryModalContent(
               testAiResponse,
-              linkedFromId: 'linked-id',
             ),
           ),
         );
@@ -90,7 +89,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             testAiResponse,
-            linkedFromId: 'linked-id',
           ),
         ),
       );
@@ -110,7 +108,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             testAiResponse,
-            linkedFromId: 'linked-id',
           ),
         ),
       );
@@ -134,7 +131,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             testAiResponse,
-            linkedFromId: 'linked-id',
           ),
         ),
       );
@@ -156,7 +152,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             testAiResponse,
-            linkedFromId: 'linked-id',
           ),
         ),
       );
@@ -180,7 +175,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             testAiResponse,
-            linkedFromId: 'linked-id',
           ),
         ),
       );
@@ -226,7 +220,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             aiResponseWithUsage,
-            linkedFromId: 'linked-id',
           ),
         ),
       );
@@ -273,7 +266,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             aiResponseWithDuration,
-            linkedFromId: 'linked-id',
           ),
         ),
       );
@@ -312,7 +304,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             aiResponseWithLongDuration,
-            linkedFromId: 'linked-id',
           ),
         ),
       );
@@ -349,7 +340,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             aiResponseWithShortDuration,
-            linkedFromId: 'linked-id',
           ),
         ),
       );
@@ -388,7 +378,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             aiResponseNoUsage,
-            linkedFromId: 'linked-id',
           ),
         ),
       );
@@ -425,7 +414,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             minimalAiResponse,
-            linkedFromId: null,
           ),
         ),
       );
@@ -479,7 +467,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummaryModalContent(
             aiResponseWithLink,
-            linkedFromId: 'linked-id',
           ),
         ),
       );

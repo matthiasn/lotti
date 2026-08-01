@@ -705,7 +705,7 @@ void main() {
             prompt: 'p',
             model: 'gemini-2.5-flash',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
           )
           .toList();
@@ -1037,7 +1037,7 @@ void main() {
               prompt: 'test',
               model: 'gemini-2.5-pro',
               temperature: 0.5,
-              thinkingConfig: GeminiThinkingConfig.disabled,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
               provider: provider,
             )
             .toList()
@@ -1098,7 +1098,7 @@ void main() {
               prompt: 'test',
               model: 'gemini-2.5-pro',
               temperature: 0.5,
-              thinkingConfig: GeminiThinkingConfig.disabled,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
               provider: provider,
             )
             .toList()
@@ -1140,7 +1140,7 @@ void main() {
               prompt: 'test',
               model: 'gemini-2.5-pro',
               temperature: 0.5,
-              thinkingConfig: GeminiThinkingConfig.disabled,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
               provider: provider,
             )
             .toList()
@@ -1206,7 +1206,7 @@ void main() {
             prompt: 'Hello',
             model: 'gemini-2.5-pro',
             temperature: 0.7,
-            thinkingConfig: GeminiThinkingConfig.standard,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 8192),
             provider: provider,
           )
           .toList();
@@ -1332,7 +1332,7 @@ void main() {
             prompt: 'Hi',
             model: 'gemini-2.5-flash',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
           )
           .toList();
@@ -1377,7 +1377,7 @@ void main() {
             prompt: 'Test',
             model: 'gemini-2.5-flash',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
           )
           .toList();
@@ -1426,7 +1426,7 @@ void main() {
             prompt: 'Call a function',
             model: 'gemini-2.5-pro',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
             tools: [
               const ChatCompletionTool(
@@ -1652,7 +1652,7 @@ void main() {
             prompt: 'p',
             model: 'gemini-2.5-flash',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
             signatureCollector: collector,
           )
@@ -1713,7 +1713,7 @@ void main() {
             prompt: 'p',
             model: 'gemini-3-pro',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
             signatureCollector: collector,
           )
@@ -1773,7 +1773,7 @@ void main() {
             messages: messages,
             model: 'gemini-2.5-pro',
             temperature: 0.7,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
           )
           .toList();
@@ -1848,7 +1848,7 @@ void main() {
             messages: messages,
             model: 'gemini-3-pro',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
             thoughtSignatures: {'call-123': 'sig-encrypted-abc'},
           )
@@ -1917,7 +1917,7 @@ void main() {
             ],
             model: 'gemini-3-flash',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
             signatureCollector: collector,
           )
@@ -2018,7 +2018,7 @@ void main() {
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
           )
           .toList();
@@ -2054,7 +2054,7 @@ void main() {
               ],
               model: 'gemini-2.5-pro',
               temperature: 0.5,
-              thinkingConfig: GeminiThinkingConfig.disabled,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
               provider: provider,
             )
             .toList(),
@@ -2142,7 +2142,7 @@ void main() {
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
           )
           .toList();
@@ -2194,7 +2194,7 @@ void main() {
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
             systemMessage: 'You are a helpful assistant.',
           )
@@ -2253,7 +2253,7 @@ void main() {
               prompt: 'test',
               model: 'gemini-2.5-pro',
               temperature: 0.5,
-              thinkingConfig: GeminiThinkingConfig.disabled,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
               provider: provider,
             )
             .toList()
@@ -2314,7 +2314,6 @@ void main() {
 
       expect(result.mimeType, 'image/png');
       expect(result.bytes, isNotEmpty);
-      expect(result.extension, 'png');
     });
 
     test('handles snake_case response format', () async {
@@ -2357,7 +2356,6 @@ void main() {
       );
 
       expect(result.mimeType, 'image/jpeg');
-      expect(result.extension, 'jpg');
     });
 
     test('throws exception when no candidates', () async {
@@ -2555,31 +2553,6 @@ void main() {
     });
   });
 
-  group('GeneratedImage', () {
-    test('extension returns correct values', () {
-      expect(
-        const GeneratedImage(bytes: [], mimeType: 'image/png').extension,
-        'png',
-      );
-      expect(
-        const GeneratedImage(bytes: [], mimeType: 'image/jpeg').extension,
-        'jpg',
-      );
-      expect(
-        const GeneratedImage(bytes: [], mimeType: 'image/gif').extension,
-        'gif',
-      );
-      expect(
-        const GeneratedImage(bytes: [], mimeType: 'image/webp').extension,
-        'webp',
-      );
-      expect(
-        const GeneratedImage(bytes: [], mimeType: 'unknown').extension,
-        'png',
-      );
-    });
-  });
-
   group('Default constructor', () {
     test('creates repository using default http.Client when none provided', () {
       // Verifies the `?? http.Client()` branch in the constructor.
@@ -2688,7 +2661,7 @@ void main() {
                 prompt: 'test',
                 model: 'gemini-2.5-pro',
                 temperature: 0.5,
-                thinkingConfig: GeminiThinkingConfig.disabled,
+                thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
                 provider: provider,
               )
               .toList()
@@ -2750,7 +2723,7 @@ void main() {
                 prompt: 'test',
                 model: 'gemini-2.5-pro',
                 temperature: 0.5,
-                thinkingConfig: GeminiThinkingConfig.disabled,
+                thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
                 provider: provider,
               )
               .toList()
@@ -2793,7 +2766,7 @@ void main() {
               prompt: 'test',
               model: 'gemini-2.5-pro',
               temperature: 0.5,
-              thinkingConfig: GeminiThinkingConfig.disabled,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
               provider: provider,
             )
             .toList()

@@ -37,14 +37,12 @@ InboundEventQueueItem _buildRow({
 
 void main() {
   group('EnqueueResult', () {
-    test('empty carries zero for every counter and ts bound', () {
+    test('empty carries zero for every counter', () {
       const r = EnqueueResult.empty;
       expect(r.accepted, 0);
       expect(r.duplicatesDropped, 0);
       expect(r.filteredOutByType, 0);
       expect(r.deferredPendingDecryption, 0);
-      expect(r.oldestTsAccepted, 0);
-      expect(r.newestTsAccepted, 0);
     });
   });
 
@@ -77,27 +75,15 @@ void main() {
   }, tags: 'glados');
 
   group('InboundQueueEntry.fromRow', () {
-    test('maps every column and applies the freshly stamped lease', () {
-      final entry = InboundQueueEntry.fromRow(_buildRow(), leaseUntil: 5555);
+    test('maps the fields required by queue processing', () {
+      final entry = InboundQueueEntry.fromRow(_buildRow());
       expect(entry.queueId, 7);
       expect(entry.eventId, r'$row');
       expect(entry.roomId, '!room:example.org');
       expect(entry.originTs, 4242);
-      expect(entry.producer, InboundEventProducer.bootstrap);
       expect(entry.enqueuedAt, 1111);
       expect(entry.attempts, 3);
       expect(entry.rawJson, r'{"event_id":"$row"}');
-      // peekBatchReady stamps the lease after selecting; the entry must
-      // carry the fresh lease, not the stale row value (999).
-      expect(entry.leaseUntil, 5555);
-    });
-
-    test('unknown stored producer name resolves to live', () {
-      final entry = InboundQueueEntry.fromRow(
-        _buildRow(producer: 'not-a-producer'),
-        leaseUntil: 0,
-      );
-      expect(entry.producer, InboundEventProducer.live);
     });
   });
 
@@ -119,7 +105,6 @@ void main() {
             'content': <String, dynamic>{'msgtype': 'm.text', 'body': 'hi'},
           }),
         ),
-        leaseUntil: 0,
       );
       final event = entry.toEvent(room);
       expect(event.eventId, r'$mat');
@@ -142,11 +127,7 @@ void main() {
       expect(InboundQueueStatuses.abandoned, 'abandoned');
     });
 
-    test('active and peekable cover the same drainable set', () {
-      expect(
-        InboundQueueStatuses.active.toSet(),
-        InboundQueueStatuses.peekable.toSet(),
-      );
+    test('active excludes terminal statuses', () {
       expect(
         InboundQueueStatuses.active,
         isNot(contains(InboundQueueStatuses.applied)),

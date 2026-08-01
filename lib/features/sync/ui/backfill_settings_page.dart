@@ -182,8 +182,6 @@ class _QueueDepthScopeState extends State<_QueueDepthScope> {
       setState(() {
         _latest = QueueDepthSignal(
           total: stats.total,
-          byProducer: stats.byProducer,
-          oldestEnqueuedAt: stats.oldestEnqueuedAt,
           abandoned: stats.abandoned,
         );
       });

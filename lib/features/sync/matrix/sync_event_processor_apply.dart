@@ -334,7 +334,6 @@ class SyncApplyDiagnostics {
   SyncApplyDiagnostics({
     required this.eventId,
     required this.payloadType,
-    required this.vectorClock,
     required this.conflictStatus,
     required this.applied,
     this.skipReason,
@@ -342,7 +341,6 @@ class SyncApplyDiagnostics {
 
   final String eventId;
   final String payloadType;
-  final Object? vectorClock;
   final String conflictStatus;
   final bool applied;
   final JournalUpdateSkipReason? skipReason;

@@ -13,7 +13,6 @@ QueueStats _stats({
 }) => QueueStats(
   total: total,
   byProducer: byProducer,
-  readyNow: 0,
   oldestEnqueuedAt: oldestEnqueuedAt,
   abandoned: abandoned,
 );
@@ -70,8 +69,6 @@ void main() {
       expect(bench.loadCalls, 1);
       final signal = bench.emissions.single;
       expect(signal.total, 3);
-      expect(signal.byProducer, const {InboundEventProducer.bootstrap: 3});
-      expect(signal.oldestEnqueuedAt, 1234);
       expect(signal.abandoned, 2);
     });
 

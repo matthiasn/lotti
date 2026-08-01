@@ -100,7 +100,6 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
     return const BootstrapResult(
       totalPages: 0,
       totalEvents: 0,
-      oldestTimestampReached: null,
       stopReason: BootstrapStopReason.error,
     );
   }
@@ -126,7 +125,6 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
     return const BootstrapResult(
       totalPages: 0,
       totalEvents: 0,
-      oldestTimestampReached: null,
       stopReason: BootstrapStopReason.error,
     );
   }
@@ -370,7 +368,6 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   return BootstrapResult(
     totalPages: pageIndex,
     totalEvents: totalEventsSoFar,
-    oldestTimestampReached: newestTsSoFar,
     stopReason: stopReason,
   );
 }

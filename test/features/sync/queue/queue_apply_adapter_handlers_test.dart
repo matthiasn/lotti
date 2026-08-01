@@ -149,10 +149,8 @@ void main() {
       eventId: r'$bad',
       roomId: '!r',
       originTs: 1,
-      producer: InboundEventProducer.live,
       enqueuedAt: 1,
       attempts: 0,
-      leaseUntil: 0,
       rawJson: 'not-json',
     );
     final outcome = await build().bind()(entry, room);

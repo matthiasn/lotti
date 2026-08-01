@@ -426,67 +426,6 @@ class VoxtralInferenceRepository {
     }
   }
 
-  /// Check if Voxtral server is healthy and model is available
-  Future<VoxtralHealthStatus> checkHealth({
-    String baseUrl = defaultBaseUrl,
-  }) async {
-    try {
-      final response = await _httpClient
-          .get(Uri.parse(baseUrl).resolve('health'))
-          .timeout(const Duration(seconds: 5));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return VoxtralHealthStatus(
-          isHealthy: data['status'] == 'healthy',
-          modelAvailable: data['model_available'] as bool? ?? false,
-          modelLoaded: data['model_loaded'] as bool? ?? false,
-          device: data['device'] as String? ?? 'unknown',
-          maxAudioMinutes:
-              (data['max_audio_minutes'] as num?)?.toDouble() ?? 30,
-        );
-      }
-      return VoxtralHealthStatus(isHealthy: false);
-    } catch (e) {
-      developer.log(
-        'Failed to check Voxtral health',
-        name: 'VoxtralInferenceRepository',
-        error: e,
-      );
-      return VoxtralHealthStatus(isHealthy: false);
-    }
-  }
-
-  /// Download the Voxtral model
-  Future<void> downloadModel({
-    String baseUrl = defaultBaseUrl,
-    String modelName = 'mistralai/Voxtral-Mini-3B-2507',
-  }) async {
-    try {
-      final response = await _httpClient.post(
-        Uri.parse(baseUrl).resolve('v1/models/pull'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'model_name': modelName,
-          'stream': false,
-        }),
-      );
-
-      if (response.statusCode != 200) {
-        throw VoxtralInferenceException(
-          'Failed to download model: HTTP ${response.statusCode}',
-          statusCode: response.statusCode,
-        );
-      }
-    } catch (e) {
-      if (e is VoxtralInferenceException) rethrow;
-      throw VoxtralInferenceException(
-        'Failed to download model: $e',
-        originalError: e,
-      );
-    }
-  }
-
   /// Closes the underlying HTTP client and any keep-alive connections.
   void close() => _httpClient.close();
 }
@@ -497,23 +436,6 @@ ChatCompletionFinishReason _chatFinishReasonFromApi(String finishReason) {
     (value) => value.name.toLowerCase() == normalized,
     orElse: () => ChatCompletionFinishReason.stop,
   );
-}
-
-/// Health status of the Voxtral server
-class VoxtralHealthStatus {
-  VoxtralHealthStatus({
-    required this.isHealthy,
-    this.modelAvailable = false,
-    this.modelLoaded = false,
-    this.device = 'unknown',
-    this.maxAudioMinutes = 30,
-  });
-
-  final bool isHealthy;
-  final bool modelAvailable;
-  final bool modelLoaded;
-  final String device;
-  final double maxAudioMinutes;
 }
 
 /// Exception thrown when Voxtral operations fail

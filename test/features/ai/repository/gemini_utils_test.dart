@@ -1210,7 +1210,6 @@ void main() {
         const ProcessedReferenceImage(
           base64Data: 'abc123',
           mimeType: 'image/png',
-          originalId: 'img-1',
         ),
       ];
       final body = GeminiUtils.buildImageGenerationRequestBody(
@@ -1240,17 +1239,14 @@ void main() {
         const ProcessedReferenceImage(
           base64Data: 'data1',
           mimeType: 'image/jpeg',
-          originalId: 'img-1',
         ),
         const ProcessedReferenceImage(
           base64Data: 'data2',
           mimeType: 'image/png',
-          originalId: 'img-2',
         ),
         const ProcessedReferenceImage(
           base64Data: 'data3',
           mimeType: 'image/webp',
-          originalId: 'img-3',
         ),
       ];
       final body = GeminiUtils.buildImageGenerationRequestBody(
@@ -1301,7 +1297,6 @@ void main() {
         const ProcessedReferenceImage(
           base64Data: 'refdata',
           mimeType: 'image/png',
-          originalId: 'ref-1',
         ),
       ];
       final body = GeminiUtils.buildImageGenerationRequestBody(

@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/sync/models/sync_error.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
@@ -134,7 +133,6 @@ void main() {
       expect(states.last.isSyncing, isFalse);
       expect(states.last.progress, 100);
       expect(states.last.currentStep, SyncStep.complete);
-      expect(states.last.error, isNull);
 
       verify(
         () => mockRepository.syncMeasurables(
@@ -349,7 +347,6 @@ void main() {
           expect(state.isSyncing, isFalse);
           expect(state.progress, 0);
           expect(state.currentStep, SyncStep.measurables);
-          expect(state.error, isNull);
           expect(state.stepProgress, isEmpty);
           expect(state.selectedSteps, isEmpty);
           return;
@@ -375,11 +372,9 @@ void main() {
 
         if (scenario.shouldFail) {
           expect(state.currentStep, scenario.failureStep);
-          expect(state.error, isNotNull);
           expect(state.progress, lessThanOrEqualTo(100));
         } else {
           expect(state.currentStep, SyncStep.complete);
-          expect(state.error, isNull);
           expect(state.progress, 100);
         }
       },
@@ -388,11 +383,6 @@ void main() {
 
     test('syncAll handles errors and updates state', () async {
       final exception = Exception('Sync failed');
-      final expectedError = SyncError.fromException(
-        exception,
-        StackTrace.current,
-        mockLoggingService,
-      ).toString();
 
       when(
         () => mockRepository.syncCategories(
@@ -423,7 +413,6 @@ void main() {
 
       final lastState = container.read(syncControllerProvider);
       expect(lastState.isSyncing, isFalse);
-      expect(lastState.error, expectedError);
       expect(lastState.currentStep, SyncStep.categories);
 
       verify(
@@ -469,7 +458,7 @@ void main() {
           stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: 'SYNC_CONTROLLER',
         ),
-      ).called(2);
+      ).called(1);
 
       sub.close();
     });

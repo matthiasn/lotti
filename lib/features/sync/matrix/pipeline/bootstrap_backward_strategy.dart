@@ -235,7 +235,6 @@ Future<BootstrapResult> collectHistoryForBootstrapImpl({
   return BootstrapResult(
     totalPages: pageIndex,
     totalEvents: totalEventsSoFar,
-    oldestTimestampReached: oldestTsSoFar,
     stopReason: stopReason,
   );
 }

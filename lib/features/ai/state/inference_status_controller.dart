@@ -32,15 +32,11 @@ inferenceStatusControllerProvider = NotifierProvider.autoDispose
 
 class InferenceStatusController extends Notifier<InferenceStatus> {
   InferenceStatusController([
-    this._providerArgs = (
+    ({String id, AiResponseType aiResponseType}) _ = (
       id: '',
       aiResponseType: AiResponseType.imageAnalysis,
     ),
   ]);
-
-  final ({String id, AiResponseType aiResponseType}) _providerArgs;
-  String get id => _providerArgs.id;
-  AiResponseType get aiResponseType => _providerArgs.aiResponseType;
 
   @override
   InferenceStatus build() {

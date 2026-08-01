@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
-import 'package:meta/meta.dart';
 
 /// Incremental parser for mixed-format Gemini streaming payloads.
 ///
@@ -121,8 +120,4 @@ class GeminiStreamParser {
 
     return results;
   }
-
-  /// Returns the current buffered, unparsed remainder (useful for testing).
-  @visibleForTesting
-  String remainder() => _buffer.toString();
 }

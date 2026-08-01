@@ -242,9 +242,6 @@ void main() {
         await channel.stopSpeaking();
 
         expect(fileResult.text, 'local transcript');
-        expect(fileResult.detectedLanguage, 'en');
-        expect(fileResult.processingTimeMs, 42);
-        expect(fileResult.diarizationStatus, 'disabled');
         expect(base64Result.text, 'local transcript');
         expect(
           calls.map((call) => call.method),

@@ -12,8 +12,6 @@ class EnqueueResult {
     required this.duplicatesDropped,
     required this.filteredOutByType,
     required this.deferredPendingDecryption,
-    required this.oldestTsAccepted,
-    required this.newestTsAccepted,
   });
 
   final int accepted;
@@ -29,16 +27,11 @@ class EnqueueResult {
   /// decryption key (F3).
   final int deferredPendingDecryption;
 
-  final int oldestTsAccepted;
-  final int newestTsAccepted;
-
   static const empty = EnqueueResult(
     accepted: 0,
     duplicatesDropped: 0,
     filteredOutByType: 0,
     deferredPendingDecryption: 0,
-    oldestTsAccepted: 0,
-    newestTsAccepted: 0,
   );
 }
 
@@ -64,40 +57,29 @@ class InboundQueueEntry {
     required this.eventId,
     required this.roomId,
     required this.originTs,
-    required this.producer,
     required this.enqueuedAt,
     required this.attempts,
-    required this.leaseUntil,
     required this.rawJson,
   });
 
-  /// Hydrates an entry from its database [row]. [leaseUntil] is passed
-  /// explicitly rather than read from the row because `peekBatchReady`
-  /// stamps a fresh lease in the same transaction *after* selecting
-  /// the rows — the row object still carries the stale value.
-  factory InboundQueueEntry.fromRow(
-    InboundEventQueueItem row, {
-    required int leaseUntil,
-  }) => InboundQueueEntry(
-    queueId: row.queueId,
-    eventId: row.eventId,
-    roomId: row.roomId,
-    originTs: row.originTs,
-    producer: producerFromName(row.producer),
-    enqueuedAt: row.enqueuedAt,
-    attempts: row.attempts,
-    leaseUntil: leaseUntil,
-    rawJson: row.rawJson,
-  );
+  /// Hydrates an entry from its database [row].
+  factory InboundQueueEntry.fromRow(InboundEventQueueItem row) =>
+      InboundQueueEntry(
+        queueId: row.queueId,
+        eventId: row.eventId,
+        roomId: row.roomId,
+        originTs: row.originTs,
+        enqueuedAt: row.enqueuedAt,
+        attempts: row.attempts,
+        rawJson: row.rawJson,
+      );
 
   final int queueId;
   final String eventId;
   final String roomId;
   final int originTs;
-  final InboundEventProducer producer;
   final int enqueuedAt;
   final int attempts;
-  final int leaseUntil;
   final String rawJson;
 
   /// Materialises the stored event against the given [room]. The room
@@ -113,8 +95,6 @@ class InboundQueueEntry {
 class QueueDepthSignal {
   const QueueDepthSignal({
     required this.total,
-    required this.byProducer,
-    required this.oldestEnqueuedAt,
     this.abandoned = 0,
   });
 
@@ -122,8 +102,6 @@ class QueueDepthSignal {
   /// includes `applied` or `abandoned` rows so "queue is empty"
   /// still means "nothing to drain."
   final int total;
-  final Map<InboundEventProducer, int> byProducer;
-  final int? oldestEnqueuedAt;
 
   /// Count of abandoned ledger rows — sync events the worker gave
   /// up on after exhausting retries. Feeds the Sync Settings badge
@@ -138,7 +116,6 @@ class QueueStats {
   const QueueStats({
     required this.total,
     required this.byProducer,
-    required this.readyNow,
     required this.oldestEnqueuedAt,
     this.applied = 0,
     this.abandoned = 0,
@@ -151,7 +128,6 @@ class QueueStats {
   /// UI) do not inflate their numbers with the ledger history.
   final int total;
   final Map<InboundEventProducer, int> byProducer;
-  final int readyNow;
   final int? oldestEnqueuedAt;
 
   /// Count of `status='applied'` rows — the ledger of everything the
@@ -203,14 +179,4 @@ abstract final class InboundQueueStatuses {
   /// on this set so the applied ledger (bounded only by retention, not
   /// by correctness) never touches the hot paths.
   static const List<String> active = <String>[enqueued, leased, retrying];
-
-  /// Peek eligibility. Includes `leased` so crash recovery works: a
-  /// worker that died mid-apply left its rows in `leased` state with a
-  /// non-zero `lease_until`. Once that timestamp elapses the row is
-  /// peekable again (the `lease_until <= now` predicate in
-  /// `peekBatchReady` still gates it). Under normal operation the
-  /// worker transitions `leased` → `applied`/`retrying`/`abandoned`
-  /// via its outcome switch, so this set is effectively `enqueued` +
-  /// `retrying` most of the time.
-  static const List<String> peekable = <String>[enqueued, retrying, leased];
 }

@@ -237,10 +237,8 @@ InboundQueueEntry hBuildEntry({
     eventId: eventId,
     roomId: roomId,
     originTs: originTsMs,
-    producer: InboundEventProducer.live,
     enqueuedAt: originTsMs,
     attempts: 0,
-    leaseUntil: 0,
     rawJson: jsonEncode(json),
   );
 }

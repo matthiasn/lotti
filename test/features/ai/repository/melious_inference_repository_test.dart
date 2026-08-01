@@ -1935,7 +1935,6 @@ void main() {
             ProcessedReferenceImage(
               base64Data: 'abc',
               mimeType: 'image/jpeg',
-              originalId: 'reference',
             ),
           ],
         ),

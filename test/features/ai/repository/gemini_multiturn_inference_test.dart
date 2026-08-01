@@ -71,7 +71,7 @@ void main() {
           messages: _messages(),
           model: 'gemini-2.5-pro',
           temperature: 0.5,
-          thinkingConfig: GeminiThinkingConfig.disabled,
+          thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
           provider: _provider(),
         ).toList();
 
@@ -108,7 +108,7 @@ void main() {
         messages: _messages(),
         model: 'gemini-2.5-pro',
         temperature: 0,
-        thinkingConfig: GeminiThinkingConfig.disabled,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
         provider: _provider(),
       ).toList();
 
@@ -143,7 +143,7 @@ void main() {
         messages: _messages(),
         model: 'gemini-3-pro',
         temperature: 0,
-        thinkingConfig: GeminiThinkingConfig.disabled,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
         provider: _provider(),
         turnIndex: 2,
       ).toList();
@@ -175,7 +175,7 @@ void main() {
           messages: _messages(),
           model: 'gemini-2.5-pro',
           temperature: 0,
-          thinkingConfig: GeminiThinkingConfig.disabled,
+          thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
           provider: _provider(),
         ).toList(),
         throwsA(
@@ -211,7 +211,7 @@ void main() {
           messages: _messages(),
           model: 'gemini-2.5-pro',
           temperature: 0,
-          thinkingConfig: GeminiThinkingConfig.disabled,
+          thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
           provider: _provider(),
           systemMessage: 'you are concise',
         ).toList();

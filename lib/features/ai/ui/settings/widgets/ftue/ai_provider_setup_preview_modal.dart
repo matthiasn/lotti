@@ -204,7 +204,6 @@ class _AiProviderSetupPreviewModalState
         SizedBox(height: tokens.spacing.step5),
         _ProfilePreviewCard(
           profileName: widget.preset.profileName,
-          providerType: widget.providerType,
           accent: accent,
         ),
         SizedBox(height: tokens.spacing.step5),
@@ -326,12 +325,10 @@ class _ConnectedBanner extends StatelessWidget {
 class _ProfilePreviewCard extends StatelessWidget {
   const _ProfilePreviewCard({
     required this.profileName,
-    required this.providerType,
     required this.accent,
   });
 
   final String profileName;
-  final InferenceProviderType providerType;
   final Color accent;
 
   @override

@@ -7,18 +7,15 @@ import 'package:lotti/utils/cache_extension.dart';
 
 /// Live state for one in-flight inference run.
 ///
-/// Identifies the run ([entityId], [promptId], [aiResponseType], plus the
-/// [linkedEntityId] when a primary/linked pair is processed together) and owns
-/// a broadcast [progressStreamController] that streams incremental progress
-/// text to the UI. Holders MUST call [dispose] to close the stream;
+/// Identifies the run ([entityId] and [promptId]) and owns a broadcast
+/// [progressStreamController] that streams incremental progress text to the
+/// UI. Holders MUST call [dispose] to close the stream;
 /// [copyWith] deliberately reuses the same controller so the stream survives
 /// state updates.
 class ActiveInferenceData {
   ActiveInferenceData({
     required this.entityId,
     required this.promptId,
-    required this.aiResponseType,
-    this.linkedEntityId,
     this.progressText = '',
     StreamController<String>? progressStreamController,
   }) : progressStreamController =
@@ -26,8 +23,6 @@ class ActiveInferenceData {
 
   final String entityId;
   final String promptId;
-  final AiResponseType aiResponseType;
-  final String? linkedEntityId;
   final String progressText;
   final StreamController<String> progressStreamController;
 
@@ -47,8 +42,6 @@ class ActiveInferenceData {
     return ActiveInferenceData(
       entityId: entityId,
       promptId: promptId,
-      aiResponseType: aiResponseType,
-      linkedEntityId: linkedEntityId,
       progressText: progressText ?? this.progressText,
       progressStreamController: progressStreamController,
     );
@@ -101,7 +94,6 @@ class ActiveInferenceController extends Notifier<ActiveInferenceData?> {
   /// progress stream can't leak. Sets state to a fresh [ActiveInferenceData].
   void startInference({
     required String promptId,
-    String? linkedEntityId,
   }) {
     // Dispose of any existing inference data
     _currentData?.dispose();
@@ -109,8 +101,6 @@ class ActiveInferenceController extends Notifier<ActiveInferenceData?> {
     _currentData = ActiveInferenceData(
       entityId: entityId,
       promptId: promptId,
-      aiResponseType: aiResponseType,
-      linkedEntityId: linkedEntityId,
     );
     state = _currentData;
   }
@@ -130,53 +120,5 @@ class ActiveInferenceController extends Notifier<ActiveInferenceData?> {
     _currentData?.dispose();
     _currentData = null;
     state = null;
-  }
-}
-
-/// Resolves the active inference for an entity regardless of response type.
-///
-/// Scans every [AiResponseType]'s [ActiveInferenceController] and returns the
-/// first in-flight run, or null if the entity is idle. Because the unified
-/// controller registers active inference for BOTH the primary and linked
-/// entity, this also reports runs that were started against a linked entity.
-final NotifierProviderFamily<
-  ActiveInferenceByEntity,
-  ActiveInferenceData?,
-  String
->
-activeInferenceByEntityProvider = NotifierProvider.autoDispose
-    .family<ActiveInferenceByEntity, ActiveInferenceData?, String>(
-      ActiveInferenceByEntity.new,
-      name: 'activeInferenceByEntityProvider',
-    );
-
-class ActiveInferenceByEntity extends Notifier<ActiveInferenceData?> {
-  ActiveInferenceByEntity(this.entityId);
-
-  final String entityId;
-
-  @override
-  ActiveInferenceData? build() {
-    ref.cacheFor(inferenceStateCacheDuration);
-
-    // Watch all response types to find any active inference for this entity
-    for (final responseType in AiResponseType.values) {
-      final activeInference = ref.watch(
-        activeInferenceControllerProvider((
-          entityId: entityId,
-          aiResponseType: responseType,
-        )),
-      );
-      if (activeInference != null) {
-        return activeInference;
-      }
-
-      // Note: Linked entities are already handled because when an inference
-      // starts with a linkedEntityId, the unified_ai_controller creates
-      // active inference entries for BOTH the primary and linked entities.
-      // So this provider will find the inference for linked entities too.
-    }
-
-    return null;
   }
 }

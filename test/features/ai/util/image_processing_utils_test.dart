@@ -137,34 +137,28 @@ void main() {
       const image = ProcessedReferenceImage(
         base64Data: 'dGVzdA==',
         mimeType: 'image/png',
-        originalId: 'test-id-123',
       );
 
       expect(image.base64Data, 'dGVzdA==');
       expect(image.mimeType, 'image/png');
-      expect(image.originalId, 'test-id-123');
     });
 
     test('supports different mime types', () {
       const pngImage = ProcessedReferenceImage(
         base64Data: 'data',
         mimeType: 'image/png',
-        originalId: 'id-1',
       );
       const jpegImage = ProcessedReferenceImage(
         base64Data: 'data',
         mimeType: 'image/jpeg',
-        originalId: 'id-2',
       );
       const gifImage = ProcessedReferenceImage(
         base64Data: 'data',
         mimeType: 'image/gif',
-        originalId: 'id-3',
       );
       const webpImage = ProcessedReferenceImage(
         base64Data: 'data',
         mimeType: 'image/webp',
-        originalId: 'id-4',
       );
 
       expect(pngImage.mimeType, 'image/png');
@@ -177,22 +171,18 @@ void main() {
       const image1 = ProcessedReferenceImage(
         base64Data: 'abc',
         mimeType: 'image/png',
-        originalId: 'id-1',
       );
       const image2 = ProcessedReferenceImage(
         base64Data: 'abc',
         mimeType: 'image/png',
-        originalId: 'id-1',
       );
       const image3 = ProcessedReferenceImage(
         base64Data: 'xyz',
         mimeType: 'image/png',
-        originalId: 'id-1',
       );
 
       expect(image1.base64Data, image2.base64Data);
       expect(image1.mimeType, image2.mimeType);
-      expect(image1.originalId, image2.originalId);
       expect(image1.base64Data, isNot(image3.base64Data));
     });
 
@@ -200,7 +190,6 @@ void main() {
       const image = ProcessedReferenceImage(
         base64Data: '',
         mimeType: 'image/jpeg',
-        originalId: 'empty-id',
       );
 
       expect(image.base64Data, isEmpty);
@@ -385,7 +374,6 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!.mimeType, 'image/jpeg');
-        expect(result.originalId, 'small-image-id');
         expect(result.base64Data, isNotEmpty);
       },
     );
@@ -408,7 +396,6 @@ void main() {
         expect(result, isNotNull);
         expect(result!.mimeType, 'image/jpeg');
         expect(result.base64Data, isNotEmpty);
-        expect(result.originalId, 'wide-image-id');
       },
     );
 
@@ -430,7 +417,6 @@ void main() {
         expect(result, isNotNull);
         expect(result!.mimeType, 'image/jpeg');
         expect(result.base64Data, isNotEmpty);
-        expect(result.originalId, 'tall-image-id');
       },
     );
   });

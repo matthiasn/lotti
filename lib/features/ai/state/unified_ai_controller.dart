@@ -110,7 +110,6 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
         )
         .startInference(
           promptId: promptId,
-          linkedEntityId: linkedEntityId,
         );
 
     if (linkedEntityId != null) {
@@ -123,7 +122,6 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
           )
           .startInference(
             promptId: promptId,
-            linkedEntityId: entityId,
           );
     }
   }

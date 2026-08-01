@@ -26,9 +26,9 @@ inferenceErrorControllerProvider = NotifierProvider.autoDispose
     );
 
 class InferenceErrorController extends Notifier<String?> {
-  InferenceErrorController(this.providerArgs);
-
-  final ({String id, AiResponseType aiResponseType}) providerArgs;
+  InferenceErrorController(
+    ({String id, AiResponseType aiResponseType}) _,
+  );
 
   @override
   String? build() {

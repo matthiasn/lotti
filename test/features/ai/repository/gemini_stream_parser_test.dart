@@ -62,7 +62,6 @@ void main() {
       expect(out.length, 2);
       expect(out[0]['a'], 1);
       expect(out[1]['b'], 2);
-      expect(parser.remainder(), isEmpty);
     });
 
     test('parses SSE data: lines with inline JSON payloads', () {
@@ -88,7 +87,6 @@ void main() {
       expect(out.length, 2);
       expect(out[0]['i'], 1);
       expect(out[1]['i'], 2);
-      expect(parser.remainder(), isEmpty);
     });
 
     test('handles objects spanning multiple chunks', () {
@@ -97,13 +95,11 @@ void main() {
       const part2 = '}, "baz": 2}';
       var out = parser.addChunk(part1);
       expect(out, isEmpty);
-      expect(parser.remainder(), isNotEmpty);
       out = parser.addChunk(part2);
       expect(out.length, 1);
       final foo = out.first['foo'] as Map<String, dynamic>;
       expect(foo['bar'], 1);
       expect(out.first['baz'], 2);
-      expect(parser.remainder(), isEmpty);
     });
 
     test('ignores braces inside string literals', () {
@@ -142,7 +138,6 @@ void main() {
       // We still parse the object; buffer should not exceed cap
       expect(out.length, 1);
       expect(out.first['z'], 9);
-      expect(small.remainder().length <= 32, isTrue);
     });
 
     Glados(any.geminiPayloads).testWithRandom(
@@ -160,7 +155,6 @@ void main() {
         }
 
         expect(chunked, whole);
-        expect(chunkedParser.remainder(), wholeParser.remainder());
       },
       tags: 'glados',
     );
@@ -190,7 +184,6 @@ void main() {
         expect(firstOut, isEmpty);
         // The all-'x' junk leaves no '{' to trim/align against, so it stays
         // buffered verbatim; it must not have produced any objects.
-        expect(parser.remainder(), junk);
 
         // Second chunk: a complete, valid JSON object. This is where the
         // trim+align path runs against an over-cap buffer.
@@ -200,7 +193,6 @@ void main() {
         expect(out.length, 1);
         expect(out.first['v'], value);
         // After parsing the only object, no remainder lingers.
-        expect(parser.remainder(), isEmpty);
       },
       tags: 'glados',
     );

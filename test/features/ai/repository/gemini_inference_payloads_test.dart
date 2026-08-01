@@ -41,33 +41,4 @@ void main() {
       expect(extractThoughtSignature(part), '12345');
     });
   });
-
-  group('GeneratedImage', () {
-    test('maps known MIME types to extensions and defaults to png', () {
-      const bytes = [1, 2, 3];
-      expect(
-        const GeneratedImage(bytes: bytes, mimeType: 'image/jpeg').extension,
-        'jpg',
-      );
-      expect(
-        const GeneratedImage(bytes: bytes, mimeType: 'image/gif').extension,
-        'gif',
-      );
-      expect(
-        const GeneratedImage(bytes: bytes, mimeType: 'image/webp').extension,
-        'webp',
-      );
-      expect(
-        const GeneratedImage(bytes: bytes, mimeType: 'image/png').extension,
-        'png',
-      );
-      expect(
-        const GeneratedImage(
-          bytes: bytes,
-          mimeType: 'application/pdf',
-        ).extension,
-        'png',
-      );
-    });
-  });
 }

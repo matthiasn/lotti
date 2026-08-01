@@ -320,9 +320,8 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
       );
     } catch (e) {
       if (!context.mounted) return;
-      // A localized title: SyncError.toString() is a hard-coded English
-      // sentence, so surfacing it directly gave every non-English locale an
-      // English failure toast.
+      // Keep the failure toast localized instead of surfacing the raw
+      // exception text.
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: messages.backfillAgentClocksFailed,

@@ -16,11 +16,9 @@ import 'package:lotti/services/domain_logging.dart';
 class CascadeDeletionResult {
   const CascadeDeletionResult({
     required this.deletedModels,
-    required this.providerName,
   });
 
   final List<AiConfigModel> deletedModels;
-  final String providerName;
 }
 
 final aiConfigRepositoryProvider = Provider<AiConfigRepository>(
@@ -222,11 +220,6 @@ class AiConfigRepository {
 
     final result = await _db.transaction(() async {
       try {
-        // Get the provider first to capture its name
-        final provider =
-            await getConfigById(providerId) as AiConfigInferenceProvider?;
-        final providerName = provider?.name ?? 'Unknown Provider';
-
         // Get all models to find those associated with this provider
         final allModels = await getConfigsByType(AiConfigType.model);
         final associatedModels = allModels
@@ -252,7 +245,6 @@ class AiConfigRepository {
 
         return CascadeDeletionResult(
           deletedModels: associatedModels,
-          providerName: providerName,
         );
       } catch (error, stackTrace) {
         if (getIt.isRegistered<DomainLogger>()) {

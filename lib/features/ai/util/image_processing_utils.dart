@@ -17,12 +17,10 @@ class ProcessedReferenceImage {
   const ProcessedReferenceImage({
     required this.base64Data,
     required this.mimeType,
-    required this.originalId,
   });
 
   final String base64Data;
   final String mimeType;
-  final String originalId;
 }
 
 /// Processes an image file for use as a reference image.
@@ -81,7 +79,6 @@ Future<ProcessedReferenceImage?> processReferenceImage({
       base64Data: base64Encode(compressedBytes),
       // Always JPEG since that's what FlutterImageCompress outputs
       mimeType: 'image/jpeg',
-      originalId: imageId,
     );
   } catch (e) {
     developer.log(

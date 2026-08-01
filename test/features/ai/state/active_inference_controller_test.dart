@@ -55,13 +55,6 @@ AiResponseType _generatedActiveResponseType(
   };
 }
 
-_GeneratedActiveEntitySlot _otherEntitySlot(_GeneratedActiveEntitySlot slot) {
-  return switch (slot) {
-    _GeneratedActiveEntitySlot.primary => _GeneratedActiveEntitySlot.secondary,
-    _GeneratedActiveEntitySlot.secondary => _GeneratedActiveEntitySlot.primary,
-  };
-}
-
 class _GeneratedActiveOperation {
   const _GeneratedActiveOperation({
     required this.kind,
@@ -69,7 +62,6 @@ class _GeneratedActiveOperation {
     required this.responseSlot,
     required this.promptSlot,
     required this.progressSlot,
-    required this.linkOtherEntity,
   });
 
   final _GeneratedActiveOperationKind kind;
@@ -77,7 +69,6 @@ class _GeneratedActiveOperation {
   final _GeneratedActiveResponseSlot responseSlot;
   final _GeneratedActivePromptSlot promptSlot;
   final _GeneratedActiveProgressSlot progressSlot;
-  final bool linkOtherEntity;
 
   String get entityId => _generatedActiveEntityId(entitySlot);
 
@@ -87,16 +78,11 @@ class _GeneratedActiveOperation {
 
   String get progressText => _generatedActiveProgress(progressSlot);
 
-  String? get linkedEntityId => linkOtherEntity
-      ? _generatedActiveEntityId(_otherEntitySlot(entitySlot))
-      : null;
-
   @override
   String toString() {
     return '_GeneratedActiveOperation('
         'kind: $kind, entitySlot: $entitySlot, responseSlot: $responseSlot, '
-        'promptSlot: $promptSlot, progressSlot: $progressSlot, '
-        'linkOtherEntity: $linkOtherEntity)';
+        'promptSlot: $promptSlot, progressSlot: $progressSlot)';
   }
 }
 
@@ -122,23 +108,17 @@ class _ExpectedActiveInference {
   const _ExpectedActiveInference({
     required this.entityId,
     required this.promptId,
-    required this.aiResponseType,
-    required this.linkedEntityId,
     required this.progressText,
   });
 
   final String entityId;
   final String promptId;
-  final AiResponseType aiResponseType;
-  final String? linkedEntityId;
   final String progressText;
 
   _ExpectedActiveInference copyWith({required String progressText}) {
     return _ExpectedActiveInference(
       entityId: entityId,
       promptId: promptId,
-      aiResponseType: aiResponseType,
-      linkedEntityId: linkedEntityId,
       progressText: progressText,
     );
   }
@@ -146,8 +126,6 @@ class _ExpectedActiveInference {
   List<Object?> get snapshot => [
     entityId,
     promptId,
-    aiResponseType,
-    linkedEntityId,
     progressText,
   ];
 }
@@ -166,8 +144,6 @@ class _GeneratedActiveModel {
         _entries[key] = _ExpectedActiveInference(
           entityId: operation.entityId,
           promptId: operation.promptId,
-          aiResponseType: operation.responseType,
-          linkedEntityId: operation.linkedEntityId,
           progressText: '',
         );
 
@@ -190,17 +166,6 @@ class _GeneratedActiveModel {
   ) {
     return _entries[_activeInferenceKey(entityId, responseType)]?.snapshot;
   }
-
-  List<Object?>? byEntitySnapshot(String entityId) {
-    for (final responseType in AiResponseType.values) {
-      final snapshot = directSnapshot(entityId, responseType);
-      if (snapshot != null) {
-        return snapshot;
-      }
-    }
-
-    return null;
-  }
 }
 
 extension _AnyGeneratedActiveScenario on glados.Any {
@@ -220,27 +185,24 @@ extension _AnyGeneratedActiveScenario on glados.Any {
       glados.any.choose(_GeneratedActiveOperationKind.values);
 
   glados.Generator<_GeneratedActiveOperation> get activeOperation =>
-      glados.any.combine6(
+      glados.any.combine5(
         activeOperationKind,
         activeEntitySlot,
         activeResponseSlot,
         activePromptSlot,
         activeProgressSlot,
-        glados.any.bool,
         (
           _GeneratedActiveOperationKind kind,
           _GeneratedActiveEntitySlot entitySlot,
           _GeneratedActiveResponseSlot responseSlot,
           _GeneratedActivePromptSlot promptSlot,
           _GeneratedActiveProgressSlot progressSlot,
-          bool linkOtherEntity,
         ) => _GeneratedActiveOperation(
           kind: kind,
           entitySlot: entitySlot,
           responseSlot: responseSlot,
           promptSlot: promptSlot,
           progressSlot: progressSlot,
-          linkOtherEntity: linkOtherEntity,
         ),
       );
 
@@ -273,8 +235,6 @@ List<Object?>? _activeInferenceSnapshot(ActiveInferenceData? data) {
   return [
     data.entityId,
     data.promptId,
-    data.aiResponseType,
-    data.linkedEntityId,
     data.progressText,
   ];
 }
@@ -314,10 +274,7 @@ void main() {
       expect(state, isNull);
 
       // Start inference
-      controller.startInference(
-        promptId: promptId,
-        linkedEntityId: 'linked-entity',
-      );
+      controller.startInference(promptId: promptId);
 
       // Should now have active inference data
       state = container.read(
@@ -329,7 +286,6 @@ void main() {
       expect(state, isNotNull);
       expect(state!.entityId, equals(entityId));
       expect(state.promptId, equals(promptId));
-      expect(state.linkedEntityId, equals('linked-entity'));
       expect(state.progressText, isEmpty);
     });
 
@@ -419,100 +375,6 @@ void main() {
       expect(state, isNull);
     });
 
-    test('ActiveInferenceByEntity should find active inference', () {
-      const entityId = 'test-entity-id';
-      const promptId = 'test-prompt-id';
-      // ignore: deprecated_member_use_from_same_package
-      const responseType = AiResponseType.taskSummary;
-
-      // Initially no active inference
-      var activeInference = container.read(
-        activeInferenceByEntityProvider(entityId),
-      );
-      expect(activeInference, isNull);
-
-      // Start an inference
-      container
-          .read(
-            activeInferenceControllerProvider((
-              entityId: entityId,
-              aiResponseType: responseType,
-            )).notifier,
-          )
-          .startInference(promptId: promptId);
-
-      // Should now find the active inference
-      activeInference = container.read(
-        activeInferenceByEntityProvider(entityId),
-      );
-      expect(activeInference, isNotNull);
-      expect(activeInference!.entityId, equals(entityId));
-      expect(activeInference.promptId, equals(promptId));
-    });
-
-    test('ActiveInferenceByEntity should find inference for linked entity', () {
-      const audioEntityId = 'audio-123';
-      const taskEntityId = 'task-456';
-      const promptId = 'asr-prompt';
-      const responseType = AiResponseType.audioTranscription;
-
-      // Initially no active inference for either entity
-      expect(
-        container.read(activeInferenceByEntityProvider(audioEntityId)),
-        isNull,
-      );
-      expect(
-        container.read(activeInferenceByEntityProvider(taskEntityId)),
-        isNull,
-      );
-
-      // Simulate what unified_ai_controller does: start inference for BOTH entities
-      // This mimics the _startActiveInference helper method behavior
-
-      // 1. Start for primary entity (audio)
-      container
-          .read(
-            activeInferenceControllerProvider((
-              entityId: audioEntityId,
-              aiResponseType: responseType,
-            )).notifier,
-          )
-          .startInference(
-            promptId: promptId,
-            linkedEntityId: taskEntityId,
-          );
-
-      // 2. Also start for linked entity (task) - this is what makes it work!
-      container
-          .read(
-            activeInferenceControllerProvider((
-              entityId: taskEntityId,
-              aiResponseType: responseType,
-            )).notifier,
-          )
-          .startInference(
-            promptId: promptId,
-            linkedEntityId: audioEntityId,
-          );
-
-      // Now BOTH entities should find the active inference
-      final audioInference = container.read(
-        activeInferenceByEntityProvider(audioEntityId),
-      );
-      expect(audioInference, isNotNull);
-      expect(audioInference!.entityId, equals(audioEntityId));
-      expect(audioInference.linkedEntityId, equals(taskEntityId));
-      expect(audioInference.aiResponseType, equals(responseType));
-
-      final taskInference = container.read(
-        activeInferenceByEntityProvider(taskEntityId),
-      );
-      expect(taskInference, isNotNull);
-      expect(taskInference!.entityId, equals(taskEntityId));
-      expect(taskInference.linkedEntityId, equals(audioEntityId));
-      expect(taskInference.aiResponseType, equals(responseType));
-    });
-
     glados.Glados(
       glados.any.activeInferenceScenario,
       glados.ExploreConfig(numRuns: 120),
@@ -536,7 +398,6 @@ void main() {
               case _GeneratedActiveOperationKind.start:
                 controller.startInference(
                   promptId: operation.promptId,
-                  linkedEntityId: operation.linkedEntityId,
                 );
 
               case _GeneratedActiveOperationKind.updateProgress:
@@ -565,24 +426,6 @@ void main() {
                 ),
               ),
               reason: '$scenario after $operation',
-            );
-            expect(
-              _activeInferenceSnapshot(
-                generatedContainer.read(
-                  activeInferenceByEntityProvider(scenario.watchedEntityId),
-                ),
-              ),
-              equals(model.byEntitySnapshot(scenario.watchedEntityId)),
-              reason: '$scenario after $operation',
-            );
-          }
-
-          if (scenario.operations.isEmpty) {
-            expect(
-              generatedContainer.read(
-                activeInferenceByEntityProvider(scenario.watchedEntityId),
-              ),
-              isNull,
             );
           }
         } finally {

@@ -7,12 +7,10 @@ import 'package:super_clipboard/super_clipboard.dart';
 class AiResponseSummaryModalContent extends StatelessWidget {
   const AiResponseSummaryModalContent(
     this.aiResponse, {
-    required this.linkedFromId,
     super.key,
   });
 
   final AiResponseEntry aiResponse;
-  final String? linkedFromId;
 
   Widget _buildInfoRow(
     String label,
