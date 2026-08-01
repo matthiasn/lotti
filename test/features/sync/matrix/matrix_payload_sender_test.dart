@@ -12,10 +12,12 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../agents/test_data/entity_factories.dart';
 
 /// Direct unit coverage for [MatrixPayloadSender]. The owning
 /// `MatrixMessageSender` exercises the higher-level payload methods through its
@@ -522,6 +524,48 @@ void main() {
         reason:
             'the send must abort on the first failure, not push the '
             'manifest that claims those entries were delivered',
+      );
+    });
+  });
+
+  group('enrichAndUploadAgentPayload restores a reclaimed sidecar', () {
+    test('rewrites the file from the inline payload when it is gone', () async {
+      // Sidecar reclamation can take a file while a row referencing it is
+      // still queued: a hard delete and a pending send race by design. The
+      // restore path used to run only when jsonPath was null, so a declared
+      // path with a missing file failed a read that could never succeed and
+      // the row retried until it aged out.
+      final entity = makeTestCapture(id: 'entity-1');
+      final relativePath = relativeAgentEntityPath('entity-1');
+      final file = File('${documentsDirectory.path}$relativePath');
+      expect(
+        file.existsSync(),
+        isFalse,
+        reason: 'The reclaimed sidecar is exactly what is missing.',
+      );
+
+      when(
+        () => room.sendFileEvent(
+          any(),
+          extraContent: any(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'evt-1');
+
+      await payloadSender.enrichAndUploadAgentPayload(
+        room: room,
+        message: SyncMessage.agentEntity(
+          agentEntity: entity,
+          jsonPath: relativePath,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      expect(
+        file.existsSync(),
+        isTrue,
+        reason:
+            'The row still carries the payload inline, so it is rewritten '
+            'rather than the send failing forever.',
       );
     });
   });

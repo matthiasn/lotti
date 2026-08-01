@@ -159,6 +159,19 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
         relativePath: enrichedPath,
         jsonPayload: inlineJson,
       );
+    } else if (enrichedPath != null &&
+        inlineJson != null &&
+        !_payloadExists(enrichedPath)) {
+      // The path is declared but the file is gone. Sidecar reclamation can
+      // take a file while a row referencing it is still queued — a hard
+      // delete and a pending send race by design — and without this the
+      // upload fails on a read that can never succeed, so the row retries
+      // until it ages out. The row still carries the payload inline, so
+      // rewrite the file rather than failing the send.
+      await _savePayloadToDisk(
+        relativePath: enrichedPath,
+        jsonPayload: inlineJson,
+      );
     }
 
     if (enrichedPath == null) {
@@ -223,9 +236,18 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     );
   }
 
-  /// Writes [jsonPayload] to disk at [relativePath] under the documents
-  /// directory, creating parent directories as needed. Used to enrich legacy
-  /// outbox items that lack a `jsonPath`.
+  /// Whether the sidecar at [relativePath] is still on disk.
+  bool _payloadExists(String relativePath) {
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    return File(p.join(documentsDirectory.path, relativeJoined)).existsSync();
+  }
+
+  /// Writes a payload to disk under the documents directory, creating parent
+  /// directories as needed. Used to enrich legacy outbox items that lack a
+  /// `jsonPath`, and to restore a sidecar reclamation removed while a row
+  /// referencing it was still queued.
   Future<void> _savePayloadToDisk({
     required String relativePath,
     required String jsonPayload,
