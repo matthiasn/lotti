@@ -863,7 +863,15 @@ void main() {
           completion(hasLength(kEmbeddingDimensions)),
         );
         releaseFailure.complete();
-        await expectLater(failingRequest, throwsException);
+        await expectLater(
+          failingRequest,
+          throwsA(
+            allOf(
+              isA<Exception>(),
+              isNot(isA<OllamaEmbeddingAvailabilityException>()),
+            ),
+          ),
+        );
 
         final afterConcurrentCompletion = await repository.embed(
           input: 'after concurrent completion',

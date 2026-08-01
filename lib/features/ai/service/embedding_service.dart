@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -40,6 +41,7 @@ class EmbeddingService {
   bool _isProcessing = false;
   bool _stopped = false;
   Future<void>? _inFlightProcessing;
+  Timer? _availabilityRetryTimer;
 
   /// The notification tokens that indicate an embeddable entity was changed.
   static const Set<String> _relevantTokens = {
@@ -64,6 +66,8 @@ class EmbeddingService {
   /// entity completes. In-flight work is awaited to ensure clean shutdown.
   Future<void> stop() async {
     _stopped = true;
+    _availabilityRetryTimer?.cancel();
+    _availabilityRetryTimer = null;
     await _subscription?.cancel();
     _subscription = null;
     _pendingEntityIds.clear();
@@ -85,6 +89,7 @@ class EmbeddingService {
     if (entityIds.isEmpty) return;
 
     _pendingEntityIds.addAll(entityIds);
+    if (_availabilityRetryTimer?.isActive ?? false) return;
     // Only start a new processing future if one isn't already running.
     // Overwriting _inFlightProcessing while _isProcessing is true would
     // cause stop() to await a completed no-op instead of the real work.
@@ -145,7 +150,10 @@ class EmbeddingService {
             'Embedding batch paused because Ollama is unavailable: $e',
             name: 'EmbeddingService',
           );
-          _pendingEntityIds.clear();
+          if (!_stopped) {
+            _pendingEntityIds.add(entityId);
+            _scheduleAvailabilityRetry(e.retryAt);
+          }
           break;
         } catch (e, stackTrace) {
           developer.log(
@@ -168,6 +176,18 @@ class EmbeddingService {
     } finally {
       _isProcessing = false;
     }
+  }
+
+  void _scheduleAvailabilityRetry(DateTime retryAt) {
+    _availabilityRetryTimer?.cancel();
+    final remaining = retryAt.difference(clock.now());
+    final delay = remaining.isNegative ? Duration.zero : remaining;
+    _availabilityRetryTimer = Timer(delay, () {
+      _availabilityRetryTimer = null;
+      if (_stopped || _pendingEntityIds.isEmpty || _isProcessing) return;
+      _inFlightProcessing = _processNext();
+      unawaited(_inFlightProcessing);
+    });
   }
 
   /// Matches UUID format (8-4-4-4-12 hex digits) used for entity IDs.

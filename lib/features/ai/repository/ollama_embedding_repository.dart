@@ -89,9 +89,18 @@ class OllamaEmbeddingRepository {
               ),
           context: 'embedding generation',
         );
-      } on OllamaEmbeddingUnavailableException {
-        _openAvailabilityCooldown(availabilityAttempt);
-        rethrow;
+      } on _OllamaEmbeddingTransportException catch (error, stackTrace) {
+        final retryAt = _openAvailabilityCooldown(availabilityAttempt);
+        if (retryAt == null) {
+          Error.throwWithStackTrace(error, stackTrace);
+        }
+        Error.throwWithStackTrace(
+          OllamaEmbeddingUnavailableException(
+            error.message,
+            retryAt: retryAt,
+          ),
+          stackTrace,
+        );
       } on Object {
         _releaseAvailabilityProbe(availabilityAttempt);
         rethrow;
@@ -204,16 +213,20 @@ class OllamaEmbeddingRepository {
     }
   }
 
-  void _openAvailabilityCooldown(_OllamaAvailabilityAttempt attempt) {
+  DateTime? _openAvailabilityCooldown(_OllamaAvailabilityAttempt attempt) {
     final current = _availabilityBackoff[attempt.baseUrl];
-    if (current == null || current.generation != attempt.generation) return;
+    if (current == null || current.generation != attempt.generation) {
+      return null;
+    }
 
+    final retryAt = clock.now().add(availabilityCooldown);
     current
       ..phase = _OllamaAvailabilityPhase.coolingDown
-      ..retryAt = clock.now().add(availabilityCooldown)
+      ..retryAt = retryAt
       ..outageConfirmed = true
       ..generation = current.generation + 1;
     _completeAvailabilityProbe(current);
+    return retryAt;
   }
 
   void _releaseAvailabilityProbe(_OllamaAvailabilityAttempt attempt) {
@@ -321,12 +334,12 @@ class OllamaEmbeddingRepository {
         if (isTimeout || isNetworkError) {
           if (attempt >= _maxRetries) {
             if (isTimeout) {
-              throw const OllamaEmbeddingUnavailableException(
+              throw const _OllamaEmbeddingTransportException(
                 'Embedding request timed out after $_maxRetries attempts. '
                 'Is the Ollama server running?',
               );
             } else {
-              throw OllamaEmbeddingUnavailableException(
+              throw _OllamaEmbeddingTransportException(
                 'Network error during $context after $_maxRetries attempts. '
                 'Is the Ollama server running?',
               );
@@ -356,14 +369,22 @@ class OllamaEmbeddingRepository {
 /// Base type for Ollama availability failures that should pause optional work.
 sealed class OllamaEmbeddingAvailabilityException implements Exception {
   const OllamaEmbeddingAvailabilityException();
+
+  DateTime get retryAt;
 }
 
 /// A transient Ollama outage confirmed after the repository's retry budget.
 class OllamaEmbeddingUnavailableException
     extends OllamaEmbeddingAvailabilityException {
-  const OllamaEmbeddingUnavailableException(this.message);
+  const OllamaEmbeddingUnavailableException(
+    this.message, {
+    required this.retryAt,
+  });
 
   final String message;
+
+  @override
+  final DateTime retryAt;
 
   @override
   String toString() => message;
@@ -380,6 +401,7 @@ class OllamaEmbeddingCooldownException
     required this.suppressedRequestCount,
   });
 
+  @override
   final DateTime retryAt;
   final int suppressedRequestCount;
 
@@ -394,6 +416,15 @@ class OllamaEmbeddingCooldownException
   String toString() =>
       'Ollama embedding request suppressed during availability cooldown '
       '(count=$suppressedRequestCount, retryAt=${retryAt.toUtc().toIso8601String()})';
+}
+
+class _OllamaEmbeddingTransportException implements Exception {
+  const _OllamaEmbeddingTransportException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }
 
 enum _OllamaAvailabilityPhase { probing, available, coolingDown }

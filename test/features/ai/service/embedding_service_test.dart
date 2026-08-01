@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -846,7 +847,9 @@ void main() {
           ),
         ).thenThrow(
           OllamaEmbeddingCooldownException(
-            retryAt: DateTime.utc(2026, 8, 1, 12, 5),
+            retryAt: clock.now().add(
+              OllamaEmbeddingRepository.availabilityCooldown,
+            ),
             suppressedRequestCount: 1,
           ),
         );
@@ -870,7 +873,7 @@ void main() {
       });
     });
 
-    test('stops the current batch when Ollama becomes unavailable', () {
+    test('preserves and retries the current batch after an Ollama outage', () {
       fakeAsync((async) {
         const entityId2 = 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee';
         final entry1 = JournalEntry(
@@ -887,17 +890,25 @@ void main() {
         when(
           () => mockJournalDb.journalEntityById(entityId2),
         ).thenAnswer((_) async => entry2);
+        var embedCallCount = 0;
         when(
           () => mockEmbeddingRepo.embed(
             input: any(named: 'input'),
             baseUrl: any(named: 'baseUrl'),
             model: any(named: 'model'),
           ),
-        ).thenThrow(
-          const OllamaEmbeddingUnavailableException(
-            'Ollama transport retries exhausted',
-          ),
-        );
+        ).thenAnswer((_) async {
+          embedCallCount++;
+          if (embedCallCount == 1) {
+            throw OllamaEmbeddingUnavailableException(
+              'Ollama transport retries exhausted',
+              retryAt: clock.now().add(
+                OllamaEmbeddingRepository.availabilityCooldown,
+              ),
+            );
+          }
+          return _fakeEmbedding();
+        });
 
         service.start();
         sendAndProcess(
@@ -905,14 +916,34 @@ void main() {
           {_entityId, entityId2, textEntryNotification},
         );
 
+        expect(embedCallCount, 1);
+        verifyNever(() => mockJournalDb.journalEntityById(entityId2));
+
+        async
+          ..elapse(OllamaEmbeddingRepository.availabilityCooldown)
+          ..flushMicrotasks();
+
+        expect(embedCallCount, 3);
+        verify(() => mockJournalDb.journalEntityById(entityId2)).called(1);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: any(named: 'entityId'),
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        ).called(2);
         verify(
           () => mockEmbeddingRepo.embed(
             input: any(named: 'input'),
             baseUrl: any(named: 'baseUrl'),
             model: any(named: 'model'),
           ),
-        ).called(1);
-        verifyNever(() => mockJournalDb.journalEntityById(entityId2));
+        ).called(3);
 
         stopInZone(async);
       });
