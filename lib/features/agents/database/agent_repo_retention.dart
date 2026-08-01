@@ -28,7 +28,15 @@ class AgentRepoRetention {
 
   final AgentDatabase _db;
 
-  /// Deletes day-status events created before [cutoff].
+  /// Deletes day-status events created before [cutoff], **keeping the newest
+  /// one per day**.
+  ///
+  /// The newest event is not residue: `dayAgentPersonaProvider` reads it to
+  /// decide how a day is presented, so deleting every event for an old day
+  /// silently changes what that day looks like when the user scrolls back.
+  /// Keeping one row per day still turns an unbounded pile into a bounded
+  /// one — the events are raised several times a day, and only the last is
+  /// read after the digest has consumed them.
   Future<int> pruneDayStatusEventsBefore(
     DateTime cutoff, {
     required int batchSize,
@@ -37,8 +45,14 @@ class AgentRepoRetention {
     maxBatches: maxBatches,
     run: () => _db.customUpdate(
       'DELETE FROM agent_entities WHERE id IN ( '
-      'SELECT id FROM agent_entities '
-      'WHERE type = ?1 AND created_at < ?2 LIMIT ?3)',
+      'SELECT e.id FROM agent_entities AS e '
+      'WHERE e.type = ?1 AND e.created_at < ?2 '
+      'AND EXISTS ( '
+      '  SELECT 1 FROM agent_entities AS newer '
+      '  WHERE newer.type = ?1 AND newer.subtype = e.subtype '
+      '  AND (newer.created_at > e.created_at '
+      '       OR (newer.created_at = e.created_at AND newer.id > e.id)) '
+      ') LIMIT ?3)',
       variables: [
         const Variable<String>(AgentEntityTypes.dayStatusEvent),
         Variable<DateTime>(cutoff),

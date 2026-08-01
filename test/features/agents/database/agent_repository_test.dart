@@ -7117,13 +7117,16 @@ void main() {
     // agent_repo_retention_test.dart; what the facade adds is the wiring, so
     // this goes through the facade against a real database.
     test('pruneDayStatusEventsBefore reaches the store', () async {
-      await repo.upsertEntity(
-        makeTestDayStatusEvent(
-          id: 'ancient',
-          raisedAt: DateTime(2020),
-          createdAt: DateTime(2020),
-        ),
-      );
+      // Two, so one is prunable — each day's newest event is kept.
+      for (final (id, hour) in [('ancient', 1), ('ancient-newer', 2)]) {
+        await repo.upsertEntity(
+          makeTestDayStatusEvent(
+            id: id,
+            raisedAt: DateTime(2020, 1, 1, hour),
+            createdAt: DateTime(2020, 1, 1, hour),
+          ),
+        );
+      }
 
       expect(
         await repo.pruneDayStatusEventsBefore(

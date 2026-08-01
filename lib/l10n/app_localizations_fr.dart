@@ -3700,6 +3700,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextActivityRetryLoad => 'Recharger';
 
   @override
+  String get dailyOsNextActivityRetryStep => 'Réessayer';
+
+  @override
   String get dailyOsNextActivitySaved => 'Enregistré localement';
 
   @override

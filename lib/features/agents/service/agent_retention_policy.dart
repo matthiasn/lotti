@@ -1,4 +1,3 @@
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 
@@ -137,9 +136,8 @@ class AgentRetentionPolicy {
   /// returning from a long absence would re-insert exactly what every device
   /// had agreed to forget, only for the next sweep to remove it again.
   ///
-  /// Age is the only bound applicable here: a count is a property of the store
-  /// as a whole, which one inbound row cannot be judged against, and the sweep
-  /// re-imposes it on the next start.
+  /// Age is the only bound that exists today; see [horizonFor] for what is and
+  /// is not swept.
   bool isBeyondHorizon({
     required AgentDomainEntity entity,
     required DateTime createdAt,
@@ -150,10 +148,3 @@ class AgentRetentionPolicy {
     return createdAt.isBefore(now.subtract(horizon));
   }
 }
-
-/// Subtype under which observation messages are stored (`AgentMessageKind`
-/// serializes to the `subtype` column).
-final String observationSubtype = AgentMessageKind.observation.name;
-
-/// Entity type whose rows the age sweep targets directly.
-const String dayStatusEventType = AgentEntityTypes.dayStatusEvent;

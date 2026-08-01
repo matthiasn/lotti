@@ -57,6 +57,38 @@ void main() {
       expect(await idsOfType('day_status_event'), ['recent']);
     });
 
+    test(
+      "keeps each day's newest event, which decides how it is shown",
+      () async {
+        // dayAgentPersonaProvider reads the newest event for a day to decide
+        // its presentation, so clearing a day entirely changes what the user
+        // sees when they scroll back to it.
+        for (final (id, hours) in [('old-1', 5), ('old-2', 3), ('newest', 1)]) {
+          await core.upsertEntity(
+            makeTestDayStatusEvent(
+              id: id,
+              dayId: 'dayplan-2025-01-01',
+              raisedAt: now.subtract(Duration(days: 200, hours: hours)),
+              createdAt: now.subtract(Duration(days: 200, hours: hours)),
+            ),
+          );
+        }
+
+        final pruned = await retention.pruneDayStatusEventsBefore(
+          now.subtract(const Duration(days: 90)),
+          batchSize: 10,
+          maxBatches: 5,
+        );
+
+        expect(pruned, 2);
+        expect(
+          await idsOfType('day_status_event'),
+          ['newest'],
+          reason: 'One row per day is bounded; zero rows per day is lossy.',
+        );
+      },
+    );
+
     test('never touches the day plan the events describe', () async {
       final plan = makeTestDayPlan(
         id: 'day_agent_plan:dayplan-2020-01-01',
@@ -65,13 +97,16 @@ void main() {
         createdAt: DateTime(2020),
       );
       await core.upsertEntity(plan);
-      await core.upsertEntity(
-        makeTestDayStatusEvent(
-          id: 'ancient',
-          raisedAt: DateTime(2020),
-          createdAt: DateTime(2020),
-        ),
-      );
+      // Two, so one is prunable — a day's newest event is kept on purpose.
+      for (final (id, hour) in [('ancient', 1), ('ancient-newer', 2)]) {
+        await core.upsertEntity(
+          makeTestDayStatusEvent(
+            id: id,
+            raisedAt: DateTime(2020, 1, 1, hour),
+            createdAt: DateTime(2020, 1, 1, hour),
+          ),
+        );
+      }
 
       await retention.pruneDayStatusEventsBefore(
         now,
@@ -79,7 +114,7 @@ void main() {
         maxBatches: 5,
       );
 
-      expect(await idsOfType('day_status_event'), isEmpty);
+      expect(await idsOfType('day_status_event'), ['ancient-newer']);
       expect(
         await idsOfType('day_plan'),
         [plan.id],

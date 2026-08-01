@@ -295,12 +295,18 @@ void main() {
             'Not yet bounded. When the observation sweep lands this assertion '
             'inverts, which is the point of stating it.',
       );
+      // Not flat, and deliberately so: each day's newest event is kept
+      // because the persona provider reads it, so retention turns
+      // `statusEventsPerDay` rows per day into exactly one. Growth is
+      // therefore linear in days at 1/day rather than 6/day — a 6x
+      // reduction, not elimination, and the gate says which.
+      final extraDays =
+          dayPlannerBenchmarkCorpora['12 months']! -
+          dayPlannerBenchmarkCorpora['6 months']!;
       expect(
-        twelveMonths['day_status_event'],
-        sixMonths['day_status_event'],
-        reason:
-            'Both corpora keep exactly the 90-day window, so a longer '
-            'install does not mean more retained status events.',
+        twelveMonths['day_status_event']! - sixMonths['day_status_event']!,
+        extraDays,
+        reason: 'One retained event per aged-out day, not six.',
       );
       expect(
         twelveMonths['day_status_event'],
@@ -308,6 +314,7 @@ void main() {
           dayPlannerBenchmarkCorpora['12 months']! *
               DayPlannerCorpus.statusEventsPerDay,
         ),
+        reason: 'Still far below the unpruned pile.',
       );
     },
     timeout: const Timeout(Duration(minutes: 2)),

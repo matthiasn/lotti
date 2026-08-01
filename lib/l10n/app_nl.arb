@@ -1840,6 +1840,7 @@
   "dailyOsNextActivityAgentJobSetupRequired": "Er is nog geen AI-model ingesteld voor plannen.",
   "dailyOsNextActivityAgentJobTemporary": "De AI-dienst was bezet of niet bereikbaar.",
   "dailyOsNextActivityOpenAiSetup": "Daily OS-instellingen openen",
+  "dailyOsNextActivityRetryStep": "Opnieuw proberen",
   "dailyOsNextAgendaCapacityComfortable": "Comfortabel",
   "dailyOsNextAgendaCapacityNearFull": "Bijna vol",
   "dailyOsNextAgendaCapacityNoPlan": "Nog geen plan",

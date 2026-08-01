@@ -6149,6 +6149,12 @@ abstract class AppLocalizations {
   /// **'Try loading again'**
   String get dailyOsNextActivityRetryLoad;
 
+  /// Retry button on a stalled agent job (no transcription involved).
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get dailyOsNextActivityRetryStep;
+
   /// No description provided for @dailyOsNextActivitySaved.
   ///
   /// In en, this message translates to:

@@ -1677,6 +1677,7 @@
   "dailyOsNextActivityReady": "Připraveno k použití",
   "dailyOsNextActivityRetry": "Zkusit přepis znovu",
   "dailyOsNextActivityRetryLoad": "Zkusit načíst znovu",
+  "dailyOsNextActivityRetryStep": "Zkusit znovu",
   "dailyOsNextActivitySaved": "Uloženo místně",
   "dailyOsNextActivitySetupRequired": "Nahrávka je v bezpečí. Nastav model pro přepis zvuku a pak to zkus znovu.",
   "dailyOsNextActivitySubmitted": "Přidáno ke dni",

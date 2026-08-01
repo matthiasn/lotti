@@ -321,7 +321,18 @@ precisely in the came-back-after-a-break case the collapse exists to serve.
 
 The sweep therefore takes the *earlier* of the age cutoff and that watermark. A
 stalled digest holds retention back rather than losing what it has yet to read,
-and a store where no digest has ever completed prunes nothing at all.
+and a store where no digest has ever completed prunes nothing at all. Each day's
+**newest** event is kept regardless: `dayAgentPersonaProvider` reads it to decide
+how that day is presented, so clearing a day entirely would silently change what
+the user sees on scrolling back.
+
+The **ingest guard does not consult the watermark** and drops an inbound event
+purely on age. That is deliberate asymmetry: the guard exists to stop a
+returning peer re-inserting what every device already agreed to forget, and a
+row this device would immediately re-delete is not worth materializing. The
+consequence — a peer can deliver an old event this device has not consumed and
+it is dropped — is bounded by the same window the sweep protects, and the
+alternative is a per-row watermark read on the sync hot path.
 
 ## Why observations are classified but not swept
 

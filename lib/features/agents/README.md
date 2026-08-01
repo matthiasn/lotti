@@ -65,51 +65,18 @@ lib/features/agents/
 
 ## What the store forgets, and what it never forgets
 
-Agents write two kinds of row into the same store. **The user's own material** —
-captures, day plans, day summaries, directives, durable knowledge, reports and
-personalities — is never deleted by age or volume, however old it gets. **The
-machine's working residue** — the status events it raises, the observations it
-writes about itself — is what retention exists to bound, because the coordinator
-is long-lived and writes on every wake, forever.
+**The user's own material is never deleted by retention** — captures, plans, day
+summaries, directives, saved knowledge, reports and personalities are kept for
+good, as are weekly totals, run history and ratings, and the record behind every
+suggestion accepted or rejected.
 
-| Row | Kept |
-|-----|------|
-| Captures, plans, summaries, directives, knowledge, reports, souls | Forever |
-| Weekly rollups | Forever — ~52 rows a year, and the digest's only trend source |
-| Per-wake token usage | Forever — the template page totals it over all time |
-| Wake-run history | Forever — it carries lifetime counts the app displays and the ratings the user gave |
-| Proposal audit trail (change sets, decisions, attention claims) | Forever |
-| Day-status events | 90 days |
+What the app does forget is the machine's own working residue. Today that means
+day-status events older than ninety days, keeping each day's last one. Tidying
+runs in the background after start-up and is safe to interrupt.
 
-**Observations are classified as bounded but are not swept yet.** They sit
-inside the agent's causal message graph — the links between messages, the
-pointer to each agent's latest one, and shared content payloads referenced by
-link rather than by the message itself. Removing one safely means answering what
-happens to each of those, which is its own change rather than another delete.
-
-What may be forgotten is decided by a classification that is **exhaustive over
-the entity model**, so a new kind of row does not compile until someone says
-what happens to it — a wildcard would let new machine-derived rows start
-accumulating with no test and no compiler failure.
-
-**Across devices it is a hard delete with no tombstone.** A tombstone per pruned
-row would grow the sync payload in the exact dimension retention exists to
-shrink, and there is nothing to converge on — every device applies the same rule
-to the same synced rows and reaches the same conclusion independently. A device
-that has been offline past the window comes back carrying rows the others
-already forgot; those are dropped on arrival rather than re-materialized. A row
-sitting exactly on the boundary may survive a few hours longer on one device
-than another, which for observational data is invisible.
-
-The sweep runs once per start, off the path to a ready app, in bounded batches.
-It is safe to interrupt: the policy is a pure function of the store's contents,
-so a pass cut short leaves rows for next time and a pass that runs twice removes
-nothing the second time.
-
-**Day-agent identities are deliberately left to accumulate** — roughly one per
-day of use. Each is tiny and permanently cold, and merging or archiving them
-would cost the property that makes them worth having: a day's history stays
-addressable by its own id forever.
+The policy, what is deliberately kept and why, how it behaves across devices,
+and what is still classified but not yet swept are in
+[agent persistence and sync](../../../knowledge/features/agents/persistence-and-sync.md).
 
 ## How it works
 
