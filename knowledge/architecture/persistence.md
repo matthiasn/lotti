@@ -94,7 +94,28 @@ flowchart TD
   the UI isolate. It is set to `false` only when opening from an actor isolate,
   where nesting isolates would be wrong.
 - **`readPool` offloads heavy reads** to read-only isolates. It only takes
-  effect when `background` is true.
+  effect when `background` is true, and `inMemoryDatabase: true` bypasses it —
+  a test that wants to exercise a pool must be file-backed.
+
+  | Database | `readPool` |
+  |----------|-----------:|
+  | `db.sqlite` | 4 |
+  | `agent.sqlite` | 2 |
+  | `sync.sqlite` | 2 |
+  | others | 0 |
+
+  `sync.sqlite` ran at 0 until 2026-08. Being single-isolate is what produced
+  its convoy signature: at `2026-07-01T19:29:48` nine queries that all *started*
+  within one second all *finished* within 150 ms of each other, at 25.7 s,
+  25.7 s, 25.7 s, 24.8 s, 15.1 s… They waited together and released together —
+  queue-behind-a-writer, not slow plans. The clearest single proof was
+  `queue_markers WHERE room_id = ?`, a single-row lookup on a unique index
+  averaging **2.8 s**, which no plan change could fix. The dense cluster of
+  maxima at ~5,069 ms across unrelated shapes is `busy_timeout` being hit.
+
+  Only reads *outside* a transaction reach the pool; drift keeps writes and
+  whole transactions on the single write executor, which is what preserves
+  read-your-writes inside one.
 - **Pragmas are applied per connection** through the `setup` callback, so read-
   pool isolates inherit them:
 

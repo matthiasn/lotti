@@ -64,10 +64,32 @@ class SyncDatabase extends _$SyncDatabase
         _SyncDbSequenceLog,
         _SyncDbBackfill,
         _SyncDbSequenceLifecycle {
+  /// [readPool] gives reads their own isolates so they stop queueing behind
+  /// the outbox writer.
+  ///
+  /// `sync.sqlite` was the only hot database still on a single isolate
+  /// (`db.sqlite` uses 4, `agent.sqlite` 2), which is what produced the convoy
+  /// signature in the 2026-06/07 slow-query logs: at 2026-07-01T19:29:48 nine
+  /// queries that all *started* within one second all *finished* within 150 ms
+  /// of each other, at 25.7 s, 25.7 s, 25.7 s, 24.8 s, 15.1 s… They waited
+  /// together and released together — queue-behind-a-writer, not slow plans.
+  /// The clearest proof is `queue_markers WHERE room_id = ?`, a single-row
+  /// lookup on a unique index averaging 2.8 s: no plan change can fix that.
+  ///
+  /// Safe because every connection is opened in WAL mode with the same pragmas
+  /// (`setup` runs per connection, so pool isolates inherit them), and drift
+  /// keeps writes and transactions on the single write executor — only reads
+  /// outside a transaction are routed to the pool.
+  ///
+  /// Sized at 2 rather than `db.sqlite`'s 4: the sync reads are small and
+  /// frequent rather than heavy, so this is about removing the head-of-line
+  /// block, not about parallel scan throughput.
+  /// See `docs/perf/2026-08-01_slow-queries-investigation.md`.
   SyncDatabase({
     this.inMemoryDatabase = false,
     String? overriddenFilename,
     bool background = true,
+    int readPool = 2,
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
   }) : super(
@@ -75,6 +97,7 @@ class SyncDatabase extends _$SyncDatabase
            overriddenFilename ?? syncDbFileName,
            inMemoryDatabase: inMemoryDatabase,
            background: background,
+           readPool: readPool,
            documentsDirectoryProvider: documentsDirectoryProvider,
            tempDirectoryProvider: tempDirectoryProvider,
          ),
