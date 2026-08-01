@@ -171,14 +171,26 @@ there is no queue to look full.
   this exact measurement with the database entirely idle;
 - platform-level throttling of a backgrounded app.
 
-Distinguishing them needs evidence this log cannot provide: app-lifecycle
-transitions, the platform and clock source, and transaction begin/commit
-boundaries. Comparing wall clock against the monotonic timer specifically does
-**not** do it — that was built and abandoned (#3724, closed unmerged), because
-the skew is ~0 whenever the clock source already includes the lost time.
+Distinguishing them needs evidence this log cannot provide:
 
-These two events contribute 1,356 s. Exclude them when aggregating, and do not
-treat them as explained.
+- **executor-side timing** — the elapsed time measured *inside* the database
+  isolate, around the statement itself. That is the only thing that separates
+  "the database was busy" from "the caller never resumed": the current number
+  brackets both and cannot tell them apart. Everything else below only narrows
+  the remaining candidates.
+- app-lifecycle transitions, and the platform and clock source, for suspend;
+- transaction begin/commit boundaries, for contention.
+
+Comparing wall clock against the monotonic timer specifically does **not** do
+it — that was built and abandoned (#3724, closed unmerged), because the skew is
+~0 whenever the clock source already includes the lost time.
+
+These two events contribute 1,356 s. **Exclude them when ranking query shapes**,
+where they say nothing about any query: both landed on a read whose p95 is
+2.1 s, and leaving them in makes a since-deleted query rank #1 across the
+corpus. **Do not drop them from latency or user-impact totals** — they are two
+genuine measured 7–15 minute waits that something produced, and the cause being
+unidentified is not a reason to erase them.
 
 ## What the April remedies achieved
 
