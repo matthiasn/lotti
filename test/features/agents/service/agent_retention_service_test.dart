@@ -79,6 +79,57 @@ void main() {
     ).called(1);
   });
 
+  test('takes the newest marker regardless of the order returned', () async {
+    // Nothing in getMessagesByKind promises newest-first, and depending on it
+    // would make the watermark quietly wrong rather than loudly broken.
+    final older = now.subtract(const Duration(days: 200));
+    final newer = now.subtract(const Duration(days: 100));
+    when(
+      () => repository.getMessagesByKind(
+        dailyOsPlannerAgentId,
+        AgentMessageKind.system,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        for (final at in [older, newer, older])
+          makeTestMessage(
+            kind: AgentMessageKind.system,
+            createdAt: at,
+            metadata: const AgentMessageMetadata(
+              milestone: AgentMilestone.dailyWakeCompleted,
+            ),
+          ),
+      ],
+    );
+
+    await withClock(Clock.fixed(now), service.sweep);
+
+    const policy = AgentRetentionPolicy();
+    verify(
+      () => repository.pruneDayStatusEventsBefore(
+        newer.subtract(const Duration(hours: 12)),
+        batchSize: policy.batchSize,
+        maxBatches: policy.maxBatchesPerSweep,
+      ),
+    ).called(1);
+  });
+
+  test('reads the whole system log, not a fixed page', () async {
+    // The coordinator writes other system messages between digests, so a
+    // capped page can push the real milestone out of view while scheduling is
+    // stalled — and a missing marker floors the cutoff at the epoch, which
+    // stops retention silently.
+    await withClock(Clock.fixed(now), service.sweep);
+
+    verify(
+      () => repository.getMessagesByKind(
+        dailyOsPlannerAgentId,
+        AgentMessageKind.system,
+      ),
+    ).called(1);
+  });
+
   test('never prunes past what the digest has consumed', () async {
     // A digest that failed or stayed pending for longer than the retention
     // window would otherwise find its backlog already deleted — silently, and

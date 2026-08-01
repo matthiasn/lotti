@@ -57,6 +57,41 @@ void main() {
       expect(await idsOfType('day_status_event'), ['recent']);
     });
 
+    test('keeps the newest event per agent, not per day alone', () async {
+      // Two agents can raise events for the same day. Without agent_id in the
+      // correlated lookup, the newer agent's event licenses deleting the
+      // other agent's last one — and that day would then be presented from
+      // nothing on the second agent's behalf.
+      for (final (id, agentId, hours) in [
+        ('a-old', 'day_agent:one', 5),
+        ('a-newest', 'day_agent:one', 4),
+        ('b-only', 'day_agent:two', 1),
+      ]) {
+        await core.upsertEntity(
+          makeTestDayStatusEvent(
+            id: id,
+            agentId: agentId,
+            dayId: 'dayplan-2025-01-01',
+            raisedAt: now.subtract(Duration(days: 200, hours: hours)),
+            createdAt: now.subtract(Duration(days: 200, hours: hours)),
+          ),
+        );
+      }
+
+      final pruned = await retention.pruneDayStatusEventsBefore(
+        now.subtract(const Duration(days: 90)),
+        batchSize: 10,
+        maxBatches: 5,
+      );
+
+      expect(pruned, 1);
+      expect(
+        await idsOfType('day_status_event'),
+        ['a-newest', 'b-only'],
+        reason: 'Each agent keeps its own newest event for the day.',
+      );
+    });
+
     test(
       "keeps each day's newest event, which decides how it is shown",
       () async {

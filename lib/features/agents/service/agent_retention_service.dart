@@ -55,19 +55,31 @@ class AgentRetentionService {
   /// which prunes nothing.
   Future<DateTime> _watermarkFloored(DateTime cutoff) async {
     try {
+      // Unbounded: the coordinator writes other system messages between
+      // digests — wake bookkeeping, fork joins — so a fixed page can push the
+      // real milestone out of view while scheduling is stalled. Reading no
+      // marker floors the cutoff at the epoch and retention then prunes
+      // nothing at all, which is a silent stall rather than a safe default.
       final markers = await repository.getMessagesByKind(
         dailyOsPlannerAgentId,
         AgentMessageKind.system,
-        limit: 50,
       );
+      // Max rather than first: nothing in `getMessagesByKind` promises an
+      // order, and depending on one would make the watermark quietly wrong
+      // rather than loudly broken.
+      DateTime? newest;
       for (final marker in markers) {
-        if (marker.metadata.milestone == AgentMilestone.dailyWakeCompleted) {
-          final watermark = marker.createdAt.subtract(_digestSyncLagSlack);
-          return watermark.isBefore(cutoff) ? watermark : cutoff;
+        if (marker.metadata.milestone != AgentMilestone.dailyWakeCompleted) {
+          continue;
+        }
+        if (newest == null || marker.createdAt.isAfter(newest)) {
+          newest = marker.createdAt;
         }
       }
       // No digest has ever completed, so nothing has been consumed.
-      return DateTime.fromMillisecondsSinceEpoch(0);
+      if (newest == null) return DateTime.fromMillisecondsSinceEpoch(0);
+      final watermark = newest.subtract(_digestSyncLagSlack);
+      return watermark.isBefore(cutoff) ? watermark : cutoff;
     } catch (e, s) {
       domainLogger.error(
         LogDomain.agentRuntime,

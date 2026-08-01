@@ -37,6 +37,16 @@ class AgentRepoRetention {
   /// Keeping one row per day still turns an unbounded pile into a bounded
   /// one — the events are raised several times a day, and only the last is
   /// read after the digest has consumed them.
+  ///
+  /// `subtype` holds the **day id** for a status event, so the correlated
+  /// lookup is already per day. It is scoped by `agent_id` as well: two agents
+  /// can raise events for the same day, and without that scoping one agent's
+  /// newer event would license deleting another agent's last one.
+  ///
+  /// Both sides carry `deleted_at IS NULL` so the predicate matches the
+  /// `idx_agent_entities_active_type_sub_created_id` partial index. Without it
+  /// SQLite falls back to the broad `idx_agent_entities_type` and every batch
+  /// rescans the whole status-event history — twenty times per sweep.
   Future<int> pruneDayStatusEventsBefore(
     DateTime cutoff, {
     required int batchSize,
@@ -47,9 +57,12 @@ class AgentRepoRetention {
       'DELETE FROM agent_entities WHERE id IN ( '
       'SELECT e.id FROM agent_entities AS e '
       'WHERE e.type = ?1 AND e.created_at < ?2 '
+      'AND e.deleted_at IS NULL '
       'AND EXISTS ( '
       '  SELECT 1 FROM agent_entities AS newer '
       '  WHERE newer.type = ?1 AND newer.subtype = e.subtype '
+      '  AND newer.agent_id = e.agent_id '
+      '  AND newer.deleted_at IS NULL '
       '  AND (newer.created_at > e.created_at '
       '       OR (newer.created_at = e.created_at AND newer.id > e.id)) '
       ') LIMIT ?3)',

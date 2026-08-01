@@ -313,6 +313,19 @@ void main() {
           AgentRetentionClass.observation,
     };
 
+    // AgentDomainEntity is a freezed union with value equality, so an entry
+    // that happens to equal an existing one would collapse silently and this
+    // loop would assert one fewer variant — in the one test that guards
+    // classification coverage. Pin the count so that shrink is a failure.
+    expect(
+      expected.length,
+      34,
+      reason:
+          'One entry per classify branch, plus a second agentMessage for the '
+          'observation/other split. Update deliberately when a variant is '
+          'added.',
+    );
+
     for (final entry in expected.entries) {
       expect(
         policy.classify(entry.key),
