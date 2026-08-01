@@ -78,28 +78,6 @@ InputDecoration createDialogInputDecoration({
   }
 }
 
-const switchDecoration = InputDecoration(
-  border: InputBorder.none,
-);
-
-const inputSpacer = SizedBox(
-  height: SpacingConstants.inputSpacerHeight,
-);
-const inputSpacerSmall = SizedBox(
-  height: SpacingConstants.inputSpacerSmallHeight,
-);
-
-TextStyle choiceChipTextStyle({
-  required ThemeData themeData,
-  required bool isSelected,
-}) => TextStyle(
-  fontSize: fontSizeMedium,
-  fontWeight: TypographyConstants.bodyFontWeight,
-  color: isSelected
-      ? themeData.colorScheme.onSecondary
-      : themeData.colorScheme.secondary,
-);
-
 const chartTooltipStyle = TextStyle(
   fontSize: fontSizeSmall,
   fontWeight: TypographyConstants.bodyFontWeight,
@@ -123,25 +101,6 @@ const appBarTextStyleNewLarge = TextStyle(
 const settingsCardTextStyle = TextStyle(
   fontSize: fontSizeLarge,
   fontWeight: TypographyConstants.bodyFontWeight,
-);
-
-const titleStyle = TextStyle(
-  fontSize: fontSizeLarge,
-  fontWeight: TypographyConstants.bodyFontWeight,
-);
-
-const taskTitleStyle = TextStyle(
-  fontSize: fontSizeLarge,
-);
-
-const chartTitleStyle = TextStyle(
-  fontSize: fontSizeMedium,
-  fontWeight: FontWeight.w400, // Slightly bolder
-);
-
-const habitTitleStyle = TextStyle(
-  fontSize: fontSizeMediumLarge,
-  fontWeight: FontWeight.w400, // Slightly bolder
 );
 
 // Utility style for monospaced, tabular-digit text with adjustable size.
@@ -206,8 +165,6 @@ const badgeStyle = TextStyle(
   fontSize: fontSizeSmall,
   fontFeatures: numericBadgeFontFeatures,
 );
-
-const settingsIconSize = 26.0; // Slightly larger
 
 const habitCompletionHeaderStyle = TextStyle(
   fontSize: 22, // Increased

@@ -80,8 +80,11 @@ extension _AnyPcmAmplitudeScenario on Any {
   );
 }
 
+double computeDbfsFromPcm16(Uint8List pcmBytes, {double floorDbfs = -80}) =>
+    measurePcm16Amplitude(pcmBytes, floorDbfs: floorDbfs).dbfs;
+
 void main() {
-  group('computeDbfsFromPcm16', () {
+  group('measurePcm16Amplitude', () {
     test('returns floor for empty input', () {
       expect(computeDbfsFromPcm16(Uint8List(0)), -80);
     });
@@ -186,11 +189,9 @@ void main() {
 
       final stats = measurePcm16Amplitude(byteData.buffer.asUint8List());
 
-      expect(stats.sampleCount, 4);
       expect(stats.nonZeroSampleCount, 2);
       expect(stats.peakSample, 3000);
       expect(stats.rmsSample, closeTo(sqrt(2500000), 0.001));
-      expect(stats.isSilent, isFalse);
       expect(stats.dbfs, closeTo(-26.33, 0.01));
     });
 

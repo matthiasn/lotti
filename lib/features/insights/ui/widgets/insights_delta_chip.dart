@@ -3,13 +3,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Percent change from [previous] to [current], rounded. Null when there is
-/// no previous baseline to divide by (`previous == 0`).
-int? insightsDeltaPercent(int current, int previous) {
-  if (previous == 0) return null;
-  return ((current - previous) / previous * 100).round();
-}
-
 /// Whether a rising value is good, bad, or neither — which decides the accent
 /// colour a [InsightsDeltaChip] paints the change (the arrow/sign always show
 /// the true direction regardless).

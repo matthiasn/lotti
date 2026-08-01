@@ -62,29 +62,6 @@ void main() {
       expect(meta.createdAt, DateTime.utc(2026, 6, 4, 8, 1));
       expect(meta.capturedAt, DateTime.utc(2026, 6, 4, 8));
     });
-
-    test('prefers explicit day identity and derives only for legacy data', () {
-      expect(
-        captureEventDayId(
-          captureEventMeta(
-            _capture(
-              'selected-day',
-              capturedAt: DateTime(2026, 6, 4, 23),
-              dayId: 'dayplan-2026-06-05',
-            ),
-          ),
-        ),
-        'dayplan-2026-06-05',
-      );
-      expect(
-        captureEventDayId(
-          captureEventMeta(
-            _capture('legacy', capturedAt: DateTime(2026, 6, 4, 23)),
-          ),
-        ),
-        'dayplan-2026-06-04',
-      );
-    });
   });
 
   group('captureInlineContent', () {

@@ -1,8 +1,6 @@
 import 'package:timezone/timezone.dart' as tz;
 
 extension DateUtilsExtension on DateTime {
-  DateTime get dayAtNoon => DateTime(year, month, day, 12);
-
   DateTime get dayAtMidnight => DateTime(year, month, day);
 
   /// Removes the time while retaining this value's timezone semantics.

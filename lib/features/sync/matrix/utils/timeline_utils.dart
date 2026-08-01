@@ -1,30 +1,4 @@
-import 'dart:math' as math;
-
 import 'package:matrix/matrix.dart';
-
-/// Computes a jittered exponential backoff.
-Duration computeExponentialBackoff(
-  int attempts, {
-  Duration base = const Duration(milliseconds: 200),
-  Duration max = const Duration(seconds: 10),
-  double jitterFraction = 0.2,
-  math.Random? random,
-}) {
-  final baseMs = base.inMilliseconds;
-  final maxMs = max.inMilliseconds;
-  final raw = baseMs * math.pow(2, attempts);
-  final clamped = raw.clamp(baseMs.toDouble(), maxMs.toDouble());
-  if (jitterFraction == 0) {
-    return Duration(milliseconds: clamped.round());
-  }
-  final rnd = random ?? math.Random();
-  final jitter = 1 + (jitterFraction * (rnd.nextDouble() * 2 - 1));
-  final jittered = (clamped * jitter).clamp(
-    baseMs.toDouble(),
-    maxMs.toDouble(),
-  );
-  return Duration(milliseconds: jittered.round());
-}
 
 /// Finds the last index of an event by its ID in an ordered list, or -1.
 int findLastIndexByEventId(List<Event> ordered, String? id) {

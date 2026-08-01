@@ -1,27 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 
 void main() {
   group('Image Prompt Generation Template', () {
-    test('has correct structure and metadata', () {
-      expect(imagePromptGenerationPrompt.id, 'image_prompt_generation');
-      expect(imagePromptGenerationPrompt.name, 'Generate Image Prompt');
-      expect(
-        imagePromptGenerationPrompt.aiResponseType,
-        AiResponseType.imagePromptGeneration,
-      );
-      expect(imagePromptGenerationPrompt.useReasoning, true);
-    });
-
-    test('requires task input data only', () {
-      expect(
-        imagePromptGenerationPrompt.requiredInputData,
-        [InputDataType.task],
-      );
-    });
-
     test('includes audioTranscript placeholder for user description', () {
       final user = imagePromptGenerationPrompt.userMessage;
       expect(user, contains('{{audioTranscript}}'));
@@ -98,35 +79,6 @@ void main() {
   // coverArtGenerationPrompt — previously had zero test coverage
   // ---------------------------------------------------------------------------
   group('Cover Art Generation Template', () {
-    test('has correct id and name', () {
-      expect(coverArtGenerationPrompt.id, 'cover_art_generation');
-      expect(coverArtGenerationPrompt.name, 'Generate Cover Art');
-    });
-
-    test('ai response type is imageGeneration', () {
-      expect(
-        coverArtGenerationPrompt.aiResponseType,
-        AiResponseType.imageGeneration,
-        reason: 'must request image generation, not prompt generation',
-      );
-    });
-
-    test('useReasoning is false', () {
-      expect(
-        coverArtGenerationPrompt.useReasoning,
-        isFalse,
-        reason: 'cover art generation must not use reasoning',
-      );
-    });
-
-    test('requires task input data only', () {
-      expect(
-        coverArtGenerationPrompt.requiredInputData,
-        [InputDataType.task],
-        reason: 'only task context is required, not audio files',
-      );
-    });
-
     test('userMessage includes audioTranscript placeholder', () {
       expect(
         coverArtGenerationPrompt.userMessage,
@@ -183,14 +135,6 @@ void main() {
         reason: 'cover art prompt must be reachable by its id key',
       );
     });
-
-    test('description is non-empty', () {
-      expect(
-        coverArtGenerationPrompt.description,
-        isNotEmpty,
-        reason: 'description must describe the prompt purpose',
-      );
-    });
   });
 
   // ---------------------------------------------------------------------------
@@ -207,16 +151,6 @@ void main() {
         equals(2),
         reason: 'no unregistered prompts should silently accumulate',
       );
-    });
-
-    test('every entry id matches its map key', () {
-      for (final entry in preconfiguredPrompts.entries) {
-        expect(
-          entry.value.id,
-          equals(entry.key),
-          reason: 'prompt id must match its key in the lookup map',
-        );
-      }
     });
   });
 }

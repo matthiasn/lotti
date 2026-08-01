@@ -15,17 +15,6 @@ const _logTag = 'SeedTombstoneMigration';
 const _profilePrefix = 'profile:';
 const _modelPrefix = 'model:';
 
-/// The identity strings the legacy ledger stored, so the format is named in
-/// one place instead of being spelled out at each call site.
-abstract final class SeedTombstoneIdentities {
-  static String profile(String profileId) => '$_profilePrefix$profileId';
-
-  static String model({
-    required String inferenceProviderId,
-    required String providerModelId,
-  }) => '$_modelPrefix$inferenceProviderId:$providerModelId';
-}
-
 /// One-shot conversion of the old settings-row tombstone ledger into
 /// soft-deleted config rows.
 ///

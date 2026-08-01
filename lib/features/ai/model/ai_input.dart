@@ -89,18 +89,6 @@ abstract class AiInputAiResponseObject with _$AiInputAiResponseObject {
       _$AiInputAiResponseObjectFromJson(json);
 }
 
-/// Wrapper around a list of [AiActionItem]s, used as the structured-output
-/// schema when the model returns a full set of suggested checklist items.
-@freezed
-abstract class AiInputActionItemsList with _$AiInputActionItemsList {
-  const factory AiInputActionItemsList({
-    required List<AiActionItem> items,
-  }) = _AiInputActionItemsList;
-
-  factory AiInputActionItemsList.fromJson(Map<String, dynamic> json) =>
-      _$AiInputActionItemsListFromJson(json);
-}
-
 /// Context for a linked task (parent or child) to be injected into AI prompts.
 /// Contains distilled information about related work.
 @freezed

@@ -26,7 +26,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
-import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
@@ -178,12 +177,8 @@ void main() {
   /// Overrides shared by every capture:
   /// - `journalDbProvider` so `configFlagProvider` resolves the gating
   ///   flags from the stubbed mock.
-  /// - `templatesPendingReviewProvider` → empty so the agents-row
-  ///   `RitualPendingIndicator` renders nothing (and never hits the
-  ///   agents DB).
   List<Override> baseOverrides() => [
     journalDbProvider.overrideWithValue(mocks.journalDb),
-    templatesPendingReviewProvider.overrideWith((ref) async => <String>{}),
   ];
 
   // -------------------------------------------------------------------------

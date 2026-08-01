@@ -420,10 +420,9 @@ Widget _aiPanel(BuildContext context) => const AiPanelDispatch();
 // Per-leaf desktop bodies for the AI sidebar children. Each renders
 // `AiSettingsBody` pinned to one tab with the in-pane TabBar AND the
 // page header hidden so the sidebar leaf / breadcrumb naming isn't
-// duplicated above the list. The `ai-profiles` panel now points at
-// the v3 profiles tab body — the legacy `InferenceProfilesBody` is
-// still kept around for any direct `/settings/ai/profiles` deep-links
-// in older bookmarks, but the v2 panel registry no longer uses it.
+// duplicated above the list. The `ai-profiles` panel points at the
+// v3 profiles tab body; direct `/settings/ai/profiles` deep-links use
+// `InferenceProfilePage` through the legacy route.
 Widget _aiProvidersPanel(BuildContext context) => const AiSettingsBody(
   initialTab: AiSettingsTab.providers,
   hideTabBar: true,

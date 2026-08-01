@@ -26,7 +26,7 @@ enum AgentEventKind {
 /// The projection kernel operates exclusively on sets of [AgentEvent]s; heavy
 /// payloads stay out (referenced by [id]). Causality is carried by
 /// [causalParents] — the canonical `messagePrev` graph — while [vectorClock] is
-/// *consistency metadata* that the kernel diagnoses but never orders by. See
+/// consistency metadata that the kernel never orders by. See
 /// `canonical_order.dart` for the ordering contract.
 ///
 /// Two [AgentEvent]s are equal iff every field is equal (value semantics via
@@ -58,9 +58,7 @@ class AgentEvent extends Equatable {
   /// order concurrent events deterministically.
   final String hostId;
 
-  /// Causal stamp. Consistency metadata only: the kernel reports edges whose
-  /// vector clocks are inconsistent (see `projection_diagnostics.dart`) but
-  /// does not order by it.
+  /// Causal stamp. Consistency metadata only; the kernel does not order by it.
   final VectorClock vectorClock;
 
   /// Ids of this event's `messagePrev` parents (0..n; n > 1 denotes a join),

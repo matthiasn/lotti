@@ -5,7 +5,6 @@ import 'package:tinycolor2/tinycolor2.dart';
 
 // Legacy colors (keeping for backward compatibility)
 final Color oldPrimaryColor = colorFromCssHex('#82E6CE');
-final Color oldPrimaryColorLight = colorFromCssHex('#CFF3EA');
 final Color alarm = colorFromCssHex('#FF7373');
 final Color nickel = colorFromCssHex('#B4B2B2');
 
@@ -61,20 +60,8 @@ const Color projectStatusTeal = Colors.teal;
 
 // Sync filter colors
 const Color syncPendingAccentColor = Colors.orange;
-const Color syncPendingForegroundColor = Colors.white;
-
-const Color syncSuccessAccentColor = Colors.green;
-const Color syncSuccessForegroundColor = Colors.white;
-
-final Color syncPendingCountAccentColor = TinyColor.fromColor(
-  syncPendingAccentColor,
-).lighten().color;
-
-Color syncErrorCountAccentColor(ColorScheme colorScheme) =>
-    TinyColor.fromColor(colorScheme.error).lighten().color;
 
 final Color secondaryTextColor = oldPrimaryColor.desaturate(70).darken(20);
-final Color chartTextColor = nickel;
 
 // Modern gradient color palette - Enhanced with more sophisticated colors
 class ModernGradientColors {

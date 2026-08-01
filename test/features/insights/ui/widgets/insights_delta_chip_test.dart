@@ -7,20 +7,6 @@ import 'package:lotti/features/insights/ui/widgets/insights_delta_chip.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
-  group('insightsDeltaPercent', () {
-    test('rounds the percent change', () {
-      expect(insightsDeltaPercent(120, 100), 20);
-      expect(insightsDeltaPercent(80, 100), -20);
-      expect(insightsDeltaPercent(100, 100), 0);
-      expect(insightsDeltaPercent(118, 100), 18);
-    });
-
-    test('is null when there is no previous baseline', () {
-      expect(insightsDeltaPercent(60, 0), isNull);
-      expect(insightsDeltaPercent(0, 0), isNull);
-    });
-  });
-
   group('InsightsDeltaChip', () {
     Future<void> pump(
       WidgetTester tester, {

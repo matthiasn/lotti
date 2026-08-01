@@ -295,9 +295,8 @@ void main() {
         expect(build('ai'), isA<AiPanelDispatch>());
         // Each AI sidebar leaf renders an `AiSettingsBody` pinned to
         // one tab with `hideTabBar: true` so the in-pane TabBar
-        // doesn't duplicate the sidebar selection. The legacy
-        // `InferenceProfilesBody` is no longer wired into the v2
-        // panel registry — the v3 Profiles tab body took its slot.
+        // doesn't duplicate the sidebar selection. The v3 Profiles
+        // tab body owns the profiles slot.
         for (final entry in {
           'ai-providers': AiSettingsTab.providers,
           'ai-models': AiSettingsTab.models,

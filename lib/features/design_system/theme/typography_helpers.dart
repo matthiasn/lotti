@@ -62,18 +62,6 @@ TextStyle calmPageTitleStyle(DsTokens tokens, {Color? color}) {
   );
 }
 
-/// Calm hero — 34px / 500 / −0.02em. Used for the single large display line
-/// on a screen (e.g. the Capture headline "What's on your mind for today?").
-TextStyle calmHeroStyle(DsTokens tokens, {Color? color}) {
-  const fontSize = 34.0;
-  return tokens.typography.styles.heading.heading1.copyWith(
-    fontSize: fontSize,
-    fontWeight: FontWeight.w500,
-    letterSpacing: fontSize * -0.02,
-    color: color ?? tokens.colors.text.highEmphasis,
-  );
-}
-
 /// Calm display moment — 26px / 600 / −0.02em. Signature lines like the
 /// Commit lead-in ("Make it yours.") and the LockInScene captions.
 TextStyle calmDisplayStyle(DsTokens tokens, {Color? color}) {

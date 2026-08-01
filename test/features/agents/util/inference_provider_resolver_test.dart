@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -38,7 +39,20 @@ void main() {
     stubProvider('provider-1', testInferenceProvider(apiKey: apiKey));
   }
 
-  group('resolveInferenceProvider', () {
+  Future<AiConfigInferenceProvider?> resolveInferenceProvider({
+    required String modelId,
+    required AiConfigRepository aiConfigRepository,
+    String logTag = 'InferenceProviderResolver',
+  }) async {
+    final resolved = await resolveInferenceProviderWithModel(
+      modelId: modelId,
+      aiConfigRepository: aiConfigRepository,
+      logTag: logTag,
+    );
+    return resolved?.provider;
+  }
+
+  group('resolveInferenceProviderWithModel', () {
     test('returns provider when model and provider are configured', () async {
       stubResolution();
 

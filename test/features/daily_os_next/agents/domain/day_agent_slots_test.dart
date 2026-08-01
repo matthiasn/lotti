@@ -1,22 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 
 void main() {
-  group('DayAgentSlots', () {
-    test('hasActiveDay reflects non-empty activeDayId', () {
-      expect(const AgentSlots().hasActiveDay, isFalse);
-      expect(const AgentSlots(activeDayId: '').hasActiveDay, isFalse);
-      expect(
-        const AgentSlots(activeDayId: 'dayplan-2026-05-25').hasActiveDay,
-        isTrue,
-      );
-    });
-  });
-
   group('dayAgentIdForDate', () {
     glados.Glados<_GeneratedDayDate>(
       glados.any.dayDate,

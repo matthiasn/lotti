@@ -206,9 +206,9 @@ Callers without segments get a single teal arc. The honest no-plan strip passes
 
 Daily OS follows the calm system through the design-system helpers:
 `calmEyebrowStyle` (11/600/0.04em) for every overline, `calmPageTitleStyle`
-(23/600) for greetings and page titles, `calmHeroStyle` (34/500) for the Capture
-headline, `calmDisplayStyle` (26/600) for the Commit lead-in and LockInScene
-captions, `calmGreetingStyle` (12/500) for quiet helper lines.
+(23/600) for page titles, `calmDisplayStyle` (26/600) for the Capture headline,
+Commit lead-in, and LockInScene captions, and `calmGreetingStyle` (12/500) for
+quiet helper lines.
 
 **No Daily OS surface uses the legacy 12/700/+8-tracking overline token
 directly.**
