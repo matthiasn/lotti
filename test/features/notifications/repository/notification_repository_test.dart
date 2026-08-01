@@ -385,6 +385,12 @@ void main() {
       );
 
       expect(saved, isNull);
+      expect(
+        await notificationsDb.notificationById(
+          repository.notificationIdForTaskSuggestion('task-no-host'),
+        ),
+        isNull,
+      );
       verifyNever(
         () => outboxService.enqueueNotification(any<NotificationEntity>()),
       );

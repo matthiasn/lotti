@@ -1,7 +1,7 @@
 part of 'database.dart';
 
 /// Typed data reads for [JournalDb]: measurements, habit completions,
-/// day plans, quantitative entries, workouts, and surveys.
+/// quantitative entries, workouts, and surveys.
 mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   Future<List<JournalEntity>> getMeasurementsByType({
     required String type,

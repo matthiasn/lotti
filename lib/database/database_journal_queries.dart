@@ -98,9 +98,7 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
   ///
   /// Chunks the id list into [_sqliteInListChunk]-sized batches so a
   /// caller passing a long list (well above what an outbox bundle ever
-  /// produces) cannot blow past SQLite's bind-variable cap. Same pattern
-  /// the other bulk-by-id helpers in this file use (e.g.
-  /// `getDayPlansForIds`).
+  /// produces) cannot blow past SQLite's bind-variable cap.
   Future<Map<String, JournalEntity>> journalEntityMapForIds(
     Iterable<String> ids,
   ) async {
