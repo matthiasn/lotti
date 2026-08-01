@@ -427,13 +427,17 @@ class AgentAttentionProjection {
   }
 
   Future<void> _refreshStandingAgreementProjection(String agreementId) async {
-    final rows = await _db.getAgentEntityById(agreementId).get();
-    if (rows.isEmpty) {
+    // Through `_core.getEntity` rather than `_db.getAgentEntityById` so this
+    // read joins the by-id coalescer's batch: projection refreshes fire once
+    // per affected entity, so the direct path spent one isolate round trip per
+    // id. Safe inside the refresh transaction because batches are keyed by
+    // zone. See `docs/perf/2026-08-01_slow-queries-investigation.md`.
+    final entity = await _core.getEntity(agreementId);
+    if (entity == null) {
       await _deleteStandingAgreementProjection(agreementId);
       return;
     }
 
-    final entity = AgentDbConversions.fromEntityRow(rows.first);
     if (entity is! StandingAgreementEntity) {
       await _deleteStandingAgreementProjection(agreementId);
       return;
@@ -521,9 +525,8 @@ class AgentAttentionProjection {
   Future<AttentionRequestEntity?> _getAttentionRequestForProjection(
     String requestId,
   ) async {
-    final rows = await _db.getAgentEntityById(requestId).get();
-    if (rows.isEmpty) return null;
-    final entity = AgentDbConversions.fromEntityRow(rows.first);
+    // Coalesced by-id read — see `_refreshStandingAgreementProjection`.
+    final entity = await _core.getEntity(requestId);
     return entity is AttentionRequestEntity ? entity : null;
   }
 

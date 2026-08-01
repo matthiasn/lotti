@@ -35,6 +35,146 @@ void main() {
     await db.close();
   });
 
+  group('getEntity coalescing', () {
+    // getEntity folds concurrent single-id reads into one batched
+    // `id IN (…)` query (AgentEntityByIdCoalescer). These tests run against a
+    // real database to pin the two properties that batching could break:
+    // identical results, and read-your-writes inside a transaction — drift
+    // resolves the executor from Zone.current, so a batch that escaped the
+    // transaction zone would read pre-transaction state.
+
+    test(
+      'concurrent getEntity calls return the same rows as serial ones',
+      () async {
+        for (var i = 0; i < 5; i++) {
+          await core.upsertEntity(
+            makeTestIdentity(
+              id: 'coalesce-$i',
+              agentId: 'agent-$i',
+              displayName: 'Agent $i',
+              createdAt: testDate,
+              updatedAt: testDate,
+            ),
+          );
+        }
+
+        final concurrent = await Future.wait([
+          for (var i = 0; i < 5; i++) core.getEntity('coalesce-$i'),
+          core.getEntity('coalesce-does-not-exist'),
+        ]);
+
+        expect(
+          concurrent
+              .take(5)
+              .map((e) => (e! as AgentIdentityEntity).displayName),
+          ['Agent 0', 'Agent 1', 'Agent 2', 'Agent 3', 'Agent 4'],
+        );
+        expect(
+          concurrent.last,
+          isNull,
+          reason: 'absent id still resolves null',
+        );
+      },
+    );
+
+    test('sees its own write when read inside the same transaction', () async {
+      await core.runInTransaction(() async {
+        await core.upsertEntity(
+          makeTestIdentity(
+            id: 'txn-entity',
+            agentId: 'txn-agent',
+            displayName: 'Written in txn',
+            createdAt: testDate,
+            updatedAt: testDate,
+          ),
+        );
+
+        final readBack = await core.getEntity('txn-entity');
+        expect(
+          readBack,
+          isNotNull,
+          reason:
+              'the coalesced read must run on the transaction executor, '
+              'not the root one, or it would not see the uncommitted write',
+        );
+        expect(
+          (readBack! as AgentIdentityEntity).displayName,
+          'Written in txn',
+        );
+      });
+
+      expect(await core.getEntity('txn-entity'), isNotNull);
+    });
+
+    test(
+      'concurrent reads inside a transaction see the uncommitted write',
+      () async {
+        await core.runInTransaction(() async {
+          await core.upsertEntity(
+            makeTestIdentity(
+              id: 'txn-batch-a',
+              agentId: 'txn-a',
+              displayName: 'A',
+              createdAt: testDate,
+              updatedAt: testDate,
+            ),
+          );
+          await core.upsertEntity(
+            makeTestIdentity(
+              id: 'txn-batch-b',
+              agentId: 'txn-b',
+              displayName: 'B',
+              createdAt: testDate,
+              updatedAt: testDate,
+            ),
+          );
+
+          // Both loads join one batch; that batch must still run inside the
+          // transaction.
+          final both = await Future.wait([
+            core.getEntity('txn-batch-a'),
+            core.getEntity('txn-batch-b'),
+          ]);
+
+          expect(
+            both.map((e) => (e! as AgentIdentityEntity).displayName),
+            ['A', 'B'],
+          );
+        });
+      },
+    );
+
+    test(
+      'rolls back cleanly when the transaction fails after a read',
+      () async {
+        await expectLater(
+          core.runInTransaction(() async {
+            await core.upsertEntity(
+              makeTestIdentity(
+                id: 'txn-rollback',
+                agentId: 'txn-rollback',
+                displayName: 'Doomed',
+                createdAt: testDate,
+                updatedAt: testDate,
+              ),
+            );
+            expect(await core.getEntity('txn-rollback'), isNotNull);
+            throw StateError('abort');
+          }),
+          throwsA(isA<StateError>()),
+        );
+
+        expect(
+          await core.getEntity('txn-rollback'),
+          isNull,
+          reason:
+              'the aborted write must not survive, and the post-rollback '
+              'read must not be served from a stale coalesced batch',
+        );
+      },
+    );
+  });
+
   group('upsertEntity / getEntity', () {
     test('inserts then updates a non-projection entity in place', () async {
       final identity = makeTestIdentity(
