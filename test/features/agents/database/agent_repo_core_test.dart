@@ -275,6 +275,25 @@ void main() {
       );
     });
 
+    test('a large inclusion list does not overflow the bind budget', () async {
+      // The inclusion list is read as its own chunked query rather than bound
+      // into every primary chunk, so it cannot share — and overflow — the
+      // statement's variable budget no matter how large it gets.
+      await putState('a-wake', 'st-a', nextWakeAt: testDate);
+      for (var i = 0; i < 1200; i++) {
+        await putState('inc-$i', 'st-inc-$i');
+      }
+
+      final states = await core.getAgentStatesWithPendingWakes(
+        ['a-wake', for (var i = 0; i < 1200; i++) 'inc-$i'],
+        alsoIncludeAgentIds: [for (var i = 0; i < 1200; i++) 'inc-$i'],
+      );
+
+      expect(states.keys, hasLength(1201));
+      expect(states.keys, contains('a-wake'));
+      expect(states.keys, contains('inc-1199'));
+    });
+
     test('spans multiple id chunks and still resolves inclusions', () async {
       // The agent-id list is chunked (900 per statement) while
       // alsoIncludeAgentIds is bound into every chunk. This exercises the

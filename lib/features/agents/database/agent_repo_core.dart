@@ -191,12 +191,11 @@ class AgentRepoCore {
     required String type,
     String? subtype,
     String outerPredicate = '',
-    List<Variable<Object>> outerVariables = const [],
   }) async {
     final result = <AgentDomainEntity>[];
     // Every chunk binds its own ids plus the type, the optional subtype, and
     // whatever `outerPredicate` needs — all against one 999-variable budget.
-    final reserved = 1 + (subtype == null ? 0 : 1) + outerVariables.length;
+    final reserved = 1 + (subtype == null ? 0 : 1);
     for (final chunk in sqliteInClauseChunks(agentIds, reserve: reserved)) {
       final placeholders = List.filled(chunk.length, '?').join(', ');
       final subtypePredicate = subtype == null ? '' : 'AND subtype = ? ';
@@ -224,7 +223,6 @@ class AgentRepoCore {
               ...chunk.map(Variable.withString),
               Variable.withString(type),
               if (subtype != null) Variable.withString(subtype),
-              ...outerVariables,
             ],
             readsFrom: {_db.agentEntities},
           )
@@ -444,25 +442,42 @@ class AgentRepoCore {
     List<String> agentIds, {
     Iterable<String> alsoIncludeAgentIds = const <String>[],
   }) async {
-    // Agents whose wake lives in a separate `ScheduledWakeEntity` row rather
-    // than on the state itself still need their state hydrated, so callers can
-    // name them explicitly. Kept in the same query — splitting it would trade
-    // the decode saving for an extra round trip.
-    final alsoInclude = alsoIncludeAgentIds.toSet().toList(growable: false);
-    final alsoPlaceholders = List.filled(alsoInclude.length, '?').join(', ');
-    final latestEntities = await latestEntitiesByAgentIds(
+    final withWakes = await latestEntitiesByAgentIds(
       agentIds: agentIds,
       type: AgentEntityTypes.agentState,
       outerPredicate:
           r"AND (json_extract(serialized, '$.nextWakeAt') IS NOT NULL "
-          r"OR json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL"
-          '${alsoInclude.isEmpty ? '' : ' OR agent_id IN ($alsoPlaceholders)'})',
-      outerVariables: alsoInclude.map(Variable.withString).toList(),
+          r"OR json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL)",
     );
-    return {
-      for (final entity in latestEntities)
+    final result = <String, AgentStateEntity>{
+      for (final entity in withWakes)
         if (entity case final AgentStateEntity state) state.agentId: state,
     };
+
+    // Agents whose wake lives in a separate `ScheduledWakeEntity` row rather
+    // than on the state itself still need their state hydrated. They are read
+    // as their own query rather than folded into the predicate above: an
+    // inclusion list bound into every chunk shares the statement's variable
+    // budget with the chunk itself, so a large enough list could overflow it
+    // on a platform built with SQLite's older 999-variable cap. A second,
+    // separately chunked query has no such interaction, and only runs when
+    // there is something to include.
+    final alsoInclude = alsoIncludeAgentIds
+        .toSet()
+        .where((id) => !result.containsKey(id))
+        .toList(growable: false);
+    if (alsoInclude.isEmpty) return result;
+
+    final named = await latestEntitiesByAgentIds(
+      agentIds: alsoInclude,
+      type: AgentEntityTypes.agentState,
+    );
+    for (final entity in named) {
+      if (entity case final AgentStateEntity state) {
+        result[state.agentId] = state;
+      }
+    }
+    return result;
   }
 
   /// Fetch the newest active agent identity of [kind] whose latest state has

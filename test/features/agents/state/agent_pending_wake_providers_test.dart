@@ -735,6 +735,24 @@ void main() {
         expect(record.dueAt, dueAt);
         // `day:<dayId>` workspace → the day id is the subject label.
         expect(record.subjectLabel, 'dayplan-2026-06-08');
+
+        // The planner's state carries no wake field of its own — its wake
+        // lives on the ScheduledWakeEntity — so it only survives the SQL
+        // filter because the provider names it explicitly. Assert the id
+        // actually reaches the read: without this the test passes even if the
+        // provider stops forwarding them, and the real query would then drop
+        // the state and the record with it.
+        final capturedIncluded =
+            verify(
+                  () => mockRepository.getAgentStatesWithPendingWakes(
+                    any(),
+                    alsoIncludeAgentIds: captureAny(
+                      named: 'alsoIncludeAgentIds',
+                    ),
+                  ),
+                ).captured.single
+                as Iterable<String>;
+        expect(capturedIncluded, contains(plannerId));
       },
     );
 
