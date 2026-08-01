@@ -350,15 +350,15 @@ void main() {
   });
 
   group('ResolvedAgentSetup', () {
-    test('derived state distinguishes runnable and broken selections', () {
+    test('retains resolution metadata', () {
       const resolved = ResolvedAgentSetup(
         status: AgentSetupResolutionStatus.resolved,
         brokenSelectionId: 'missing-override',
         setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
       );
 
-      expect(resolved.canRun, isTrue);
-      expect(resolved.hasBrokenSelection, isTrue);
+      expect(resolved.status, AgentSetupResolutionStatus.resolved);
+      expect(resolved.brokenSelectionId, 'missing-override');
       expect(resolved.setupOrigin, AgentInferenceSetupOrigin.categorySnapshot);
     });
   });

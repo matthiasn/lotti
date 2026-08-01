@@ -120,7 +120,6 @@ class _CoverArtSkillModalState extends ConsumerState<CoverArtSkillModal> {
   Widget build(BuildContext context) {
     if (_isGenerating) {
       return _CoverArtProgressView(
-        entityId: widget.entityId,
         linkedTaskId: widget.linkedTaskId,
         referenceImageCount: _referenceImageCount,
       );
@@ -145,12 +144,10 @@ class _CoverArtSkillModalState extends ConsumerState<CoverArtSkillModal> {
 /// via `ref.keepAlive()` in `triggerSkillProvider`.
 class _CoverArtProgressView extends ConsumerStatefulWidget {
   const _CoverArtProgressView({
-    required this.entityId,
     required this.linkedTaskId,
     required this.referenceImageCount,
   });
 
-  final String entityId;
   final String linkedTaskId;
   final int referenceImageCount;
 

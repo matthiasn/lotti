@@ -183,7 +183,6 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
           builder: (BuildContext _) {
             return AiResponseSummaryModalContent(
               aiResponse,
-              linkedFromId: widget.linkedFromId,
             );
           },
         );

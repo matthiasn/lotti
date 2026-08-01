@@ -34,7 +34,6 @@ void main() {
     status: AgentSetupResolutionStatus.resolved,
     profile: profile,
     source: AgentSetupResolutionSource.baseProfile,
-    routeFingerprint: InferenceRouteFingerprint.fromProfile(profile),
   );
   final route = InferenceRouteSnapshot.fromResolvedProfile(profile);
 

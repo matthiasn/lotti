@@ -665,7 +665,6 @@ void main() {
         ).thenAnswer(
           (_) async => const CascadeDeletionResult(
             deletedModels: <AiConfigModel>[],
-            providerName: 'Gemini',
           ),
         );
 

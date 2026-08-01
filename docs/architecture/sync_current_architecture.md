@@ -476,34 +476,18 @@ The tests lock this in:
 - `test/features/sync/matrix/sync_event_processor_test.dart`
   contains `processes old SyncBackfillRequest even when startupTimestamp is set`
 
-#### Catch-up falls back to a bounded tail if the marker cannot be found
+#### The legacy snapshot collector is no longer part of the receive path
 
-`CatchUpStrategy.collectEventsForCatchUp()` returns:
+The old `collectEventsForCatchUp` snapshot slicer and its
+`CatchUpCollection` result type had no runtime callers and have been removed.
+The queue pipeline now owns ingestion. `BridgeCoordinator` resumes from the
+durable per-room marker with `collectForwardForBootstrap`; when that anchor is
+unavailable or unsafe, it uses the timestamp-bounded
+`collectHistoryForBootstrap` backward walk. Both paths stream pages into the
+durable inbound queue instead of returning a detached timeline snapshot.
 
-- only events after `lastEventId` when the marker is found
-- a bounded tail (capped by `missingMarkerFallbackLimit`, default 1000) when
-  `lastEventId` cannot be located
-
-**Historical note (pre-fix):** before the stabilization fix, the fallback
-returned the entire snapshot, which could produce 10k+ event replay waves.
-The bounded-tail fallback was introduced to prevent this.
-
-#### Live scan cannot explain a 10k+ replay by itself
-
-`buildLiveScanSlice()` uses:
-
-- all events strictly after `lastEventId` when the marker is present
-- otherwise only the last `tailLimit` events
-
-The current live-scan fallback is therefore bounded by the tail size, while the
-combined log replay batches are well above `10000` events.
-
-#### The stream processor dedupe is too small to suppress these waves
-
-`MatrixStreamProcessor` keeps only:
-
-- `5000` recent `_seenEventIds`
-- `5000` recent `_completedSyncIds`
+`MatrixStreamProcessor` is now a metrics and diagnostics adapter for database
+apply outcomes. It no longer owns event or sync-id LRU dedupe sets.
 
 ### What the logs show
 
@@ -537,15 +521,18 @@ old requests. It is replaying large slices of old room history.
 
 ```mermaid
 flowchart TD
-  A["Stored lastEventId is not found in catch-up view"] --> B["CatchUpStrategy returns bounded tail (max 1000)"]
-  B --> C["Bounded set of recent events re-enter processor"]
-  C --> D["5k LRU dedupe is sufficient to suppress duplicates"]
+  A["Bridge starts from durable room state"] --> B{"Forward anchor safe?"}
+  B -->|Yes| C["Anchored forward pagination"]
+  B -->|No| D["Timestamp-bounded backward pagination"]
+  C --> E["Pages enter durable inbound queue"]
+  D --> E
+  E --> F["Per-room worker applies events in order"]
 ```
 
-**Historical note (pre-fix):** Before the stabilization fix, this diagram
-showed "CatchUpStrategy returns entire snapshot" → "10k+ old events re-enter
-processor" → "5k LRU dedupe rolls over" → repeated replay waves. The
-bounded-tail fallback was introduced to break this cycle.
+**Historical note:** The removed snapshot collector first returned an entire
+snapshot when its marker was missing, then used a bounded-tail fallback. The
+large replay waves below describe that retired receive path and remain useful
+as failure-history evidence; they do not describe the queue pipeline above.
 
 ### Why it mattered (pre-fix analysis)
 
@@ -556,13 +543,16 @@ missing, the entire snapshot was returned. The log evidence showed:
 - the same old event IDs were replayed in large waves (10k+)
 - those waves were too large for the `5000`-entry LRU dedupe to suppress
 
-The bounded-tail fallback now caps the replay to `missingMarkerFallbackLimit`
-(default 1000), which is well within the dedupe window.
+The queue migration removed that snapshot replay mechanism entirely. Current
+catch-up is bounded by the forward/backward pagination limits and streams into
+the durable queue, whose ledger and monotonic marker advancement provide the
+replay boundary.
 
 ### Confidence
 
-High confidence that the bounded-tail fallback prevents the large replay waves
-observed in the pre-fix logs.
+High confidence that the retired snapshot collector caused the historical
+waves. The current queue path should be evaluated through its pagination
+bounds, durable ledger, and marker invariants instead.
 
 ## Failure Surface 2: Agent Payload Resolution Can Mismatch Text Event Generation
 
@@ -982,21 +972,17 @@ Recommended order:
    - exact `(host, counter) -> payloadId` hit
    - payload VC behind the requested counter
    - resend + `unresolvable` in the same handling pass
-2. Add a catch-up / stream pipeline test that simulates:
-   - missing `lastEventId`
-   - bounded-tail fallback
-   - verify the tail size is within `missingMarkerFallbackLimit`
-3. Add a focused test in `sync_event_processor_test.dart` or a pipeline test
+2. Add a focused test in `sync_event_processor_test.dart` or a pipeline test
    that simulates:
    - same agent entity path
    - two or three versions
    - older text event processed after the index was updated to the newest
      descriptor
-4. Assert whether the sequence log receives:
+3. Assert whether the sequence log receives:
    - older covered clocks
    - newer resolved vector clock
    - and therefore emits the false gap
-5. Only after that decide the fix shape
+4. Only after that decide the fix shape
 
 Likely fix directions to evaluate:
 

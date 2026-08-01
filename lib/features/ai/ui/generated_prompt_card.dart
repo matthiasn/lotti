@@ -235,7 +235,6 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
               builder: (BuildContext _) {
                 return AiResponseSummaryModalContent(
                   widget.aiResponse,
-                  linkedFromId: widget.linkedFromId,
                 );
               },
             );

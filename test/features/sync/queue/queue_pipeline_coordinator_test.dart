@@ -381,7 +381,6 @@ class _GladosBench {
       (_) async => const QueueStats(
         total: 0,
         byProducer: {},
-        readyNow: 0,
         oldestEnqueuedAt: null,
       ),
     );
@@ -623,7 +622,6 @@ void main() {
       (_) async => const QueueStats(
         total: 0,
         byProducer: {},
-        readyNow: 0,
         oldestEnqueuedAt: null,
       ),
     );
@@ -1538,7 +1536,6 @@ void main() {
       (_) async => const QueueStats(
         total: 0,
         byProducer: {},
-        readyNow: 0,
         oldestEnqueuedAt: null,
       ),
     );
@@ -1752,7 +1749,6 @@ void main() {
           return QueueStats(
             total: total,
             byProducer: const {},
-            readyNow: total,
             oldestEnqueuedAt: null,
           );
         });
@@ -1780,7 +1776,6 @@ void main() {
           (_) async => const QueueStats(
             total: 5,
             byProducer: {},
-            readyNow: 5,
             oldestEnqueuedAt: null,
           ),
         );

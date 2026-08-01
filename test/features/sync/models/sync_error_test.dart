@@ -28,25 +28,14 @@ void main() {
   });
 
   group('SyncError', () {
-    test('constructor sets all fields', () {
-      final error = SyncError(
-        type: SyncErrorType.database,
-        message: 'Test message',
-        originalError: Exception('original'),
-        stackTrace: StackTrace.current,
-      );
+    test('constructor sets the user-facing message', () {
+      final error = SyncError(message: 'Test message');
 
-      expect(error.type, SyncErrorType.database);
       expect(error.message, 'Test message');
-      expect(error.originalError, isA<Exception>());
-      expect(error.stackTrace, isNotNull);
     });
 
     test('toString returns message', () {
-      final error = SyncError(
-        type: SyncErrorType.network,
-        message: 'Connection lost',
-      );
+      final error = SyncError(message: 'Connection lost');
 
       expect(error.toString(), 'Connection lost');
     });
@@ -59,7 +48,6 @@ void main() {
           loggingService,
         );
 
-        expect(error.type, SyncErrorType.database);
         expect(
           error.message,
           'Failed to access local data. Please try again.',
@@ -73,7 +61,6 @@ void main() {
           loggingService,
         );
 
-        expect(error.type, SyncErrorType.network);
         expect(
           error.message,
           'Network connection issue. Please check your internet connection.',
@@ -87,7 +74,10 @@ void main() {
           loggingService,
         );
 
-        expect(error.type, SyncErrorType.network);
+        expect(
+          error.message,
+          'Network connection issue. Please check your internet connection.',
+        );
       });
 
       test('detects outbox error type', () {
@@ -97,7 +87,6 @@ void main() {
           loggingService,
         );
 
-        expect(error.type, SyncErrorType.outbox);
         expect(
           error.message,
           'Failed to queue sync items. Please try again.',
@@ -111,7 +100,6 @@ void main() {
           loggingService,
         );
 
-        expect(error.type, SyncErrorType.unknown);
         expect(
           error.message,
           'An unexpected error occurred. Please try again.',
@@ -132,28 +120,6 @@ void main() {
             subDomain: 'SYNC_CONTROLLER',
           ),
         ).called(1);
-      });
-
-      test('preserves original error', () {
-        final originalError = Exception('database failure');
-        final error = SyncError.fromException(
-          originalError,
-          StackTrace.current,
-          loggingService,
-        );
-
-        expect(error.originalError, originalError);
-      });
-
-      test('preserves stack trace', () {
-        final stackTrace = StackTrace.current;
-        final error = SyncError.fromException(
-          Exception('test'),
-          stackTrace,
-          loggingService,
-        );
-
-        expect(error.stackTrace, stackTrace);
       });
     });
   });
@@ -178,29 +144,13 @@ void main() {
         );
 
         final expected = switch (keyword) {
-          'database' => SyncErrorType.database,
-          'network' || 'connection' => SyncErrorType.network,
-          'outbox' => SyncErrorType.outbox,
-          _ => SyncErrorType.unknown,
+          'database' => 'Failed to access local data. Please try again.',
+          'network' || 'connection' =>
+            'Network connection issue. Please check your internet connection.',
+          'outbox' => 'Failed to queue sync items. Please try again.',
+          _ => 'An unexpected error occurred. Please try again.',
         };
-        expect(error.type, expected, reason: 'message="$message"');
-        // The user-facing message is exactly the canonical text for the
-        // resolved type — never raw exception output.
-        const friendly = {
-          SyncErrorType.database:
-              'Failed to access local data. '
-              'Please try again.',
-          SyncErrorType.network:
-              'Network connection issue. '
-              'Please check your internet connection.',
-          SyncErrorType.outbox:
-              'Failed to queue sync items. '
-              'Please try again.',
-          SyncErrorType.unknown:
-              'An unexpected error occurred. '
-              'Please try again.',
-        };
-        expect(error.message, friendly[error.type], reason: 'msg="$message"');
+        expect(error.message, expected, reason: 'msg="$message"');
       },
       tags: 'glados',
     );

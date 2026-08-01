@@ -92,7 +92,6 @@ class _GeneratedApplyDiagnostics {
     return SyncApplyDiagnostics(
       eventId: eventId,
       payloadType: payloadTypeValue,
-      vectorClock: null,
       conflictStatus: conflictStatusValue,
       applied: applied,
       skipReason: skipReasonValue,

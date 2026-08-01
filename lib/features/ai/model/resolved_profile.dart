@@ -239,7 +239,6 @@ class ResolvedAgentSetup {
     this.source,
     this.setupOrigin,
     this.brokenSelectionId,
-    this.routeFingerprint,
   });
 
   final AgentSetupResolutionStatus status;
@@ -247,8 +246,4 @@ class ResolvedAgentSetup {
   final AgentSetupResolutionSource? source;
   final AgentInferenceSetupOrigin? setupOrigin;
   final String? brokenSelectionId;
-  final InferenceRouteFingerprint? routeFingerprint;
-
-  bool get canRun => status == AgentSetupResolutionStatus.resolved;
-  bool get hasBrokenSelection => brokenSelectionId != null;
 }

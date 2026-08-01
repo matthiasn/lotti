@@ -505,7 +505,7 @@ Future<void> throwIfStalled({
     debugPrint(
       '[stall-probe] no progress for '
       '${sinceLastProgress.elapsed.inSeconds}s at $currentCount entries; '
-      'quiet=$quiet queue[total=${stats.total} ready=${stats.readyNow}] '
+      'quiet=$quiet queue[total=${stats.total}] '
       'resumeFloorTs=$resumeFloorTs '
       'bridgeInFlight=${coord.isBridgeInFlight}',
     );
@@ -519,7 +519,7 @@ Future<void> throwIfStalled({
     '$currentCount entries, with an empty inbound queue and no bridge in '
     'flight, and no ciphertext awaiting a key. Nothing is outstanding, so the '
     'remaining wait cannot help. '
-    'queue[total=${stats.total} ready=${stats.readyNow} '
+    'queue[total=${stats.total} '
     'byProducer=${stats.byProducer}] '
     'resumeFloorTs=$resumeFloorTs '
     'bridgeInFlight=${coord.isBridgeInFlight} '
@@ -1416,7 +1416,7 @@ void main() {
         Future<String> queueSnapshot() async {
           final coord = bob.queueCoordinator;
           final stats = await coord.queue.stats();
-          return 'queue[total=${stats.total} ready=${stats.readyNow} '
+          return 'queue[total=${stats.total} '
               'byProducer=${stats.byProducer} '
               'oldestEnqueuedAt=${stats.oldestEnqueuedAt}] '
               'coord.running=${coord.isRunning} '

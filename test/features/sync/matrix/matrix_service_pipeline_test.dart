@@ -31,7 +31,6 @@ void main() {
       SyncApplyDiagnostics(
         eventId: 'event',
         payloadType: 'type',
-        vectorClock: null,
         conflictStatus: 'none',
         applied: true,
       ),
@@ -419,7 +418,6 @@ void main() {
           (_) async => const QueueStats(
             total: 7,
             byProducer: {InboundEventProducer.live: 7},
-            readyNow: 7,
             oldestEnqueuedAt: 1,
             applied: 42,
             abandoned: 3,

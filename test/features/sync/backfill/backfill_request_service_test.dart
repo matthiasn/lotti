@@ -2211,8 +2211,6 @@ void main() {
             depthController.add(
               const QueueDepthSignal(
                 total: 0,
-                byProducer: {},
-                oldestEnqueuedAt: null,
               ),
             );
             async.flushMicrotasks();
@@ -2286,8 +2284,6 @@ void main() {
             depthController.add(
               const QueueDepthSignal(
                 total: 3,
-                byProducer: {},
-                oldestEnqueuedAt: null,
               ),
             );
             async.flushMicrotasks();
@@ -2300,8 +2296,6 @@ void main() {
             depthController.add(
               const QueueDepthSignal(
                 total: 0,
-                byProducer: {},
-                oldestEnqueuedAt: null,
               ),
             );
             async.flushMicrotasks();
@@ -2357,8 +2351,6 @@ void main() {
             depthController.add(
               const QueueDepthSignal(
                 total: 2,
-                byProducer: {},
-                oldestEnqueuedAt: null,
               ),
             );
             async.flushMicrotasks();
@@ -2371,8 +2363,6 @@ void main() {
             depthController.add(
               const QueueDepthSignal(
                 total: 0,
-                byProducer: {},
-                oldestEnqueuedAt: null,
               ),
             );
             async.flushMicrotasks();

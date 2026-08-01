@@ -24,7 +24,6 @@ enum AiProviderSetupResultAction {
 @immutable
 class AiProviderSetupResultData {
   const AiProviderSetupResultData({
-    required this.providerName,
     required this.providerType,
     required this.modelsCreated,
     required this.modelsVerified,
@@ -37,7 +36,6 @@ class AiProviderSetupResultData {
   factory AiProviderSetupResultData.fromGemini({
     required GeminiFtueResult result,
   }) => AiProviderSetupResultData(
-    providerName: 'Gemini',
     providerType: InferenceProviderType.gemini,
     modelsCreated: result.modelsCreated,
     modelsVerified: result.modelsVerified,
@@ -50,7 +48,6 @@ class AiProviderSetupResultData {
   factory AiProviderSetupResultData.fromOpenAi({
     required OpenAiFtueResult result,
   }) => AiProviderSetupResultData(
-    providerName: 'OpenAI',
     providerType: InferenceProviderType.openAi,
     modelsCreated: result.modelsCreated,
     modelsVerified: result.modelsVerified,
@@ -63,7 +60,6 @@ class AiProviderSetupResultData {
   factory AiProviderSetupResultData.fromMistral({
     required MistralFtueResult result,
   }) => AiProviderSetupResultData(
-    providerName: 'Mistral',
     providerType: InferenceProviderType.mistral,
     modelsCreated: result.modelsCreated,
     modelsVerified: result.modelsVerified,
@@ -76,7 +72,6 @@ class AiProviderSetupResultData {
   factory AiProviderSetupResultData.fromMelious({
     required MeliousFtueResult result,
   }) => AiProviderSetupResultData(
-    providerName: 'Melious.ai',
     providerType: InferenceProviderType.melious,
     modelsCreated: result.modelsCreated,
     modelsVerified: result.modelsVerified,
@@ -89,7 +84,6 @@ class AiProviderSetupResultData {
   factory AiProviderSetupResultData.fromAlibaba({
     required AlibabaFtueResult result,
   }) => AiProviderSetupResultData(
-    providerName: 'Alibaba Cloud (Qwen)',
     providerType: InferenceProviderType.alibaba,
     modelsCreated: result.modelsCreated,
     modelsVerified: result.modelsVerified,
@@ -102,7 +96,6 @@ class AiProviderSetupResultData {
   factory AiProviderSetupResultData.fromAnthropic({
     required AnthropicFtueResult result,
   }) => AiProviderSetupResultData(
-    providerName: 'Anthropic',
     providerType: InferenceProviderType.anthropic,
     modelsCreated: result.modelsCreated,
     modelsVerified: result.modelsVerified,
@@ -115,7 +108,6 @@ class AiProviderSetupResultData {
   factory AiProviderSetupResultData.fromOllama({
     required OllamaFtueResult result,
   }) => AiProviderSetupResultData(
-    providerName: 'Ollama',
     providerType: InferenceProviderType.ollama,
     modelsCreated: result.modelsCreated,
     modelsVerified: result.modelsVerified,
@@ -154,7 +146,6 @@ class AiProviderSetupResultData {
     };
   }
 
-  final String providerName;
   final InferenceProviderType providerType;
   final int modelsCreated;
   final int modelsVerified;

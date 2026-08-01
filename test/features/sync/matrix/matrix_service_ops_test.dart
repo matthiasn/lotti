@@ -24,7 +24,6 @@ QueueStats _stats({
 }) => QueueStats(
   total: total,
   byProducer: const {},
-  readyNow: 0,
   oldestEnqueuedAt: null,
   applied: applied,
   abandoned: abandoned,

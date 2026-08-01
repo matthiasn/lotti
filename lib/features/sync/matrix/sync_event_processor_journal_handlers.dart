@@ -117,7 +117,6 @@ extension _JournalHandlers on SyncEventProcessor {
     final diag = SyncApplyDiagnostics(
       eventId: event.eventId,
       payloadType: 'journalEntity',
-      vectorClock: incomingVc.toJson(),
       conflictStatus: status.toString(),
       applied: false,
       skipReason: JournalUpdateSkipReason.olderOrEqual,
@@ -296,7 +295,6 @@ extension _JournalHandlers on SyncEventProcessor {
     final diag = SyncApplyDiagnostics(
       eventId: event.eventId,
       payloadType: 'journalEntity',
-      vectorClock: syncMessage.vectorClock?.toJson(),
       conflictStatus: VclockStatus.equal.toString(),
       applied: false,
       skipReason: JournalUpdateSkipReason.olderOrEqual,
@@ -400,7 +398,6 @@ extension _JournalHandlers on SyncEventProcessor {
     final diag = SyncApplyDiagnostics(
       eventId: event.eventId,
       payloadType: 'journalEntity',
-      vectorClock: vcB?.toJson(),
       conflictStatus: predictedStatus.toString(),
       applied: updateResult.applied,
       skipReason: updateResult.skipReason,
@@ -493,7 +490,6 @@ extension _JournalHandlers on SyncEventProcessor {
         final diag = SyncApplyDiagnostics(
           eventId: event.eventId,
           payloadType: 'entryLink',
-          vectorClock: null,
           conflictStatus: rows == 0 ? 'entryLink.noop' : 'applied',
           applied: rows > 0,
           skipReason: rows > 0 ? null : JournalUpdateSkipReason.olderOrEqual,

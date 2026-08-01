@@ -759,7 +759,6 @@ void main() {
           'provider-1',
         );
 
-        expect(result.providerName, 'Provider 1');
         expect(result.deletedModels, hasLength(2));
         expect(
           result.deletedModels.map((m) => m.id).toSet(),
@@ -776,10 +775,9 @@ void main() {
     );
 
     test(
-      'deleteInferenceProviderWithModels returns unknown provider name when '
-      'provider not found',
+      'deleteInferenceProviderWithModels removes orphaned models when '
+      'provider is missing',
       () async {
-        // Provider doesn't exist — providerName should fall back to 'Unknown Provider'
         final model = AiConfig.model(
           id: 'model-orphan',
           name: 'Orphan Model',
@@ -796,7 +794,6 @@ void main() {
           'missing-provider',
         );
 
-        expect(result.providerName, 'Unknown Provider');
         expect(result.deletedModels, hasLength(1));
       },
     );
@@ -1113,7 +1110,6 @@ void main() {
         );
 
         // Reported as the success it locally is…
-        expect(result.providerName, 'Provider 1');
         expect(result.deletedModels, hasLength(1));
         // …and every id was still attempted, not abandoned at the first throw.
         verify(() => mockOutboxService.enqueueMessage(any())).called(2);
@@ -1191,8 +1187,10 @@ void main() {
       'deleteInferenceProviderWithModels logs error via DomainLogger and '
       'rethrows when transaction fails',
       () async {
-        // Arrange: make the transaction itself throw via a failing getConfigById
-        when(() => mockDb.getConfigById(any())).thenThrow(
+        // Arrange: make the transactional model lookup fail.
+        when(
+          () => mockDb.getConfigsByType(AiConfigType.model.name),
+        ).thenThrow(
           Exception('DB connection lost'),
         );
         when(
@@ -1203,10 +1201,6 @@ void main() {
                   as Future<CascadeDeletionResult> Function();
           return callback();
         });
-        when(
-          () => mockDb.getConfigsByType(AiConfigType.model.name),
-        ).thenAnswer((_) async => []);
-
         // Act & Assert: should rethrow
         await expectLater(
           repository.deleteInferenceProviderWithModels('provider-1'),
@@ -1732,7 +1726,6 @@ void main() {
         result.deletedModels.map((m) => m.id),
         containsAll(['model-1', 'model-2']),
       );
-      expect(result.providerName, isNotEmpty);
 
       // Verify models were deleted
       verify(() => mockDb.deleteConfig('model-1')).called(1);
@@ -1765,7 +1758,6 @@ void main() {
 
       // Assert
       expect(result.deletedModels.length, equals(0));
-      expect(result.providerName, isNotEmpty);
 
       // Verify only provider was deleted
       verify(() => mockDb.deleteConfig(providerId)).called(1);
@@ -1814,7 +1806,6 @@ void main() {
         result.deletedModels.map((m) => m.id),
         containsAll(['model-sync']),
       );
-      expect(result.providerName, isNotEmpty);
 
       // Verify deletions happened
       verify(() => mockDb.deleteConfig('model-sync')).called(1);
@@ -1889,7 +1880,6 @@ void main() {
         result.deletedModels.map((m) => m.id),
         containsAll(['model-0', 'model-1', 'model-2', 'model-3', 'model-4']),
       );
-      expect(result.providerName, isNotEmpty);
 
       // Verify all models were deleted
       for (var i = 0; i < 5; i++) {
@@ -2056,7 +2046,6 @@ void main() {
       // Assert
       expect(result.deletedModels.length, equals(1));
       expect(result.deletedModels.map((m) => m.id), containsAll(['model-1']));
-      expect(result.providerName, isNotEmpty);
 
       // Verify that the transaction was used
       verify(() => mockDb.transaction<CascadeDeletionResult>(any())).called(1);

@@ -111,14 +111,12 @@ class InferenceProviderFormController
         apiKey: ApiKeyValue.pure('', providerType),
         baseUrl: BaseUrl.pure(defaultBaseUrl),
         inferenceProviderType: providerType,
-        lastUpdated: DateTime.now(),
       );
     }
 
     // Default state for manual provider selection (no preselectedType)
     return InferenceProviderFormState(
       apiKey: ApiKeyValue.pure('', providerType),
-      lastUpdated: DateTime.now(),
     );
   }
 
@@ -242,7 +240,6 @@ class InferenceProviderFormController
           baseUrl: BaseUrl.pure(newBaseUrl ?? ''),
           name: ApiKeyName.pure(newName ?? ''),
           inferenceProviderType: value,
-          lastUpdated: DateTime.now(),
         ),
       );
     } else {

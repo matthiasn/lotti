@@ -206,7 +206,6 @@ class ProfileResolver {
       source: source,
       setupOrigin: setupOrigin,
       brokenSelectionId: brokenSelectionId,
-      routeFingerprint: InferenceRouteFingerprint.fromProfile(profile),
     );
   }
 

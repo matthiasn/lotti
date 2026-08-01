@@ -286,24 +286,15 @@ class MlxAudioModelDownloadProgress {
 class MlxAudioTranscriptionResult {
   const MlxAudioTranscriptionResult({
     required this.text,
-    this.detectedLanguage,
-    this.processingTimeMs,
-    this.diarizationStatus,
   });
 
   factory MlxAudioTranscriptionResult.fromMap(Map<String, Object?> map) {
     return MlxAudioTranscriptionResult(
       text: map['text'] as String? ?? '',
-      detectedLanguage: map['detectedLanguage'] as String?,
-      processingTimeMs: (map['processingTimeMs'] as num?)?.toInt(),
-      diarizationStatus: map['diarizationStatus'] as String?,
     );
   }
 
   final String text;
-  final String? detectedLanguage;
-  final int? processingTimeMs;
-  final String? diarizationStatus;
 }
 
 final mlxAudioChannelProvider = Provider<MlxAudioChannel>((ref) {

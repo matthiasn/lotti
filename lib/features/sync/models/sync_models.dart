@@ -39,15 +39,13 @@ class StepProgress {
 }
 
 /// Immutable snapshot of a re-sync run: whether it is active, overall
-/// [progress] percent, the [currentStep], any [error], the per-step counters,
-/// and which [selectedSteps] the user opted into. Note [copyWith] intentionally
-/// clears [error] when not supplied so a fresh state never carries a stale one.
+/// [progress] percent, the [currentStep], the per-step counters, and which
+/// [selectedSteps] the user opted into.
 class SyncState {
   const SyncState({
     this.isSyncing = false,
     this.progress = 0,
     this.currentStep = SyncStep.measurables,
-    this.error,
     this.stepProgress = const {},
     this.selectedSteps = const {},
   });
@@ -55,7 +53,6 @@ class SyncState {
   final bool isSyncing;
   final int progress;
   final SyncStep currentStep;
-  final String? error;
   final Map<SyncStep, StepProgress> stepProgress;
   final Set<SyncStep> selectedSteps;
 
@@ -63,7 +60,6 @@ class SyncState {
     bool? isSyncing,
     int? progress,
     SyncStep? currentStep,
-    String? error,
     Map<SyncStep, StepProgress>? stepProgress,
     Set<SyncStep>? selectedSteps,
   }) {
@@ -71,7 +67,6 @@ class SyncState {
       isSyncing: isSyncing ?? this.isSyncing,
       progress: progress ?? this.progress,
       currentStep: currentStep ?? this.currentStep,
-      error: error,
       stepProgress: stepProgress ?? this.stepProgress,
       selectedSteps: selectedSteps ?? this.selectedSteps,
     );

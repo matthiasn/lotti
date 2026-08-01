@@ -60,7 +60,6 @@ void main() {
       SyncApplyDiagnostics(
         eventId: 'fallback',
         payloadType: 'fallback',
-        vectorClock: null,
         conflictStatus: 'fallback',
         applied: false,
       ),

@@ -2696,12 +2696,10 @@ void main() {
         const ProcessedReferenceImage(
           base64Data: 'base64data1',
           mimeType: 'image/jpeg',
-          originalId: 'ref-1',
         ),
         const ProcessedReferenceImage(
           base64Data: 'base64data2',
           mimeType: 'image/png',
-          originalId: 'ref-2',
         ),
       ];
 
@@ -2794,7 +2792,6 @@ void main() {
           const ProcessedReferenceImage(
             base64Data: 'data',
             mimeType: 'image/png',
-            originalId: 'ref-1',
           ),
         ];
 

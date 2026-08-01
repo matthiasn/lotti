@@ -439,8 +439,6 @@ void main() {
           duplicatesDropped: 0,
           filteredOutByType: 0,
           deferredPendingDecryption: 0,
-          oldestTsAccepted: 30,
-          newestTsAccepted: 30,
         );
       });
       when(
@@ -577,8 +575,6 @@ void main() {
           duplicatesDropped: events.length - accepted,
           filteredOutByType: 0,
           deferredPendingDecryption: 0,
-          oldestTsAccepted: 0,
-          newestTsAccepted: 0,
         );
       });
       when(

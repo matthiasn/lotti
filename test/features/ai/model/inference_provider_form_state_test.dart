@@ -122,54 +122,6 @@ void main() {
       expect(valid.inputs, hasLength(4));
     });
 
-    test('copyWith overrides only the provided fields', () {
-      final original = InferenceProviderFormState(
-        id: 'id-1',
-        name: const ApiKeyName.dirty('original'),
-        lastUpdated: DateTime(2024, 3, 15),
-      );
-
-      final updated = original.copyWith(
-        name: const ApiKeyName.dirty('changed'),
-        isSubmitting: true,
-        inferenceProviderType: InferenceProviderType.ollama,
-      );
-
-      expect(updated.id, 'id-1'); // preserved
-      expect(updated.name.value, 'changed');
-      expect(updated.isSubmitting, isTrue);
-      expect(updated.inferenceProviderType, InferenceProviderType.ollama);
-      // Untouched fields keep their previous values.
-      expect(updated.apiKey, same(original.apiKey));
-      expect(updated.baseUrl, same(original.baseUrl));
-    });
-
-    test('copyWith keeps current values when no fields are provided', () {
-      final original = InferenceProviderFormState(
-        id: 'id-2',
-        name: const ApiKeyName.dirty('keep-me'),
-        apiKey: const ApiKeyValue.dirty('sk-keep'),
-        baseUrl: const BaseUrl.dirty('https://keep.example.com'),
-        description: const DescriptionValue.dirty('keep description'),
-        isSubmitting: true,
-        submitFailed: true,
-        inferenceProviderType: InferenceProviderType.anthropic,
-        lastUpdated: DateTime(2024, 3, 15),
-      );
-
-      final copy = original.copyWith();
-
-      // Every field falls back to `this.<field>` (the `?? this.x` branches).
-      expect(copy.id, 'id-2');
-      expect(copy.name, same(original.name));
-      expect(copy.apiKey, same(original.apiKey));
-      expect(copy.baseUrl, same(original.baseUrl));
-      expect(copy.description, same(original.description));
-      expect(copy.isSubmitting, isTrue);
-      expect(copy.submitFailed, isTrue);
-      expect(copy.inferenceProviderType, InferenceProviderType.anthropic);
-    });
-
     test('toAiConfig maps form values onto an inferenceProvider config', () {
       final state = InferenceProviderFormState(
         id: 'config-7',

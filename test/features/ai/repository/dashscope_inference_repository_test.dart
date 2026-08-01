@@ -271,7 +271,6 @@ void main() {
             const refImage = ProcessedReferenceImage(
               base64Data: 'dGVzdA==',
               mimeType: 'image/png',
-              originalId: 'ref-1',
             );
 
             await repository.generateImage(

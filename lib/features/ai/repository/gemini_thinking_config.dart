@@ -23,27 +23,6 @@ class GeminiThinkingConfig {
   final GeminiThinkingMode? thinkingMode;
   final bool includeThoughts;
 
-  // Presets for common scenarios
-  static const auto = GeminiThinkingConfig(thinkingBudget: -1);
-  static const disabled = GeminiThinkingConfig(thinkingBudget: 0);
-  static const standard = GeminiThinkingConfig(thinkingBudget: 8192);
-  static const minimal = GeminiThinkingConfig(
-    thinkingBudget: 0,
-    thinkingMode: GeminiThinkingMode.minimal,
-  );
-  static const low = GeminiThinkingConfig(
-    thinkingBudget: 1024,
-    thinkingMode: GeminiThinkingMode.low,
-  );
-  static const medium = GeminiThinkingConfig(
-    thinkingBudget: 4096,
-    thinkingMode: GeminiThinkingMode.medium,
-  );
-  static const high = GeminiThinkingConfig(
-    thinkingBudget: -1,
-    thinkingMode: GeminiThinkingMode.high,
-  );
-
   /// Serializes the thinking config for the Gemini API.
   ///
   /// When [modelId] identifies a Gemini 3.x model, emits `thinkingLevel`.

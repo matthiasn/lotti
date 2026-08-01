@@ -141,11 +141,9 @@ class InboundQueue {
     var duplicates = 0;
     var filteredOut = 0;
     var deferred = 0;
-    var oldest = 0;
-    var newest = 0;
     final nowMs = clock.now().millisecondsSinceEpoch;
 
-    final toInsert = <({InboundEventQueueCompanion row, int ts})>[];
+    final toInsert = <InboundEventQueueCompanion>[];
     for (final event in events) {
       // F3 must run before F4. A real `m.room.encrypted` event has
       // ciphertext-only content with no visible `msgtype`, so the
@@ -164,8 +162,8 @@ class InboundQueue {
       }
 
       final ts = event.originServerTs.millisecondsSinceEpoch;
-      toInsert.add((
-        row: InboundEventQueueCompanion.insert(
+      toInsert.add(
+        InboundEventQueueCompanion.insert(
           eventId: event.eventId,
           roomId: event.roomId ?? '',
           originTs: ts,
@@ -180,8 +178,7 @@ class InboundQueue {
           // abandoned row later and resurrect it.
           jsonPath: Value(extractJsonPath(event)),
         ),
-        ts: ts,
-      ));
+      );
     }
 
     if (toInsert.isNotEmpty) {
@@ -190,17 +187,13 @@ class InboundQueue {
           final inserted = await _db
               .into(_db.inboundEventQueue)
               .insertReturningOrNull(
-                candidate.row,
+                candidate,
                 mode: InsertMode.insertOrIgnore,
               );
           if (inserted == null) {
             duplicates++;
           } else {
             accepted++;
-            // Only count bounds for events we actually inserted; duplicate
-            // rows must not inflate the accepted window.
-            if (oldest == 0 || candidate.ts < oldest) oldest = candidate.ts;
-            if (candidate.ts > newest) newest = candidate.ts;
           }
         }
       });
@@ -224,8 +217,6 @@ class InboundQueue {
       duplicatesDropped: duplicates,
       filteredOutByType: filteredOut,
       deferredPendingDecryption: deferred,
-      oldestTsAccepted: oldest,
-      newestTsAccepted: newest,
     );
   }
 
@@ -344,8 +335,7 @@ class InboundQueue {
         ),
       );
       return [
-        for (final r in rows)
-          InboundQueueEntry.fromRow(r, leaseUntil: leaseUntilMs),
+        for (final r in rows) InboundQueueEntry.fromRow(r),
       ];
     });
   }
@@ -540,10 +530,6 @@ class InboundQueue {
   /// instead of participating in the `GROUP BY status, producer` aggregate
   /// that appeared in the slow-query logs.
   Future<QueueStats> stats() async {
-    final nowMs = clock.now().millisecondsSinceEpoch;
-    final table = _db.inboundEventQueue;
-    final countCol = table.queueId.count();
-
     final depth = await _depthStats();
 
     final appliedRow = await _db
@@ -557,27 +543,9 @@ class InboundQueue {
         .getSingle();
     final applied = appliedRow.read<int>('cnt');
 
-    // Ready-now keeps its own probe: the predicate is
-    // `status IN InboundQueueStatuses.peekable AND next_due_at <= now
-    // AND lease_until <= now`, which the (status, next_due_at,
-    // lease_until) index satisfies as a per-status range scan and
-    // does not align with the (status, producer, enqueued_at)
-    // pivot's grouping.
-    final readyRow =
-        await (_db.selectOnly(table)
-              ..addColumns([countCol])
-              ..where(
-                const CustomExpression<bool>(_peekableStatusPredicate) &
-                    table.nextDueAt.isSmallerOrEqualValue(nowMs) &
-                    table.leaseUntil.isSmallerOrEqualValue(nowMs),
-              ))
-            .getSingle();
-    final readyNow = readyRow.read(countCol) ?? 0;
-
     return QueueStats(
       total: depth.total,
       byProducer: depth.byProducer,
-      readyNow: readyNow,
       oldestEnqueuedAt: depth.oldestEnqueuedAt,
       applied: applied,
       abandoned: depth.abandoned,
@@ -633,7 +601,6 @@ class InboundQueue {
     return QueueStats(
       total: total,
       byProducer: byProducer,
-      readyNow: 0,
       oldestEnqueuedAt: oldest,
       abandoned: abandoned,
       retrying: retrying,

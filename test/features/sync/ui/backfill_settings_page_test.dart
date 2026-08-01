@@ -580,7 +580,6 @@ void main() {
         (_) async => const QueueStats(
           total: 0,
           byProducer: {},
-          readyNow: 0,
           oldestEnqueuedAt: null,
         ),
       );
@@ -602,8 +601,6 @@ void main() {
       depthCtl.add(
         QueueDepthSignal(
           total: total,
-          byProducer: const {},
-          oldestEnqueuedAt: null,
           abandoned: abandoned,
         ),
       );
@@ -624,7 +621,6 @@ void main() {
           (_) async => const QueueStats(
             total: 4,
             byProducer: {},
-            readyNow: 0,
             oldestEnqueuedAt: null,
             abandoned: 2,
           ),
@@ -1176,7 +1172,6 @@ void main() {
         (_) async => const QueueStats(
           total: 0,
           byProducer: {},
-          readyNow: 0,
           oldestEnqueuedAt: null,
         ),
       );
@@ -1227,8 +1222,6 @@ void main() {
       depthCtl.add(
         const QueueDepthSignal(
           total: 0,
-          byProducer: {},
-          oldestEnqueuedAt: null,
           abandoned: 4,
         ),
       );
@@ -1454,7 +1447,6 @@ void main() {
       const idleStats = QueueStats(
         total: 0,
         byProducer: {},
-        readyNow: 0,
         oldestEnqueuedAt: null,
       );
       when(() => queueA.depthChanges).thenAnswer((_) => ctlA.stream);
@@ -1481,8 +1473,6 @@ void main() {
       ctlA.add(
         const QueueDepthSignal(
           total: 11,
-          byProducer: {},
-          oldestEnqueuedAt: null,
         ),
       );
       await tester.pump();
@@ -1508,8 +1498,6 @@ void main() {
       ctlA.add(
         const QueueDepthSignal(
           total: 99,
-          byProducer: {},
-          oldestEnqueuedAt: null,
         ),
       );
       await tester.pump();
@@ -1520,8 +1508,6 @@ void main() {
       ctlB.add(
         const QueueDepthSignal(
           total: 42,
-          byProducer: {},
-          oldestEnqueuedAt: null,
         ),
       );
       await tester.pump();

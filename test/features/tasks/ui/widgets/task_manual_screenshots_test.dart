@@ -197,9 +197,6 @@ final _manualResolvedAgentSetup = ResolvedAgentSetup(
   profile: _manualResolvedProfile,
   source: AgentSetupResolutionSource.baseProfile,
   setupOrigin: AgentInferenceSetupOrigin.user,
-  routeFingerprint: InferenceRouteFingerprint.fromProfile(
-    _manualResolvedProfile,
-  ),
 );
 final AgentTemplateEntity _manualTaskAgentTemplate =
     AgentDomainEntity.agentTemplate(

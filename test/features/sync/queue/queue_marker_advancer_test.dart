@@ -16,10 +16,8 @@ InboundQueueEntry _entry({
   eventId: eventId,
   roomId: roomId,
   originTs: originTs,
-  producer: InboundEventProducer.live,
   enqueuedAt: 1000,
   attempts: 0,
-  leaseUntil: 0,
   rawJson: '{}',
 );
 

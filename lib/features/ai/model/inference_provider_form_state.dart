@@ -86,9 +86,7 @@ class BaseUrl extends FormzInput<String, ProviderFormError> {
 /// Formz-backed state for the inference-provider edit form.
 ///
 /// Aggregates the four validated inputs plus submission flags and the selected
-/// [inferenceProviderType]. [lastUpdated] is bumped on every [copyWith] (even
-/// when no field value changes) so Riverpod always sees a new state object and
-/// rebuilds. Convert to the persisted entity with [toAiConfig].
+/// [inferenceProviderType]. Convert to the persisted entity with [toAiConfig].
 // Form state class
 class InferenceProviderFormState with FormzMixin {
   InferenceProviderFormState({
@@ -100,8 +98,7 @@ class InferenceProviderFormState with FormzMixin {
     this.isSubmitting = false,
     this.submitFailed = false,
     this.inferenceProviderType = InferenceProviderType.genericOpenAi,
-    DateTime? lastUpdated,
-  }) : lastUpdated = lastUpdated ?? DateTime.now();
+  });
 
   final String? id; // null for new API keys
   final ApiKeyName name;
@@ -111,31 +108,6 @@ class InferenceProviderFormState with FormzMixin {
   final bool isSubmitting;
   final bool submitFailed;
   final InferenceProviderType inferenceProviderType;
-  final DateTime lastUpdated;
-
-  InferenceProviderFormState copyWith({
-    String? id,
-    ApiKeyName? name,
-    ApiKeyValue? apiKey,
-    BaseUrl? baseUrl,
-    DescriptionValue? description,
-    bool? isSubmitting,
-    bool? submitFailed,
-    InferenceProviderType? inferenceProviderType,
-  }) {
-    return InferenceProviderFormState(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      apiKey: apiKey ?? this.apiKey,
-      baseUrl: baseUrl ?? this.baseUrl,
-      description: description ?? this.description,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
-      submitFailed: submitFailed ?? this.submitFailed,
-      inferenceProviderType:
-          inferenceProviderType ?? this.inferenceProviderType,
-      lastUpdated: DateTime.now(),
-    );
-  }
 
   @override
   List<FormzInput<String, dynamic>> get inputs => [

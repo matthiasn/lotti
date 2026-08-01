@@ -9,7 +9,6 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import '../../../../../../widget_test_utils.dart';
 
 AiProviderSetupResultData _data({
-  String providerName = 'Google Gemini',
   InferenceProviderType providerType = InferenceProviderType.gemini,
   int modelsCreated = 3,
   int modelsVerified = 0,
@@ -19,7 +18,6 @@ AiProviderSetupResultData _data({
   List<String> errors = const [],
 }) {
   return AiProviderSetupResultData(
-    providerName: providerName,
     providerType: providerType,
     modelsCreated: modelsCreated,
     modelsVerified: modelsVerified,
@@ -40,12 +38,11 @@ void main() {
       );
       final data = AiProviderSetupResultData.fromGemini(result: result);
       expect(data.totalModels, equals(3));
-      expect(data.providerName, equals('Gemini'));
       expect(data.providerType, equals(InferenceProviderType.gemini));
     });
 
     test('from() dispatches by runtime type for every wired provider', () {
-      final cases = <(AiFtueResult, InferenceProviderType, String)>[
+      final cases = <(AiFtueResult, InferenceProviderType)>[
         (
           const GeminiFtueResult(
             modelsCreated: 1,
@@ -53,7 +50,6 @@ void main() {
             categoryCreated: true,
           ),
           InferenceProviderType.gemini,
-          'Gemini',
         ),
         (
           const OpenAiFtueResult(
@@ -62,7 +58,6 @@ void main() {
             categoryCreated: true,
           ),
           InferenceProviderType.openAi,
-          'OpenAI',
         ),
         (
           const MistralFtueResult(
@@ -71,7 +66,6 @@ void main() {
             categoryCreated: true,
           ),
           InferenceProviderType.mistral,
-          'Mistral',
         ),
         (
           const MeliousFtueResult(
@@ -80,7 +74,6 @@ void main() {
             categoryCreated: true,
           ),
           InferenceProviderType.melious,
-          'Melious.ai',
         ),
         (
           const AlibabaFtueResult(
@@ -89,7 +82,6 @@ void main() {
             categoryCreated: true,
           ),
           InferenceProviderType.alibaba,
-          'Alibaba Cloud (Qwen)',
         ),
         (
           const AnthropicFtueResult(
@@ -98,19 +90,16 @@ void main() {
             categoryCreated: true,
           ),
           InferenceProviderType.anthropic,
-          'Anthropic',
         ),
         (
           const OllamaFtueResult(categoryCreated: true),
           InferenceProviderType.ollama,
-          'Ollama',
         ),
       ];
 
-      for (final (result, type, name) in cases) {
+      for (final (result, type) in cases) {
         final data = AiProviderSetupResultData.from(result);
         expect(data.providerType, equals(type));
-        expect(data.providerName, equals(name));
       }
     });
   });
@@ -172,7 +161,6 @@ void main() {
           makeTestableWidget(
             AiProviderSetupResultModal(
               data: _data(
-                providerName: 'Ollama',
                 providerType: InferenceProviderType.ollama,
                 modelsCreated: 0,
                 // ignore: avoid_redundant_argument_values

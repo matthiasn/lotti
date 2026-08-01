@@ -62,7 +62,6 @@ void main() {
       expect(state.isSyncing, isFalse);
       expect(state.progress, 0);
       expect(state.currentStep, SyncStep.measurables);
-      expect(state.error, isNull);
       expect(state.stepProgress, isEmpty);
       expect(state.selectedSteps, isEmpty);
     });
@@ -73,7 +72,6 @@ void main() {
         isSyncing: true,
         progress: 50,
         currentStep: SyncStep.labels,
-        error: 'test error',
         stepProgress: {
           SyncStep.measurables: const StepProgress(processed: 5, total: 5),
         },
@@ -83,37 +81,8 @@ void main() {
       expect(updated.isSyncing, isTrue);
       expect(updated.progress, 50);
       expect(updated.currentStep, SyncStep.labels);
-      expect(updated.error, 'test error');
       expect(updated.stepProgress, hasLength(1));
       expect(updated.selectedSteps, hasLength(2));
-    });
-
-    test('copyWith always clears error unless explicitly re-supplied', () {
-      // SyncState.copyWith does NOT coalesce `error` with `??` the way the
-      // other fields do — it assigns `error: error` directly. That is
-      // deliberate: every no-arg copyWith resets the error to null so a stale
-      // failure cannot leak into the next state transition. Pin both halves of
-      // that asymmetry so a future refactor to `error ?? this.error` is caught.
-      final withError = const SyncState().copyWith(error: 'some error');
-      expect(
-        withError.error,
-        'some error',
-        reason: 'explicitly supplied error must be retained',
-      );
-
-      final cleared = withError.copyWith();
-      expect(
-        cleared.error,
-        isNull,
-        reason: 'no-arg copyWith must drop the previous error, not preserve it',
-      );
-
-      final replaced = withError.copyWith(error: 'new error');
-      expect(
-        replaced.error,
-        'new error',
-        reason: 'a newly supplied error must overwrite the previous one',
-      );
     });
 
     test('copyWith preserves unmodified fields', () {

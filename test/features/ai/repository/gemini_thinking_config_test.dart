@@ -165,14 +165,12 @@ void main() {
       });
 
       test('creates with zero budget (disabled)', () {
-        // ignore: use_named_constants, intentionally testing constructor
         const config = GeminiThinkingConfig(thinkingBudget: 0);
 
         expect(config.thinkingBudget, 0);
       });
 
       test('creates with negative budget (auto)', () {
-        // ignore: use_named_constants, intentionally testing constructor
         const config = GeminiThinkingConfig(thinkingBudget: -1);
 
         expect(config.thinkingBudget, -1);
@@ -182,51 +180,6 @@ void main() {
         const config = GeminiThinkingConfig(thinkingBudget: 24576);
 
         expect(config.thinkingBudget, 24576);
-      });
-    });
-
-    group('presets', () {
-      test('auto preset has budget -1 and includeThoughts false', () {
-        expect(GeminiThinkingConfig.auto.thinkingBudget, -1);
-        expect(GeminiThinkingConfig.auto.includeThoughts, isFalse);
-      });
-
-      test('disabled preset has budget 0 and includeThoughts false', () {
-        expect(GeminiThinkingConfig.disabled.thinkingBudget, 0);
-        expect(GeminiThinkingConfig.disabled.includeThoughts, isFalse);
-      });
-
-      test('standard preset has budget 8192 and includeThoughts false', () {
-        expect(GeminiThinkingConfig.standard.thinkingBudget, 8192);
-        expect(GeminiThinkingConfig.standard.includeThoughts, isFalse);
-      });
-
-      test('mode presets carry API modes and fallback budgets', () {
-        expect(
-          GeminiThinkingConfig.minimal.thinkingMode,
-          GeminiThinkingMode.minimal,
-        );
-        expect(GeminiThinkingConfig.minimal.thinkingBudget, 0);
-        expect(GeminiThinkingConfig.low.thinkingMode, GeminiThinkingMode.low);
-        expect(GeminiThinkingConfig.low.thinkingBudget, 1024);
-        expect(
-          GeminiThinkingConfig.medium.thinkingMode,
-          GeminiThinkingMode.medium,
-        );
-        expect(GeminiThinkingConfig.medium.thinkingBudget, 4096);
-        expect(GeminiThinkingConfig.high.thinkingMode, GeminiThinkingMode.high);
-        expect(GeminiThinkingConfig.high.thinkingBudget, -1);
-      });
-
-      test('presets are const', () {
-        // These compile-time const checks verify the presets are constant
-        const auto = GeminiThinkingConfig.auto;
-        const disabled = GeminiThinkingConfig.disabled;
-        const standard = GeminiThinkingConfig.standard;
-
-        expect(auto, isNotNull);
-        expect(disabled, isNotNull);
-        expect(standard, isNotNull);
       });
     });
 
@@ -295,7 +248,7 @@ void main() {
       });
 
       test('serializes auto preset', () {
-        final json = GeminiThinkingConfig.auto.toJson();
+        final json = const GeminiThinkingConfig(thinkingBudget: -1).toJson();
 
         expect(json, {
           'thinkingBudget': -1,
@@ -304,7 +257,7 @@ void main() {
       });
 
       test('serializes disabled preset', () {
-        final json = GeminiThinkingConfig.disabled.toJson();
+        final json = const GeminiThinkingConfig(thinkingBudget: 0).toJson();
 
         expect(json, {
           'thinkingBudget': 0,
@@ -313,7 +266,7 @@ void main() {
       });
 
       test('serializes standard preset', () {
-        final json = GeminiThinkingConfig.standard.toJson();
+        final json = const GeminiThinkingConfig(thinkingBudget: 8192).toJson();
 
         expect(json, {
           'thinkingBudget': 8192,
@@ -357,7 +310,7 @@ void main() {
 
     group('toJson with Gemini 3.x modelId', () {
       test('emits thinkingLevel for Gemini 3.x model', () {
-        final json = GeminiThinkingConfig.auto.toJson(
+        final json = const GeminiThinkingConfig(thinkingBudget: -1).toJson(
           modelId: 'models/gemini-3.1-pro-preview',
         );
 
@@ -368,7 +321,7 @@ void main() {
       });
 
       test('emits thinkingBudget for non-Gemini-3 model', () {
-        final json = GeminiThinkingConfig.auto.toJson(
+        final json = const GeminiThinkingConfig(thinkingBudget: -1).toJson(
           modelId: 'models/custom-model',
         );
 
@@ -378,28 +331,28 @@ void main() {
       });
 
       test('emits thinkingBudget when modelId is null', () {
-        final json = GeminiThinkingConfig.auto.toJson();
+        final json = const GeminiThinkingConfig(thinkingBudget: -1).toJson();
 
         expect(json.containsKey('thinkingBudget'), isTrue);
         expect(json.containsKey('thinkingLevel'), isFalse);
       });
 
       test('maps auto preset to high for Gemini 3', () {
-        final json = GeminiThinkingConfig.auto.toJson(
+        final json = const GeminiThinkingConfig(thinkingBudget: -1).toJson(
           modelId: 'gemini-3.1-pro-preview',
         );
         expect(json['thinkingLevel'], 'high');
       });
 
       test('maps disabled preset to low for Gemini 3 Pro', () {
-        final json = GeminiThinkingConfig.disabled.toJson(
+        final json = const GeminiThinkingConfig(thinkingBudget: 0).toJson(
           modelId: 'gemini-3.1-pro-preview',
         );
         expect(json['thinkingLevel'], 'low');
       });
 
       test('maps standard preset (8192) to high for Gemini 3', () {
-        final json = GeminiThinkingConfig.standard.toJson(
+        final json = const GeminiThinkingConfig(thinkingBudget: 8192).toJson(
           modelId: 'gemini-3.1-pro-preview',
         );
         expect(json['thinkingLevel'], 'high');
@@ -522,14 +475,22 @@ void main() {
     group('thinking capability check', () {
       test('budget != 0 indicates thinking is enabled', () {
         // This tests the pattern used in cloud_inference_repository.dart
-        expect(GeminiThinkingConfig.auto.thinkingBudget != 0, isTrue);
-        expect(GeminiThinkingConfig.standard.thinkingBudget != 0, isTrue);
-        expect(GeminiThinkingConfig.disabled.thinkingBudget != 0, isFalse);
+        expect(
+          const GeminiThinkingConfig(thinkingBudget: -1).thinkingBudget != 0,
+          isTrue,
+        );
+        expect(
+          const GeminiThinkingConfig(thinkingBudget: 8192).thinkingBudget != 0,
+          isTrue,
+        );
+        expect(
+          const GeminiThinkingConfig(thinkingBudget: 0).thinkingBudget != 0,
+          isFalse,
+        );
       });
 
       test('custom budgets indicate thinking capability correctly', () {
         const enabled = GeminiThinkingConfig(thinkingBudget: 1);
-        // ignore: use_named_constants, intentionally testing constructor
         const disabledConfig = GeminiThinkingConfig(thinkingBudget: 0);
 
         expect(enabled.thinkingBudget != 0, isTrue);

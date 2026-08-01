@@ -104,8 +104,6 @@ class QueueDepthEmitter {
         _depthCtl.add(
           QueueDepthSignal(
             total: snapshot.total,
-            byProducer: snapshot.byProducer,
-            oldestEnqueuedAt: snapshot.oldestEnqueuedAt,
             abandoned: snapshot.abandoned,
           ),
         );

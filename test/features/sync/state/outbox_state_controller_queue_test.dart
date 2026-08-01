@@ -295,14 +295,11 @@ void main() {
 
     QueueDepthSignal signal(int total) => QueueDepthSignal(
       total: total,
-      byProducer: const <InboundEventProducer, int>{},
-      oldestEnqueuedAt: null,
     );
 
     QueueStats stats(int total) => QueueStats(
       total: total,
       byProducer: const <InboundEventProducer, int>{},
-      readyNow: 0,
       oldestEnqueuedAt: null,
     );
 

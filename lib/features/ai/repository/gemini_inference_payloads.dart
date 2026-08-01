@@ -60,19 +60,4 @@ class GeneratedImage {
 
   /// The MIME type of the image (e.g., 'image/png', 'image/jpeg').
   final String mimeType;
-
-  /// Returns the file extension for this image's MIME type.
-  String get extension {
-    switch (mimeType) {
-      case 'image/jpeg':
-        return 'jpg';
-      case 'image/gif':
-        return 'gif';
-      case 'image/webp':
-        return 'webp';
-      case 'image/png':
-      default:
-        return 'png';
-    }
-  }
 }

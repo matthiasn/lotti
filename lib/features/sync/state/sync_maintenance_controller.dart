@@ -132,7 +132,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
         progress: 100,
       );
     } catch (e, stackTrace) {
-      final syncError = SyncError.fromException(
+      SyncError.fromException(
         e,
         stackTrace,
         _loggingService,
@@ -140,7 +140,6 @@ class SyncMaintenanceController extends Notifier<SyncState> {
 
       state = state.copyWith(
         isSyncing: false,
-        error: syncError.toString(),
       );
       rethrow;
     }

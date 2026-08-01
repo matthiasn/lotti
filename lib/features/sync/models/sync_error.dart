@@ -9,19 +9,12 @@ enum SyncErrorType {
   unknown,
 }
 
-/// A sync failure paired with a user-friendly [message] and its [type].
+/// A sync failure exposing a user-friendly [message].
 ///
-/// Retains the [originalError]/[stackTrace] for diagnostics while exposing a
-/// localised-intent message via [toString]. Build instances through
-/// [SyncError.fromException], which classifies the error and logs the raw
-/// detail before discarding it from the UI surface.
+/// Build instances through [SyncError.fromException], which classifies the
+/// error and logs the raw detail before discarding it from the UI surface.
 class SyncError {
-  SyncError({
-    required this.type,
-    required this.message,
-    this.originalError,
-    this.stackTrace,
-  });
+  SyncError({required this.message});
 
   /// Classifies [error] into a [SyncErrorType] (by inspecting its string form),
   /// logs the full error + [stackTrace] via [loggingService], and returns a
@@ -45,18 +38,10 @@ class SyncError {
     // Create a user-friendly message
     final message = _createUserFriendlyMessage(error, type);
 
-    return SyncError(
-      type: type,
-      message: message,
-      originalError: error,
-      stackTrace: stackTrace,
-    );
+    return SyncError(message: message);
   }
 
-  final SyncErrorType type;
   final String message;
-  final Object? originalError;
-  final StackTrace? stackTrace;
 
   static SyncErrorType _determineErrorType(Object error) {
     if (error.toString().contains('database')) {

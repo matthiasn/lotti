@@ -322,8 +322,6 @@ class _GeneratedBatchAccountingScenario {
     var duplicates = 0;
     var filtered = 0;
     var deferred = 0;
-    var oldest = 0;
-    var newest = 0;
 
     for (final row in rows) {
       switch (row.kind) {
@@ -340,8 +338,6 @@ class _GeneratedBatchAccountingScenario {
             originTsMs: row.originTsMs,
             jsonPath: row.expectedStoredPath,
           );
-          if (oldest == 0 || row.originTsMs < oldest) oldest = row.originTsMs;
-          if (row.originTsMs > newest) newest = row.originTsMs;
       }
     }
 
@@ -350,8 +346,6 @@ class _GeneratedBatchAccountingScenario {
       duplicates: duplicates,
       filtered: filtered,
       deferred: deferred,
-      oldest: oldest,
-      newest: newest,
     );
   }
 
@@ -375,16 +369,12 @@ class _ExpectedBatchAccounting {
     required this.duplicates,
     required this.filtered,
     required this.deferred,
-    required this.oldest,
-    required this.newest,
   });
 
   final Map<String, _ExpectedAcceptedBatchRow> acceptedByEventId;
   final int duplicates;
   final int filtered;
   final int deferred;
-  final int oldest;
-  final int newest;
 }
 
 class _ExpectedQueueMarker {
@@ -1109,7 +1099,6 @@ void main() {
           // Only the never-peeked row is ready right now: the leased row
           // holds a live lease and the retrying row's backoff is in the
           // future.
-          expect(stats.readyNow, 1);
           // All rows were enqueued under the frozen clock.
           expect(stats.oldestEnqueuedAt, frozen.millisecondsSinceEpoch);
         });
@@ -1153,57 +1142,7 @@ void main() {
             expect(snapshot.byProducer[InboundEventProducer.live], 1);
             expect(snapshot.abandoned, 1);
             expect(snapshot.applied, 0);
-            expect(snapshot.readyNow, 0);
           },
-        );
-      },
-    );
-
-    test(
-      'ready-now probe uses literal peekable statuses so partial indexes '
-      'remain provable',
-      () async {
-        await queue.enqueueBatch(
-          [
-            for (var i = 0; i < 200; i++)
-              _buildSyncEvent(
-                eventId: '\$ready-plan-$i',
-                roomId: roomA,
-                originTsMs: 1000 + i,
-              ),
-          ],
-          producer: InboundEventProducer.live,
-        );
-        await db.customStatement('ANALYZE');
-
-        final rows = await db
-            .customSelect(
-              'EXPLAIN QUERY PLAN '
-              'SELECT COUNT(*) AS cnt FROM inbound_event_queue '
-              "WHERE status IN ('enqueued', 'retrying', 'leased') "
-              'AND next_due_at <= ? '
-              'AND lease_until <= ?',
-              variables: [
-                Variable.withInt(100000),
-                Variable.withInt(100000),
-              ],
-            )
-            .get();
-        final plan = rows.map((row) => row.data.toString()).join('\n');
-
-        expect(
-          plan,
-          anyOf(
-            contains('idx_inbound_event_queue_active_ready_at'),
-            contains('idx_inbound_event_queue_status_due_lease'),
-          ),
-          reason:
-              'literal peekable status predicates must keep ready-now probes '
-              'on queue indexes instead of the applied-ledger table scan',
-        );
-        expect(
-          plan,
-          isNot(matches(RegExp('SCAN inbound_event_queue(?! USING)'))),
         );
       },
     );
@@ -1492,7 +1431,6 @@ void main() {
 
           final stats = await queue.stats();
           expect(stats.total, expectedEventIds.length);
-          expect(stats.readyNow, expectedEventIds.length);
           expect(
             stats.abandoned,
             scenario.rows.length - expectedEventIds.length,
@@ -1564,7 +1502,6 @@ void main() {
 
           final stats = await freshQueue.stats();
           expect(stats.total, expectedIndices.length);
-          expect(stats.readyNow, expectedIndices.length);
           expect(
             stats.abandoned,
             scenario.seededSlots.length - expectedIndices.length,
@@ -1614,8 +1551,6 @@ void main() {
           expect(result.duplicatesDropped, expected.duplicates);
           expect(result.filteredOutByType, expected.filtered);
           expect(result.deferredPendingDecryption, expected.deferred);
-          expect(result.oldestTsAccepted, expected.oldest);
-          expect(result.newestTsAccepted, expected.newest);
 
           final stored = await db.select(db.inboundEventQueue).get();
           expect(stored, hasLength(expected.acceptedByEventId.length));

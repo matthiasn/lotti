@@ -20,9 +20,7 @@ imageGenerationErrorControllerProvider = NotifierProvider.autoDispose
     );
 
 class ImageGenerationErrorController extends Notifier<String?> {
-  ImageGenerationErrorController(this.id);
-
-  final String id;
+  ImageGenerationErrorController(String _);
 
   @override
   String? build() {

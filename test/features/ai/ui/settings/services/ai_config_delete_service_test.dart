@@ -77,7 +77,6 @@ void main() {
           // Arrange
           final cascadeResult = CascadeDeletionResult(
             deletedModels: associatedModels,
-            providerName: testProvider.name,
           );
 
           when(
@@ -487,7 +486,6 @@ void main() {
         // Arrange
         final cascadeResult = CascadeDeletionResult(
           deletedModels: associatedModels,
-          providerName: testProvider.name,
         );
 
         when(
@@ -695,7 +693,6 @@ void main() {
           // Arrange
           final cascadeResult = CascadeDeletionResult(
             deletedModels: associatedModels,
-            providerName: testProvider.name,
           );
 
           when(
@@ -756,7 +753,6 @@ void main() {
 
           final cascadeResult = CascadeDeletionResult(
             deletedModels: manyModels,
-            providerName: testProvider.name,
           );
 
           when(
@@ -870,9 +866,8 @@ void main() {
         'should handle empty associated models for provider deletion',
         (WidgetTester tester) async {
           // Arrange
-          final cascadeResult = CascadeDeletionResult(
+          const cascadeResult = CascadeDeletionResult(
             deletedModels: [], // No associated models
-            providerName: testProvider.name,
           );
 
           when(
@@ -1105,7 +1100,6 @@ void main() {
         (WidgetTester tester) async {
           final cascadeResult = CascadeDeletionResult(
             deletedModels: associatedModels,
-            providerName: testProvider.name,
           );
 
           when(
