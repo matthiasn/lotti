@@ -178,6 +178,15 @@ result is otherwise unspecified. The consumers are first-wins
 `unifiedSuggestionList`), so an unordered compound could let an older
 retry/audit decision override the newest one.
 
+`latestEntitiesByAgentIds` accepts an `outerPredicate` that is applied to the
+outer `WHERE rn = 1` — i.e. it filters the *winning* row per agent, after
+ranking. `getAgentStatesWithPendingWakes` uses it to return only agents that
+actually have a wake pending, instead of returning every agent's latest state
+for the pending-wakes screen to discard. Applying such a predicate inside the
+ranked subquery would be a correctness bug: it could promote an older row that
+satisfies it over a newer one that does not, resurrecting state the newest row
+had cleared.
+
 Latest-per-agent batch reads are backed by active-row indexes that include the
 `(created_at DESC, id DESC)` ranking order for both type-only and
 type-plus-subtype lookups, so the window-function query needs no temp sort for

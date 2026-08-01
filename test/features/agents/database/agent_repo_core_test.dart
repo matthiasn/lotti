@@ -175,6 +175,121 @@ void main() {
     );
   });
 
+  group('getAgentStatesWithPendingWakes', () {
+    // The pending-wakes screen used to load every agent's latest state and
+    // discard the ones with no wake. The filter now runs in SQL. These tests
+    // pin the two things that could go wrong: filtering must happen AFTER the
+    // per-agent ranking, and agents whose wake lives in a separate
+    // ScheduledWakeEntity row must still be hydrated.
+    //
+    // `created_at` for an AgentStateEntity is its `updatedAt`
+    // (AgentDbConversions.entityCreatedAt), which is what the ranking orders by.
+
+    Future<void> putState(
+      String agentId,
+      String stateId, {
+      DateTime? nextWakeAt,
+      DateTime? scheduledWakeAt,
+      DateTime? at,
+    }) async {
+      await core.upsertEntity(
+        makeTestState(
+          id: stateId,
+          agentId: agentId,
+          nextWakeAt: nextWakeAt,
+          scheduledWakeAt: scheduledWakeAt,
+          updatedAt: at ?? testDate,
+        ),
+      );
+    }
+
+    test('returns only agents with a pending or scheduled wake', () async {
+      await putState('a-wake', 'st-a', nextWakeAt: testDate);
+      await putState('a-sched', 'st-b', scheduledWakeAt: testDate);
+      await putState('a-idle', 'st-c');
+
+      final states = await core.getAgentStatesWithPendingWakes([
+        'a-wake',
+        'a-sched',
+        'a-idle',
+      ]);
+
+      expect(
+        states.keys.toSet(),
+        {'a-wake', 'a-sched'},
+        reason: 'the idle agent must not be decoded or returned',
+      );
+    });
+
+    test('a cleared wake on the newest state excludes the agent', () async {
+      // The correctness trap: filtering inside the ranked subquery would
+      // promote the older row that still has a wake, resurrecting it.
+      await putState(
+        'a-1',
+        'st-1-old',
+        nextWakeAt: testDate,
+        at: DateTime(2026, 3, 14),
+      );
+      await putState('a-1', 'st-1-new', at: DateTime(2026, 3, 16));
+
+      final states = await core.getAgentStatesWithPendingWakes(['a-1']);
+
+      expect(
+        states,
+        isEmpty,
+        reason: 'the newest state cleared the wake, so the agent is excluded',
+      );
+    });
+
+    test('a newly-set wake on the newest state includes the agent', () async {
+      await putState('a-2', 'st-2-old', at: DateTime(2026, 3, 14));
+      await putState(
+        'a-2',
+        'st-2-new',
+        nextWakeAt: testDate,
+        at: DateTime(2026, 3, 16),
+      );
+
+      final states = await core.getAgentStatesWithPendingWakes(['a-2']);
+
+      expect(states.keys, ['a-2']);
+      expect(states['a-2']!.nextWakeAt, isNotNull);
+    });
+
+    test('alsoIncludeAgentIds hydrates agents with no wake field', () async {
+      // ScheduledWakeEntity rows carry the wake instead of the state, so those
+      // agents must survive the filter when named explicitly.
+      await putState('a-wake', 'st-a', nextWakeAt: testDate);
+      await putState('a-workspace', 'st-b');
+      await putState('a-idle', 'st-c');
+
+      final states = await core.getAgentStatesWithPendingWakes(
+        ['a-wake', 'a-workspace', 'a-idle'],
+        alsoIncludeAgentIds: ['a-workspace'],
+      );
+
+      expect(
+        states.keys.toSet(),
+        {'a-wake', 'a-workspace'},
+        reason: 'named agent included, unnamed idle agent still filtered out',
+      );
+    });
+
+    test('omitting alsoIncludeAgentIds leaves valid SQL', () async {
+      // The `OR agent_id IN (...)` clause is appended only when ids are given;
+      // the default path must not emit a dangling `IN ()`.
+      await putState('a-wake', 'st-a', nextWakeAt: testDate);
+      await putState('a-idle', 'st-b');
+
+      final states = await core.getAgentStatesWithPendingWakes([
+        'a-wake',
+        'a-idle',
+      ]);
+
+      expect(states.keys, ['a-wake']);
+    });
+  });
+
   group('upsertEntity / getEntity', () {
     test('inserts then updates a non-projection entity in place', () async {
       final identity = makeTestIdentity(

@@ -181,10 +181,17 @@ class AgentRepoCore {
   /// [type] (and optionally [subtype]). Shared batched read used by the
   /// state/head latest-per-agent lookups in this class and in
   /// [AgentRepoQueries].
+  /// [outerPredicate] is appended to the outer `WHERE rn = 1` — i.e. it filters
+  /// the *winning* row per agent, after ranking. Filtering inside the ranked
+  /// subquery instead would be a correctness bug: it could promote an older row
+  /// that satisfies the predicate over a newer one that does not, resurrecting
+  /// state the newest row had cleared.
   Future<List<AgentDomainEntity>> latestEntitiesByAgentIds({
     required Iterable<String> agentIds,
     required String type,
     String? subtype,
+    String outerPredicate = '',
+    List<Variable<Object>> outerVariables = const [],
   }) async {
     final result = <AgentDomainEntity>[];
     for (final chunk in sqliteInClauseChunks(agentIds)) {
@@ -208,11 +215,13 @@ class AgentRepoCore {
                   AND deleted_at IS NULL
               )
               WHERE rn = 1
+                $outerPredicate
             ''',
             variables: [
               ...chunk.map(Variable.withString),
               Variable.withString(type),
               if (subtype != null) Variable.withString(subtype),
+              ...outerVariables,
             ],
             readsFrom: {_db.agentEntities},
           )
@@ -410,6 +419,42 @@ class AgentRepoCore {
     final latestEntities = await latestEntitiesByAgentIds(
       agentIds: agentIds,
       type: AgentEntityTypes.agentState,
+    );
+    return {
+      for (final entity in latestEntities)
+        if (entity case final AgentStateEntity state) state.agentId: state,
+    };
+  }
+
+  /// The latest [AgentStateEntity] per agent, **restricted to agents that
+  /// actually have a wake pending** — either a self-requested `nextWakeAt` or a
+  /// state-level `scheduledWakeAt`.
+  ///
+  /// [getAgentStatesByAgentIds] returns the latest state for every agent, and
+  /// the pending-wakes screen then discards the overwhelming majority of them.
+  /// On an install with ~900 agents that is ~900 rows decoded from JSON on
+  /// every agent-update notification; the 2026-06/07 slow-query logs show 2,050
+  /// full-population reads of this shape in 14 days (`args=901`), each around
+  /// 32 ms. The predicate is applied *after* ranking, so an agent whose newest
+  /// state cleared its wake is correctly excluded.
+  Future<Map<String, AgentStateEntity>> getAgentStatesWithPendingWakes(
+    List<String> agentIds, {
+    Iterable<String> alsoIncludeAgentIds = const <String>[],
+  }) async {
+    // Agents whose wake lives in a separate `ScheduledWakeEntity` row rather
+    // than on the state itself still need their state hydrated, so callers can
+    // name them explicitly. Kept in the same query — splitting it would trade
+    // the decode saving for an extra round trip.
+    final alsoInclude = alsoIncludeAgentIds.toSet().toList(growable: false);
+    final alsoPlaceholders = List.filled(alsoInclude.length, '?').join(', ');
+    final latestEntities = await latestEntitiesByAgentIds(
+      agentIds: agentIds,
+      type: AgentEntityTypes.agentState,
+      outerPredicate:
+          r"AND (json_extract(serialized, '$.nextWakeAt') IS NOT NULL "
+          r"OR json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL"
+          '${alsoInclude.isEmpty ? '' : ' OR agent_id IN ($alsoPlaceholders)'})',
+      outerVariables: alsoInclude.map(Variable.withString).toList(),
     );
     return {
       for (final entity in latestEntities)

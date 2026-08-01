@@ -507,7 +507,10 @@ void main() {
           mockAgentService.listAgents,
         ).thenAnswer((_) => Future.value([firstIdentity, secondIdentity]));
         when(
-          () => mockRepository.getAgentStatesByAgentIds(any()),
+          () => mockRepository.getAgentStatesWithPendingWakes(
+            any(),
+            alsoIncludeAgentIds: any(named: 'alsoIncludeAgentIds'),
+          ),
         ).thenAnswer(
           (_) async => {
             'agent-a': firstState,
@@ -541,7 +544,10 @@ void main() {
         expect(records[2].agent.agentId, 'agent-b');
         final capturedAgentIds =
             verify(
-                  () => mockRepository.getAgentStatesByAgentIds(captureAny()),
+                  () => mockRepository.getAgentStatesWithPendingWakes(
+                    captureAny(),
+                    alsoIncludeAgentIds: any(named: 'alsoIncludeAgentIds'),
+                  ),
                 ).captured.single
                 as List<String>;
         expect(capturedAgentIds, ['agent-a', 'agent-b']);
@@ -587,7 +593,10 @@ void main() {
               Future.value([activeIdentity, deletedIdentity, missingIdentity]),
         );
         when(
-          () => mockRepository.getAgentStatesByAgentIds(any()),
+          () => mockRepository.getAgentStatesWithPendingWakes(
+            any(),
+            alsoIncludeAgentIds: any(named: 'alsoIncludeAgentIds'),
+          ),
         ).thenAnswer(
           (_) async => {
             'agent-a': activeState,
@@ -635,7 +644,10 @@ void main() {
           mockAgentService.listAgents,
         ).thenAnswer((_) => Future.value([identity]));
         when(
-          () => mockRepository.getAgentStatesByAgentIds(any()),
+          () => mockRepository.getAgentStatesWithPendingWakes(
+            any(),
+            alsoIncludeAgentIds: any(named: 'alsoIncludeAgentIds'),
+          ),
         ).thenAnswer((_) async => {'agent-a': state});
         when(
           mockRepository.getPendingScheduledWakeRecords,
@@ -680,7 +692,10 @@ void main() {
           mockAgentService.listAgents,
         ).thenAnswer((_) async => [identity]);
         when(
-          () => mockRepository.getAgentStatesByAgentIds(any()),
+          () => mockRepository.getAgentStatesWithPendingWakes(
+            any(),
+            alsoIncludeAgentIds: any(named: 'alsoIncludeAgentIds'),
+          ),
         ).thenAnswer((_) async => {plannerId: state});
         when(mockRepository.getPendingScheduledWakeRecords).thenAnswer(
           (_) async => [
@@ -732,7 +747,10 @@ void main() {
 
         when(mockAgentService.listAgents).thenAnswer((_) async => const []);
         when(
-          () => mockRepository.getAgentStatesByAgentIds(any()),
+          () => mockRepository.getAgentStatesWithPendingWakes(
+            any(),
+            alsoIncludeAgentIds: any(named: 'alsoIncludeAgentIds'),
+          ),
         ).thenAnswer((_) async => const {});
         when(mockRepository.getPendingScheduledWakeRecords).thenAnswer(
           (_) async => [
@@ -789,7 +807,10 @@ void main() {
           mockAgentService.listAgents,
         ).thenAnswer((_) async => scenario.identities);
         when(
-          () => mockRepository.getAgentStatesByAgentIds(any()),
+          () => mockRepository.getAgentStatesWithPendingWakes(
+            any(),
+            alsoIncludeAgentIds: any(named: 'alsoIncludeAgentIds'),
+          ),
         ).thenAnswer((_) async => scenario.statesByAgentId);
         when(
           mockRepository.getPendingScheduledWakeRecords,
@@ -813,7 +834,10 @@ void main() {
 
           final capturedAgentIds =
               verify(
-                    () => mockRepository.getAgentStatesByAgentIds(captureAny()),
+                    () => mockRepository.getAgentStatesWithPendingWakes(
+                      captureAny(),
+                      alsoIncludeAgentIds: any(named: 'alsoIncludeAgentIds'),
+                    ),
                   ).captured.single
                   as List<String>;
           expect(
