@@ -54,6 +54,12 @@ Future<AppExitResponse> _handleAppExitRequested() async {
 /// Test seam for the desktop exit callback.
 Future<AppExitResponse> handleAppExitRequested() => _handleAppExitRequested();
 
+/// Emits any counted framework-error summaries that are still waiting for
+/// their timer when orderly shutdown begins.
+void flushPendingFrameworkErrorSummaries() {
+  _frameworkErrorLimiter.flushPendingSummaries();
+}
+
 Future<void> main() async {
   // Raise the file descriptor soft limit before anything opens an FD. On
   // macOS, GUI apps inherit launchd's legacy soft limit of 256, which is
@@ -120,7 +126,13 @@ Future<void> main() async {
         ..registerSingleton<SecureStorage>(SecureStorage())
         ..registerSingleton<Directory>(docDir)
         ..registerSingleton<SettingsDb>(SettingsDb())
-        ..registerSingleton<WindowService>(WindowService());
+        ..registerSingleton<WindowService>(
+          WindowService(
+            beforeLogFlush: () async {
+              flushPendingFrameworkErrorSummaries();
+            },
+          ),
+        );
 
       await getIt<WindowService>().restore();
       tz.initializeTimeZones();
@@ -166,7 +178,13 @@ void handleFlutterFrameworkError(FlutterErrorDetails details) {
   final report = _frameworkErrorLimiter.observe(details, diagnostics);
   switch (report.kind) {
     case _FrameworkErrorReportKind.full:
-      FlutterError.presentError(details);
+      FlutterError.presentError(
+        details.copyWith(
+          informationCollector: () => <DiagnosticsNode>[
+            for (final diagnostic in diagnostics) ErrorDescription(diagnostic),
+          ],
+        ),
+      );
       final logger = getIt<DomainLogger>();
       if (diagnostics.isEmpty) {
         logger.error(
@@ -191,12 +209,18 @@ void handleFlutterFrameworkError(FlutterErrorDetails details) {
   }
 }
 
-List<String> _renderFrameworkErrorDiagnostics(FlutterErrorDetails details) =>
-    <String>[
+List<String> _renderFrameworkErrorDiagnostics(FlutterErrorDetails details) {
+  try {
+    return <String>[
       ...?details.informationCollector?.call().map(
         (node) => node.toStringDeep(),
       ),
     ];
+  } catch (_) {
+    // Rendering optional diagnostics must never mask the framework error.
+    return const <String>[];
+  }
+}
 
 void _emitFrameworkErrorSummary(_FrameworkErrorReport report, String? library) {
   final summary =
@@ -257,8 +281,16 @@ class _FrameworkErrorReport {
 }
 
 class _FrameworkErrorState {
-  _FrameworkErrorState(this.lastReportedAt);
+  _FrameworkErrorState(
+    this.lastReportedAt, {
+    required this.fingerprint,
+    required this.errorType,
+    required this.library,
+  });
 
+  final String fingerprint;
+  final String errorType;
+  final String? library;
   DateTime lastReportedAt;
   int total = 0;
   int pending = 0;
@@ -290,7 +322,14 @@ class _FrameworkErrorLimiter {
     final fingerprint = _fingerprint(details, diagnostics);
     final errorType = details.exception.runtimeType.toString();
     final library = details.library;
-    final state = _states.remove(fingerprint) ?? _FrameworkErrorState(now);
+    final state =
+        _states.remove(fingerprint) ??
+        _FrameworkErrorState(
+          now,
+          fingerprint: fingerprint,
+          errorType: errorType,
+          library: library,
+        );
     _states[fingerprint] = state;
     while (_states.length > _frameworkErrorFingerprintCapacity) {
       _states.remove(_states.keys.first)?.summaryTimer?.cancel();
@@ -310,37 +349,14 @@ class _FrameworkErrorLimiter {
     state.pending++;
     final elapsed = now.difference(state.lastReportedAt);
     if (state.pending >= summaryEvery || elapsed >= summaryInterval) {
-      final observed = state.pending;
-      state
-        ..summaryTimer?.cancel()
-        ..summaryTimer = null
-        ..pending = 0
-        ..lastReportedAt = now;
-      return _FrameworkErrorReport(
-        kind: _FrameworkErrorReportKind.summary,
-        fingerprint: fingerprint,
-        errorType: errorType,
-        observed: observed,
-        total: state.total,
-      );
+      return _takePendingSummary(state, now);
     }
 
     if (scheduleIntervalSummaries && state.summaryTimer == null) {
       state.summaryTimer = Timer(summaryInterval - elapsed, () {
-        final observed = state.pending;
-        state
-          ..summaryTimer = null
-          ..pending = 0
-          ..lastReportedAt = clock.now();
         _emitFrameworkErrorSummary(
-          _FrameworkErrorReport(
-            kind: _FrameworkErrorReportKind.summary,
-            fingerprint: fingerprint,
-            errorType: errorType,
-            observed: observed,
-            total: state.total,
-          ),
-          library,
+          _takePendingSummary(state, clock.now()),
+          state.library,
         );
       });
     }
@@ -352,6 +368,36 @@ class _FrameworkErrorLimiter {
       observed: state.pending,
       total: state.total,
     );
+  }
+
+  _FrameworkErrorReport _takePendingSummary(
+    _FrameworkErrorState state,
+    DateTime reportedAt,
+  ) {
+    final observed = state.pending;
+    state
+      ..summaryTimer?.cancel()
+      ..summaryTimer = null
+      ..pending = 0
+      ..lastReportedAt = reportedAt;
+    return _FrameworkErrorReport(
+      kind: _FrameworkErrorReportKind.summary,
+      fingerprint: state.fingerprint,
+      errorType: state.errorType,
+      observed: observed,
+      total: state.total,
+    );
+  }
+
+  void flushPendingSummaries() {
+    final now = clock.now();
+    for (final state in _states.values) {
+      if (state.pending == 0) continue;
+      _emitFrameworkErrorSummary(
+        _takePendingSummary(state, now),
+        state.library,
+      );
+    }
   }
 
   String _fingerprint(

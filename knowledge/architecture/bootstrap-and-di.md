@@ -5,7 +5,7 @@ description: How the app starts, which singletons GetIt owns, and why registrati
 resource: ../../lib/get_it.dart
 tags: [architecture, startup, dependency-injection, get-it, riverpod]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-01T16:08:05Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T16:29:35Z }
 stale_after: 2027-01-11
 sources:
   - id: main
@@ -20,6 +20,10 @@ sources:
     resource: ../../lib/get_it_helpers.dart
     title: Late and optional service registration
     last_modified: 2026-06-13
+  - id: window-service
+    resource: ../../lib/services/window_service.dart
+    title: Ordered desktop shutdown
+    last_modified: 2026-08-01
 ---
 
 # Two containers, one boundary
@@ -79,7 +83,7 @@ flowchart TD
   ErrorHook --> Run["runApp(ProviderScope(...MyBeamerApp))"]
 ```
 
-Three details in that sequence are deliberate and easy to break:
+Four details in that sequence are deliberate and easy to break:
 
 - **The file-descriptor bump runs before anything opens an FD.** macOS GUI apps
   inherit launchd's soft limit of 256, which sockets, SQLite handles,
@@ -155,7 +159,9 @@ Desktop close paths converge on one ordered teardown. `AppLifecycleListener`'s
 `onExitRequested` and the window-manager close event both call
 `WindowService.closeWindow()`, which releases SQLite handles before the process
 is allowed to exit. On macOS the immediate-exit path is only reached after
-that release — exiting earlier risks a half-flushed WAL.
+that release — exiting earlier risks a half-flushed WAL. The pre-flush callback
+also drains pending framework-error counts as described in
+[Logging and diagnostics](logging-and-diagnostics.md#the-gate-and-what-bypasses-it).
 
 # Where to look
 

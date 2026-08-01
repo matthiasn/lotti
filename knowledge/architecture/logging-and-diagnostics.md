@@ -5,7 +5,7 @@ description: Twenty-four opt-in logging domains, where their lines land, and why
 resource: ../../lib/services/logging_domains.dart
 tags: [architecture, logging, diagnostics, observability]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-01T16:08:05Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T16:29:35Z }
 stale_after: 2027-01-11
 sources:
   - id: log-domains
@@ -23,6 +23,10 @@ sources:
   - id: framework-errors
     resource: ../../lib/main.dart
     title: Flutter framework error handler
+    last_modified: 2026-08-01
+  - id: shutdown
+    resource: ../../lib/services/window_service.dart
+    title: Ordered shutdown and final log flush
     last_modified: 2026-08-01
 ---
 
@@ -107,10 +111,12 @@ diagnostics. The first observation keeps Flutter's full console presentation,
 durable stack, and collected widget/render-object diagnostics; identical
 repeats emit only a counted, stack-free summary every 100 observations. A timer
 flushes any smaller pending burst after at most one minute even when the error
-stops recurring. Distinct fingerprints remain independent, and an LRU cap of
-256 signatures bounds the in-memory sampler itself. This preserves both the
-diagnostic context and evidence of a rebuild loop without allowing one
-framework exception to generate an unbounded error file.
+stops recurring. Orderly shutdown drains pending counts before the final log
+flush, so a short burst is not lost when the app closes inside that minute.
+Distinct fingerprints remain independent, and an LRU cap of 256 signatures
+bounds the in-memory sampler itself. This preserves both the diagnostic context
+and evidence of a rebuild loop without allowing one framework exception to
+generate an unbounded error file.
 
 **`sync` is the one domain that routes to its own file.** It is off by default
 and far noisier than everything else — a catch-up can produce thousands of lines

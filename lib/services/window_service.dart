@@ -25,10 +25,12 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
     @visibleForTesting ExitCallback? exitOverride,
     @visibleForTesting AsyncDisposer? playerDisposerOverride,
     @visibleForTesting PlatformCheck? isMacOSOverride,
+    AsyncDisposer? beforeLogFlush,
     @visibleForTesting bool skipWindowManagerSetup = false,
   }) : _exitFn = exitOverride ?? immediateExit,
        _playerDisposer =
            playerDisposerOverride ?? AudioPlayerController.disposeActivePlayer,
+       _beforeLogFlush = beforeLogFlush ?? (() async {}),
        _isMacOS = isMacOSOverride ?? (() => isMacOS) {
     if (!skipWindowManagerSetup) {
       windowManager.addListener(this);
@@ -47,6 +49,7 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
   Future<void>? _closeFuture;
   final ExitCallback _exitFn;
   final AsyncDisposer _playerDisposer;
+  final AsyncDisposer _beforeLogFlush;
   final PlatformCheck _isMacOS;
 
   final sizeKey = 'WINDOW_SIZE';
@@ -149,6 +152,12 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
   Future<void> shutdown() => _shutdownFuture ??= _shutdown();
 
   Future<void> _shutdown() async {
+    try {
+      await _beforeLogFlush();
+    } catch (e, s) {
+      _logDisposalError(e, s, 'frameworkErrorSummaries');
+    }
+
     await _disposer.disposeAll();
 
     try {

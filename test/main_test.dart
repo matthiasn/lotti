@@ -13,6 +13,19 @@ import 'package:mocktail/mocktail.dart';
 import 'mocks/mocks.dart';
 import 'widget_test_utils.dart';
 
+class _ThrowingDiagnosticsProperty extends DiagnosticsProperty<String> {
+  _ThrowingDiagnosticsProperty() : super('widget', 'unstable widget');
+
+  @override
+  String toStringDeep({
+    String prefixLineOne = '',
+    String? prefixOtherLines,
+    TextTreeConfiguration? parentConfiguration,
+    DiagnosticLevel minLevel = DiagnosticLevel.debug,
+    int wrapWidth = 65,
+  }) => throw StateError('render failed');
+}
+
 void main() {
   late Completer<void> closeCompleter;
   late MockWindowService windowService;
@@ -284,7 +297,7 @@ void main() {
             (details) => details.informationCollector!().single.toDescription(),
           )
           .toList(),
-      ['first widget', 'second widget'],
+      [contains('first widget'), contains('second widget')],
     );
     final capturedDiagnostics = verify(
       () => domainLogger.errorWithDiagnostics(
@@ -298,6 +311,142 @@ void main() {
     expect(capturedDiagnostics, hasLength(2));
     expect(capturedDiagnostics.first, contains('first widget'));
     expect(capturedDiagnostics.last, contains('second widget'));
+  });
+
+  test(
+    'collected diagnostics are evaluated once and reused for presentation',
+    () {
+      var collectorCalls = 0;
+      final presentedDiagnostics = <String>[];
+      final previousPresenter = FlutterError.presentError;
+      FlutterError.presentError = (details) {
+        presentedDiagnostics.addAll(
+          details.informationCollector!().map((node) => node.toStringDeep()),
+        );
+      };
+      addTearDown(() => FlutterError.presentError = previousPresenter);
+
+      final exception = StateError('single collector evaluation');
+      final stack = StackTrace.fromString('framework.dart 70:11 build');
+      final details = FlutterErrorDetails(
+        exception: exception,
+        stack: stack,
+        library: 'widgets library',
+        informationCollector: () {
+          collectorCalls++;
+          return <DiagnosticsNode>[
+            DiagnosticsProperty<String>('widget', 'stable widget'),
+          ];
+        },
+      );
+
+      app.handleFlutterFrameworkError(details);
+
+      expect(collectorCalls, 1);
+      expect(presentedDiagnostics.single, contains('stable widget'));
+      verify(
+        () => domainLogger.errorWithDiagnostics(
+          LogDomain.general,
+          exception,
+          stackTrace: stack,
+          subDomain: 'widgets library',
+          diagnostics: any<String>(
+            named: 'diagnostics',
+            that: contains('stable widget'),
+          ),
+        ),
+      ).called(1);
+    },
+  );
+
+  test('collector invocation failure does not mask the framework error', () {
+    final presented = <FlutterErrorDetails>[];
+    final previousPresenter = FlutterError.presentError;
+    FlutterError.presentError = presented.add;
+    addTearDown(() => FlutterError.presentError = previousPresenter);
+
+    final exception = StateError('collector invocation failed');
+    final stack = StackTrace.fromString('framework.dart 80:12 build');
+    final details = FlutterErrorDetails(
+      exception: exception,
+      stack: stack,
+      library: 'widgets library',
+      informationCollector: () => throw StateError('collector failed'),
+    );
+
+    expect(() => app.handleFlutterFrameworkError(details), returnsNormally);
+
+    expect(presented.single.exception, same(exception));
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        exception,
+        stackTrace: stack,
+        subDomain: 'widgets library',
+      ),
+    ).called(1);
+  });
+
+  test('diagnostic rendering failure does not mask the framework error', () {
+    final presented = <FlutterErrorDetails>[];
+    final previousPresenter = FlutterError.presentError;
+    FlutterError.presentError = presented.add;
+    addTearDown(() => FlutterError.presentError = previousPresenter);
+    final diagnostic = _ThrowingDiagnosticsProperty();
+
+    final exception = StateError('diagnostic rendering failed');
+    final stack = StackTrace.fromString('framework.dart 90:13 build');
+    final details = FlutterErrorDetails(
+      exception: exception,
+      stack: stack,
+      library: 'widgets library',
+      informationCollector: () => <DiagnosticsNode>[diagnostic],
+    );
+
+    expect(() => app.handleFlutterFrameworkError(details), returnsNormally);
+
+    expect(presented.single.exception, same(exception));
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        exception,
+        stackTrace: stack,
+        subDomain: 'widgets library',
+      ),
+    ).called(1);
+  });
+
+  test('shutdown drain emits a pending repeat summary immediately', () {
+    final details = FlutterErrorDetails(
+      exception: StateError('shutdown framework failure'),
+      stack: StackTrace.fromString('framework.dart 100:14 build'),
+      library: 'widgets library',
+    );
+
+    app.handleFlutterFrameworkError(details);
+    app.handleFlutterFrameworkError(details);
+    verifyNever(
+      () => domainLogger.error(
+        LogDomain.general,
+        any<Object>(),
+        subDomain: 'widgets library',
+        message: any<String>(named: 'message'),
+      ),
+    );
+
+    app.flushPendingFrameworkErrorSummaries();
+
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        any<Object>(),
+        subDomain: 'widgets library',
+        message: any<String>(
+          named: 'message',
+          that: allOf(contains('observed=1'), contains('total=2')),
+        ),
+      ),
+    ).called(1);
   });
 
   test('framework error fingerprints evict the least recently used entry', () {
@@ -327,7 +476,9 @@ void main() {
 
     expect(presented, hasLength(258));
     expect(
-      presented.where((details) => identical(details, oldestDetails)),
+      presented.where(
+        (details) => identical(details.exception, oldestException),
+      ),
       hasLength(2),
     );
     verify(
