@@ -142,21 +142,26 @@ void main() {
         subDomain: 'rendering library',
       ),
     ).called(1);
-    verify(
+    final capturedSummary = verify(
       () => domainLogger.error(
         LogDomain.general,
-        any<Object>(that: isNot(same(exception))),
+        captureAny<Object>(that: isNot(same(exception))),
         subDomain: 'rendering library',
-        message: any<String>(
-          named: 'message',
-          that: allOf(
-            contains('observed=3'),
-            contains('suppressed=3'),
-            contains('total=4'),
-          ),
-        ),
+        message: captureAny<String>(named: 'message'),
       ),
-    ).called(1);
+    ).captured;
+    expect(
+      capturedSummary.first.toString(),
+      'Repeated Flutter framework error',
+    );
+    expect(
+      capturedSummary.last,
+      allOf(
+        contains('observed=3'),
+        contains('suppressed=3'),
+        contains('total=4'),
+      ),
+    );
   });
 
   test('framework error interval emits all pending repeat counts', () {
@@ -241,6 +246,46 @@ void main() {
         subDomain: 'widgets library',
       ),
     ).called(1);
+  });
+
+  test('framework error fingerprints evict the least recently used entry', () {
+    final presented = <FlutterErrorDetails>[];
+    final previousPresenter = FlutterError.presentError;
+    FlutterError.presentError = presented.add;
+    addTearDown(() => FlutterError.presentError = previousPresenter);
+
+    final oldestException = StateError('framework failure 0');
+    final oldestDetails = FlutterErrorDetails(
+      exception: oldestException,
+      stack: StackTrace.fromString('framework.dart 0:1 build'),
+      library: 'widgets library',
+    );
+    app.handleFlutterFrameworkError(oldestDetails);
+    for (var i = 1; i <= 256; i++) {
+      app.handleFlutterFrameworkError(
+        FlutterErrorDetails(
+          exception: StateError('framework failure $i'),
+          stack: StackTrace.fromString('framework.dart $i:1 build'),
+          library: 'widgets library',
+        ),
+      );
+    }
+
+    app.handleFlutterFrameworkError(oldestDetails);
+
+    expect(presented, hasLength(258));
+    expect(
+      presented.where((details) => identical(details, oldestDetails)),
+      hasLength(2),
+    );
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        oldestException,
+        stackTrace: oldestDetails.stack,
+        subDomain: 'widgets library',
+      ),
+    ).called(2);
   });
 
   test('uncaught zone errors always echo to the console', () {
