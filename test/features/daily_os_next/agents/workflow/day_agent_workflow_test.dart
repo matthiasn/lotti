@@ -2275,7 +2275,7 @@ void main() {
                 .scheduledAt,
             DateTime(2026, 5, 26, 6),
             reason:
-                'The log says today was digested, so today\'s slot is skipped '
+                "The log says today was digested, so today's slot is skipped "
                 'even though the wake reported failure.',
           );
         });
