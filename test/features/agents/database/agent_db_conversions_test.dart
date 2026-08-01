@@ -647,7 +647,7 @@ void main() {
 
       final companion = AgentDbConversions.toEntityCompanion(entity);
 
-      expect(companion.id, const Value('week_rollup:2026-05-18'));
+      expect(companion.id, const Value('week_rollup_v2:2026-05-18'));
       expect(companion.type, const Value(AgentEntityTypes.weekRollup));
       // Deterministic per-week ids make PK lookups sufficient; no subtype.
       expect(companion.subtype, const Value<String?>.absent());
