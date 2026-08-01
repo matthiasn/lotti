@@ -456,6 +456,51 @@ void main() {
       );
     });
 
+    test('a transaction without an identity write keeps the cache', () async {
+      // AgentSyncService routes every message and state write through
+      // runInTransaction. Invalidating on any transaction would clear the cache
+      // continuously during a wake — exactly when identities are read most —
+      // so only a transaction that actually wrote an identity may invalidate.
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+      );
+      expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+      await insertIdentityBypassingCache('a-2');
+      await core.runInTransaction(() async {
+        await core.upsertEntity(makeTestState(id: 'st-1', agentId: 'a-1'));
+      });
+
+      expect(
+        await evolution.getAllAgentIdentities(),
+        hasLength(1),
+        reason: 'a state-only transaction must not drop the cached list',
+      );
+    });
+
+    test(
+      'a transaction that writes an identity invalidates on commit',
+      () async {
+        await core.upsertEntity(
+          makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+        );
+        expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+        await core.runInTransaction(() async {
+          await core.upsertEntity(
+            makeTestIdentity(id: 'a-2', agentId: 'a-2', displayName: 'Second'),
+          );
+        });
+
+        expect(
+          (await evolution.getAllAgentIdentities())
+              .map((a) => a.agentId)
+              .toSet(),
+          {'a-1', 'a-2'},
+        );
+      },
+    );
+
     test('a rolled-back transaction does not leave a cached row', () async {
       // A transaction can write an identity, read the list back, then roll
       // back. Caching that read would publish a row the database no longer has.

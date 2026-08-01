@@ -103,8 +103,17 @@ class AgentRepoCore {
   /// operation throws, the entire transaction is rolled back. Drift supports
   /// nested transactions via savepoints.
   Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    // Nested calls share the outermost scope's state, so only the transaction
+    // that actually commits does the invalidating.
+    final inherited = Zone.current[_txnStateKey] as _TransactionState?;
+    final state = inherited ?? _TransactionState();
     try {
-      return await _db.transaction(() => _markInTransaction(action));
+      return await _db.transaction(
+        () => runZoned(
+          action,
+          zoneValues: {_inTransactionKey: true, _txnStateKey: state},
+        ),
+      );
     } finally {
       // Invalidate once the transaction has actually committed, not just when
       // the write inside it returned. An identity write nested in a caller's
@@ -114,17 +123,29 @@ class AgentRepoCore {
       // would invalidate again, so that stale list would be served until the
       // next identity write.
       //
-      // Unconditional rather than tracked: a needless invalidation costs one
-      // cache miss, and getting the tracking wrong costs correctness.
-      invalidateAgentIdentitiesCache();
+      // Only when an identity was actually written: AgentSyncService routes
+      // every message and state write through here, so invalidating on any
+      // transaction would clear the cache continuously during a wake, exactly
+      // when identities are read most.
+      if (inherited == null && state.identityWritten) {
+        invalidateAgentIdentitiesCache();
+      }
     }
   }
 
-  /// Runs [action] with the in-transaction zone marker set, so
-  /// [cachedAgentIdentities] knows not to publish a transaction-local read.
+  /// Runs [action] with the transaction zone values set, so
+  /// [cachedAgentIdentities] knows not to publish a transaction-local read and
+  /// [runInTransaction] can tell whether an identity was written.
   static Future<T> _markInTransaction<T>(Future<T> Function() action) {
-    return runZoned(action, zoneValues: {_inTransactionKey: true});
+    final state = Zone.current[_txnStateKey] as _TransactionState?;
+    return runZoned(
+      action,
+      zoneValues: {_inTransactionKey: true, _txnStateKey: ?state},
+    );
   }
+
+  /// Records, per outermost transaction, whether an identity was written.
+  static const _txnStateKey = #agentRepoCoreTransactionState;
 
   // ── Entity CRUD ────────────────────────────────────────────────────────────
 
@@ -167,7 +188,11 @@ class AgentRepoCore {
     // and the in-memory test databases bypass pooling entirely
     // (`openDbConnection`), so an in-memory test would pass either way.
     final isIdentity = entity is AgentIdentityEntity;
-    if (isIdentity) invalidateAgentIdentitiesCache();
+    if (isIdentity) {
+      invalidateAgentIdentitiesCache();
+      (Zone.current[_txnStateKey] as _TransactionState?)?.identityWritten =
+          true;
+    }
     try {
       await _writeEntity(entity);
     } finally {
@@ -671,4 +696,9 @@ class AgentRepoCore {
           entry.key: v,
     };
   }
+}
+
+/// Per-transaction bookkeeping for [AgentRepoCore.runInTransaction].
+class _TransactionState {
+  bool identityWritten = false;
 }
