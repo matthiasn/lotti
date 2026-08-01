@@ -69,7 +69,6 @@ void main() {
 
         final view = await assemble(memory, captureSucceeded: false);
 
-        expect(view.captureSucceeded, isFalse);
         expect(view.compactedLog, isNull);
         expect(view.useCompactedLog, isFalse);
         verifyNever(() => syncService.repository);
@@ -99,7 +98,6 @@ void main() {
 
       final view = await assemble(memory, captureSucceeded: true);
 
-      expect(view.captureSucceeded, isTrue);
       expect(view.compactedLog, isEmpty);
       expect(view.useCompactedLog, isFalse);
     });

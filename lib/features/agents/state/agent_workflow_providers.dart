@@ -68,7 +68,6 @@ ImproverAgentWorkflow improverAgentWorkflow(Ref ref) {
     feedbackService: ref.watch(feedbackExtractionServiceProvider),
     evolutionWorkflow: ref.watch(templateEvolutionWorkflowProvider),
     improverService: ref.watch(improverAgentServiceProvider),
-    repository: ref.watch(agentRepositoryProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     syncService: ref.watch(agentSyncServiceProvider),
   );

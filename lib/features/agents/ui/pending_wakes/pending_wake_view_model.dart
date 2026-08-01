@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -19,7 +18,6 @@ class PendingWakeVm {
     required this.title,
     required this.subtitle,
     required this.kind,
-    required this.lifecycle,
     required this.type,
     required this.dueAt,
   });
@@ -42,7 +40,6 @@ class PendingWakeVm {
   final String? subtitle;
 
   final String kind;
-  final AgentLifecycle lifecycle;
   final PendingWakeType type;
   final DateTime dueAt;
 }
@@ -84,7 +81,6 @@ PendingWakeVm _toVm(PendingWakeRecord record, String? rawSubjectTitle) {
     title: hasSubject ? subjectTitle : agentName,
     subtitle: hasSubject ? agentName : null,
     kind: record.agent.kind,
-    lifecycle: record.agent.lifecycle,
     type: record.type,
     dueAt: record.dueAt,
   );

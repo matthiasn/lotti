@@ -10,7 +10,6 @@ import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:meta/meta.dart';
 
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.
@@ -218,7 +217,7 @@ Future<RitualSummaryMetrics> ritualSummaryMetrics(
     lifetimeWakeCount: lifetimeWakeCount,
     wakesSinceLastSession: wakesSinceLastSession,
     totalTokenUsageSinceLastSession: totalTokenUsageSinceLastSession,
-    dailyWakeCounts: _buildDailyWakeCounts(
+    dailyWakeCounts: buildDailyWakeCounts(
       recentWakeRuns: recentWakeRuns,
       chartStart: chartStart,
       today: today,
@@ -226,20 +225,7 @@ Future<RitualSummaryMetrics> ritualSummaryMetrics(
   );
 }
 
-/// Test-only seam for [_buildDailyWakeCounts] — the pure per-day wake bucket
-/// builder spanning `[chartStart, today]` inclusive.
-@visibleForTesting
-List<DailyWakeCountBucket> debugBuildDailyWakeCounts({
-  required List<WakeRunLogData> recentWakeRuns,
-  required DateTime chartStart,
-  required DateTime today,
-}) => _buildDailyWakeCounts(
-  recentWakeRuns: recentWakeRuns,
-  chartStart: chartStart,
-  today: today,
-);
-
-List<DailyWakeCountBucket> _buildDailyWakeCounts({
+List<DailyWakeCountBucket> buildDailyWakeCounts({
   required List<WakeRunLogData> recentWakeRuns,
   required DateTime chartStart,
   required DateTime today,

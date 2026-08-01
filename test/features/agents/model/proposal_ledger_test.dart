@@ -1,61 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 
 import '../test_utils.dart';
 
-// ── Generators ────────────────────────────────────────────────────────────────
-
-extension _AnyChangeItemStatus on glados.Any {
-  glados.Generator<ChangeItemStatus> get changeItemStatus =>
-      glados.AnyUtils(this).choose(ChangeItemStatus.values);
-}
-
 void main() {
-  group('LedgerEntry.isOpen', () {
-    test('is true when status is pending', () {
-      final entry = makeLedgerEntry();
-      expect(entry.isOpen, isTrue);
-    });
-
-    test('is false when status is confirmed', () {
-      final entry = makeLedgerEntry(status: ChangeItemStatus.confirmed);
-      expect(entry.isOpen, isFalse);
-    });
-
-    test('is false when status is rejected', () {
-      final entry = makeLedgerEntry(status: ChangeItemStatus.rejected);
-      expect(entry.isOpen, isFalse);
-    });
-
-    test('is false when status is deferred', () {
-      final entry = makeLedgerEntry(status: ChangeItemStatus.deferred);
-      expect(entry.isOpen, isFalse);
-    });
-
-    test('is false when status is retracted', () {
-      final entry = makeLedgerEntry(status: ChangeItemStatus.retracted);
-      expect(entry.isOpen, isFalse);
-    });
-
-    glados.Glados(
-      glados.any.changeItemStatus,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'isOpen is true if and only if status == pending',
-      (status) {
-        final entry = makeLedgerEntry(status: status);
-        expect(
-          entry.isOpen,
-          equals(status == ChangeItemStatus.pending),
-          reason: 'status=$status',
-        );
-      },
-      tags: 'glados',
-    );
-  });
-
   group('ProposalLedger.isEmpty', () {
     test('is true for the empty constructor', () {
       const ledger = ProposalLedger.empty();
@@ -103,7 +52,6 @@ void main() {
       expect(entry.resolvedBy, isNull);
       expect(entry.verdict, isNull);
       expect(entry.reason, isNull);
-      expect(entry.groupId, isNull);
     });
 
     test('optional fields accept non-null values', () {
@@ -120,14 +68,12 @@ void main() {
         resolvedBy: DecisionActor.user,
         verdict: ChangeDecisionVerdict.confirmed,
         reason: 'User approved',
-        groupId: 'group-1',
       );
 
       expect(entry.resolvedAt, equals(DateTime(2024, 3, 16)));
       expect(entry.resolvedBy, equals(DecisionActor.user));
       expect(entry.verdict, equals(ChangeDecisionVerdict.confirmed));
       expect(entry.reason, equals('User approved'));
-      expect(entry.groupId, equals('group-1'));
     });
   });
 }

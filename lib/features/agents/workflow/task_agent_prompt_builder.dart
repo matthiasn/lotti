@@ -265,16 +265,6 @@ for `/tasks/<taskId>` links; IDs belong only in tool arguments and link targets.
 Dedicated Links sections contain only real external URLs.
 ''';
 
-  /// The rigid scaffold of the Task Agent system prompt, combining all parts.
-  ///
-  /// Used as a single constant for legacy templates that have no split
-  /// directives. New templates use the three sub-constants below.
-  static const taskAgentScaffold =
-      '$taskAgentScaffoldCore'
-      '$taskAgentScaffoldReport'
-      '$taskAgentScaffoldProjectContext'
-      '$taskAgentScaffoldTrailing';
-
   /// Core scaffold: role description and job responsibilities.
   static const taskAgentScaffoldCore = '''
 You are a Task Agent — a persistent assistant that maintains a summary report

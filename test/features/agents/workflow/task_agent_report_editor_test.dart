@@ -1497,7 +1497,6 @@ turn task metadata or a checklist edit into an accomplishment.
         );
 
     expect(result.revision?.content, contains('compare the reference'));
-    expect(result.hadRevision, isTrue);
     expect(result.attempts, 1);
     expect(result.validationIssues, isEmpty);
     expect(result.usage?.inputTokens, 50);
@@ -1897,7 +1896,6 @@ turn task metadata or a checklist edit into an accomplishment.
         );
 
     expect(result.revision, isNull);
-    expect(result.hadRevision, isTrue);
     expect(result.attempts, 2);
     expect(
       result.validationIssues,
@@ -1907,39 +1905,30 @@ turn task metadata or a checklist edit into an accomplishment.
 
   test('editor distinguishes missing and malformed report calls', () async {
     final responseSets = [
-      (
-        responses: [
-          _toolCalls([
-            (
-              name: TaskAgentToolNames.setTaskTitle,
-              argumentsJson: '{"title":"Ignored"}',
-            ),
-          ]),
-        ],
-        hadRevision: false,
-      ),
-      (
-        responses: [
-          _toolCalls([
-            (
-              name: TaskAgentToolNames.updateReport,
-              argumentsJson: 'not-json',
-            ),
-          ]),
-        ],
-        hadRevision: true,
-      ),
-      (
-        responses: [
-          _toolCalls([
-            (
-              name: TaskAgentToolNames.updateReport,
-              argumentsJson: '[]',
-            ),
-          ]),
-        ],
-        hadRevision: true,
-      ),
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.setTaskTitle,
+            argumentsJson: '{"title":"Ignored"}',
+          ),
+        ]),
+      ],
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: 'not-json',
+          ),
+        ]),
+      ],
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: '[]',
+          ),
+        ]),
+      ],
     ];
 
     for (final responseSet in responseSets) {
@@ -1947,7 +1936,7 @@ turn task metadata or a checklist edit into an accomplishment.
           await _createEditor(
             provider: provider,
             inferenceRepository: _QueuedInferenceRepository([
-              responseSet.responses,
+              responseSet,
             ]),
             maxAttempts: 1,
           ).edit(
@@ -1958,11 +1947,6 @@ turn task metadata or a checklist edit into an accomplishment.
           );
 
       expect(result.revision, isNull);
-      expect(
-        result.hadRevision,
-        responseSet.hadRevision,
-        reason: '$responseSet',
-      );
       expect(result.validationIssues, [
         TaskAgentReportRevisionIssue.invalidShape,
       ]);

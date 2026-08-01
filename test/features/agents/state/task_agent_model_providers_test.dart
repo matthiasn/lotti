@@ -33,14 +33,14 @@ void main() {
   }
 
   test('task-agent model capability requires text in/out and tool calling', () {
-    expect(isTaskAgentThinkingModel(model()), isTrue);
-    expect(isTaskAgentThinkingModel(model(tools: false)), isFalse);
+    expect(isAgenticThinkingModel(model()), isTrue);
+    expect(isAgenticThinkingModel(model(tools: false)), isFalse);
     expect(
-      isTaskAgentThinkingModel(model(input: const [Modality.image])),
+      isAgenticThinkingModel(model(input: const [Modality.image])),
       isFalse,
     );
     expect(
-      isTaskAgentThinkingModel(model(output: const [Modality.image])),
+      isAgenticThinkingModel(model(output: const [Modality.image])),
       isFalse,
     );
   });

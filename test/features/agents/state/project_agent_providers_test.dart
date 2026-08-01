@@ -52,58 +52,15 @@ void main() {
   });
 
   group('ProjectAgentSummaryState', () {
-    test(
-      'isSummaryOutdated is true when report exists and activity is pending',
-      () {
-        final state = ProjectAgentSummaryState(
-          hasReport: true,
-          pendingProjectActivityAt: DateTime(2026, 3, 22, 12),
-        );
-
-        expect(state.isSummaryOutdated, isTrue);
-      },
-    );
-
-    test('isSummaryOutdated is false when no pending activity', () {
-      const state = ProjectAgentSummaryState(
-        hasReport: true,
-      );
-
-      expect(state.isSummaryOutdated, isFalse);
-    });
-
-    test('isSummaryOutdated is false when no report', () {
-      final state = ProjectAgentSummaryState(
-        hasReport: false,
-        pendingProjectActivityAt: DateTime(2026, 3, 22, 12),
-      );
-
-      expect(state.isSummaryOutdated, isFalse);
-    });
-
-    test(
-      'isSummaryOutdated is false when both report and activity are absent',
-      () {
-        const state = ProjectAgentSummaryState(
-          hasReport: false,
-        );
-
-        expect(state.isSummaryOutdated, isFalse);
-      },
-    );
-
     test('exposes all constructor fields', () {
-      final wake = DateTime(2026, 3, 23, 6);
       final pending = DateTime(2026, 3, 22, 12);
       final state = ProjectAgentSummaryState(
         hasReport: true,
         pendingProjectActivityAt: pending,
-        scheduledWakeAt: wake,
       );
 
       expect(state.hasReport, isTrue);
       expect(state.pendingProjectActivityAt, pending);
-      expect(state.scheduledWakeAt, wake);
     });
   });
 
@@ -147,7 +104,6 @@ void main() {
     );
 
     test('builds summary with stale metadata and non-empty report', () async {
-      final scheduledWakeAt = DateTime(2026, 3, 23, 6);
       final pendingProjectActivityAt = DateTime(2026, 3, 22, 12);
       final container = ProviderContainer(
         overrides: [
@@ -162,7 +118,6 @@ void main() {
               slots: AgentSlots(
                 pendingProjectActivityAt: pendingProjectActivityAt,
               ),
-              scheduledWakeAt: scheduledWakeAt,
             ),
           ),
           agentReportProvider(
@@ -184,8 +139,6 @@ void main() {
       expect(result, isNotNull);
       expect(result!.hasReport, isTrue);
       expect(result.pendingProjectActivityAt, pendingProjectActivityAt);
-      expect(result.scheduledWakeAt, scheduledWakeAt);
-      expect(result.isSummaryOutdated, isTrue);
     });
 
     test('treats whitespace-only report content as missing', () async {
@@ -215,7 +168,6 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.hasReport, isFalse);
-      expect(result.isSummaryOutdated, isFalse);
     });
   });
 }

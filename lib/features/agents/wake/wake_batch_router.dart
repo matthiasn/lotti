@@ -214,7 +214,7 @@ extension WakeBatchRouter on WakeOrchestrator {
       // queue and the content gate will skip it until real content arrives.
       // Once content does arrive, _shouldSkipForAwaitingContent clears the
       // flag and from then on the normal throttle applies.
-      if (_agentsAwaitingContent.contains(sub.agentId)) {
+      if (isAwaitingContent(sub.agentId)) {
         _log(
           'skipping throttle deadline for '
           '${DomainLogger.sanitizeId(sub.agentId)} '

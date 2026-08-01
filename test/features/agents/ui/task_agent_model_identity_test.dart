@@ -144,7 +144,6 @@ void main() {
 
     expect(disabled.presentation, TaskAgentIdentityPresentation.disabled);
     expect(broken.presentation, TaskAgentIdentityPresentation.broken);
-    expect(broken.brokenSelectionId, 'missing-model');
   });
 
   test('broken and disabled setups preserve report attribution state', () {

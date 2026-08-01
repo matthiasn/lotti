@@ -14,7 +14,6 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 part 'change_set_batch_exploder.dart';
@@ -367,7 +366,7 @@ class ChangeSetBuilder {
         }
       }
 
-      await _notifyTaskNeedsAttention(merged);
+      await notifyTaskNeedsAttention(merged);
       return merged;
     }
 
@@ -387,7 +386,7 @@ class ChangeSetBuilder {
             as ChangeSetEntity;
 
     await syncService.upsertEntity(entity);
-    await _notifyTaskNeedsAttention(entity);
+    await notifyTaskNeedsAttention(entity);
     return entity;
   }
 
@@ -404,14 +403,7 @@ class ChangeSetBuilder {
   /// for the same task so the bell still exposes at most one active row per
   /// task.
   ///
-  /// Test seam for the notification guard — build() structurally always
-  /// passes at least one pending item (an all-deduped wake returns null
-  /// first), so the zero-pending short-circuit is only reachable directly.
-  @visibleForTesting
-  Future<void> debugNotifyTaskNeedsAttention(ChangeSetEntity entity) =>
-      _notifyTaskNeedsAttention(entity);
-
-  Future<void> _notifyTaskNeedsAttention(ChangeSetEntity entity) async {
+  Future<void> notifyTaskNeedsAttention(ChangeSetEntity entity) async {
     // Count only the items the user actually needs to act on; previously
     // confirmed/rejected/retracted items don't warrant a fresh alert.
     final pendingCount = entity.items

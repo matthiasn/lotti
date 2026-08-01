@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/pending_wake_view_model.dart';
@@ -120,21 +119,18 @@ class _GeneratedPendingWakeRowSpec {
     required this.subjectSlot,
     required this.titleSlot,
     required this.kindSlot,
-    required this.lifecycle,
   });
 
   final _GeneratedPendingWakeTypeSlot typeSlot;
   final _GeneratedPendingWakeSubjectSlot subjectSlot;
   final _GeneratedPendingWakeTitleSlot titleSlot;
   final _GeneratedPendingWakeKindSlot kindSlot;
-  final AgentLifecycle lifecycle;
 
   @override
   String toString() {
     return '_GeneratedPendingWakeRowSpec('
         'typeSlot: $typeSlot, subjectSlot: $subjectSlot, '
-        'titleSlot: $titleSlot, kindSlot: $kindSlot, '
-        'lifecycle: $lifecycle)';
+        'titleSlot: $titleSlot, kindSlot: $kindSlot)';
   }
 }
 
@@ -163,28 +159,22 @@ extension _AnyGeneratedPendingWakeRowsScenario on glados.Any {
   glados.Generator<_GeneratedPendingWakeKindSlot> get pendingWakeKindSlot =>
       glados.AnyUtils(this).choose(_GeneratedPendingWakeKindSlot.values);
 
-  glados.Generator<AgentLifecycle> get agentLifecycle =>
-      glados.AnyUtils(this).choose(AgentLifecycle.values);
-
   glados.Generator<_GeneratedPendingWakeRowSpec> get pendingWakeRowSpec =>
-      glados.CombinableAny(this).combine5(
+      glados.CombinableAny(this).combine4(
         pendingWakeTypeSlot,
         pendingWakeSubjectSlot,
         pendingWakeTitleSlot,
         pendingWakeKindSlot,
-        agentLifecycle,
         (
           _GeneratedPendingWakeTypeSlot typeSlot,
           _GeneratedPendingWakeSubjectSlot subjectSlot,
           _GeneratedPendingWakeTitleSlot titleSlot,
           _GeneratedPendingWakeKindSlot kindSlot,
-          AgentLifecycle lifecycle,
         ) => _GeneratedPendingWakeRowSpec(
           typeSlot: typeSlot,
           subjectSlot: subjectSlot,
           titleSlot: titleSlot,
           kindSlot: kindSlot,
-          lifecycle: lifecycle,
         ),
       );
 
@@ -226,7 +216,6 @@ void main() {
                 agentId: agentId,
                 kind: _generatedPendingWakeKind(spec.kindSlot),
                 displayName: agentName,
-                lifecycle: spec.lifecycle,
               ),
               state: makeTestState(
                 id: 'state-$index',
@@ -279,7 +268,6 @@ void main() {
             _generatedPendingWakeKind(spec.kindSlot),
             reason: reason,
           );
-          expect(vm.lifecycle, spec.lifecycle, reason: reason);
           expect(
             vm.type,
             _generatedPendingWakeType(spec.typeSlot),

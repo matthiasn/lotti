@@ -161,7 +161,6 @@ class AgentProposalLedger {
           resolvedBy: decision?.actor,
           verdict: decision?.verdict,
           reason: decision?.retractionReason ?? decision?.rejectionReason,
-          groupId: item.groupId,
         );
         if (isOpen) {
           open.add(entry);

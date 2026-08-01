@@ -22,7 +22,6 @@ class LedgerEntry {
     this.resolvedBy,
     this.verdict,
     this.reason,
-    this.groupId,
   });
 
   /// The parent `ChangeSetEntity.id`.
@@ -65,14 +64,6 @@ class LedgerEntry {
   /// Free-text reason for the resolution — the user's rejection reason or
   /// the agent's retraction reason, whichever applies. `null` otherwise.
   final String? reason;
-
-  /// Optional group key from the source `ChangeItem` (used by task-split
-  /// operations to relate a follow-up creation to its migration items).
-  final String? groupId;
-
-  /// True when the item is still pending and therefore actionable in the UI
-  /// and reasonable to propose duplicates against.
-  bool get isOpen => status == ChangeItemStatus.pending;
 }
 
 /// All proposals an agent has ever produced for one target task, grouped

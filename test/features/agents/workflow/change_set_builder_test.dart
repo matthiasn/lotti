@@ -891,7 +891,7 @@ void main() {
       () async {
         // build() can never hand the notifier a zero-pending set (an
         // all-deduped wake returns null before notifying), so exercise the
-        // defensive guard through the test seam directly.
+        // defensive guard through the notifier helper directly.
         final resolvedSet = makeTestChangeSet(
           items: const [
             ChangeItem(
@@ -909,7 +909,7 @@ void main() {
           ],
         );
 
-        await builder.debugNotifyTaskNeedsAttention(resolvedSet);
+        await builder.notifyTaskNeedsAttention(resolvedSet);
 
         verifyNever(
           () => notificationRepository.createTaskSuggestion(

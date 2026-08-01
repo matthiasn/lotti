@@ -23,7 +23,6 @@ class ToolExecutionResult {
     this.mutatedEntityId,
     this.errorMessage,
     this.policyDenied = false,
-    this.denialReason,
   });
 
   /// Converts a task tool handler result into a [ToolExecutionResult].
@@ -65,10 +64,6 @@ class ToolExecutionResult {
 
   /// True when the call was rejected by the category-allowlist policy.
   final bool policyDenied;
-
-  /// Human-readable reason for the policy denial, set when [policyDenied] is
-  /// true.
-  final String? denialReason;
 }
 
 /// The per-agent-kind tool-dispatch callback the executor wraps: given a
@@ -251,7 +246,6 @@ class AgentToolExecutor {
         success: false,
         output: 'Policy denied: $denialReason',
         policyDenied: true,
-        denialReason: denialReason,
       );
     }
 

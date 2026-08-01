@@ -3,7 +3,6 @@ import 'package:glados/glados.dart' as glados;
 enum GeneratedWakeRunnerOperationKind {
   acquire,
   release,
-  waitForCompletion,
   abort,
 }
 

@@ -2345,7 +2345,11 @@ class LocalTaskAgentInferenceEvalRunner {
     }
 
     return _LocalTaskAgentReportEditingResult(
-      completed: result.hadRevision,
+      completed:
+          revision != null ||
+          result.validationIssues.any(
+            (issue) => issue != TaskAgentReportRevisionIssue.invalidShape,
+          ),
       attempts: result.attempts,
       validationIssues: result.validationIssues,
       usage: result.usage,

@@ -2441,7 +2441,7 @@ void main() {
   // ---------------------------------------------------------------------------
   // Glados property for the PII-safe arg formatter (via debug seam).
   // ---------------------------------------------------------------------------
-  group('debugDescribeArgsForLog — properties', () {
+  group('describeArgsForLog — properties', () {
     const safeNames = ['id', 'items', 'labels', 'minutes', 'priority'];
 
     glados.Glados(
@@ -2462,7 +2462,7 @@ void main() {
         }
       }
 
-      final described = ChangeSetConfirmationService.debugDescribeArgsForLog(
+      final described = ChangeSetConfirmationService.describeArgsForLog(
         args,
       );
 

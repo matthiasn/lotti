@@ -74,7 +74,6 @@ void main() {
       feedbackService: mockFeedbackService,
       evolutionWorkflow: mockEvolutionWorkflow,
       improverService: mockImproverService,
-      repository: mockRepository,
       templateService: mockTemplateService,
       syncService: mockSyncService,
     );

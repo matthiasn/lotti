@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/service/agent_template_crud.dart';
@@ -16,12 +15,10 @@ import 'package:lotti/services/domain_logging.dart';
 /// writes versions directly through the sync service.
 class AgentTemplateSeeding {
   AgentTemplateSeeding({
-    required this.repository,
     required this.syncService,
     required this.crud,
   });
 
-  final AgentRepository repository;
   final AgentSyncService syncService;
   final AgentTemplateCrud crud;
 

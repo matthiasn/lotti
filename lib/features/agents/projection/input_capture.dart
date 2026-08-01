@@ -91,9 +91,6 @@ class CaptureResult extends Equatable {
   /// replays (and the on-device prefix cache keeps hitting).
   final List<CaptureReference> references;
 
-  /// True when nothing was captured.
-  bool get isEmpty => payloads.isEmpty && references.isEmpty;
-
   @override
   List<Object?> get props => [payloads, references];
 }

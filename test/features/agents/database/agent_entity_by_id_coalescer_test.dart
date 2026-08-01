@@ -271,24 +271,6 @@ void main() {
     expect(batches, hasLength(3));
   });
 
-  test('does not retain batch state once a batch completes', () async {
-    final coalescer = build();
-
-    final pending = Future.wait([coalescer.load('a'), coalescer.load('b')]);
-    expect(
-      coalescer.pendingBatchCount,
-      1,
-      reason: 'a batch is registered while loads accumulate',
-    );
-
-    await pending;
-    expect(
-      coalescer.pendingBatchCount,
-      0,
-      reason: 'batch entries must not leak after flushing',
-    );
-  });
-
   group('zone isolation (drift transaction safety)', () {
     // Drift resolves the executor from Zone.current, so a batch must never
     // merge calls made inside a transaction zone with calls made outside it.

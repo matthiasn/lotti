@@ -5,7 +5,6 @@ import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Holds a pending directive proposal from the evolution agent.
@@ -29,7 +28,6 @@ class PendingSoulProposal {
     required this.coachingStyle,
     required this.antiSycophancyPolicy,
     required this.rationale,
-    this.crossTemplateNotice,
   });
 
   final String voiceDirective;
@@ -37,7 +35,6 @@ class PendingSoulProposal {
   final String coachingStyle;
   final String antiSycophancyPolicy;
   final String rationale;
-  final String? crossTemplateNotice;
 }
 
 /// Holds a structured recap for the current ritual.
@@ -199,9 +196,9 @@ class EvolutionStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) {
-    final generalDirective = _readStringArg(args, 'general_directive');
-    final reportDirective = _readStringArg(args, 'report_directive');
-    final rationale = _readStringArg(args, 'rationale');
+    final generalDirective = readStringArg(args, 'general_directive');
+    final reportDirective = readStringArg(args, 'report_directive');
+    final rationale = readStringArg(args, 'rationale');
 
     if (generalDirective.trim().isEmpty && reportDirective.trim().isEmpty) {
       manager.addToolResponse(
@@ -249,12 +246,12 @@ class EvolutionStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) {
-    final voiceDirective = _readStringArg(args, 'voice_directive');
-    final toneBounds = _readStringArg(args, 'tone_bounds');
-    final coachingStyle = _readStringArg(args, 'coaching_style');
-    final antiSycophancyPolicy = _readStringArg(args, 'anti_sycophancy_policy');
-    final rationale = _readStringArg(args, 'rationale');
-    final crossTemplateNotice = _readStringArg(args, 'cross_template_notice');
+    final voiceDirective = readStringArg(args, 'voice_directive');
+    final toneBounds = readStringArg(args, 'tone_bounds');
+    final coachingStyle = readStringArg(args, 'coaching_style');
+    final antiSycophancyPolicy = readStringArg(args, 'anti_sycophancy_policy');
+    final rationale = readStringArg(args, 'rationale');
+    final crossTemplateNotice = readStringArg(args, 'cross_template_notice');
 
     if (rationale.trim().isEmpty) {
       manager.addToolResponse(
@@ -281,9 +278,6 @@ class EvolutionStrategy extends ConversationStrategy {
       coachingStyle: coachingStyle,
       antiSycophancyPolicy: antiSycophancyPolicy,
       rationale: rationale,
-      crossTemplateNotice: crossTemplateNotice.trim().isEmpty
-          ? null
-          : crossTemplateNotice,
     );
 
     // Auto-render a GenUI soul proposal surface.
@@ -322,8 +316,8 @@ class EvolutionStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) {
-    final kindStr = _readStringArg(args, 'kind');
-    final content = _readStringArg(args, 'content');
+    final kindStr = readStringArg(args, 'kind');
+    final content = readStringArg(args, 'content');
 
     final kind = EvolutionNoteKind.values.firstWhereOrNull(
       (k) => k.name == kindStr,
@@ -359,8 +353,8 @@ class EvolutionStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) {
-    final tldr = _readStringArg(args, 'tldr').trim();
-    final content = _readStringArg(args, 'content').trim();
+    final tldr = readStringArg(args, 'tldr').trim();
+    final content = readStringArg(args, 'content').trim();
 
     if (tldr.isEmpty || content.isEmpty) {
       final missing = [
@@ -382,16 +376,11 @@ class EvolutionStrategy extends ConversationStrategy {
   }
 
   /// Safely read a string argument, tolerating non-string JSON values.
-  static String _readStringArg(Map<String, dynamic> args, String key) {
+  static String readStringArg(Map<String, dynamic> args, String key) {
     final value = args[key];
     if (value is String) return value;
     return '';
   }
-
-  /// Test seam for the defensive string-arg reader — pure, no state.
-  @visibleForTesting
-  static String debugReadStringArg(Map<String, dynamic> args, String key) =>
-      _readStringArg(args, key);
 
   Map<String, dynamic> _parseArgs(String arguments) {
     try {

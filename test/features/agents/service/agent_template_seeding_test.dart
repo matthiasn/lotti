@@ -44,7 +44,6 @@ void main() {
       syncService: mockSync,
     );
     seeding = AgentTemplateSeeding(
-      repository: mockRepo,
       syncService: mockSync,
       crud: crud,
     );

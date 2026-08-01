@@ -1,7 +1,6 @@
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -25,7 +24,6 @@ class ImproverAgentWorkflow {
     required this.feedbackService,
     required this.evolutionWorkflow,
     required this.improverService,
-    required this.repository,
     required this.templateService,
     required this.syncService,
   });
@@ -33,7 +31,6 @@ class ImproverAgentWorkflow {
   final FeedbackExtractionService feedbackService;
   final TemplateEvolutionWorkflow evolutionWorkflow;
   final ImproverAgentService improverService;
-  final AgentRepository repository;
   final AgentTemplateService templateService;
   final AgentSyncService syncService;
 

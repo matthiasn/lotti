@@ -367,7 +367,7 @@ void main() {
     });
   });
 
-  group('debugBuildDailyWakeCounts (pure day-bucket property)', () {
+  group('buildDailyWakeCounts (pure day-bucket property)', () {
     glados.Glados2(
       // chartSpanDays: number of days in the inclusive [chartStart, today]
       // window minus one (so span 0 == single day, span 29 == 30 buckets).
@@ -411,7 +411,7 @@ void main() {
         if (spec.dayOffset <= chartSpanDays) inWindowRuns++;
       }
 
-      final result = debugBuildDailyWakeCounts(
+      final result = buildDailyWakeCounts(
         recentWakeRuns: runs,
         chartStart: chartStart,
         today: today,

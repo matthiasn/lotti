@@ -18,7 +18,6 @@ class TaskAgentModelIdentityViewData {
     this.currentRoute,
     this.reportRoute,
     this.reportAttributionUnavailable = false,
-    this.brokenSelectionId,
   });
 
   factory TaskAgentModelIdentityViewData.fromResolution({
@@ -29,7 +28,6 @@ class TaskAgentModelIdentityViewData {
     if (setup == null || setup.status == AgentSetupResolutionStatus.broken) {
       return TaskAgentModelIdentityViewData(
         presentation: TaskAgentIdentityPresentation.broken,
-        brokenSelectionId: setup?.brokenSelectionId,
         reportRoute: reportProvenance?.finalAuthorRoute,
         reportAttributionUnavailable: hasReport && reportProvenance == null,
       );
@@ -46,7 +44,6 @@ class TaskAgentModelIdentityViewData {
     if (profile == null) {
       return TaskAgentModelIdentityViewData(
         presentation: TaskAgentIdentityPresentation.broken,
-        brokenSelectionId: setup.brokenSelectionId,
         reportRoute: reportProvenance?.finalAuthorRoute,
         reportAttributionUnavailable: hasReport && reportProvenance == null,
       );
@@ -79,7 +76,6 @@ class TaskAgentModelIdentityViewData {
   final InferenceRouteSnapshot? currentRoute;
   final InferenceRouteSnapshot? reportRoute;
   final bool reportAttributionUnavailable;
-  final String? brokenSelectionId;
 }
 
 /// Human-readable model publisher and serving-provider identity.

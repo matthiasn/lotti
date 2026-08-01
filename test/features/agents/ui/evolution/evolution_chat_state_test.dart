@@ -1999,7 +1999,7 @@ void main() {
   // ---------------------------------------------------------------------------
   // Glados properties for the pure helpers (via the debug seams).
   // ---------------------------------------------------------------------------
-  group('debugIsImplicitApprovalMessage — properties', () {
+  group('isImplicitApprovalMessage — properties', () {
     const approvalKeywords = [
       'ok',
       'okay',
@@ -2023,7 +2023,7 @@ void main() {
       'every keyword matches regardless of surrounding punctuation/whitespace',
       (keyword, prefix, suffix) {
         expect(
-          EvolutionChatState.debugIsImplicitApprovalMessage(
+          EvolutionChatState.isImplicitApprovalMessage(
             '$prefix$keyword$suffix',
           ),
           isTrue,
@@ -2031,7 +2031,7 @@ void main() {
         );
         // Case-insensitivity comes with the keyword match.
         expect(
-          EvolutionChatState.debugIsImplicitApprovalMessage(
+          EvolutionChatState.isImplicitApprovalMessage(
             '$prefix${keyword.toUpperCase()}$suffix',
           ),
           isTrue,
@@ -2049,14 +2049,14 @@ void main() {
       'is anchored',
       (keyword) {
         expect(
-          EvolutionChatState.debugIsImplicitApprovalMessage(
+          EvolutionChatState.isImplicitApprovalMessage(
             'this is not $keyword behavior',
           ),
           isFalse,
           reason: keyword,
         );
         expect(
-          EvolutionChatState.debugIsImplicitApprovalMessage(
+          EvolutionChatState.isImplicitApprovalMessage(
             '$keyword but please tweak the tone first',
           ),
           isFalse,
@@ -2067,7 +2067,7 @@ void main() {
     );
   });
 
-  group('debugProposalKey — properties', () {
+  group('proposalKey — properties', () {
     glados.Glados3(
       glados.AnyUtils(glados.any).choose(const ['', '  d1  ', 'directive']),
       glados.AnyUtils(glados.any).choose(const ['', ' r ', 'report\nline2']),
@@ -2083,7 +2083,7 @@ void main() {
         reportDirective: report,
         rationale: rationale,
       );
-      final key = EvolutionChatState.debugProposalKey(proposal);
+      final key = EvolutionChatState.buildProposalKey(proposal);
 
       // Trim-stability: padding any field never changes the fingerprint.
       final padded = PendingProposal(
@@ -2091,7 +2091,7 @@ void main() {
         reportDirective: '\n$report ',
         rationale: ' $rationale  ',
       );
-      expect(EvolutionChatState.debugProposalKey(padded), key);
+      expect(EvolutionChatState.buildProposalKey(padded), key);
 
       // Structure: exactly two separators join the three trimmed fields.
       expect('\n---\n'.allMatches(key).length, 2, reason: key);
@@ -2102,14 +2102,14 @@ void main() {
     }, tags: 'glados');
   });
 
-  group('debugHasNonEmptyText — properties', () {
+  group('hasNonEmptyText — properties', () {
     // Whitespace-only (and null) inputs are the *only* values that must be
     // treated as empty; any payload containing a non-whitespace character
     // must be considered non-empty regardless of its surrounding whitespace.
     const whitespacePadding = ['', ' ', '  ', '\t', '\n', ' \t\n '];
 
     test('null is treated as empty', () {
-      expect(EvolutionChatState.debugHasNonEmptyText(null), isFalse);
+      expect(EvolutionChatState.hasNonEmptyText(null), isFalse);
     });
 
     glados.Glados(
@@ -2119,7 +2119,7 @@ void main() {
       'strings consisting only of whitespace are treated as empty',
       (whitespace) {
         expect(
-          EvolutionChatState.debugHasNonEmptyText(whitespace),
+          EvolutionChatState.hasNonEmptyText(whitespace),
           isFalse,
           reason: 'whitespace-only: ${whitespace.codeUnits}',
         );
@@ -2140,7 +2140,7 @@ void main() {
         // payload always carries at least one non-whitespace character.
         final payload = core.isEmpty ? 'x' : core;
         expect(
-          EvolutionChatState.debugHasNonEmptyText('$prefix$payload$suffix'),
+          EvolutionChatState.hasNonEmptyText('$prefix$payload$suffix'),
           isTrue,
           reason: '"$prefix$payload$suffix"',
         );

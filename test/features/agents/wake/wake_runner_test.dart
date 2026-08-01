@@ -85,61 +85,6 @@ void main() {
       });
     });
 
-    group('waitForCompletion', () {
-      test('returns immediately when no run is active', () {
-        fakeAsync((async) {
-          var completed = false;
-          runner.waitForCompletion('agent-1').then((_) => completed = true);
-          async.flushMicrotasks();
-
-          expect(completed, isTrue);
-        });
-      });
-
-      test('suspends until active run is released', () {
-        fakeAsync((async) {
-          // Acquire lock
-          runner.tryAcquire('agent-1');
-          async.flushMicrotasks();
-
-          // Start waiting
-          var waitCompleted = false;
-          runner.waitForCompletion('agent-1').then((_) => waitCompleted = true);
-          async.flushMicrotasks();
-
-          expect(waitCompleted, isFalse, reason: 'Still locked');
-
-          // Release lock
-          runner.release('agent-1');
-          async.flushMicrotasks();
-
-          expect(waitCompleted, isTrue, reason: 'Should resolve after release');
-        });
-      });
-
-      test('multiple waiters all resolve on release', () {
-        fakeAsync((async) {
-          runner.tryAcquire('agent-1');
-          async.flushMicrotasks();
-
-          var waiter1Done = false;
-          var waiter2Done = false;
-          runner.waitForCompletion('agent-1').then((_) => waiter1Done = true);
-          runner.waitForCompletion('agent-1').then((_) => waiter2Done = true);
-          async.flushMicrotasks();
-
-          expect(waiter1Done, isFalse);
-          expect(waiter2Done, isFalse);
-
-          runner.release('agent-1');
-          async.flushMicrotasks();
-
-          expect(waiter1Done, isTrue);
-          expect(waiter2Done, isTrue);
-        });
-      });
-    });
-
     group('isRunning', () {
       test('returns false for unknown agent', () {
         expect(runner.isRunning('agent-unknown'), isFalse);
@@ -282,23 +227,23 @@ void main() {
       });
     });
 
-    group('startedAt / activeStartedAtById', () {
-      test('startedAt returns null for an agent that is not running', () {
-        expect(runner.startedAt('agent-cold'), isNull);
+    group('activeStartedAtById', () {
+      test('has no timestamp for an agent that is not running', () {
+        expect(runner.activeStartedAtById['agent-cold'], isNull);
       });
 
       test(
-        'startedAt records clock.now() at acquire and clears on release',
+        'records clock.now() at acquire and clears on release',
         () {
           final fixed = DateTime(2026, 5, 5, 21);
           withClock(Clock.fixed(fixed), () {
             fakeAsync((async) {
               runner.tryAcquire('agent-1');
               async.flushMicrotasks();
-              expect(runner.startedAt('agent-1'), fixed);
+              expect(runner.activeStartedAtById['agent-1'], fixed);
 
               runner.release('agent-1');
-              expect(runner.startedAt('agent-1'), isNull);
+              expect(runner.activeStartedAtById['agent-1'], isNull);
             });
           });
         },

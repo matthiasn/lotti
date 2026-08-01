@@ -95,7 +95,9 @@ void main() {
     // ── examples ─────────────────────────────────────────────────────────────
 
     test('returns empty for no sources', () {
-      expect(captureSources(const <RenderedSource>[]).isEmpty, isTrue);
+      final result = captureSources(const <RenderedSource>[]);
+      expect(result.payloads, isEmpty);
+      expect(result.references, isEmpty);
     });
 
     test(

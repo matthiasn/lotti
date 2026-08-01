@@ -101,7 +101,3 @@ bool isAgenticThinkingModel(AiConfigModel model) {
       model.inputModalities.contains(Modality.text) &&
       model.outputModalities.contains(Modality.text);
 }
-
-/// Backward-compatible name for existing task-agent callers.
-bool isTaskAgentThinkingModel(AiConfigModel model) =>
-    isAgenticThinkingModel(model);

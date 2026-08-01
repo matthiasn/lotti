@@ -95,12 +95,10 @@ class AgentTemplateService {
 
   late final AgentTemplateMetrics _metrics = AgentTemplateMetrics(
     repository: repository,
-    syncService: syncService,
     crud: _crud,
   );
 
   late final AgentTemplateSeeding _seeding = AgentTemplateSeeding(
-    repository: repository,
     syncService: syncService,
     crud: _crud,
   );

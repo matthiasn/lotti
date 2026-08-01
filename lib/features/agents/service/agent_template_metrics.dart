@@ -6,7 +6,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/service/agent_template_crud.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
-import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 
 /// Performance metrics and evolution-data gathering for agent templates.
 ///
@@ -17,12 +16,10 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 class AgentTemplateMetrics {
   AgentTemplateMetrics({
     required this.repository,
-    required this.syncService,
     required this.crud,
   });
 
   final AgentRepository repository;
-  final AgentSyncService syncService;
   final AgentTemplateCrud crud;
 
   /// Compute performance metrics for a template using SQL aggregation.

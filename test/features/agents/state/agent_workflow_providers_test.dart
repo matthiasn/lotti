@@ -267,7 +267,6 @@ void main() {
         final workflow = container.read(improverAgentWorkflowProvider);
 
         expect(workflow, isA<ImproverAgentWorkflow>());
-        expect(workflow.repository, same(repository));
         expect(workflow.syncService, same(syncService));
         // The composed evolution workflow is the provider-resolved one.
         expect(

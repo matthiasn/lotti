@@ -96,7 +96,6 @@ enum TaskAgentReportRevisionIssue {
 class TaskAgentReportEditResult {
   const TaskAgentReportEditResult({
     required this.revision,
-    required this.hadRevision,
     required this.attempts,
     required this.validationIssues,
     required this.usage,
@@ -106,9 +105,6 @@ class TaskAgentReportEditResult {
 
   /// Accepted revision, or `null` when every candidate was rejected.
   final TaskAgentReportDraft? revision;
-
-  /// Whether the editor returned at least one `update_report` candidate.
-  final bool hadRevision;
 
   /// Number of editor calls made.
   final int attempts;
@@ -213,7 +209,6 @@ class TaskAgentReportEditor {
       );
     }
     var attempts = 0;
-    var hadRevision = false;
     var validationIssues = initialValidationIssues.toList(growable: false);
     var rejectedReport = initialValidationIssues.isEmpty ? null : draft;
     InferenceUsage? usage;
@@ -301,11 +296,9 @@ class TaskAgentReportEditor {
       }
 
       attempts++;
-      hadRevision = hadRevision || strategy.sawReportCall;
       if (attemptError != null) {
         return TaskAgentReportEditResult(
           revision: null,
-          hadRevision: hadRevision,
           attempts: attempts,
           validationIssues: validationIssues,
           usage: usage,
@@ -329,7 +322,6 @@ class TaskAgentReportEditor {
       if (validationIssues.isEmpty) {
         return TaskAgentReportEditResult(
           revision: candidate,
-          hadRevision: true,
           attempts: attempts,
           validationIssues: const [],
           usage: usage,
@@ -341,7 +333,6 @@ class TaskAgentReportEditor {
 
     return TaskAgentReportEditResult(
       revision: null,
-      hadRevision: hadRevision,
       attempts: attempts,
       validationIssues: validationIssues,
       usage: usage,
@@ -1369,7 +1360,6 @@ that helps the user act.
 
 class _TaskAgentReportCaptureStrategy extends ConversationStrategy {
   TaskAgentReportDraft? report;
-  bool sawReportCall = false;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -1384,8 +1374,6 @@ class _TaskAgentReportCaptureStrategy extends ConversationStrategy {
         );
         continue;
       }
-      sawReportCall = true;
-
       TaskAgentReportDraft? candidate;
       try {
         final decoded = jsonDecode(call.function.arguments);

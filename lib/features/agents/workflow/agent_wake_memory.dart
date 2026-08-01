@@ -14,17 +14,11 @@ import 'package:lotti/services/domain_logging.dart';
 class WakeMemoryView {
   /// Wraps a pipeline result.
   const WakeMemoryView({
-    required this.captureSucceeded,
     required this.compactedLog,
     required this.useCompactedLog,
     this.activeSummaryId,
     this.lastEventPosition,
   });
-
-  /// Whether THIS wake's capture refreshed the input frontier. The read-flip
-  /// only trusts the captured substrate when true — otherwise capture failed
-  /// (or didn't run) and the frontier may predate the current journal.
-  final bool captureSucceeded;
 
   /// The assembled `active summary + event tail` block, or null when
   /// assembly failed.
@@ -155,7 +149,6 @@ class AgentWakeMemory {
         'useCompactedLog=false',
       );
       return const WakeMemoryView(
-        captureSucceeded: false,
         compactedLog: null,
         useCompactedLog: false,
       );
@@ -214,7 +207,6 @@ class AgentWakeMemory {
       'useCompactedLog=$useCompactedLog',
     );
     return WakeMemoryView(
-      captureSucceeded: captureSucceeded,
       compactedLog: compactedLog,
       useCompactedLog: useCompactedLog,
       activeSummaryId: assembled?.activeSummaryId,

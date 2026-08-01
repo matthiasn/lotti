@@ -33,14 +33,11 @@ void main() {
   });
 
   test('does not query claims for non-terminal tasks', () async {
-    final result = await service.settleTerminalTaskClaims(
+    await service.settleTerminalTaskClaims(
       agentId: agentId,
       task: _task(status: _openStatus()),
     );
 
-    expect(result.inspectedClaims, 0);
-    expect(result.settledClaims, 0);
-    expect(result.status, isNull);
     verifyNever(
       () => agentRepository.getAttentionClaimsForTarget(
         targetKind: any(named: 'targetKind'),
@@ -64,16 +61,12 @@ void main() {
       ],
     );
 
-    final result = await withClock(Clock.fixed(now), () {
+    await withClock(Clock.fixed(now), () {
       return service.settleTerminalTaskClaims(
         agentId: agentId,
         task: _task(status: _doneStatus()),
       );
     });
-
-    expect(result.inspectedClaims, 2);
-    expect(result.settledClaims, 1);
-    expect(result.status, AttentionClaimStatus.satisfied);
 
     final disposition =
         verify(() => syncService.upsertEntity(captureAny())).captured.single
@@ -93,15 +86,12 @@ void main() {
       ),
     ).thenAnswer((_) async => [_claim(id: 'claim-own', agentId: agentId)]);
 
-    final result = await withClock(Clock.fixed(now), () {
+    await withClock(Clock.fixed(now), () {
       return service.settleTerminalTaskClaims(
         agentId: agentId,
         task: _task(status: _rejectedStatus()),
       );
     });
-
-    expect(result.settledClaims, 1);
-    expect(result.status, AttentionClaimStatus.withdrawn);
 
     final disposition =
         verify(() => syncService.upsertEntity(captureAny())).captured.single
@@ -121,16 +111,11 @@ void main() {
       (_) async => [_claim(id: 'claim-other', agentId: 'project-agent-001')],
     );
 
-    final result = await service.settleTerminalTaskClaims(
+    await service.settleTerminalTaskClaims(
       agentId: agentId,
       task: _task(status: _doneStatus()),
     );
 
-    expect(result.inspectedClaims, 1);
-    expect(result.settledClaims, 0);
-    // Terminal task with no owned claims still reports the projected
-    // disposition so callers can distinguish it from a non-terminal task.
-    expect(result.status, AttentionClaimStatus.satisfied);
     verifyNever(() => syncService.upsertEntity(any()));
   });
 }

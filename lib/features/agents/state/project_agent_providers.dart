@@ -45,14 +45,10 @@ class ProjectAgentSummaryState {
   const ProjectAgentSummaryState({
     required this.hasReport,
     this.pendingProjectActivityAt,
-    this.scheduledWakeAt,
   });
 
   final bool hasReport;
   final DateTime? pendingProjectActivityAt;
-  final DateTime? scheduledWakeAt;
-
-  bool get isSummaryOutdated => hasReport && pendingProjectActivityAt != null;
 }
 
 /// Fetches summary freshness data for the project's provisioned agent.
@@ -85,6 +81,5 @@ projectAgentSummaryProvider = FutureProvider.autoDispose
       return ProjectAgentSummaryState(
         hasReport: report != null && report.content.trim().isNotEmpty,
         pendingProjectActivityAt: state?.slots.pendingProjectActivityAt,
-        scheduledWakeAt: state?.scheduledWakeAt,
       );
     });

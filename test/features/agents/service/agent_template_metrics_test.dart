@@ -40,7 +40,6 @@ void main() {
     );
     metrics = AgentTemplateMetrics(
       repository: mockRepo,
-      syncService: mockSync,
       crud: crud,
     );
   });
