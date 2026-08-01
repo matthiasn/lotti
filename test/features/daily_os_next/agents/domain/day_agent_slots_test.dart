@@ -95,13 +95,13 @@ void main() {
     });
   });
 
-  group('weekStartFor', () {
+  group('canonicalWeekStart', () {
     test('maps every weekday of one week to the same Monday', () {
       // 2026-05-18 is a Monday.
       for (var offset = 0; offset < 7; offset++) {
         expect(
-          weekStartFor(DateTime(2026, 5, 18 + offset, 13, 45)),
-          DateTime(2026, 5, 18),
+          canonicalWeekStart(DateTime(2026, 5, 18 + offset, 13, 45)),
+          DateTime.utc(2026, 5, 18),
           reason: 'offset $offset must bucket to Monday 2026-05-18',
         );
       }
@@ -109,8 +109,56 @@ void main() {
 
     test('a Sunday belongs to the week begun the prior Monday, crossing '
         'month boundaries', () {
-      expect(weekStartFor(DateTime(2026, 6, 7)), DateTime(2026, 6));
-      expect(weekStartFor(DateTime(2026, 5, 3)), DateTime(2026, 4, 27));
+      expect(canonicalWeekStart(DateTime(2026, 6, 7)), DateTime.utc(2026, 6));
+      expect(
+        canonicalWeekStart(DateTime(2026, 5, 3)),
+        DateTime.utc(2026, 4, 27),
+      );
+    });
+
+    test('reads calendar components, so a local and a UTC-typed spelling of '
+        'the same date agree', () {
+      expect(
+        canonicalWeekStart(DateTime(2026, 5, 20, 23, 30)),
+        canonicalWeekStart(DateTime.utc(2026, 5, 20, 23, 30)),
+        reason:
+            'A converting read would move the UTC-typed spelling across a '
+            'day — and, near a Monday, across a week.',
+      );
+    });
+  });
+
+  group('recordedWallClock', () {
+    test('reads the clock of the recording device, not the reading one', () {
+      // One instant, two recording zones, two different calendar days.
+      final instant = DateTime.utc(2026, 5, 31, 13);
+      expect(
+        recordedWallClock(instant, 12 * 60),
+        DateTime.utc(2026, 6, 1, 1),
+      );
+      expect(
+        recordedWallClock(instant, -12 * 60),
+        DateTime.utc(2026, 5, 31, 1),
+      );
+    });
+
+    test('an unstamped legacy entry falls back to the reading device', () {
+      final local = DateTime(2026, 5, 27, 12, 30, 15);
+
+      expect(
+        recordedWallClock(local, null),
+        DateTime.utc(2026, 5, 27, 12, 30, 15),
+        reason:
+            "The wall clock is the reading zone's, expressed as the same "
+            'zone-free reading the stamped path produces.',
+      );
+    });
+
+    test('a zero offset means UTC, not "unstamped"', () {
+      expect(
+        recordedWallClock(DateTime.utc(2026, 5, 31, 13), 0),
+        DateTime.utc(2026, 5, 31, 13),
+      );
     });
   });
 
@@ -124,10 +172,24 @@ void main() {
       );
     });
 
-    test('normalizes a mid-week timestamp through localDay', () {
+    test('keys on calendar components, so two devices agree', () {
+      // A converting read would push the UTC-typed spelling to 05-19 (or back
+      // to 05-17) depending on the reader's zone — two ids for one week, which
+      // is exactly the register flapping the canonical key prevents.
+      expect(
+        weekRollupEntityId(DateTime.utc(2026, 5, 18, 23, 59)),
+        'week_rollup:2026-05-18',
+      );
       expect(
         weekRollupEntityId(DateTime(2026, 5, 18, 23, 59)),
         'week_rollup:2026-05-18',
+      );
+    });
+
+    test('pads single-digit months and days', () {
+      expect(
+        weekRollupEntityId(DateTime.utc(2026, 1, 5)),
+        'week_rollup:2026-01-05',
       );
     });
   });

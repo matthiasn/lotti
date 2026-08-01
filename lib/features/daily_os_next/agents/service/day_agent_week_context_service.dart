@@ -225,6 +225,7 @@ class DayAgentWeekContextService {
           start: pair.start,
           duration: pair.duration,
           taskId: pair.taskId,
+          utcOffsetMinutes: pair.utcOffsetMinutes,
         ),
     ];
   }
@@ -274,7 +275,11 @@ class DayAgentWeekContextService {
         final prior = existing is WeekRollupEntity ? existing : null;
         final aggregates = aggregatesByWeek[weekStart]!;
         const equality = DeepCollectionEquality();
+        // A legacy register is rewritten even when its numbers happen to
+        // match, so the stamp — not a coincidence — is what says the value is
+        // canonical.
         if (prior != null &&
+            prior.bucketingRule == recordedLocalBucketingRule &&
             prior.daysWithPlans == aggregates.daysWithPlans &&
             equality.equals(
               prior.plannedMinutesByCategory,
@@ -291,6 +296,11 @@ class DayAgentWeekContextService {
                 plannedMinutesByCategory: aggregates.plannedMinutesByCategory,
                 recordedMinutesByCategory: aggregates.recordedMinutesByCategory,
                 daysWithPlans: aggregates.daysWithPlans,
+                bucketingRule: recordedLocalBucketingRule,
+                // Legacy registers stored a device-local midnight here; the
+                // canonical key is zone-free, so migrate the field too rather
+                // than leaving two spellings of the same Monday in the store.
+                weekStart: weekStart,
                 updatedAt: now,
               )
             : AgentDomainEntity.weekRollup(
@@ -303,6 +313,7 @@ class DayAgentWeekContextService {
                 plannedMinutesByCategory: aggregates.plannedMinutesByCategory,
                 recordedMinutesByCategory: aggregates.recordedMinutesByCategory,
                 daysWithPlans: aggregates.daysWithPlans,
+                bucketingRule: recordedLocalBucketingRule,
               );
         await syncService.upsertEntity(entity);
       }
@@ -354,10 +365,15 @@ class DayAgentWeekContextService {
   /// Mondays of the last [recentWeekRollupCount] COMPLETE weeks (strictly
   /// before the week containing [now]), newest first.
   List<DateTime> _recentCompleteWeekStarts(DateTime now) {
-    final currentWeekStart = weekStartFor(now);
+    // WHICH weeks to compute follows the reading device's calendar — the user
+    // asking for "recent weeks" means recent to them. WHAT each week contains
+    // does not (see [_computeAggregatesForWeeks]): the keys are canonical, so
+    // two devices that disagree about the current week near a Monday boundary
+    // still agree on every week they both compute.
+    final currentWeekStart = canonicalWeekStart(localDay(now));
     return [
       for (var back = 1; back <= recentWeekRollupCount; back++)
-        DateTime(
+        DateTime.utc(
           currentWeekStart.year,
           currentWeekStart.month,
           currentWeekStart.day - 7 * back,
@@ -385,7 +401,7 @@ class DayAgentWeekContextService {
     final weekByPlanId = <String, DateTime>{};
     for (final weekStart in weekStarts) {
       for (var offset = 0; offset < DateTime.daysPerWeek; offset++) {
-        final day = DateTime(
+        final day = DateTime.utc(
           weekStart.year,
           weekStart.month,
           weekStart.day + offset,
@@ -408,17 +424,27 @@ class DayAgentWeekContextService {
 
     final oldest = weekStarts.last;
     final newest = weekStarts.first;
+    // The fetch is an instant range, but the buckets are wall-clock weeks in
+    // the RECORDING device's zone, which can sit up to 14 hours either side of
+    // this device's. Widen the fetch by a day at each end so no span that
+    // belongs to a covered week is missed; the bucketing below discards
+    // whatever falls outside.
     final spans = await _recordedSpansInRange(
-      rangeStart: oldest,
+      rangeStart: DateTime(oldest.year, oldest.month, oldest.day - 1),
       rangeEnd: DateTime(
         newest.year,
         newest.month,
-        newest.day + DateTime.daysPerWeek,
+        newest.day + DateTime.daysPerWeek + 1,
       ),
     );
+    final coveredWeeks = weekStarts.toSet();
     final spansByWeek = <DateTime, List<RecordedSpan>>{};
     for (final span in spans) {
-      spansByWeek.putIfAbsent(weekStartFor(span.start), () => []).add(span);
+      final week = canonicalWeekStart(
+        recordedWallClock(span.start, span.utcOffsetMinutes),
+      );
+      if (!coveredWeeks.contains(week)) continue;
+      spansByWeek.putIfAbsent(week, () => []).add(span);
     }
 
     return {

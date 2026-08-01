@@ -46,6 +46,13 @@ class ResolvedTimeEntry {
 
   /// When the recorded time started.
   DateTime get start => entry.meta.dateFrom;
+
+  /// The UTC offset, in minutes, of the device that recorded the entry.
+  ///
+  /// Null on entries written before the field existed. Consumers that bucket
+  /// by calendar day or week use this rather than their own zone, so the same
+  /// entry buckets identically on every device.
+  int? get utcOffsetMinutes => entry.meta.utcOffset;
 }
 
 /// Resolves the entries that count as recorded time into

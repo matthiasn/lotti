@@ -57,16 +57,51 @@ String dayStatusEventId(String dayId, String suffix) =>
 String dayStatusEventIdForProcessingJob(String dayId, String processingJobId) =>
     dayStatusEventId(dayId, 'job:$processingJobId');
 
-/// Monday 00:00 local time of the calendar week containing [date].
+/// `WeekRollupEntity.bucketingRule` value for the canonical rule: recorded
+/// minutes bucket by the wall clock of the device that recorded them.
 ///
-/// Weeks are ISO weeks (Monday-start), matching the digest's "recent weeks"
-/// framing. Normalizes through [localDay] first so UTC-typed inputs bucket to
-/// the user's local week. Uses component day arithmetic (not
-/// `subtract(Duration)`, which is instant-based) so the result stays at
-/// local midnight across DST transitions, where a day may be 23 or 25 hours.
-DateTime weekStartFor(DateTime date) {
-  final day = localDay(date);
-  return DateTime(
+/// A register without this stamp is legacy — bucketed in whichever zone the
+/// reading device happened to be in.
+const recordedLocalBucketingRule = 'recordedLocal';
+
+/// The wall clock an instant was recorded at, from the UTC offset the
+/// recording device stamped on the entry (`Metadata.utcOffset`, in minutes).
+///
+/// Returned UTC-typed, but it is **not a UTC instant** — it is a zone-free
+/// calendar reading, the numbers that were on the recorder's clock. That is
+/// what makes it canonical: every device derives the same reading from the
+/// same synced entry, whereas `start.toLocal()` answers differently on a
+/// device in another zone.
+///
+/// A legacy entry with no stamped offset falls back to the reading device's
+/// zone — the pre-canonical behaviour, and the only answer still available.
+DateTime recordedWallClock(DateTime start, int? utcOffsetMinutes) {
+  if (utcOffsetMinutes == null) {
+    final local = start.toLocal();
+    return DateTime.utc(
+      local.year,
+      local.month,
+      local.day,
+      local.hour,
+      local.minute,
+      local.second,
+    );
+  }
+  return start.toUtc().add(Duration(minutes: utcOffsetMinutes));
+}
+
+/// Monday 00:00 of the ISO week containing [date], read from [date]'s own
+/// calendar components and returned UTC-typed — the zone-free week key that
+/// [weekRollupEntityId] hashes.
+///
+/// Component day arithmetic (not `subtract(Duration)`, which is instant-based)
+/// keeps the result at midnight across DST, where a local day may be 23 or 25
+/// hours. Because it reads components rather than converting, it accepts both
+/// a local-midnight day-plan date and a [recordedWallClock] reading and gives
+/// the same answer for the same calendar date.
+DateTime canonicalWeekStart(DateTime date) {
+  final day = DateTime.utc(date.year, date.month, date.day);
+  return DateTime.utc(
     day.year,
     day.month,
     day.day - (day.weekday - DateTime.monday),
@@ -78,5 +113,15 @@ DateTime weekStartFor(DateTime date) {
 ///
 /// One revisable register per calendar week, recomputed from source data at
 /// digest time (plain LWW — a recompute on any device converges).
+///
+/// Keyed on [weekStart]'s calendar components, NOT on the instant it names:
+/// a converting read would give two devices in different zones two different
+/// ids for the same week, which is the register-flapping this file's
+/// bucketing rules exist to prevent.
 String weekRollupEntityId(DateTime weekStart) =>
-    'week_rollup:${localDay(weekStart).toIso8601String().substring(0, 10)}';
+    'week_rollup:${_isoDate(weekStart)}';
+
+String _isoDate(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';

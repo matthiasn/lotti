@@ -396,6 +396,17 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     @Default(<String, int>{}) Map<String, int> plannedMinutesByCategory,
     @Default(<String, int>{}) Map<String, int> recordedMinutesByCategory,
     @Default(0) int daysWithPlans,
+
+    /// Which rule bucketed `recordedMinutesByCategory` into this week.
+    ///
+    /// `recordedLocal` means each span was bucketed by the wall clock of the
+    /// device that recorded it, which every device derives identically. Null
+    /// marks a **legacy** register bucketed in the reading device's own zone,
+    /// where two devices in different zones computed different totals for the
+    /// same week and flapped this register between them. Legacy registers are
+    /// rewritten the next time their week falls inside the recompute window;
+    /// older ones keep their legacy values and stay flagged by this null.
+    String? bucketingRule,
     DateTime? deletedAt,
   }) = WeekRollupEntity;
 

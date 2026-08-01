@@ -58,6 +58,24 @@ lib/features/daily_os_next/
 The shared day-plan aggregate lives in `lib/classes/day_plan.dart` and is extended
 here rather than duplicated.
 
+## The week a recording belongs to
+
+Weekly totals bucket each recorded entry by **the wall clock of the device that
+recorded it** — the UTC offset stamped on the entry at creation — not by the
+zone of whichever device is reading. An hour worked at 9am in Tokyo counts to
+that Tokyo Monday on every device the user owns.
+
+The rule exists because these totals are a shared, synced register. Bucketing in
+the reading device's zone meant a laptop and a phone in different zones computed
+different totals for the same past week and overwrote each other indefinitely —
+historical numbers that changed on their own. Bucketing by the recording zone is
+a property of the data, so every device derives the same answer.
+
+Entries written before the app stamped an offset have no recording zone to
+honour and fall back to the reading device's. Weekly registers written under the
+old rule are rewritten as their week comes back into the recompute window;
+older ones keep their legacy values and are flagged as such in the store.
+
 ## Performance envelope
 
 Daily OS carries deterministic offline regression gates and live model

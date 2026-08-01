@@ -183,6 +183,52 @@ The rollups render as `<recent_weeks>` (names resolved, newest first), so the
 digest can spot month-scale pacing trends without re-reading a month of raw
 entities.
 
+## Bucketing is canonical, or LWW does not converge
+
+"Recomputed from source on every digest" only self-heals when every device
+computes the *same* value from that source. Device-local bucketing broke that:
+`weekStartFor(span.start)` resolved through the reading device's zone, so a
+laptop and a phone in different zones produced different totals for the same
+past week and flapped the register between them forever — a convergence bug
+wearing the costume of a bucketing bug.
+
+Two rules make the computation a property of the data rather than of the reader:
+
+| Input | Canonical rule |
+|-------|----------------|
+| Recorded minutes | `recordedWallClock(span.start, span.utcOffsetMinutes)` — the wall clock of the **recording** device, from `Metadata.utcOffset` |
+| Planned minutes | already stable: keyed by date-only `dayplan-<date>` ids, never by an instant |
+| Week key | `canonicalWeekStart` reads calendar **components** and returns a UTC-typed midnight; `weekRollupEntityId` hashes those components, never a converted instant |
+
+Because the buckets are wall-clock weeks in the recording zone and the fetch is
+an instant range, the spanning read widens a day at each end (recording zones
+reach ±14h) and bucketing discards what falls outside.
+
+**Which weeks** to compute still follows the reading device's calendar — "recent"
+means recent to the user. Two devices straddling a Monday boundary may therefore
+compute different *sets*, but never different *values*, so nothing flaps.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Legacy: register written before the canonical rule
+  [*] --> Canonical: register written by this build
+  Legacy --> Canonical: week inside the 4-week window at digest time
+  Legacy --> Legacy: week aged out — keeps legacy values, stays flagged
+  Canonical --> Canonical: recompute (write skipped when unchanged)
+```
+
+`WeekRollupEntity.bucketingRule` records which rule produced a register:
+`recordedLocal` for canonical, null for legacy. The steady-state
+skip-when-unchanged check requires the stamp as well as matching numbers —
+matching numbers on a legacy register are a coincidence, not evidence — so a
+legacy register inside the window is always rewritten, stamped, and its
+device-local `weekStart` migrated to the zone-free key. Registers older than the
+window keep their legacy values and stay identifiable by the null.
+
+Entries predating `Metadata.utcOffset` carry no recording zone and fall back to
+the reading device's — the only answer still available, and the pre-canonical
+behaviour.
+
 # The other two upward channels
 
 They predate this protocol and still carry their own traffic:
