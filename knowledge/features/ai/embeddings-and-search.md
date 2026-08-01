@@ -11,7 +11,7 @@ sources:
   - id: embedding-service
     resource: ../../../lib/features/ai/service/embedding_service.dart
     title: EmbeddingService
-    last_modified: 2026-03-07
+    last_modified: 2026-08-01
   - id: store
     resource: ../../../lib/features/ai/database/objectbox_embedding_store.dart
     title: ObjectBox-backed embedding store
@@ -27,6 +27,10 @@ sources:
   - id: task-agent-report-embedding
     resource: ../../../lib/features/agents/workflow/task_agent_persistence_helpers.dart
     title: Optional task-agent report embedding
+    last_modified: 2026-08-01
+  - id: embedding-backfill-controller
+    resource: ../../../lib/features/ai/state/embedding_backfill_controller.dart
+    title: EmbeddingBackfillController
     last_modified: 2026-08-01
 ---
 
@@ -66,11 +70,13 @@ flowchart LR
   cooldown for that URL. Calls during the cooldown fail before network I/O and
   carry a cumulative suppressed-request count; the task-agent path does not
   emit a full stack trace for every optional report.
-- The first call after the cooldown is the recovery probe. Any HTTP response
+- The first call after the cooldown exclusively reserves the recovery probe;
+  concurrent callers remain suppressed until it finishes. Any HTTP response
   proves the service is reachable and closes the circuit; another exhausted
-  transport retry budget opens a fresh cooldown. A failed optional embedding
-  never rolls back the already-persisted agent report or deletes its previous
-  embedding.
+  transport retry budget opens a fresh cooldown. Notification and manual
+  backfill loops stop on a known cooldown instead of emitting one stack trace
+  per remaining item. A failed optional embedding never rolls back the
+  already-persisted agent report or deletes its previous embedding.
 
 ```mermaid
 stateDiagram-v2
@@ -78,6 +84,7 @@ stateDiagram-v2
   Available --> CoolingDown: transport retries exhausted
   CoolingDown --> CoolingDown: calls suppressed and counted
   CoolingDown --> RecoveryProbe: five minutes elapsed
+  RecoveryProbe --> RecoveryProbe: concurrent calls suppressed
   RecoveryProbe --> Available: HTTP response received
   RecoveryProbe --> CoolingDown: transport retries exhausted
 ```

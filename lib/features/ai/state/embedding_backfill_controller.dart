@@ -141,6 +141,8 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
 
   /// Iterates [entityIds], calling [EmbeddingProcessor.processEntity] for
   /// each, and updating progress state. Shared by backfill and reindex.
+  /// A known Ollama cooldown stops the run so remaining items do not emit
+  /// duplicate fast-failure diagnostics.
   Future<void> _processEntities({
     required List<String> entityIds,
     required _BackfillServices services,
@@ -151,6 +153,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
     var embedded = 0;
 
     for (final entityId in entityIds) {
+      var stopForCooldown = false;
       try {
         final didEmbed = await EmbeddingProcessor.processEntity(
           entityId: entityId,
@@ -161,6 +164,12 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
           labelNameResolver: labelResolver,
         );
         if (didEmbed) embedded++;
+      } on OllamaEmbeddingCooldownException catch (e) {
+        stopForCooldown = true;
+        _recordAvailabilityCooldown(
+          e,
+          operation: 'Category backfill',
+        );
       } catch (e, stackTrace) {
         developer.log(
           'Backfill failed for $entityId: $e',
@@ -176,7 +185,19 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
         embeddedCount: embedded,
         progress: processed / total,
       );
+      if (stopForCooldown) break;
     }
+  }
+
+  void _recordAvailabilityCooldown(
+    OllamaEmbeddingCooldownException exception, {
+    required String operation,
+  }) {
+    developer.log(
+      '$operation paused during Ollama availability cooldown: $exception',
+      name: 'EmbeddingBackfillController',
+    );
+    state = state.copyWith(error: exception.toString());
   }
 
   /// Generates embeddings for all entries in the given [categoryIds].

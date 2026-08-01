@@ -50,7 +50,7 @@ class OllamaEmbeddingRepository {
       throw ArgumentError('OllamaEmbeddingRepository.embed(): input is empty');
     }
 
-    _throwIfAvailabilityCoolingDown(baseUrl);
+    _reserveAvailabilityProbeOrThrow(baseUrl);
 
     final http.Response response;
     try {
@@ -71,6 +71,9 @@ class OllamaEmbeddingRepository {
       );
     } on _OllamaEmbeddingUnavailableException {
       _openAvailabilityCooldown(baseUrl);
+      rethrow;
+    } on Object {
+      _releaseAvailabilityProbe(baseUrl);
       rethrow;
     }
 
@@ -93,9 +96,17 @@ class OllamaEmbeddingRepository {
     return _parseEmbeddingResponse(response.body);
   }
 
-  void _throwIfAvailabilityCoolingDown(String baseUrl) {
+  void _reserveAvailabilityProbeOrThrow(String baseUrl) {
     final backoff = _availabilityBackoff[baseUrl];
-    if (backoff == null || !clock.now().isBefore(backoff.retryAt)) return;
+    if (backoff == null) return;
+
+    final now = clock.now();
+    if (!backoff.recoveryProbeInFlight && !now.isBefore(backoff.retryAt)) {
+      backoff
+        ..recoveryProbeInFlight = true
+        ..retryAt = now.add(availabilityCooldown);
+      return;
+    }
 
     backoff.suppressedRequestCount++;
     final exception = OllamaEmbeddingCooldownException(
@@ -121,8 +132,19 @@ class OllamaEmbeddingRepository {
     if (current == null) {
       _availabilityBackoff[baseUrl] = _OllamaAvailabilityBackoff(retryAt);
     } else {
-      current.retryAt = retryAt;
+      current
+        ..retryAt = retryAt
+        ..recoveryProbeInFlight = false;
     }
+  }
+
+  void _releaseAvailabilityProbe(String baseUrl) {
+    final backoff = _availabilityBackoff[baseUrl];
+    if (backoff == null || !backoff.recoveryProbeInFlight) return;
+
+    backoff
+      ..recoveryProbeInFlight = false
+      ..retryAt = clock.now();
   }
 
   void _markAvailable(String baseUrl) {
@@ -188,9 +210,12 @@ class OllamaEmbeddingRepository {
       try {
         return await operation();
       } on Exception catch (e) {
-        if (e is TimeoutException || e is SocketException) {
+        final isTimeout = e is TimeoutException;
+        final isNetworkError =
+            e is SocketException || e is http.ClientException;
+        if (isTimeout || isNetworkError) {
           if (attempt >= _maxRetries) {
-            if (e is TimeoutException) {
+            if (isTimeout) {
               throw const _OllamaEmbeddingUnavailableException(
                 'Embedding request timed out after $_maxRetries attempts. '
                 'Is the Ollama server running?',
@@ -202,7 +227,7 @@ class OllamaEmbeddingRepository {
               );
             }
           }
-          final reason = e is TimeoutException ? 'Timeout' : 'Network error';
+          final reason = isTimeout ? 'Timeout' : 'Network error';
           developer.log(
             '$reason during $context, retrying (attempt $attempt)...',
             name: 'OllamaEmbeddingRepository',
@@ -262,4 +287,5 @@ class _OllamaAvailabilityBackoff {
 
   DateTime retryAt;
   int suppressedRequestCount = 0;
+  bool recoveryProbeInFlight = false;
 }

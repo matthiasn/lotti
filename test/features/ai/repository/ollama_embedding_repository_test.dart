@@ -482,6 +482,150 @@ void main() {
         },
       );
 
+      test(
+        'treats http ClientException as an outage and opens cooldown',
+        () async {
+          var callCount = 0;
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            throw http.ClientException(
+              'Connection refused',
+              Uri.parse('$baseUrl/api/embed'),
+            );
+          });
+
+          await expectLater(
+            () => repository.embed(input: 'initial', baseUrl: baseUrl),
+            throwsException,
+          );
+          await expectLater(
+            () => repository.embed(input: 'suppressed', baseUrl: baseUrl),
+            throwsA(isA<OllamaEmbeddingCooldownException>()),
+          );
+
+          expect(
+            callCount,
+            3,
+            reason: 'the wrapped socket failure must consume one retry budget',
+          );
+        },
+      );
+
+      test('only one concurrent caller owns the recovery probe', () async {
+        var now = DateTime.utc(2026, 8, 1, 12);
+        var callCount = 0;
+        final probeStarted = Completer<void>();
+        final probeResponse = Completer<http.Response>();
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) {
+          callCount++;
+          if (callCount <= 3) {
+            throw const SocketException('Connection refused');
+          }
+          if (callCount == 4) {
+            probeStarted.complete();
+            return probeResponse.future;
+          }
+          throw StateError('a second recovery probe reached the network');
+        });
+
+        await withClock(Clock(() => now), () async {
+          await expectLater(
+            () => repository.embed(input: 'initial', baseUrl: baseUrl),
+            throwsException,
+          );
+
+          now = now.add(OllamaEmbeddingRepository.availabilityCooldown);
+          final recoveryProbe = repository.embed(
+            input: 'recovery probe',
+            baseUrl: baseUrl,
+          );
+          await probeStarted.future;
+          now = now.add(OllamaEmbeddingRepository.availabilityCooldown);
+
+          await expectLater(
+            () => repository.embed(
+              input: 'concurrent request',
+              baseUrl: baseUrl,
+            ),
+            throwsA(
+              isA<OllamaEmbeddingCooldownException>().having(
+                (error) => error.retryAt,
+                'reserved probe window',
+                now,
+              ),
+            ),
+          );
+          expect(callCount, 4);
+
+          probeResponse.complete(
+            http.Response(
+              makeEmbeddingResponse(kEmbeddingDimensions),
+              200,
+            ),
+          );
+          await expectLater(
+            recoveryProbe,
+            completion(hasLength(kEmbeddingDimensions)),
+          );
+        });
+      });
+
+      test('unexpected recovery failure releases the probe', () async {
+        var now = DateTime.utc(2026, 8, 1, 12);
+        var callCount = 0;
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          if (callCount <= 3) {
+            throw const SocketException('Connection refused');
+          }
+          if (callCount == 4) {
+            throw StateError('unexpected recovery failure');
+          }
+          return http.Response(
+            makeEmbeddingResponse(kEmbeddingDimensions),
+            200,
+          );
+        });
+
+        await withClock(Clock(() => now), () async {
+          await expectLater(
+            () => repository.embed(input: 'initial', baseUrl: baseUrl),
+            throwsException,
+          );
+
+          now = now.add(OllamaEmbeddingRepository.availabilityCooldown);
+          await expectLater(
+            () => repository.embed(input: 'failed probe', baseUrl: baseUrl),
+            throwsA(isA<StateError>()),
+          );
+          final recovered = await repository.embed(
+            input: 'replacement probe',
+            baseUrl: baseUrl,
+          );
+
+          expect(recovered, hasLength(kEmbeddingDimensions));
+          expect(callCount, 5);
+        });
+      });
+
       test('successful post-cooldown probe re-enables embeddings', () async {
         var now = DateTime.utc(2026, 8, 1, 12);
         var callCount = 0;

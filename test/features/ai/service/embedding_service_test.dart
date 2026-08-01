@@ -9,6 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -815,6 +816,55 @@ void main() {
             categoryId: any(named: 'categoryId'),
           ),
         ).called(1);
+
+        stopInZone(async);
+      });
+    });
+
+    test('stops the current batch when Ollama is cooling down', () {
+      fakeAsync((async) {
+        const entityId2 = 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee';
+        final entry1 = JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        );
+        final entry2 = JournalEntry(
+          meta: _meta(id: entityId2),
+          entryText: const EntryText(
+            plainText: 'Another long enough text for embedding generation.',
+          ),
+        );
+        stubEntity(entry1);
+        when(
+          () => mockJournalDb.journalEntityById(entityId2),
+        ).thenAnswer((_) async => entry2);
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenThrow(
+          OllamaEmbeddingCooldownException(
+            retryAt: DateTime.utc(2026, 8, 1, 12, 5),
+            suppressedRequestCount: 1,
+          ),
+        );
+
+        service.start();
+        sendAndProcess(
+          async,
+          {_entityId, entityId2, textEntryNotification},
+        );
+
+        verify(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).called(1);
+        verifyNever(() => mockJournalDb.journalEntityById(entityId2));
 
         stopInZone(async);
       });

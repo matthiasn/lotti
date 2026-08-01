@@ -140,6 +140,13 @@ class EmbeddingService {
             baseUrl: baseUrl,
             labelNameResolver: labelResolver,
           );
+        } on OllamaEmbeddingCooldownException catch (e) {
+          developer.log(
+            'Embedding batch paused during Ollama availability cooldown: $e',
+            name: 'EmbeddingService',
+          );
+          _pendingEntityIds.clear();
+          break;
         } catch (e, stackTrace) {
           developer.log(
             'Failed to generate embedding for $entityId: $e',

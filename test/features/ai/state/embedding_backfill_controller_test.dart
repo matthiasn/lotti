@@ -535,6 +535,52 @@ void main() {
       expect(s.error, isNull);
     });
 
+    test('stops category backfill when Ollama is cooling down', () async {
+      final entries = [
+        JournalEntry(
+          meta: _meta(id: 'first-1'),
+          entryText: const EntryText(plainText: _longText),
+        ),
+        JournalEntry(
+          meta: _meta(id: 'second-1'),
+          entryText: const EntryText(
+            plainText: 'Another long enough entry for embedding.',
+          ),
+        ),
+      ];
+      _stubEntityIds(mockJournalDb, entries.map((entry) => entry.id).toList());
+      for (final entry in entries) {
+        _stubEntity(mockJournalDb, entry);
+      }
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenThrow(
+        OllamaEmbeddingCooldownException(
+          retryAt: DateTime.utc(2026, 8, 1, 12, 5),
+          suppressedRequestCount: 1,
+        ),
+      );
+
+      await controller().backfillCategories({_testCategoryId});
+
+      final s = state();
+      expect(s.processedCount, 1);
+      expect(s.progress, 0.5);
+      expect(s.error, contains('availability cooldown'));
+      verify(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).called(1);
+      verifyNever(() => mockJournalDb.journalEntityById('second-1'));
+    });
+
     test('sets error when embedding pipeline not registered', () async {
       // The controller gates on `getIt.isRegistered<EmbeddingStore>()`, so
       // unregister only that one dependency rather than nuking the whole
