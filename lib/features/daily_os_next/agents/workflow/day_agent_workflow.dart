@@ -236,7 +236,9 @@ class DayAgentWorkflow {
           await _scheduleNextCoordinatorDigest(
             agentId: agentId,
             now: now,
-            anchoredDay: digestAnchorDay(effectiveTokens),
+            // An unparseable digest token resolves to no day; the run day is
+            // then the honest anchor, and the duplicate guard still applies.
+            anchoredDay: digestAnchorDay(effectiveTokens) ?? localDay(now),
           );
         } catch (scheduleError, stackTrace) {
           _logError(
@@ -793,14 +795,17 @@ class DayAgentWorkflow {
 
   /// Schedules the coordinator's next morning digest after either success or
   /// failure, because the current scheduled-wake record is consumed first.
+  ///
+  /// [anchoredDay] is the day this wake actually digested (post re-anchor).
+  /// The next slot is bounded by it rather than by [now] alone, so a catch-up
+  /// that ran before the digest hour cannot re-arm a second digest for the day
+  /// it just covered.
   Future<void> _scheduleNextCoordinatorDigest({
     required String agentId,
     required DateTime now,
-    DateTime? anchoredDay,
+    required DateTime anchoredDay,
   }) async {
-    final next = anchoredDay == null
-        ? nextDigestTime(now)
-        : nextDigestTimeAfterDay(now, anchoredDay);
+    final next = nextDigestTimeAfterDay(now, anchoredDay);
     await syncService.upsertEntity(
       AgentDomainEntity.scheduledWake(
         id: scheduledWakeRecordId(
