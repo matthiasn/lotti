@@ -141,9 +141,27 @@ class AgentRepoCore {
   Future<void> _upsertEntity(AgentDomainEntity entity) async {
     // Any identity write — including a soft delete, which is an upsert with
     // `deletedAt` set — makes the cached list stale.
-    if (entity is AgentIdentityEntity) {
-      invalidateAgentIdentitiesCache();
+    //
+    // Invalidated on **both** sides of the write. Before, so nothing keeps
+    // serving the pre-write list. After, because a read starting inside the
+    // window captures the bumped generation, reads the not-yet-committed
+    // snapshot — `agent.sqlite` runs a two-isolate read pool in production —
+    // and would install it; a successful write never invalidates again, so
+    // that stale list would be served until the next identity write.
+    //
+    // Not unit-covered: reproducing the interleaving needs a real read pool,
+    // and the in-memory test databases bypass pooling entirely
+    // (`openDbConnection`), so an in-memory test would pass either way.
+    final isIdentity = entity is AgentIdentityEntity;
+    if (isIdentity) invalidateAgentIdentitiesCache();
+    try {
+      await _writeEntity(entity);
+    } finally {
+      if (isIdentity) invalidateAgentIdentitiesCache();
     }
+  }
+
+  Future<void> _writeEntity(AgentDomainEntity entity) async {
     final companion = AgentDbConversions.toEntityCompanion(entity);
     final affectsAttentionClaims = affectsAttentionClaimProjection(entity);
     final affectsStandingAgreements = affectsStandingAgreementProjection(

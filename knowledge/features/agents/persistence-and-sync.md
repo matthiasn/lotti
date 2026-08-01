@@ -5,7 +5,7 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-01T13:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-01T16:15:00Z }
 stale_after: 2026-10-12
 sources:
   - id: db
@@ -52,7 +52,7 @@ sources:
 
 # One database, two shapes
 
-Agent persistence lives in `agent.sqlite` (schema version 17). Syncable domain
+Agent persistence lives in `agent.sqlite` (schema version 18). Syncable domain
 objects are modelled as **`AgentDomainEntity` variants** and **`AgentLink`
 variants**; wake-run history lives in a dedicated `wake_run_log` table outside
 that model.
