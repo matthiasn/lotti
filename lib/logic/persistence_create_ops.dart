@@ -188,10 +188,24 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
       }
 
       if (habitDefinition != null) {
-        await getIt<NotificationService>().scheduleHabitNotification(
-          habitDefinition,
-          daysToAdd: 1,
-        );
+        // Scheduling the next reminder is a side effect of a completion that
+        // has already been written. Letting it throw here would return null
+        // and tell the caller the write failed — it did not — so the user
+        // would get no confirmation for a completion that is in the database,
+        // and would likely tap again and record a duplicate.
+        try {
+          await getIt<NotificationService>().scheduleHabitNotification(
+            habitDefinition,
+            daysToAdd: 1,
+          );
+        } catch (exception, stackTrace) {
+          loggingService.error(
+            LogDomain.persistence,
+            exception,
+            stackTrace: stackTrace,
+            subDomain: 'createHabitCompletionEntry.scheduleNotification',
+          );
+        }
       }
 
       return habitCompletionEntry;
@@ -200,7 +214,7 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
-        subDomain: 'createMeasurementEntry',
+        subDomain: 'createHabitCompletionEntry',
       );
     }
 

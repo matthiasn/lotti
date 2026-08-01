@@ -59,6 +59,29 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  /// Resolves the local [Location] for scheduling, degrading to [local]
+  /// rather than throwing.
+  ///
+  /// [getLocalTimezone] can still return a zone *abbreviation* when no IANA
+  /// name is resolvable, and `getLocation` rejects those — `Location with the
+  /// name "CEST" doesn't exist`. A reminder that cannot be scheduled in the
+  /// user's exact zone is still worth scheduling in the process-local zone; it
+  /// is never worth throwing, because this runs inside entry creation and the
+  /// entry has already been written by the time it would.
+  Location _resolveLocation(String timezone) {
+    try {
+      return getLocation(timezone);
+    } catch (exception, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.notifications,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'resolveLocation',
+      );
+      return local;
+    }
+  }
+
   Future<void> _requestPermissions() async {
     if (_skipNotificationsOnCurrentPlatform) {
       return;
@@ -201,8 +224,7 @@ class NotificationService {
     await _requestPermissions();
     await flutterLocalNotificationsPlugin.cancel(id: notificationId);
     final now = DateTime.now();
-    final localTimezone = await getLocalTimezone();
-    final location = getLocation(localTimezone);
+    final location = _resolveLocation(await getLocalTimezone());
 
     final scheduledDate = TZDateTime(
       location,
@@ -260,8 +282,7 @@ class NotificationService {
 
     await _requestPermissions();
     await flutterLocalNotificationsPlugin.cancel(id: notificationId);
-    final localTimezone = await getLocalTimezone();
-    final location = getLocation(localTimezone);
+    final location = _resolveLocation(await getLocalTimezone());
     final scheduledDate = TZDateTime.from(notifyAt, location);
 
     await flutterLocalNotificationsPlugin.zonedSchedule(

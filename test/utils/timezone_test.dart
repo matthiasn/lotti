@@ -78,6 +78,149 @@ void main() {
     });
   });
 
+  group('getLocalTimezone — IANA resolution via /etc/localtime', () {
+    // The bug this covers: `DateTime.timeZoneName` returns an ABBREVIATION
+    // ("CEST"), and `getLocation` from the timezone package only accepts IANA
+    // names, so it throws `Location with the name "CEST" doesn't exist`. On
+    // macOS there is no /etc/timezone, so the abbreviation used to be the only
+    // thing this returned. The /etc/localtime symlink carries the IANA name on
+    // both macOS and Linux.
+
+    late Directory tempDir;
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('tz_link_test');
+    });
+
+    tearDown(() async {
+      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+    });
+
+    /// Builds a zoneinfo tree under [tempDir] and links [linkName] at it, the
+    /// way the OS lays it out.
+    Future<String> makeLocaltimeLink({
+      required String zoneinfoPrefix,
+      required String ianaName,
+      String linkName = 'localtime',
+    }) async {
+      final target = Directory('${tempDir.path}$zoneinfoPrefix$ianaName');
+      await target.parent.create(recursive: true);
+      await File(target.path).writeAsString('TZif');
+      final link = Link('${tempDir.path}/$linkName');
+      await link.create(target.path);
+      return link.path;
+    }
+
+    test('reads the IANA name from a macOS-style zoneinfo link', () async {
+      // macOS: /etc/localtime -> /var/db/timezone/zoneinfo/Europe/Berlin
+      final linkPath = await makeLocaltimeLink(
+        zoneinfoPrefix: '/var/db/timezone/zoneinfo/',
+        ianaName: 'Europe/Berlin',
+      );
+
+      final tz = await getLocalTimezone(
+        // No /etc/timezone on macOS — point the file lookup at nothing so the
+        // link is what answers.
+        linuxTimezoneFilePath: '${tempDir.path}/absent',
+        localtimeLinkPath: linkPath,
+        overrideIsTestEnv: false,
+      );
+
+      expect(
+        tz,
+        'Europe/Berlin',
+        reason: 'must be an IANA name, not the CEST abbreviation',
+      );
+    });
+
+    test('reads the IANA name from a Linux-style zoneinfo link', () async {
+      final linkPath = await makeLocaltimeLink(
+        zoneinfoPrefix: '/usr/share/zoneinfo/',
+        ianaName: 'America/New_York',
+      );
+
+      final tz = await getLocalTimezone(
+        linuxTimezoneFilePath: '${tempDir.path}/absent',
+        localtimeLinkPath: linkPath,
+        overrideIsTestEnv: false,
+      );
+
+      expect(tz, 'America/New_York');
+    });
+
+    test('keeps multi-segment zone names intact', () async {
+      final linkPath = await makeLocaltimeLink(
+        zoneinfoPrefix: '/usr/share/zoneinfo/',
+        ianaName: 'America/Argentina/Buenos_Aires',
+      );
+
+      final tz = await getLocalTimezone(
+        linuxTimezoneFilePath: '${tempDir.path}/absent',
+        localtimeLinkPath: linkPath,
+        overrideIsTestEnv: false,
+      );
+
+      expect(tz, 'America/Argentina/Buenos_Aires');
+    });
+
+    test('falls back to the abbreviation when the link is missing', () async {
+      final fixedNow = DateTime(2024, 3, 15, 12);
+
+      final tz = await getLocalTimezone(
+        linuxTimezoneFilePath: '${tempDir.path}/absent',
+        localtimeLinkPath: '${tempDir.path}/no-such-link',
+        overrideIsTestEnv: false,
+        clock: () => fixedNow,
+      );
+
+      expect(
+        tz,
+        fixedNow.timeZoneName,
+        reason: 'unresolvable is not a crash — callers must tolerate this',
+      );
+    });
+
+    test(
+      'falls back when the link points outside a zoneinfo tree',
+      () async {
+        // Some systems copy the zoneinfo file rather than linking it, and a
+        // link into an unrecognised location yields no derivable name.
+        final stray = File('${tempDir.path}/stray-tzfile');
+        await stray.writeAsString('TZif');
+        final link = Link('${tempDir.path}/localtime');
+        await link.create(stray.path);
+        final fixedNow = DateTime(2024, 3, 15, 12);
+
+        final tz = await getLocalTimezone(
+          linuxTimezoneFilePath: '${tempDir.path}/absent',
+          localtimeLinkPath: link.path,
+          overrideIsTestEnv: false,
+          clock: () => fixedNow,
+        );
+
+        expect(tz, fixedNow.timeZoneName);
+      },
+    );
+
+    test('an empty /etc/timezone falls through to the link', () async {
+      // A present-but-empty file used to be returned as an empty string.
+      final tzFile = File('${tempDir.path}/timezone');
+      await tzFile.writeAsString('   \n');
+      final linkPath = await makeLocaltimeLink(
+        zoneinfoPrefix: '/usr/share/zoneinfo/',
+        ianaName: 'Asia/Tokyo',
+      );
+
+      final tz = await getLocalTimezone(
+        linuxTimezoneFilePath: tzFile.path,
+        localtimeLinkPath: linkPath,
+        overrideIsTestEnv: false,
+      );
+
+      expect(tz, Platform.isLinux ? 'Asia/Tokyo' : 'Asia/Tokyo');
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // Glados property tests for the Linux whitespace-trim path
   //

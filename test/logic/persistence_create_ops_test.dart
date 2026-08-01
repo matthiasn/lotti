@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
+import '../test_data/test_data.dart';
 import '../widget_test_utils.dart';
 
 /// Mirror test for [PersistenceCreateOps].
@@ -176,4 +177,55 @@ void main() {
 
     expect(result, isNull);
   });
+
+  test(
+    'a failing reminder does not make a saved completion look unsaved',
+    () async {
+      // Regression: scheduleHabitNotification threw (on macOS, getLocation
+      // rejected the "CEST" abbreviation), the exception escaped to the outer
+      // catch, and the method returned null — after createDbEntity had already
+      // committed. The caller reads null as "the write didn't commit", so the
+      // user got no confirmation for a completion that IS in the database, and
+      // would tap again and record a duplicate.
+      when(
+        () => logic.createDbEntity(
+          any(),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final notificationService =
+          getIt<NotificationService>() as MockNotificationService;
+      when(
+        () => notificationService.scheduleHabitNotification(
+          any(),
+          daysToAdd: any(named: 'daysToAdd'),
+        ),
+      ).thenThrow(
+        // The real failure shape.
+        ArgumentError('Location with the name "CEST" doesn\'t exist'),
+      );
+
+      final result = await ops.createHabitCompletionEntryImpl(
+        data: HabitCompletionData(
+          habitId: habitFlossing.id,
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          completionType: HabitCompletionType.success,
+        ),
+        habitDefinition: habitFlossing,
+      );
+
+      expect(
+        result,
+        isNotNull,
+        reason:
+            'the completion was written; a failed reminder is not a '
+            'failed write',
+      );
+      expect(result!.data.habitId, habitFlossing.id);
+    },
+  );
 }

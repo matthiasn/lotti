@@ -238,6 +238,11 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
       // never arrive, so clear it here or a later real completion — and its
       // celebration — would be suppressed. No success SnackBar either, since
       // nothing was recorded.
+      //
+      // This branch means the *write* failed, and only that. Side effects of a
+      // successful write — scheduling the next reminder, for one — are caught
+      // where they happen so a failed reminder cannot masquerade as a failed
+      // completion.
       _optimisticCelebration = false;
       return;
     }
