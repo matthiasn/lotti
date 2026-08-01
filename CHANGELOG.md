@@ -4,24 +4,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0]
-### Changed
-- **The morning briefing is prepared once, not once per device.** Every device
-  signed in to the same account woke up and produced its own copy of the same
-  daily briefing, so a laptop, a phone and a tablet meant three AI calls billed
-  for one result, every morning, forever. The devices now agree among themselves
-  which one prepares it — no server involved, just the record they already
-  share. If that device is asleep or loses connection before it finishes,
-  another picks the work up rather than the briefing being skipped.
-- **The agent store starts reclaiming space.** Day-status events — the running
-  record of how each day was going — were kept indefinitely, so the database,
-  sync payload and backup grew every month with nothing ever released. They are
-  now kept for ninety days. **Nothing you wrote is ever affected**: check-ins,
-  plans, day summaries, directives, saved knowledge, reports and personalities
-  are kept for good, as are weekly totals, your run history and ratings, and the
-  record behind every suggestion you accepted or rejected. Tidying runs in the
-  background after start-up and can be interrupted safely.
-
 ## [1.0.1]
 ### Added
 - **A failed planning step now says so on the day it happened.** When Daily OS
@@ -59,14 +41,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   days rather than to the beginning.
 
 ### Changed
+- **The morning briefing is prepared once, not once per device.** Every device
+  signed in to the same account woke up and produced its own copy of the same
+  daily briefing, so a laptop, a phone and a tablet meant three AI calls billed
+  for one result, every morning, forever. The devices now agree among themselves
+  which one prepares it — no server involved, just the record they already
+  share. If that device is asleep or loses connection before it finishes,
+  another picks the work up rather than the briefing being skipped.
 - **The agent store stops growing without limit.** Day-status events — the
   running record of how each day was going, raised several times a day — were
   kept indefinitely, so the database grew every month with nothing ever
   released. The full record is now kept for ninety days, and older days keep
   only their final status, which is what the app shows when you scroll back to
   them. Space already taken on disk is reused for new data rather than handed
-  back, so the file stops growing rather than shrinking. **Nothing you wrote is ever affected**: check-ins, plans, day
-  summaries, directives, saved knowledge, reports and personalities are kept for
+  back, so the file stops growing rather than shrinking. **Nothing you wrote is
+  ever affected**: check-ins, plans, day summaries, directives, saved
+  knowledge, reports and personalities are kept for
   good, as are weekly totals, your run history and ratings, and the record behind
   every suggestion you accepted or rejected. Tidying runs in the background after
   start-up and can be interrupted safely.
