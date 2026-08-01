@@ -5,12 +5,16 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-01T13:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-01T16:15:00Z }
 stale_after: 2026-10-12
 sources:
   - id: db
     resource: ../../../lib/features/agents/database/agent_database.dart
     title: AgentDatabase
+    last_modified: 2026-08-01
+  - id: repo-core
+    resource: ../../../lib/features/agents/database/agent_repo_core.dart
+    title: AgentRepoCore
     last_modified: 2026-08-01
   - id: coalescer
     resource: ../../../lib/features/agents/database/agent_entity_by_id_coalescer.dart
@@ -52,7 +56,7 @@ sources:
 
 # One database, two shapes
 
-Agent persistence lives in `agent.sqlite` (schema version 17). Syncable domain
+Agent persistence lives in `agent.sqlite` (schema version 18). Syncable domain
 objects are modelled as **`AgentDomainEntity` variants** and **`AgentLink`
 variants**; wake-run history lives in a dedicated `wake_run_log` table outside
 that model.
@@ -202,6 +206,29 @@ for the pending-wakes screen to discard. Applying such a predicate inside the
 ranked subquery would be a correctness bug: it could promote an older row that
 satisfies it over a newer one that does not, resurrecting state the newest row
 had cleared.
+
+# The agent identity list is cached
+
+`getAllAgentIdentities` returns a **cached, decoded** list rather than re-reading
+and re-decoding every identity. The read is not bursty — 1,449 of its 1,587
+occurrences in the 2026-06/07 logs are isolated — so coalescing does nothing for
+it; not repeating the work is what helps.
+
+The cache lives on `AgentRepoCore`, and three rules keep it honest:
+
+- **Every path that changes which identities exist must invalidate it.** That is
+  `_upsertEntity` (covering local writes, incoming sync writes, and soft
+  deletes, which are upserts with `deletedAt` set) **and**
+  `AgentRepository.hardDeleteAgent`, which deletes rows directly and never
+  reaches the upsert path.
+- **A load that raced an invalidation is discarded, not cached.** Each load
+  captures a generation counter before querying and compares it after; without
+  that, a write landing mid-flight is undone by the older result and the
+  pre-write list is served until the next write.
+- **Reads inside a transaction never populate the cache.** A transaction can
+  write an identity, read the list back, then roll back; caching that read
+  would publish a row the database no longer has. `AgentRepoCore` marks its
+  transactions with a zone value so the load can tell.
 
 Latest-per-agent batch reads are backed by active-row indexes that include the
 `(created_at DESC, id DESC)` ranking order for both type-only and

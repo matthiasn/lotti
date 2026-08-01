@@ -4316,6 +4316,23 @@ void main() {
       expect(await repo.getEntitiesByAgentId(testAgentId), isEmpty);
     });
 
+    test('drops the destroyed agent from the cached identity list', () async {
+      // hardDeleteAgent deletes rows directly instead of going through
+      // upsertEntity, so it has to invalidate the identity cache itself.
+      // Without that the destroyed agent keeps being listed until some
+      // unrelated identity write happens to invalidate it.
+      await repo.upsertEntity(makeAgent());
+      expect(await repo.getAllAgentIdentities(), hasLength(1));
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      expect(
+        await repo.getAllAgentIdentities(),
+        isEmpty,
+        reason: 'a hard-deleted agent must not survive in the cached list',
+      );
+    });
+
     test('deletes all links for the target agent', () async {
       await repo.upsertLink(makeBasicLink(id: 'link-from-agent'));
       await repo.upsertLink(

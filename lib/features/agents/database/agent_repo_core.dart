@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_attention_projection.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -31,6 +32,66 @@ class AgentRepoCore {
     getEntitiesByIds,
   );
 
+  /// Cached result of `AgentRepoEvolution.getAllAgentIdentities`.
+  ///
+  /// Agent identities change rarely but are re-read constantly: the 2026-06/07
+  /// slow-query logs show 1,734 full reads of every agent in 14 days (87.4 s at
+  /// ~50 ms each — well above the round-trip floor, because ~900 fat rows are
+  /// decoded from JSON each time). The read is not bursty (1,449 of 1,587
+  /// occurrences are isolated), so microtask coalescing does nothing for it;
+  /// what helps is not repeating the work when nothing changed.
+  List<AgentIdentityEntity>? _agentIdentitiesCache;
+
+  /// Bumped by every invalidation.
+  ///
+  /// A load that started before an invalidation must not install its result
+  /// afterwards — otherwise a write that lands mid-flight is silently undone
+  /// and the pre-write list is served until the *next* write. The generation
+  /// captured before the query is compared after it, and a stale load is
+  /// discarded rather than cached.
+  int _agentIdentitiesGeneration = 0;
+
+  /// Zone marker set for the duration of a transaction, so a load that runs
+  /// inside one does not install its result in the shared cache.
+  ///
+  /// A transaction can read identities after writing one and then roll back;
+  /// caching that read would publish a row the database no longer has.
+  /// Transaction-local reads are still correct — they just do not populate the
+  /// cache.
+  static const _inTransactionKey = #agentRepoCoreInTransaction;
+
+  static bool get _isInTransaction => Zone.current[_inTransactionKey] == true;
+
+  /// Returns the cached identity list, or populates it via [load].
+  Future<List<AgentIdentityEntity>> cachedAgentIdentities(
+    Future<List<AgentIdentityEntity>> Function() load,
+  ) async {
+    final cached = _agentIdentitiesCache;
+    if (cached != null) return cached;
+
+    final generation = _agentIdentitiesGeneration;
+    final loaded = await load();
+
+    // Discard the result rather than caching it if an identity write landed
+    // while the query was in flight, or if this ran inside a transaction whose
+    // writes may still roll back. The caller still gets the rows it asked for.
+    if (generation == _agentIdentitiesGeneration && !_isInTransaction) {
+      _agentIdentitiesCache = loaded;
+    }
+    return loaded;
+  }
+
+  /// Drops the cached identity list.
+  ///
+  /// Called by every path that can change which identities exist: identity
+  /// upserts (including soft deletes, which are upserts with `deletedAt` set)
+  /// and [AgentRepository.hardDeleteAgent], which deletes rows directly and
+  /// therefore never reaches [_upsertEntity].
+  void invalidateAgentIdentitiesCache() {
+    _agentIdentitiesCache = null;
+    _agentIdentitiesGeneration++;
+  }
+
   /// The projection collaborator used by [upsertEntity] to keep the local
   /// attention/standing indexes in sync. Wired by [AgentRepository] after both
   /// collaborators are constructed (Core ↔ projection form a cycle).
@@ -41,9 +102,50 @@ class AgentRepoCore {
   /// All operations within the callback are committed atomically; if any
   /// operation throws, the entire transaction is rolled back. Drift supports
   /// nested transactions via savepoints.
-  Future<T> runInTransaction<T>(Future<T> Function() action) {
-    return _db.transaction(action);
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    // Nested calls share the outermost scope's state, so only the transaction
+    // that actually commits does the invalidating.
+    final inherited = Zone.current[_txnStateKey] as _TransactionState?;
+    final state = inherited ?? _TransactionState();
+    try {
+      return await _db.transaction(
+        () => runZoned(
+          action,
+          zoneValues: {_inTransactionKey: true, _txnStateKey: state},
+        ),
+      );
+    } finally {
+      // Invalidate once the transaction has actually committed, not just when
+      // the write inside it returned. An identity write nested in a caller's
+      // transaction invalidates while still uncommitted, and a concurrent
+      // reader — in a different zone, so not suppressed — can repopulate the
+      // cache from the pre-commit snapshot before the commit lands. Nothing
+      // would invalidate again, so that stale list would be served until the
+      // next identity write.
+      //
+      // Only when an identity was actually written: AgentSyncService routes
+      // every message and state write through here, so invalidating on any
+      // transaction would clear the cache continuously during a wake, exactly
+      // when identities are read most.
+      if (inherited == null && state.identityWritten) {
+        invalidateAgentIdentitiesCache();
+      }
+    }
   }
+
+  /// Runs [action] with the transaction zone values set, so
+  /// [cachedAgentIdentities] knows not to publish a transaction-local read and
+  /// [runInTransaction] can tell whether an identity was written.
+  static Future<T> _markInTransaction<T>(Future<T> Function() action) {
+    final state = Zone.current[_txnStateKey] as _TransactionState?;
+    return runZoned(
+      action,
+      zoneValues: {_inTransactionKey: true, _txnStateKey: ?state},
+    );
+  }
+
+  /// Records, per outermost transaction, whether an identity was written.
+  static const _txnStateKey = #agentRepoCoreTransactionState;
 
   // ── Entity CRUD ────────────────────────────────────────────────────────────
 
@@ -56,20 +158,52 @@ class AgentRepoCore {
   /// successful parse or move a near-midnight capture after a timezone change.
   Future<void> upsertEntity(AgentDomainEntity entity) async {
     if (entity is CaptureEntity) {
-      await _db.transaction(() async {
-        final existing = await getEntity(entity.id);
-        final entityToWrite = AgentRepository.normalizeCaptureForWrite(
-          entity,
-          existing: existing is CaptureEntity ? existing : null,
-        );
-        await _upsertEntity(entityToWrite);
-      });
+      await _db.transaction(
+        () => _markInTransaction(() async {
+          final existing = await getEntity(entity.id);
+          final entityToWrite = AgentRepository.normalizeCaptureForWrite(
+            entity,
+            existing: existing is CaptureEntity ? existing : null,
+          );
+          await _upsertEntity(entityToWrite);
+        }),
+      );
       return;
     }
     await _upsertEntity(entity);
   }
 
   Future<void> _upsertEntity(AgentDomainEntity entity) async {
+    // Any identity write — including a soft delete, which is an upsert with
+    // `deletedAt` set — makes the cached list stale.
+    //
+    // Invalidated on **both** sides of the write. Before, so nothing keeps
+    // serving the pre-write list. After, because a read starting inside the
+    // window captures the bumped generation, reads the not-yet-committed
+    // snapshot — `agent.sqlite` runs a two-isolate read pool in production —
+    // and would install it; a successful write never invalidates again, so
+    // that stale list would be served until the next identity write.
+    //
+    // Not unit-covered: reproducing the interleaving needs a real read pool,
+    // and the in-memory test databases bypass pooling entirely
+    // (`openDbConnection`), so an in-memory test would pass either way.
+    final isIdentity = entity is AgentIdentityEntity;
+    if (isIdentity) {
+      invalidateAgentIdentitiesCache();
+      (Zone.current[_txnStateKey] as _TransactionState?)?.identityWritten =
+          true;
+    }
+    try {
+      await _writeEntity(entity);
+    } finally {
+      // The write's own transaction (if any) has committed by here. When this
+      // upsert is itself nested in a caller's transaction, that outer one
+      // invalidates again on commit — see [runInTransaction].
+      if (isIdentity) invalidateAgentIdentitiesCache();
+    }
+  }
+
+  Future<void> _writeEntity(AgentDomainEntity entity) async {
     final companion = AgentDbConversions.toEntityCompanion(entity);
     final affectsAttentionClaims = affectsAttentionClaimProjection(entity);
     final affectsStandingAgreements = affectsStandingAgreementProjection(
@@ -80,15 +214,17 @@ class AgentRepoCore {
       return;
     }
 
-    await _db.transaction(() async {
-      await _db.into(_db.agentEntities).insertOnConflictUpdate(companion);
-      if (affectsAttentionClaims) {
-        await projection.refreshAttentionClaimProjectionForEntity(entity);
-      }
-      if (affectsStandingAgreements) {
-        await projection.refreshStandingAgreementProjectionForEntity(entity);
-      }
-    });
+    await _db.transaction(
+      () => _markInTransaction(() async {
+        await _db.into(_db.agentEntities).insertOnConflictUpdate(companion);
+        if (affectsAttentionClaims) {
+          await projection.refreshAttentionClaimProjectionForEntity(entity);
+        }
+        if (affectsStandingAgreements) {
+          await projection.refreshStandingAgreementProjectionForEntity(entity);
+        }
+      }),
+    );
   }
 
   /// Fetch a single entity by its [id], or `null` if not found.
@@ -560,4 +696,9 @@ class AgentRepoCore {
           entry.key: v,
     };
   }
+}
+
+/// Per-transaction bookkeeping for [AgentRepoCore.runInTransaction].
+class _TransactionState {
+  bool identityWritten = false;
 }

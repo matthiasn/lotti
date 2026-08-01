@@ -4,7 +4,10 @@ import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_attention_projection.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/database/agent_proposal_ledger.dart';
 import 'package:lotti/features/agents/database/agent_repo_core.dart';
+import 'package:lotti/features/agents/database/agent_repo_evolution.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
@@ -328,6 +331,211 @@ void main() {
       ]);
 
       expect(states.keys, ['a-wake']);
+    });
+  });
+
+  group('agent identity cache', () {
+    // The cache and its invalidation live on AgentRepoCore, so the tests do
+    // too; AgentRepoEvolution.getAllAgentIdentities is only the reader that
+    // populates it, wired here exactly as AgentRepository wires it.
+    late AgentRepoEvolution evolution;
+
+    setUp(() {
+      evolution = AgentRepoEvolution(db, core, AgentProposalLedger(db));
+    });
+
+    // The list is cached between identity writes. A cache is only as good as
+    // its invalidation, so these tests exercise the write paths that must
+    // drop it — including soft delete, which is an upsert with deletedAt set.
+    //
+    // Bypassing the repository (writing straight to the table) is how each
+    // test proves the *cached* value is being served rather than a fresh read.
+
+    Future<void> insertIdentityBypassingCache(String id) async {
+      await db
+          .into(db.agentEntities)
+          .insertOnConflictUpdate(
+            AgentDbConversions.toEntityCompanion(
+              makeTestIdentity(id: id, agentId: id, displayName: id),
+            ),
+          );
+    }
+
+    test('serves a cached list on repeated reads', () async {
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+      );
+      expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+      await insertIdentityBypassingCache('a-2');
+
+      expect(
+        await evolution.getAllAgentIdentities(),
+        hasLength(1),
+        reason: 'the second read is served from cache, not the table',
+      );
+    });
+
+    test('an identity write invalidates the cache', () async {
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+      );
+      expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-2', agentId: 'a-2', displayName: 'Second'),
+      );
+
+      expect(
+        (await evolution.getAllAgentIdentities()).map((a) => a.agentId).toSet(),
+        {'a-1', 'a-2'},
+        reason: 'writing an identity must drop the cached list',
+      );
+    });
+
+    test('an identity rename is visible after the write', () async {
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'Before'),
+      );
+      expect(
+        (await evolution.getAllAgentIdentities()).single.displayName,
+        'Before',
+      );
+
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'After'),
+      );
+
+      expect(
+        (await evolution.getAllAgentIdentities()).single.displayName,
+        'After',
+        reason: 'an in-place update must not serve the stale name',
+      );
+    });
+
+    test('a soft delete invalidates the cache', () async {
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'Doomed'),
+      );
+      expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+      await core.upsertEntity(
+        makeTestIdentity(
+          id: 'a-1',
+          agentId: 'a-1',
+          displayName: 'Doomed',
+        ).copyWith(deletedAt: testDate),
+      );
+
+      expect(
+        await evolution.getAllAgentIdentities(),
+        isEmpty,
+        reason: 'a soft-deleted identity must disappear from the cached list',
+      );
+    });
+
+    test('a write during an in-flight load is not overwritten by it', () async {
+      // The load captures a generation before querying and compares it after.
+      // Without that, a write landing mid-flight is silently undone: the
+      // pre-write list gets installed and served until the *next* write.
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+      );
+
+      final inFlight = evolution.getAllAgentIdentities();
+      // Lands while the query above is still awaiting.
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-2', agentId: 'a-2', displayName: 'Second'),
+      );
+      await inFlight;
+
+      expect(
+        (await evolution.getAllAgentIdentities()).map((a) => a.agentId).toSet(),
+        {'a-1', 'a-2'},
+        reason: 'the stale in-flight result must not have been cached',
+      );
+    });
+
+    test('a transaction without an identity write keeps the cache', () async {
+      // AgentSyncService routes every message and state write through
+      // runInTransaction. Invalidating on any transaction would clear the cache
+      // continuously during a wake — exactly when identities are read most —
+      // so only a transaction that actually wrote an identity may invalidate.
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+      );
+      expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+      await insertIdentityBypassingCache('a-2');
+      await core.runInTransaction(() async {
+        await core.upsertEntity(makeTestState(id: 'st-1', agentId: 'a-1'));
+      });
+
+      expect(
+        await evolution.getAllAgentIdentities(),
+        hasLength(1),
+        reason: 'a state-only transaction must not drop the cached list',
+      );
+    });
+
+    test(
+      'a transaction that writes an identity invalidates on commit',
+      () async {
+        await core.upsertEntity(
+          makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+        );
+        expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+        await core.runInTransaction(() async {
+          await core.upsertEntity(
+            makeTestIdentity(id: 'a-2', agentId: 'a-2', displayName: 'Second'),
+          );
+        });
+
+        expect(
+          (await evolution.getAllAgentIdentities())
+              .map((a) => a.agentId)
+              .toSet(),
+          {'a-1', 'a-2'},
+        );
+      },
+    );
+
+    test('a rolled-back transaction does not leave a cached row', () async {
+      // A transaction can write an identity, read the list back, then roll
+      // back. Caching that read would publish a row the database no longer has.
+      await expectLater(
+        core.runInTransaction(() async {
+          await core.upsertEntity(
+            makeTestIdentity(id: 'a-doomed', agentId: 'a-doomed'),
+          );
+          expect(await evolution.getAllAgentIdentities(), hasLength(1));
+          throw StateError('abort');
+        }),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(
+        await evolution.getAllAgentIdentities(),
+        isEmpty,
+        reason: 'the transaction-local read must not have populated the cache',
+      );
+    });
+
+    test('a non-identity write leaves the cache in place', () async {
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+      );
+      expect(await evolution.getAllAgentIdentities(), hasLength(1));
+
+      await insertIdentityBypassingCache('a-2');
+      await core.upsertEntity(makeTestState(id: 'st-1', agentId: 'a-1'));
+
+      expect(
+        await evolution.getAllAgentIdentities(),
+        hasLength(1),
+        reason: 'only identity writes need to invalidate; states do not',
+      );
     });
   });
 

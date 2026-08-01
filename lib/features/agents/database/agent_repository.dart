@@ -665,6 +665,14 @@ class AgentRepository {
 
   Future<List<SagaLogData>> getPendingSagaOps() => _links.getPendingSagaOps();
 
-  Future<void> hardDeleteAgent(String agentId) =>
-      _links.hardDeleteAgent(agentId);
+  /// Permanently deletes every row for [agentId].
+  ///
+  /// Deletes rows directly rather than through `upsertEntity`, so it must drop
+  /// the cached identity list itself — otherwise the destroyed agent keeps
+  /// appearing in [getAllAgentIdentities] until an unrelated identity write
+  /// happens to invalidate it.
+  Future<void> hardDeleteAgent(String agentId) async {
+    await _links.hardDeleteAgent(agentId);
+    _core.invalidateAgentIdentitiesCache();
+  }
 }

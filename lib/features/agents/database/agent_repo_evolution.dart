@@ -79,12 +79,16 @@ class AgentRepoEvolution {
   /// Fetch all agent identity entities (type = 'agent'), excluding deleted.
   ///
   /// Returns all agents regardless of their lifecycle state.
-  Future<List<AgentIdentityEntity>> getAllAgentIdentities() async {
-    final rows = await _db.getAllAgentIdentities().get();
-    return rows
-        .map(AgentDbConversions.fromEntityRow)
-        .whereType<AgentIdentityEntity>()
-        .toList();
+  /// Cached between identity writes — see
+  /// [AgentRepoCore.cachedAgentIdentities] for why.
+  Future<List<AgentIdentityEntity>> getAllAgentIdentities() {
+    return _core.cachedAgentIdentities(() async {
+      final rows = await _db.getAllAgentIdentities().get();
+      return rows
+          .map(AgentDbConversions.fromEntityRow)
+          .whereType<AgentIdentityEntity>()
+          .toList();
+    });
   }
 
   /// Fetch agent identities filtered by lifecycle in SQL.
