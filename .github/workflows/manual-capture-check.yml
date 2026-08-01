@@ -15,6 +15,11 @@ on:
       # way this breaks — and the reason it must be watched here. Both recent
       # regressions were lib/ changes that triggered no manual workflow at all.
       - 'lib/**'
+      # The suites read bundled inputs directly, so an asset-only change can
+      # break a capture: the shared harness loads Inter and Inconsolata from
+      # assets/fonts/, and the What's New capture decodes cover art from
+      # assets/design_system/.
+      - 'assets/**'
       - 'test/features/**/*_screenshots_test.dart'
       - 'test/features/daily_os_next/screenshot_harness.dart'
       - 'test/test_utils/screenshot_harness.dart'

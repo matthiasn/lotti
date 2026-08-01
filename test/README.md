@@ -603,9 +603,10 @@ than per push.
 the fallback every other locale degrades to, so a rendering that only breaks
 once a translation is involved passes there — locale-specific quotation marks
 have already slipped through exactly this way. `manual-capture-check.yml`
-therefore captures German on pull requests that touch `lib/`, a harness, or a
-registered screenshot test; check a second locale locally before concluding a
-harness change is safe.
+therefore defaults to capturing **German** on pull requests that touch `lib/`,
+`assets/`, a harness, or a registered screenshot test — override the locale
+with the `MANUAL_CHECK_LOCALE` repository variable. Check a second locale
+locally before concluding a harness change is safe.
 
 The case contract lives in `docs-site/metadata/screenshot-cases.json`. Each
 case must name a deterministic source test and provide all four inputs:

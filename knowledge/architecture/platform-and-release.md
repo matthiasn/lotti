@@ -5,8 +5,8 @@ description: Five platform targets from one codebase, the checks every branch ru
 resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-30T21:16:11Z }
-stale_after: 2027-01-30
+generated: { by: claude-code/opus-5, at: 2026-08-01T12:10:00Z }
+stale_after: 2027-02-01
 sources:
   - id: workflows
     resource: ../../.github/workflows
