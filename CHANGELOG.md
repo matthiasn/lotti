@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.0]
+### Changed
+- **The habits tab and consistency heatmap open faster.** Loading habit
+  completions pulled the full stored record for every completion in range —
+  including the whole entry payload — when only three fields were ever used.
+  The read now fetches just those, so the habits tab and the heatmap spend less
+  time waiting on the database and less time decoding what they discard.
+
 ### Fixed
 - **Agent startup no longer floods diagnostic storage when its database has
   already shut down.** Runtime restoration now bulk-loads the required state

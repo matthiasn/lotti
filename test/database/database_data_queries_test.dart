@@ -424,14 +424,16 @@ void main() {
         'getHabitCompletionRecordsInRange decodes an unknown completion type '
         'as null rather than throwing',
         () async {
-          // Forward compatibility: a newer peer can sync a completion type this
-          // build does not know. The consumers all treat null as "counts as
-          // success", so decoding to null is the safe reading — throwing would
-          // take out the whole heatmap for one unrecognised row.
+          // Forward compatibility: a newer peer can sync a completion type
+          // this build does not know. Decoding to null keeps it in the same
+          // bucket as a legacy entry — recorded and streak-extending, but not
+          // counted as a success — rather than throwing and taking out the
+          // whole heatmap for one unrecognised row.
           const serialized =
               '{"data":{"habitId":"habit-future",'
               '"completionType":"teleported"},'
-              '"meta":{"id":"future-type"}}';
+              '"meta":{"id":"future-type",'
+              '"dateFrom":"2024-04-16T21:00:00.000"}}';
           await db!.customStatement(
             'INSERT INTO journal (id, created_at, updated_at, date_from, '
             'date_to, type, subtype, serialized, deleted, starred, private, '
@@ -450,6 +452,46 @@ void main() {
             future.single.completionType,
             isNull,
             reason: 'an unrecognised type must decode to null, not throw',
+          );
+        },
+      );
+
+      test(
+        'getHabitCompletionRecordsInRange reports the recorded wall-clock day, '
+        'not the day the epoch column reconstructs to',
+        () async {
+          // `date_from` is stored as a Unix epoch and reconstructed in the
+          // reader's zone; `meta.dateFrom` is a naive local timestamp that
+          // keeps the wall clock it was recorded with. A completion entered at
+          // 23:30 in Berlin and read later in Auckland reconstructs from the
+          // column as 11:30 the NEXT day, which would move it between heatmap
+          // cells, "completed today" buckets and streak windows.
+          //
+          // Rather than switch the test process's timezone, the two are given
+          // deliberately different values: whichever one the projection reads
+          // is then unambiguous.
+          const serialized =
+              '{"data":{"habitId":"habit-tz","completionType":"success"},'
+              '"meta":{"id":"tz-row","dateFrom":"2024-04-18T23:30:00.000"}}';
+          await db!.customStatement(
+            'INSERT INTO journal (id, created_at, updated_at, date_from, '
+            'date_to, type, subtype, serialized, deleted, starred, private, '
+            'task, flag) VALUES (?1, 1713470000, 1713470000, 1713480000, '
+            '1713480000, ?2, ?3, ?4, 0, 0, 0, 0, 0)',
+            ['tz-row', 'HabitCompletionEntry', '', serialized],
+          );
+
+          final result = await db!.getHabitCompletionRecordsInRange(
+            rangeStart: DateTime(2024),
+          );
+          final row = result.singleWhere((r) => r.habitId == 'habit-tz');
+
+          expect(
+            row.dateFrom,
+            DateTime.parse('2024-04-18T23:30:00.000'),
+            reason:
+                'the projection must carry the recorded meta.dateFrom, '
+                'not the value the date_from epoch column reconstructs to',
           );
         },
       );

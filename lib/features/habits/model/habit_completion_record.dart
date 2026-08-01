@@ -33,9 +33,14 @@ class HabitCompletionRecord {
 
   /// `json_extract(serialized, '$.data.completionType')`.
   ///
-  /// Null is meaningful rather than missing data: entries written before the
-  /// field existed count as successes, and the consumers already treat
-  /// `null` that way.
+  /// Null is meaningful rather than missing data. Legacy entries written
+  /// before the field existed carry it, and so does any completion type synced
+  /// from a newer peer that this build cannot decode.
+  ///
+  /// The consumers treat it as **recorded and streak-extending, but not a
+  /// success**: it counts in `allByDay`, `habitSuccessDays` and the heatmap
+  /// denominator, but not in `successfulByDay`, `successfulToday` or the
+  /// heatmap's success numerator.
   final HabitCompletionType? completionType;
 
   @override

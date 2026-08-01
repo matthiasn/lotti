@@ -45,16 +45,30 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   /// calling side. Decoding those blobs into `JournalEntity` then costs the
   /// *calling* isolate more work on top, outside the measurement.
   ///
+  /// The day comes from the **serialized** `meta.dateFrom`, not the
+  /// `date_from` column. They are the same instant, but not the same wall
+  /// clock: the column is stored as a Unix epoch and reconstructed in the
+  /// reader's zone, while `meta.dateFrom` is a naive local timestamp that keeps
+  /// the wall clock it was recorded with. A completion entered at 23:30 in
+  /// Berlin and later read in Auckland reconstructs from the column as 11:30
+  /// the *next* day — moving it between heatmap cells, "completed today"
+  /// buckets and streak windows. The consumers previously read
+  /// `meta.dateFrom`, and still do.
+  ///
+  /// Ranking is unaffected: `PARTITION BY`/`ORDER BY` still use the indexed
+  /// column, exactly as before.
+  ///
   /// See `docs/perf/2026-08-01_slow-queries-investigation.md`.
   Future<List<HabitCompletionRecord>> getHabitCompletionRecordsInRange({
     required DateTime rangeStart,
   }) async {
     final rows = await customSelect(
       r'''
-        SELECT habit_id, date_from, completion_type
+        SELECT habit_id, recorded_at, completion_type
         FROM (
           SELECT
             json_extract(serialized, '$.data.habitId') AS habit_id,
+            json_extract(serialized, '$.meta.dateFrom') AS recorded_at,
             journal.date_from AS date_from,
             json_extract(serialized, '$.data.completionType') AS completion_type,
             ROW_NUMBER() OVER (
@@ -87,7 +101,7 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
         .map(
           (row) => HabitCompletionRecord(
             habitId: row.read<String>('habit_id'),
-            dateFrom: row.read<DateTime>('date_from'),
+            dateFrom: DateTime.parse(row.read<String>('recorded_at')),
             completionType: _habitCompletionTypeFromDb(
               row.readNullable<String>('completion_type'),
             ),
@@ -98,9 +112,20 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
 
   /// Maps the serialized enum name back to [HabitCompletionType].
   ///
-  /// An unknown value decodes to `null` rather than throwing: a newer peer can
-  /// sync a completion type this build does not know, and the consumers all
-  /// treat `null` as "counts as success", which is the safe reading.
+  /// An unknown value decodes to `null` rather than throwing, so one completion
+  /// type synced from a newer peer cannot take out the whole heatmap.
+  ///
+  /// `null` is not a synonym for success. It is the same value legacy entries
+  /// written before the field existed already carry, and the consumers treat it
+  /// as **recorded, and streak-extending, but not a success**: it lands in
+  /// `allByDay` and `habitSuccessDays`, and in the heatmap's denominator, while
+  /// staying out of `successfulByDay`, `successfulToday` and the heatmap's
+  /// success numerator. An unknown type therefore closes the habit for the day
+  /// without counting toward its success rate.
+  ///
+  /// That split is pre-existing behaviour for legacy `null`s, not something
+  /// this projection introduced. Giving unknown types their own sentinel with
+  /// defined semantics is a product decision, not a read-path one.
   static HabitCompletionType? _habitCompletionTypeFromDb(String? value) {
     if (value == null) return null;
     for (final type in HabitCompletionType.values) {

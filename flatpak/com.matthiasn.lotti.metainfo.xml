@@ -39,6 +39,7 @@
   <releases>
     <release version="1.0.0" date="2026-08-01">
       <description>
+        <p>Changed: the habits tab and consistency heatmap open faster. Loading habit completions pulled the full stored record for every completion in range — including the whole entry payload — when only three fields were ever used. The read now fetches just those, so the habits tab and the heatmap spend less time waiting on the database and less time decoding what they discard.</p>
         <p>Fixed: agent startup no longer floods diagnostic storage when its database has already shut down. Runtime restoration bulk-loads the required state and links, then aborts the pass with one diagnostic if that snapshot fails instead of querying and logging once for every persisted agent. Incomplete restoration remains failed and retryable rather than silently succeeding.</p>
         <p>Fixed: a repeated interface failure no longer fills diagnostic storage with thousands of identical stack traces. Lotti keeps the first complete framework error and then records bounded, counted summaries for repeats, including short bursts that stop; errors from different call sites or widget contexts still retain their own full diagnostics.</p>
         <p>Fixed: weekly planning history from earlier builds opens and syncs again. Some saved weekly rollups omitted their start-of-week date, making otherwise valid planning history unreadable. Lotti now restores the date from the rollup's canonical Monday key; irreparable remote records are ignored without blocking later sync.</p>

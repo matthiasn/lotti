@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/habits
     title: Habits feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-01
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
@@ -100,9 +100,16 @@ costs the *calling* isolate more work again, outside that measurement.
 The ranking contract is unchanged: one winning row per habit/day, last write
 wins, ordered `updated_at DESC, created_at DESC, date_to DESC, id DESC`.
 
-An unrecognised `completionType` decodes to `null` rather than throwing, so a
-completion type synced from a newer peer degrades to "counts as success"
-instead of taking out the whole heatmap.
+An unrecognised `completionType` decodes to `null` rather than throwing, so one
+completion type synced from a newer peer cannot take out the whole heatmap.
+
+**`null` is not a synonym for success.** It is the value legacy entries already
+carry, and the consumers treat it as *recorded and streak-extending, but not a
+success*: it counts in `allByDay`, `habitSuccessDays` and the heatmap
+denominator, while staying out of `successfulByDay`, `successfulToday` and the
+heatmap's success numerator. So an unknown type closes the habit for that day
+without contributing to its success rate. That asymmetry predates the
+projection; it is how legacy `null`s have always behaved.
 
 # What the tab controller derives
 
