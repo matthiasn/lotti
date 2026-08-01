@@ -89,7 +89,7 @@ class OllamaEmbeddingRepository {
               ),
           context: 'embedding generation',
         );
-      } on _OllamaEmbeddingUnavailableException {
+      } on OllamaEmbeddingUnavailableException {
         _openAvailabilityCooldown(availabilityAttempt);
         rethrow;
       } on Object {
@@ -294,12 +294,12 @@ class OllamaEmbeddingRepository {
         if (isTimeout || isNetworkError) {
           if (attempt >= _maxRetries) {
             if (isTimeout) {
-              throw const _OllamaEmbeddingUnavailableException(
+              throw const OllamaEmbeddingUnavailableException(
                 'Embedding request timed out after $_maxRetries attempts. '
                 'Is the Ollama server running?',
               );
             } else {
-              throw _OllamaEmbeddingUnavailableException(
+              throw OllamaEmbeddingUnavailableException(
                 'Network error during $context after $_maxRetries attempts. '
                 'Is the Ollama server running?',
               );
@@ -325,9 +325,15 @@ class OllamaEmbeddingRepository {
   }
 }
 
+/// Base type for Ollama availability failures that should pause optional work.
+sealed class OllamaEmbeddingAvailabilityException implements Exception {
+  const OllamaEmbeddingAvailabilityException();
+}
+
 /// A transient Ollama outage confirmed after the repository's retry budget.
-class _OllamaEmbeddingUnavailableException implements Exception {
-  const _OllamaEmbeddingUnavailableException(this.message);
+class OllamaEmbeddingUnavailableException
+    extends OllamaEmbeddingAvailabilityException {
+  const OllamaEmbeddingUnavailableException(this.message);
 
   final String message;
 
@@ -339,7 +345,8 @@ class _OllamaEmbeddingUnavailableException implements Exception {
 ///
 /// [suppressedRequestCount] is cumulative for the current outage and lets
 /// callers report sampled summaries without emitting a stack trace per item.
-class OllamaEmbeddingCooldownException implements Exception {
+class OllamaEmbeddingCooldownException
+    extends OllamaEmbeddingAvailabilityException {
   const OllamaEmbeddingCooldownException({
     required this.retryAt,
     required this.suppressedRequestCount,

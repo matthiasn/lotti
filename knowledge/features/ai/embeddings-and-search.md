@@ -85,8 +85,9 @@ flowchart LR
   concurrent callers remain suppressed until it finishes. Availability is
   reserved before the invocation wrapper begins AI attribution, so a suppressed
   embedding creates neither a provider consumption event nor a failed
-  attribution projection. Notification and manual backfill loops stop on a
-  known cooldown instead of emitting one stack trace per remaining item.
+  attribution projection. Notification and manual backfill loops stop when the
+  initial transport budget is exhausted or a known cooldown suppresses the
+  call, instead of emitting one stack trace per remaining item.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
   maps it to the active locale; the suppression count and retry timestamp stay
   in diagnostic logs. A failed optional embedding never rolls back the

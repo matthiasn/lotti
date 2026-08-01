@@ -6,6 +6,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -583,6 +585,48 @@ void main() {
         ),
       ).called(1);
       verifyNever(() => mockJournalDb.journalEntityById('second-1'));
+    });
+
+    test('surfaces the initial exhausted Ollama outage', () async {
+      final entry = JournalEntry(
+        meta: _meta(id: 'offline-1'),
+        entryText: const EntryText(plainText: _longText),
+      );
+      _stubEntityIds(mockJournalDb, [entry.id]);
+      _stubEntity(mockJournalDb, entry);
+
+      var requestCount = 0;
+      final unavailableRepository = OllamaEmbeddingRepository(
+        httpClient: MockClient((request) async {
+          requestCount++;
+          throw http.ClientException('Ollama is offline', request.url);
+        }),
+      );
+      getIt
+        ..unregister<OllamaEmbeddingRepository>()
+        ..registerSingleton<OllamaEmbeddingRepository>(
+          unavailableRepository,
+        );
+      OllamaEmbeddingRepository.retryBaseDelay = Duration.zero;
+
+      try {
+        await controller().backfillCategories({_testCategoryId});
+
+        final s = state();
+        expect(requestCount, 3);
+        expect(s.processedCount, 1);
+        expect(s.totalCount, 1);
+        expect(s.embeddedCount, 0);
+        expect(s.progress, 1);
+        expect(s.error, isNull);
+        expect(
+          s.errorCode,
+          EmbeddingBackfillErrorCode.ollamaUnavailable,
+        );
+      } finally {
+        OllamaEmbeddingRepository.retryBaseDelay = const Duration(seconds: 2);
+        unavailableRepository.close();
+      }
     });
 
     test('sets error when embedding pipeline not registered', () async {

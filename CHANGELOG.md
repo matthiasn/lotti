@@ -35,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   background tidying of old day-status records — now removes the matching files
   as well, as far as the system allows: a file the app cannot reach at that
   moment is left alone rather than failing the deletion.
+- **Local embedding backfills fail clearly when Ollama is offline.** A manual
+  backfill now stops after the first exhausted connection attempt and shows an
+  actionable message in the active language instead of reaching 100% with only
+  a hidden failure count. Optional report embeddings share a per-server
+  cooldown, so an offline local server no longer triggers a fresh retry loop
+  for every report; a later successful probe resumes embedding automatically.
 - **Weekly totals stop changing on their own.** Daily OS pools each past week's
   planned and recorded minutes into a shared summary the morning briefing reads.
   Recorded time was bucketed into weeks using the calendar of whichever device
