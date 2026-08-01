@@ -8,6 +8,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/service/agent_retention_service.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
@@ -528,4 +529,15 @@ Future<void> agentInitialization(Ref ref) async {
         );
     rethrow;
   }
+
+  // 6. Forget the derived rows past the retention policy. Last, and
+  //    deliberately NOT awaited: housekeeping must never sit between the user
+  //    and a ready app. The sweep is bounded, idempotent, and safe to
+  //    interrupt, so a process kill mid-pass just leaves rows for next start.
+  unawaited(
+    AgentRetentionService(
+      repository: ref.read(agentRepositoryProvider),
+      domainLogger: ref.read(domainLoggerProvider),
+    ).sweep(),
+  );
 }

@@ -149,6 +149,22 @@ extension _AgentHandlers on SyncEventProcessor {
     if (resolvedEntity == null) {
       return;
     }
+    // Retention is a hard local delete with no tombstone (see
+    // AgentRepoRetention): every device forgets the same derived rows by the
+    // same deterministic rule, so there is nothing to converge on. Without
+    // this guard a peer returning from a long absence would re-materialize
+    // exactly what every device had already agreed to forget, and the next
+    // sweep would delete it again — churn on every reconnect. Dropping it here
+    // still records the receipt below, so the sequence marker advances and no
+    // backfill is triggered for it.
+    if (const AgentRetentionPolicy().isBeyondHorizon(
+      type: AgentDbConversions.entityType(resolvedEntity),
+      createdAt: AgentDbConversions.entityCreatedAt(resolvedEntity),
+      now: clock.now(),
+    )) {
+      await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
+      return;
+    }
     if (agentRepository != null) {
       // AgentStateEntity carries per-host G-counters that must converge under
       // concurrent edits: merge them element-wise rather than letting whole-row

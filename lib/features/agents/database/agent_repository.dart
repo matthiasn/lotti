@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/database/agent_repo_evolution.dart';
 import 'package:lotti/features/agents/database/agent_repo_internals.dart';
 import 'package:lotti/features/agents/database/agent_repo_links.dart';
 import 'package:lotti/features/agents/database/agent_repo_queries.dart';
+import 'package:lotti/features/agents/database/agent_repo_retention.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
@@ -43,6 +44,8 @@ class AttentionPlanningInputs {
 ///  * [AgentRepoQueries] — report/template/soul-document/message queries.
 ///  * [AgentRepoEvolution] — evolution sessions, scheduled wakes, change sets.
 ///  * [AgentRepoLinks] — link CRUD, wake-run log, saga log, hard delete.
+///  * [AgentRepoRetention] — batched hard deletes of derived rows past the
+///    retention policy.
 ///  * [AgentAttentionProjection] — attention-claim / standing-agreement
 ///    projection reads plus the rebuild/refresh machinery.
 ///  * [AgentProposalLedger] — the proposal-ledger assembly query.
@@ -57,6 +60,7 @@ class AgentRepository {
   AgentRepository(AgentDatabase db, {DomainLogger? domainLogger})
     : _core = AgentRepoCore(db),
       _links = AgentRepoLinks(db, domainLogger),
+      _retention = AgentRepoRetention(db),
       _ledger = AgentProposalLedger(db) {
     // Core ↔ projection form a cycle: the projection hydrates source rows via
     // `core.getEntitiesByIds`, and `core.upsertEntity` refreshes the projection
@@ -70,6 +74,7 @@ class AgentRepository {
 
   final AgentRepoCore _core;
   final AgentRepoLinks _links;
+  final AgentRepoRetention _retention;
   final AgentProposalLedger _ledger;
   late final AgentAttentionProjection _projection;
   late final AgentRepoQueries _queries;
@@ -675,4 +680,40 @@ class AgentRepository {
     await _links.hardDeleteAgent(agentId);
     _core.invalidateAgentIdentitiesCache();
   }
+
+  // ── Retention ───────────────────────────────────────────────────────────
+
+  /// Deletes observation messages beyond the newest [keepPerAgent] per agent,
+  /// with their payload rows. See [AgentRepoRetention].
+  Future<int> pruneObservationsBeyond({
+    required int keepPerAgent,
+    required int batchSize,
+    required int maxBatches,
+  }) => _retention.pruneObservationsBeyond(
+    keepPerAgent: keepPerAgent,
+    batchSize: batchSize,
+    maxBatches: maxBatches,
+  );
+
+  /// Deletes day-status events created before [cutoff].
+  Future<int> pruneDayStatusEventsBefore(
+    DateTime cutoff, {
+    required int batchSize,
+    required int maxBatches,
+  }) => _retention.pruneDayStatusEventsBefore(
+    cutoff,
+    batchSize: batchSize,
+    maxBatches: maxBatches,
+  );
+
+  /// Deletes wake-run log rows created before [cutoff].
+  Future<int> pruneWakeRunsBefore(
+    DateTime cutoff, {
+    required int batchSize,
+    required int maxBatches,
+  }) => _retention.pruneWakeRunsBefore(
+    cutoff,
+    batchSize: batchSize,
+    maxBatches: maxBatches,
+  );
 }

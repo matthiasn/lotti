@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0]
+### Changed
+- **The agent store stops growing forever.** The long-lived planner writes notes
+  to itself on every run, and those, along with the day-status events and run
+  logs behind them, were kept indefinitely — a database, sync payload and backup
+  that got bigger every month you used the app, with nothing ever reclaimed. The
+  app now forgets that working residue on a published schedule: the newest 200
+  notes per agent, ninety days of status events and run logs. **Nothing you
+  wrote is ever affected** — check-ins, plans, day summaries, directives, saved
+  knowledge, reports and personalities are kept for good, as are weekly totals
+  and the record behind every suggestion you accepted or rejected. Tidying runs
+  in the background after start-up and can be interrupted safely.
+
 ## [1.0.1]
 ### Added
 - **A failed planning step now says so on the day it happened.** When Daily OS

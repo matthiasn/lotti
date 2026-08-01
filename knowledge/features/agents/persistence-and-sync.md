@@ -47,6 +47,9 @@ sources:
   - id: queue-adapter
     resource: ../../../lib/features/sync/queue/queue_apply_adapter.dart
     title: QueueApplyAdapter
+  - id: retention
+    resource: ../../../lib/features/agents/service/agent_retention_policy.dart
+    title: AgentRetentionPolicy
     last_modified: 2026-08-01
   - id: adr-0007
     resource: ../../../docs/adr/0007-token-usage-wake-run-log-storage.md
@@ -279,6 +282,81 @@ spending the retry budget on deterministic poison data.
 Because wake workflows resolve an inference profile at run time, the same
 template can be routed through different providers without changing the agent
 persistence model.
+
+# Retention: what the store may forget
+
+Bounding *reads* stopped per-action cost from growing with install age; it did
+nothing about the rows. The coordinator is long-lived and writes observations on
+every wake, forever, so the store grew without limit — felt as database size,
+sync payload, backup size and whole-table maintenance long before any indexed
+query got slow.
+
+`AgentRetentionPolicy` splits the store by **who authored the row**, and the
+split is a declaration in code rather than a shape that falls out of a sweep's
+SQL, so a new entity type forces a decision instead of silently inheriting one.
+
+| Row | Kept | Why |
+|-----|------|-----|
+| Captures, plans, summaries, directives, knowledge, reports, souls | Forever | The user's own material |
+| `weekRollup` | Forever | ~52 rows/year, and the digest's only month-scale trend source |
+| `wakeTokenUsage` | Forever | Aggregated over **all time** by the template page; pruning would silently rewrite a number the user can read. Monthly compaction is the way to bound it |
+| Change sets, decisions, attention claims | Forever | Audit trail behind proposals the user accepted or rejected |
+| `saga_log` | n/a | No writer exists yet; it earns a policy when it earns a writer |
+| Observations (`agentMessage` + payload) | Newest **200 per agent** | Count, not age: the bound needed is "does not grow without limit", and a count says that whatever the usage rate. Reads take at most 40 |
+| `dayStatusEvent` | **90 days** | The digest reads from its watermark plus 12h slack — months of headroom |
+| `wake_run_log` | **90 days** | Evaluation surfaces read at most 30 days |
+
+**Observations are two rows, not one.** Each is a message plus an
+`agentMessagePayload` carrying its text, and the payload is the larger. The
+sweep deletes payloads first inside one transaction: a crash between the
+statements must not leave a message whose text is gone (which would render as
+"(no content)"), whereas the other order only leaves an orphan the next sweep
+collects. Nothing walks `prevMessageId` — reads are all `(agentId, type,
+subtype, created_at DESC)` — so pruning the middle of the chain breaks no read.
+
+## Hard delete, no tombstone
+
+```mermaid
+sequenceDiagram
+  participant A as Device A
+  participant B as Device B — offline for months
+  A->>A: sweep — derived rows past the horizon hard-deleted
+  Note over A: no tombstone written, nothing to sync
+  B->>A: reconnects, replays its old derived rows
+  A->>A: ingest guard drops them, records the receipt
+  Note over A,B: B's next sweep reaches the same conclusion locally
+```
+
+A tombstone per pruned row would grow the sync payload in the exact dimension
+retention exists to shrink, and there is nothing to converge on: the rule is a
+pure function of `(type, createdAt, now)`, so every device reaches the same
+conclusion independently. The apply path therefore drops an inbound derived row
+already past the local horizon instead of materializing it — otherwise every
+reconnect would hand the next sweep the same work again. The sequence receipt is
+still recorded, so no backfill is triggered for the dropped row.
+
+A row sitting exactly on the boundary may survive a few hours longer on one
+device than another. For observational data that is invisible, and it converges
+as time passes.
+
+## Bounded, and safe to interrupt
+
+The sweep rides the once-per-start agent init — last, and **not awaited**, so
+housekeeping never sits between the user and a ready app. Each type is capped at
+`batchSize × maxBatchesPerSweep` rows, each batch is its own statement, and the
+policy is idempotent: a pass killed mid-flight leaves rows for the next start,
+and a pass that runs twice removes nothing the second time.
+
+**Day-agent identities are deliberately left to accumulate** (~one per day of
+use). Each is tiny and permanently cold, and merging or archiving them would
+cost the property that makes them worth having — a day's history stays
+addressable by its own id forever. What scales with their count is enumeration
+and sync footprint, and both are bounded by per-agent reads rather than by
+walking the set.
+
+The aged-corpus benchmark gates this: at six and twelve simulated months, every
+retention-eligible type reads the *same* count after a sweep while day plans and
+captures keep growing.
 
 # Diagnostics are content-free
 

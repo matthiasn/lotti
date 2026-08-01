@@ -63,6 +63,49 @@ lib/features/agents/
 └── ui/           # AI summary card, internals panel, settings tabs
 ```
 
+## What the store forgets, and what it never forgets
+
+Agents write two kinds of row into the same store. **The user's own material** —
+captures, day plans, day summaries, directives, durable knowledge, reports and
+personalities — is never deleted by age or volume, however old it gets. **The
+machine's working residue** — the observations an agent writes about itself, the
+status events it raises, the wake-run log — is bounded, because the coordinator
+is long-lived and writes on every wake, forever. Unbounded growth is felt as
+database size, sync payload, backup size and slower maintenance long before any
+individual query gets slow.
+
+| Row | Kept |
+|-----|------|
+| Captures, plans, summaries, directives, knowledge, reports, souls | Forever |
+| Weekly rollups | Forever — ~52 rows a year, and the digest's only trend source |
+| Per-wake token usage | Forever — the template page totals it over all time; compacting it into monthly aggregates is the way to bound it, not deletion |
+| Proposal audit trail (change sets, decisions, attention claims) | Forever |
+| Observations | Newest 200 per agent (reads use at most 40) |
+| Day-status events | 90 days |
+| Wake-run log | 90 days |
+
+The sweep runs once per start, off the path to a ready app, in bounded batches.
+It is safe to interrupt: the policy is a pure function of the store's contents,
+so a pass cut short leaves rows for next time and a pass that runs twice removes
+nothing the second time.
+
+**Across devices it is a hard delete with no tombstone.** A tombstone per pruned
+row would grow the sync payload in the exact dimension retention exists to
+shrink, and there is nothing to converge on — every device applies the same rule
+to the same synced rows and reaches the same conclusion independently. A device
+that has been offline past the window therefore comes back carrying rows the
+others already forgot; those are dropped on arrival rather than re-materialized,
+so reconnecting does not hand the next sweep the same work again. A row sitting
+exactly on the boundary may survive a few hours longer on one device than
+another, which for observational data is invisible.
+
+**Day-agent identities are deliberately left to accumulate** — roughly one per
+day of use. Each is tiny and permanently cold, and merging or archiving them
+would cost the property that makes them worth having: a day's history stays
+addressable by its own id forever. What scales with their count is enumeration
+and sync footprint, and both are already bounded by per-agent reads rather than
+by walking the set.
+
 ## How it works
 
 Design decisions behind the runtime are recorded in

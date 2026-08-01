@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -196,6 +197,65 @@ void main() {
       await processor.process(event: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(incoming)).called(1);
+    });
+
+    test('a day-status event past the retention horizon is not '
+        'materialized', () async {
+      // Retention hard-deletes derived rows with no tombstone, so a peer
+      // returning from a long absence carries rows every device already
+      // agreed to forget. Materializing them would only hand the next sweep
+      // the same work again, on every reconnect.
+      final entity = AgentDomainEntity.dayStatusEvent(
+        id: 'day_status:dayplan-2020-01-01:evt-1',
+        agentId: 'daily_os_planner',
+        dayId: 'dayplan-2020-01-01',
+        status: DayStatusKind.onTrack,
+        reasons: const [],
+        raisedAt: DateTime(2020),
+        createdAt: DateTime(2020),
+        vectorClock: null,
+      );
+      when(
+        () => event.text,
+      ).thenReturn(
+        encodeMessage(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verifyNever(() => mockAgentRepo.upsertEntity(any()));
+    });
+
+    test('a recent day-status event is materialized as usual', () async {
+      final entity = AgentDomainEntity.dayStatusEvent(
+        id: 'day_status:dayplan-2026-07-30:evt-1',
+        agentId: 'daily_os_planner',
+        dayId: 'dayplan-2026-07-30',
+        status: DayStatusKind.onTrack,
+        reasons: const [],
+        raisedAt: DateTime.now().subtract(const Duration(days: 1)),
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        vectorClock: null,
+      );
+      when(
+        () => event.text,
+      ).thenReturn(
+        encodeMessage(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
 
     test('processes agent state entity', () async {
