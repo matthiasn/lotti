@@ -102,20 +102,15 @@ breaks; only the chatty success path is silenced.
 
 The global Flutter framework hook bounds one special amplification case before
 it reaches that always-on path. A SHA-256 fingerprint covers the exception type
-and text, library, context and stack. The first observation keeps Flutter's full
-console presentation and durable stack; identical repeats emit only a counted,
-stack-free summary every 100 observations or one minute. Distinct fingerprints
-remain independent, and an LRU cap of 256 signatures bounds the in-memory
-sampler itself. This preserves evidence of a rebuild loop without allowing one
-framework exception to generate an unbounded error file.
-
-The July 2026 amplification named `FlutterQuillLocalizations` as missing even
-though the ready `MyBeamerApp` already registers its delegate. A focused
-full-app regression now proves that routed content resolves the Quill messages
-and that the Quill delegate supports every app locale. The transient production
-trigger has not been reproduced from the retained logs, so no speculative
-widget workaround is applied; the framework-error limiter bounds any recurrence
-while the localization contract remains pinned.
+and text, library, context, stack and rendered `informationCollector`
+diagnostics. The first observation keeps Flutter's full console presentation
+and durable stack; identical repeats emit only a counted, stack-free summary
+every 100 observations. A timer flushes any smaller pending burst after at most
+one minute even when the error stops recurring. Distinct fingerprints remain
+independent, and an LRU cap of 256 signatures bounds the in-memory sampler
+itself. This preserves both widget/render-object detail and evidence of a
+rebuild loop without allowing one framework exception to generate an unbounded
+error file.
 
 **`sync` is the one domain that routes to its own file.** It is off by default
 and far noisier than everything else — a catch-up can produce thousands of lines

@@ -95,9 +95,10 @@ Three details in that sequence are deliberate and easy to break:
   handler.
 - **The Flutter framework hook deduplicates identical diagnostics.** It keeps
   the first full console and file stack, then replaces repeated copies with
-  periodic counted summaries. The fingerprint includes the complete stack, so
-  exceptions with similar messages at different call sites remain separately
-  diagnosable.
+  periodic counted summaries. The fingerprint includes the complete stack and
+  collected diagnostics, so exceptions from different call sites or widget and
+  render-object contexts remain separately diagnosable. A pending sub-threshold
+  burst is flushed after one minute even if no later occurrence arrives.
 
 # Registration order inside `registerSingletons()`
 

@@ -157,9 +157,9 @@ Future<void> main() async {
 /// Global framework error handler: presents the error on the console exactly
 /// like Flutter's default handler and persists its full stack once per stable
 /// fingerprint. Identical repeats are suppressed, with stack-free counted
-/// summaries emitted every 100 observations or one minute. This preserves the
-/// diagnostic while preventing a rebuild loop from writing thousands of
-/// copies of the same stack trace.
+/// summaries emitted every 100 observations or after at most one minute. This
+/// preserves the diagnostic while preventing a rebuild loop from writing
+/// thousands of copies of the same stack trace.
 @visibleForTesting
 void handleFlutterFrameworkError(FlutterErrorDetails details) {
   final report = _frameworkErrorLimiter.observe(details);
@@ -173,22 +173,26 @@ void handleFlutterFrameworkError(FlutterErrorDetails details) {
         subDomain: details.library,
       );
     case _FrameworkErrorReportKind.summary:
-      final summary =
-          'Repeated Flutter framework error '
-          'fingerprint=${report.fingerprint} '
-          'errorType=${report.errorType} '
-          'observed=${report.observed} '
-          'suppressed=${report.observed} total=${report.total}';
-      debugPrint(summary);
-      getIt<DomainLogger>().error(
-        LogDomain.general,
-        const _RepeatedFlutterFrameworkError(),
-        subDomain: details.library,
-        message: summary,
-      );
+      _emitFrameworkErrorSummary(report, details.library);
     case _FrameworkErrorReportKind.suppressed:
       return;
   }
+}
+
+void _emitFrameworkErrorSummary(_FrameworkErrorReport report, String? library) {
+  final summary =
+      'Repeated Flutter framework error '
+      'fingerprint=${report.fingerprint} '
+      'errorType=${report.errorType} '
+      'observed=${report.observed} '
+      'suppressed=${report.observed} total=${report.total}';
+  debugPrint(summary);
+  getIt<DomainLogger>().error(
+    LogDomain.general,
+    const _RepeatedFlutterFrameworkError(),
+    subDomain: library,
+    message: summary,
+  );
 }
 
 const _defaultFrameworkErrorSummaryEvery = 100;
@@ -199,16 +203,19 @@ var _frameworkErrorLimiter = _FrameworkErrorLimiter();
 
 /// Resets process-global framework error sampling with deterministic thresholds.
 ///
-/// Production never calls this; tests use it to isolate cases and exercise the
-/// count and elapsed-time boundaries without timers or wall-clock delays.
+/// Production never calls this; tests use it to isolate cases, keep timers off
+/// by default, and opt into virtual-time scheduling for the interval drain.
 @visibleForTesting
 void resetFrameworkErrorSuppressionForTesting({
   int summaryEvery = _defaultFrameworkErrorSummaryEvery,
   Duration summaryInterval = _defaultFrameworkErrorSummaryInterval,
+  bool scheduleIntervalSummaries = false,
 }) {
+  _frameworkErrorLimiter.dispose();
   _frameworkErrorLimiter = _FrameworkErrorLimiter(
     summaryEvery: summaryEvery,
     summaryInterval: summaryInterval,
+    scheduleIntervalSummaries: scheduleIntervalSummaries,
   );
 }
 
@@ -236,12 +243,14 @@ class _FrameworkErrorState {
   DateTime lastReportedAt;
   int total = 0;
   int pending = 0;
+  Timer? summaryTimer;
 }
 
 class _FrameworkErrorLimiter {
   _FrameworkErrorLimiter({
     this.summaryEvery = _defaultFrameworkErrorSummaryEvery,
     this.summaryInterval = _defaultFrameworkErrorSummaryInterval,
+    this.scheduleIntervalSummaries = true,
   }) : assert(summaryEvery > 0, 'summaryEvery must be positive'),
        assert(
          summaryInterval > Duration.zero,
@@ -250,6 +259,7 @@ class _FrameworkErrorLimiter {
 
   final int summaryEvery;
   final Duration summaryInterval;
+  final bool scheduleIntervalSummaries;
   final LinkedHashMap<String, _FrameworkErrorState> _states =
       LinkedHashMap<String, _FrameworkErrorState>();
 
@@ -257,10 +267,11 @@ class _FrameworkErrorLimiter {
     final now = clock.now();
     final fingerprint = _fingerprint(details);
     final errorType = details.exception.runtimeType.toString();
+    final library = details.library;
     final state = _states.remove(fingerprint) ?? _FrameworkErrorState(now);
     _states[fingerprint] = state;
     while (_states.length > _frameworkErrorFingerprintCapacity) {
-      _states.remove(_states.keys.first);
+      _states.remove(_states.keys.first)?.summaryTimer?.cancel();
     }
 
     state.total++;
@@ -279,6 +290,8 @@ class _FrameworkErrorLimiter {
     if (state.pending >= summaryEvery || elapsed >= summaryInterval) {
       final observed = state.pending;
       state
+        ..summaryTimer?.cancel()
+        ..summaryTimer = null
         ..pending = 0
         ..lastReportedAt = now;
       return _FrameworkErrorReport(
@@ -288,6 +301,26 @@ class _FrameworkErrorLimiter {
         observed: observed,
         total: state.total,
       );
+    }
+
+    if (scheduleIntervalSummaries && state.summaryTimer == null) {
+      state.summaryTimer = Timer(summaryInterval - elapsed, () {
+        final observed = state.pending;
+        state
+          ..summaryTimer = null
+          ..pending = 0
+          ..lastReportedAt = clock.now();
+        _emitFrameworkErrorSummary(
+          _FrameworkErrorReport(
+            kind: _FrameworkErrorReportKind.summary,
+            fingerprint: fingerprint,
+            errorType: errorType,
+            observed: observed,
+            total: state.total,
+          ),
+          library,
+        );
+      });
     }
 
     return _FrameworkErrorReport(
@@ -306,8 +339,18 @@ class _FrameworkErrorLimiter {
       details.library ?? '',
       details.context?.toDescription() ?? '',
       details.stack?.toString() ?? '',
+      ...?details.informationCollector?.call().map(
+        (node) => node.toStringDeep(),
+      ),
     ]);
     return sha256.convert(utf8.encode(signature)).toString().substring(0, 16);
+  }
+
+  void dispose() {
+    for (final state in _states.values) {
+      state.summaryTimer?.cancel();
+    }
+    _states.clear();
   }
 }
 

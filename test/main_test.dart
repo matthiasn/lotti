@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui' show AppExitResponse;
 
-import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
@@ -164,25 +164,34 @@ void main() {
     );
   });
 
-  test('framework error interval emits all pending repeat counts', () {
+  test('framework error interval flushes a stopped repeat burst', () {
     final presented = <FlutterErrorDetails>[];
     final previousPresenter = FlutterError.presentError;
     FlutterError.presentError = presented.add;
     addTearDown(() => FlutterError.presentError = previousPresenter);
 
-    var now = DateTime.utc(2026, 8);
     final details = FlutterErrorDetails(
       exception: StateError('interval framework failure'),
       stack: StackTrace.fromString('framework.dart 30:6 paint'),
       library: 'painting library',
     );
 
-    withClock(Clock(() => now), () {
+    fakeAsync((async) {
+      app.resetFrameworkErrorSuppressionForTesting(
+        scheduleIntervalSummaries: true,
+      );
       app.handleFlutterFrameworkError(details);
-      now = now.add(const Duration(seconds: 30));
+      async.elapse(const Duration(seconds: 30));
       app.handleFlutterFrameworkError(details);
-      now = now.add(const Duration(seconds: 31));
-      app.handleFlutterFrameworkError(details);
+      verifyNever(
+        () => domainLogger.error(
+          LogDomain.general,
+          any<Object>(),
+          subDomain: 'painting library',
+          message: any<String>(named: 'message'),
+        ),
+      );
+      async.elapse(const Duration(seconds: 31));
     });
 
     expect(presented, hasLength(1));
@@ -194,9 +203,9 @@ void main() {
         message: any<String>(
           named: 'message',
           that: allOf(
-            contains('observed=2'),
-            contains('suppressed=2'),
-            contains('total=3'),
+            contains('observed=1'),
+            contains('suppressed=1'),
+            contains('total=2'),
           ),
         ),
       ),
@@ -246,6 +255,45 @@ void main() {
         subDomain: 'widgets library',
       ),
     ).called(1);
+  });
+
+  test('collected diagnostics distinguish otherwise identical errors', () {
+    final presented = <FlutterErrorDetails>[];
+    final previousPresenter = FlutterError.presentError;
+    FlutterError.presentError = presented.add;
+    addTearDown(() => FlutterError.presentError = previousPresenter);
+
+    final exception = StateError('same framework failure');
+    final stack = StackTrace.fromString('framework.dart 60:10 build');
+    FlutterErrorDetails detailsFor(String widgetName) => FlutterErrorDetails(
+      exception: exception,
+      stack: stack,
+      library: 'widgets library',
+      informationCollector: () => <DiagnosticsNode>[
+        DiagnosticsProperty<String>('widget', widgetName),
+      ],
+    );
+
+    app.handleFlutterFrameworkError(detailsFor('first widget'));
+    app.handleFlutterFrameworkError(detailsFor('second widget'));
+
+    expect(presented, hasLength(2));
+    expect(
+      presented
+          .map(
+            (details) => details.informationCollector!().single.toDescription(),
+          )
+          .toList(),
+      ['first widget', 'second widget'],
+    );
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        exception,
+        stackTrace: stack,
+        subDomain: 'widgets library',
+      ),
+    ).called(2);
   });
 
   test('framework error fingerprints evict the least recently used entry', () {
