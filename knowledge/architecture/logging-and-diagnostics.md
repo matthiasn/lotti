@@ -19,7 +19,7 @@ sources:
   - id: domain-logging
     resource: ../../lib/services/domain_logging.dart
     title: DomainLogger
-    last_modified: 2026-05-31
+    last_modified: 2026-08-01
   - id: framework-errors
     resource: ../../lib/main.dart
     title: Flutter framework error handler
