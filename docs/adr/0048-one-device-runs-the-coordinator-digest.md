@@ -34,10 +34,16 @@ surviving claim is still its own.
 The election needs no coordinator because the record is already a
 last-write-wins register: concurrent claims converge to exactly one surviving
 host, and the settle period is what gives that convergence time to happen before
-anyone acts on it. The lease expires, so a device that claims and then crashes
-or goes offline delays the window rather than dropping it — any device may take
-over past `leaseUntil`, and the existing cold-start bootstrap re-arms a record
-whose claimant died mid-digest.
+anyone acts on it. The lease expires, so a device that claims and then crashes or goes offline
+before consuming the record delays the window rather than dropping it: any
+device may take over past `leaseUntil`.
+
+That recovery covers the claim, **not** the run. A device that crashes *after*
+the record flips to `consumed` but before its in-memory job finishes loses that
+day's briefing: cold-start bootstrap sees a consumed record and arms the next
+day's slot rather than retrying today's. This predates the lease — it follows
+from consuming the record before running — and is tracked separately rather
+than fixed here.
 
 `leaseUntil` is stored in **UTC**. Entities cross devices as JSON, and
 `toIso8601String()` on a local `DateTime` emits no offset, so a peer's

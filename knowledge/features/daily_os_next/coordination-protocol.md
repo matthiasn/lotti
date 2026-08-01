@@ -145,10 +145,15 @@ would look already expired and be taken over at once — both devices firing, th
 duplicate the lease exists to prevent — while the reverse direction would stretch
 thirty minutes into hours.
 
-The lease expires. A device that claims and then crashes or goes offline delays
-the window rather than dropping it: past `leaseUntil` any device takes over, and
-a claimant that died mid-digest is recovered by the cold-start bootstrap. A
-device with no sync host fires unleased — it has no peers to race.
+The lease expires. A device that claims and then crashes or goes offline
+*before consuming the record* delays the window rather than dropping it: past
+`leaseUntil` any device takes over. A device with no sync host fires unleased —
+it has no peers to race.
+
+The lease recovers the **claim**, not the run. A crash after the `consumed` flip
+but before the job finishes still loses that day's briefing, because
+`_ensurePendingDigestWake` sees a consumed record and arms tomorrow's slot. That
+follows from consuming before running and is older than the lease.
 
 **The lease bounds cost, not correctness.** Devices partitioned from sync while
 their model providers stay reachable can each hold a locally-consistent claim and
@@ -194,8 +199,9 @@ briefing over a transient error.
 The resulting invariant is **at most one digest per day per record history** —
 it is enforced by one device consuming and re-arming the record in sequence, and
 says nothing about two devices holding the same pending record before either
-`consumed` flip has synced. Cross-device exclusion is a separate concern with
-its own mechanism, tracked as `lotti3-hkb.11`.
+`consumed` flip has synced. That second question is the lease's, above: it
+narrows the window to the settle period rather than closing it, which bounds
+cost rather than establishing exclusion.
 
 ## Severity ranking, not arrival order
 
