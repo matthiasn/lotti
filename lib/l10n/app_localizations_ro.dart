@@ -3619,8 +3619,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acțiunea nu s-a finalizat. Înregistrarea dvs. este în continuare în siguranță — încercați din nou.';
 
   @override
+  String get dailyOsNextActivityAgentActionFailed =>
+      'Acțiunea nu s-a finalizat. Nu s-a pierdut nimic — încercați din nou.';
+
+  @override
   String get dailyOsNextActivityAgentJobDraft =>
       'Crearea planului dumneavoastră pentru zi nu s-a finalizat.';
+
+  @override
+  String get dailyOsNextActivityAgentJobModelFailed =>
+      'Modelul AI nu a putut finaliza această sarcină.';
 
   @override
   String get dailyOsNextActivityAgentJobParse =>
@@ -3633,6 +3641,14 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dailyOsNextActivityAgentJobRetryHint =>
       'Nu s-a pierdut nimic. Încercați din nou când doriți.';
+
+  @override
+  String get dailyOsNextActivityAgentJobSetupRequired =>
+      'Nu este încă configurat niciun model AI pentru planificare.';
+
+  @override
+  String get dailyOsNextActivityAgentJobTemporary =>
+      'Serviciul AI a fost ocupat sau inaccesibil.';
 
   @override
   String get dailyOsNextActivityDaySummary => 'Rezumatul zilei';
@@ -3664,7 +3680,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextActivityNeedsAttention => 'Necesită atenție';
 
   @override
-  String get dailyOsNextActivityOpenAiSetup => 'Deschideți configurarea IA';
+  String get dailyOsNextActivityOpenAiSetup =>
+      'Deschideți configurarea Daily OS';
 
   @override
   String get dailyOsNextActivityOpenSetup =>

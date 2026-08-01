@@ -753,15 +753,20 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text(messages.dailyOsNextActivityAgentJobRetryHint),
+        find.textContaining(messages.dailyOsNextActivityAgentJobModelFailed),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(messages.dailyOsNextActivityAgentJobRetryHint),
         findsOneWidget,
       );
       expect(
         find.text(messages.dailyOsNextActivityNeedsAttention),
         findsOneWidget,
       );
-      // The durable reason stays visible so a second failure is diagnosable.
-      expect(find.text('the model returned no plan'), findsOneWidget);
+      // The provider's own message is hard-coded English written for a log;
+      // this card is localized everywhere else, so it never reaches the UI.
+      expect(find.text('the model returned no plan'), findsNothing);
       // A failed agent job is not a recording: no delete, nothing to reuse.
       expect(
         find.text(messages.dailyOsNextActivityDeleteRecording),
@@ -777,7 +782,8 @@ void main() {
     },
   );
 
-  testWidgets('a stalled refine with no model configured offers AI setup', (
+  testWidgets('a stalled refine with no model configured offers Daily OS '
+      'setup', (
     tester,
   ) async {
     final outbox = MockDayProcessingOutboxRepository();
@@ -835,7 +841,13 @@ void main() {
     await tester.tap(find.text(messages.dailyOsNextActivityOpenAiSetup));
     await tester.pump();
 
-    expect(routed, '/settings/ai');
+    expect(
+      routed,
+      '/settings/daily-os',
+      reason:
+          'The generic AI list can create a profile but never binds one to '
+          'Daily OS, so it would leave the job exactly as blocked.',
+    );
   });
 
   testWidgets(

@@ -3548,8 +3548,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'That action didn\'t finish. Your recording is still safe—try again.';
 
   @override
+  String get dailyOsNextActivityAgentActionFailed =>
+      'That action didn\'t finish. Nothing was lost—try again.';
+
+  @override
   String get dailyOsNextActivityAgentJobDraft =>
       'Drafting your day plan didn\'t finish.';
+
+  @override
+  String get dailyOsNextActivityAgentJobModelFailed =>
+      'The AI model couldn\'t finish this one.';
 
   @override
   String get dailyOsNextActivityAgentJobParse =>
@@ -3562,6 +3570,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dailyOsNextActivityAgentJobRetryHint =>
       'Nothing was lost. Retry when you\'re ready.';
+
+  @override
+  String get dailyOsNextActivityAgentJobSetupRequired =>
+      'No AI model is set up for planning yet.';
+
+  @override
+  String get dailyOsNextActivityAgentJobTemporary =>
+      'The AI service was busy or unreachable.';
 
   @override
   String get dailyOsNextActivityDaySummary => 'Day summary';
@@ -3591,7 +3607,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextActivityNeedsAttention => 'Needs attention';
 
   @override
-  String get dailyOsNextActivityOpenAiSetup => 'Open AI setup';
+  String get dailyOsNextActivityOpenAiSetup => 'Open Daily OS setup';
 
   @override
   String get dailyOsNextActivityOpenSetup => 'Open transcription setup';
@@ -11437,8 +11453,16 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get customColor => 'Custom Colour';
 
   @override
+  String get dailyOsNextActivityAgentActionFailed =>
+      'That action didn\'t finish. Nothing was lost—try again.';
+
+  @override
   String get dailyOsNextActivityAgentJobDraft =>
       'Drafting your day plan didn\'t finish.';
+
+  @override
+  String get dailyOsNextActivityAgentJobModelFailed =>
+      'The AI model couldn\'t finish this one.';
 
   @override
   String get dailyOsNextActivityAgentJobParse =>
@@ -11453,7 +11477,15 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
       'Nothing was lost. Retry when you\'re ready.';
 
   @override
-  String get dailyOsNextActivityOpenAiSetup => 'Open AI setup';
+  String get dailyOsNextActivityAgentJobSetupRequired =>
+      'No AI model is set up for planning yet.';
+
+  @override
+  String get dailyOsNextActivityAgentJobTemporary =>
+      'The AI service was busy or unreachable.';
+
+  @override
+  String get dailyOsNextActivityOpenAiSetup => 'Open Daily OS setup';
 
   @override
   String get dashboardActiveLabel => 'Active';

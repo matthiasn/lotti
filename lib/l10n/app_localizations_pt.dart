@@ -3596,8 +3596,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'That action didn\'t finish. Your recording is still safe—try again.';
 
   @override
+  String get dailyOsNextActivityAgentActionFailed =>
+      'A ação não chegou ao fim. Não se perdeu nada — tenta de novo.';
+
+  @override
   String get dailyOsNextActivityAgentJobDraft =>
       'A criação do teu plano do dia não chegou ao fim.';
+
+  @override
+  String get dailyOsNextActivityAgentJobModelFailed =>
+      'O modelo de IA não conseguiu concluir isto.';
 
   @override
   String get dailyOsNextActivityAgentJobParse =>
@@ -3610,6 +3618,14 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get dailyOsNextActivityAgentJobRetryHint =>
       'Não se perdeu nada. Tenta de novo quando quiseres.';
+
+  @override
+  String get dailyOsNextActivityAgentJobSetupRequired =>
+      'Ainda não há nenhum modelo de IA configurado para planear.';
+
+  @override
+  String get dailyOsNextActivityAgentJobTemporary =>
+      'O serviço de IA estava ocupado ou inacessível.';
 
   @override
   String get dailyOsNextActivityDaySummary => 'Day summary';
@@ -3639,7 +3655,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextActivityNeedsAttention => 'Needs attention';
 
   @override
-  String get dailyOsNextActivityOpenAiSetup => 'Abrir a configuração de IA';
+  String get dailyOsNextActivityOpenAiSetup =>
+      'Abrir a configuração do Daily OS';
 
   @override
   String get dailyOsNextActivityOpenSetup => 'Open transcription setup';
