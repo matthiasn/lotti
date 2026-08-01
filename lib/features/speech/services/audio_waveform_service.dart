@@ -104,10 +104,7 @@ class _AudioWaveformCachePayload {
 }
 
 class _DatedCacheFile {
-  const _DatedCacheFile({
-    required this.file,
-    required this.modified,
-  });
+  const _DatedCacheFile({required this.file, required this.modified});
 
   final File file;
   final DateTime modified;
@@ -119,6 +116,20 @@ typedef AudioWaveformExtractor =
       required File waveOutFile,
       required WaveformZoom zoom,
     });
+
+/// Deterministic lifecycle hooks used by the waveform cache real-I/O tests.
+@visibleForTesting
+class AudioWaveformServiceTestHooks {
+  const AudioWaveformServiceTestHooks({
+    this.beforeCachePrune,
+    this.beforeCacheFileStat,
+    this.onCacheWritten,
+  });
+
+  final Future<void> Function()? beforeCachePrune;
+  final Future<void> Function(File file)? beforeCacheFileStat;
+  final void Function(File file)? onCacheWritten;
+}
 
 Future<Waveform> _defaultWaveformExtractor({
   required File audioFile,
@@ -169,6 +180,7 @@ class AudioWaveformService {
     AudioWaveformExtractor? extractor,
     this._zoom = _defaultZoom,
     @visibleForTesting int maxCacheEntries = _maxCacheEntries,
+    @visibleForTesting this.testHooks,
   }) : _extractor = extractor ?? _defaultWaveformExtractor,
        _maxEntries = maxCacheEntries;
 
@@ -177,6 +189,11 @@ class AudioWaveformService {
 
   /// Cache-prune threshold; injectable so tests don't need 1000+ files.
   final int _maxEntries;
+
+  @visibleForTesting
+  final AudioWaveformServiceTestHooks? testHooks;
+
+  Future<void> _pruneTail = Future<void>.value();
 
   DomainLogger get _loggingService => getIt<DomainLogger>();
 
@@ -214,14 +231,10 @@ class AudioWaveformService {
           cached.audioFileRelativePath ==
               AudioUtils.getRelativeAudioPath(audio) &&
           cached.audioFileSizeBytes == stat.size &&
-          cached.audioFileModifiedAt.isAtSameMomentAs(
-            stat.modified.toUtc(),
-          )) {
+          cached.audioFileModifiedAt.isAtSameMomentAs(stat.modified.toUtc())) {
         return AudioWaveformData(
           amplitudes: cached.amplitudes,
-          bucketDuration: Duration(
-            microseconds: cached.bucketDurationMicros,
-          ),
+          bucketDuration: Duration(microseconds: cached.bucketDurationMicros),
           audioDuration: Duration(milliseconds: cached.audioDurationMs),
         );
       }
@@ -364,7 +377,8 @@ class AudioWaveformService {
     try {
       cacheFile.parent.createSync(recursive: true);
       cacheFile.writeAsStringSync(jsonEncode(payload.toJson()));
-      await _pruneCacheIfNeeded();
+      testHooks?.onCacheWritten?.call(cacheFile);
+      await _enqueueCachePrune();
     } catch (error, stackTrace) {
       _loggingService.error(
         LogDomain.speech,
@@ -392,18 +406,11 @@ class AudioWaveformService {
     }
 
     final maxAmplitude = waveform.flags == 0 ? 32768.0 : 128.0;
-    final pixelAmplitudes = List<double>.generate(
-      pixelCount,
-      (int index) {
-        final min = waveform.getPixelMin(index).abs();
-        final max = waveform.getPixelMax(index).abs();
-        return math.min(
-          1,
-          math.max(min, max) / maxAmplitude,
-        );
-      },
-      growable: false,
-    );
+    final pixelAmplitudes = List<double>.generate(pixelCount, (int index) {
+      final min = waveform.getPixelMin(index).abs();
+      final max = waveform.getPixelMax(index).abs();
+      return math.min(1, math.max(min, max) / maxAmplitude);
+    }, growable: false);
 
     if (pixelCount <= targetBuckets) {
       return pixelAmplitudes;
@@ -443,13 +450,20 @@ class AudioWaveformService {
         waveform.samplesPerPixel / waveform.sampleRate.toDouble();
     final pixelsPerBucket = waveform.length / reducedBuckets;
     final bucketSeconds = secondsPerPixel * pixelsPerBucket;
-    return Duration(
-      microseconds: (bucketSeconds * 1000000).round(),
-    );
+    return Duration(microseconds: (bucketSeconds * 1000000).round());
+  }
+
+  /// Queues every prune after the previous pass so concurrent waveform writes
+  /// cannot list and mutate the cache tree at the same time.
+  Future<void> _enqueueCachePrune() {
+    final prune = _pruneTail.then((_) => _pruneCacheIfNeeded());
+    _pruneTail = prune;
+    return prune;
   }
 
   Future<void> _pruneCacheIfNeeded() async {
     try {
+      await testHooks?.beforeCachePrune?.call();
       if (!_cacheDirectory.existsSync()) {
         return;
       }
@@ -468,19 +482,19 @@ class AudioWaveformService {
 
       final datedFiles = <_DatedCacheFile>[];
       for (final file in files) {
-        // Keeping this async avoids blocking the UI isolate during large prunes.
-        // ignore: avoid_slow_async_io
-        final modified = await file.lastModified();
-        datedFiles.add(
-          _DatedCacheFile(
-            file: file,
-            modified: modified,
-          ),
-        );
+        try {
+          await testHooks?.beforeCacheFileStat?.call(file);
+          // Keeping this async avoids blocking the UI isolate during large
+          // prunes.
+          // ignore: avoid_slow_async_io
+          final modified = await file.lastModified();
+          datedFiles.add(_DatedCacheFile(file: file, modified: modified));
+        } on PathNotFoundException {
+          // Another service instance or external cleanup already removed it.
+          continue;
+        }
       }
-      datedFiles.sort(
-        (a, b) => a.modified.compareTo(b.modified),
-      );
+      datedFiles.sort((a, b) => a.modified.compareTo(b.modified));
 
       final toRemove = datedFiles.length - _maxEntries;
       for (var i = 0; i < toRemove; i++) {

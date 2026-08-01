@@ -5,13 +5,13 @@ description: Audio capture, app-wide playback, waveform extraction, and the tran
 resource: ../../../lib/features/speech
 tags: [speech, audio, recording, playback, transcripts]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T02:45:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T17:53:53Z }
 stale_after: 2027-02-15
 sources:
   - id: src
     resource: ../../../lib/features/speech
     title: Speech feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-01
   - id: vu
     resource: ../../../lib/features/speech/state/vu_meter.dart
     title: VuMeter — sliding-window RMS→VU
@@ -143,7 +143,12 @@ letting the two compete for the output device.
 
 Waveforms are extracted by `AudioWaveformService` and exposed through
 `audioWaveformProvider`, which caches them so scrubbing does not re-analyse the
-file.
+file. Disk-cache writes queue their prune passes per service instance, so two
+concurrent extractions cannot recursively list and delete the cache tree at the
+same time. Pruning retains the 1,000 newest files by modification time. A file
+that disappears after listing but before its metadata is read is treated as
+already cleaned up; the pass continues and preserves the cache bound without a
+spurious error log.
 
 # Related
 
