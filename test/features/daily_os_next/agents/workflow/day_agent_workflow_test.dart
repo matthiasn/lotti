@@ -2234,6 +2234,52 @@ void main() {
           );
         });
 
+        test('a digest that committed before failing keeps the bound', () async {
+          // AgentSyncService rethrows a buffered outbox failure only AFTER its
+          // transaction commits, so the milestone can be durable while the
+          // wake still reports failure. Re-arming unbounded there would
+          // overwrite the committed next-day record and digest today twice.
+          when(
+            () => repository.getMessagesByKind(
+              dailyOsPlannerAgentId,
+              AgentMessageKind.system,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              makeTestMessage(
+                id: 'committed-digest',
+                agentId: dailyOsPlannerAgentId,
+                kind: AgentMessageKind.system,
+                createdAt: DateTime(2026, 5, 25, 3),
+                metadata: const AgentMessageMetadata(
+                  milestone: AgentMilestone.dailyWakeCompleted,
+                  runKey: runKey,
+                ),
+              ),
+            ],
+          );
+          conversationRepository.errorToThrow = Exception('outbox enqueue');
+
+          final result = await executeAsCoordinator(
+            workflow(directiveService: directiveService),
+            triggerTokens: {dayAgentDigestToken('dayplan-2026-05-20')},
+            at: DateTime(2026, 5, 25, 3),
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            upsertedEntities
+                .whereType<ScheduledWakeEntity>()
+                .single
+                .scheduledAt,
+            DateTime(2026, 5, 26, 6),
+            reason:
+                'The log says today was digested, so today\'s slot is skipped '
+                'even though the wake reported failure.',
+          );
+        });
+
         test("a failed catch-up keeps today's retry", () async {
           conversationRepository.errorToThrow = Exception('model failed');
 
