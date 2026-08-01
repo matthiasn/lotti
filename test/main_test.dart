@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' show AppExitResponse;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
@@ -18,6 +19,7 @@ void main() {
   late MockDomainLogger domainLogger;
 
   setUp(() async {
+    app.resetFrameworkErrorSuppressionForTesting();
     closeCompleter = Completer<void>();
     addTearDown(() {
       if (!closeCompleter.isCompleted) closeCompleter.complete();
@@ -59,6 +61,183 @@ void main() {
         LogDomain.general,
         exception,
         stackTrace: stack,
+        subDomain: 'widgets library',
+      ),
+    ).called(1);
+  });
+
+  test('identical framework errors do not repeat full diagnostics', () {
+    final presented = <FlutterErrorDetails>[];
+    final previousPresenter = FlutterError.presentError;
+    FlutterError.presentError = presented.add;
+    addTearDown(() => FlutterError.presentError = previousPresenter);
+
+    final exception = StateError('repeating framework failure');
+    final stack = StackTrace.fromString('framework.dart 10:2 build');
+    final details = FlutterErrorDetails(
+      exception: exception,
+      stack: stack,
+      library: 'widgets library',
+    );
+
+    app.handleFlutterFrameworkError(details);
+    app.handleFlutterFrameworkError(details);
+
+    expect(presented, hasLength(1));
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        exception,
+        stackTrace: stack,
+        subDomain: 'widgets library',
+      ),
+    ).called(1);
+  });
+
+  test('framework error count threshold emits a stack-free summary', () {
+    app.resetFrameworkErrorSuppressionForTesting(
+      summaryEvery: 3,
+      summaryInterval: const Duration(minutes: 10),
+    );
+    final presented = <FlutterErrorDetails>[];
+    final printed = <String?>[];
+    final previousPresenter = FlutterError.presentError;
+    final previousPrint = debugPrint;
+    FlutterError.presentError = presented.add;
+    debugPrint = (message, {wrapWidth}) => printed.add(message);
+    addTearDown(() {
+      FlutterError.presentError = previousPresenter;
+      debugPrint = previousPrint;
+    });
+
+    final exception = StateError('counted framework failure');
+    final stack = StackTrace.fromString('framework.dart 20:4 layout');
+    final details = FlutterErrorDetails(
+      exception: exception,
+      stack: stack,
+      library: 'rendering library',
+    );
+
+    for (var i = 0; i < 4; i++) {
+      app.handleFlutterFrameworkError(details);
+    }
+
+    expect(presented, hasLength(1));
+    expect(
+      printed.single,
+      allOf(
+        contains('Repeated Flutter framework error'),
+        contains('observed=3'),
+        contains('suppressed=3'),
+        contains('total=4'),
+        isNot(contains('counted framework failure')),
+        isNot(contains('framework.dart')),
+      ),
+    );
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        exception,
+        stackTrace: stack,
+        subDomain: 'rendering library',
+      ),
+    ).called(1);
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        any<Object>(that: isNot(same(exception))),
+        subDomain: 'rendering library',
+        message: any<String>(
+          named: 'message',
+          that: allOf(
+            contains('observed=3'),
+            contains('suppressed=3'),
+            contains('total=4'),
+          ),
+        ),
+      ),
+    ).called(1);
+  });
+
+  test('framework error interval emits all pending repeat counts', () {
+    final presented = <FlutterErrorDetails>[];
+    final previousPresenter = FlutterError.presentError;
+    FlutterError.presentError = presented.add;
+    addTearDown(() => FlutterError.presentError = previousPresenter);
+
+    var now = DateTime.utc(2026, 8);
+    final details = FlutterErrorDetails(
+      exception: StateError('interval framework failure'),
+      stack: StackTrace.fromString('framework.dart 30:6 paint'),
+      library: 'painting library',
+    );
+
+    withClock(Clock(() => now), () {
+      app.handleFlutterFrameworkError(details);
+      now = now.add(const Duration(seconds: 30));
+      app.handleFlutterFrameworkError(details);
+      now = now.add(const Duration(seconds: 31));
+      app.handleFlutterFrameworkError(details);
+    });
+
+    expect(presented, hasLength(1));
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        any<Object>(),
+        subDomain: 'painting library',
+        message: any<String>(
+          named: 'message',
+          that: allOf(
+            contains('observed=2'),
+            contains('suppressed=2'),
+            contains('total=3'),
+          ),
+        ),
+      ),
+    ).called(1);
+  });
+
+  test('distinct framework errors retain independent full diagnostics', () {
+    final presented = <FlutterErrorDetails>[];
+    final previousPresenter = FlutterError.presentError;
+    FlutterError.presentError = presented.add;
+    addTearDown(() => FlutterError.presentError = previousPresenter);
+
+    final first = StateError('same framework failure');
+    final second = StateError('same framework failure');
+    final firstStack = StackTrace.fromString('framework.dart 40:8 build');
+    final secondStack = StackTrace.fromString('framework.dart 50:9 build');
+    final firstDetails = FlutterErrorDetails(
+      exception: first,
+      stack: firstStack,
+      library: 'widgets library',
+    );
+    final secondDetails = FlutterErrorDetails(
+      exception: second,
+      stack: secondStack,
+      library: 'widgets library',
+    );
+
+    app.handleFlutterFrameworkError(firstDetails);
+    app.handleFlutterFrameworkError(firstDetails);
+    app.handleFlutterFrameworkError(secondDetails);
+    app.handleFlutterFrameworkError(secondDetails);
+
+    expect(presented.map((details) => details.exception), [first, second]);
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        first,
+        stackTrace: firstStack,
+        subDomain: 'widgets library',
+      ),
+    ).called(1);
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        second,
+        stackTrace: secondStack,
         subDomain: 'widgets library',
       ),
     ).called(1);

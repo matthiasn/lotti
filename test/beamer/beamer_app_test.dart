@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:beamer/beamer.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -3202,6 +3203,47 @@ void main() {
     });
     tearDown(() {
       TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+    });
+
+    testWidgets('ready app provides Quill localization to routed content', (
+      tester,
+    ) async {
+      for (final locale in AppLocalizations.supportedLocales) {
+        expect(
+          FlutterQuillLocalizations.delegate.isSupported(locale),
+          isTrue,
+          reason: 'Quill must support every app locale: $locale',
+        );
+      }
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => false,
+        isDailyOsEnabled: () => false,
+        isHabitsEnabled: () => false,
+        isDashboardsEnabled: () => false,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+      final activity = _SpyUserActivityService();
+      addTearDown(activity.dispose);
+
+      await _pumpReadyMyBeamerApp(
+        tester,
+        app: MyBeamerApp(
+          navService: mockNavService,
+          userActivityService: activity,
+        ),
+      );
+
+      final routedContext = tester.element(find.byType(ZoomWrapper));
+      final quillMessages = FlutterQuillLocalizations.of(routedContext);
+      expect(quillMessages, isNotNull);
+      expect(quillMessages!.bold, isNotEmpty);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
 
     testWidgets(

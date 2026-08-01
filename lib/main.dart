@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:collection';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show AppExitResponse;
 
+import 'package:clock/clock.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -151,17 +155,167 @@ Future<void> main() async {
 }
 
 /// Global framework error handler: presents the error on the console exactly
-/// like Flutter's default handler (so `flutter run` output stays complete),
-/// then persists a durable log entry for post-hoc diagnosis.
+/// like Flutter's default handler and persists its full stack once per stable
+/// fingerprint. Identical repeats are suppressed, with stack-free counted
+/// summaries emitted every 100 observations or one minute. This preserves the
+/// diagnostic while preventing a rebuild loop from writing thousands of
+/// copies of the same stack trace.
 @visibleForTesting
 void handleFlutterFrameworkError(FlutterErrorDetails details) {
-  FlutterError.presentError(details);
-  getIt<DomainLogger>().error(
-    LogDomain.general,
-    details.exception,
-    stackTrace: details.stack,
-    subDomain: details.library,
+  final report = _frameworkErrorLimiter.observe(details);
+  switch (report.kind) {
+    case _FrameworkErrorReportKind.full:
+      FlutterError.presentError(details);
+      getIt<DomainLogger>().error(
+        LogDomain.general,
+        details.exception,
+        stackTrace: details.stack,
+        subDomain: details.library,
+      );
+    case _FrameworkErrorReportKind.summary:
+      final summary =
+          'Repeated Flutter framework error '
+          'fingerprint=${report.fingerprint} '
+          'errorType=${report.errorType} '
+          'observed=${report.observed} '
+          'suppressed=${report.observed} total=${report.total}';
+      debugPrint(summary);
+      getIt<DomainLogger>().error(
+        LogDomain.general,
+        const _RepeatedFlutterFrameworkError(),
+        subDomain: details.library,
+        message: summary,
+      );
+    case _FrameworkErrorReportKind.suppressed:
+      return;
+  }
+}
+
+const _defaultFrameworkErrorSummaryEvery = 100;
+const _defaultFrameworkErrorSummaryInterval = Duration(minutes: 1);
+const _frameworkErrorFingerprintCapacity = 256;
+
+var _frameworkErrorLimiter = _FrameworkErrorLimiter();
+
+/// Resets process-global framework error sampling with deterministic thresholds.
+///
+/// Production never calls this; tests use it to isolate cases and exercise the
+/// count and elapsed-time boundaries without timers or wall-clock delays.
+@visibleForTesting
+void resetFrameworkErrorSuppressionForTesting({
+  int summaryEvery = _defaultFrameworkErrorSummaryEvery,
+  Duration summaryInterval = _defaultFrameworkErrorSummaryInterval,
+}) {
+  _frameworkErrorLimiter = _FrameworkErrorLimiter(
+    summaryEvery: summaryEvery,
+    summaryInterval: summaryInterval,
   );
+}
+
+enum _FrameworkErrorReportKind { full, summary, suppressed }
+
+class _FrameworkErrorReport {
+  const _FrameworkErrorReport({
+    required this.kind,
+    required this.fingerprint,
+    required this.errorType,
+    required this.observed,
+    required this.total,
+  });
+
+  final _FrameworkErrorReportKind kind;
+  final String fingerprint;
+  final String errorType;
+  final int observed;
+  final int total;
+}
+
+class _FrameworkErrorState {
+  _FrameworkErrorState(this.lastReportedAt);
+
+  DateTime lastReportedAt;
+  int total = 0;
+  int pending = 0;
+}
+
+class _FrameworkErrorLimiter {
+  _FrameworkErrorLimiter({
+    this.summaryEvery = _defaultFrameworkErrorSummaryEvery,
+    this.summaryInterval = _defaultFrameworkErrorSummaryInterval,
+  }) : assert(summaryEvery > 0, 'summaryEvery must be positive'),
+       assert(
+         summaryInterval > Duration.zero,
+         'summaryInterval must be positive',
+       );
+
+  final int summaryEvery;
+  final Duration summaryInterval;
+  final LinkedHashMap<String, _FrameworkErrorState> _states =
+      LinkedHashMap<String, _FrameworkErrorState>();
+
+  _FrameworkErrorReport observe(FlutterErrorDetails details) {
+    final now = clock.now();
+    final fingerprint = _fingerprint(details);
+    final errorType = details.exception.runtimeType.toString();
+    final state = _states.remove(fingerprint) ?? _FrameworkErrorState(now);
+    _states[fingerprint] = state;
+    while (_states.length > _frameworkErrorFingerprintCapacity) {
+      _states.remove(_states.keys.first);
+    }
+
+    state.total++;
+    if (state.total == 1) {
+      return _FrameworkErrorReport(
+        kind: _FrameworkErrorReportKind.full,
+        fingerprint: fingerprint,
+        errorType: errorType,
+        observed: 1,
+        total: 1,
+      );
+    }
+
+    state.pending++;
+    final elapsed = now.difference(state.lastReportedAt);
+    if (state.pending >= summaryEvery || elapsed >= summaryInterval) {
+      final observed = state.pending;
+      state
+        ..pending = 0
+        ..lastReportedAt = now;
+      return _FrameworkErrorReport(
+        kind: _FrameworkErrorReportKind.summary,
+        fingerprint: fingerprint,
+        errorType: errorType,
+        observed: observed,
+        total: state.total,
+      );
+    }
+
+    return _FrameworkErrorReport(
+      kind: _FrameworkErrorReportKind.suppressed,
+      fingerprint: fingerprint,
+      errorType: errorType,
+      observed: state.pending,
+      total: state.total,
+    );
+  }
+
+  String _fingerprint(FlutterErrorDetails details) {
+    final signature = jsonEncode(<String>[
+      details.exception.runtimeType.toString(),
+      details.exceptionAsString(),
+      details.library ?? '',
+      details.context?.toDescription() ?? '',
+      details.stack?.toString() ?? '',
+    ]);
+    return sha256.convert(utf8.encode(signature)).toString().substring(0, 16);
+  }
+}
+
+class _RepeatedFlutterFrameworkError {
+  const _RepeatedFlutterFrameworkError();
+
+  @override
+  String toString() => 'Repeated Flutter framework error';
 }
 
 /// Uncaught-zone error handler: always echoes to the console, then records a

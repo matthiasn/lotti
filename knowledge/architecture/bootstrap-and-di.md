@@ -11,7 +11,7 @@ sources:
   - id: main
     resource: ../../lib/main.dart
     title: main() entry point
-    last_modified: 2026-07-22
+    last_modified: 2026-08-01
   - id: get-it
     resource: ../../lib/get_it.dart
     title: registerSingletons()
@@ -93,6 +93,11 @@ Three details in that sequence are deliberate and easy to break:
   `getIt.isRegistered<DomainLogger>()`. An error thrown before the logger
   exists must surface as itself, not as a GetIt lookup failure inside the
   handler.
+- **The Flutter framework hook deduplicates identical diagnostics.** It keeps
+  the first full console and file stack, then replaces repeated copies with
+  periodic counted summaries. The fingerprint includes the complete stack, so
+  exceptions with similar messages at different call sites remain separately
+  diagnosable.
 
 # Registration order inside `registerSingletons()`
 

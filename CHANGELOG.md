@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0]
 ### Fixed
+- **A repeated interface failure no longer fills diagnostic storage with
+  thousands of identical stack traces.** Lotti keeps the first complete
+  framework error and then records bounded, counted summaries for repeats.
+  Errors from different call sites still retain their own full diagnostics.
 - **Weekly planning history from earlier builds opens and syncs again.** Some
   saved weekly rollups omitted their start-of-week date, making otherwise valid
   planning history unreadable. Lotti now restores the date from the rollup's

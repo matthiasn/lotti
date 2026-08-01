@@ -20,6 +20,10 @@ sources:
     resource: ../../lib/services/domain_logging.dart
     title: DomainLogger
     last_modified: 2026-05-31
+  - id: framework-errors
+    resource: ../../lib/main.dart
+    title: Flutter framework error handler
+    last_modified: 2026-08-01
 ---
 
 # A closed set of domains
@@ -95,6 +99,23 @@ device, not opening a screen.
 **Errors are always logged**, whether or not their domain is enabled. A user who
 has everything toggled off still produces a diagnosable record when something
 breaks; only the chatty success path is silenced.
+
+The global Flutter framework hook bounds one special amplification case before
+it reaches that always-on path. A SHA-256 fingerprint covers the exception type
+and text, library, context and stack. The first observation keeps Flutter's full
+console presentation and durable stack; identical repeats emit only a counted,
+stack-free summary every 100 observations or one minute. Distinct fingerprints
+remain independent, and an LRU cap of 256 signatures bounds the in-memory
+sampler itself. This preserves evidence of a rebuild loop without allowing one
+framework exception to generate an unbounded error file.
+
+The July 2026 amplification named `FlutterQuillLocalizations` as missing even
+though the ready `MyBeamerApp` already registers its delegate. A focused
+full-app regression now proves that routed content resolves the Quill messages
+and that the Quill delegate supports every app locale. The transient production
+trigger has not been reproduced from the retained logs, so no speculative
+widget workaround is applied; the framework-error limiter bounds any recurrence
+while the localization contract remains pinned.
 
 **`sync` is the one domain that routes to its own file.** It is off by default
 and far noisier than everything else — a catch-up can produce thousands of lines
