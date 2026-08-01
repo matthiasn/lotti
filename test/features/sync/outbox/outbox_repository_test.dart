@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
@@ -459,6 +460,64 @@ void main() {
       });
 
       test(
+        'markRetryBatch issues one batched statement set, not one per row',
+        () async {
+          // The point of the change: a failed bundle retries up to
+          // SyncTuning.outboxBundleMaxSize (50) rows, and the previous loop
+          // held sync.sqlite's single write lock across one update round trip
+          // per row. Counting statements is the only way to assert that — a
+          // behavioural test passes either way.
+          //
+          // Counted with a drift QueryInterceptor over its own connection, so
+          // no counter has to leak into production code.
+          final counter = _StatementCounter();
+          final countedDb = SyncDatabase.connect(
+            DatabaseConnection(NativeDatabase.memory().interceptWith(counter)),
+          );
+          addTearDown(countedDb.close);
+          final countedRepo = DatabaseOutboxRepository(
+            countedDb,
+            maxRetries: 2,
+          );
+
+          for (var i = 0; i < 12; i++) {
+            await countedDb.addOutboxItem(
+              OutboxCompanion(
+                status: Value(OutboxStatus.sending.index),
+                subject: const Value('s'),
+                message: const Value('{}'),
+                createdAt: Value(DateTime(2024)),
+                updatedAt: Value(DateTime(2024)),
+                retries: const Value(0),
+              ),
+            );
+          }
+          final items = await countedDb.getOutboxItems(
+            statuses: const [OutboxStatus.sending],
+          );
+          expect(items, hasLength(12));
+
+          counter.reset();
+          await countedRepo.markRetryBatch(items);
+
+          expect(
+            counter.updates,
+            lessThan(12),
+            reason:
+                'a batched update must not cost one statement per row; '
+                'got ${counter.updates} discrete updates for 12 rows',
+          );
+
+          // …and the rows must still be updated correctly.
+          final after = await countedDb.getOutboxItems(
+            statuses: const [OutboxStatus.pending],
+          );
+          expect(after, hasLength(12));
+          expect(after.every((r) => r.retries == 1), isTrue);
+        },
+      );
+
+      test(
         'pruneSentOutboxItems (non-chunked) deletes only sent rows older '
         'than the retention window',
         () async {
@@ -823,4 +882,38 @@ void main() {
       );
     });
   });
+}
+
+/// Counts discrete statements drift sends to the executor.
+///
+/// `runBatched` is one call carrying many argument sets, which is exactly the
+/// distinction `markRetryBatch` is asserted on: a per-row loop shows up as N
+/// `runUpdate` calls, a batch as a single `runBatched`.
+class _StatementCounter extends QueryInterceptor {
+  int updates = 0;
+  int batches = 0;
+
+  void reset() {
+    updates = 0;
+    batches = 0;
+  }
+
+  @override
+  Future<int> runUpdate(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    updates++;
+    return executor.runUpdate(statement, args);
+  }
+
+  @override
+  Future<void> runBatched(
+    QueryExecutor executor,
+    BatchedStatements statements,
+  ) {
+    batches++;
+    return executor.runBatched(statements);
+  }
 }
