@@ -12,6 +12,10 @@ sources:
     resource: ../../../lib/features/agents/database/agent_database.dart
     title: AgentDatabase
     last_modified: 2026-08-01
+  - id: repo-core
+    resource: ../../../lib/features/agents/database/agent_repo_core.dart
+    title: AgentRepoCore
+    last_modified: 2026-08-01
   - id: coalescer
     resource: ../../../lib/features/agents/database/agent_entity_by_id_coalescer.dart
     title: AgentEntityByIdCoalescer

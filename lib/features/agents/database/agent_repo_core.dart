@@ -102,8 +102,22 @@ class AgentRepoCore {
   /// All operations within the callback are committed atomically; if any
   /// operation throws, the entire transaction is rolled back. Drift supports
   /// nested transactions via savepoints.
-  Future<T> runInTransaction<T>(Future<T> Function() action) {
-    return _db.transaction(() => _markInTransaction(action));
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    try {
+      return await _db.transaction(() => _markInTransaction(action));
+    } finally {
+      // Invalidate once the transaction has actually committed, not just when
+      // the write inside it returned. An identity write nested in a caller's
+      // transaction invalidates while still uncommitted, and a concurrent
+      // reader — in a different zone, so not suppressed — can repopulate the
+      // cache from the pre-commit snapshot before the commit lands. Nothing
+      // would invalidate again, so that stale list would be served until the
+      // next identity write.
+      //
+      // Unconditional rather than tracked: a needless invalidation costs one
+      // cache miss, and getting the tracking wrong costs correctness.
+      invalidateAgentIdentitiesCache();
+    }
   }
 
   /// Runs [action] with the in-transaction zone marker set, so
@@ -157,6 +171,9 @@ class AgentRepoCore {
     try {
       await _writeEntity(entity);
     } finally {
+      // The write's own transaction (if any) has committed by here. When this
+      // upsert is itself nested in a caller's transaction, that outer one
+      // invalidates again on commit — see [runInTransaction].
       if (isIdentity) invalidateAgentIdentitiesCache();
     }
   }
