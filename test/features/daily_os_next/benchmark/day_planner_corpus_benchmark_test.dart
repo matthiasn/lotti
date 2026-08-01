@@ -2,7 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/service/agent_retention_policy.dart';
 import 'package:lotti/features/agents/service/agent_retention_service.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -259,7 +258,7 @@ void main() {
   });
 
   test(
-    'retention holds the store flat as history accumulates',
+    'retention holds the swept types flat as history accumulates',
     () async {
       final sixMonths = await _sweptCountsByType(
         dayPlannerBenchmarkCorpora['6 months']!,
@@ -284,22 +283,17 @@ void main() {
         greaterThan(sixMonths['day_capture']!),
       );
 
-      // ... while every retention-eligible type is pinned to its policy and
-      // reads the same at twelve months as at six.
-      const policy = AgentRetentionPolicy();
-      final retainedDays = policy.observations.inDays;
-      for (final type in ['agentMessage', 'agentMessagePayload']) {
-        expect(
-          twelveMonths[type],
-          retainedDays * DayPlannerCorpus.observationsPerDay,
-          reason:
-              'Observations live under a fresh day_agent identity per day, so '
-              'the per-agent cap never binds — the age ceiling is what holds '
-              'the total flat. Payloads must fall with their messages or '
-              'retention grows the store.',
-        );
-        expect(twelveMonths[type], sixMonths[type]);
-      }
+      // ... while what retention DOES sweep reads the same at twelve months
+      // as at six. Observations are deliberately excluded for now (they sit
+      // inside the message DAG, see AgentRetentionPolicy), so they still grow
+      // — asserted here so the exclusion is visible rather than assumed.
+      expect(
+        twelveMonths['agentMessage'],
+        greaterThan(sixMonths['agentMessage']!),
+        reason:
+            'Not yet bounded. When the observation sweep lands this assertion '
+            'inverts, which is the point of stating it.',
+      );
       expect(
         twelveMonths['day_status_event'],
         sixMonths['day_status_event'],

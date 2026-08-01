@@ -76,15 +76,18 @@ void main() {
   });
 
   group('what is bounded', () {
-    test('an observation is bounded by both a count and an age', () {
+    test('an observation is classified but not yet swept', () {
       final observation = makeTestMessage(kind: AgentMessageKind.observation);
 
       expect(policy.classify(observation), AgentRetentionClass.observation);
-      expect(policy.horizonFor(observation), policy.observations);
       expect(
-        policy.observationsPerAgent,
-        greaterThan(40),
-        reason: 'A wake reads at most 40; the cap must clear every read.',
+        policy.horizonFor(observation),
+        isNull,
+        reason:
+            'Observations sit inside the message DAG — message_prev edges, '
+            'agent-state heads, and content-addressed payloads shared by '
+            'link. Until the sweep answers for all of those, dropping them '
+            'on ingest would delete rows this device never prunes locally.',
       );
     });
 
@@ -362,6 +365,5 @@ void main() {
     // slack. If a horizon ever drops below the read window it protects, the
     // read silently starts returning less than it asks for.
     expect(policy.dayStatusEvents, greaterThan(const Duration(days: 3)));
-    expect(policy.observations, greaterThan(policy.dayStatusEvents));
   });
 }

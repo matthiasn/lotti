@@ -6,16 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0]
 ### Changed
-- **The agent store stops growing forever.** The planner writes notes to itself
-  on every run, and those, along with the day-status events behind them, were
-  kept indefinitely — a database, sync payload and backup that got bigger every
-  month you used the app, with nothing ever reclaimed. The app now forgets that
-  working residue on a published schedule: notes are kept for four months and
-  capped at the most recent 200 per assistant, day-status events for ninety
-  days. **Nothing you wrote is ever affected** — check-ins, plans, day
-  summaries, directives, saved knowledge, reports and personalities are kept for
-  good, as are weekly totals, your run history and ratings, and the record
-  behind every suggestion you accepted or rejected. Tidying runs in the
+- **The agent store starts reclaiming space.** Day-status events — the running
+  record of how each day was going — were kept indefinitely, so the database,
+  sync payload and backup grew every month with nothing ever released. They are
+  now kept for ninety days. **Nothing you wrote is ever affected**: check-ins,
+  plans, day summaries, directives, saved knowledge, reports and personalities
+  are kept for good, as are weekly totals, your run history and ratings, and the
+  record behind every suggestion you accepted or rejected. Tidying runs in the
   background after start-up and can be interrupted safely.
 
 ## [1.0.1]

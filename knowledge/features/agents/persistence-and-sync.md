@@ -286,10 +286,9 @@ persistence model.
 # Retention: what the store may forget
 
 Bounding *reads* stopped per-action cost from growing with install age; it did
-nothing about the rows. The coordinator is long-lived and writes observations on
-every wake, forever, so the store grew without limit — felt as database size,
-sync payload, backup size and whole-table maintenance long before any indexed
-query got slow.
+nothing about the rows. The coordinator is long-lived and writes on every wake,
+forever, so the store grew without limit — felt as database size, sync payload,
+backup size and whole-table maintenance long before any indexed query got slow.
 
 `AgentRetentionPolicy` splits the store by **who authored the row**, and the
 split is a declaration in code rather than a shape that falls out of a sweep's
@@ -299,11 +298,11 @@ SQL, so a new entity type forces a decision instead of silently inheriting one.
 |-----|------|-----|
 | Captures, plans, summaries, directives, knowledge, reports, souls | Forever | The user's own material |
 | `weekRollup` | Forever | ~52 rows/year, and the digest's only month-scale trend source |
-| `wakeTokenUsage` | Forever | Aggregated over **all time** by the template page; pruning would silently rewrite a number the user can read. Monthly compaction is the way to bound it |
+| `wakeTokenUsage` | Forever | Aggregated over **all time** by the template page; pruning would silently rewrite a number the user can read |
+| `wake_run_log` | Forever | `getLifetimeWakeCount` aggregates the whole table for a figure the evolution UI displays, and the rows carry the user's `user_rating` |
 | Change sets, decisions, attention claims | Forever | Audit trail behind proposals the user accepted or rejected |
 | `saga_log` | n/a | No writer exists yet; it earns a policy when it earns a writer |
-| `wake_run_log` | Forever | `getLifetimeWakeCount` aggregates the whole table for a figure the evolution UI displays, and the rows carry the user's own `user_rating`. Pruning would make a visible lifetime number go *down* and erase human feedback |
-| Observations (`agentMessage` + payload + link) | Newest **200 per agent** AND **120 days** | See below — neither bound suffices alone |
+| Observations | **Classified, not yet swept** | See below |
 | `dayStatusEvent` | **90 days** | The digest reads from its watermark plus 12h slack — months of headroom |
 
 **The classification is exhaustive over the entity union.** `classify` is a
@@ -312,30 +311,23 @@ is a compile error until someone decides what retention does with it. A wildcard
 would have let a new machine-derived row accumulate forever with neither a test
 nor a compiler failure to say so.
 
-## Observations need two bounds, not one
+## Why observations are classified but not swept
 
-A per-agent count is the natural bound for the long-lived coordinator, and it is
-useless against the shape Daily OS actually writes: observations go under a
-fresh `day_agent:<dayId>` identity every day, and each of those goes cold
-permanently. A per-agent quota therefore admits *one more agent, with a full
-allowance of its own, every day forever* — the total still grows without limit
-while every individual agent stays inside its cap.
+They are the fastest-growing derived type and the obvious target — and they sit
+inside the agent's causal message DAG, which is where a naive sweep does damage:
 
-So the count bounds the coordinator's recency and the age ceiling reaps the
-accumulating per-day identities. The benchmark gate seeds observations under
-per-day identities precisely so it measures that axis rather than hiding it.
+| Entanglement | What a plain delete breaks |
+|---|---|
+| `message_prev` edges | Deleting a mid-chain observation cuts the chain in two. `ForkHealer` treats every unreferenced fragment tip as a head, so the next wake mistakes a retention cut for a real multi-device fork and persists a join |
+| `AgentStateEntity.recentHeadMessageId` | A head pointing at a deleted message is trusted on the next append, creating a permanent dangling parent |
+| `agentMessagePayload` | Payloads written by `AgentInputCaptureService` are **user content**, content-addressed under `sharedContentAgentId` and referenced by `messagePayload` **links** — not by any message's `contentEntryId`. An ownership check based on `contentEntryId` reads them as orphans and deletes them |
+| Replayed links | A peer can re-sync a `message_prev` edge for an observation this device pruned, so the link table repopulates from outside |
 
-**Observations are three rows, not one.** Each is a message, an
-`agentMessagePayload` carrying its text (the larger of the two), and a
-`message_prev` link into the causal chain. The sweep removes all three in one
-transaction, payload first: a crash between the statements must not leave a
-message whose text is gone (which would render as "(no content)"), whereas the
-other order only leaves an orphan the next sweep collects. Leaving the links
-would keep `agent_links` growing exactly as `agent_entities` stopped, and leave
-the fork projection walking edges whose ends no longer exist.
-
-Nothing walks `prevMessageId` — reads are all `(agentId, type, subtype,
-created_at DESC)` — so pruning the middle of the chain breaks no read.
+Each has an answer; together they are a subsystem's worth of invariants rather
+than another `DELETE`, so observations keep their classification — recording the
+intent — while the sweep that honours it lands separately. `horizonFor` returns
+null for them meanwhile: dropping them on ingest while never pruning locally
+would be divergence for no gain.
 
 ## Hard delete, no tombstone
 
@@ -358,19 +350,9 @@ already past the local horizon instead of materializing it — otherwise every
 reconnect would hand the next sweep the same work again. The sequence receipt is
 still recorded, so no backfill is triggered for the dropped row.
 
-Age is the only bound the ingest guard can apply: a count is a property of the
-store as a whole, which a single inbound row cannot be judged against. An
-observation that arrives after the start-up sweep and is inside the age horizon
-is therefore materialized, and the count is re-imposed on the next start.
-
-**A payload syncs as an entity in its own right**, so a peer replaying an
-expired observation delivers the message and its payload as two separate sync
-messages. The guard drops the expired message; the payload carries no timestamp
-relationship the receiver can evaluate and lands on its own — and the sweep
-would never find it again, because it reaches payloads through their owning
-message's `contentEntryId`. A separate pass therefore collects payloads past the
-observation horizon that no message owns. A *recent* orphan is left alone:
-sync routinely delivers a payload before its message.
+A row sitting exactly on the boundary may survive a few hours longer on one
+device than another. For observational data that is invisible, and it converges
+as time passes.
 
 **The outbox's JSON sidecars are not reclaimed.** Every synced entity is also
 written to `/agent_entities/<id>.json`, and nothing in the app has ever deleted
@@ -378,17 +360,7 @@ those — not retention, not `hardDeleteAgent`, not a tombstone. Retention bound
 the database; the sidecar lifecycle is a separate, pre-existing gap that has to
 be settled against the sequence/backfill contract before files can be removed.
 
-A row sitting exactly on the boundary may survive a few hours longer on one
-device than another. For observational data that is invisible, and it converges
-as time passes.
-
 ## Bounded, and safe to interrupt
-
-Deletes are chunked below SQLite's 999-parameter cap. A full batch is already
-two ids per observation, and the link predicate binds its list twice, so an
-unchunked statement would throw, roll back the transaction, and leave every
-start-up retrying the same batch — retention that never progresses, which is
-worse than none.
 
 The sweep rides the once-per-start agent init — last, and **not awaited**, so
 housekeeping never sits between the user and a ready app. Each type is capped at
@@ -399,13 +371,12 @@ and a pass that runs twice removes nothing the second time.
 **Day-agent identities are deliberately left to accumulate** (~one per day of
 use). Each is tiny and permanently cold, and merging or archiving them would
 cost the property that makes them worth having — a day's history stays
-addressable by its own id forever. What scales with their count is enumeration
-and sync footprint, and both are bounded by per-agent reads rather than by
-walking the set.
+addressable by its own id forever.
 
-The aged-corpus benchmark gates this: at six and twelve simulated months, every
-retention-eligible type reads the *same* count after a sweep while day plans and
-captures keep growing.
+The aged-corpus benchmark gates this: at six and twelve simulated months the
+swept type reads the same count after a sweep while day plans and captures keep
+growing — and observations are asserted to still grow, so their exclusion is
+visible rather than assumed.
 
 # Diagnostics are content-free
 

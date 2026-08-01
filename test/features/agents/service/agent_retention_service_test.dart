@@ -33,21 +33,6 @@ void main() {
       ),
     ).thenReturn(null);
     when(
-      () => repository.pruneObservations(
-        keepPerAgent: any(named: 'keepPerAgent'),
-        cutoff: any(named: 'cutoff'),
-        batchSize: any(named: 'batchSize'),
-        maxBatches: any(named: 'maxBatches'),
-      ),
-    ).thenAnswer((_) async => 0);
-    when(
-      () => repository.pruneOrphanedPayloadsBefore(
-        any(),
-        batchSize: any(named: 'batchSize'),
-        maxBatches: any(named: 'maxBatches'),
-      ),
-    ).thenAnswer((_) async => 0);
-    when(
       () => repository.pruneDayStatusEventsBefore(
         any(),
         batchSize: any(named: 'batchSize'),
@@ -65,21 +50,6 @@ void main() {
 
     const policy = AgentRetentionPolicy();
     verify(
-      () => repository.pruneObservations(
-        keepPerAgent: policy.observationsPerAgent,
-        cutoff: now.subtract(policy.observations),
-        batchSize: policy.batchSize,
-        maxBatches: policy.maxBatchesPerSweep,
-      ),
-    ).called(1);
-    verify(
-      () => repository.pruneOrphanedPayloadsBefore(
-        now.subtract(policy.observations),
-        batchSize: policy.batchSize,
-        maxBatches: policy.maxBatchesPerSweep,
-      ),
-    ).called(1);
-    verify(
       () => repository.pruneDayStatusEventsBefore(
         now.subtract(policy.dayStatusEvents),
         batchSize: policy.batchSize,
@@ -90,14 +60,6 @@ void main() {
 
   test('reports what each source removed', () async {
     when(
-      () => repository.pruneObservations(
-        keepPerAgent: any(named: 'keepPerAgent'),
-        cutoff: any(named: 'cutoff'),
-        batchSize: any(named: 'batchSize'),
-        maxBatches: any(named: 'maxBatches'),
-      ),
-    ).thenAnswer((_) async => 7);
-    when(
       () => repository.pruneDayStatusEventsBefore(
         any(),
         batchSize: any(named: 'batchSize'),
@@ -107,48 +69,35 @@ void main() {
 
     final result = await withClock(Clock.fixed(now), service.sweep);
 
-    expect(result.observations, 7);
     expect(result.dayStatusEvents, 3);
-    expect(result.total, 10);
+    expect(result.total, 3);
   });
 
-  test('a failing source keeps what the earlier ones already removed', () async {
-    when(
-      () => repository.pruneObservations(
-        keepPerAgent: any(named: 'keepPerAgent'),
-        cutoff: any(named: 'cutoff'),
-        batchSize: any(named: 'batchSize'),
-        maxBatches: any(named: 'maxBatches'),
-      ),
-    ).thenAnswer((_) async => 5);
-    when(
-      () => repository.pruneDayStatusEventsBefore(
-        any(),
-        batchSize: any(named: 'batchSize'),
-        maxBatches: any(named: 'maxBatches'),
-      ),
-    ).thenThrow(StateError('database locked'));
+  test(
+    'a failing source keeps what the earlier ones already removed',
+    () async {
+      when(
+        () => repository.pruneDayStatusEventsBefore(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          maxBatches: any(named: 'maxBatches'),
+        ),
+      ).thenThrow(StateError('database locked'));
 
-    final result = await withClock(Clock.fixed(now), service.sweep);
+      final result = await withClock(Clock.fixed(now), service.sweep);
 
-    expect(
-      result.observations,
-      5,
-      reason:
-          'Those rows are gone whatever happens next — the result must say so '
-          'rather than reporting a clean zero.',
-    );
-    expect(result.dayStatusEvents, 0);
-    verify(
-      () => domainLogger.error(
-        any(),
-        any(),
-        message: any(named: 'message'),
-        stackTrace: any(named: 'stackTrace'),
-        subDomain: any(named: 'subDomain'),
-      ),
-    ).called(1);
-  });
+      expect(result.dayStatusEvents, 0);
+      verify(
+        () => domainLogger.error(
+          any(),
+          any(),
+          message: any(named: 'message'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    },
+  );
 
   test('an empty sweep logs nothing', () async {
     await withClock(Clock.fixed(now), service.sweep);

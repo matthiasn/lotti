@@ -14,7 +14,15 @@ enum AgentRetentionClass {
   /// Derived and bounded by age.
   ageBounded,
 
-  /// Derived and bounded by a per-agent count *and* an age ceiling.
+  /// Derived, and *intended* to be bounded — but not yet swept.
+  ///
+  /// Observations sit inside the agent's causal message DAG: `message_prev`
+  /// edges, agent-state heads, and content-addressed payloads shared through
+  /// `messagePayload` links (which are user content, and referenced by link
+  /// rather than by `contentEntryId`). Deleting one safely means answering
+  /// what happens to each of those. That is a subsystem's worth of invariants
+  /// and gets its own change; classifying them here records the intent without
+  /// pretending the sweep exists.
   observation,
 }
 
@@ -33,8 +41,6 @@ enum AgentRetentionClass {
 class AgentRetentionPolicy {
   const AgentRetentionPolicy({
     this.dayStatusEvents = const Duration(days: 90),
-    this.observations = const Duration(days: 120),
-    this.observationsPerAgent = 200,
     this.batchSize = 500,
     this.maxBatchesPerSweep = 20,
   });
@@ -44,23 +50,6 @@ class AgentRetentionPolicy {
   /// The digest reads them from its watermark (plus 12h sync-lag slack), so a
   /// window measured in months is far beyond any read that exists.
   final Duration dayStatusEvents;
-
-  /// Age ceiling on observations, applied **in addition to**
-  /// [observationsPerAgent].
-  ///
-  /// The count alone does not bound the store. Daily OS writes observations
-  /// under a fresh `day_agent:<dayId>` identity every day, and each of those
-  /// goes cold permanently — so a per-agent cap would let one more agent, with
-  /// up to [observationsPerAgent] rows of its own, appear every day forever.
-  /// The count bounds the long-lived coordinator's recency; the age bounds the
-  /// accumulating per-day identities. Neither does both.
-  final Duration observations;
-
-  /// Observations retained per agent, newest first.
-  ///
-  /// The prompt replays at most 20 and the wake reads at most 40, so this
-  /// leaves an order of magnitude of headroom over any read.
-  final int observationsPerAgent;
 
   /// Rows deleted per statement. Each batch commits on its own.
   final int batchSize;
@@ -128,11 +117,17 @@ class AgentRetentionPolicy {
     agentMessagePayload: (_) => AgentRetentionClass.keptDerived,
   );
 
-  /// The age horizon for [entity], or null when age is not what bounds it.
+  /// The age horizon for [entity], or null when nothing bounds it by age
+  /// today.
+  ///
+  /// `observation` yields null deliberately: until the sweep exists, dropping
+  /// inbound observations at the horizon would delete rows this device never
+  /// prunes locally, which is divergence for no gain.
   Duration? horizonFor(AgentDomainEntity entity) => switch (classify(entity)) {
     AgentRetentionClass.ageBounded => dayStatusEvents,
-    AgentRetentionClass.observation => observations,
-    AgentRetentionClass.userAuthored || AgentRetentionClass.keptDerived => null,
+    AgentRetentionClass.observation ||
+    AgentRetentionClass.userAuthored ||
+    AgentRetentionClass.keptDerived => null,
   };
 
   /// Whether an inbound synced [entity] is already past this device's horizon,

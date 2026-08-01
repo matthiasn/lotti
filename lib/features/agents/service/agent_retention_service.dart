@@ -5,22 +5,14 @@ import 'package:lotti/services/domain_logging.dart';
 
 /// Outcome of one retention sweep, per source.
 class AgentRetentionResult {
-  const AgentRetentionResult({
-    this.observations = 0,
-    this.orphanedPayloads = 0,
-    this.dayStatusEvents = 0,
-  });
+  const AgentRetentionResult({this.dayStatusEvents = 0});
 
-  final int observations;
-  final int orphanedPayloads;
   final int dayStatusEvents;
 
-  int get total => observations + orphanedPayloads + dayStatusEvents;
+  int get total => dayStatusEvents;
 
   @override
-  String toString() =>
-      'observations=$observations orphanedPayloads=$orphanedPayloads '
-      'dayStatusEvents=$dayStatusEvents';
+  String toString() => 'dayStatusEvents=$dayStatusEvents';
 }
 
 /// Forgets the derived rows the agent store no longer needs.
@@ -57,36 +49,12 @@ class AgentRetentionService {
     final now = clock.now();
     var result = const AgentRetentionResult();
     try {
-      final observations = await repository.pruneObservations(
-        keepPerAgent: policy.observationsPerAgent,
-        cutoff: now.subtract(policy.observations),
-        batchSize: policy.batchSize,
-        maxBatches: policy.maxBatchesPerSweep,
-      );
-      result = AgentRetentionResult(observations: observations);
-
-      // After the observation sweep, so a payload whose message this pass just
-      // removed is already unowned and collected in the same run.
-      final orphanedPayloads = await repository.pruneOrphanedPayloadsBefore(
-        now.subtract(policy.observations),
-        batchSize: policy.batchSize,
-        maxBatches: policy.maxBatchesPerSweep,
-      );
-      result = AgentRetentionResult(
-        observations: observations,
-        orphanedPayloads: orphanedPayloads,
-      );
-
       final dayStatusEvents = await repository.pruneDayStatusEventsBefore(
         now.subtract(policy.dayStatusEvents),
         batchSize: policy.batchSize,
         maxBatches: policy.maxBatchesPerSweep,
       );
-      result = AgentRetentionResult(
-        observations: observations,
-        orphanedPayloads: orphanedPayloads,
-        dayStatusEvents: dayStatusEvents,
-      );
+      result = AgentRetentionResult(dayStatusEvents: dayStatusEvents);
     } catch (e, s) {
       domainLogger.error(
         LogDomain.agentRuntime,

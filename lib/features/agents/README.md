@@ -68,32 +68,24 @@ lib/features/agents/
 Agents write two kinds of row into the same store. **The user's own material** —
 captures, day plans, day summaries, directives, durable knowledge, reports and
 personalities — is never deleted by age or volume, however old it gets. **The
-machine's working residue** — the observations an agent writes about itself, the
-status events it raises, the wake-run log — is bounded, because the coordinator
-is long-lived and writes on every wake, forever. Unbounded growth is felt as
-database size, sync payload, backup size and slower maintenance long before any
-individual query gets slow.
+machine's working residue** — the status events it raises, the observations it
+writes about itself — is what retention exists to bound, because the coordinator
+is long-lived and writes on every wake, forever.
 
 | Row | Kept |
 |-----|------|
 | Captures, plans, summaries, directives, knowledge, reports, souls | Forever |
 | Weekly rollups | Forever — ~52 rows a year, and the digest's only trend source |
-| Per-wake token usage | Forever — the template page totals it over all time; compacting it into monthly aggregates is the way to bound it, not deletion |
+| Per-wake token usage | Forever — the template page totals it over all time |
 | Wake-run history | Forever — it carries lifetime counts the app displays and the ratings the user gave |
 | Proposal audit trail (change sets, decisions, attention claims) | Forever |
-| Observations | Newest 200 per agent **and** 120 days |
 | Day-status events | 90 days |
 
-Observations need both bounds. The count alone would not hold: a fresh
-`day_agent` identity is created every day and goes cold permanently, so a
-per-agent quota lets one more agent, with a full allowance of its own, appear
-every day forever. The count bounds the long-lived planner's recency; the age
-reaps the accumulating per-day identities.
-
-The sweep runs once per start, off the path to a ready app, in bounded batches.
-It is safe to interrupt: the policy is a pure function of the store's contents,
-so a pass cut short leaves rows for next time and a pass that runs twice removes
-nothing the second time.
+**Observations are classified as bounded but are not swept yet.** They sit
+inside the agent's causal message graph — the links between messages, the
+pointer to each agent's latest one, and shared content payloads referenced by
+link rather than by the message itself. Removing one safely means answering what
+happens to each of those, which is its own change rather than another delete.
 
 What may be forgotten is decided by a classification that is **exhaustive over
 the entity model**, so a new kind of row does not compile until someone says
@@ -104,18 +96,20 @@ accumulating with no test and no compiler failure.
 row would grow the sync payload in the exact dimension retention exists to
 shrink, and there is nothing to converge on — every device applies the same rule
 to the same synced rows and reaches the same conclusion independently. A device
-that has been offline past the window therefore comes back carrying rows the
-others already forgot; those are dropped on arrival rather than re-materialized,
-so reconnecting does not hand the next sweep the same work again. A row sitting
-exactly on the boundary may survive a few hours longer on one device than
-another, which for observational data is invisible.
+that has been offline past the window comes back carrying rows the others
+already forgot; those are dropped on arrival rather than re-materialized. A row
+sitting exactly on the boundary may survive a few hours longer on one device
+than another, which for observational data is invisible.
+
+The sweep runs once per start, off the path to a ready app, in bounded batches.
+It is safe to interrupt: the policy is a pure function of the store's contents,
+so a pass cut short leaves rows for next time and a pass that runs twice removes
+nothing the second time.
 
 **Day-agent identities are deliberately left to accumulate** — roughly one per
 day of use. Each is tiny and permanently cold, and merging or archiving them
 would cost the property that makes them worth having: a day's history stays
-addressable by its own id forever. What scales with their count is enumeration
-and sync footprint, and both are already bounded by per-agent reads rather than
-by walking the set.
+addressable by its own id forever.
 
 ## How it works
 

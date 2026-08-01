@@ -683,32 +683,6 @@ class AgentRepository {
 
   // ── Retention ───────────────────────────────────────────────────────────
 
-  /// Deletes observations past the newest [keepPerAgent] per agent or older
-  /// than [cutoff], with their payload rows and links. See
-  /// [AgentRepoRetention].
-  Future<int> pruneObservations({
-    required int keepPerAgent,
-    required DateTime cutoff,
-    required int batchSize,
-    required int maxBatches,
-  }) => _retention.pruneObservations(
-    keepPerAgent: keepPerAgent,
-    cutoff: cutoff,
-    batchSize: batchSize,
-    maxBatches: maxBatches,
-  );
-
-  /// Deletes message payloads older than [cutoff] that no message owns.
-  Future<int> pruneOrphanedPayloadsBefore(
-    DateTime cutoff, {
-    required int batchSize,
-    required int maxBatches,
-  }) => _retention.pruneOrphanedPayloadsBefore(
-    cutoff,
-    batchSize: batchSize,
-    maxBatches: maxBatches,
-  );
-
   /// Deletes day-status events created before [cutoff].
   Future<int> pruneDayStatusEventsBefore(
     DateTime cutoff, {
