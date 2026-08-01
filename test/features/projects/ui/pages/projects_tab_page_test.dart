@@ -865,7 +865,8 @@ void main() {
         // the query itself.
         await tester.enterText(find.byType(TextField), 'migration');
         await tester.pump();
-        container.read(projectsFilterControllerProvider.notifier).clear();
+        container.read(projectsFilterControllerProvider.notifier).filter =
+            const ProjectsFilter();
         expect(
           container.read(projectsFilterControllerProvider).textQuery,
           isEmpty,

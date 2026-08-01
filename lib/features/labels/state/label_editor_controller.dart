@@ -133,11 +133,6 @@ class LabelEditorController extends Notifier<LabelEditorState> {
     );
   }
 
-  /// The current [LabelEditorState.colorHex] parsed into a [Color], falling
-  /// back to blue when the hex is unparseable.
-  Color get selectedColor =>
-      colorFromCssHex(state.colorHex, substitute: Colors.blue);
-
   void setName(String value) {
     final trimmed = value.trim();
     final updated = state.copyWith(
@@ -181,16 +176,6 @@ class LabelEditorController extends Notifier<LabelEditorState> {
     );
     state = updated.copyWith(
       hasChanges: _hasChanges(isPrivate: isPrivateValue),
-    );
-  }
-
-  void addCategoryId(String id) {
-    if (id.isEmpty) return;
-    final next = {...state.selectedCategoryIds}..add(id);
-    state = state.copyWith(
-      selectedCategoryIds: next,
-      hasChanges: _hasChanges(selectedCategoryIds: next),
-      errorMessage: null,
     );
   }
 
@@ -325,12 +310,6 @@ class LabelEditorController extends Notifier<LabelEditorState> {
       );
       return null;
     }
-  }
-
-  /// Discards in-progress edits, restoring the form to the last saved baseline
-  /// (the original label, or a blank create form if none exists yet).
-  void resetToInitial() {
-    state = LabelEditorState.initial(label: _initialLabel);
   }
 }
 

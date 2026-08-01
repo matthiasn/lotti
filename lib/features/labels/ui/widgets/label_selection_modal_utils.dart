@@ -46,7 +46,6 @@ class LabelSelectionModalUtils {
         stickyActionBarBuilder: (_) =>
             _LabelApplyFooter(staged: staged, entryId: entryId),
         builder: (_) => _LabelPickerBody(
-          entryId: entryId,
           initialLabelIds: initialLabelIds,
           categoryId: categoryId,
           staged: staged,
@@ -60,13 +59,11 @@ class LabelSelectionModalUtils {
 
 class _LabelPickerBody extends ConsumerWidget {
   const _LabelPickerBody({
-    required this.entryId,
     required this.initialLabelIds,
     required this.categoryId,
     required this.staged,
   });
 
-  final String entryId;
   final List<String> initialLabelIds;
   final String? categoryId;
   final ValueNotifier<Set<String>> staged;

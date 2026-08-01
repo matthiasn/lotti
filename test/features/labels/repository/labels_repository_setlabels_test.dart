@@ -202,10 +202,10 @@ void main() {
         ).thenAnswer((_) async => true);
         // Also handle calls without named args
         when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => true);
+        when(() => mockCache.getLabelById('a')).thenReturn(def('a'));
 
-        // addLabels/removeLabel/setLabels: all should call updateDbEntity without named args
+        // Both assignment write paths call updateDbEntity without named args.
         await repo.addLabels(journalEntityId: 'img1', addedLabelIds: ['a']);
-        await repo.removeLabel(journalEntityId: 'img1', labelId: 'a');
         await repo.setLabels(journalEntityId: 'img1', labelIds: const ['a']);
         verify(() => mockPl.updateDbEntity(any())).called(2);
       },
@@ -224,10 +224,6 @@ void main() {
 
       expect(
         await repo.addLabels(journalEntityId: 'bad', addedLabelIds: ['x']),
-        isFalse,
-      );
-      expect(
-        await repo.removeLabel(journalEntityId: 'bad', labelId: 'x'),
         isFalse,
       );
       expect(

@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/notification_entity.dart';
-import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/services/notification_service.dart';
 
 class NotificationScheduler {
@@ -11,11 +10,9 @@ class NotificationScheduler {
   /// startup just to wire up the scheduler, so sandboxed builds (e.g. flatpak)
   /// where the plugin may fail to register stay startable.
   NotificationScheduler({
-    required this._notificationsDb,
     required this._notificationServiceProvider,
   });
 
-  final NotificationsDb _notificationsDb;
   final NotificationService Function() _notificationServiceProvider;
 
   NotificationService get _notificationService =>
@@ -67,23 +64,6 @@ class NotificationScheduler {
       showOnDesktop: true,
       deepLink: _deepLinkFor(entity),
     );
-  }
-
-  Future<void> cancel(String id) {
-    return _notificationService.cancelNotification(notificationIdFor(id));
-  }
-
-  Future<void> reconcile({DateTime? now}) async {
-    final effectiveNow = now ?? DateTime.now();
-    final due = await _notificationsDb.dueNow(effectiveNow);
-    final upcoming = await _notificationsDb.upcoming(effectiveNow);
-
-    for (final entity in due) {
-      await schedule(entity, now: effectiveNow);
-    }
-    for (final entity in upcoming) {
-      await schedule(entity, now: effectiveNow);
-    }
   }
 
   String? _deepLinkFor(NotificationEntity entity) {

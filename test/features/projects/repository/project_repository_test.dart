@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -326,12 +325,14 @@ void main() {
         stream,
         emitsInOrder([
           isA<ProjectsOverviewSnapshot>().having(
-            (snapshot) => snapshot.totalProjectCount,
+            (snapshot) =>
+                snapshot.groups.expand((group) => group.projects).length,
             'initial project count',
             1,
           ),
           isA<ProjectsOverviewSnapshot>().having(
-            (snapshot) => snapshot.totalProjectCount,
+            (snapshot) =>
+                snapshot.groups.expand((group) => group.projects).length,
             'updated project count',
             2,
           ),
@@ -1806,97 +1807,6 @@ void main() {
         'project-uncat',
       );
     });
-  });
-
-  group('debugProjectsOverviewNeedsRefresh — Glados properties', () {
-    ProjectsOverviewSnapshot snapshotWith({
-      required List<String> projectIds,
-      required String categoryId,
-    }) {
-      return ProjectsOverviewSnapshot(
-        groups: [
-          ProjectCategoryGroup(
-            categoryId: categoryId,
-            category: workCategory,
-            projects: [
-              for (final id in projectIds)
-                ProjectListItemData(
-                  project: makeTestProject(
-                    id: id,
-                    title: id,
-                    categoryId: categoryId,
-                  ),
-                  category: workCategory,
-                  taskRollup: const ProjectTaskRollupData(),
-                ),
-            ],
-          ),
-        ],
-      );
-    }
-
-    glados.Glados<int>(
-      glados.IntAnys(glados.any).intInRange(0, 1 << 12),
-      glados.ExploreConfig(numRuns: 150),
-    ).test(
-      'broad tokens always refresh; snapshot members (bare or prefixed) '
-      'refresh; unknown ids never refresh',
-      (seed) {
-        final snapshot = snapshotWith(
-          projectIds: ['proj-$seed', 'proj-x$seed'],
-          categoryId: 'cat-$seed',
-        );
-
-        // Any broad token alone triggers a refresh.
-        for (final token in [
-          projectNotification,
-          taskNotification,
-          categoriesNotification,
-          privateToggleNotification,
-        ]) {
-          expect(
-            repository.debugProjectsOverviewNeedsRefresh({token}, snapshot),
-            isTrue,
-            reason: token,
-          );
-        }
-
-        // A member project id refreshes — bare and prefix-wrapped agree.
-        expect(
-          repository.debugProjectsOverviewNeedsRefresh(
-            {'proj-$seed'},
-            snapshot,
-          ),
-          isTrue,
-        );
-        expect(
-          repository.debugProjectsOverviewNeedsRefresh(
-            {projectEntityUpdateNotification('proj-$seed')},
-            snapshot,
-          ),
-          isTrue,
-        );
-
-        // The snapshot's category id refreshes too.
-        expect(
-          repository.debugProjectsOverviewNeedsRefresh(
-            {'cat-$seed'},
-            snapshot,
-          ),
-          isTrue,
-        );
-
-        // Unrecognised ids never refresh.
-        expect(
-          repository.debugProjectsOverviewNeedsRefresh(
-            {'unrelated-$seed', projectEntityUpdateNotification('nope-$seed')},
-            snapshot,
-          ),
-          isFalse,
-        );
-      },
-      tags: 'glados',
-    );
   });
 
   group('resolveAffectedProjectIds — properties', () {

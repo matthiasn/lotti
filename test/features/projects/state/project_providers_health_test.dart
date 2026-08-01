@@ -105,7 +105,7 @@ void main() {
 
         final result = await container.read(projectsOverviewProvider.future);
 
-        expect(result.totalProjectCount, 2);
+        expect(result.groups.expand((group) => group.projects), hasLength(2));
         expect(
           result.groups.first.projects.first.project.data.title,
           'Device Sync',
@@ -205,10 +205,8 @@ void main() {
     test('visibleProjectGroupsProvider filters by local text query', () async {
       final scopedContainer = await makeOverviewContainer();
       scopedContainer
-        ..read(projectsFilterControllerProvider.notifier).setSearchMode(
-          ProjectsSearchMode.localText,
-        )
-        ..read(projectsFilterControllerProvider.notifier).setTextQuery('react');
+          .read(projectsFilterControllerProvider.notifier)
+          .setTextQuery('react');
 
       final filtered = scopedContainer.read(visibleProjectGroupsProvider).value;
 
@@ -240,72 +238,7 @@ void main() {
     );
 
     test(
-      'ProjectsFilterController.clear resets to default filter',
-      () async {
-        final scopedContainer = await makeOverviewContainer();
-
-        // Apply a filter, then clear it
-        scopedContainer
-          ..read(
-            projectsFilterControllerProvider.notifier,
-          ).setSelectedCategoryIds({workCategory.id})
-          ..read(
-            projectsFilterControllerProvider.notifier,
-          ).setTextQuery('something')
-          ..read(
-            projectsFilterControllerProvider.notifier,
-          ).setSearchMode(ProjectsSearchMode.localText);
-
-        scopedContainer.read(projectsFilterControllerProvider.notifier).clear();
-
-        final filter = scopedContainer.read(projectsFilterControllerProvider);
-        expect(filter.selectedCategoryIds, isEmpty);
-        expect(filter.textQuery, isEmpty);
-        expect(filter.searchMode, ProjectsSearchMode.disabled);
-
-        // All groups should be visible again
-        final groups = scopedContainer.read(visibleProjectGroupsProvider).value;
-        expect(groups, hasLength(2));
-      },
-    );
-
-    test(
-      'ProjectsFilterController.filter getter returns the current state',
-      () {
-        final scopedContainer = ProviderContainer(
-          overrides: [
-            projectsOverviewProvider.overrideWith(
-              (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
-            ),
-          ],
-        );
-        addTearDown(scopedContainer.dispose);
-
-        final notifier = scopedContainer.read(
-          projectsFilterControllerProvider.notifier,
-        );
-
-        // Initially returns the default filter
-        expect(notifier.filter, const ProjectsFilter());
-
-        // After mutation, getter reflects the updated state
-        notifier
-          ..setSelectedCategoryIds({'cat-a', 'cat-b'})
-          ..setSelectedStatusIds(
-            {ProjectStatusFilterIds.active},
-          );
-
-        final current = notifier.filter;
-        expect(current.selectedCategoryIds, {'cat-a', 'cat-b'});
-        expect(
-          current.selectedStatusIds,
-          {ProjectStatusFilterIds.active},
-        );
-      },
-    );
-
-    test(
-      'ProjectsFilterController.filter setter replaces the entire filter state',
+      'ProjectsFilterController.filter replaces the entire filter state',
       () {
         final scopedContainer = ProviderContainer(
           overrides: [

@@ -6,7 +6,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -268,16 +267,6 @@ class LabelAssignmentProcessor {
         journalEntityId: taskId,
         addedLabelIds: assigned,
       );
-      // Publish event for UI (toast + undo) when event bus is available
-      try {
-        if (getIt.isRegistered<LabelAssignmentEventService>()) {
-          getIt<LabelAssignmentEventService>().publish(
-            LabelAssignmentEvent(taskId: taskId, assignedIds: [...assigned]),
-          );
-        }
-      } catch (_) {
-        // ignore publish errors in processor path
-      }
     }
 
     return LabelAssignmentResult(

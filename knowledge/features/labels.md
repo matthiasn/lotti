@@ -60,9 +60,10 @@ categories.
 
 # The write boundary
 
-`LabelsRepository` handles streaming definitions, reading single labels and usage
-counts, definition CRUD, `{id, name}` tuples for display and AI context,
-add/remove/replace of assigned ids, and task suppression maintenance.
+`LabelsRepository` handles streaming definitions, reading single labels,
+definition CRUD, add/replace assignment writes, and task suppression
+maintenance. Usage counts are read directly by `labelsListControllerProvider`
+from the journal database's `labeled` lookup table.
 
 **Definition writes normalize category scope before persisting**: trim ids, drop
 empties, remove duplicates, discard unknown categories, and **sort surviving ids
@@ -73,13 +74,13 @@ by category name for stable diffs**.
 ## Assignment writes are stricter than a chip picker
 
 - `addLabels()` appends only missing ids.
-- `removeLabel()` removes one id.
 - `setLabels()` replaces the full set, resolving each id **first against
   `EntitiesCacheService`** — which retains soft-deleted definitions, so cached
   deleted labels are kept — and otherwise against the DB, where only non-deleted
   definitions are accepted. It dedupes and stores ids **sorted by label name**.
 
-For tasks, assignment writes also update suppression:
+For tasks, assignment writes also update suppression. `setLabels()` derives the
+removed and added ids from the old and replacement sets:
 
 - Removing a label **adds** it to `aiSuppressedLabelIds`.
 - Adding a label **removes** it from `aiSuppressedLabelIds`.

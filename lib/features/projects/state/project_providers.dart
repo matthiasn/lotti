@@ -110,14 +110,6 @@ class ProjectsFilterController extends Notifier<ProjectsFilter> {
           : ProjectsSearchMode.localText,
     );
   }
-
-  void setSearchMode(ProjectsSearchMode searchMode) {
-    state = state.copyWith(searchMode: searchMode);
-  }
-
-  void clear() {
-    state = const ProjectsFilter();
-  }
 }
 
 /// Raw grouped projects snapshot for the top-level tab.

@@ -2112,12 +2112,6 @@ void main() {
         () => mockLabelsRepositoryAT.getAllLabels(),
       ).thenAnswer((_) async => []);
       when(
-        () => mockLabelsRepositoryAT.getLabelUsageCounts(),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockLabelsRepositoryAT.buildLabelTuples(any()),
-      ).thenAnswer((_) async => []);
-      when(
         () => mockAiInputRepositoryAT.buildTaskDetailsJson(
           id: any<String>(named: 'id'),
         ),
@@ -2375,12 +2369,6 @@ void main() {
       // Default stubs
       when(
         () => mockLabelsRepositoryCTS.getAllLabels(),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockLabelsRepositoryCTS.getLabelUsageCounts(),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockLabelsRepositoryCTS.buildLabelTuples(any()),
       ).thenAnswer((_) async => []);
       when(
         () => mockAiInputRepositoryCTS.buildTaskDetailsJson(
@@ -2828,12 +2816,6 @@ void main() {
       // Default stubs
       when(
         () => mockLabelsRepositorySD.getAllLabels(),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockLabelsRepositorySD.getLabelUsageCounts(),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockLabelsRepositorySD.buildLabelTuples(any()),
       ).thenAnswer((_) async => []);
       when(
         () => mockAiInputRepositorySD.buildTaskDetailsJson(

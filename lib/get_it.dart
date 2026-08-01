@@ -32,7 +32,6 @@ import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
-import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
@@ -288,7 +287,6 @@ Future<void> registerSingletons() async {
   // resolving here so sandboxed builds (e.g. flatpak) don't trip the lazy
   // service before anything actually needs it.
   final notificationScheduler = NotificationScheduler(
-    notificationsDb: notificationsDb,
     // ignore: unnecessary_lambdas
     notificationServiceProvider: () => getIt<NotificationService>(),
   );

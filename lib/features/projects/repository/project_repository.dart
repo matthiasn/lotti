@@ -15,7 +15,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:meta/meta.dart';
 
 /// Repository for project CRUD and task-project linking.
 ///
@@ -420,13 +419,6 @@ class ProjectRepository {
   /// Stream of all update notifications. Filter for [projectNotification]
   /// to react to project changes.
   Stream<Set<String>> get updateStream => _updateNotifications.updateStream;
-
-  /// Test-only seam for the pure refresh predicate.
-  @visibleForTesting
-  bool debugProjectsOverviewNeedsRefresh(
-    Set<String> affectedIds,
-    ProjectsOverviewSnapshot currentSnapshot,
-  ) => _projectsOverviewNeedsRefresh(affectedIds, currentSnapshot);
 
   bool _projectsOverviewNeedsRefresh(
     Set<String> affectedIds,

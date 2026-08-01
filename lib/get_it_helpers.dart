@@ -118,12 +118,6 @@ Future<void> _registerLateAndOptionalServices() async {
     'LabelAssignmentProcessor',
   );
 
-  // Label assignment event service for UI notifications
-  _registerLazyServiceSafely<LabelAssignmentEventService>(
-    LabelAssignmentEventService.new,
-    'LabelAssignmentEventService',
-  );
-
   // Embedding generation pipeline (Ollama-based, local).
   // If the backend fails to initialize, the pipeline is non-essential
   // and the app should still start.
