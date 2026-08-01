@@ -81,24 +81,31 @@ so a retried job updates one row rather than accumulating a card per attempt.
 
 **Only stalled agent jobs earn a row.** `queued` and `running` are in flight and
 already visible through the plan surface's progress affordance; surfacing them
-here would be noise. The three states that do not progress on their own do earn
-one, because otherwise the failure is silent in the app even though it raised a
-notification:
+here would be noise. Three states earn one — not because none of them recovers
+by itself, but because in each the day is waiting on something the user cannot
+otherwise see:
 
-| Status | Why it earns a row |
-|--------|--------------------|
-| `failed` | Deterministic — it will not retry itself |
-| `waitingForUser` | Needs a prerequisite only the user can supply (e.g. a configured model) |
-| `waitingForNetwork` | Parked until connectivity returns |
+| Status | Recovers alone? | Why it earns a row |
+|--------|-----------------|--------------------|
+| `failed` | No | Deterministic — nothing will retry it |
+| `waitingForUser` | No | Needs a prerequisite only the user can supply (e.g. a configured planning model) |
+| `waitingForNetwork` | **Yes** | The runtime probes it and re-queues on connectivity restore, but the wait is otherwise invisible; the row says what is pending and offers to force the attempt |
+
+**Notification coverage is narrower than the timeline's.** `DayPlanReadyNotifier`
+reacts only to `draftPlan`/`refinePlan` reaching `succeeded` or `failed`; it
+ignores `waitingForUser`, `waitingForNetwork`, and every `parseCapture` outcome.
+So Activity is the only surface that shows those — which is the gap it was added
+to close, not a duplicate of the notification.
 
 The row is placed at `requestedAt`, not `updatedAt`. While the device is offline
 the runtime probes each waiting job on a timer, re-queuing and re-parking it,
 and both transitions rewrite `updatedAt` — ordering by it made the row jump to
 the newest timeline position on every probe with no attempt having run.
 
-A **failed `parseCapture` whose capture has since been deleted** earns no row:
-nothing reschedules it, and Retry would only run a pre-check that terminates on
-its own.
+A failed `parseCapture` earns a row only while its capture is still **present
+and unparsed**. Nothing reschedules a failed job, so a capture that was since
+deleted — or parsed here or on a peer that synced the result — would otherwise
+keep offering Retry for an intent that no longer exists or work already done.
 
 Retries go through the existing `retryNow`, which re-queues the job and clears
 its error state — so retrying removes the row: the work is in flight again.

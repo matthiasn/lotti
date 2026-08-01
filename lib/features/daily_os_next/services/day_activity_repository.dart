@@ -117,9 +117,15 @@ class DayActivityRepository {
       dayId,
       kinds: const {DayProcessingJobKind.transcribeAudio},
     );
-    final liveCaptureIds = {
+    // A parse row is worth showing only while its capture still exists AND is
+    // still unparsed. A capture whose parse completed — here or on a peer that
+    // synced the result — leaves the local job row `failed` forever, since
+    // nothing reschedules a failed job; without this the day would keep
+    // offering Retry for work that is already done.
+    final unparsedCaptureIds = {
       for (final capture in captures)
-        if (capture.deletedAt == null) capture.id,
+        if (capture.deletedAt == null && capture.parseCompletedAt == null)
+          capture.id,
     };
     final stalledAgentJobs = [
       for (final job in await outbox.getForDay(dayId, kinds: agentJobKinds))
@@ -129,7 +135,7 @@ class DayActivityRepository {
           // Retry for a tombstoned capture only leads the user to a job that
           // terminates on its own pre-check.
           if (job.parsedCaptureId == null ||
-              liveCaptureIds.contains(job.parsedCaptureId))
+              unparsedCaptureIds.contains(job.parsedCaptureId))
             job,
     ];
     final jobsByActivity = <String, DayProcessingJob>{

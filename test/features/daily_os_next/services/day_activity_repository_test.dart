@@ -483,6 +483,48 @@ void main() {
       );
     });
 
+    test(
+      'a parse failure stops being offered once parsing completes',
+      () async {
+        await outbox.enqueueParseCapture(dayId: dayId, captureId: 'capture-1');
+        final claim = await outbox.claimNext();
+        await outbox.markFailure(
+          jobId: claim!.job.id,
+          claimToken: claim.token,
+          failureClass: DayProcessingFailureClass.deterministic,
+          error: 'could not read it',
+        );
+        // A peer parsed it and synced the result; the local job row stays
+        // `failed` forever because nothing reschedules a failed job.
+        final parsed =
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: 'planner',
+                  transcript: 'read elsewhere',
+                  capturedAt: capturedAt,
+                  createdAt: capturedAt,
+                  vectorClock: null,
+                  dayId: dayId,
+                  parseCompletedAt: capturedAt,
+                )
+                as CaptureEntity;
+
+        final entries = await repository.load(
+          dayId: dayId,
+          captures: [parsed],
+        );
+
+        expect(
+          entries.map((e) => e.kind),
+          [DayActivityEntryKind.checkIn],
+          reason:
+              'The check-in itself still belongs on the day; only the stale '
+              'failure row goes. Offering Retry for work already done sends '
+              'the user to spend a model request re-deriving what exists.',
+        );
+      },
+    );
+
     test('a succeeded agent job leaves no trace in Activity', () async {
       await outbox.enqueueParseCapture(dayId: dayId, captureId: 'capture-1');
       final claim = await outbox.claimNext();
