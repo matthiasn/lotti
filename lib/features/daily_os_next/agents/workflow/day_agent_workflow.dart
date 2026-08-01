@@ -822,10 +822,16 @@ class DayAgentWorkflow {
     required String runKey,
   }) async {
     try {
+      // Unbounded on purpose. The page is ordered by `created_at DESC`, so a
+      // backward clock correction — or synced history carrying future-dated
+      // system messages — can push the marker this run just wrote off a capped
+      // newest page. Answering "no" then overwrites an already-correct
+      // next-day re-arm with today's slot, which is the duplicate this whole
+      // path exists to prevent. System messages are milestones, not a
+      // high-volume kind.
       final milestones = await agentRepository.getMessagesByKind(
         agentId,
         AgentMessageKind.system,
-        limit: 20,
       );
       for (final message in milestones) {
         if (message.metadata.milestone == AgentMilestone.dailyWakeCompleted &&

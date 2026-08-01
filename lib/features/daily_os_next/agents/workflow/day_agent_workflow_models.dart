@@ -815,8 +815,12 @@ DateTime nextDigestTimeAfterDay(DateTime now, DateTime anchoredDay) {
 /// token is rewritten to today's day id; a current or future token is left
 /// alone (an early fire is not evidence of staleness). Missed digest windows
 /// collapse into this single run rather than replaying one digest per skipped
-/// day — nothing is lost, because the digest reads status events from its
-/// watermark rather than from its day token.
+/// day. The catch-up reads status events from its watermark rather than from
+/// its day token, so it still sees everything back to the last digest that
+/// COMPLETED — with no completed digest at all the watermark falls back to
+/// roughly 60 hours, and older escalations are not rendered before it advances
+/// past them. That bound belongs to the watermark fallback, not to
+/// re-anchoring.
 ///
 /// Non-digest token sets are returned unchanged.
 Set<String> reanchorDigestTriggerTokens(

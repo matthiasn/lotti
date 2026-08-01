@@ -130,10 +130,14 @@ The re-arm is bounded by the day just digested (`nextDigestTimeAfterDay`), not
 merely by `now`. A catch-up that runs at 03:00 re-anchors to today, and the plain
 next slot would be *today* at 06:00 — a second digest for the day just digested.
 
-**Only a successful run applies that bound.** A failed wake digested nothing and
-wrote no watermark, so it re-arms unbounded and keeps today's 06:00 retry;
-skipping to tomorrow would cost the user today's briefing over a transient
-error.
+**Only a run that actually digested applies that bound** — which is not the same
+as a run that reported success. `AgentSyncService` rethrows a buffered outbox
+failure *after* its transaction commits, so a digest can be durably complete and
+still be reported as failed; the failure path therefore reads the
+`dailyWakeCompleted` milestone back from the log for its own run key rather than
+trusting the result. When nothing committed it re-arms unbounded and keeps
+today's 06:00 retry, because skipping to tomorrow would cost the user today's
+briefing over a transient error.
 
 The resulting invariant is **at most one digest per day per record history** —
 it is enforced by one device consuming and re-arming the record in sequence, and
