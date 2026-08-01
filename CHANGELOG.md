@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.0]
+### Changed
+- **Sync stops freezing the app while it catches up.** During a busy sync every
+  read from the sync database had to wait its turn behind whatever was being
+  written. Reads that normally take milliseconds were finishing after 3–25
+  seconds, and anything waiting on them — the outbox badge, the sync status
+  panel, a screen that needed a synced entry — stalled with them. Most reads no
+  longer wait for the writer at all.
+
 ### Fixed
 - **Deleting an entry no longer traps an otherwise healthy sync batch in
   retries.** Bundled sends mistook a soft-deleted entry for a missing database
@@ -20,12 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1074]
 ### Changed
-- **Sync stops freezing the app while it catches up.** During a busy sync every
-  read from the sync database had to wait its turn behind whatever was being
-  written. Reads that normally take milliseconds were finishing after 3–25
-  seconds, and anything waiting on them — the outbox badge, the sync status
-  panel, a screen that needed a synced entry — stalled with them. Most reads no
-  longer wait for the writer at all.
 - **The task-list header gets out of the way while you read.** On a small
   phone the Tasks header — title, search field, saved-filter rail and active
   filter chips — took up to half the screen before the first task appeared.
