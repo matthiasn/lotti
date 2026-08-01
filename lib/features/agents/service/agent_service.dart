@@ -251,7 +251,7 @@ class AgentService {
     // The rows are only half of what a synced agent leaves behind: its JSON
     // sidecars stay readable on disk otherwise, outliving the delete the user
     // just asked for.
-    sidecarReclaimer?.reclaim(
+    await sidecarReclaimer?.reclaim(
       entityIds: removed.entityIds,
       linkIds: removed.linkIds,
     );

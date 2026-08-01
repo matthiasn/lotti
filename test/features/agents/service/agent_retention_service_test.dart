@@ -191,7 +191,7 @@ void main() {
         entityIds: any(named: 'entityIds'),
         linkIds: any(named: 'linkIds'),
       ),
-    ).thenReturn(2);
+    ).thenAnswer((_) async => 2);
     when(
       () => repository.pruneDayStatusEventsBefore(
         any(),

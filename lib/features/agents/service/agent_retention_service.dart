@@ -121,7 +121,7 @@ class AgentRetentionService {
       );
       // The row is only half of what a synced entity leaves behind; without
       // this the database shrinks while the documents directory does not.
-      sidecarReclaimer?.reclaim(entityIds: pruned);
+      await sidecarReclaimer?.reclaim(entityIds: pruned);
       result = AgentRetentionResult(dayStatusEvents: pruned.length);
     } catch (e, s) {
       domainLogger.error(

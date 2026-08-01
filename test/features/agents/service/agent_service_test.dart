@@ -868,7 +868,7 @@ void main() {
             entityIds: any(named: 'entityIds'),
             linkIds: any(named: 'linkIds'),
           ),
-        ).thenReturn(3);
+        ).thenAnswer((_) async => 3);
         when(
           () => mockRepository.getEntity('agent-1'),
         ).thenAnswer((_) async => null);

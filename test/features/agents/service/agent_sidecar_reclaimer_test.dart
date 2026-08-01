@@ -40,11 +40,11 @@ void main() {
     return file..writeAsStringSync('{"secret":"content"}');
   }
 
-  test('removes the entity and link files it is given', () {
+  test('removes the entity and link files it is given', () async {
     final entity = writeSidecar(relativeAgentEntityPath('entity-1'));
     final link = writeSidecar(relativeAgentLinkPath('link-1'));
 
-    final removed = reclaimer.reclaim(
+    final removed = await reclaimer.reclaim(
       entityIds: ['entity-1'],
       linkIds: ['link-1'],
     );
@@ -54,11 +54,11 @@ void main() {
     expect(link.existsSync(), isFalse);
   });
 
-  test('leaves every other sidecar alone', () {
+  test('leaves every other sidecar alone', () async {
     final keep = writeSidecar(relativeAgentEntityPath('entity-keep'));
     writeSidecar(relativeAgentEntityPath('entity-go'));
 
-    reclaimer.reclaim(entityIds: ['entity-go']);
+    await reclaimer.reclaim(entityIds: ['entity-go']);
 
     expect(
       keep.existsSync(),
@@ -67,9 +67,9 @@ void main() {
     );
   });
 
-  test('an absent file is the normal case, not an error', () {
+  test('an absent file is the normal case, not an error', () async {
     // The entity may never have synced, so no sidecar was ever written.
-    expect(reclaimer.reclaim(entityIds: ['never-synced']), 0);
+    expect(await reclaimer.reclaim(entityIds: ['never-synced']), 0);
     verifyNever(
       () => domainLogger.error(
         any(),
@@ -81,14 +81,14 @@ void main() {
     );
   });
 
-  test('a deletion failure is logged, not thrown', () {
+  test('a deletion failure is logged, not thrown', () async {
     // Forced through the seam rather than a chmod: the real failure modes are
     // OS-specific, the suite runs a Windows shard, and an elevated POSIX user
     // can delete a file its parent directory denies.
     writeSidecar(relativeAgentEntityPath('entity-1'));
     reclaimer.deleteSidecar = (_) => throw const FileSystemException('busy');
 
-    expect(reclaimer.reclaim(entityIds: ['entity-1']), 0);
+    expect(await reclaimer.reclaim(entityIds: ['entity-1']), 0);
     verify(
       () => domainLogger.error(
         any(),
@@ -100,14 +100,14 @@ void main() {
     ).called(1);
   });
 
-  test('an id that would escape the sidecar directory is refused', () {
+  test('an id that would escape the sidecar directory is refused', () async {
     // Ids arrive from sync payloads, so they are untrusted. Without the
     // containment check this resolves to <docs>/agent_entities/../secret.json
     // and deletes a file no database write ever accounted for.
     final outside = File('${root.path}/secret.json')
       ..writeAsStringSync('{"not":"a sidecar"}');
 
-    expect(reclaimer.reclaim(entityIds: ['../secret']), 0);
+    expect(await reclaimer.reclaim(entityIds: ['../secret']), 0);
 
     expect(
       outside.existsSync(),
@@ -116,35 +116,38 @@ void main() {
     );
   });
 
-  test('absolute and separator-bearing ids are refused too', () {
+  test('absolute and separator-bearing ids are refused too', () async {
     for (final id in ['/etc/passwd', 'a/b', r'a\\b', 'C:file']) {
-      expect(reclaimer.reclaim(entityIds: [id]), 0);
+      expect(await reclaimer.reclaim(entityIds: [id]), 0);
     }
   });
 
-  test('no documents directory disables reclamation rather than failing', () {
-    final headless = AgentSidecarReclaimer(
-      documentsDirectory: null,
-      domainLogger: domainLogger,
-    );
+  test(
+    'no documents directory disables reclamation rather than failing',
+    () async {
+      final headless = AgentSidecarReclaimer(
+        documentsDirectory: null,
+        domainLogger: domainLogger,
+      );
 
-    expect(
-      headless.reclaim(entityIds: ['entity-1']),
-      0,
-      reason:
-          'The caller has already committed its database work; a missing '
-          'documents directory must not turn that into a failure.',
-    );
-  });
+      expect(
+        await headless.reclaim(entityIds: ['entity-1']),
+        0,
+        reason:
+            'The caller has already committed its database work; a missing '
+            'documents directory must not turn that into a failure.',
+      );
+    },
+  );
 
   test(
     'the id is joined under the documents root, not treated as absolute',
-    () {
+    () async {
       // relativeAgentEntityPath carries a leading '/', which a naive join would
       // read as an absolute path and escape the sandbox with.
       final file = writeSidecar(relativeAgentEntityPath('entity-1'));
 
-      reclaimer.reclaim(entityIds: ['entity-1']);
+      await reclaimer.reclaim(entityIds: ['entity-1']);
 
       expect(file.existsSync(), isFalse);
       expect(file.path.startsWith(root.path), isTrue);

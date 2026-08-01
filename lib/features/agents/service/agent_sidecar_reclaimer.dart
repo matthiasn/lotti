@@ -58,19 +58,31 @@ class AgentSidecarReclaimer {
     return true;
   }
 
-  int reclaim({
+  /// Files handled before yielding the isolate.
+  ///
+  /// A full sweep can reach ten thousand ids, and the deletes are synchronous
+  /// — the fastest way to do the work, but ten thousand of them in one go
+  /// monopolises the isolate and shows up as a startup freeze. Yielding keeps
+  /// the total work identical while leaving the frame loop room to run.
+  static const _yieldEvery = 200;
+
+  Future<int> reclaim({
     Iterable<String> entityIds = const [],
     Iterable<String> linkIds = const [],
-  }) {
+  }) async {
     final root = documentsDirectory;
     if (root == null) return 0;
 
     var removed = 0;
+    var handled = 0;
     for (final (ids, toPath) in [
       (entityIds, relativeAgentEntityPath),
       (linkIds, relativeAgentLinkPath),
     ]) {
       for (final id in ids) {
+        if (++handled % _yieldEvery == 0) {
+          await Future<void>.delayed(Duration.zero);
+        }
         try {
           // Ids reach this method from sync payloads, so they are untrusted
           // input. A traversal segment would otherwise resolve to
