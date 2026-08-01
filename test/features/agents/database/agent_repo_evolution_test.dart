@@ -127,6 +127,49 @@ void main() {
       );
     });
 
+    test('a write during an in-flight load is not overwritten by it', () async {
+      // The load captures a generation before querying and compares it after.
+      // Without that, a write landing mid-flight is silently undone: the
+      // pre-write list gets installed and served until the *next* write.
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),
+      );
+
+      final inFlight = evolution.getAllAgentIdentities();
+      // Lands while the query above is still awaiting.
+      await core.upsertEntity(
+        makeTestIdentity(id: 'a-2', agentId: 'a-2', displayName: 'Second'),
+      );
+      await inFlight;
+
+      expect(
+        (await evolution.getAllAgentIdentities()).map((a) => a.agentId).toSet(),
+        {'a-1', 'a-2'},
+        reason: 'the stale in-flight result must not have been cached',
+      );
+    });
+
+    test('a rolled-back transaction does not leave a cached row', () async {
+      // A transaction can write an identity, read the list back, then roll
+      // back. Caching that read would publish a row the database no longer has.
+      await expectLater(
+        core.runInTransaction(() async {
+          await core.upsertEntity(
+            makeTestIdentity(id: 'a-doomed', agentId: 'a-doomed'),
+          );
+          expect(await evolution.getAllAgentIdentities(), hasLength(1));
+          throw StateError('abort');
+        }),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(
+        await evolution.getAllAgentIdentities(),
+        isEmpty,
+        reason: 'the transaction-local read must not have populated the cache',
+      );
+    });
+
     test('a non-identity write leaves the cache in place', () async {
       await core.upsertEntity(
         makeTestIdentity(id: 'a-1', agentId: 'a-1', displayName: 'First'),

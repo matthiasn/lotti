@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_attention_projection.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -39,18 +40,56 @@ class AgentRepoCore {
   /// decoded from JSON each time). The read is not bursty (1,449 of 1,587
   /// occurrences are isolated), so microtask coalescing does nothing for it;
   /// what helps is not repeating the work when nothing changed.
-  ///
-  /// Held here rather than on the evolution collaborator because *this* class
-  /// owns the only write path ([_upsertEntity]), so invalidation cannot be
-  /// missed. Soft deletes are upserts with `deletedAt` set and therefore land
-  /// on the same hook.
   List<AgentIdentityEntity>? _agentIdentitiesCache;
+
+  /// Bumped by every invalidation.
+  ///
+  /// A load that started before an invalidation must not install its result
+  /// afterwards — otherwise a write that lands mid-flight is silently undone
+  /// and the pre-write list is served until the *next* write. The generation
+  /// captured before the query is compared after it, and a stale load is
+  /// discarded rather than cached.
+  int _agentIdentitiesGeneration = 0;
+
+  /// Zone marker set for the duration of a transaction, so a load that runs
+  /// inside one does not install its result in the shared cache.
+  ///
+  /// A transaction can read identities after writing one and then roll back;
+  /// caching that read would publish a row the database no longer has.
+  /// Transaction-local reads are still correct — they just do not populate the
+  /// cache.
+  static const _inTransactionKey = #agentRepoCoreInTransaction;
+
+  static bool get _isInTransaction => Zone.current[_inTransactionKey] == true;
 
   /// Returns the cached identity list, or populates it via [load].
   Future<List<AgentIdentityEntity>> cachedAgentIdentities(
     Future<List<AgentIdentityEntity>> Function() load,
   ) async {
-    return _agentIdentitiesCache ??= await load();
+    final cached = _agentIdentitiesCache;
+    if (cached != null) return cached;
+
+    final generation = _agentIdentitiesGeneration;
+    final loaded = await load();
+
+    // Discard the result rather than caching it if an identity write landed
+    // while the query was in flight, or if this ran inside a transaction whose
+    // writes may still roll back. The caller still gets the rows it asked for.
+    if (generation == _agentIdentitiesGeneration && !_isInTransaction) {
+      _agentIdentitiesCache = loaded;
+    }
+    return loaded;
+  }
+
+  /// Drops the cached identity list.
+  ///
+  /// Called by every path that can change which identities exist: identity
+  /// upserts (including soft deletes, which are upserts with `deletedAt` set)
+  /// and [AgentRepository.hardDeleteAgent], which deletes rows directly and
+  /// therefore never reaches [_upsertEntity].
+  void invalidateAgentIdentitiesCache() {
+    _agentIdentitiesCache = null;
+    _agentIdentitiesGeneration++;
   }
 
   /// The projection collaborator used by [upsertEntity] to keep the local
@@ -64,7 +103,13 @@ class AgentRepoCore {
   /// operation throws, the entire transaction is rolled back. Drift supports
   /// nested transactions via savepoints.
   Future<T> runInTransaction<T>(Future<T> Function() action) {
-    return _db.transaction(action);
+    return _db.transaction(() => _markInTransaction(action));
+  }
+
+  /// Runs [action] with the in-transaction zone marker set, so
+  /// [cachedAgentIdentities] knows not to publish a transaction-local read.
+  static Future<T> _markInTransaction<T>(Future<T> Function() action) {
+    return runZoned(action, zoneValues: {_inTransactionKey: true});
   }
 
   // ── Entity CRUD ────────────────────────────────────────────────────────────
@@ -78,14 +123,16 @@ class AgentRepoCore {
   /// successful parse or move a near-midnight capture after a timezone change.
   Future<void> upsertEntity(AgentDomainEntity entity) async {
     if (entity is CaptureEntity) {
-      await _db.transaction(() async {
-        final existing = await getEntity(entity.id);
-        final entityToWrite = AgentRepository.normalizeCaptureForWrite(
-          entity,
-          existing: existing is CaptureEntity ? existing : null,
-        );
-        await _upsertEntity(entityToWrite);
-      });
+      await _db.transaction(
+        () => _markInTransaction(() async {
+          final existing = await getEntity(entity.id);
+          final entityToWrite = AgentRepository.normalizeCaptureForWrite(
+            entity,
+            existing: existing is CaptureEntity ? existing : null,
+          );
+          await _upsertEntity(entityToWrite);
+        }),
+      );
       return;
     }
     await _upsertEntity(entity);
@@ -95,7 +142,7 @@ class AgentRepoCore {
     // Any identity write — including a soft delete, which is an upsert with
     // `deletedAt` set — makes the cached list stale.
     if (entity is AgentIdentityEntity) {
-      _agentIdentitiesCache = null;
+      invalidateAgentIdentitiesCache();
     }
     final companion = AgentDbConversions.toEntityCompanion(entity);
     final affectsAttentionClaims = affectsAttentionClaimProjection(entity);
@@ -107,15 +154,17 @@ class AgentRepoCore {
       return;
     }
 
-    await _db.transaction(() async {
-      await _db.into(_db.agentEntities).insertOnConflictUpdate(companion);
-      if (affectsAttentionClaims) {
-        await projection.refreshAttentionClaimProjectionForEntity(entity);
-      }
-      if (affectsStandingAgreements) {
-        await projection.refreshStandingAgreementProjectionForEntity(entity);
-      }
-    });
+    await _db.transaction(
+      () => _markInTransaction(() async {
+        await _db.into(_db.agentEntities).insertOnConflictUpdate(companion);
+        if (affectsAttentionClaims) {
+          await projection.refreshAttentionClaimProjectionForEntity(entity);
+        }
+        if (affectsStandingAgreements) {
+          await projection.refreshStandingAgreementProjectionForEntity(entity);
+        }
+      }),
+    );
   }
 
   /// Fetch a single entity by its [id], or `null` if not found.
