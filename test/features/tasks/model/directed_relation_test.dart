@@ -53,7 +53,7 @@ void main() {
 
   group('wireName', () {
     test('maps every directed option to its stable machine phrase', () {
-      expect(DirectedRelation.wireNames, [
+      expect(relationshipDirectedOptions.map((option) => option.wireName), [
         'relates_to',
         'blocks',
         'is_blocked_by',

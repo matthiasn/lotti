@@ -5,7 +5,7 @@ description: The eleven Drift/SQLite databases, how connections are opened and m
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-01T15:45:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T20:22:00Z }
 stale_after: 2027-01-11
 sources:
   - id: sync-db
@@ -19,7 +19,7 @@ sources:
   - id: notifications-db
     resource: ../../lib/database/notifications_db.dart
     title: NotificationsDb
-    last_modified: 2026-05-17
+    last_modified: 2026-08-01
   - id: consumption-db
     resource: ../../lib/features/ai_consumption/database/consumption_database.dart
     title: ConsumptionDatabase
@@ -290,9 +290,9 @@ undercounts the gate badly:
 
 | Mechanism | Where |
 |-----------|-------|
-| `_queryWithPrivateFilter` | `journal_queries`, `data_queries`, `definitions`, `project_queries`, `links_ratings` |
+| `_queryWithPrivateFilter` | `journal_queries`, `definitions`, `project_queries`, `links_ratings` |
 | **`privateStatuses` passed as a parameter**, so the caller decides | `task_queries`, `task_query_builders`, `task_due_queries` |
-| **Raw SQL reading the flag directly** — `WITH private_flag AS (SELECT status FROM config_flags WHERE name = 'private')`, then `COALESCE(t.private, FALSE) IN (FALSE, pf.visible)` | `insights_queries` |
+| **Raw SQL reading the flag directly** | `insights_queries` uses a `private_flag` CTE; `data_queries` uses a direct `config_flags` subquery in `getHabitCompletionsInRange` |
 
 Of the ten query-bearing mixins, **nine gate on private one of these ways**. The
 exception is `_JournalDbEntityOps`, which is maintenance and write operations

@@ -11,7 +11,6 @@ part of 'audio_note.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-
 /// @nodoc
 mixin _$AudioNote {
 
@@ -22,8 +21,6 @@ mixin _$AudioNote {
 @pragma('vm:prefer-inline')
 $AudioNoteCopyWith<AudioNote> get copyWith => _$AudioNoteCopyWithImpl<AudioNote>(this as AudioNote, _$identity);
 
-  /// Serializes this AudioNote to a JSON map.
-  Map<String, dynamic> toJson();
 
 
 @override
@@ -31,7 +28,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioNote&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.audioFile, audioFile) || other.audioFile == audioFile)&&(identical(other.audioDirectory, audioDirectory) || other.audioDirectory == audioDirectory)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.dayContext, dayContext) || other.dayContext == dayContext));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,createdAt,audioFile,audioDirectory,duration,dayContext);
 
@@ -222,11 +219,11 @@ return $default(_that.createdAt,_that.audioFile,_that.audioDirectory,_that.durat
 }
 
 /// @nodoc
-@JsonSerializable()
+
 
 class _AudioNote implements AudioNote {
   const _AudioNote({required this.createdAt, required this.audioFile, required this.audioDirectory, required this.duration, this.dayContext});
-  factory _AudioNote.fromJson(Map<String, dynamic> json) => _$AudioNoteFromJson(json);
+  
 
 @override final  DateTime createdAt;
 @override final  String audioFile;
@@ -240,17 +237,14 @@ class _AudioNote implements AudioNote {
 @pragma('vm:prefer-inline')
 _$AudioNoteCopyWith<_AudioNote> get copyWith => __$AudioNoteCopyWithImpl<_AudioNote>(this, _$identity);
 
-@override
-Map<String, dynamic> toJson() {
-  return _$AudioNoteToJson(this, );
-}
+
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioNote&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.audioFile, audioFile) || other.audioFile == audioFile)&&(identical(other.audioDirectory, audioDirectory) || other.audioDirectory == audioDirectory)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.dayContext, dayContext) || other.dayContext == dayContext));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,createdAt,audioFile,audioDirectory,duration,dayContext);
 

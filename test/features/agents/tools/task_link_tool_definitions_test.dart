@@ -56,10 +56,17 @@ void main() {
     });
 
     group('taskRelationWireNames', () {
-      test('restates DirectedRelation.wireNames exactly', () {
+      test('restates the directed relation options exactly', () {
         // The schema list must be const, so it cannot derive from the model
         // at runtime — this pin is what keeps the two lists one vocabulary.
-        expect(taskRelationWireNames, equals(DirectedRelation.wireNames));
+        expect(
+          taskRelationWireNames,
+          equals(
+            relationshipDirectedOptions
+                .map((option) => option.wireName)
+                .toList(),
+          ),
+        );
       });
 
       test('every value parses back to a relation', () {

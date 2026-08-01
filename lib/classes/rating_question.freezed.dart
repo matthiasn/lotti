@@ -11,7 +11,6 @@ part of 'rating_question.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-
 /// @nodoc
 mixin _$RatingQuestion {
 
@@ -33,8 +32,6 @@ mixin _$RatingQuestion {
 @pragma('vm:prefer-inline')
 $RatingQuestionCopyWith<RatingQuestion> get copyWith => _$RatingQuestionCopyWithImpl<RatingQuestion>(this as RatingQuestion, _$identity);
 
-  /// Serializes this RatingQuestion to a JSON map.
-  Map<String, dynamic> toJson();
 
 
 @override
@@ -42,7 +39,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is RatingQuestion&&(identical(other.key, key) || other.key == key)&&(identical(other.question, question) || other.question == question)&&(identical(other.description, description) || other.description == description)&&(identical(other.inputType, inputType) || other.inputType == inputType)&&const DeepCollectionEquality().equals(other.options, options));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,key,question,description,inputType,const DeepCollectionEquality().hash(options));
 
@@ -221,11 +218,11 @@ return $default(_that.key,_that.question,_that.description,_that.inputType,_that
 }
 
 /// @nodoc
-@JsonSerializable()
+
 
 class _RatingQuestion implements RatingQuestion {
   const _RatingQuestion({required this.key, required this.question, required this.description, this.inputType = 'tapBar', final  List<RatingQuestionOption>? options}): _options = options;
-  factory _RatingQuestion.fromJson(Map<String, dynamic> json) => _$RatingQuestionFromJson(json);
+  
 
 /// Stable identifier for this question (e.g., "productivity").
 @override final  String key;
@@ -260,17 +257,14 @@ class _RatingQuestion implements RatingQuestion {
 @pragma('vm:prefer-inline')
 _$RatingQuestionCopyWith<_RatingQuestion> get copyWith => __$RatingQuestionCopyWithImpl<_RatingQuestion>(this, _$identity);
 
-@override
-Map<String, dynamic> toJson() {
-  return _$RatingQuestionToJson(this, );
-}
+
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _RatingQuestion&&(identical(other.key, key) || other.key == key)&&(identical(other.question, question) || other.question == question)&&(identical(other.description, description) || other.description == description)&&(identical(other.inputType, inputType) || other.inputType == inputType)&&const DeepCollectionEquality().equals(other._options, _options));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,key,question,description,inputType,const DeepCollectionEquality().hash(_options));
 

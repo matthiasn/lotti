@@ -130,11 +130,6 @@ class DirectedRelation {
     return null;
   }
 
-  /// Every [wireName] in display order — the enum a tool schema advertises.
-  static List<String> get wireNames => [
-    for (final option in relationshipDirectedOptions) option.wireName,
-  ];
-
   @override
   bool operator ==(Object other) =>
       other is DirectedRelation &&

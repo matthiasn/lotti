@@ -73,7 +73,7 @@ class DayAgentWeekContextService {
 
   /// Builds the rendered week context for [planDate], or null when loading
   /// fails (fail-soft). An information-free window yields a [WeekContext]
-  /// whose sections are null ([WeekContext.isEmpty]) — the prompt builder
+  /// whose sections are null — the prompt builder
   /// omits absent sections, so callers need not special-case it.
   ///
   /// Reads are not keyed to the waking agent: lookback/lookahead plans and

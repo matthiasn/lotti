@@ -10,15 +10,6 @@ void main() {
       expect(settings.voiceId, kDefaultTtsVoiceId);
       expect(settings.modelId, kDefaultTtsModelId);
       expect(settings.speed, kDefaultTtsSpeed);
-      expect(settings.voice.gender, TtsVoiceGender.female);
-      expect(settings.model.id, kDefaultTtsModelId);
-    });
-
-    test('resolve voice/model getters from ids, including stale ids', () {
-      const settings = TtsSettings(voiceId: 'F4', modelId: 'gone');
-      expect(settings.voice.id, 'F4');
-      // Unknown model id resolves to the default, not a crash.
-      expect(settings.model.id, kDefaultTtsModelId);
     });
   });
 

@@ -36,9 +36,6 @@ class ResolvedBlocker {
   /// correctly rather than inheriting the blocked task's category.
   final String? categoryId;
 
-  /// True when the blocker link's target could not be loaded as a task.
-  bool get isUnresolved => title == null;
-
   Map<String, Object?> toJson() => {
     'taskId': taskId,
     if (title != null) 'title': title,

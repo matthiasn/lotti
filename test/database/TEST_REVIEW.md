@@ -46,7 +46,7 @@ under `lib/database/`.
 | `lib/database/settings_db.dart` | 207 | Yes — settings_db_test.dart | OK |
 | `test/database/settings_db_test.dart` | 301 | — | Good quality; well-targeted coalescing tests |
 | `lib/database/notifications_db.dart` | 233 | Yes — notifications_db_test.dart | OK |
-| `test/database/notifications_db_test.dart` | 251 | — | Good; covers merge semantics and pagination |
+| `test/database/notifications_db_test.dart` | 251 | — | Good; covers merge semantics and notification state queries |
 | `lib/database/journal_db/config_flags.dart` | 205 | Yes — journal_db/config_flags_test.dart | OK |
 | `test/database/journal_db/config_flags_test.dart` | 143 | — | Good; per-test DB open could use shared instance |
 | `lib/database/state/config_flag_provider.dart` | 12 | Yes — state/config_flag_provider_test.dart | OK |
@@ -57,7 +57,6 @@ under `lib/database/`.
 | `test/database/open_db_connection_test.dart` | 212 | (for lib/database/common.dart) | Good; meaningful WAL/pragma assertions |
 | `test/database/journal_db_actor_isolate_test.dart` | 95 | — | Thin (1 test); covers isolate path well but single-test file is fragile signal |
 | `test/database/column_exists_test.dart` | 63 | — | Opens a file-based DB per test run (slow path) |
-| `test/database/batch_chunking_test.dart` | 309 | (for database.dart chunking) | Good; covers 500-id boundary |
 
 ---
 
@@ -65,7 +64,7 @@ under `lib/database/`.
 
 - [x] **[HIGH]** `lib/database/database.dart` (3 602 lines) is the largest non-generated source file. It is a single `JournalDb` class with no section extensions. Natural split seams follow the method groupings already visible in the file:
 
-  - **`journal_db_queries.dart`** (lines ~1 142–2 600) — all journal entity read methods (`getJournalEntities`, `getJournalEntitiesForIds`, `getJournalEntityMapForIds`, `getCategoryIdsForEntryIds`, etc.). Extractable as a private mixin or companion class `JournalDbQueries`.
+  - **`journal_db_queries.dart`** (lines ~1 142–2 600) — journal entity reads such as `getJournalEntities`, `getJournalEntitiesForIds`, and `getJournalEntityMapForIds`. Extractable as a private mixin or companion class `JournalDbQueries`.
   - **`task_queries.dart`** (lines ~1 468–1 907, ~2 442–2 600) — `getTasks`, `getTasksSortedByDueDate`, `_buildTasksByDueDateQuery`, `getFilteredTasksCount`, `getFilteredTaskIds`, `getInProgressTasks`, `getMissedRecurringTasks`, task-due coalescing (~2 813–2 985). This cluster already grows to ~700 lines.
   - **`project_queries.dart`** (lines ~2 641–2 985) — already marked with a section comment `// ── Project queries ──────────────────`.
   - **`links_ratings.dart`** (lines ~3 018–3 315) — `linksForEntryIds`, `basicLinksForEntryIds`, coalescing, rating queries.
@@ -75,7 +74,7 @@ under `lib/database/`.
 
 - [x] **[HIGH]** `test/database/database_test.dart` (8 642 lines) is the single largest test file in the repo by a large margin. It contains one mega-group `'Database Tests - '` (lines 334–8 084, ~7 750 lines, ~219 tests) plus one migration group (lines 8 091–8 642). Mirror-split to match the proposed impl split:
 
-  - **`database_journal_queries_test.dart`** → `group('Journal queries -')` (line 548) through `group('getCategoryIdsForEntryIds -')` (line 2 775) + `group('Aggregate queries -')` (line 3 151) — ~1 000 lines.
+  - **`database_journal_queries_test.dart`** → journal lookup, range, bulk-id, and aggregate-query coverage — ~1 000 lines.
   - **`database_task_queries_test.dart`** → `group('Task queries -')` (line 739) through ~line 2 224 + `group('getTasks with label/sortByDate/priority branch coverage -')` (line 5 035) + `group('getTasksSortedByDueDate edge cases -')` (line 5 414) + task-due coalescing section — ~2 200 lines.
   - **`database_journal_entity_ops_test.dart`** → `group('Journal Entity Operations -')` (line 5 647) + `group('Conflict Handling -')` (line 5 739) + `group('JSON persistence -')` (line 372) + `group('Edge cases -')` (line 440) + vector clock streaming (line 4 121) — ~800 lines.
   - **`database_links_ratings_test.dart`** → `group('Entry links -')` (line 3 614) + `group('Rating queries -')` (line 3 788) + `group('entryLinkById -')` (line 4 802) + `group('getBulkLinkedTimeSpans -')` (line 6 212) — ~800 lines.
@@ -133,8 +132,8 @@ under `lib/database/`.
 - [x] **[MED]** `lib/database/conversions.dart` — `_sanitizeDashboardJson` (lines 282–317) is a pure function: given a JSON map, it filters `items` by `_knownDashboardItemTypes`. A Glados property over arbitrary lists of runtimeType strings (mix of known and unknown) would assert: all known types pass through, all unknown types are removed, the returned list length equals the count of known-type items. Currently only 5 example-based tests exist covering specific item type names. Tag `glados`.
   - **RESOLVED:** added a `glados`-tagged property (numRuns 120) in `conversions_test.dart` exercising the public `fromDashboardDbEntity` path: for any interleaving of valid known items (measurement/healthChart/habitChart) and unknown runtimeTypes, the deserialized dashboard contains exactly the known-type count — unknowns are always dropped pre-deserialization.
 
-- [x] **[MED]** `lib/database/database.dart:125` — `_sqliteInListChunk = 500` chunking logic in `journalEntityMapForIds` (line 1 129) and `linksForEntryIds` (line 2 617) is a pure batch-splitting algorithm. A Glados property that generates id lists of varying lengths (0, 1, 499, 500, 501, 1001, 2347) and asserts that all ids are visited exactly once and the return map has exactly the number of matching entities would provide stronger guarantees than the existing 500-boundary examples in `batch_chunking_test.dart`. Tag `glados`. *(Note: `batch_chunking_test.dart` is Part 1 scope and already covers the 500-boundary with a concrete example; the Glados property would add stronger coverage for arbitrary sizes.)*
-  - **RESOLVED:** added a `glados`-tagged property (numRuns 60) in `batch_chunking_test.dart` over `getDayPlansByIds` (which routes through the shared `_sqliteInListChunk = 500` splitter): with six stored rows, an arbitrary-length request id list (0..1100 ids, duplicates and absent ids, spanning multiple chunks) always returns exactly the stored∩requested set with no row repeated — proving every id is visited once regardless of chunk count.
+- [x] **[MED]** `_sqliteInListChunk = 500` chunking in `journalEntityMapForIds` needed explicit cross-boundary coverage.
+  - **RESOLVED:** `database_journal_queries_test.dart` inserts and fetches 501 entries, including the row in the second chunk. The former day-plan Glados property and its dedicated suite were removed with the unused day-plan query API.
 
 - [x] **[LOW]** `lib/database/journal_update_result.dart` — `JournalUpdateSkipReason.label` is a pure exhaustive switch over an enum. A Glados property asserting that every `JournalUpdateSkipReason` value returns a non-empty string label would be a trivial but safe property. Currently only 4 example-based assertions exist. Tag `glados`.
   - **RESOLVED:** already done — `journal_update_result_test.dart:66-79` has a `glados`-tagged property (numRuns 120) over `any.skipReason` asserting `label` is non-empty for every enum value, alongside the 4 known-label examples.
@@ -153,7 +152,8 @@ under `lib/database/`.
 
 - [x] **[MED]** `lib/database/database.dart` — `getHabitCompletionsInRange()` (line 2 589) has no test in `database_test.dart`. The closely related `getHabitCompletionsByHabitId()` does. Add a test asserting date-range boundary behavior (inclusive/exclusive endpoints).
 
-- [x] **[MED]** `lib/database/database.dart` — `journalEntityMapForIds` over-500-id chunking (line 1 129) is not tested with more than a small set. `batch_chunking_test.dart` covers `getDayPlansByIds` and `runRatingsForTimeEntriesQueryForIds` across the 500-boundary, but not `journalEntityMapForIds`. Add a test that inserts 501 entries and asserts the returned map contains all 501.
+- [x] **[MED]** `journalEntityMapForIds` over-500-id chunking needed direct coverage.
+  - **RESOLVED:** `database_journal_queries_test.dart` inserts 501 entries and asserts that all 501 are returned without duplicates.
 
 - [x] **[MED]** `lib/database/database.dart` — constraint violation on `insertLabel` (duplicate `(journal_id, label_id)`) is tested (line 8 019), but the corresponding `SqliteException` handler in `insertLabel` (line 923) is the only place DB-level constraint errors are tested in the whole file. The `upsertEntryLink` precheck-error path is covered (line 4 826). The `addConflict` duplicate-id path is not explicitly tested (the `insertOrIgnore` semantics). Add a test for inserting the same conflict id twice and verifying no row duplication.
 
@@ -190,9 +190,6 @@ under `lib/database/`.
 
 - [x] **[LOW]** `test/database/editor_db_test.dart` — opens a new `EditorDb(inMemoryDatabase: true)` in `setUp` (line 13) for each of ~35 tests. The `allDrafts()` query in the `'allDrafts Query Tests'` group (line 584+) never leaves persistent state. Promote to a shared instance with per-test cleanup where inserts are done.
   **RESOLVED:** DB opened once in `setUpAll`, closed in `tearDownAll`; per-test `tearDown` truncates the single `editor_drafts` table (`DELETE FROM editor_drafts`). `EditorDb` keeps no in-memory cache, so truncation is complete, order-independent cleanup. The `schema` group's v2-migration test opens its own throwaway file-based `EditorDb` and never touches the shared instance, so it is unaffected. No getIt singleton involved.
-
-- [x] **[LOW]** `test/database/batch_chunking_test.dart` — opens a new `JournalDb(inMemoryDatabase: true)` and calls `initConfigFlags` in `setUp` for each test. The `getDayPlansByIds` group (5 tests) and `runRatingsForTimeEntriesQueryForIds` group (2 tests) could share a single DB instance initialized in `setUpAll` since the chunk-boundary tests are purely about query behavior (no config flag mutations).
-  - **RESOLVED:** (assessed — keep per-test instance) the per-test `setUp` does more than open the DB — it creates a temp dir, installs a `path_provider` channel mock, registers `getIt<Directory>` and `MockDomainLogger`/`getIt<DomainLogger>`, and seeds config flags. Promoting just the DB to `setUpAll` while that getIt/channel state stays per-test gains little, and sharing all of it would require per-test row cleanup plus `getIt` teardown to avoid bleeding into sibling files — contamination risk disproportionate to a 7-test file. One `'excludes private plans'` test also mutates the private config flag, so the "no config flag mutations" premise doesn't fully hold. (The newly-added chunking Glados group already uses its own scoped `setUp` seeding six rows once for all 60 runs.) Kept per-test.
 
 ---
 

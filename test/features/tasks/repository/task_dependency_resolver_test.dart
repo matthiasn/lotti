@@ -187,7 +187,6 @@ void main() {
         expect(result['blocked'], [
           const ResolvedBlocker(taskId: 'missing-blocker'),
         ]);
-        expect(result['blocked']!.single.isUnresolved, isTrue);
         expect(result['blocked']!.single.toJson(), {
           'taskId': 'missing-blocker',
         });
@@ -324,7 +323,6 @@ void main() {
       // so there is no category to report. The entry still blocks.
       const unresolved = ResolvedBlocker(taskId: 'x');
 
-      expect(unresolved.isUnresolved, isTrue);
       expect(unresolved.toJson(), {'taskId': 'x'});
     });
   });

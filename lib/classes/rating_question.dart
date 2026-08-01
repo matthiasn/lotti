@@ -32,9 +32,6 @@ abstract class RatingQuestion with _$RatingQuestion {
     /// Each option has a display label and a normalized value.
     List<RatingQuestionOption>? options,
   }) = _RatingQuestion;
-
-  factory RatingQuestion.fromJson(Map<String, dynamic> json) =>
-      _$RatingQuestionFromJson(json);
 }
 
 /// A single option within a segmented rating question.

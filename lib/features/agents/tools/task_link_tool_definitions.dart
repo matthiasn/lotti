@@ -2,11 +2,11 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// The `relation` enum advertised by the link tools, in display order.
 ///
-/// Must stay identical to `DirectedRelation.wireNames`
-/// (`lib/features/tasks/model/directed_relation.dart`) — tool schemas have to
-/// be `const`, so the list is restated here and pinned by a test rather than
-/// derived at runtime. Every phrase reads with the CURRENT task as its
-/// subject: "This task ⟨relation⟩ the other task".
+/// Must stay identical to the `DirectedRelation.wireName` values in
+/// `relationshipDirectedOptions` — tool schemas have to be `const`, so the
+/// list is restated here and pinned by a test rather than derived at runtime.
+/// Every phrase reads with the CURRENT task as its subject: "This task
+/// ⟨relation⟩ the other task".
 const List<String> taskRelationWireNames = [
   'relates_to',
   'blocks',

@@ -28,11 +28,6 @@ void main() {
   });
 
   group('TtsVoice', () {
-    test('assetFileName is the id with a .json suffix', () {
-      const voice = TtsVoice(id: 'F3', gender: TtsVoiceGender.female);
-      expect(voice.assetFileName, 'F3.json');
-    });
-
     test('uses value equality on id and gender', () {
       const a = TtsVoice(id: 'F1', gender: TtsVoiceGender.female);
       const b = TtsVoice(id: 'F1', gender: TtsVoiceGender.female);
