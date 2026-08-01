@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/database/agent_repository.dart'
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:meta/meta.dart';
 
 /// Entity CRUD, transaction scoping, and the shared batched-read primitives for
 /// [AgentRepository]. Collaborator extracted from the former `_AgentRepoCore`
@@ -53,11 +52,6 @@ class AgentRepoCore {
   ) async {
     return _agentIdentitiesCache ??= await load();
   }
-
-  /// Drops the cached identity list. Called on every identity write; exposed
-  /// so tests can force a reload without reaching into private state.
-  @visibleForTesting
-  void invalidateAgentIdentitiesCache() => _agentIdentitiesCache = null;
 
   /// The projection collaborator used by [upsertEntity] to keep the local
   /// attention/standing indexes in sync. Wired by [AgentRepository] after both
