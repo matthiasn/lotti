@@ -379,7 +379,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
   /// Deterministic weekly rollup register (ADR 0032 digest pooling).
   ///
-  /// Keyed `week_rollup:<ISO Monday date>` and coordinator-owned: a pure
+  /// Keyed `week_rollup_v2:<ISO Monday date>` and coordinator-owned: a pure
   /// aggregation over one calendar week's day plans (planned minutes per
   /// category, days that had a plan) and recorded time entries (recorded
   /// minutes per category). Recomputed from source data — never accumulated

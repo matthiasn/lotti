@@ -225,7 +225,6 @@ class DayAgentWeekContextService {
           start: pair.start,
           duration: pair.duration,
           taskId: pair.taskId,
-          utcOffsetMinutes: pair.utcOffsetMinutes,
         ),
     ];
   }
@@ -239,7 +238,7 @@ class DayAgentWeekContextService {
 
   /// Recomputes and persists the weekly rollup registers the digest renders
   /// (ADR 0032 digest pooling): the last [recentWeekRollupCount] complete
-  /// calendar weeks, coordinator-owned, keyed `week_rollup:<Monday>`.
+  /// calendar weeks, coordinator-owned, keyed `week_rollup_v2:<Monday>`.
   ///
   /// EVERY week is recomputed from source on every call — this is what makes
   /// the "plain LWW converges because every device recomputes" claim true:
@@ -339,7 +338,15 @@ class DayAgentWeekContextService {
       });
       return <WeekRollupEntity>[
         for (final entity in byId.values)
-          if (entity is WeekRollupEntity && entity.deletedAt == null) entity,
+          // Canonical rows only. ensureWeekRollups is fail-soft, so a refresh
+          // that threw part-way leaves legacy registers live beside migrated
+          // ones; rendering both would feed the digest two bucketing rules in
+          // one section without saying so. Omitting the unmigrated weeks makes
+          // a failed migration visible as absence instead of as a wrong trend.
+          if (entity is WeekRollupEntity &&
+              entity.deletedAt == null &&
+              entity.bucketingRule == recordedLocalBucketingRule)
+            entity,
       ]..sort((a, b) => b.weekStart.compareTo(a.weekStart));
     } catch (e, s) {
       domainLogger.error(
@@ -424,11 +431,12 @@ class DayAgentWeekContextService {
 
     final oldest = weekStarts.last;
     final newest = weekStarts.first;
-    // The fetch is an instant range, but the buckets are wall-clock weeks in
-    // the RECORDING device's zone, which can sit up to 14 hours either side of
-    // this device's. Widen the fetch by a day at each end so no span that
-    // belongs to a covered week is missed; the bucketing below discards
-    // whatever falls outside.
+    // The fetch is an instant range while the buckets are zone-free calendar
+    // readings. For the ordinary local-typed timestamp the two agree — the
+    // stored instant is exactly those components in this device's zone — but a
+    // UTC-typed `dateFrom` (imported data) can sit up to 14 hours off it.
+    // Widen by a day at each end so no span belonging to a covered week is
+    // missed; the bucketing below discards whatever falls outside.
     final spans = await _recordedSpansInRange(
       rangeStart: DateTime(oldest.year, oldest.month, oldest.day - 1),
       rangeEnd: DateTime(
@@ -440,9 +448,7 @@ class DayAgentWeekContextService {
     final coveredWeeks = weekStarts.toSet();
     final spansByWeek = <DateTime, List<RecordedSpan>>{};
     for (final span in spans) {
-      final week = canonicalWeekStart(
-        recordedWallClock(span.start, span.utcOffsetMinutes),
-      );
+      final week = canonicalWeekStart(recordedWallClock(span.start));
       if (!coveredWeeks.contains(week)) continue;
       spansByWeek.putIfAbsent(week, () => []).add(span);
     }

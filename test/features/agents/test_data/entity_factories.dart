@@ -373,7 +373,7 @@ WeekRollupEntity makeTestWeekRollup({
 }) {
   final start = weekStart ?? DateTime.utc(2026, 5, 18);
   return AgentDomainEntity.weekRollup(
-        id: id ?? 'week_rollup:2026-05-18',
+        id: id ?? 'week_rollup_v2:2026-05-18',
         agentId: agentId,
         weekStart: start,
         plannedMinutesByCategory: plannedMinutesByCategory,

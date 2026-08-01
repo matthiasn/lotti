@@ -777,12 +777,12 @@ void main() {
   group('week rollups', () {
     // _now is Wednesday 2026-06-10 → current week starts Monday 2026-06-08;
     // the last four COMPLETE weeks start 06-01, 05-25, 05-18, 05-11.
-    const newestId = 'week_rollup:2026-06-01';
+    const newestId = 'week_rollup_v2:2026-06-01';
     const allRollupIds = [
       newestId,
-      'week_rollup:2026-05-25',
-      'week_rollup:2026-05-18',
-      'week_rollup:2026-05-11',
+      'week_rollup_v2:2026-05-25',
+      'week_rollup_v2:2026-05-18',
+      'week_rollup_v2:2026-05-11',
     ];
 
     /// Routes the entity-batch reads by requested id shape: rollup-id
@@ -805,7 +805,7 @@ void main() {
         final ids = (invocation.positionalArguments.single as Iterable)
             .cast<String>()
             .toSet();
-        final source = ids.any((id) => id.startsWith('week_rollup:'))
+        final source = ids.any((id) => id.startsWith('week_rollup_v2:'))
             ? rollups
             : plans;
         return {
@@ -929,7 +929,7 @@ void main() {
       expect(newest.plannedMinutesByCategory, {'cat-work': 120});
       expect(newest.recordedMinutesByCategory, {'': 30, 'cat-work': 45});
       final midWeek =
-          upserted.firstWhere((e) => e.id == 'week_rollup:2026-05-18')
+          upserted.firstWhere((e) => e.id == 'week_rollup_v2:2026-05-18')
               as WeekRollupEntity;
       expect(
         midWeek.recordedMinutesByCategory,
@@ -938,8 +938,8 @@ void main() {
       );
     });
 
-    test('a span buckets by the zone it was RECORDED in, not the zone it is '
-        'read in', () async {
+    test('a span buckets by the recording wall clock, not the reading '
+        'zone', () async {
       stubEntityReads();
       when(
         () => journalDb.sortedCalendarEntries(
@@ -948,25 +948,49 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => [
-          // One instant, two recording zones. 2026-05-31T13:00Z is a Sunday
-          // (week 05-25) in UTC, but Monday 01:00 (week 06-01) for a device
-          // 12 hours ahead. Both entries below share that instant and differ
-          // only in the offset stamped on them, so the week each lands in is
-          // decided by the recording device — never by this one. That is what
-          // makes two devices in different zones agree.
+          // dateFrom crosses the wire with no zone suffix, so its components
+          // ARE the recorder's wall clock on every device holding the entry.
+          // Monday 00:30 belongs to the 06-01 week and Sunday 23:30 to the one
+          // before, and no reader zone can move either — nothing is converted.
           timeEntry(
-            id: 'recorded-ahead',
-            start: DateTime.utc(2026, 5, 31, 13),
+            id: 'recorded-monday',
+            start: DateTime(2026, 6, 1, 0, 30),
             minutes: 60,
-            categoryId: 'cat-ahead',
-            utcOffset: 12 * 60,
+            categoryId: 'cat-monday',
           ),
           timeEntry(
-            id: 'recorded-behind',
-            start: DateTime.utc(2026, 5, 31, 13),
+            id: 'recorded-sunday',
+            start: DateTime(2026, 5, 31, 23, 30),
             minutes: 30,
-            categoryId: 'cat-behind',
-            utcOffset: -12 * 60,
+            categoryId: 'cat-sunday',
+          ),
+        ],
+      );
+
+      await withNow(() => service.ensureWeekRollups());
+
+      final byId = {for (final e in upserted) e.id: e as WeekRollupEntity};
+      expect(byId[newestId]!.recordedMinutesByCategory, {'cat-monday': 60});
+      expect(
+        byId['week_rollup_v2:2026-05-25']!.recordedMinutesByCategory,
+        {'cat-sunday': 30},
+      );
+    });
+
+    test('a UTC-typed timestamp buckets by its own components too', () async {
+      stubEntityReads();
+      when(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: DateTime(2026, 5, 10),
+          rangeEnd: DateTime(2026, 6, 9),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          timeEntry(
+            id: 'imported',
+            start: DateTime.utc(2026, 5, 27, 12),
+            minutes: 45,
+            categoryId: 'cat-work',
           ),
         ],
       );
@@ -975,19 +999,16 @@ void main() {
 
       final byId = {for (final e in upserted) e.id: e as WeekRollupEntity};
       expect(
-        byId[newestId]!.recordedMinutesByCategory,
-        {'cat-ahead': 60},
-        reason: 'Recorded at Monday 01:00 local — the 06-01 week.',
-      );
-      expect(
-        byId['week_rollup:2026-05-25']!.recordedMinutesByCategory,
-        {'cat-behind': 30},
-        reason: 'Same instant, recorded at Sunday 01:00 local — prior week.',
+        byId['week_rollup_v2:2026-05-25']!.recordedMinutesByCategory,
+        {'cat-work': 45},
+        reason:
+            'Imported data is UTC-typed; reading components rather than '
+            'converting keeps every device on one answer for it too.',
       );
     });
 
     test(
-      'a legacy entry with no stamped offset falls back to this device',
+      'an entry with no stamped offset needs no special case',
       () async {
         stubEntityReads();
         when(
@@ -997,10 +1018,11 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => [
-            // Midweek local noon: no reachable offset (±14h) moves this across
-            // a week boundary, so the assertion holds in any test-runner zone.
+            // Nothing consults utcOffset, so an unstamped entry runs on
+            // exactly the same rule as any other — there is no divergent
+            // fallback to mark canonical.
             timeEntry(
-              id: 'legacy',
+              id: 'unstamped',
               start: DateTime(2026, 5, 27, 12),
               minutes: 45,
               categoryId: 'cat-work',
@@ -1011,7 +1033,7 @@ void main() {
         await withNow(() => service.ensureWeekRollups());
 
         final byId = {for (final e in upserted) e.id: e as WeekRollupEntity};
-        expect(byId['week_rollup:2026-05-25']!.recordedMinutesByCategory, {
+        expect(byId['week_rollup_v2:2026-05-25']!.recordedMinutesByCategory, {
           'cat-work': 45,
         });
       },
@@ -1025,7 +1047,7 @@ void main() {
             id: makeTestWeekRollup(
               id: id,
               weekStart: DateTime.parse(
-                '${id.substring('week_rollup:'.length)}T00:00:00Z',
+                '${id.substring('week_rollup_v2:'.length)}T00:00:00Z',
               ),
               plannedMinutesByCategory: const {},
               recordedMinutesByCategory: const {},
@@ -1067,7 +1089,7 @@ void main() {
               id: makeTestWeekRollup(
                 id: id,
                 weekStart: DateTime.parse(
-                  '${id.substring('week_rollup:'.length)}T00:00:00Z',
+                  '${id.substring('week_rollup_v2:'.length)}T00:00:00Z',
                 ),
                 plannedMinutesByCategory: const {},
                 recordedMinutesByCategory: const {},
@@ -1118,7 +1140,7 @@ void main() {
             id: makeTestWeekRollup(
               id: id,
               weekStart: DateTime.parse(
-                '${id.substring('week_rollup:'.length)}T00:00:00Z',
+                '${id.substring('week_rollup_v2:'.length)}T00:00:00Z',
               ),
               plannedMinutesByCategory: const {},
               recordedMinutesByCategory: const {},
@@ -1153,8 +1175,8 @@ void main() {
             // Stale register: source data says empty (e.g. a plan tombstoned
             // after the week left the newest slot, or an incomplete aggregate
             // that won a concurrent-LWW race on another device).
-            'week_rollup:2026-05-18': makeTestWeekRollup(
-              id: 'week_rollup:2026-05-18',
+            'week_rollup_v2:2026-05-18': makeTestWeekRollup(
+              id: 'week_rollup_v2:2026-05-18',
               weekStart: DateTime.utc(2026, 5, 18),
               plannedMinutesByCategory: const {'cat-a': 1},
               recordedMinutesByCategory: const {},
@@ -1167,16 +1189,16 @@ void main() {
         expect(
           [for (final e in upserted) e.id],
           [
-            'week_rollup:2026-05-25',
-            'week_rollup:2026-05-18',
-            'week_rollup:2026-05-11',
+            'week_rollup_v2:2026-05-25',
+            'week_rollup_v2:2026-05-18',
+            'week_rollup_v2:2026-05-11',
           ],
           reason:
               'The unchanged newest week skips its write; the stale 05-18 '
               'register is corrected from source, the missing weeks created.',
         );
         final corrected =
-            upserted.firstWhere((e) => e.id == 'week_rollup:2026-05-18')
+            upserted.firstWhere((e) => e.id == 'week_rollup_v2:2026-05-18')
                 as WeekRollupEntity;
         expect(
           corrected.plannedMinutesByCategory,
@@ -1193,7 +1215,7 @@ void main() {
             id: makeTestWeekRollup(
               id: id,
               weekStart: DateTime.parse(
-                '${id.substring('week_rollup:'.length)}T00:00:00Z',
+                '${id.substring('week_rollup_v2:'.length)}T00:00:00Z',
               ),
               plannedMinutesByCategory: const {},
               recordedMinutesByCategory: const {},
@@ -1240,16 +1262,16 @@ void main() {
         'tombstones', () async {
       stubEntityReads(
         rollups: {
-          'week_rollup:2026-05-18': makeTestWeekRollup(
-            id: 'week_rollup:2026-05-18',
+          'week_rollup_v2:2026-05-18': makeTestWeekRollup(
+            id: 'week_rollup_v2:2026-05-18',
             weekStart: DateTime.utc(2026, 5, 18),
           ),
           newestId: makeTestWeekRollup(
             id: newestId,
             weekStart: DateTime.utc(2026, 6),
           ),
-          'week_rollup:2026-05-25': makeTestWeekRollup(
-            id: 'week_rollup:2026-05-25',
+          'week_rollup_v2:2026-05-25': makeTestWeekRollup(
+            id: 'week_rollup_v2:2026-05-25',
             weekStart: DateTime.utc(2026, 5, 25),
             deletedAt: _now,
           ),
@@ -1261,6 +1283,31 @@ void main() {
       expect(
         [for (final r in rollups) r.weekStart],
         [DateTime.utc(2026, 6), DateTime.utc(2026, 5, 18)],
+      );
+    });
+
+    test('recentWeekRollups omits registers a failed migration left '
+        'legacy', () async {
+      stubEntityReads(
+        rollups: {
+          newestId: makeTestWeekRollup(id: newestId),
+          'week_rollup_v2:2026-05-25': makeTestWeekRollup(
+            id: 'week_rollup_v2:2026-05-25',
+            weekStart: DateTime.utc(2026, 5, 25),
+            bucketingRule: null,
+          ),
+        },
+      );
+
+      final rollups = await withNow(() => service.recentWeekRollups());
+
+      expect(
+        [for (final r in rollups) r.id],
+        [newestId],
+        reason:
+            'ensureWeekRollups is fail-soft, so a part-way failure can leave '
+            'legacy rows live beside migrated ones. Rendering both would feed '
+            'the digest two bucketing rules in one section without saying so.',
       );
     });
 

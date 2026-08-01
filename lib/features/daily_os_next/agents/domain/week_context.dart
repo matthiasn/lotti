@@ -44,7 +44,6 @@ class RecordedSpan {
     required this.start,
     required this.duration,
     this.taskId,
-    this.utcOffsetMinutes,
   });
 
   /// The category the time belongs to (null renders as "Uncategorized").
@@ -58,12 +57,6 @@ class RecordedSpan {
 
   /// The backing task, when the time was recorded against one.
   final String? taskId;
-
-  /// UTC offset in minutes of the device that recorded the span, stamped on
-  /// the entry at creation. Week rollups bucket by the wall clock this
-  /// implies rather than by the reading device's zone, so the same span lands
-  /// in the same week everywhere. Null on entries predating the field.
-  final int? utcOffsetMinutes;
 }
 
 /// The rendered week-context section bodies (no surrounding tags).

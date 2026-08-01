@@ -25,6 +25,22 @@ DayPlanData _data(DateTime planDate, List<PlannedBlock> blocks) => DayPlanData(
 );
 
 void main() {
+  test('the week label is formatted from the key, never converted', () {
+    // localDay() on this zone-free Monday renders 2026-05-31 anywhere west of
+    // UTC — a wrong week label on otherwise-correct totals.
+    final rendered = renderRecentWeeksJson(
+      rollups: [
+        makeTestWeekRollup(
+          id: 'week_rollup_v2:2026-06-01',
+          weekStart: DateTime.utc(2026, 6),
+        ),
+      ],
+      categoryName: (id) => id,
+    );
+
+    expect(rendered!.single['weekStart'], '2026-06-01');
+  });
+
   group('computeWeekRollupAggregates', () {
     test('sums planned minutes per category across days, skipping dropped '
         'blocks, and counts distinct planned days', () {
@@ -153,7 +169,7 @@ void main() {
       final rendered = renderRecentWeeksJson(
         rollups: [
           makeTestWeekRollup(
-            id: 'week_rollup:2026-05-11',
+            id: 'week_rollup_v2:2026-05-11',
             weekStart: DateTime(2026, 5, 11),
             plannedMinutesByCategory: const {'cat-work': 300},
             recordedMinutesByCategory: const {},

@@ -194,15 +194,32 @@ wearing the costume of a bucketing bug.
 
 Two rules make the computation a property of the data rather than of the reader:
 
+**The fix rests on how `dateFrom` crosses the wire.** It is a local-typed
+timestamp serialized with `toIso8601String()`, which emits **no zone suffix**,
+and the receiver parses it back as local. Its *components* are therefore the
+recording device's wall clock on every device that holds the entry — while the
+instant it denotes is reader-relative, because each device resolves those
+components in its own zone. Reading the components is what makes the answer a
+property of the data; converting first (`toUtc()`, `toLocal()`) turns it back
+into a reader-relative instant, which was the bug.
+
 | Input | Canonical rule |
 |-------|----------------|
-| Recorded minutes | `recordedWallClock(span.start, span.utcOffsetMinutes)` — the wall clock of the **recording** device, from `Metadata.utcOffset` |
+| Recorded minutes | `recordedWallClock(span.start)` — `dateFrom`'s calendar components, read as-is |
 | Planned minutes | already stable: keyed by date-only `dayplan-<date>` ids, never by an instant |
-| Week key | `canonicalWeekStart` reads calendar **components** and returns a UTC-typed midnight; `weekRollupEntityId` hashes those components, never a converted instant |
+| Week key | `canonicalWeekStart` reads calendar **components** and returns a UTC-typed midnight; `weekRollupEntityId` hashes those, never a converted instant |
+| Week label | `isoCalendarDate` formats those components; a converting read renders the canonical Monday as the preceding Sunday west of UTC |
 
-Because the buckets are wall-clock weeks in the recording zone and the fetch is
-an instant range, the spanning read widens a day at each end (recording zones
-reach ±14h) and bucketing discards what falls outside.
+`Metadata.utcOffset` is deliberately **not** consulted. It records the offset at
+*creation*, not at `dateFrom`, so a backfilled or cross-DST entry carries an
+offset that does not apply to its own timestamp — and it is absent on older
+entries, which would put them on a different rule from everything else. The
+components need neither.
+
+The spanning read still widens a day at each end: for the ordinary local-typed
+timestamp the stored instant and the components agree, but a UTC-typed
+`dateFrom` (imported data) can sit up to 14 hours off the reader-local range.
+Bucketing discards whatever falls outside.
 
 **Which weeks** to compute still follows the reading device's calendar — "recent"
 means recent to the user. Two devices straddling a Monday boundary may therefore
@@ -217,17 +234,23 @@ stateDiagram-v2
   Canonical --> Canonical: recompute (write skipped when unchanged)
 ```
 
+**The register id carries a generation: `week_rollup_v2:<Monday>`.** During a
+staggered upgrade a device still on the previous build recomputes the *old* id
+with the old reader-local rule and writes it back unstamped; had both
+generations shared an id, the two builds would have overwritten each other for
+as long as the rollout lasted — the exact loop this change exists to end.
+Old-generation rows are inert, because nothing reads them again.
+
 `WeekRollupEntity.bucketingRule` records which rule produced a register:
 `recordedLocal` for canonical, null for legacy. The steady-state
 skip-when-unchanged check requires the stamp as well as matching numbers —
-matching numbers on a legacy register are a coincidence, not evidence — so a
-legacy register inside the window is always rewritten, stamped, and its
-device-local `weekStart` migrated to the zone-free key. Registers older than the
-window keep their legacy values and stay identifiable by the null.
+matching numbers on a legacy register are a coincidence, not evidence.
 
-Entries predating `Metadata.utcOffset` carry no recording zone and fall back to
-the reading device's — the only answer still available, and the pre-canonical
-behaviour.
+`recentWeekRollups` renders **canonical registers only**. `ensureWeekRollups` is
+fail-soft, so a refresh that threw part-way can leave legacy registers live
+beside migrated ones; rendering both would feed the digest two bucketing rules
+in one section without saying so. A failed migration therefore shows up as an
+absent week rather than as a wrong trend.
 
 # The other two upward channels
 

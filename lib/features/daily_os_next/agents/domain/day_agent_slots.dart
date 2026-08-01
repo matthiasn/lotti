@@ -64,31 +64,33 @@ String dayStatusEventIdForProcessingJob(String dayId, String processingJobId) =>
 /// reading device happened to be in.
 const recordedLocalBucketingRule = 'recordedLocal';
 
-/// The wall clock an instant was recorded at, from the UTC offset the
-/// recording device stamped on the entry (`Metadata.utcOffset`, in minutes).
+/// The wall clock a recorded entry carries, as a zone-free calendar reading.
 ///
-/// Returned UTC-typed, but it is **not a UTC instant** — it is a zone-free
-/// calendar reading, the numbers that were on the recorder's clock. That is
-/// what makes it canonical: every device derives the same reading from the
-/// same synced entry, whereas `start.toLocal()` answers differently on a
-/// device in another zone.
+/// `Metadata.dateFrom` is a local-typed timestamp serialized with
+/// `toIso8601String()`, which emits **no zone suffix**, and the receiving
+/// device parses it back as local. Its *components* are therefore the
+/// recording device's wall clock on every device that holds the entry, while
+/// the instant it denotes is not — that is reader-relative, because each
+/// device resolves those components in its own zone.
 ///
-/// A legacy entry with no stamped offset falls back to the reading device's
-/// zone — the pre-canonical behaviour, and the only answer still available.
-DateTime recordedWallClock(DateTime start, int? utcOffsetMinutes) {
-  if (utcOffsetMinutes == null) {
-    final local = start.toLocal();
-    return DateTime.utc(
-      local.year,
-      local.month,
-      local.day,
-      local.hour,
-      local.minute,
-      local.second,
-    );
-  }
-  return start.toUtc().add(Duration(minutes: utcOffsetMinutes));
-}
+/// So the canonical reading is the components, read as-is. Converting first
+/// (`start.toUtc()`, `start.toLocal()`) is precisely the mistake: it turns a
+/// device-independent calendar reading back into a reader-relative instant,
+/// which is what made two devices disagree about the same entry's week.
+///
+/// The stamped `Metadata.utcOffset` is deliberately NOT consulted. It records
+/// the offset at *creation* time rather than at `dateFrom`, so a backfilled or
+/// cross-DST entry carries an offset that does not apply to its own timestamp;
+/// and it is absent on older entries, which would leave them on a different
+/// rule from everything else. The components need neither.
+DateTime recordedWallClock(DateTime start) => DateTime.utc(
+  start.year,
+  start.month,
+  start.day,
+  start.hour,
+  start.minute,
+  start.second,
+);
 
 /// Monday 00:00 of the ISO week containing [date], read from [date]'s own
 /// calendar components and returned UTC-typed — the zone-free week key that
@@ -109,7 +111,7 @@ DateTime canonicalWeekStart(DateTime date) {
 }
 
 /// Deterministic agent-entity ID for the weekly rollup register keyed by the
-/// week's Monday: `week_rollup:<yyyy-MM-dd>`.
+/// week's Monday: `week_rollup_v2:<yyyy-MM-dd>`.
 ///
 /// One revisable register per calendar week, recomputed from source data at
 /// digest time (plain LWW — a recompute on any device converges).
@@ -118,10 +120,22 @@ DateTime canonicalWeekStart(DateTime date) {
 /// a converting read would give two devices in different zones two different
 /// ids for the same week, which is the register-flapping this file's
 /// bucketing rules exist to prevent.
+///
+/// **The `_v2` generation is what keeps a staggered upgrade honest.** A device
+/// still on the previous build recomputes the old `week_rollup:` id with the
+/// old reader-local rule and writes it back without the canonical stamp; had
+/// both generations shared an id, the two builds would have overwritten each
+/// other for as long as the rollout lasted — the exact loop this change
+/// exists to end. Old-generation rows are inert: nothing reads them again.
 String weekRollupEntityId(DateTime weekStart) =>
-    'week_rollup:${_isoDate(weekStart)}';
+    'week_rollup_v2:${isoCalendarDate(weekStart)}';
 
-String _isoDate(DateTime date) =>
+/// `yyyy-MM-dd` read from [date]'s own calendar components.
+///
+/// Never `toIso8601String()` after a `localDay`/`toUtc` conversion: on a
+/// zone-free key that moves the date, which is how a canonical Monday ends up
+/// labelled as the preceding Sunday.
+String isoCalendarDate(DateTime date) =>
     '${date.year.toString().padLeft(4, '0')}-'
     '${date.month.toString().padLeft(2, '0')}-'
     '${date.day.toString().padLeft(2, '0')}';

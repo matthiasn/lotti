@@ -129,35 +129,33 @@ void main() {
   });
 
   group('recordedWallClock', () {
-    test('reads the clock of the recording device, not the reading one', () {
-      // One instant, two recording zones, two different calendar days.
-      final instant = DateTime.utc(2026, 5, 31, 13);
+    test("reads the timestamp's components, never a conversion", () {
+      // dateFrom crosses the wire without a zone suffix, so its components are
+      // the recorder's wall clock on every device. Converting would make the
+      // answer depend on the reader's zone, which is the bug this replaces.
       expect(
-        recordedWallClock(instant, 12 * 60),
-        DateTime.utc(2026, 6, 1, 1),
-      );
-      expect(
-        recordedWallClock(instant, -12 * 60),
-        DateTime.utc(2026, 5, 31, 1),
-      );
-    });
-
-    test('an unstamped legacy entry falls back to the reading device', () {
-      final local = DateTime(2026, 5, 27, 12, 30, 15);
-
-      expect(
-        recordedWallClock(local, null),
+        recordedWallClock(DateTime(2026, 5, 27, 12, 30, 15)),
         DateTime.utc(2026, 5, 27, 12, 30, 15),
-        reason:
-            "The wall clock is the reading zone's, expressed as the same "
-            'zone-free reading the stamped path produces.',
       );
     });
 
-    test('a zero offset means UTC, not "unstamped"', () {
+    test('a UTC-typed timestamp keeps its own components too', () {
       expect(
-        recordedWallClock(DateTime.utc(2026, 5, 31, 13), 0),
-        DateTime.utc(2026, 5, 31, 13),
+        recordedWallClock(DateTime.utc(2026, 5, 31, 23, 30)),
+        DateTime.utc(2026, 5, 31, 23, 30),
+        reason:
+            'Imported data is UTC-typed; reading components rather than '
+            'converting keeps every device on one answer for it too.',
+      );
+    });
+
+    test('a local and a UTC spelling of one wall clock agree', () {
+      expect(
+        recordedWallClock(DateTime(2026, 6, 1, 0, 30)),
+        recordedWallClock(DateTime.utc(2026, 6, 1, 0, 30)),
+        reason:
+            'The reading is the calendar, not the instant — which is exactly '
+            'what makes two devices bucket the same entry identically.',
       );
     });
   });
@@ -168,7 +166,7 @@ void main() {
       // drift here would silently orphan persisted rollups.
       expect(
         weekRollupEntityId(DateTime(2026, 5, 18)),
-        'week_rollup:2026-05-18',
+        'week_rollup_v2:2026-05-18',
       );
     });
 
@@ -178,18 +176,18 @@ void main() {
       // is exactly the register flapping the canonical key prevents.
       expect(
         weekRollupEntityId(DateTime.utc(2026, 5, 18, 23, 59)),
-        'week_rollup:2026-05-18',
+        'week_rollup_v2:2026-05-18',
       );
       expect(
         weekRollupEntityId(DateTime(2026, 5, 18, 23, 59)),
-        'week_rollup:2026-05-18',
+        'week_rollup_v2:2026-05-18',
       );
     });
 
     test('pads single-digit months and days', () {
       expect(
         weekRollupEntityId(DateTime.utc(2026, 1, 5)),
-        'week_rollup:2026-01-05',
+        'week_rollup_v2:2026-01-05',
       );
     });
   });
