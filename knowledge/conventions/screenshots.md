@@ -5,8 +5,8 @@ description: Where captured images live — never in this repository — and why
 resource: ../../test/test_utils/screenshot_harness.dart
 tags: [convention, screenshots, review, pull-request, lotti-docs]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T18:00:00Z }
-stale_after: 2027-01-18
+generated: { by: claude-code/opus-5, at: 2026-08-01T12:10:00Z }
+stale_after: 2027-02-01
 sources:
   - id: harness
     resource: ../../test/test_utils/screenshot_harness.dart
@@ -72,8 +72,22 @@ full catalog does not fit in a single job's timeout — nightly and on dispatch
 only, four at a time, because eleven runners per merge is more than a catalog
 that rarely changes is worth. **A UI change therefore ships before its manual
 media does**; dispatch the workflow when a screenshot needs to be current
-sooner. Run a single locale the same way CI does when iterating on one
-language:
+sooner.
+
+Whether the harness still *runs* is checked earlier and separately:
+`manual-capture-check.yml` captures one locale on any pull request touching
+`lib/`, `assets/`, a harness, or a registered screenshot test. It publishes
+nothing — it exists because these suites are opt-in, so no other *pull
+request* lane executes them and a UI change would otherwise only be found to
+have broken the catalog by the nightly capture.
+
+It defaults to **German**, not the authoring locale: every other locale falls
+back to English, so a rendering that only breaks once a translation is
+involved stays green there. That is not hypothetical — a proposal row whose
+quotation marks come from the locale (`„…“` in German and Czech, `"…"` in
+English) passed English and failed the other ten. Override with the
+`MANUAL_CHECK_LOCALE` repository variable. Run a single locale the same way CI
+does when iterating on one language:
 
 ```bash
 make manual_screenshots_shard MANUAL_LOCALE=de

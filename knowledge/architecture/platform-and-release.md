@@ -5,8 +5,8 @@ description: Five platform targets from one codebase, the checks every branch ru
 resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-30T21:16:11Z }
-stale_after: 2027-01-30
+generated: { by: claude-code/opus-5, at: 2026-08-01T12:10:00Z }
+stale_after: 2027-02-01
 sources:
   - id: workflows
     resource: ../../.github/workflows
@@ -93,6 +93,15 @@ Two more run on **every** branch push despite looking scoped:
 Genuinely path-filtered, both on pushes *and* pull requests to `main`:
 `python-tools-ci.yml` (the Python tools) and `manual.yml` (docs-site) — the latter
 also runs on a nightly cron (`23 2 * * *`) and on manual dispatch.
+
+`manual-capture-check.yml` is pull-request-only and exists because the two
+cadences above leave a gap: the harnesses render real production widgets, so
+app code is what usually breaks them, but `manual.yml` does not watch `lib/`
+and no longer captures on push at all. It runs the same capture for **one**
+locale and publishes nothing. The locale defaults to German rather than the
+authoring locale, because every other locale falls back to English — a
+rendering that only breaks once a translation is involved stays green there.
+Override with the `MANUAL_CHECK_LOCALE` repository variable.
 
 `manual.yml` is also the manual's **publishing** lane, built around a
 Cloudflare R2 bucket rather than git or Pages alone. Screenshots publish to
