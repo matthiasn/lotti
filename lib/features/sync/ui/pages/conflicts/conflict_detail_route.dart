@@ -110,7 +110,6 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
               );
             }
             final pair = ConflictPair(
-              conflict: conflict,
               local: local,
               remote: remote,
             );

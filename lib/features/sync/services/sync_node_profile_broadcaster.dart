@@ -125,14 +125,6 @@ class SyncNodeProfileBroadcaster {
     return true;
   }
 
-  /// Persists a new display name and triggers a broadcast.
-  Future<void> setDisplayName(String displayName, {String? appVersion}) async {
-    await broadcastIfChanged(
-      displayNameOverride: displayName,
-      appVersion: appVersion,
-    );
-  }
-
   bool _contentMatches(SyncNodeProfile a, SyncNodeProfile b) {
     return a.hostId == b.hostId &&
         a.displayName == b.displayName &&

@@ -229,18 +229,6 @@ void main() {
   });
 
   test(
-    'setDisplayName routes through broadcastIfChanged with the override and '
-    'persists the new name',
-    () async {
-      await broadcaster.setDisplayName('Studio Mac');
-
-      final self = await repo.getSelf();
-      expect(self?.displayName, 'Studio Mac');
-      verify(() => outboxService.enqueueMessage(any())).called(1);
-    },
-  );
-
-  test(
     'with a DomainLogger wired, the issued-broadcast and skipped-unchanged '
     'log paths fire on the matching control flow',
     () async {

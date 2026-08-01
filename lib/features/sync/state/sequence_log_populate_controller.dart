@@ -21,7 +21,6 @@ class SequenceLogPopulateState {
     this.populatedLinksCount,
     this.populatedAgentEntitiesCount,
     this.populatedAgentLinksCount,
-    this.totalCount,
     this.error,
     this.phase = SequenceLogPopulatePhase.idle,
   });
@@ -32,7 +31,6 @@ class SequenceLogPopulateState {
   final int? populatedLinksCount;
   final int? populatedAgentEntitiesCount;
   final int? populatedAgentLinksCount;
-  final int? totalCount;
   final String? error;
   final SequenceLogPopulatePhase phase;
 
@@ -43,7 +41,6 @@ class SequenceLogPopulateState {
     int? populatedLinksCount,
     int? populatedAgentEntitiesCount,
     int? populatedAgentLinksCount,
-    int? totalCount,
     String? error,
     SequenceLogPopulatePhase? phase,
     bool clearError = false,
@@ -62,7 +59,6 @@ class SequenceLogPopulateState {
       populatedAgentLinksCount: clearCount
           ? null
           : populatedAgentLinksCount ?? this.populatedAgentLinksCount,
-      totalCount: clearCount ? null : totalCount ?? this.totalCount,
       error: clearError ? null : error ?? this.error,
       phase: phase ?? this.phase,
     );

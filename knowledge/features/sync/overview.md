@@ -118,9 +118,9 @@ Base64url-encoded — from a device that already syncs to one that does not.
 `SyncBundleKind` decides what consuming it does: a `provisioned` bundle (minted
 by the CLI) rotates the account password and persists the new one; a `handover`
 bundle (minted by a peer) joins without rotating, so every peer shares one live
-credential. `ProvisioningController.rotatesPassword` exposes that distinction —
-the progress step count is **three for a rotating bundle and two otherwise**,
-and derives from the bundle kind, never from the platform.
+credential. The controller's state transitions expose that distinction directly:
+a rotating bundle enters `rotatingPassword`, while a handover bundle proceeds
+from room join to `done`. The behavior derives from bundle kind, never platform.
 
 ```mermaid
 stateDiagram-v2

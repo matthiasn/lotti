@@ -21,10 +21,6 @@ class MessageCountsViewState extends ConsumerState<MessageCountsView> {
   MatrixStats? _stats;
   ProviderSubscription<AsyncValue<MatrixStats>>? _subscription;
   String? _signature;
-  bool _subscriptionClosed = false;
-
-  @visibleForTesting
-  bool get subscriptionClosed => _subscriptionClosed;
 
   @override
   void initState() {
@@ -54,7 +50,6 @@ class MessageCountsViewState extends ConsumerState<MessageCountsView> {
     final subscription = _subscription;
     _subscription = null;
     subscription?.close();
-    _subscriptionClosed = true;
     super.dispose();
   }
 

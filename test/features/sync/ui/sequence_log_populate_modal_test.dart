@@ -270,7 +270,6 @@ void main() {
       expect(state.progress, 0);
       expect(state.isRunning, false);
       expect(state.populatedCount, isNull);
-      expect(state.totalCount, isNull);
       expect(state.error, isNull);
     });
 
@@ -279,14 +278,12 @@ void main() {
         progress: 0.5,
         isRunning: true,
         populatedCount: 100,
-        totalCount: 200,
         error: 'error',
       );
       final copied = state.copyWith();
       expect(copied.progress, 0.5);
       expect(copied.isRunning, true);
       expect(copied.populatedCount, 100);
-      expect(copied.totalCount, 200);
       expect(copied.error, 'error');
     });
 
@@ -296,13 +293,11 @@ void main() {
         progress: 0.75,
         isRunning: true,
         populatedCount: 50,
-        totalCount: 100,
         error: 'new error',
       );
       expect(copied.progress, 0.75);
       expect(copied.isRunning, true);
       expect(copied.populatedCount, 50);
-      expect(copied.totalCount, 100);
       expect(copied.error, 'new error');
     });
 
@@ -313,13 +308,9 @@ void main() {
     });
 
     test('copyWith clearCount removes counts', () {
-      const state = SequenceLogPopulateState(
-        populatedCount: 100,
-        totalCount: 200,
-      );
+      const state = SequenceLogPopulateState(populatedCount: 100);
       final copied = state.copyWith(clearCount: true);
       expect(copied.populatedCount, isNull);
-      expect(copied.totalCount, isNull);
     });
 
     test('copyWith clearError takes precedence over new error', () {
@@ -329,17 +320,12 @@ void main() {
     });
 
     test('copyWith clearCount takes precedence over new counts', () {
-      const state = SequenceLogPopulateState(
-        populatedCount: 10,
-        totalCount: 20,
-      );
+      const state = SequenceLogPopulateState(populatedCount: 10);
       final copied = state.copyWith(
         clearCount: true,
         populatedCount: 30,
-        totalCount: 40,
       );
       expect(copied.populatedCount, isNull);
-      expect(copied.totalCount, isNull);
     });
   });
 }

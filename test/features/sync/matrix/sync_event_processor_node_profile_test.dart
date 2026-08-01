@@ -66,8 +66,7 @@ void main() {
 
     await processorWithRepo.process(event: event2, journalDb: journalDb);
 
-    final stored = await repo.getNode('peer-1');
-    expect(stored, profile);
+    expect(await repo.listKnownNodes(), [profile]);
   });
 
   test('does not write to JournalDb or emit UpdateNotifications', () async {
@@ -121,8 +120,7 @@ void main() {
       ).thenReturn(_encode(SyncMessage.syncNodeProfile(profile: stale)));
       await processorWithRepo.process(event: event2, journalDb: journalDb);
 
-      final stored = await repo.getNode('peer-3');
-      expect(stored?.displayName, 'Newer');
+      expect((await repo.listKnownNodes()).single.displayName, 'Newer');
     },
   );
 

@@ -40,12 +40,9 @@ class _PreAcquiredLock extends MatrixVerificationModalLock {
 
 /// A fake provisioning controller that provides a fixed state.
 class _FakeProvisioningController extends ProvisioningController {
-  _FakeProvisioningController(this.initialState, {this.rotates = false});
+  _FakeProvisioningController(this.initialState);
 
   final ProvisioningState initialState;
-
-  /// Stands in for the bundle kind the real controller derives this from.
-  final bool rotates;
 
   /// How often the bar's Retry invoked the controller.
   int retryCalls = 0;
@@ -55,9 +52,6 @@ class _FakeProvisioningController extends ProvisioningController {
 
   @override
   ProvisioningState build() => initialState;
-
-  @override
-  bool get rotatesPassword => rotates;
 
   @override
   Future<void> retry() async {
@@ -152,7 +146,6 @@ void main() {
     WidgetTester tester,
     ProvisioningState state, {
     List<Override> extraOverrides = const [],
-    bool rotates = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -160,7 +153,7 @@ void main() {
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
           provisioningControllerProvider.overrideWith(
-            () => _FakeProvisioningController(state, rotates: rotates),
+            () => _FakeProvisioningController(state),
           ),
           ...extraOverrides,
         ],

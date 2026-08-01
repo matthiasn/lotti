@@ -85,7 +85,6 @@ void main() {
       final changed = await repo.upsertNode(profile);
 
       expect(changed, isTrue);
-      expect(await repo.getNode('peer-1'), profile);
       expect(await repo.listKnownNodes(), [profile]);
     });
 
@@ -102,7 +101,7 @@ void main() {
       final changed = await repo.upsertNode(newer);
 
       expect(changed, isTrue);
-      expect((await repo.getNode('peer-1'))?.displayName, 'New');
+      expect((await repo.listKnownNodes()).single.displayName, 'New');
     });
 
     test(
@@ -120,7 +119,7 @@ void main() {
         final changed = await repo.upsertNode(stale);
 
         expect(changed, isFalse);
-        expect((await repo.getNode('peer-1'))?.displayName, 'New');
+        expect((await repo.listKnownNodes()).single.displayName, 'New');
       },
     );
 

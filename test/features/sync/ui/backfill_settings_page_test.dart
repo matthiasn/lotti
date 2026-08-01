@@ -1518,7 +1518,7 @@ void main() {
     });
   });
 
-  group('debugFormatCount · locale plumbing', () {
+  group('formatCount · locale plumbing', () {
     // The formatter itself is intl's; what is OURS is that the widget's
     // locale actually reaches NumberFormat. Locales chosen for stable
     // separators across CLDR versions (fr uses a narrow no-break space
@@ -1540,7 +1540,7 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (context) {
-                formatted = debugFormatCount(context, 715544);
+                formatted = formatCount(context, 715544);
                 return const SizedBox.shrink();
               },
             ),
