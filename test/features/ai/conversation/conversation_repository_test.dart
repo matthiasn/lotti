@@ -143,15 +143,6 @@ void main() {
       expect(manager, isNull);
     });
 
-    test('deleteConversation disposes the manager (events stream closes)', () {
-      final id = repository.createConversation();
-      final manager = repository.getConversation(id)!;
-
-      final closed = expectLater(manager.events, emitsDone);
-      repository.deleteConversation(id);
-      return closed;
-    });
-
     test('dispose cleans up all conversations', () {
       // Create conversations
       final ids = <String>[];
@@ -750,15 +741,6 @@ void main() {
         // After 2 turns, canContinue should be false
         expect(manager.canContinue(), false);
 
-        // Try to send third message anyway and expect user message followed by error event
-        final maxTurnsError = expectLater(
-          manager.events,
-          emitsInOrder([
-            isA<UserMessageEvent>(),
-            isA<ConversationErrorEvent>(),
-          ]),
-        );
-
         await repository.sendMessage(
           conversationId: conversationId,
           message: 'Third message',
@@ -767,11 +749,10 @@ void main() {
           inferenceRepo: mockOllamaRepo,
         );
 
-        await maxTurnsError;
-
         // Verify that we're at the turn limit (user message may have been added)
         expect(manager.turnCount, lessThanOrEqualTo(3));
         expect(manager.canContinue(), false);
+        expect(manager.lastError, 'Maximum conversation turns reached');
 
         // Verify that the conversation has the expected number of messages
         // 2 turns = 4 messages (2 user + 2 assistant) + possibly 1 more user message
@@ -788,21 +769,6 @@ void main() {
 
         final manager = repository.getConversation(conversationId)!;
 
-        // Expect UserMessageEvent followed by ThinkingEvent and then a
-        // ConversationErrorEvent carrying the thrown exception's message.
-        final errorExpectation = expectLater(
-          manager.events,
-          emitsInOrder([
-            isA<UserMessageEvent>(),
-            isA<ThinkingEvent>(),
-            isA<ConversationErrorEvent>().having(
-              (e) => e.message,
-              'message',
-              contains('API Error'),
-            ),
-          ]),
-        );
-
         await repository.sendMessage(
           conversationId: conversationId,
           message: 'This will fail',
@@ -811,7 +777,7 @@ void main() {
           inferenceRepo: mockOllamaRepo,
         );
 
-        await errorExpectation;
+        expect(manager.lastError, contains('API Error'));
       });
 
       test(

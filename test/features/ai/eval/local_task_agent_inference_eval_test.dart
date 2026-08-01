@@ -1013,7 +1013,6 @@ void main() {
       final conversationRepository = _ThrowingConversationRepository(
         _ConversationFailurePoint.create,
       );
-      addTearDown(conversationRepository.disposeManager);
       final runner = LocalTaskAgentInferenceEvalRunner(
         provider: provider,
         conversationRepository: conversationRepository,
@@ -1040,7 +1039,6 @@ void main() {
     final conversationRepository = _ThrowingConversationRepository(
       _ConversationFailurePoint.send,
     );
-    addTearDown(conversationRepository.disposeManager);
     final runner = LocalTaskAgentInferenceEvalRunner(
       provider: provider,
       conversationRepository: conversationRepository,
@@ -2233,12 +2231,9 @@ class _ThrowingConversationRepository extends ConversationRepository {
 
   final _ConversationFailurePoint failurePoint;
   final _manager = ConversationManager(
-    conversationId: 'throwing-conversation',
     maxTurns: 2,
   );
   int deleteCount = 0;
-
-  void disposeManager() => _manager.dispose();
 
   @override
   String createConversation({String? systemMessage, int maxTurns = 20}) {

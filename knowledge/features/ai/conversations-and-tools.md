@@ -5,13 +5,13 @@ description: The reusable multi-turn loop behind every agent workflow, and the s
 resource: ../../../lib/features/ai/conversation
 tags: [ai, conversation, tool-calling, streaming]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-01T00:00:00Z }
 stale_after: 2026-10-19
 sources:
   - id: conversation
     resource: ../../../lib/features/ai/conversation
     title: ConversationRepository and ConversationManager
-    last_modified: 2026-07-21
+    last_modified: 2026-08-01
 ---
 
 `ConversationRepository` and `ConversationManager` provide the reusable
@@ -40,7 +40,6 @@ sequenceDiagram
 Responsibilities:
 
 - Preserve conversation history.
-- Emit conversation events for the UI.
 - Accumulate streamed tool calls across chunks.
 - Keep Gemini thought signatures between turns.
 - Re-enter the loop through a `ConversationStrategy` after tool execution.

@@ -15,7 +15,7 @@ void main() {
 
   setUp(() {
     strategy = EvolutionStrategy();
-    manager = ConversationManager(conversationId: 'test-conv')
+    manager = ConversationManager()
       ..initialize(systemMessage: 'You are an evolution agent.');
   });
 
@@ -40,7 +40,7 @@ void main() {
     late ConversationManager bridgeManager;
 
     setUp(() {
-      final bench = buildGenUiBench(conversationId: 'test-bridge');
+      final bench = buildGenUiBench();
       bridge = bench.bridge;
       strategyWithBridge = bench.strategy;
       bridgeManager = bench.manager;
@@ -409,7 +409,6 @@ void main() {
 
     setUp(() {
       final bench = buildGenUiBench(
-        conversationId: 'test-soul-auto',
         strategyBuilder: (bridge) => EvolutionStrategy(
           genUiBridge: bridge,
           currentVoiceDirective: 'Old voice.',
@@ -484,8 +483,7 @@ void main() {
       final emptyProcessor = SurfaceController(catalogs: []);
       final brokenBridge = GenUiBridge(processor: emptyProcessor);
       final strat = EvolutionStrategy(genUiBridge: brokenBridge);
-      final mgr = ConversationManager(conversationId: 'test-broken')
-        ..initialize();
+      final mgr = ConversationManager()..initialize();
 
       final toolCall = makeToolCall(
         name: 'propose_soul_directives',

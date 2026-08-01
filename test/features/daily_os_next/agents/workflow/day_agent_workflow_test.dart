@@ -7120,7 +7120,6 @@ class _ConversationHarness extends ConversationRepository {
     lastSystemMessage = systemMessage;
     final id = 'conversation-$createdConversationCount';
     _managers[id] = ConversationManager(
-      conversationId: id,
       maxTurns: maxTurns,
     )..initialize(systemMessage: systemMessage);
     return id;
@@ -7200,6 +7199,6 @@ class _ConversationHarness extends ConversationRepository {
   @override
   void deleteConversation(String conversationId) {
     deletedConversationCount++;
-    _managers.remove(conversationId)?.dispose();
+    _managers.remove(conversationId);
   }
 }

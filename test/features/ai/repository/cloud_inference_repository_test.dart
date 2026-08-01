@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
-import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
@@ -1880,12 +1879,7 @@ void main() {
     late _TestBench bench;
 
     setUp(() {
-      bench = _TestBench(
-        extraOverrides: [
-          // Mock the thoughts toggle provider - default to true for testing
-          geminiIncludeThoughtsProvider.overrideWithBuild((_, _) => true),
-        ],
-      );
+      bench = _TestBench();
       mockGeminiRepo = bench.geminiRepo;
       repository = bench.repository;
     });
@@ -2897,12 +2891,7 @@ void main() {
       late MockOllamaInferenceRepository mockOllamaRepo;
 
       setUp(() {
-        bench = _TestBench(
-          withHttpClient: false,
-          extraOverrides: [
-            geminiIncludeThoughtsProvider.overrideWithBuild((_, _) => true),
-          ],
-        );
+        bench = _TestBench(withHttpClient: false);
         mockOllamaRepo = bench.ollamaRepo;
         repository = bench.repository;
       });

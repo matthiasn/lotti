@@ -60,7 +60,6 @@ class _TestConversationRepository extends ConversationRepository {
 
     final manager =
         ConversationManager(
-            conversationId: conversationId,
             maxTurns: 1,
           )
           ..initialize()
@@ -182,8 +181,7 @@ void main() {
       ).thenAnswer((_) async => newVersion);
 
       final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-soul')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-soul',
         type: ChatCompletionMessageToolCallType.function,
@@ -267,8 +265,7 @@ void main() {
         currentCoachingStyle: 'Old coaching.',
         currentAntiSycophancyPolicy: 'Old policy.',
       );
-      final manager = ConversationManager(conversationId: 'conv-refresh')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-refresh',
         type: ChatCompletionMessageToolCallType.function,
@@ -344,8 +341,7 @@ void main() {
 
       // Propose only voice — other fields are empty.
       final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-merge')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-merge',
         type: ChatCompletionMessageToolCallType.function,
@@ -441,8 +437,7 @@ void main() {
         // Propose only tone_bounds; voice_directive is absent (empty) so it
         // must fall back to the current soul version's voiceDirective.
         final strategy = EvolutionStrategy();
-        final manager = ConversationManager(conversationId: 'conv-empty-voice')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call-empty-voice',
           type: ChatCompletionMessageToolCallType.function,
@@ -546,8 +541,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-no-soul')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-ns',
         type: ChatCompletionMessageToolCallType.function,
@@ -588,8 +582,7 @@ void main() {
   group('rejectSoulProposal', () {
     test('clears soul proposal from strategy', () async {
       final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-1',
         type: ChatCompletionMessageToolCallType.function,
@@ -906,7 +899,6 @@ void main() {
       // Inject a soul proposal into the strategy via processToolCalls.
       final session = workflow.activeSessions.values.first;
       final manager = ConversationManager(
-        conversationId: 'test',
         maxTurns: 1,
       )..initialize();
       await session.strategy.processToolCalls(
@@ -997,7 +989,6 @@ void main() {
 
       final session = workflow.activeSessions.values.first;
       final manager = ConversationManager(
-        conversationId: 'test',
         maxTurns: 1,
       )..initialize();
       await session.strategy.processToolCalls(
@@ -1060,7 +1051,6 @@ void main() {
       // Inject a soul proposal.
       final session = workflow.activeSessions.values.first;
       final manager = ConversationManager(
-        conversationId: 'test',
         maxTurns: 1,
       )..initialize();
       await session.strategy.processToolCalls(
@@ -1156,7 +1146,6 @@ void main() {
 
         // Inject a soul proposal.
         final manager = ConversationManager(
-          conversationId: 'test',
           maxTurns: 1,
         )..initialize();
         await strategy.processToolCalls(
@@ -1227,7 +1216,6 @@ void main() {
 
       // Inject a soul proposal.
       final manager = ConversationManager(
-        conversationId: 'test',
         maxTurns: 1,
       )..initialize();
       await session.strategy.processToolCalls(
@@ -1481,8 +1469,7 @@ void main() {
       ).thenThrow(Exception('DB failure'));
 
       final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-err')
-        ..initialize();
+      final manager = ConversationManager()..initialize();
       const toolCall = ChatCompletionMessageToolCall(
         id: 'call-err',
         type: ChatCompletionMessageToolCallType.function,
@@ -1715,8 +1702,7 @@ void main() {
         final strategy = EvolutionStrategy();
         // Propose only voiceDirective; tone, coaching, antiSycophancy all empty
         // so they fall back to the current soul version values.
-        final manager = ConversationManager(conversationId: 'conv-fallback')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call-fallback',
           type: ChatCompletionMessageToolCallType.function,
@@ -1822,9 +1808,7 @@ void main() {
         // Propose only tone_bounds; voice_directive is absent (empty) so it
         // must fall back to the current soul version's voiceDirective.
         final strategy = EvolutionStrategy();
-        final manager = ConversationManager(
-          conversationId: 'conv-empty-voice',
-        )..initialize();
+        final manager = ConversationManager()..initialize();
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call-empty-voice',
           type: ChatCompletionMessageToolCallType.function,
@@ -1930,9 +1914,7 @@ void main() {
               content: '',
             ),
           );
-        final manager = ConversationManager(
-          conversationId: 'conv-tldr-fallback',
-        )..initialize();
+        final manager = ConversationManager()..initialize();
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call-tldr',
           type: ChatCompletionMessageToolCallType.function,
@@ -2017,8 +1999,7 @@ void main() {
         ).thenAnswer((_) async => null);
 
         final strategy = EvolutionStrategy();
-        final manager = ConversationManager(conversationId: 'conv-cb-soul')
-          ..initialize();
+        final manager = ConversationManager()..initialize();
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call-cb-soul',
           type: ChatCompletionMessageToolCallType.function,

@@ -63,14 +63,7 @@ class ConversationRepository extends Notifier<void> {
 
   @override
   void build() {
-    // Initialize repository
-    ref.onDispose(() {
-      // Clean up all conversations
-      for (final conversation in _conversations.values) {
-        conversation.dispose();
-      }
-      _conversations.clear();
-    });
+    ref.onDispose(_conversations.clear);
   }
 
   /// Create a new conversation
@@ -80,7 +73,6 @@ class ConversationRepository extends Notifier<void> {
   }) {
     final conversationId = _uuid.v4();
     final manager = ConversationManager(
-      conversationId: conversationId,
       maxTurns: maxTurns,
     )..initialize(systemMessage: systemMessage);
     _conversations[conversationId] = manager;
@@ -226,8 +218,8 @@ class ConversationRepository extends Notifier<void> {
   /// if no usage data was reported by the inference provider.
   ///
   /// Set [rethrowInferenceErrors] for orchestration that owns retry/failure
-  /// state. Interactive callers keep the default behavior, which emits the
-  /// error through the conversation manager and ends the conversation.
+  /// state. Interactive callers keep the default behavior, which stores the
+  /// error in [ConversationManager.lastError] and ends the conversation.
   Future<InferenceUsage?> sendMessage({
     required String conversationId,
     required String message,
@@ -260,7 +252,7 @@ class ConversationRepository extends Notifier<void> {
 
     // Check if we can continue
     if (!manager.canContinue()) {
-      manager.emitError('Maximum conversation turns reached');
+      manager.lastError = 'Maximum conversation turns reached';
       return null;
     }
 
@@ -310,9 +302,6 @@ class ConversationRepository extends Notifier<void> {
 
     while (shouldContinue) {
       try {
-        // Emit thinking event
-        manager.emitThinking();
-
         // Get all messages for the request
         final messages = manager.getMessagesForRequest();
 
@@ -438,7 +427,7 @@ class ConversationRepository extends Notifier<void> {
           if (turnUsage != null) {
             accumulated = accumulated.merge(turnUsage);
           }
-          _emitTurnError(manager, e, stackTrace);
+          _storeTurnError(manager, e, stackTrace);
           if (rethrowInferenceErrors) {
             throw _RethrownInferenceError(e, stackTrace);
           }
@@ -519,7 +508,7 @@ class ConversationRepository extends Notifier<void> {
         if (e is _RethrownInferenceError) {
           Error.throwWithStackTrace(e.error, e.stackTrace);
         }
-        _emitTurnError(manager, e, stackTrace);
+        _storeTurnError(manager, e, stackTrace);
         shouldContinue = false;
       }
     }
@@ -538,7 +527,7 @@ class ConversationRepository extends Notifier<void> {
     return accumulated.hasData ? accumulated : null;
   }
 
-  void _emitTurnError(
+  void _storeTurnError(
     ConversationManager manager,
     Object error,
     StackTrace stackTrace,
@@ -550,17 +539,12 @@ class ConversationRepository extends Notifier<void> {
       error: error,
       stackTrace: stackTrace,
     );
-    try {
-      manager.emitError(errorMessage);
-    } catch (_) {
-      // Ignore errors when emitting error events.
-    }
+    manager.lastError = errorMessage;
   }
 
   /// Delete a conversation
   void deleteConversation(String conversationId) {
-    final manager = _conversations.remove(conversationId);
-    manager?.dispose();
+    _conversations.remove(conversationId);
   }
 }
 

@@ -15,7 +15,7 @@ void main() {
 
   setUp(() {
     strategy = EvolutionStrategy();
-    manager = ConversationManager(conversationId: 'test-conv')
+    manager = ConversationManager()
       ..initialize(systemMessage: 'You are an evolution agent.');
   });
 
@@ -213,7 +213,7 @@ void main() {
         // times within one test() and the shared setUp fixtures would
         // accumulate notes across runs.
         final localStrategy = EvolutionStrategy();
-        final localManager = ConversationManager(conversationId: 'glados-conv')
+        final localManager = ConversationManager()
           ..initialize(systemMessage: 'You are an evolution agent.');
         final content = 'Content for ${kind.name}';
         final toolCall = makeToolCall(
@@ -346,7 +346,6 @@ void main() {
     test('returns false when manager has exhausted turns', () {
       final exhausted =
           ConversationManager(
-              conversationId: 'exhausted',
               maxTurns: 1,
             )
             ..initialize()
@@ -397,7 +396,7 @@ void main() {
     late ConversationManager bridgeManager;
 
     setUp(() {
-      final bench = buildGenUiBench(conversationId: 'test-auto');
+      final bench = buildGenUiBench();
       bridge = bench.bridge;
       strategyWithBridge = bench.strategy;
       bridgeManager = bench.manager;

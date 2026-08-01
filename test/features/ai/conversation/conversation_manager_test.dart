@@ -1,4 +1,3 @@
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -13,7 +12,6 @@ enum _GeneratedConversationOperationKind {
   addAssistantToolCall,
   addAssistantToolCallWithSignature,
   addToolResponse,
-  emitThinking,
   emitError,
 }
 
@@ -118,7 +116,7 @@ class _GeneratedConversationModel {
   final int maxHistorySize;
   final List<_GeneratedConversationRole> roles = [];
   final Map<String, String> signatures = {};
-  int eventCount = 0;
+  String? lastError;
 
   int get turnCount =>
       roles.where((role) => role == _GeneratedConversationRole.user).length;
@@ -130,30 +128,27 @@ class _GeneratedConversationModel {
       case _GeneratedConversationOperationKind.initializeEmpty:
         roles.clear();
         signatures.clear();
-        eventCount += 1;
+        lastError = null;
 
       case _GeneratedConversationOperationKind.initializeWithSystem:
         roles
           ..clear()
           ..add(_GeneratedConversationRole.system);
         signatures.clear();
-        eventCount += 1;
+        lastError = null;
 
       case _GeneratedConversationOperationKind.addUser:
         roles.add(_GeneratedConversationRole.user);
         _trimHistoryIfNeeded();
-        eventCount += 1;
 
       case _GeneratedConversationOperationKind.addAssistantContent:
         roles.add(_GeneratedConversationRole.assistant);
-        eventCount += 1;
 
       case _GeneratedConversationOperationKind.addAssistantEmpty:
         roles.add(_GeneratedConversationRole.assistant);
 
       case _GeneratedConversationOperationKind.addAssistantToolCall:
         roles.add(_GeneratedConversationRole.assistant);
-        eventCount += 1;
 
       case _GeneratedConversationOperationKind
           .addAssistantToolCallWithSignature:
@@ -162,15 +157,12 @@ class _GeneratedConversationModel {
           operation.toolSlot,
           index,
         );
-        eventCount += 1;
 
       case _GeneratedConversationOperationKind.addToolResponse:
         roles.add(_GeneratedConversationRole.tool);
-        eventCount += 1;
 
-      case _GeneratedConversationOperationKind.emitThinking:
       case _GeneratedConversationOperationKind.emitError:
-        eventCount += 1;
+        lastError = operation.text;
     }
   }
 
@@ -325,7 +317,6 @@ void main() {
 
     setUp(() {
       manager = ConversationManager(
-        conversationId: 'test-conversation',
         maxHistorySize: 50,
       );
     });
@@ -440,7 +431,6 @@ void main() {
           // boundary lands on toolA, whose assistant parent (a1) is dropped.
           final m =
               ConversationManager(
-                  conversationId: 'orphan-trim',
                   maxHistorySize: 5,
                 )
                 ..addUserMessage('u1')
@@ -481,110 +471,43 @@ void main() {
               );
             }
           }
-
-          m.dispose();
         },
       );
     });
 
     group('addUserMessage', () {
-      test('should add messages and emit events', () {
-        fakeAsync((async) {
-          final events = <ConversationEvent>[];
-          manager.events.listen(events.add);
+      test('should add messages', () {
+        manager.addUserMessage('Test message');
 
-          manager.addUserMessage('Test message');
-          async.flushMicrotasks();
-
-          expect(manager.messages.length, 1);
-          expect(events.whereType<UserMessageEvent>().length, 1);
-        });
+        expect(manager.messages.length, 1);
+        expect(
+          manager.messages.single.role,
+          ChatCompletionMessageRole.user,
+        );
+        expect(manager.messages.single.toJson()['content'], 'Test message');
       });
+    });
 
-      test('should add tool responses correctly', () {
-        const toolCallId = 'tool-123';
+    group('Error state', () {
+      test('stores and clears the most recent error', () {
+        manager.lastError = 'Test error message';
+        expect(manager.lastError, 'Test error message');
 
+        manager.clearLastError();
+        expect(manager.lastError, isNull);
+      });
+    });
+
+    group('Tool Response Handling', () {
+      test('addToolResponse stores the tool response', () {
         manager.addToolResponse(
-          toolCallId: toolCallId,
+          toolCallId: 'tool-123',
           response: 'Tool executed successfully',
         );
 
         expect(manager.messages.length, 1);
         expect(manager.messages.first.role, ChatCompletionMessageRole.tool);
-      });
-    });
-
-    group('Event Emission', () {
-      test('emitThinking should emit thinking event', () {
-        fakeAsync((async) {
-          final events = <ConversationEvent>[];
-          manager.events.listen(events.add);
-
-          manager.emitThinking();
-          async.flushMicrotasks();
-
-          expect(events.length, 1);
-          expect(events.first, isA<ThinkingEvent>());
-          expect((events.first as ThinkingEvent).turnNumber, 0);
-        });
-      });
-
-      test('emitError should emit error event', () {
-        fakeAsync((async) {
-          final events = <ConversationEvent>[];
-          manager.events.listen(events.add);
-
-          manager.emitError('Test error message');
-          async.flushMicrotasks();
-
-          expect(events.length, 1);
-          expect(events.first, isA<ConversationErrorEvent>());
-          final errorEvent = events.first as ConversationErrorEvent;
-          expect(errorEvent.message, 'Test error message');
-          expect(errorEvent.turnNumber, 0);
-          expect(manager.lastError, 'Test error message');
-        });
-      });
-
-      test('should not emit events after dispose', () {
-        fakeAsync((async) {
-          final events = <ConversationEvent>[];
-          manager.events.listen(events.add);
-
-          // Dispose the manager
-          manager
-            ..dispose()
-            ..emitError('Should not be emitted')
-            ..emitThinking()
-            ..addUserMessage('Should not be emitted');
-
-          async.flushMicrotasks();
-          expect(events, isEmpty);
-        });
-      });
-    });
-
-    group('Tool Response Handling', () {
-      test('addToolResponse should emit tool response event', () {
-        fakeAsync((async) {
-          final events = <ConversationEvent>[];
-          manager.events.listen(events.add);
-
-          manager.addToolResponse(
-            toolCallId: 'tool-123',
-            response: 'Tool executed successfully',
-          );
-          async.flushMicrotasks();
-
-          expect(manager.messages.length, 1);
-          expect(manager.messages.first.role, ChatCompletionMessageRole.tool);
-
-          expect(events.length, 1);
-          expect(events.first, isA<ToolResponseEvent>());
-          final toolEvent = events.first as ToolResponseEvent;
-          expect(toolEvent.toolCallId, 'tool-123');
-          expect(toolEvent.response, 'Tool executed successfully');
-        });
+        expect(manager.messages.first.content, 'Tool executed successfully');
       });
     });
 
@@ -600,80 +523,53 @@ void main() {
         ),
       ];
 
-      test('emits the right event per content/toolCalls combination', () {
-        // (description, content, toolCalls, expected event type or null).
-        // Tool calls take priority over content; an empty assistant message
-        // emits nothing.
-        final cases =
-            <
-              (
-                String,
-                String?,
-                List<ChatCompletionMessageToolCall>?,
-                Type?,
-              )
-            >[
-              (
-                'content only',
-                'This is the assistant response',
-                null,
-                AssistantMessageEvent,
-              ),
-              ('tool calls only', null, sampleToolCalls, ToolCallsEvent),
-              (
-                'content and tool calls',
-                'Executing function',
-                sampleToolCalls,
-                ToolCallsEvent,
-              ),
-              ('neither content nor tool calls', null, null, null),
-            ];
+      test('stores each content/toolCalls combination', () {
+        final cases = <(String, String?, List<ChatCompletionMessageToolCall>?)>[
+          (
+            'content only',
+            'This is the assistant response',
+            null,
+          ),
+          ('tool calls only', null, sampleToolCalls),
+          (
+            'content and tool calls',
+            'Executing function',
+            sampleToolCalls,
+          ),
+          ('neither content nor tool calls', null, null),
+        ];
 
-        for (final (description, content, toolCalls, expectedEvent) in cases) {
-          fakeAsync((async) {
-            final caseManager = ConversationManager(
-              conversationId: 'assistant-$description',
-              maxHistorySize: 50,
-            );
-            addTearDown(caseManager.dispose);
-            final events = <ConversationEvent>[];
-            caseManager.events.listen(events.add);
+        for (final (description, content, toolCalls) in cases) {
+          final caseManager = ConversationManager(
+            maxHistorySize: 50,
+          );
 
-            caseManager.addAssistantMessage(
-              content: content,
-              toolCalls: toolCalls,
-            );
-            async.flushMicrotasks();
+          final storedMessage =
+              (caseManager..addAssistantMessage(
+                    content: content,
+                    toolCalls: toolCalls,
+                  ))
+                  .messages
+                  .single;
 
-            expect(caseManager.messages.length, 1, reason: description);
-            expect(
-              caseManager.messages.first.role,
-              ChatCompletionMessageRole.assistant,
-              reason: description,
-            );
-            expect(
-              caseManager.messages.first.content,
-              content,
-              reason: description,
-            );
-
-            if (expectedEvent == null) {
-              expect(events, isEmpty, reason: description);
-            } else {
-              expect(events.length, 1, reason: description);
-              expect(
-                events.first.runtimeType,
-                expectedEvent,
-                reason: description,
-              );
-              if (events.first case final AssistantMessageEvent event) {
-                expect(event.message, content, reason: description);
-              }
-              if (events.first case final ToolCallsEvent event) {
-                expect(event.calls, toolCalls, reason: description);
-              }
-            }
-          });
+          expect(caseManager.messages.length, 1, reason: description);
+          expect(
+            storedMessage.role,
+            ChatCompletionMessageRole.assistant,
+            reason: description,
+          );
+          expect(
+            storedMessage.content,
+            content,
+            reason: description,
+          );
+          expect(
+            storedMessage.mapOrNull(
+              assistant: (message) => message.toolCalls,
+            ),
+            toolCalls,
+            reason: description,
+          );
         }
       });
     });
@@ -690,7 +586,7 @@ void main() {
           );
         expect(manager.messages.length, 3);
         expect(manager.thoughtSignatures, isNotEmpty);
-        manager.emitError('Previous inference failed');
+        manager.lastError = 'Previous inference failed';
         expect(manager.lastError, isNotNull);
 
         // Initialize with system message
@@ -716,24 +612,6 @@ void main() {
         // Should have no messages
         expect(manager.messages, isEmpty);
       });
-
-      test('initialize emits initialization event', () {
-        fakeAsync((async) {
-          final events = <ConversationEvent>[];
-          manager.events.listen(events.add);
-
-          manager.initialize(systemMessage: 'Test system');
-
-          // Deterministically allow event processing
-          async.flushMicrotasks();
-
-          expect(events.length, 1);
-          expect(events.first, isA<ConversationInitializedEvent>());
-          final initEvent = events.first as ConversationInitializedEvent;
-          expect(initEvent.conversationId, 'test-conversation');
-          expect(initEvent.systemMessage, 'Test system');
-        });
-      });
     });
 
     group('Turn Management', () {
@@ -756,7 +634,6 @@ void main() {
 
       test('canContinue respects maxTurns', () {
         final limitedManager = ConversationManager(
-          conversationId: 'limited',
           maxTurns: 3,
         );
 
@@ -850,7 +727,6 @@ void main() {
       test('handles trimming when trimmed result would still exceed max', () {
         // Create manager with small max size
         final smallManager = ConversationManager(
-          conversationId: 'small',
           maxHistorySize: 5,
         );
 
@@ -980,89 +856,81 @@ void main() {
       glados.Glados(
         glados.any.conversationScenario,
         glados.ExploreConfig(numRuns: 180),
-      ).test('match generated message, event, and signature semantics', (
+      ).test('match generated message, error, and signature semantics', (
         scenario,
       ) {
-        fakeAsync((async) {
-          final generatedManager = ConversationManager(
-            conversationId: 'generated-conversation',
-            maxTurns: scenario.maxTurns,
-            maxHistorySize: scenario.maxHistorySize,
-          );
-          final model = _GeneratedConversationModel(
-            maxTurns: scenario.maxTurns,
-            maxHistorySize: scenario.maxHistorySize,
-          );
-          final events = <ConversationEvent>[];
-          generatedManager.events.listen(events.add);
+        final generatedManager = ConversationManager(
+          maxTurns: scenario.maxTurns,
+          maxHistorySize: scenario.maxHistorySize,
+        );
+        final model = _GeneratedConversationModel(
+          maxTurns: scenario.maxTurns,
+          maxHistorySize: scenario.maxHistorySize,
+        );
 
-          for (final (index, operation) in scenario.operations.indexed) {
-            switch (operation.kind) {
-              case _GeneratedConversationOperationKind.initializeEmpty:
-                generatedManager.initialize();
+        for (final (index, operation) in scenario.operations.indexed) {
+          switch (operation.kind) {
+            case _GeneratedConversationOperationKind.initializeEmpty:
+              generatedManager.initialize();
 
-              case _GeneratedConversationOperationKind.initializeWithSystem:
-                generatedManager.initialize(systemMessage: operation.text);
+            case _GeneratedConversationOperationKind.initializeWithSystem:
+              generatedManager.initialize(systemMessage: operation.text);
 
-              case _GeneratedConversationOperationKind.addUser:
-                generatedManager.addUserMessage(operation.text);
+            case _GeneratedConversationOperationKind.addUser:
+              generatedManager.addUserMessage(operation.text);
 
-              case _GeneratedConversationOperationKind.addAssistantContent:
-                generatedManager.addAssistantMessage(content: operation.text);
+            case _GeneratedConversationOperationKind.addAssistantContent:
+              generatedManager.addAssistantMessage(content: operation.text);
 
-              case _GeneratedConversationOperationKind.addAssistantEmpty:
-                generatedManager.addAssistantMessage();
+            case _GeneratedConversationOperationKind.addAssistantEmpty:
+              generatedManager.addAssistantMessage();
 
-              case _GeneratedConversationOperationKind.addAssistantToolCall:
-                generatedManager.addAssistantMessage(
-                  toolCalls: [_generatedToolCall(operation.toolId)],
-                );
+            case _GeneratedConversationOperationKind.addAssistantToolCall:
+              generatedManager.addAssistantMessage(
+                toolCalls: [_generatedToolCall(operation.toolId)],
+              );
 
-              case _GeneratedConversationOperationKind
-                  .addAssistantToolCallWithSignature:
-                generatedManager.addAssistantMessage(
-                  toolCalls: [_generatedToolCall(operation.toolId)],
-                  signatures: {
-                    operation.toolId: _generatedConversationSignature(
-                      operation.toolSlot,
-                      index,
-                    ),
-                  },
-                );
+            case _GeneratedConversationOperationKind
+                .addAssistantToolCallWithSignature:
+              generatedManager.addAssistantMessage(
+                toolCalls: [_generatedToolCall(operation.toolId)],
+                signatures: {
+                  operation.toolId: _generatedConversationSignature(
+                    operation.toolSlot,
+                    index,
+                  ),
+                },
+              );
 
-              case _GeneratedConversationOperationKind.addToolResponse:
-                generatedManager.addToolResponse(
-                  toolCallId: operation.toolId,
-                  response: operation.text,
-                );
+            case _GeneratedConversationOperationKind.addToolResponse:
+              generatedManager.addToolResponse(
+                toolCallId: operation.toolId,
+                response: operation.text,
+              );
 
-              case _GeneratedConversationOperationKind.emitThinking:
-                generatedManager.emitThinking();
-
-              case _GeneratedConversationOperationKind.emitError:
-                generatedManager.emitError(operation.text);
-            }
-            model.apply(operation, index);
+            case _GeneratedConversationOperationKind.emitError:
+              generatedManager.lastError = operation.text;
           }
+          model.apply(operation, index);
+        }
 
-          async.flushMicrotasks();
-
-          expect(
-            _conversationRoles(generatedManager.messages),
-            model.roles,
-            reason: '$scenario',
-          );
-          expect(
-            generatedManager.thoughtSignatures,
-            model.signatures,
-            reason: '$scenario',
-          );
-          expect(generatedManager.turnCount, model.turnCount);
-          expect(generatedManager.canContinue(), model.canContinue);
-          expect(events.length, model.eventCount, reason: '$scenario');
-
-          generatedManager.dispose();
-        });
+        expect(
+          _conversationRoles(generatedManager.messages),
+          model.roles,
+          reason: '$scenario',
+        );
+        expect(
+          generatedManager.thoughtSignatures,
+          model.signatures,
+          reason: '$scenario',
+        );
+        expect(generatedManager.turnCount, model.turnCount);
+        expect(generatedManager.canContinue(), model.canContinue);
+        expect(
+          generatedManager.lastError,
+          model.lastError,
+          reason: '$scenario',
+        );
       }, tags: 'glados');
 
       glados.Glados(
@@ -1074,7 +942,6 @@ void main() {
           scenario,
         ) {
           final generatedManager = ConversationManager(
-            conversationId: 'generated-history',
             maxHistorySize: scenario.maxHistorySize,
           );
 
@@ -1144,60 +1011,9 @@ void main() {
             );
             expect(retainedUserMessages, isNotEmpty, reason: '$scenario');
           }
-
-          generatedManager.dispose();
         },
         tags: 'glados',
       );
-    });
-
-    group('Event Classes', () {
-      test('ConversationErrorEvent properties', () {
-        final event =
-            ConversationEvent.error(
-                  message: 'Test error',
-                  turnNumber: 5,
-                )
-                as ConversationErrorEvent;
-
-        expect(event.message, 'Test error');
-        expect(event.turnNumber, 5);
-      });
-
-      test('UserMessageEvent properties', () {
-        final event =
-            ConversationEvent.userMessage(
-                  message: 'User input',
-                  turnNumber: 3,
-                )
-                as UserMessageEvent;
-
-        expect(event.message, 'User input');
-        expect(event.turnNumber, 3);
-      });
-
-      test('ToolCallsEvent properties', () {
-        final toolCalls = [
-          const ChatCompletionMessageToolCall(
-            id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'test',
-              arguments: '{}',
-            ),
-          ),
-        ];
-
-        final event =
-            ConversationEvent.toolCalls(
-                  calls: toolCalls,
-                  turnNumber: 2,
-                )
-                as ToolCallsEvent;
-
-        expect(event.calls, toolCalls);
-        expect(event.turnNumber, 2);
-      });
     });
   });
 }

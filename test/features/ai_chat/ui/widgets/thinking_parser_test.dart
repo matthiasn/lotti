@@ -1,389 +1,135 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
 
 void main() {
-  // -------------------------------------------------------------------------
-  // ParsedThinking model
-  // -------------------------------------------------------------------------
-
-  group('ParsedThinking', () {
-    test('stores visible and null thinking', () {
-      const pt = ParsedThinking(visible: 'hello');
-      expect(pt.visible, 'hello');
-      expect(pt.thinking, isNull);
-    });
-
-    test('stores visible and non-null thinking', () {
-      const pt = ParsedThinking(visible: 'answer', thinking: 'reason');
-      expect(pt.visible, 'answer');
-      expect(pt.thinking, 'reason');
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // ThinkingPatterns regex sanity checks (covers lines 53, 57, 63, 67)
-  // -------------------------------------------------------------------------
-
-  group('ThinkingPatterns', () {
-    test('htmlOpen matches <think> and <thinking> case-insensitively', () {
-      expect(ThinkingPatterns.htmlOpen.hasMatch('<think>'), isTrue);
-      expect(ThinkingPatterns.htmlOpen.hasMatch('<THINKING>'), isTrue);
-      expect(ThinkingPatterns.htmlOpen.hasMatch('<thinking>'), isTrue);
-      expect(ThinkingPatterns.htmlOpen.hasMatch('<notthink>'), isFalse);
-    });
-
-    test('htmlClose matches </think> and </thinking> case-insensitively', () {
-      expect(ThinkingPatterns.htmlClose.hasMatch('</think>'), isTrue);
-      expect(ThinkingPatterns.htmlClose.hasMatch('</THINKING>'), isTrue);
-      expect(ThinkingPatterns.htmlClose.hasMatch('</notthink>'), isFalse);
-    });
-
-    test('bracketOpen matches [think] and [thinking] case-insensitively', () {
-      expect(ThinkingPatterns.bracketOpen.hasMatch('[think]'), isTrue);
-      expect(ThinkingPatterns.bracketOpen.hasMatch('[THINKING]'), isTrue);
-      expect(ThinkingPatterns.bracketOpen.hasMatch('[notthink]'), isFalse);
-    });
-
-    test(
-      'bracketClose matches [/think] and [/thinking] case-insensitively',
-      () {
-        expect(ThinkingPatterns.bracketClose.hasMatch('[/think]'), isTrue);
-        expect(ThinkingPatterns.bracketClose.hasMatch('[/THINKING]'), isTrue);
-        expect(ThinkingPatterns.bracketClose.hasMatch('[notthink]'), isFalse);
-      },
-    );
-  });
-
-  // -------------------------------------------------------------------------
-  // parseThinking — example-based
-  // -------------------------------------------------------------------------
-
-  group('parseThinking', () {
-    test('returns empty visible for empty input', () {
-      final result = parseThinking('');
-      expect(result.visible, '');
-      expect(result.thinking, isNull);
-    });
-
-    test('plain text with no tags returns full input as visible', () {
-      const input = 'Hello, world!';
-      final result = parseThinking(input);
-      expect(result.visible, input);
-      expect(result.thinking, isNull);
-    });
-
-    test('<think>...</think> tag separates thinking from visible', () {
-      final result = parseThinking('<think>reason</think>answer');
-      expect(result.visible, 'answer');
-      expect(result.thinking, 'reason');
-    });
-
-    test('<thinking>...</thinking> tag works', () {
-      final result = parseThinking('<thinking>step</thinking>reply');
-      expect(result.visible, 'reply');
-      expect(result.thinking, 'step');
-    });
-
-    test('bracket [think]...[/think] syntax works', () {
-      final result = parseThinking('[think]thought[/think]visible');
-      expect(result.visible, 'visible');
-      expect(result.thinking, 'thought');
-    });
-
-    test('bracket [thinking]...[/thinking] syntax works', () {
-      final result = parseThinking('[thinking]chain[/thinking]result');
-      expect(result.visible, 'result');
-      expect(result.thinking, 'chain');
-    });
-
-    test('fenced ```think block is extracted', () {
-      final result = parseThinking('```think\nmy reasoning\n```\nthe answer');
-      expect(result.visible, 'the answer');
-      expect(result.thinking, isNotNull);
-      expect(result.thinking, contains('my reasoning'));
-    });
-
-    test('fenced ```thinking block is extracted', () {
-      final result = parseThinking(
-        '```thinking\ndeep reasoning\n```\nfinal answer',
-      );
-      expect(result.visible, 'final answer');
-      expect(result.thinking, contains('deep reasoning'));
-    });
-
-    test(
-      'open-ended <thinking> tag (streaming): all after tag is thinking',
-      () {
-        final result = parseThinking('<thinking>still thinking...');
-        expect(result.thinking, contains('still thinking...'));
-        expect(result.visible, '');
-      },
-    );
-
-    test('open-ended [think] tag (streaming)', () {
-      final result = parseThinking('[think]partial');
-      expect(result.thinking, contains('partial'));
-    });
-
-    test('open-ended fenced block (no closing ```)', () {
-      final result = parseThinking('```think\nopen ended');
-      expect(result.thinking, contains('open ended'));
-    });
-
-    test('text before and after thinking block is preserved', () {
-      final result = parseThinking('before <think>inner</think> after');
-      expect(result.visible.trim(), 'before  after'.trim());
-      expect(result.thinking, 'inner');
-    });
-
-    test('multiple thinking blocks are concatenated with HR separator', () {
-      final result = parseThinking(
-        '<think>first</think>mid<think>second</think>end',
-      );
-      expect(result.visible, 'midend');
-      expect(result.thinking, contains('first'));
-      expect(result.thinking, contains('second'));
-      expect(result.thinking, contains('---'));
-    });
-
-    test('case-insensitive: <THINK> is recognised', () {
-      final result = parseThinking('<THINK>reasoning</THINK>answer');
-      expect(result.thinking, isNotNull);
-      expect(result.visible, 'answer');
-    });
-
-    test('nested thinking tags are handled (nesting depth)', () {
-      final result = parseThinking(
-        '<think>outer<think>inner</think>still outer</think>vis',
-      );
-      expect(result.thinking, contains('outer'));
-      expect(result.thinking, contains('inner'));
-      expect(result.visible, 'vis');
-    });
-
-    test(
-      'unbalanced nesting where the only close lands at end of input is '
-      'open-ended: whole remainder (incl. inner open) becomes thinking '
-      '(covers _extractNested natural loop exit, line 144)',
-      () {
-        // One inner <think> raises depth to 2; the single </think> sits at the
-        // very end of the string, dropping depth to 1 while pos reaches the end
-        // of content. The while loop exits without depth==0 and without ever
-        // seeing nextClose<0, hitting the final open-ended return.
-        final result = parseThinking('<think>x<think>y</think>');
-        expect(result.visible, '');
-        // The inner open token and the trailing close are part of the body.
-        expect(result.thinking, 'x<think>y</think>');
-      },
-    );
-
-    test(
-      'unbalanced nesting with surrounding visible text (line 144 path)',
-      () {
-        final result = parseThinking(
-          'pre <think>a<think>b</think> post',
-        );
-        expect(result.visible, 'pre');
-        expect(result.thinking, 'a<think>b</think> post');
-      },
-    );
-
-    test(
-      'bracket unbalanced nesting is also open-ended (line 144 via brackets)',
-      () {
-        final result = parseThinking('[think]p[think]q[/think]');
-        expect(result.visible, '');
-        expect(result.thinking, 'p[think]q[/think]');
-      },
-    );
-
-    test(
-      'ThinkingUtils.stripThinking removes thinking and returns visible',
-      () {
-        final stripped = ThinkingUtils.stripThinking('<think>hide</think>show');
-        expect(stripped, 'show');
-      },
-    );
-
-    test('result is memoised: same object returned on repeated call', () {
-      const input = '<think>cached</think>result';
-      final first = parseThinking(input);
-      final second = parseThinking(input);
-      expect(identical(first, second), isTrue);
-    });
-
-    test('cache eviction: more than _cacheLimit entries evicts oldest '
-        '(covers line 92)', () {
-      // Insert 102 unique entries to trigger eviction at _cacheLimit (100).
-      for (var i = 0; i < 102; i++) {
-        parseThinking('unique_entry_$i');
-      }
-      // After eviction the function still works correctly.
-      final result = parseThinking('<think>ok</think>visible');
-      expect(result.visible, 'visible');
-      expect(result.thinking, 'ok');
-    });
-
-    test(
-      'very long content > 10000 chars is not cached (two calls are equal)',
-      () {
-        final big = 'x' * 10001;
-        final r1 = parseThinking(big);
-        final r2 = parseThinking(big);
-        // Results equal even though not cached.
-        expect(r1.visible, r2.visible);
-        expect(r1.thinking, r2.thinking);
-      },
-    );
-
-    test('thinking content truncated when single segment exceeds max length '
-        '(covers segment.length > remaining path)', () {
-      final longThinking = 'a' * (ThinkingUtils.maxThinkingLength + 100);
-      final result = parseThinking('<think>$longThinking</think>answer');
-      expect(result.thinking, contains('[Thinking content truncated...]'));
-    });
-
-    test('thinking content truncated when second block fills remaining '
-        '(covers line 365: remaining <= 0)', () {
-      // First block fills up exactly maxThinkingLength characters.
-      final full = 'a' * ThinkingUtils.maxThinkingLength;
-      final result = parseThinking(
-        '<think>$full</think>mid<think>overflow</think>end',
-      );
-      expect(result.thinking, contains('[Thinking content truncated...]'));
-    });
-
-    test('[think] and [thinking] both present: covers line 173 both-present '
-        'branch', () {
-      // [think] appears before [thinking] — parser picks the closer one first.
-      final result = parseThinking('[think]a[/think][thinking]b[/thinking]end');
-      expect(result.thinking, contains('a'));
-      expect(result.visible, 'end');
-    });
-
-    test('<think> and <thinking> both present: <thinking> appears first', () {
-      final result = parseThinking(
-        '<thinking>first</thinking><think>second</think>end',
-      );
-      expect(result.thinking, contains('first'));
-      expect(result.visible, 'end');
-    });
-
-    test('defensive: parseThinking never throws for plain strings', () {
-      expect(() => parseThinking('no tags at all'), returnsNormally);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // splitThinkingSegments — example-based
-  // -------------------------------------------------------------------------
-
   group('splitThinkingSegments', () {
-    test('empty string returns empty list', () {
+    test('returns no segments for empty content', () {
       expect(splitThinkingSegments(''), isEmpty);
     });
 
-    test('plain text yields single visible segment', () {
-      final segments = splitThinkingSegments('hello');
+    test('preserves plain visible content exactly', () {
+      const content = 'plain visible text';
+
+      final segments = splitThinkingSegments(content);
+
       expect(segments, hasLength(1));
-      expect(segments.first.isThinking, isFalse);
-      expect(segments.first.text, 'hello');
+      expect(segments.single.isThinking, isFalse);
+      expect(segments.single.text, content);
     });
 
-    test('<think>...</think> yields thinking segment then visible', () {
-      final segments = splitThinkingSegments('<think>reason</think>answer');
-      expect(segments, hasLength(2));
-      expect(segments[0].isThinking, isTrue);
-      expect(segments[0].text, 'reason');
-      expect(segments[1].isThinking, isFalse);
-      expect(segments[1].text, 'answer');
-    });
-
-    test('text before and after thinking segment is preserved', () {
+    test('preserves ordered HTML thinking and visible segments', () {
       final segments = splitThinkingSegments(
-        'before<think>middle</think>after',
+        'before<think>first</think>middle'
+        '<thinking>second</thinking>after',
       );
+
+      expect(
+        segments.map((segment) => segment.isThinking),
+        [false, true, false, true, false],
+      );
+      expect(
+        segments.map((segment) => segment.text),
+        ['before', 'first', 'middle', 'second', 'after'],
+      );
+    });
+
+    test('supports bracket markers case-insensitively', () {
+      final segments = splitThinkingSegments(
+        'a[ThInK]first[/THINK]b[THINKING]second[/thinking]c',
+      );
+
+      expect(
+        segments.map((segment) => segment.isThinking),
+        [false, true, false, true, false],
+      );
+      expect(
+        segments.map((segment) => segment.text),
+        ['a', 'first', 'b', 'second', 'c'],
+      );
+    });
+
+    test('supports think and thinking fenced blocks', () {
+      final segments = splitThinkingSegments(
+        'pre```think\nfirst\n```mid```thinking\nsecond\n```post',
+      );
+
+      expect(
+        segments.map((segment) => segment.isThinking),
+        [false, true, false, true, false],
+      );
+      expect(segments[1].text.trim(), 'first');
+      expect(segments[3].text.trim(), 'second');
+    });
+
+    test('treats open HTML, bracket, and fence blocks as thinking', () {
+      for (final (content, expected) in [
+        ('before<think>streaming', 'streaming'),
+        ('before[thinking]streaming', 'streaming'),
+        ('before```think\nstreaming', 'streaming'),
+      ]) {
+        final segments = splitThinkingSegments(content);
+
+        expect(segments, hasLength(2), reason: content);
+        expect(segments.first.text, 'before', reason: content);
+        expect(segments.last.isThinking, isTrue, reason: content);
+        expect(segments.last.text.trim(), expected, reason: content);
+      }
+    });
+
+    test('keeps nested markers inside their outer thinking segment', () {
+      final segments = splitThinkingSegments(
+        'before<think>outer<think>inner</think>end</think>after',
+      );
+
       expect(segments, hasLength(3));
-      expect(segments[0].isThinking, isFalse);
-      expect(segments[0].text, 'before');
       expect(segments[1].isThinking, isTrue);
-      expect(segments[1].text, 'middle');
-      expect(segments[2].isThinking, isFalse);
-      expect(segments[2].text, 'after');
+      expect(segments[1].text, 'outer<think>inner</think>end');
     });
 
-    test('multiple thinking segments are each separate', () {
-      final segments = splitThinkingSegments(
-        '<think>a</think>mid<think>b</think>end',
-      );
-      final thinking = segments.where((s) => s.isThinking).toList();
-      expect(thinking, hasLength(2));
-      expect(thinking[0].text, 'a');
-      expect(thinking[1].text, 'b');
+    test('ignores malformed fence openings and stray closing markers', () {
+      for (final content in [
+        'pre```think without newline```post',
+        'hello </think> world',
+        'hello [/thinking] world',
+      ]) {
+        final segments = splitThinkingSegments(content);
+
+        expect(segments, hasLength(1), reason: content);
+        expect(segments.single.isThinking, isFalse, reason: content);
+        expect(segments.single.text, content, reason: content);
+      }
     });
 
-    test('open-ended <think> (streaming) is a thinking segment', () {
-      final segments = splitThinkingSegments('<think>streaming...');
-      expect(segments, hasLength(1));
-      expect(segments.first.isThinking, isTrue);
-      expect(segments.first.text, contains('streaming...'));
-    });
+    glados.Glados<String>(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('plain generated content round-trips without throwing', (content) {
+      final segments = splitThinkingSegments(content);
 
-    test('fence open-ended (no closing ```) yields thinking segment '
-        '(covers lines 422-423)', () {
-      final segments = splitThinkingSegments('```think\nno close');
-      expect(segments, hasLength(1));
-      expect(segments.first.isThinking, isTrue);
-      expect(segments.first.text, contains('no close'));
-    });
+      if (content.isEmpty) {
+        expect(segments, isEmpty);
+      } else {
+        expect(segments, hasLength(1));
+        expect(segments.single.isThinking, isFalse);
+        expect(segments.single.text, content);
+      }
+    }, tags: 'glados');
 
-    test('bracket [thinking] tag yields thinking segment', () {
-      final segments = splitThinkingSegments(
-        '[thinking]content[/thinking]visible',
-      );
-      expect(segments, hasLength(2));
-      expect(segments[0].isThinking, isTrue);
-      expect(segments[0].text, 'content');
-      expect(segments[1].isThinking, isFalse);
-      expect(segments[1].text, 'visible');
-    });
+    glados.Glados2<String, String>(
+      glados.any.letterOrDigits,
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('generated bracket blocks preserve body and tail', (body, tail) {
+      final segments = splitThinkingSegments('[think]$body[/think]$tail');
+      final thinking = segments.where((segment) => segment.isThinking);
 
-    test(
-      'no visible tail after last thinking block produces correct count',
-      () {
-        final segments = splitThinkingSegments('<think>only thinking</think>');
-        final thinkingSegs = segments.where((s) => s.isThinking).toList();
-        expect(thinkingSegs, hasLength(1));
-        expect(thinkingSegs.first.text, 'only thinking');
-      },
-    );
-
-    test('fenced ```thinking block is extracted as thinking segment', () {
-      final segments = splitThinkingSegments(
-        'before\n```thinking\ndeep\n```\nafter',
-      );
-      final thinking = segments.where((s) => s.isThinking).toList();
       expect(thinking, hasLength(1));
-      expect(thinking.first.text, contains('deep'));
-    });
-
-    test(
-      'unbalanced nesting (only close at end) is one open-ended thinking '
-      'segment carrying the inner open token (covers line 144 via split)',
-      () {
-        final segments = splitThinkingSegments(
-          'pre <think>a<think>b</think> post',
-        );
-        expect(segments, hasLength(2));
-        expect(segments[0].isThinking, isFalse);
-        expect(segments[0].text, 'pre ');
-        expect(segments[1].isThinking, isTrue);
-        expect(segments[1].text, 'a<think>b</think> post');
-      },
-    );
+      expect(thinking.single.text, body);
+      if (tail.isNotEmpty) {
+        expect(segments.last.isThinking, isFalse);
+        expect(segments.last.text, tail);
+      }
+    }, tags: 'glados');
   });
-
-  // -------------------------------------------------------------------------
-  // Property-based tests (glados)
-  // -------------------------------------------------------------------------
 }

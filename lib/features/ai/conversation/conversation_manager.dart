@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:openai_dart/openai_dart.dart';
 
 /// Manages AI conversations with context preservation and multi-turn support
@@ -8,11 +6,9 @@ import 'package:openai_dart/openai_dart.dart';
 /// - Maintains conversation history
 /// - Supports function calling
 /// - Handles multi-turn interactions
-/// - Provides event stream for UI updates
 /// - Flexible for various use cases
 class ConversationManager {
   ConversationManager({
-    required this.conversationId,
     this.maxTurns = 20,
     this.maxHistorySize = 100,
   });
@@ -20,22 +16,19 @@ class ConversationManager {
   static const _truncationNotice =
       '[Previous messages truncated for context length]';
 
-  final String conversationId;
   final int maxTurns;
   final int maxHistorySize;
 
   final List<ChatCompletionMessage> _messages = [];
-  final _eventController = StreamController<ConversationEvent>.broadcast();
   String? _lastError;
 
   /// Thought signatures from Gemini 3 models, keyed by tool call ID.
   /// Required for multi-turn function calling to maintain reasoning context.
   final Map<String, String> _thoughtSignatures = {};
 
-  Stream<ConversationEvent> get events => _eventController.stream;
   List<ChatCompletionMessage> get messages => List.unmodifiable(_messages);
 
-  /// Most recent inference error emitted for this conversation, if any.
+  /// Most recent inference error recorded for this conversation, if any.
   String? get lastError => _lastError;
 
   /// Clears the previous request's error before a new request begins.
@@ -57,13 +50,6 @@ class ConversationManager {
     if (systemMessage != null) {
       _messages.add(ChatCompletionMessage.system(content: systemMessage));
     }
-
-    _eventController.add(
-      ConversationEvent.initialized(
-        conversationId: conversationId,
-        systemMessage: systemMessage,
-      ),
-    );
   }
 
   /// Add a user message to the conversation
@@ -75,15 +61,6 @@ class ConversationManager {
     );
 
     _trimHistoryIfNeeded();
-
-    if (!_eventController.isClosed) {
-      _eventController.add(
-        ConversationEvent.userMessage(
-          message: message,
-          turnNumber: turnCount,
-        ),
-      );
-    }
   }
 
   /// Add an assistant message (from AI response)
@@ -107,24 +84,6 @@ class ConversationManager {
         toolCalls: toolCalls,
       ),
     );
-
-    if (!_eventController.isClosed) {
-      if (toolCalls?.isNotEmpty ?? false) {
-        _eventController.add(
-          ConversationEvent.toolCalls(
-            calls: toolCalls!,
-            turnNumber: turnCount,
-          ),
-        );
-      } else if (content != null) {
-        _eventController.add(
-          ConversationEvent.assistantMessage(
-            message: content,
-            turnNumber: turnCount,
-          ),
-        );
-      }
-    }
   }
 
   /// Add tool response
@@ -138,15 +97,6 @@ class ConversationManager {
         content: response,
       ),
     );
-
-    if (!_eventController.isClosed) {
-      _eventController.add(
-        ConversationEvent.toolResponse(
-          toolCallId: toolCallId,
-          response: response,
-        ),
-      );
-    }
   }
 
   /// Check if we can continue the conversation
@@ -171,29 +121,8 @@ class ConversationManager {
         .toList(growable: false);
   }
 
-  /// Emit an error event
-  void emitError(String error) {
-    _lastError = error;
-    if (!_eventController.isClosed) {
-      _eventController.add(
-        ConversationEvent.error(
-          message: error,
-          turnNumber: turnCount,
-        ),
-      );
-    }
-  }
-
-  /// Emit thinking/processing event
-  void emitThinking() {
-    if (!_eventController.isClosed) {
-      _eventController.add(
-        ConversationEvent.thinking(
-          turnNumber: turnCount,
-        ),
-      );
-    }
-  }
+  /// Store the most recent inference error for this conversation.
+  set lastError(String error) => _lastError = error;
 
   /// Trim history if it exceeds max size
   void _trimHistoryIfNeeded() {
@@ -249,117 +178,6 @@ class ConversationManager {
     return message.role == ChatCompletionMessageRole.system &&
         message.content == _truncationNotice;
   }
-
-  void dispose() {
-    _eventController.close();
-  }
-}
-
-/// Events emitted during conversation
-sealed class ConversationEvent {
-  const ConversationEvent();
-
-  factory ConversationEvent.initialized({
-    required String conversationId,
-    String? systemMessage,
-  }) = ConversationInitializedEvent;
-
-  factory ConversationEvent.userMessage({
-    required String message,
-    required int turnNumber,
-  }) = UserMessageEvent;
-
-  factory ConversationEvent.thinking({
-    required int turnNumber,
-  }) = ThinkingEvent;
-
-  factory ConversationEvent.assistantMessage({
-    required String message,
-    required int turnNumber,
-  }) = AssistantMessageEvent;
-
-  factory ConversationEvent.toolCalls({
-    required List<ChatCompletionMessageToolCall> calls,
-    required int turnNumber,
-  }) = ToolCallsEvent;
-
-  factory ConversationEvent.toolResponse({
-    required String toolCallId,
-    required String response,
-  }) = ToolResponseEvent;
-
-  factory ConversationEvent.error({
-    required String message,
-    required int turnNumber,
-  }) = ConversationErrorEvent;
-}
-
-class ConversationInitializedEvent extends ConversationEvent {
-  const ConversationInitializedEvent({
-    required this.conversationId,
-    this.systemMessage,
-  });
-
-  final String conversationId;
-  final String? systemMessage;
-}
-
-class UserMessageEvent extends ConversationEvent {
-  const UserMessageEvent({
-    required this.message,
-    required this.turnNumber,
-  });
-
-  final String message;
-  final int turnNumber;
-}
-
-class ThinkingEvent extends ConversationEvent {
-  const ThinkingEvent({
-    required this.turnNumber,
-  });
-
-  final int turnNumber;
-}
-
-class AssistantMessageEvent extends ConversationEvent {
-  const AssistantMessageEvent({
-    required this.message,
-    required this.turnNumber,
-  });
-
-  final String message;
-  final int turnNumber;
-}
-
-class ToolCallsEvent extends ConversationEvent {
-  const ToolCallsEvent({
-    required this.calls,
-    required this.turnNumber,
-  });
-
-  final List<ChatCompletionMessageToolCall> calls;
-  final int turnNumber;
-}
-
-class ToolResponseEvent extends ConversationEvent {
-  const ToolResponseEvent({
-    required this.toolCallId,
-    required this.response,
-  });
-
-  final String toolCallId;
-  final String response;
-}
-
-class ConversationErrorEvent extends ConversationEvent {
-  const ConversationErrorEvent({
-    required this.message,
-    required this.turnNumber,
-  });
-
-  final String message;
-  final int turnNumber;
 }
 
 /// Strategy for handling conversations

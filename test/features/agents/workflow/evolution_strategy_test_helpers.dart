@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 /// conversation manager — previously duplicated by three groups' setUps.
 ({GenUiBridge bridge, EvolutionStrategy strategy, ConversationManager manager})
 buildGenUiBench({
-  required String conversationId,
   EvolutionStrategy Function(GenUiBridge bridge)? strategyBuilder,
 }) {
   final catalog = buildEvolutionCatalog();
@@ -16,7 +15,7 @@ buildGenUiBench({
   final bridge = GenUiBridge(processor: processor);
   final strategy =
       strategyBuilder?.call(bridge) ?? EvolutionStrategy(genUiBridge: bridge);
-  final manager = ConversationManager(conversationId: conversationId)
+  final manager = ConversationManager()
     ..initialize(systemMessage: 'You are an evolution agent.');
   return (bridge: bridge, strategy: strategy, manager: manager);
 }
