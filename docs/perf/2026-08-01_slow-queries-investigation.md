@@ -56,8 +56,9 @@ Aggregating over all 47 days puts `habitCompletionsInRange` at
   `ROW_NUMBER` variant `getHabitCompletionsInRange`
   (`lib/database/database_data_queries.dart:40`, landed in d36221b06, 2026-06-06).
 - 1,356 s of its 1,458 s comes from **two** outlier events (see "Mode C" below).
-- The drift query now has **no callers** and only generates dead code at
-  `database.g.dart:6986`. **Deleted in #3723** — it was never worth optimising.
+- The drift query had **no callers** and generated a dead method alongside
+  itself. Both were **deleted in #3723** — it was never worth optimising, and
+  that generated location now belongs to an unrelated query.
 
 Everything below is therefore ranked over **2026-07-19 → 2026-08-01**, which reflects
 the code as it actually stands.
@@ -132,34 +133,52 @@ maxima at ~5,069 ms across shapes 3, 5, 7 and 8.
 Entries 7 and 8 are the clearest proof: `queue_markers WHERE room_id = ?` is a
 single-row lookup on a unique index averaging **2.8 s**. No plan change can fix that.
 
-### Mode C — two isolated multi-minute stalls (real, but not contention)
+### Mode C — two isolated multi-minute stalls (cause unidentified)
 
 | Duration | Window | Query |
 |---:|---|---|
 | 909,870 ms | 2026-06-25 15:21:43 → 15:36:53 | habit completions |
 | 446,318 ms | 2026-06-23 19:40:16 → 19:47:42 | habit completions |
 
-Both had **zero overlapping writes** and near-zero overlapping queries (3 and 16
-logged statements respectively across a 7–15 minute span). That rules out lock
-contention: if the database were held, the queue would be full of waiters, as it
-visibly is in the sync convoys.
+**This document has guessed at these twice and been wrong both times.** First
+"probably host suspend", then "definitely not host suspend, therefore a real
+stall". Neither is supported. What follows is what the measurement can actually
+carry.
 
-**These were nevertheless real elapsed time, not host suspend.** An earlier
-version of this document guessed suspend. That is ruled out by the measurement
-itself: the durations come from `Stopwatch`, which is monotonic, and on a
-suspended host the monotonic clock does not advance — it could not have recorded
-909 seconds that the process spent asleep. So the process really was stuck for
-15 minutes of running time.
+**What the number is.** The interceptor wraps the executor on the *calling*
+side (`common.dart:173`) and stops its `Stopwatch` in the `finally` after
+`await run()` resumes (`slow_query_logging.dart`). The span therefore runs from
+just before dispatch to just after the continuation resumes on the caller
+isolate. It brackets far more than query execution.
 
-Comparing wall clock against the monotonic timer therefore **cannot** identify
-these events, which is why that approach was built and then abandoned (#3724,
-closed unmerged). The open question is what blocked the database isolate for
-that long with nothing else queued behind it — isolate starvation, a blocking
-call on the DB isolate, or platform-level throttling. Answering it needs
-app-lifecycle and platform evidence, not clock comparison.
+**Why "monotonic, therefore not suspend" does not follow.** Monotonic only means
+the clock does not run backwards; whether it advances across system sleep is
+platform-specific, and the corpus does not record which platform or clock source
+produced these captures. So suspend is not excluded.
 
-These two events contribute 1,356 s and still distort any all-window ranking;
-exclude them when aggregating, but do not treat them as explained.
+**Why "no overlapping writes, therefore not contention" does not follow either.**
+The interceptor instruments individual `run*` calls, not transaction lifetimes.
+A short, unlogged statement can open a transaction and hold it across the gap
+between statements without appearing in the log at all. And with a single waiter
+there is no queue to look full.
+
+**Candidates, none eliminated:**
+
+- host or app suspend, on a platform whose clock source includes sleep;
+- the database isolate blocked — a long-held transaction, a checkpoint, a
+  filesystem stall;
+- the **caller** isolate not resuming the continuation promptly, which produces
+  this exact measurement with the database entirely idle;
+- platform-level throttling of a backgrounded app.
+
+Distinguishing them needs evidence this log cannot provide: app-lifecycle
+transitions, the platform and clock source, and transaction begin/commit
+boundaries. Comparing wall clock against the monotonic timer specifically does
+**not** do it — that was built and abandoned (#3724, closed unmerged), because
+the skew is ~0 whenever the clock source already includes the lost time.
+
+These two events contribute 1,356 s. Exclude them when aggregating, and do not
+treat them as explained.
 
 ## What the April remedies achieved
 
@@ -198,9 +217,9 @@ barely present in April — now dominates.
 10. ~~**Delete the dead `habitCompletionsInRange` drift query.**~~ Done in #3723;
     the query and its generated output are gone.
 11. ~~**Add wall-clock/monotonic divergence detection**~~ — attempted in #3724
-    and **abandoned**. It cannot work: the outlier durations were themselves
-    measured by the monotonic `Stopwatch`, so the monotonic clock advanced
-    throughout and the wall-vs-monotonic skew is ~0. See Mode C.
+    and **abandoned**. The skew is ~0 whenever the clock source already includes
+    the lost time, so it cannot separate the Mode C candidates. See Mode C for
+    what would actually be needed.
 
 ## Code map
 
