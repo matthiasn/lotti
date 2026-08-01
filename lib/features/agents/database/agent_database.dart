@@ -599,16 +599,27 @@ class AgentDatabase extends _$AgentDatabase {
           LIMIT ${entityType == 'changeDecision' ? '?4' : '?3'}
         )''';
 
+    // The inner ORDER BY of each arm decides which rows survive that arm's
+    // LIMIT, but says nothing about the order of the compound result — SQLite
+    // may emit the arms' rows in any legal order. The consumers are first-wins
+    // (`decisionByKey.putIfAbsent`, and the duplicate-proposal collapse in
+    // `unifiedSuggestionList`), so an unordered compound could let an older
+    // retry/audit decision override the newest one. Order the compound result
+    // explicitly to keep every bucket newest-first.
+    final compound =
+        '${[
+          arm(
+            _ledgerBucketPending,
+            'changeSet',
+            extraPredicate: "AND subtype IN ('pending', 'partiallyResolved')",
+          ),
+          arm(_ledgerBucketRecent, 'changeSet'),
+          arm(_ledgerBucketDecision, 'changeDecision'),
+        ].join('\n        UNION ALL\n')}\n'
+        '        ORDER BY $ledgerBucketColumn ASC, created_at DESC, id DESC';
+
     return customSelect(
-      [
-        arm(
-          _ledgerBucketPending,
-          'changeSet',
-          extraPredicate: "AND subtype IN ('pending', 'partiallyResolved')",
-        ),
-        arm(_ledgerBucketRecent, 'changeSet'),
-        arm(_ledgerBucketDecision, 'changeDecision'),
-      ].join('\n        UNION ALL\n'),
+      compound,
       variables: [
         Variable<String>(agentId),
         Variable<String>(taskId),

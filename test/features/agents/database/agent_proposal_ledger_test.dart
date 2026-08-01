@@ -131,6 +131,56 @@ void main() {
       expect(idsByBucket[AgentDatabase.ledgerBucketDecision], {'cd-1'});
     });
 
+    test('every bucket comes back newest-first', () async {
+      // The consumers are first-wins (decisionByKey.putIfAbsent, and the
+      // duplicate-proposal collapse), so a compound result in some other legal
+      // order would let an older retry/audit decision override the newest one.
+      for (var i = 0; i < 3; i++) {
+        await insertChangeSet(
+          id: 'cs-$i',
+          agentId: 'agent-1',
+          taskId: 'task-1',
+          clock: i + 1,
+        );
+        await insertDecision(
+          id: 'cd-$i',
+          agentId: 'agent-1',
+          taskId: 'task-1',
+          changeSetId: 'cs-0',
+          clock: 100 + i,
+        );
+      }
+
+      final rows = await db
+          .getProposalLedgerRowsForAgentAndTask(
+            agentId: 'agent-1',
+            taskId: 'task-1',
+            changeSetLimit: 200,
+            decisionLimit: 50,
+          )
+          .get();
+
+      final byBucket = <String, List<DateTime>>{};
+      for (final row in rows) {
+        byBucket
+            .putIfAbsent(
+              row.read<String>(AgentDatabase.ledgerBucketColumn),
+              () => <DateTime>[],
+            )
+            .add(row.read<DateTime>('created_at'));
+      }
+
+      expect(byBucket.keys, isNotEmpty);
+      for (final entry in byBucket.entries) {
+        final sortedDesc = [...entry.value]..sort((a, b) => b.compareTo(a));
+        expect(
+          entry.value,
+          sortedDesc,
+          reason: 'bucket "${entry.key}" must be newest-first',
+        );
+      }
+    });
+
     test('scopes to the requested agent and task', () async {
       await insertChangeSet(id: 'mine', agentId: 'agent-1', taskId: 'task-1');
       await insertChangeSet(
