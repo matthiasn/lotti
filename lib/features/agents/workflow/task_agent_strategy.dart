@@ -19,7 +19,6 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -229,7 +228,7 @@ class TaskAgentStrategy extends ConversationStrategy {
 
       Map<String, dynamic> args;
       try {
-        args = _parseToolArguments(call.function.arguments);
+        args = parseToolArguments(call.function.arguments);
       } catch (e) {
         final rawBytes = utf8.encode(call.function.arguments).length;
         developer.log(
@@ -511,18 +510,6 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   // ── Internal handlers ──────────────────────────────────────────────────
 
-  /// Test seam for the JSON-recovery parser — pure, no I/O.
-  @visibleForTesting
-  static Map<String, dynamic> debugParseToolArguments(String raw) =>
-      _parseToolArguments(raw);
-
-  /// Test seam for the pure human-summary formatter.
-  @visibleForTesting
-  static String debugGenerateHumanSummary(
-    String toolName,
-    Map<String, dynamic> args,
-  ) => TaskAgentChangeHandlers._generateHumanSummary(toolName, args);
-
   void _recordSuccessfulMutation(
     String toolName,
     Map<String, dynamic> arguments,
@@ -544,7 +531,7 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   /// Parses tool call arguments from raw JSON, with resilience for common
   /// local model quirks (markdown fencing, trailing text, etc.).
-  static Map<String, dynamic> _parseToolArguments(String raw) {
+  static Map<String, dynamic> parseToolArguments(String raw) {
     // First, try direct parse.
     try {
       final decoded = jsonDecode(raw);

@@ -378,28 +378,6 @@ void main() {
       expect(strategy.latestSoulProposal, isNull);
       expect(strategy.latestProposal!.generalDirective, 'Template stays.');
     });
-
-    test('captures cross-template notice', () async {
-      final toolCall = makeToolCall(
-        name: 'propose_soul_directives',
-        args: {
-          'voice_directive': 'New voice.',
-          'rationale': 'Update.',
-          'cross_template_notice':
-              'Also affects: Laura Project Analyst, Tom Task Agent',
-        },
-      );
-
-      await strategy.processToolCalls(
-        toolCalls: [toolCall],
-        manager: manager,
-      );
-
-      expect(
-        strategy.latestSoulProposal!.crossTemplateNotice,
-        contains('Laura Project Analyst'),
-      );
-    });
   });
 
   group('auto-surface on propose_soul_directives', () {
@@ -508,7 +486,7 @@ void main() {
   // ---------------------------------------------------------------------------
   // Glados property for the defensive string-arg reader (via debug seam).
   // ---------------------------------------------------------------------------
-  group('debugReadStringArg — properties', () {
+  group('readStringArg — properties', () {
     glados.Glados(
       glados.IntAnys(glados.any).intInRange(0, 7),
       glados.ExploreConfig(numRuns: 80),
@@ -530,12 +508,12 @@ void main() {
         final args = <String, dynamic>{'key': value};
 
         expect(
-          EvolutionStrategy.debugReadStringArg(args, 'key'),
+          EvolutionStrategy.readStringArg(args, 'key'),
           isString ? value : '',
           reason: '$value',
         );
         // Missing keys are also the empty-string fallback.
-        expect(EvolutionStrategy.debugReadStringArg(args, 'absent'), '');
+        expect(EvolutionStrategy.readStringArg(args, 'absent'), '');
       },
       tags: 'glados',
     );

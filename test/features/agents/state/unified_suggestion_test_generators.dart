@@ -335,7 +335,7 @@ class GeneratedUnifiedSuggestionScenario {
 }
 
 /// Spec for one entry in the timer-dedup property input list
-/// (see `debugKeepLatestRunningTimerUpdate`).
+/// (see `keepLatestRunningTimerUpdate`).
 class GeneratedTimerDedupSpec {
   const GeneratedTimerDedupSpec({
     required this.isTimerUpdate,

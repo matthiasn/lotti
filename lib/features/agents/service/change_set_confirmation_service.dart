@@ -8,7 +8,6 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:meta/meta.dart';
 
 typedef ConfirmedDecisionCallback =
     Future<void> Function({
@@ -123,7 +122,7 @@ class ChangeSetConfirmationService {
       LogDomain.agentWorkflow,
       'Confirming item $itemIndex (${item.toolName}) in change set '
       '${DomainLogger.sanitizeId(current.id)}, '
-      '${_describeArgsForLog(dispatchArgs)}',
+      '${describeArgsForLog(dispatchArgs)}',
       subDomain: _sub,
     );
 
@@ -538,12 +537,7 @@ class ChangeSetConfirmationService {
     'title',
   };
 
-  /// Test seam for the PII-safe arg formatter — pure, no state.
-  @visibleForTesting
-  static String debugDescribeArgsForLog(Map<String, dynamic> args) =>
-      _describeArgsForLog(args);
-
-  static String _describeArgsForLog(Map<String, dynamic> args) {
+  static String describeArgsForLog(Map<String, dynamic> args) {
     final knownNames =
         args.keys
             .where((key) => _safeLogArgNames.contains(key))

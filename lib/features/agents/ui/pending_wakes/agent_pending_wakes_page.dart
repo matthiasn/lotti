@@ -208,7 +208,7 @@ class _AdaptedRows {
     final hints = <String, _RowHint>{};
     for (final vm in vms) {
       rows.add(_vmToRow(vm, messages));
-      hints[vm.id] = _RowHint(type: vm.type, agentId: vm.agentId);
+      hints[vm.id] = _RowHint(type: vm.type);
     }
     return _AdaptedRows(rows: rows, hints: hints);
   }
@@ -218,9 +218,8 @@ class _AdaptedRows {
 }
 
 class _RowHint {
-  const _RowHint({required this.type, required this.agentId});
+  const _RowHint({required this.type});
   final PendingWakeType type;
-  final String agentId;
 }
 
 AgentListRowData _vmToRow(PendingWakeVm vm, AppLocalizations messages) {
@@ -248,7 +247,6 @@ AgentListRowData _vmToRow(PendingWakeVm vm, AppLocalizations messages) {
     // (in the compact layout) to overflow on phone-wide windows. The
     // exact timestamp surfaces as the countdown chip's tooltip.
     trailing: (context) => _PendingWakeTrailing(
-      rowId: vm.id,
       dueAt: vm.dueAt,
       type: vm.type,
       agentId: vm.agentId,
@@ -280,13 +278,11 @@ IconData _wakeIcon(PendingWakeType type) {
 /// The delete state is local because it's per-row; the timer is not.
 class _PendingWakeTrailing extends ConsumerStatefulWidget {
   const _PendingWakeTrailing({
-    required this.rowId,
     required this.dueAt,
     required this.type,
     required this.agentId,
   });
 
-  final String rowId;
   final DateTime dueAt;
   final PendingWakeType type;
   final String agentId;

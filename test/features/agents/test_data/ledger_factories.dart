@@ -18,7 +18,6 @@ LedgerEntry makeLedgerEntry({
   DecisionActor? resolvedBy,
   ChangeDecisionVerdict? verdict,
   String? reason,
-  String? groupId,
 }) {
   return LedgerEntry(
     changeSetId: changeSetId,
@@ -33,7 +32,6 @@ LedgerEntry makeLedgerEntry({
     resolvedBy: resolvedBy,
     verdict: verdict,
     reason: reason,
-    groupId: groupId,
   );
 }
 

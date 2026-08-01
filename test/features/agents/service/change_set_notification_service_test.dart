@@ -245,24 +245,24 @@ void main() {
     },
   );
 
-  group('resolveSupportedLocaleForTest', () {
+  group('resolveSupportedLocale', () {
     test(
       'exact match wins, language-only match follows, fallback is first',
       () {
         // Exact supported locale passes through.
         expect(
-          resolveSupportedLocaleForTest(const ui.Locale('de')),
+          resolveSupportedLocale(const ui.Locale('de')),
           const ui.Locale('de'),
         );
         // Language-code match without country: de-AT → de (not the English
         // fallback) — the second loop in _resolveSupportedLocale.
         expect(
-          resolveSupportedLocaleForTest(const ui.Locale('de', 'AT')),
+          resolveSupportedLocale(const ui.Locale('de', 'AT')),
           const ui.Locale('de'),
         );
         // Unsupported language falls back to the first supported locale.
         expect(
-          resolveSupportedLocaleForTest(const ui.Locale('zz')),
+          resolveSupportedLocale(const ui.Locale('zz')),
           AppLocalizations.supportedLocales.first,
         );
       },

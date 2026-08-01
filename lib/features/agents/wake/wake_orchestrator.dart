@@ -106,7 +106,6 @@ typedef MaxConcurrentWakes = int Function();
 class WakeRunCompletion {
   const WakeRunCompletion({
     required this.runKey,
-    required this.agentId,
     required this.status,
     this.error,
   });
@@ -114,9 +113,6 @@ class WakeRunCompletion {
   /// Deterministic run key of the finished wake (matches the value returned
   /// by [WakeOrchestrator.enqueueManualWake]).
   final String runKey;
-
-  /// The agent the wake ran under.
-  final String agentId;
 
   /// Terminal status: [WakeRunStatus.completed], [WakeRunStatus.failed], or
   /// [WakeRunStatus.aborted].
@@ -229,7 +225,6 @@ class WakeOrchestrator {
     _runCompletions.add(
       WakeRunCompletion(
         runKey: job.runKey,
-        agentId: job.agentId,
         status: status,
         error: error,
       ),

@@ -10,7 +10,6 @@ import 'package:lotti/features/agents/ui/evolution/evolution_chat_data.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
-import 'package:meta/meta.dart';
 
 export 'package:lotti/features/agents/ui/evolution/evolution_chat_data.dart';
 
@@ -86,7 +85,7 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
     final suppressOpeningAssistantBubble =
         hasOpeningProposal && openingSurfaces.isNotEmpty;
 
-    if (!suppressOpeningAssistantBubble && _hasNonEmptyText(openingResponse)) {
+    if (!suppressOpeningAssistantBubble && hasNonEmptyText(openingResponse)) {
       messages.add(
         EvolutionChatMessage.assistant(
           text: openingResponse,
@@ -153,7 +152,7 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
       processor: processor,
       lastSurfacedProposalKey:
           openingProposal != null && openingSurfaces.isNotEmpty
-          ? _proposalKey(openingProposal)
+          ? buildProposalKey(openingProposal)
           : null,
     );
   }
@@ -203,7 +202,7 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
 
     if (!skipApprovalCheck &&
         hasPendingProposal &&
-        _isImplicitApprovalMessage(text)) {
+        isImplicitApprovalMessage(text)) {
       final approved = await approveProposal();
       if (!approved) {
         final current = state.value;
@@ -251,7 +250,7 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
 
       final pendingProposal = workflow.getCurrentProposal(sessionId: sessionId);
       final proposalKey = pendingProposal != null
-          ? _proposalKey(pendingProposal)
+          ? buildProposalKey(pendingProposal)
           : null;
 
       // Render the proposal surface as a fallback when the LLM didn't already
@@ -325,33 +324,18 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
     unicode: true,
   );
 
-  static bool _isImplicitApprovalMessage(String text) =>
+  static bool isImplicitApprovalMessage(String text) =>
       _implicitApprovalPattern.hasMatch(text.trim());
 
-  /// Test seam for the implicit-approval matcher — pure regex, no state.
-  @visibleForTesting
-  static bool debugIsImplicitApprovalMessage(String text) =>
-      _isImplicitApprovalMessage(text);
+  static bool hasNonEmptyText(String? text) => text?.trim().isNotEmpty ?? false;
 
-  static bool _hasNonEmptyText(String? text) =>
-      text?.trim().isNotEmpty ?? false;
-
-  /// Test seam for the non-empty-text guard — pure, no state.
-  @visibleForTesting
-  static bool debugHasNonEmptyText(String? text) => _hasNonEmptyText(text);
-
-  static String _proposalKey(PendingProposal proposal) {
+  static String buildProposalKey(PendingProposal proposal) {
     return [
       proposal.generalDirective.trim(),
       proposal.reportDirective.trim(),
       proposal.rationale.trim(),
     ].join('\n---\n');
   }
-
-  /// Test seam for the proposal fingerprint — pure string join, no state.
-  @visibleForTesting
-  static String debugProposalKey(PendingProposal proposal) =>
-      _proposalKey(proposal);
 
   List<EvolutionChatMessage> _renderProposalSurface({
     required ActiveEvolutionSession? session,
@@ -425,7 +409,7 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
           processor: () => null,
           messages: [
             ...current.messages,
-            if (_hasNonEmptyText(recapSummary))
+            if (hasNonEmptyText(recapSummary))
               EvolutionChatMessage.assistant(
                 text: recapSummary!,
                 timestamp: clock.now(),

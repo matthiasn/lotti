@@ -2793,15 +2793,6 @@ void main() {
         },
       );
 
-      test('debug summary formatter falls back for unsupported tools', () {
-        final summary = TaskAgentStrategy.debugGenerateHumanSummary(
-          'future_deferred_tool',
-          {'alpha': 1, 'beta': 2},
-        );
-
-        expect(summary, 'future_deferred_tool(alpha, beta)');
-      });
-
       test(
         'returns Skipped response when addItem reports a within-wake duplicate',
         () async {
@@ -3223,7 +3214,6 @@ void main() {
               success: false,
               output: 'Policy denied: Category cat-999 not in allowed set',
               policyDenied: true,
-              denialReason: 'Category cat-999 not in allowed set',
             ),
           );
 
@@ -3351,7 +3341,6 @@ void main() {
               success: false,
               output: 'Policy denied: Category cat-999 not in allowed set',
               policyDenied: true,
-              denialReason: 'Category cat-999 not in allowed set',
             ),
           );
 
@@ -4913,10 +4902,10 @@ void main() {
 
     // -------------------------------------------------------------------------
     // Glados properties for the pure JSON-recovery parser (via the
-    // debugParseToolArguments seam) — round-trip, fence-recovery, and
+    // parseToolArguments helper) — round-trip, fence-recovery, and
     // balanced-brace invariants for arbitrary generated JSON objects.
     // -------------------------------------------------------------------------
-    group('debugParseToolArguments — properties', () {
+    group('parseToolArguments — properties', () {
       glados.Glados(
         glados.any.toolArgsObject,
         glados.ExploreConfig(numRuns: 120),
@@ -4929,14 +4918,14 @@ void main() {
 
           // Idempotent direct parse: a valid object returns the same map.
           expect(
-            TaskAgentStrategy.debugParseToolArguments(encoded),
+            TaskAgentStrategy.parseToolArguments(encoded),
             obj,
             reason: 'direct: $encoded',
           );
 
           // Fence recovery: a markdown-fenced object always round-trips.
           expect(
-            TaskAgentStrategy.debugParseToolArguments(
+            TaskAgentStrategy.parseToolArguments(
               '```json\n$encoded\n```',
             ),
             obj,
@@ -4946,7 +4935,7 @@ void main() {
           // Balanced-brace extraction: the first balanced object in a string
           // with trailing prose is always returned.
           expect(
-            TaskAgentStrategy.debugParseToolArguments(
+            TaskAgentStrategy.parseToolArguments(
               '$encoded trailing explanation text',
             ),
             obj,

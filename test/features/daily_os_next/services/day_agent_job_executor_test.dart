@@ -173,7 +173,6 @@ void main() {
             completions.add(
               const WakeRunCompletion(
                 runKey: 'run-key',
-                agentId: agentId,
                 status: WakeRunStatus.completed,
               ),
             );
@@ -282,7 +281,6 @@ void main() {
             completions.add(
               const WakeRunCompletion(
                 runKey: 'run-key-1',
-                agentId: agentId,
                 status: WakeRunStatus.completed,
               ),
             );
@@ -386,7 +384,6 @@ void main() {
           completions.add(
             const WakeRunCompletion(
               runKey: 'run-key',
-              agentId: 'resolved-$dayId',
               status: WakeRunStatus.completed,
             ),
           );
@@ -439,7 +436,6 @@ void main() {
           completions.add(
             const WakeRunCompletion(
               runKey: 'run-key-1',
-              agentId: agentId,
               status: WakeRunStatus.completed,
             ),
           );
@@ -472,7 +468,6 @@ void main() {
           completions.add(
             const WakeRunCompletion(
               runKey: 'run-key-1',
-              agentId: agentId,
               status: WakeRunStatus.completed,
             ),
           );
@@ -501,7 +496,6 @@ void main() {
           completions.add(
             const WakeRunCompletion(
               runKey: 'run-key-1',
-              agentId: agentId,
               status: WakeRunStatus.completed,
             ),
           );
@@ -530,7 +524,6 @@ void main() {
             completions.add(
               WakeRunCompletion(
                 runKey: 'run-key-1',
-                agentId: agentId,
                 status: WakeRunStatus.failed,
                 error: MissingDraftDayPlanException(),
               ),
@@ -563,7 +556,6 @@ void main() {
             completions.add(
               WakeRunCompletion(
                 runKey: 'run-key-1',
-                agentId: agentId,
                 status: WakeRunStatus.failed,
                 error: TimeoutException('slow'),
               ),
@@ -652,7 +644,6 @@ void main() {
       completions.add(
         const WakeRunCompletion(
           runKey: 'run-key',
-          agentId: agentId,
           status: WakeRunStatus.completed,
         ),
       );

@@ -306,13 +306,6 @@ void main() {
       expect(captured, contains('invalid arguments format'));
       expect(strategy.extractReportContent(), '');
     });
-
-    test('parses markdown-fenced JSON arguments', () {
-      final parsed = strategy.debugParseToolArguments(
-        '```json\n{"oneLiner":"x","tldr":"y","content":"z"}\n```',
-      );
-      expect(parsed, {'oneLiner': 'x', 'tldr': 'y', 'content': 'z'});
-    });
   });
 
   group('continuation + final response', () {

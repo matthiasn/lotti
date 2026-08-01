@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:meta/meta.dart';
 
 /// Signature of the batched read the coalescer folds single-id loads into.
 /// Returns the found entities keyed by id; absent ids are simply missing.
@@ -63,11 +62,6 @@ class AgentEntityByIdCoalescer {
   /// between the first [load] of a turn and that turn's flush, so this map is
   /// empty whenever the coalescer is idle.
   final Map<Zone, _PendingBatch> _batches = <Zone, _PendingBatch>{};
-
-  /// Number of batches awaiting flush. Exposed so tests can assert the map
-  /// does not leak entries after a flush rather than inferring it.
-  @visibleForTesting
-  int get pendingBatchCount => _batches.length;
 
   /// Resolves [id] to its entity, or `null` when no live row matches.
   ///

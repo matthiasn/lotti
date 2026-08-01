@@ -23,13 +23,13 @@ class AttentionClaimMaintenanceService {
   static const _uuid = Uuid();
   static const _taskTargetKind = 'task';
 
-  Future<AttentionClaimMaintenanceResult> settleTerminalTaskClaims({
+  Future<void> settleTerminalTaskClaims({
     required String agentId,
     required Task task,
   }) async {
     final projectedStatus = _terminalDispositionStatus(task.data.status);
     if (projectedStatus == null) {
-      return const AttentionClaimMaintenanceResult();
+      return;
     }
 
     final activeClaims = await agentRepository.getAttentionClaimsForTarget(
@@ -40,10 +40,7 @@ class AttentionClaimMaintenanceService {
         .where((claim) => claim.agentId == agentId)
         .toList(growable: false);
     if (ownClaims.isEmpty) {
-      return AttentionClaimMaintenanceResult(
-        inspectedClaims: activeClaims.length,
-        status: projectedStatus,
-      );
+      return;
     }
 
     final now = clock.now();
@@ -62,12 +59,6 @@ class AttentionClaimMaintenanceService {
         );
       }
     });
-
-    return AttentionClaimMaintenanceResult(
-      inspectedClaims: activeClaims.length,
-      settledClaims: ownClaims.length,
-      status: projectedStatus,
-    );
   }
 
   static AttentionClaimStatus? _terminalDispositionStatus(TaskStatus status) {
@@ -86,21 +77,4 @@ class AttentionClaimMaintenanceService {
       _ => 'Task state no longer needs this attention request.',
     };
   }
-}
-
-/// Outcome of a [AttentionClaimMaintenanceService.settleTerminalTaskClaims]
-/// pass: how many of the task's own active claims were [inspectedClaims], how
-/// many were closed ([settledClaims]), and the terminal [status] the task's
-/// status projected to (`null` when the task isn't in a terminal state and no
-/// settling was attempted).
-class AttentionClaimMaintenanceResult {
-  const AttentionClaimMaintenanceResult({
-    this.inspectedClaims = 0,
-    this.settledClaims = 0,
-    this.status,
-  });
-
-  final int inspectedClaims;
-  final int settledClaims;
-  final AttentionClaimStatus? status;
 }

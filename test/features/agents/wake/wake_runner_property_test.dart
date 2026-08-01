@@ -15,7 +15,6 @@ void main() {
       final expectedActive = <String, DateTime>{};
       final expectedEmissions = <Set<String>>[];
       final emissions = <Set<String>>[];
-      final waiters = <GeneratedWakeRunnerWaiter>[];
       // Set of agentIds whose abort signal has already been fired in the
       // current run. Cleared on release so a fresh acquire starts un-aborted.
       final firedAborts = <String>{};
@@ -69,9 +68,6 @@ void main() {
                   generatedRunner.release(agentId);
                   if (removed) {
                     expectedEmissions.add(expectedActive.keys.toSet());
-                    waiters
-                        .where((waiter) => waiter.agentId == agentId)
-                        .forEach((waiter) => waiter.expectedCompleted = true);
                     // Release fires any pending abort signal and clears the
                     // fired-abort bookkeeping so the next acquire starts
                     // fresh.
@@ -83,32 +79,6 @@ void main() {
                     firedAborts.remove(agentId);
                   }
                   async.flushMicrotasks();
-
-                case GeneratedWakeRunnerOperationKind.waitForCompletion:
-                  final waiter = GeneratedWakeRunnerWaiter(
-                    agentId: agentId,
-                    actualCompleted: false,
-                    expectedCompleted: !expectedActive.containsKey(agentId),
-                  );
-                  generatedRunner.waitForCompletion(agentId).then((_) {
-                    waiter.actualCompleted = true;
-                  });
-                  async.flushMicrotasks();
-
-                  if (!expectedActive.containsKey(agentId)) {
-                    expect(
-                      waiter.actualCompleted,
-                      isTrue,
-                      reason: '$scenario',
-                    );
-                  } else {
-                    expect(
-                      waiter.actualCompleted,
-                      isFalse,
-                      reason: '$scenario',
-                    );
-                    waiters.add(waiter);
-                  }
 
                 case GeneratedWakeRunnerOperationKind.abort:
                   final isActive = expectedActive.containsKey(agentId);
@@ -152,19 +122,12 @@ void main() {
               for (final slot in GeneratedWakeRunnerAgentSlot.values) {
                 final id = generatedWakeRunnerAgentId(slot);
                 expect(
-                  generatedRunner.startedAt(id),
+                  generatedRunner.activeStartedAtById[id],
                   expectedActive[id],
                   reason: '$scenario',
                 );
               }
               expect(emissions, expectedEmissions, reason: '$scenario');
-              for (final waiter in waiters) {
-                expect(
-                  waiter.actualCompleted,
-                  waiter.expectedCompleted,
-                  reason: '$scenario',
-                );
-              }
               for (final waiter in abortWaiters) {
                 expect(
                   waiter.actualCompleted,

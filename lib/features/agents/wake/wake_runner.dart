@@ -7,8 +7,7 @@ import 'package:clock/clock.dart';
 ///
 /// Ensures that at most one wake executes per agent at a time.  Each
 /// in-progress run is represented by a [Completer] stored under the agent's
-/// ID; callers that cannot acquire a lock can wait for completion via
-/// [waitForCompletion] and re-try.
+/// ID, while the orchestrator observes [abortFuture] to coordinate shutdown.
 class WakeRunner {
   final _activeLocks = <String, Completer<void>>{};
   final _activeStartedAt = <String, DateTime>{};
@@ -86,25 +85,11 @@ class WakeRunner {
   /// Returns `null` when the agent is not currently running.
   Future<void>? abortFuture(String agentId) => _abortSignals[agentId]?.future;
 
-  /// Suspend until the currently active run for [agentId] finishes.
-  ///
-  /// Returns immediately when no run is active.
-  Future<void> waitForCompletion(String agentId) async {
-    final completer = _activeLocks[agentId];
-    if (completer != null) await completer.future;
-  }
-
   /// Whether [agentId] has an active wake run.
   bool isRunning(String agentId) => _activeLocks.containsKey(agentId);
 
   /// Snapshot of the IDs of all agents that are currently running.
   Set<String> get activeAgentIds => Set.unmodifiable(_activeLocks.keys.toSet());
-
-  /// When did the currently-active wake for [agentId] start? Returns
-  /// `null` when [agentId] is not running. The wall-clock used here is
-  /// `clock.now()`, so tests that override `clock` see deterministic
-  /// values.
-  DateTime? startedAt(String agentId) => _activeStartedAt[agentId];
 
   /// The workspace key passed to [tryAcquire] for [agentId]'s currently
   /// active run, or `null` when [agentId] is not running (or is running

@@ -702,7 +702,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             _log(
               'rejected report editor revision after '
               '${editResult.attempts} attempt(s): '
-              '${editResult.validationIssues.map((issue) => issue.name).join(',')}',
+              '${editResult.validationIssues.map((issue) => issue.name).join(',')}; '
+              'candidateReturned=${editResult.hadRevision}',
               subDomain: 'reportEditor',
             );
           }

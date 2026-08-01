@@ -54,8 +54,7 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.policyDenied, isTrue);
-        expect(result.denialReason, equals('Target entity has no category'));
-        expect(result.output, contains('Policy denied'));
+        expect(result.output, contains('Target entity has no category'));
       });
 
       test('denies when category is not in allowed set', () async {
@@ -74,8 +73,8 @@ void main() {
         expect(result.success, isFalse);
         expect(result.policyDenied, isTrue);
         expect(
-          result.denialReason,
-          equals('Category cat-forbidden not in allowed set'),
+          result.output,
+          contains('Category cat-forbidden not in allowed set'),
         );
       });
 
@@ -480,7 +479,7 @@ void main() {
           // The policy denial result must be returned despite audit failure.
           expect(result.success, isFalse);
           expect(result.policyDenied, isTrue);
-          expect(result.denialReason, contains('wrong-category'));
+          expect(result.output, contains('wrong-category'));
         },
       );
 
@@ -671,7 +670,6 @@ void main() {
       );
 
       expect(result.policyDenied, isFalse);
-      expect(result.denialReason, isNull);
       expect(result.mutatedEntityId, isNull);
       expect(result.errorMessage, isNull);
     });
@@ -683,7 +681,6 @@ void main() {
         mutatedEntityId: 'ent-1',
         errorMessage: 'err',
         policyDenied: true,
-        denialReason: 'not allowed',
       );
 
       expect(result.success, isFalse);
@@ -691,7 +688,6 @@ void main() {
       expect(result.mutatedEntityId, equals('ent-1'));
       expect(result.errorMessage, equals('err'));
       expect(result.policyDenied, isTrue);
-      expect(result.denialReason, equals('not allowed'));
     });
 
     test('fromHandlerResult maps a write result onto the entity id', () {

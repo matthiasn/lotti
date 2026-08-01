@@ -153,7 +153,8 @@ void main() {
         unifiedSuggestionListProvider('task-abc').future,
       );
 
-      expect(result.isEmpty, isTrue);
+      expect(result.open, isEmpty);
+      expect(result.activity, isEmpty);
       verifyNever(
         () => mockRepo.getProposalLedger(
           any(),
@@ -741,7 +742,7 @@ void main() {
     );
   });
 
-  group('debugKeepLatestRunningTimerUpdate (pure dedup property)', () {
+  group('keepLatestRunningTimerUpdate (pure dedup property)', () {
     String? timerIdOf(PendingSuggestion s) {
       final raw = s.item.args['timerId'];
       if (raw is! String) return null;
@@ -782,7 +783,7 @@ void main() {
         );
       }
 
-      final result = debugKeepLatestRunningTimerUpdate(input);
+      final result = keepLatestRunningTimerUpdate(input);
 
       // Oracle: newest createdAt per timer id, ties broken by the higher
       // itemIndex, first-seen wins exact ties — mirroring the documented

@@ -3464,7 +3464,6 @@ void main() {
 
             expect(received, isNotNull);
             expect(received!.runKey, runKey);
-            expect(received!.agentId, 'agent-1');
             expect(received!.status, WakeRunStatus.completed);
             expect(received!.error, isNull);
           });

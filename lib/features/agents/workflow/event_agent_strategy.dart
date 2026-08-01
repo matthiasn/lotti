@@ -8,7 +8,6 @@ import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// [ConversationStrategy] implementation for the Event Agent.
@@ -301,9 +300,4 @@ class EventAgentStrategy extends ConversationStrategy
     manager.addToolResponse(toolCallId: callId, response: errorMsg);
     await recordToolResultMessage(toolName: toolName, errorMessage: errorMsg);
   }
-
-  /// Test seam for the shared JSON/markdown argument parser.
-  @visibleForTesting
-  Map<String, dynamic> debugParseToolArguments(String raw) =>
-      parseAgentToolArguments(raw);
 }
