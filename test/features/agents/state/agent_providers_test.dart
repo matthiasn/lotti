@@ -358,6 +358,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
         ],
@@ -395,6 +396,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           updateNotificationsProvider.overrideWithValue(mockNotifications),
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           projectRepositoryProvider.overrideWithValue(mockProjectRepository),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
@@ -543,6 +545,7 @@ void main() {
     ProviderContainer createTaskWorkflowContainer() {
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           conversationRepositoryProvider.overrideWith(
             ConversationRepository.new,
@@ -1681,6 +1684,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeQueueProvider.overrideWithValue(queue),
           wakeRunnerProvider.overrideWithValue(runner),
@@ -1752,6 +1756,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           wakeQueueProvider.overrideWithValue(queue),
@@ -1793,6 +1798,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
           agentSyncServiceProvider.overrideWithValue(bench.service),
           journalDbProvider.overrideWithValue(journalDb),
@@ -2111,6 +2117,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
@@ -2141,6 +2148,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           outboxServiceProvider.overrideWithValue(mockOutbox),
@@ -2163,6 +2171,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
@@ -2259,6 +2268,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
@@ -2281,6 +2291,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
@@ -2318,6 +2329,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
@@ -2404,6 +2416,7 @@ void main() {
     }) {
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),

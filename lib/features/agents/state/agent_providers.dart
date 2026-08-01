@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_retention_service.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
@@ -158,6 +160,21 @@ final agentDatabaseProvider = Provider<AgentDatabase>(
 AgentDatabase agentDatabase(Ref ref) {
   return getIt<AgentDatabase>();
 }
+
+/// Reclaims the JSON sidecars of rows that have been hard-deleted or pruned.
+///
+/// A null documents directory (tests, headless) disables reclamation — a
+/// missing file is never worth failing a delete or a sweep over.
+final agentSidecarReclaimerProvider = Provider<AgentSidecarReclaimer>(
+  agentSidecarReclaimer,
+  name: 'agentSidecarReclaimerProvider',
+);
+AgentSidecarReclaimer agentSidecarReclaimer(Ref ref) => AgentSidecarReclaimer(
+  documentsDirectory: getIt.isRegistered<Directory>()
+      ? getIt<Directory>()
+      : null,
+  domainLogger: ref.watch(domainLoggerProvider),
+);
 
 /// The agent repository wrapping the database.
 final agentRepositoryProvider = Provider<AgentRepository>(
@@ -363,6 +380,7 @@ final agentServiceProvider = Provider<AgentService>(
 AgentService agentService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return AgentService(
+    sidecarReclaimer: ref.watch(agentSidecarReclaimerProvider),
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
@@ -555,6 +573,7 @@ Future<void> agentInitialization(Ref ref) async {
     AgentRetentionService(
       repository: ref.read(agentRepositoryProvider),
       domainLogger: ref.read(domainLoggerProvider),
+      sidecarReclaimer: ref.read(agentSidecarReclaimerProvider),
     ).sweep(),
   );
 }

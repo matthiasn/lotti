@@ -59,7 +59,7 @@ void main() {
         batchSize: any(named: 'batchSize'),
         maxBatches: any(named: 'maxBatches'),
       ),
-    ).thenAnswer((_) async => 0);
+    ).thenAnswer((_) async => <String>[]);
     service = AgentRetentionService(
       repository: repository,
       domainLogger: domainLogger,
@@ -184,6 +184,34 @@ void main() {
     ).called(1);
   });
 
+  test("the pruned rows' sidecars are reclaimed with them", () async {
+    final reclaimer = MockAgentSidecarReclaimer();
+    when(
+      () => reclaimer.reclaim(
+        entityIds: any(named: 'entityIds'),
+        linkIds: any(named: 'linkIds'),
+      ),
+    ).thenReturn(2);
+    when(
+      () => repository.pruneDayStatusEventsBefore(
+        any(),
+        batchSize: any(named: 'batchSize'),
+        maxBatches: any(named: 'maxBatches'),
+      ),
+    ).thenAnswer((_) async => ['evt-1', 'evt-2']);
+
+    await withClock(
+      Clock.fixed(now),
+      AgentRetentionService(
+        repository: repository,
+        domainLogger: domainLogger,
+        sidecarReclaimer: reclaimer,
+      ).sweep,
+    );
+
+    verify(() => reclaimer.reclaim(entityIds: ['evt-1', 'evt-2'])).called(1);
+  });
+
   test('reports what each source removed', () async {
     when(
       () => repository.pruneDayStatusEventsBefore(
@@ -191,7 +219,7 @@ void main() {
         batchSize: any(named: 'batchSize'),
         maxBatches: any(named: 'maxBatches'),
       ),
-    ).thenAnswer((_) async => 3);
+    ).thenAnswer((_) async => ['e0', 'e1', 'e2']);
 
     final result = await withClock(Clock.fixed(now), service.sweep);
 

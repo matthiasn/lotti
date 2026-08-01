@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_retention_policy.dart';
+import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -41,11 +42,16 @@ class AgentRetentionService {
     required this.repository,
     required this.domainLogger,
     this.policy = const AgentRetentionPolicy(),
+    this.sidecarReclaimer,
   });
 
   final AgentRepository repository;
   final DomainLogger domainLogger;
   final AgentRetentionPolicy policy;
+
+  /// Removes the JSON sidecars of pruned rows. Optional so contexts without a
+  /// documents directory simply skip reclamation.
+  final AgentSidecarReclaimer? sidecarReclaimer;
 
   /// The digest's unconsumed backlog is never eligible: returns the earlier of
   /// [cutoff] and the coordinator's watermark, so a stalled digest holds
@@ -108,12 +114,15 @@ class AgentRetentionService {
       final cutoff = await _watermarkFloored(
         now.subtract(policy.dayStatusEvents),
       );
-      final dayStatusEvents = await repository.pruneDayStatusEventsBefore(
+      final pruned = await repository.pruneDayStatusEventsBefore(
         cutoff,
         batchSize: policy.batchSize,
         maxBatches: policy.maxBatchesPerSweep,
       );
-      result = AgentRetentionResult(dayStatusEvents: dayStatusEvents);
+      // The row is only half of what a synced entity leaves behind; without
+      // this the database shrinks while the documents directory does not.
+      sidecarReclaimer?.reclaim(entityIds: pruned);
+      result = AgentRetentionResult(dayStatusEvents: pruned.length);
     } catch (e, s) {
       domainLogger.error(
         LogDomain.agentRuntime,
