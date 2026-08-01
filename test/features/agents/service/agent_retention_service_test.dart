@@ -33,21 +33,15 @@ void main() {
       ),
     ).thenReturn(null);
     when(
-      () => repository.pruneObservationsBeyond(
+      () => repository.pruneObservations(
         keepPerAgent: any(named: 'keepPerAgent'),
+        cutoff: any(named: 'cutoff'),
         batchSize: any(named: 'batchSize'),
         maxBatches: any(named: 'maxBatches'),
       ),
     ).thenAnswer((_) async => 0);
     when(
       () => repository.pruneDayStatusEventsBefore(
-        any(),
-        batchSize: any(named: 'batchSize'),
-        maxBatches: any(named: 'maxBatches'),
-      ),
-    ).thenAnswer((_) async => 0);
-    when(
-      () => repository.pruneWakeRunsBefore(
         any(),
         batchSize: any(named: 'batchSize'),
         maxBatches: any(named: 'maxBatches'),
@@ -64,8 +58,9 @@ void main() {
 
     const policy = AgentRetentionPolicy();
     verify(
-      () => repository.pruneObservationsBeyond(
+      () => repository.pruneObservations(
         keepPerAgent: policy.observationsPerAgent,
+        cutoff: now.subtract(policy.observations),
         batchSize: policy.batchSize,
         maxBatches: policy.maxBatchesPerSweep,
       ),
@@ -77,19 +72,13 @@ void main() {
         maxBatches: policy.maxBatchesPerSweep,
       ),
     ).called(1);
-    verify(
-      () => repository.pruneWakeRunsBefore(
-        now.subtract(policy.wakeRunLog),
-        batchSize: policy.batchSize,
-        maxBatches: policy.maxBatchesPerSweep,
-      ),
-    ).called(1);
   });
 
   test('reports what each source removed', () async {
     when(
-      () => repository.pruneObservationsBeyond(
+      () => repository.pruneObservations(
         keepPerAgent: any(named: 'keepPerAgent'),
+        cutoff: any(named: 'cutoff'),
         batchSize: any(named: 'batchSize'),
         maxBatches: any(named: 'maxBatches'),
       ),
@@ -101,26 +90,19 @@ void main() {
         maxBatches: any(named: 'maxBatches'),
       ),
     ).thenAnswer((_) async => 3);
-    when(
-      () => repository.pruneWakeRunsBefore(
-        any(),
-        batchSize: any(named: 'batchSize'),
-        maxBatches: any(named: 'maxBatches'),
-      ),
-    ).thenAnswer((_) async => 2);
 
     final result = await withClock(Clock.fixed(now), service.sweep);
 
     expect(result.observations, 7);
     expect(result.dayStatusEvents, 3);
-    expect(result.wakeRuns, 2);
-    expect(result.total, 12);
+    expect(result.total, 10);
   });
 
   test('a failing source keeps what the earlier ones already removed', () async {
     when(
-      () => repository.pruneObservationsBeyond(
+      () => repository.pruneObservations(
         keepPerAgent: any(named: 'keepPerAgent'),
+        cutoff: any(named: 'cutoff'),
         batchSize: any(named: 'batchSize'),
         maxBatches: any(named: 'maxBatches'),
       ),
@@ -152,13 +134,6 @@ void main() {
         subDomain: any(named: 'subDomain'),
       ),
     ).called(1);
-    verifyNever(
-      () => repository.pruneWakeRunsBefore(
-        any(),
-        batchSize: any(named: 'batchSize'),
-        maxBatches: any(named: 'maxBatches'),
-      ),
-    );
   });
 
   test('an empty sweep logs nothing', () async {

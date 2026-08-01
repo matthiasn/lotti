@@ -149,10 +149,14 @@ class DayPlannerCorpus {
       }
 
       for (var i = 0; i < observationsPerDay; i++) {
+        // Under the DAY agent, not the coordinator. That is where Daily OS
+        // actually writes them, and it is the growth axis a per-agent cap
+        // cannot see: one more cold identity, with a full quota of its own,
+        // every day forever.
         await repository.upsertEntity(
           AgentDomainEntity.agentMessagePayload(
             id: 'observation-payload-$dayId-$i',
-            agentId: dailyOsPlannerAgentId,
+            agentId: 'day_agent:$dayId',
             createdAt: at,
             vectorClock: null,
             content: {'text': 'The user protected the morning block ($i).'},
@@ -161,7 +165,7 @@ class DayPlannerCorpus {
         await repository.upsertEntity(
           AgentDomainEntity.agentMessage(
             id: 'observation-$dayId-$i',
-            agentId: dailyOsPlannerAgentId,
+            agentId: 'day_agent:$dayId',
             threadId: 'thread-$dayId',
             kind: AgentMessageKind.observation,
             createdAt: at,

@@ -8,19 +8,16 @@ class AgentRetentionResult {
   const AgentRetentionResult({
     this.observations = 0,
     this.dayStatusEvents = 0,
-    this.wakeRuns = 0,
   });
 
   final int observations;
   final int dayStatusEvents;
-  final int wakeRuns;
 
-  int get total => observations + dayStatusEvents + wakeRuns;
+  int get total => observations + dayStatusEvents;
 
   @override
   String toString() =>
-      'observations=$observations dayStatusEvents=$dayStatusEvents '
-      'wakeRuns=$wakeRuns';
+      'observations=$observations dayStatusEvents=$dayStatusEvents';
 }
 
 /// Forgets the derived rows the agent store no longer needs.
@@ -57,8 +54,9 @@ class AgentRetentionService {
     final now = clock.now();
     var result = const AgentRetentionResult();
     try {
-      final observations = await repository.pruneObservationsBeyond(
+      final observations = await repository.pruneObservations(
         keepPerAgent: policy.observationsPerAgent,
+        cutoff: now.subtract(policy.observations),
         batchSize: policy.batchSize,
         maxBatches: policy.maxBatchesPerSweep,
       );
@@ -72,17 +70,6 @@ class AgentRetentionService {
       result = AgentRetentionResult(
         observations: observations,
         dayStatusEvents: dayStatusEvents,
-      );
-
-      final wakeRuns = await repository.pruneWakeRunsBefore(
-        now.subtract(policy.wakeRunLog),
-        batchSize: policy.batchSize,
-        maxBatches: policy.maxBatchesPerSweep,
-      );
-      result = AgentRetentionResult(
-        observations: observations,
-        dayStatusEvents: dayStatusEvents,
-        wakeRuns: wakeRuns,
       );
     } catch (e, s) {
       domainLogger.error(

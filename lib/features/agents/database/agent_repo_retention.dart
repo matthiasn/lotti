@@ -41,20 +41,28 @@ class AgentRepoRetention {
     ),
   );
 
-  /// Deletes observation messages beyond the newest [keepPerAgent] **per
-  /// agent**, together with the payload rows they own.
+  /// Deletes observations bounded by BOTH a per-agent count and an age
+  /// ceiling, together with the payload rows and causal links they own.
   ///
-  /// The payloads are the reason this cannot be a plain `DELETE`: each
-  /// observation is a message row plus an `agentMessagePayload` row carrying
-  /// its text, and the payload is the larger of the two. Deleting only the
-  /// message would leave the bytes behind forever with nothing pointing at
-  /// them — retention that grows the store.
+  /// **Two bounds, because neither is sufficient alone.** Daily OS writes
+  /// observations under a fresh `day_agent:<dayId>` identity every day, and
+  /// each goes cold permanently — so a per-agent count would let one more
+  /// agent, with up to [keepPerAgent] rows of its own, appear every day
+  /// forever. The count bounds the long-lived coordinator's recency; the
+  /// [cutoff] reaps the accumulating per-day identities.
+  ///
+  /// **Three row families, not one.** Each observation is a message, an
+  /// `agentMessagePayload` carrying its text (the larger of the two), and a
+  /// `message_prev` link into the causal chain. Deleting only the message
+  /// would leave the bytes and the link behind forever with nothing pointing
+  /// at them — retention that grows the store.
   ///
   /// Rank is per `(agent_id)` partition by `created_at DESC, id DESC`, the same
   /// total order the read path uses, so "kept" here means exactly the rows a
   /// read could still return.
-  Future<int> pruneObservationsBeyond({
+  Future<int> pruneObservations({
     required int keepPerAgent,
+    required DateTime cutoff,
     required int batchSize,
     required int maxBatches,
   }) => _batched(
@@ -64,20 +72,21 @@ class AgentRepoRetention {
           .customSelect(
             'SELECT id, json_extract(serialized, ?1) AS payload_id '
             'FROM agent_entities WHERE type = ?2 AND subtype = ?3 '
-            'AND id NOT IN ('
+            'AND (created_at < ?6 OR id NOT IN ('
             '  SELECT id FROM ('
             '    SELECT id, ROW_NUMBER() OVER ('
             '      PARTITION BY agent_id ORDER BY created_at DESC, id DESC'
             '    ) AS rank FROM agent_entities '
             '    WHERE type = ?2 AND subtype = ?3 '
             '  ) WHERE rank <= ?4 '
-            ') LIMIT ?5',
+            ')) LIMIT ?5',
             variables: [
               const Variable<String>(r'$.contentEntryId'),
               const Variable<String>(AgentEntityTypes.agentMessage),
               Variable<String>(observationSubtype),
               Variable<int>(keepPerAgent),
               Variable<int>(batchSize),
+              Variable<DateTime>(cutoff),
             ],
             readsFrom: {_db.agentEntities},
           )
@@ -98,27 +107,28 @@ class AgentRepoRetention {
       if (payloadIds.isNotEmpty) {
         await _deleteByIds(payloadIds);
       }
+      // `_appendMessage` writes a `message_prev` link for every observation
+      // once the agent has a head. Leaving those behind would keep the link
+      // table growing exactly as the entity table stopped, and would leave the
+      // fork projection walking edges whose parents no longer exist.
+      await _deleteLinksTouching([...messageIds, ...payloadIds]);
       return _deleteByIds(messageIds);
     }),
   );
 
-  /// Deletes wake-run log rows created before [cutoff].
-  Future<int> pruneWakeRunsBefore(
-    DateTime cutoff, {
-    required int batchSize,
-    required int maxBatches,
-  }) => _batched(
-    maxBatches: maxBatches,
-    run: () => _db.customUpdate(
-      'DELETE FROM wake_run_log WHERE run_key IN ( '
-      'SELECT run_key FROM wake_run_log WHERE created_at < ?1 LIMIT ?2)',
+  /// Removes every link with a pruned entity at either end.
+  Future<void> _deleteLinksTouching(List<String> ids) async {
+    if (ids.isEmpty) return;
+    final placeholders = List.filled(ids.length, '?').join(',');
+    await _db.customUpdate(
+      'DELETE FROM agent_links '
+      'WHERE from_id IN ($placeholders) OR to_id IN ($placeholders)',
       variables: [
-        Variable<DateTime>(cutoff),
-        Variable<int>(batchSize),
+        for (final id in [...ids, ...ids]) Variable<String>(id),
       ],
       updateKind: UpdateKind.delete,
-    ),
-  );
+    );
+  }
 
   Future<int> _deleteByIds(List<String> ids) {
     final placeholders = List.filled(ids.length, '?').join(',');

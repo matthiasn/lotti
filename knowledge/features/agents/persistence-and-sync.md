@@ -302,17 +302,40 @@ SQL, so a new entity type forces a decision instead of silently inheriting one.
 | `wakeTokenUsage` | Forever | Aggregated over **all time** by the template page; pruning would silently rewrite a number the user can read. Monthly compaction is the way to bound it |
 | Change sets, decisions, attention claims | Forever | Audit trail behind proposals the user accepted or rejected |
 | `saga_log` | n/a | No writer exists yet; it earns a policy when it earns a writer |
-| Observations (`agentMessage` + payload) | Newest **200 per agent** | Count, not age: the bound needed is "does not grow without limit", and a count says that whatever the usage rate. Reads take at most 40 |
+| `wake_run_log` | Forever | `getLifetimeWakeCount` aggregates the whole table for a figure the evolution UI displays, and the rows carry the user's own `user_rating`. Pruning would make a visible lifetime number go *down* and erase human feedback |
+| Observations (`agentMessage` + payload + link) | Newest **200 per agent** AND **120 days** | See below — neither bound suffices alone |
 | `dayStatusEvent` | **90 days** | The digest reads from its watermark plus 12h slack — months of headroom |
-| `wake_run_log` | **90 days** | Evaluation surfaces read at most 30 days |
 
-**Observations are two rows, not one.** Each is a message plus an
-`agentMessagePayload` carrying its text, and the payload is the larger. The
-sweep deletes payloads first inside one transaction: a crash between the
-statements must not leave a message whose text is gone (which would render as
-"(no content)"), whereas the other order only leaves an orphan the next sweep
-collects. Nothing walks `prevMessageId` — reads are all `(agentId, type,
-subtype, created_at DESC)` — so pruning the middle of the chain breaks no read.
+**The classification is exhaustive over the entity union.** `classify` is a
+freezed `map` with no fallback branch, so adding an `AgentDomainEntity` variant
+is a compile error until someone decides what retention does with it. A wildcard
+would have let a new machine-derived row accumulate forever with neither a test
+nor a compiler failure to say so.
+
+## Observations need two bounds, not one
+
+A per-agent count is the natural bound for the long-lived coordinator, and it is
+useless against the shape Daily OS actually writes: observations go under a
+fresh `day_agent:<dayId>` identity every day, and each of those goes cold
+permanently. A per-agent quota therefore admits *one more agent, with a full
+allowance of its own, every day forever* — the total still grows without limit
+while every individual agent stays inside its cap.
+
+So the count bounds the coordinator's recency and the age ceiling reaps the
+accumulating per-day identities. The benchmark gate seeds observations under
+per-day identities precisely so it measures that axis rather than hiding it.
+
+**Observations are three rows, not one.** Each is a message, an
+`agentMessagePayload` carrying its text (the larger of the two), and a
+`message_prev` link into the causal chain. The sweep removes all three in one
+transaction, payload first: a crash between the statements must not leave a
+message whose text is gone (which would render as "(no content)"), whereas the
+other order only leaves an orphan the next sweep collects. Leaving the links
+would keep `agent_links` growing exactly as `agent_entities` stopped, and leave
+the fork projection walking edges whose ends no longer exist.
+
+Nothing walks `prevMessageId` — reads are all `(agentId, type, subtype,
+created_at DESC)` — so pruning the middle of the chain breaks no read.
 
 ## Hard delete, no tombstone
 
@@ -334,6 +357,17 @@ conclusion independently. The apply path therefore drops an inbound derived row
 already past the local horizon instead of materializing it — otherwise every
 reconnect would hand the next sweep the same work again. The sequence receipt is
 still recorded, so no backfill is triggered for the dropped row.
+
+Age is the only bound the ingest guard can apply: a count is a property of the
+store as a whole, which a single inbound row cannot be judged against. An
+observation that arrives after the start-up sweep and is inside the age horizon
+is therefore materialized, and the count is re-imposed on the next start.
+
+**The outbox's JSON sidecars are not reclaimed.** Every synced entity is also
+written to `/agent_entities/<id>.json`, and nothing in the app has ever deleted
+those — not retention, not `hardDeleteAgent`, not a tombstone. Retention bounds
+the database; the sidecar lifecycle is a separate, pre-existing gap that has to
+be settled against the sequence/backfill contract before files can be removed.
 
 A row sitting exactly on the boundary may survive a few hours longer on one
 device than another. For observational data that is invisible, and it converges

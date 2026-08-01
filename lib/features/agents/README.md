@@ -79,15 +79,26 @@ individual query gets slow.
 | Captures, plans, summaries, directives, knowledge, reports, souls | Forever |
 | Weekly rollups | Forever — ~52 rows a year, and the digest's only trend source |
 | Per-wake token usage | Forever — the template page totals it over all time; compacting it into monthly aggregates is the way to bound it, not deletion |
+| Wake-run history | Forever — it carries lifetime counts the app displays and the ratings the user gave |
 | Proposal audit trail (change sets, decisions, attention claims) | Forever |
-| Observations | Newest 200 per agent (reads use at most 40) |
+| Observations | Newest 200 per agent **and** 120 days |
 | Day-status events | 90 days |
-| Wake-run log | 90 days |
+
+Observations need both bounds. The count alone would not hold: a fresh
+`day_agent` identity is created every day and goes cold permanently, so a
+per-agent quota lets one more agent, with a full allowance of its own, appear
+every day forever. The count bounds the long-lived planner's recency; the age
+reaps the accumulating per-day identities.
 
 The sweep runs once per start, off the path to a ready app, in bounded batches.
 It is safe to interrupt: the policy is a pure function of the store's contents,
 so a pass cut short leaves rows for next time and a pass that runs twice removes
 nothing the second time.
+
+What may be forgotten is decided by a classification that is **exhaustive over
+the entity model**, so a new kind of row does not compile until someone says
+what happens to it — a wildcard would let new machine-derived rows start
+accumulating with no test and no compiler failure.
 
 **Across devices it is a hard delete with no tombstone.** A tombstone per pruned
 row would grow the sync payload in the exact dimension retention exists to

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -226,20 +227,26 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await withClock(
+        Clock.fixed(DateTime(2026, 8, 1, 9)),
+        () => processor.process(event: event, journalDb: journalDb),
+      );
 
       verifyNever(() => mockAgentRepo.upsertEntity(any()));
     });
 
     test('a recent day-status event is materialized as usual', () async {
+      // Both dates and the clock are pinned: the boundary under test is a
+      // fixed 90 days, and a wall-clock fixture cannot be replayed.
+      final now = DateTime(2026, 8, 1, 9);
       final entity = AgentDomainEntity.dayStatusEvent(
         id: 'day_status:dayplan-2026-07-30:evt-1',
         agentId: 'daily_os_planner',
         dayId: 'dayplan-2026-07-30',
         status: DayStatusKind.onTrack,
         reasons: const [],
-        raisedAt: DateTime.now().subtract(const Duration(days: 1)),
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        raisedAt: DateTime(2026, 7, 30),
+        createdAt: DateTime(2026, 7, 30),
         vectorClock: null,
       );
       when(
@@ -253,7 +260,10 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await withClock(
+        Clock.fixed(now),
+        () => processor.process(event: event, journalDb: journalDb),
+      );
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
@@ -501,7 +511,10 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await withClock(
+        Clock.fixed(DateTime(2026, 8, 1, 9)),
+        () => processor.process(event: event, journalDb: journalDb),
+      );
 
       verifyNever(() => mockAgentRepo.upsertEntity(any()));
     });
@@ -1350,7 +1363,10 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await withClock(
+        Clock.fixed(DateTime(2026, 8, 1, 9)),
+        () => processor.process(event: event, journalDb: journalDb),
+      );
 
       verifyNever(() => mockAgentRepo.upsertEntity(any()));
       verify(

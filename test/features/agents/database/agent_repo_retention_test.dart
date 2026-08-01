@@ -8,7 +8,6 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 
 import '../test_data/entity_factories.dart';
-import '../test_data/wake_factories.dart';
 
 /// Mirror tests for [AgentRepoRetention]: a real in-memory [AgentDatabase],
 /// real rows, and assertions on exactly which ones survive a sweep.
@@ -80,8 +79,9 @@ void main() {
         );
       }
 
-      final pruned = await retention.pruneObservationsBeyond(
+      final pruned = await retention.pruneObservations(
         keepPerAgent: 2,
+        cutoff: DateTime(2000),
         batchSize: 10,
         maxBatches: 5,
       );
@@ -112,8 +112,9 @@ void main() {
         }
       }
 
-      await retention.pruneObservationsBeyond(
+      await retention.pruneObservations(
         keepPerAgent: 2,
+        cutoff: DateTime(2000),
         batchSize: 10,
         maxBatches: 5,
       );
@@ -149,8 +150,9 @@ void main() {
         );
       }
 
-      await retention.pruneObservationsBeyond(
+      await retention.pruneObservations(
         keepPerAgent: 1,
+        cutoff: DateTime(2000),
         batchSize: 10,
         maxBatches: 5,
       );
@@ -167,8 +169,9 @@ void main() {
         );
       }
 
-      final first = await retention.pruneObservationsBeyond(
+      final first = await retention.pruneObservations(
         keepPerAgent: 2,
+        cutoff: DateTime(2000),
         batchSize: 3,
         maxBatches: 1,
       );
@@ -176,8 +179,9 @@ void main() {
       expect(first, 3, reason: 'One batch of three, then stop.');
       expect(await idsOfType('agentMessage'), hasLength(7));
 
-      final second = await retention.pruneObservationsBeyond(
+      final second = await retention.pruneObservations(
         keepPerAgent: 2,
+        cutoff: DateTime(2000),
         batchSize: 3,
         maxBatches: 5,
       );
@@ -198,20 +202,101 @@ void main() {
           createdAt: now.subtract(Duration(days: 3 - i)),
         );
       }
-      await retention.pruneObservationsBeyond(
+      await retention.pruneObservations(
         keepPerAgent: 2,
+        cutoff: DateTime(2000),
         batchSize: 10,
         maxBatches: 5,
       );
 
       expect(
-        await retention.pruneObservationsBeyond(
+        await retention.pruneObservations(
           keepPerAgent: 2,
+          cutoff: DateTime(2000),
           batchSize: 10,
           maxBatches: 5,
         ),
         0,
         reason: 'Idempotent, which is what makes interruption harmless.',
+      );
+    });
+
+    test(
+      'the age ceiling reaps cold per-day agents the count cannot',
+      () async {
+        // Daily OS writes observations under a fresh day_agent:<dayId> identity
+        // every day and each goes cold permanently, so a per-agent count alone
+        // lets one more agent — with a full quota of its own — appear forever.
+        for (var day = 0; day < 5; day++) {
+          await writeObservation(
+            agentId: 'day_agent:2025-0$day',
+            id: 'cold-$day',
+            createdAt: now.subtract(Duration(days: 200 + day)),
+          );
+        }
+        await writeObservation(
+          agentId: 'daily_os_planner',
+          id: 'warm',
+          createdAt: now.subtract(const Duration(days: 3)),
+        );
+
+        final pruned = await retention.pruneObservations(
+          keepPerAgent: 200,
+          cutoff: now.subtract(const Duration(days: 120)),
+          batchSize: 10,
+          maxBatches: 5,
+        );
+
+        expect(pruned, 5);
+        expect(
+          await idsOfType('agentMessage'),
+          ['warm'],
+          reason:
+              'Every cold agent was inside its own per-agent quota; only the '
+              'age ceiling can reach them.',
+        );
+        expect(await idsOfType('agentMessagePayload'), ['payload-warm']);
+      },
+    );
+
+    test('the causal links of pruned observations go with them', () async {
+      for (var i = 0; i < 3; i++) {
+        await writeObservation(
+          agentId: 'coordinator',
+          id: 'obs-$i',
+          createdAt: now.subtract(Duration(days: 3 - i)),
+        );
+        await db.customUpdate(
+          'INSERT INTO agent_links (id, from_id, to_id, type, created_at, '
+          'updated_at, serialized) VALUES (?1, ?2, ?3, ?4, ?5, ?5, ?6)',
+          variables: [
+            Variable<String>('link-$i'),
+            Variable<String>('obs-$i'),
+            Variable<String>('payload-obs-$i'),
+            const Variable<String>('message_payload'),
+            Variable<DateTime>(now),
+            const Variable<String>('{}'),
+          ],
+        );
+      }
+
+      await retention.pruneObservations(
+        keepPerAgent: 1,
+        cutoff: DateTime(2000),
+        batchSize: 10,
+        maxBatches: 5,
+      );
+
+      final links = await db
+          .customSelect('SELECT id FROM agent_links ORDER BY id')
+          .get();
+      expect(
+        [for (final row in links) row.read<String>('id')],
+        ['link-2'],
+        reason:
+            'Leaving the links behind would keep that table growing exactly '
+            'as the entity table stopped, and leave the fork projection '
+            'walking edges whose ends no longer exist.',
       );
     });
   });
@@ -266,39 +351,6 @@ void main() {
         [plan.id],
         reason: "A day plan is the user's own material and never expires.",
       );
-    });
-  });
-
-  group('pruneWakeRunsBefore', () {
-    test('deletes only runs older than the cutoff', () async {
-      await db
-          .into(db.wakeRunLog)
-          .insert(
-            makeTestWakeRun(
-              runKey: 'old-run',
-              agentId: 'coordinator',
-              createdAt: now.subtract(const Duration(days: 120)),
-            ),
-          );
-      await db
-          .into(db.wakeRunLog)
-          .insert(
-            makeTestWakeRun(
-              runKey: 'recent-run',
-              agentId: 'coordinator',
-              createdAt: now.subtract(const Duration(days: 3)),
-            ),
-          );
-
-      final pruned = await retention.pruneWakeRunsBefore(
-        now.subtract(const Duration(days: 90)),
-        batchSize: 10,
-        maxBatches: 5,
-      );
-
-      expect(pruned, 1);
-      final survivors = await db.select(db.wakeRunLog).get();
-      expect([for (final row in survivors) row.runKey], ['recent-run']);
     });
   });
 }

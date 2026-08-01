@@ -1,5 +1,22 @@
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+
+/// How long a row may stay in the agent store.
+enum AgentRetentionClass {
+  /// The user's own material. Never deleted by retention, at any age.
+  userAuthored,
+
+  /// Derived, but kept anyway — each for a stated reason, so "we decided
+  /// against it" never looks like "we didn't get to it".
+  keptDerived,
+
+  /// Derived and bounded by age.
+  ageBounded,
+
+  /// Derived and bounded by a per-agent count *and* an age ceiling.
+  observation,
+}
 
 /// What the agent store may forget, and after how long.
 ///
@@ -7,30 +24,16 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 /// authored** rows are the user's own material — captures, day plans, day
 /// summaries, directives, knowledge, reports and the identities that own them.
 /// **Derived** rows are the machine's working residue: observations it wrote
-/// about itself, status events it raised, run logs. Only derived rows are
-/// retention-eligible, and the split is spelled out here rather than left to a
-/// sweep's SQL, so adding an entity type forces a decision instead of silently
-/// inheriting one.
+/// about itself, status events it raised.
 ///
-/// Deliberately NOT eligible, with reasons, because "we didn't get to it" and
-/// "we decided against it" must not look the same from the outside:
-///
-/// * `weekRollup` — one register per ISO week (~52 rows/year) and the digest's
-///   only month-scale trend source. Bounded and load-bearing.
-/// * `wakeTokenUsage` — the template detail page aggregates it over **all
-///   time**. Pruning would silently rewrite a number the user can read off the
-///   screen. Compacting old rows into per-month aggregates is the way to bound
-///   it; that is a follow-up, not a silent deletion.
-/// * `changeSet` / `changeDecision` / `attentionRequest` and its dispositions —
-///   the audit trail behind proposals the user accepted or rejected.
-/// * `saga_log` — the table has no writer anywhere in the app today. Sweeping
-///   it would mean inventing a terminal-status vocabulary for rows that never
-///   arrive; it earns a policy when it earns a writer.
-/// * Everything user-authored (see [userAuthoredTypes]).
+/// [classify] is **exhaustive over the entity union**, so a new
+/// `AgentDomainEntity` variant does not compile until someone decides what
+/// happens to it. That is deliberate: a wildcard would let a new machine-derived
+/// row start accumulating forever with no test and no compiler failure.
 class AgentRetentionPolicy {
   const AgentRetentionPolicy({
     this.dayStatusEvents = const Duration(days: 90),
-    this.wakeRunLog = const Duration(days: 90),
+    this.observations = const Duration(days: 120),
     this.observationsPerAgent = 200,
     this.batchSize = 500,
     this.maxBatchesPerSweep = 20,
@@ -39,22 +42,24 @@ class AgentRetentionPolicy {
   /// How long raised day-status events are kept.
   ///
   /// The digest reads them from its watermark (plus 12h sync-lag slack), so a
-  /// window measured in months is far beyond any read that exists. They are
-  /// kept longer than the run log because they carry the coordinator's
-  /// reasoning about a day, which is worth having when a user asks why.
+  /// window measured in months is far beyond any read that exists.
   final Duration dayStatusEvents;
 
-  /// How long wake-run log rows are kept. Read by evaluation surfaces over
-  /// windows of at most 30 days.
-  final Duration wakeRunLog;
+  /// Age ceiling on observations, applied **in addition to**
+  /// [observationsPerAgent].
+  ///
+  /// The count alone does not bound the store. Daily OS writes observations
+  /// under a fresh `day_agent:<dayId>` identity every day, and each of those
+  /// goes cold permanently — so a per-agent cap would let one more agent, with
+  /// up to [observationsPerAgent] rows of its own, appear every day forever.
+  /// The count bounds the long-lived coordinator's recency; the age bounds the
+  /// accumulating per-day identities. Neither does both.
+  final Duration observations;
 
   /// Observations retained per agent, newest first.
   ///
-  /// Count-based rather than age-based on purpose: the bound this needs to
-  /// hold is "the coordinator's observation history does not grow without
-  /// limit", and a count says that directly regardless of how heavily the app
-  /// is used. The prompt replays at most 20 and the wake reads at most 40, so
-  /// this leaves an order of magnitude of headroom over any read.
+  /// The prompt replays at most 20 and the wake reads at most 40, so this
+  /// leaves an order of magnitude of headroom over any read.
   final int observationsPerAgent;
 
   /// Rows deleted per statement. Each batch commits on its own.
@@ -64,43 +69,88 @@ class AgentRetentionPolicy {
   /// stays bounded and the remainder is collected on the next start.
   final int maxBatchesPerSweep;
 
-  /// Entity types that are the user's own material and are never deleted by
-  /// retention, whatever their age.
-  static const Set<String> userAuthoredTypes = {
-    AgentEntityTypes.capture,
-    AgentEntityTypes.parsedItem,
-    AgentEntityTypes.dayPlan,
-    AgentEntityTypes.daySummary,
-    AgentEntityTypes.dayDirective,
-    AgentEntityTypes.plannerKnowledge,
-    AgentEntityTypes.agentReport,
-    AgentEntityTypes.agentReportHead,
-    AgentEntityTypes.soulDocument,
-    AgentEntityTypes.soulDocumentVersion,
-    AgentEntityTypes.soulDocumentHead,
+  /// What retention may do with [entity].
+  ///
+  /// Exhaustive by construction — `map` has no fallback branch, so adding a
+  /// variant is a compile error until it is classified here.
+  AgentRetentionClass classify(AgentDomainEntity entity) => entity.map(
+    // ── The user's own material ──────────────────────────────────────────
+    capture: (_) => AgentRetentionClass.userAuthored,
+    parsedItem: (_) => AgentRetentionClass.userAuthored,
+    dayPlan: (_) => AgentRetentionClass.userAuthored,
+    daySummary: (_) => AgentRetentionClass.userAuthored,
+    dayDirective: (_) => AgentRetentionClass.userAuthored,
+    plannerKnowledge: (_) => AgentRetentionClass.userAuthored,
+    agentReport: (_) => AgentRetentionClass.userAuthored,
+    agentReportHead: (_) => AgentRetentionClass.userAuthored,
+    soulDocument: (_) => AgentRetentionClass.userAuthored,
+    soulDocumentVersion: (_) => AgentRetentionClass.userAuthored,
+    soulDocumentHead: (_) => AgentRetentionClass.userAuthored,
+    agentTemplate: (_) => AgentRetentionClass.userAuthored,
+    agentTemplateVersion: (_) => AgentRetentionClass.userAuthored,
+    agentTemplateHead: (_) => AgentRetentionClass.userAuthored,
+    evolutionSession: (_) => AgentRetentionClass.userAuthored,
+    evolutionSessionRecap: (_) => AgentRetentionClass.userAuthored,
+    evolutionNote: (_) => AgentRetentionClass.userAuthored,
+
+    // ── Identity and live state: deleting these breaks the agent ─────────
+    agent: (_) => AgentRetentionClass.keptDerived,
+    agentState: (_) => AgentRetentionClass.keptDerived,
+    scheduledWake: (_) => AgentRetentionClass.keptDerived,
+    unknown: (_) => AgentRetentionClass.keptDerived,
+
+    // ── Derived, kept deliberately ───────────────────────────────────────
+    // weekRollup: one register per ISO week (~52 rows/year) and the digest's
+    // only month-scale trend source. Bounded and load-bearing.
+    weekRollup: (_) => AgentRetentionClass.keptDerived,
+    // wakeTokenUsage: the template detail page aggregates it over ALL TIME.
+    // Pruning would silently rewrite a number the user can read off the
+    // screen; compacting into per-month aggregates is the way to bound it.
+    wakeTokenUsage: (_) => AgentRetentionClass.keptDerived,
+    // The audit trail behind proposals the user accepted or rejected.
+    changeSet: (_) => AgentRetentionClass.keptDerived,
+    changeDecision: (_) => AgentRetentionClass.keptDerived,
+    attentionRequest: (_) => AgentRetentionClass.keptDerived,
+    attentionClaimDisposition: (_) => AgentRetentionClass.keptDerived,
+    attentionAward: (_) => AgentRetentionClass.keptDerived,
+    standingAgreement: (_) => AgentRetentionClass.keptDerived,
+    projectRecommendation: (_) => AgentRetentionClass.keptDerived,
+
+    // ── Derived and bounded ──────────────────────────────────────────────
+    dayStatusEvent: (_) => AgentRetentionClass.ageBounded,
+    // Only observations are bounded; summaries and every other message kind
+    // are the agent's durable memory and stay.
+    agentMessage: (e) => e.kind == AgentMessageKind.observation
+        ? AgentRetentionClass.observation
+        : AgentRetentionClass.keptDerived,
+    // A payload's fate follows the message that owns it, which the sweep
+    // resolves by id — never by age of its own.
+    agentMessagePayload: (_) => AgentRetentionClass.keptDerived,
+  );
+
+  /// The age horizon for [entity], or null when age is not what bounds it.
+  Duration? horizonFor(AgentDomainEntity entity) => switch (classify(entity)) {
+    AgentRetentionClass.ageBounded => dayStatusEvents,
+    AgentRetentionClass.observation => observations,
+    AgentRetentionClass.userAuthored || AgentRetentionClass.keptDerived => null,
   };
 
-  /// The age horizon for [type], or null when the type is not age-eligible.
+  /// Whether an inbound synced [entity] is already past this device's horizon,
+  /// and so should not be materialized at all.
   ///
-  /// Observations are absent here on purpose: they are bounded by count
-  /// ([observationsPerAgent]), not by age.
-  Duration? horizonFor(String type) => switch (type) {
-    AgentEntityTypes.dayStatusEvent => dayStatusEvents,
-    _ => null,
-  };
-
-  /// Whether an inbound synced [type] created at [createdAt] is already past
-  /// this device's horizon, and so should not be materialized at all.
+  /// Retention is a hard local delete with no tombstone, so without this a peer
+  /// returning from a long absence would re-insert exactly what every device
+  /// had agreed to forget, only for the next sweep to remove it again.
   ///
-  /// Retention is a hard local delete with no tombstone, so without this a
-  /// peer returning from a long absence would re-insert exactly what every
-  /// device had agreed to forget, only for the next sweep to remove it again.
+  /// Age is the only bound applicable here: a count is a property of the store
+  /// as a whole, which one inbound row cannot be judged against, and the sweep
+  /// re-imposes it on the next start.
   bool isBeyondHorizon({
-    required String type,
+    required AgentDomainEntity entity,
     required DateTime createdAt,
     required DateTime now,
   }) {
-    final horizon = horizonFor(type);
+    final horizon = horizonFor(entity);
     if (horizon == null) return false;
     return createdAt.isBefore(now.subtract(horizon));
   }
@@ -109,3 +159,6 @@ class AgentRetentionPolicy {
 /// Subtype under which observation messages are stored (`AgentMessageKind`
 /// serializes to the `subtype` column).
 final String observationSubtype = AgentMessageKind.observation.name;
+
+/// Entity type whose rows the age sweep targets directly.
+const String dayStatusEventType = AgentEntityTypes.dayStatusEvent;

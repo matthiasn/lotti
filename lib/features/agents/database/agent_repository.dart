@@ -683,14 +683,17 @@ class AgentRepository {
 
   // ── Retention ───────────────────────────────────────────────────────────
 
-  /// Deletes observation messages beyond the newest [keepPerAgent] per agent,
-  /// with their payload rows. See [AgentRepoRetention].
-  Future<int> pruneObservationsBeyond({
+  /// Deletes observations past the newest [keepPerAgent] per agent or older
+  /// than [cutoff], with their payload rows and links. See
+  /// [AgentRepoRetention].
+  Future<int> pruneObservations({
     required int keepPerAgent,
+    required DateTime cutoff,
     required int batchSize,
     required int maxBatches,
-  }) => _retention.pruneObservationsBeyond(
+  }) => _retention.pruneObservations(
     keepPerAgent: keepPerAgent,
+    cutoff: cutoff,
     batchSize: batchSize,
     maxBatches: maxBatches,
   );
@@ -701,17 +704,6 @@ class AgentRepository {
     required int batchSize,
     required int maxBatches,
   }) => _retention.pruneDayStatusEventsBefore(
-    cutoff,
-    batchSize: batchSize,
-    maxBatches: maxBatches,
-  );
-
-  /// Deletes wake-run log rows created before [cutoff].
-  Future<int> pruneWakeRunsBefore(
-    DateTime cutoff, {
-    required int batchSize,
-    required int maxBatches,
-  }) => _retention.pruneWakeRunsBefore(
     cutoff,
     batchSize: batchSize,
     maxBatches: maxBatches,

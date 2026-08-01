@@ -287,13 +287,16 @@ void main() {
       // ... while every retention-eligible type is pinned to its policy and
       // reads the same at twelve months as at six.
       const policy = AgentRetentionPolicy();
+      final retainedDays = policy.observations.inDays;
       for (final type in ['agentMessage', 'agentMessagePayload']) {
         expect(
           twelveMonths[type],
-          policy.observationsPerAgent,
+          retainedDays * DayPlannerCorpus.observationsPerDay,
           reason:
-              '$type saturates at the per-agent cap; the payloads must fall '
-              'with their messages or retention grows the store.',
+              'Observations live under a fresh day_agent identity per day, so '
+              'the per-agent cap never binds — the age ceiling is what holds '
+              'the total flat. Payloads must fall with their messages or '
+              'retention grows the store.',
         );
         expect(twelveMonths[type], sixMonths[type]);
       }

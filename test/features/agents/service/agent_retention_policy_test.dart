@@ -1,76 +1,105 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_retention_policy.dart';
+
+import '../test_data/entity_factories.dart';
 
 void main() {
   const policy = AgentRetentionPolicy();
   final now = DateTime(2026, 8);
 
   group('what is never eligible', () {
-    test('no user-authored type has an age horizon', () {
-      for (final type in AgentRetentionPolicy.userAuthoredTypes) {
-        expect(
-          policy.horizonFor(type),
-          isNull,
-          reason: "$type is the user's own material and never expires.",
-        );
-      }
-    });
+    test("the user's own material has no horizon, however old", () {
+      final authored = <AgentDomainEntity>[
+        makeTestCapture(createdAt: DateTime(2015)),
+        makeTestDayPlan(createdAt: DateTime(2015)),
+        makeTestDaySummary(createdAt: DateTime(2015)),
+        makeTestDayDirective(createdAt: DateTime(2015)),
+        makeTestReport(createdAt: DateTime(2015)),
+      ];
 
-    test('an ancient capture and day plan survive any cutoff', () {
-      for (final type in [
-        AgentEntityTypes.capture,
-        AgentEntityTypes.dayPlan,
-        AgentEntityTypes.daySummary,
-        AgentEntityTypes.dayDirective,
-        AgentEntityTypes.plannerKnowledge,
-      ]) {
+      for (final entity in authored) {
+        expect(
+          policy.classify(entity),
+          AgentRetentionClass.userAuthored,
+          reason: "${entity.runtimeType} is the user's own material.",
+        );
         expect(
           policy.isBeyondHorizon(
-            type: type,
+            entity: entity,
             createdAt: DateTime(2015),
             now: now,
           ),
           isFalse,
-          reason: '$type must never be dropped, however old.',
         );
       }
     });
 
     test('the deliberate keeps stay keeps', () {
-      for (final type in [
-        AgentEntityTypes.weekRollup,
-        'wakeTokenUsage',
-        AgentEntityTypes.attentionRequest,
-        AgentEntityTypes.attentionClaimDisposition,
-      ]) {
-        expect(
-          policy.horizonFor(type),
-          isNull,
-          reason:
-              'These were decided against on the record, not overlooked — '
-              'a horizon appearing here is a regression.',
-        );
+      // These were decided against on the record, not overlooked. A horizon
+      // appearing on any of them is a regression, not a new feature.
+      final kept = <AgentDomainEntity>[
+        makeTestWeekRollup(),
+        makeTestIdentity(),
+        makeTestState(),
+        makeTestMessagePayload(),
+      ];
+
+      for (final entity in kept) {
+        expect(policy.classify(entity), AgentRetentionClass.keptDerived);
+        expect(policy.horizonFor(entity), isNull);
       }
+    });
+
+    test('a non-observation message is durable memory, not residue', () {
+      final summary = makeTestMessage(
+        kind: AgentMessageKind.summary,
+        createdAt: DateTime(2015),
+      );
+
+      expect(policy.classify(summary), AgentRetentionClass.keptDerived);
+      expect(
+        policy.isBeyondHorizon(
+          entity: summary,
+          createdAt: DateTime(2015),
+          now: now,
+        ),
+        isFalse,
+        reason:
+            'Compaction summaries are what the agent remembers after its raw '
+            'log is folded away; ageing them out would erase that memory.',
+      );
     });
   });
 
-  group('isBeyondHorizon', () {
-    test('an old day-status event is past the horizon', () {
+  group('what is bounded', () {
+    test('an observation is bounded by both a count and an age', () {
+      final observation = makeTestMessage(kind: AgentMessageKind.observation);
+
+      expect(policy.classify(observation), AgentRetentionClass.observation);
+      expect(policy.horizonFor(observation), policy.observations);
+      expect(
+        policy.observationsPerAgent,
+        greaterThan(40),
+        reason: 'A wake reads at most 40; the cap must clear every read.',
+      );
+    });
+
+    test('a day-status event past the horizon is dropped', () {
+      final event = makeTestDayStatusEvent();
+
       expect(
         policy.isBeyondHorizon(
-          type: AgentEntityTypes.dayStatusEvent,
+          entity: event,
           createdAt: now.subtract(const Duration(days: 91)),
           now: now,
         ),
         isTrue,
       );
-    });
-
-    test('one inside the window is kept', () {
       expect(
         policy.isBeyondHorizon(
-          type: AgentEntityTypes.dayStatusEvent,
+          entity: event,
           createdAt: now.subtract(const Duration(days: 89)),
           now: now,
         ),
@@ -81,7 +110,7 @@ void main() {
     test('the boundary itself is kept, not dropped', () {
       expect(
         policy.isBeyondHorizon(
-          type: AgentEntityTypes.dayStatusEvent,
+          entity: makeTestDayStatusEvent(),
           createdAt: now.subtract(policy.dayStatusEvents),
           now: now,
         ),
@@ -89,29 +118,13 @@ void main() {
         reason: 'Strictly-before, so the horizon is inclusive of its edge.',
       );
     });
-
-    test('observations are not age-eligible — they are bounded by count', () {
-      expect(
-        policy.isBeyondHorizon(
-          type: AgentEntityTypes.agentMessage,
-          createdAt: DateTime(2015),
-          now: now,
-        ),
-        isFalse,
-        reason:
-            'An age rule here would let a heavy week evict a light month, '
-            'which is not the bound the store needs.',
-      );
-    });
   });
 
-  test('every read window the policy protects fits inside it', () {
+  test('every read window a horizon protects fits inside it', () {
     // The digest reads status events from its watermark with 12h of sync-lag
-    // slack; evaluation surfaces read wake runs over at most 30 days. If a
-    // horizon ever drops below a read window, the read silently starts
-    // returning less than it asks for.
+    // slack. If a horizon ever drops below the read window it protects, the
+    // read silently starts returning less than it asks for.
     expect(policy.dayStatusEvents, greaterThan(const Duration(days: 3)));
-    expect(policy.wakeRunLog, greaterThanOrEqualTo(const Duration(days: 30)));
-    expect(policy.observationsPerAgent, greaterThan(40));
+    expect(policy.observations, greaterThan(policy.dayStatusEvents));
   });
 }

@@ -158,7 +158,7 @@ extension _AgentHandlers on SyncEventProcessor {
     // still records the receipt below, so the sequence marker advances and no
     // backfill is triggered for it.
     if (const AgentRetentionPolicy().isBeyondHorizon(
-      type: AgentDbConversions.entityType(resolvedEntity),
+      entity: resolvedEntity,
       createdAt: AgentDbConversions.entityCreatedAt(resolvedEntity),
       now: clock.now(),
     )) {
