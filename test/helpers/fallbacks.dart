@@ -226,7 +226,6 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeAiConfigPrompt());
   registerFallbackValue(FakeAiConfigModel());
   registerFallbackValue(FakeAiConfigInferenceProvider());
-  registerFallbackValue(FakeChatSession());
   registerFallbackValue(FakeChecklistData());
   registerFallbackValue(FakeChecklistItemData());
   registerFallbackValue(<ChecklistItemData>[]);

@@ -96,21 +96,6 @@ void main() {
     expect(result, same(template));
   });
 
-  test('evolutionNotesProvider delegates to getRecentEvolutionNotes', () async {
-    when(
-      () => templateService.getRecentEvolutionNotes(templateId),
-    ).thenAnswer((_) async => <EvolutionNoteEntity>[]);
-
-    final result = await container.read(
-      evolutionNotesProvider(templateId).future,
-    );
-
-    expect(result, isEmpty);
-    verify(
-      () => templateService.getRecentEvolutionNotes(templateId),
-    ).called(1);
-  });
-
   test(
     'templatePerformanceMetricsProvider delegates to computeMetrics',
     () async {
@@ -505,107 +490,6 @@ void main() {
         );
 
         expect(result, isEmpty);
-      });
-    });
-
-    group('evolutionNotesProvider', () {
-      late MockAgentTemplateService mockTemplateService;
-
-      setUp(() {
-        mockTemplateService = MockAgentTemplateService();
-      });
-
-      ProviderContainer makeNotesContainer() => createTemplateContainer(
-        mockTemplateService: mockTemplateService,
-        mockService: mockService,
-        mockRepository: mockRepository,
-      );
-
-      test('delegates to getRecentEvolutionNotes', () async {
-        final notes = [
-          makeTestEvolutionNote(id: 'n1'),
-          makeTestEvolutionNote(
-            id: 'n2',
-            kind: EvolutionNoteKind.decision,
-          ),
-          makeTestEvolutionNote(
-            id: 'n3',
-            kind: EvolutionNoteKind.pattern,
-          ),
-        ];
-        when(
-          () => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId),
-        ).thenAnswer((_) async => notes);
-
-        final container = makeNotesContainer();
-        final result = await container.read(
-          evolutionNotesProvider(kTestTemplateId).future,
-        );
-
-        expect(result, hasLength(3));
-        final first = result[0] as EvolutionNoteEntity;
-        expect(first.id, 'n1');
-        expect(first.kind, EvolutionNoteKind.reflection);
-        final second = result[1] as EvolutionNoteEntity;
-        expect(second.kind, EvolutionNoteKind.decision);
-        final third = result[2] as EvolutionNoteEntity;
-        expect(third.kind, EvolutionNoteKind.pattern);
-      });
-
-      test('returns empty list when no notes exist', () async {
-        when(
-          () => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId),
-        ).thenAnswer((_) async => []);
-
-        final container = makeNotesContainer();
-        final result = await container.read(
-          evolutionNotesProvider(kTestTemplateId).future,
-        );
-
-        expect(result, isEmpty);
-      });
-
-      test('refetches when agentUpdateStream emits for template', () async {
-        var fetchCount = 0;
-        when(
-          () => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId),
-        ).thenAnswer((_) async {
-          fetchCount++;
-          return [];
-        });
-
-        final setup = await setUpUpdateStreamTest(
-          containerFactory: () => ProviderContainer(
-            overrides: [
-              agentTemplateServiceProvider.overrideWithValue(
-                mockTemplateService,
-              ),
-              agentServiceProvider.overrideWithValue(mockService),
-              agentRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-          ),
-        );
-
-        // Initial fetch.
-        final sub = setup.container.listen(
-          evolutionNotesProvider(kTestTemplateId),
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-        await setup.container.read(
-          evolutionNotesProvider(kTestTemplateId).future,
-        );
-        expect(fetchCount, 1);
-
-        // Fire update notification for the template.
-        setup.controller.add({kTestTemplateId});
-        await pumpEventQueue();
-
-        // Provider should have refetched.
-        await setup.container.read(
-          evolutionNotesProvider(kTestTemplateId).future,
-        );
-        expect(fetchCount, 2);
       });
     });
 

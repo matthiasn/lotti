@@ -16,7 +16,7 @@ import 'package:record/record.dart' as record;
 
 export 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
 
-/// Drives the chat-input voice recorder — record to a temp `.m4a` file,
+/// Drives the shared AI voice-input recorder — record to a temp `.m4a` file,
 /// then batch-transcribe — exposing a single [ChatRecorderState] to the UI.
 ///
 /// Race model: every recording session captures a monotonically increasing

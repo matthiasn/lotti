@@ -1,52 +1,49 @@
-# AI chat
+# AI chat support
 
-AI chat lets the user ask questions about their own work and get an answer
-grounded in what actually happened — "what did I finish last week?", "what
-patterns show up in this area?", "where did the time really go?".
-
-It is a conversation, not an agent: it answers when asked and does not act on its
-own.
+This module contains the small set of voice-input and reasoning-display
+primitives that are still shared by AI-assisted surfaces. It no longer owns a
+standalone chat screen or an in-memory chat-session stack.
 
 ## What it does for the user
 
-- **Answers questions about real history.** The assistant can pull summaries of
-  the tasks worked on in a date range, rather than guessing from a pile of raw
-  text.
-- **Lets the user choose the model.** Each chat session has an explicitly chosen
-  model — nothing is picked silently.
-- **Streams the answer.** Text appears as it is generated, and the UI stays
-  responsive even while the assistant is assembling a data request behind the
-  scenes.
-- **Takes voice input.** A question can be spoken instead of typed, transcribed
-  in one batch pass.
-- **Keeps sessions light.** Recent sessions are available for the current run of
-  the app, and creating or discarding one costs nothing.
+- **Accepts spoken input.** AI-assisted flows can record a short voice note,
+  show live amplitude feedback, and transcribe the finished recording.
+- **Shows transcription progress.** Callers can consume streamed transcript
+  chunks while a configured audio-capable model processes the recording.
+- **Displays model reasoning safely.** Shared parsing and disclosure widgets
+  separate hidden thinking blocks from visible assistant text.
 
-Chat history is **not** stored permanently yet — sessions live for the app's
-lifetime.
+These primitives currently support evolution chat and Daily OS audio
+processing. They are not a separate navigation destination.
 
 ## What it owns
 
-Session and message state for the chat UI; per-session model selection; streaming
-assistant output including tool-calling turns; the task-summary retrieval tool;
-and batch transcription for chat input.
+- batch audio transcription through configured AI providers;
+- temporary-file recording state and cleanup;
+- waveform history and rendering helpers;
+- parsing and disclosure of reasoning blocks.
 
-It does not own provider configuration or routing ([ai](../ai/README.md)), agent
-wake cycles or memory ([agents](../agents/README.md)), or durable transcript
-persistence.
+It does not own provider configuration or routing
+([ai](../ai/README.md)), agent conversations and wake memory
+([agents](../agents/README.md)), or durable transcript persistence.
+
+The retired standalone chat implementation is not retained here: there are no
+chat sessions, chat repository, task-summary tool, model-selection controller,
+or top-level chat UI in this module.
 
 ## Where the code lives
 
 ```text
 lib/features/ai_chat/
-├── models/ · repository/ · services/
+├── services/audio_transcription_service.dart
 └── ui/
+    ├── controllers/ · recorder state and amplitude history
+    └── widgets/ · waveform, thinking parser, and disclosure
 ```
 
-## How it works
+## Architecture
 
-The two controllers, the in-memory session model, the turn flow with concurrent
-tool accumulation, and the single batched retrieval tool are documented in the
-knowledge bundle:
+The provider selection, recorder lifecycle, attribution boundary, and reasoning
+rendering flow are documented in the knowledge bundle:
 
 **→ [knowledge/features/ai_chat.md](../../../knowledge/features/ai_chat.md)**
