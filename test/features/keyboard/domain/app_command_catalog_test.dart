@@ -19,14 +19,13 @@ void main() {
         TargetPlatform.windows,
         TargetPlatform.linux,
       ]) {
-        final resolvedBindings = AppCommandCatalog.definitions
+        final bindingKeys = AppCommandCatalog.definitions
             .expand((definition) => definition.bindings)
-            .map((binding) => binding.resolve(platform))
-            .nonNulls
+            .map((binding) => binding.equivalenceKey(platform))
             .toList();
         expect(
-          resolvedBindings.toSet(),
-          hasLength(resolvedBindings.length),
+          bindingKeys.toSet(),
+          hasLength(bindingKeys.length),
           reason:
               '$platform must not dispatch one chord to two default commands',
         );
