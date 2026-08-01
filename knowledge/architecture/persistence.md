@@ -5,7 +5,7 @@ description: The eleven Drift/SQLite databases, how connections are opened and m
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T20:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-01T17:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: notifications
@@ -50,8 +50,8 @@ migration work has to cover both, and embeddings are a third store again (below)
 | Database | File | Schema | Owns |
 |----------|------|--------|------|
 | `JournalDb` | `db.sqlite` | 45 | Journal entities, tasks, links, tags, config flags — the primary store |
-| `SyncDatabase` | `sync.sqlite` | 27 | Outbox, sequence log, host activity, inbound event queue, queue markers |
-| `AgentDatabase` | `agent.sqlite` | 17 | Agent state, reports, observations, change proposals, wake history |
+| `SyncDatabase` | `sync.sqlite` | 28 | Outbox, sequence log, host activity, inbound event queue, queue markers |
+| `AgentDatabase` | `agent.sqlite` | 18 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
 | `ConsumptionDatabase` | `ai_consumption.sqlite` | 2 | AI token usage and the interaction ledger |
 | `SettingsDb` | `settings.sqlite` | 1 | Key/value app settings, sync watermarks, saved filters |
@@ -94,7 +94,29 @@ flowchart TD
   the UI isolate. It is set to `false` only when opening from an actor isolate,
   where nesting isolates would be wrong.
 - **`readPool` offloads heavy reads** to read-only isolates. It only takes
-  effect when `background` is true.
+  effect when `background` is true, and `inMemoryDatabase: true` bypasses it —
+  a test that wants to exercise a pool must be file-backed.
+
+  | Database | `readPool` |
+  |----------|-----------:|
+  | `db.sqlite` (`JournalDb`) | 4 |
+  | `agent.sqlite` (`AgentDatabase`) | 2 |
+  | `notifications.sqlite` (`NotificationsDb`) | 2 |
+  | `ai_consumption.sqlite` (`ConsumptionDatabase`) | 1 |
+  | `day_processing.sqlite` (`DayProcessingDb`) | 1 |
+
+  Anything not listed — including `sync.sqlite` — takes `openDbConnection`'s
+  default of 0.
+
+  **A pool is not a free win.** Only reads outside a transaction reach it, so
+  adding one to a database whose callers do *check-then-act* changes an
+  invariant they were relying on: at 0, every read serialises behind the writer
+  on one executor, which implicitly protects a read that informs a later write.
+  Giving `sync.sqlite` a pool was attempted and abandoned for exactly this
+  (#3720) — it made four read-after-write races reachable in the outbox,
+  sequence-log and inbound-queue paths, none of which wrap their read and write
+  in a transaction. Audit those call sites before adding a pool to a database
+  that has them.
 - **Pragmas are applied per connection** through the `setup` callback, so read-
   pool isolates inherit them:
 
