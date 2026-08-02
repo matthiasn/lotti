@@ -213,36 +213,36 @@ class _DateStrip extends StatelessWidget {
     );
     final locale = Localizations.localeOf(context).toString();
     final todayLabel = messages.dailyOsTodayButton;
-    // What the year-carrying variant needs: the widest date this locale can
-    // produce plus both chevrons, each of which occupies a minimum tap
-    // target. Dropping the year is what buys a narrow pane its full date —
-    // the year is the least useful part while stepping through nearby days.
-    final wideReserved = _stableDateLabelWidth(
-      context,
-      format: DateFormat.yMMMEd(locale),
-      style: labelStyle,
-      todayLabel: todayLabel,
-    );
     const chevrons = kMinInteractiveDimension * 2;
     // The label's own chrome counts too: it sits in a step3 inset on each
     // side, so a pane between `reserved + chevrons` and that plus the insets
-    // would pick the year and then ellipsize it.
+    // would pick a format and then ellipsize it.
     final labelChrome = tokens.spacing.step3 * 2;
-    // Unbounded width (a test or an intrinsic pass) cannot be measured
-    // against; fall back to the window breakpoint there.
-    final wide = available.isFinite
-        ? available >= wideReserved + chevrons + labelChrome
-        : isDesktopLayout(context);
+
+    // Two variants only. A third, numeric tier was tried and removed: in
+    // every width/scale it actually engaged, the room left was already below
+    // even "Wed, 5/27", so the label ellipsized anyway — and at those sizes
+    // the rest of the surface overflows independently. The ellipsis is the
+    // honest floor here, not a missing tier.
+    final wideFormat = DateFormat.yMMMEd(locale);
+    final wideReserved = _stableDateLabelWidth(
+      context,
+      format: wideFormat,
+      style: labelStyle,
+      todayLabel: todayLabel,
+    );
+    bool fits({double extra = 0}) =>
+        available >= wideReserved + chevrons + labelChrome + extra;
+
+    // Unbounded width (an intrinsics pass) cannot be measured against; fall
+    // back to the window breakpoint there.
+    final wide = available.isFinite ? fits() : isDesktopLayout(context);
     final showToday =
         !isToday &&
         wide &&
         (!available.isFinite ||
-            available >=
-                wideReserved +
-                    chevrons +
-                    labelChrome +
-                    _todayControlWidth(context, tokens));
-    final format = wide ? DateFormat.yMMMEd(locale) : DateFormat.MMMEd(locale);
+            fits(extra: _todayControlWidth(context, tokens)));
+    final format = wide ? wideFormat : DateFormat.MMMEd(locale);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
