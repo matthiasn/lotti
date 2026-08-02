@@ -10,9 +10,11 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
+import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -973,6 +975,42 @@ void main() {
         find.byKey(const Key('add_device_send_messages')),
       );
       expect(sendMessages.onPressed, isNotNull);
+    });
+
+    testWidgets('opens onboarding history for the exact verified target', (
+      tester,
+    ) async {
+      const target = OnboardingSyncTarget(
+        userId: '@alice:example.com',
+        deviceId: 'NEWPHONE',
+      );
+      final signal = AddDeviceJoinSignal()
+        ..target = target
+        ..value = AddDeviceJoinState.ready;
+      addTearDown(signal.dispose);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          AddDeviceActionBar(
+            signal: signal,
+            onSendSettings: (_) async {},
+          ),
+          overrides: overrides(
+            calls: _Calls(),
+            devices: [...existing, verifiedPhone],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('add_device_send_messages')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final modal = tester.widget<ReSyncModalContent>(
+        find.byType(ReSyncModalContent),
+      );
+      expect(modal.onboardingTarget?.userId, target.userId);
+      expect(modal.onboardingTarget?.deviceId, target.deviceId);
     });
 
     testWidgets('runs the hand-off when pressed', (tester) async {

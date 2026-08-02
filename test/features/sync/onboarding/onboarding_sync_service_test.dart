@@ -346,6 +346,128 @@ void main() {
     expect(enqueued, isEmpty);
   });
 
+  test(
+    'rejects onboarding when the local sync identity is unavailable',
+    () async {
+      service = OnboardingSyncService(
+        syncDatabase: db,
+        enqueueMessage: (message) async => enqueued.add(message),
+        getHostId: () async => null,
+        getSnapshotCoverage: () async => const {},
+        getLocalUserId: () => '@sync:example.org',
+        getLocalDeviceId: () => 'DESKTOP',
+        serviceClock: serviceClock,
+      );
+
+      await expectLater(
+        service.beginOutbound(
+          const OnboardingSyncTarget(
+            userId: '@sync:example.org',
+            deviceId: 'PHONE',
+          ),
+        ),
+        throwsStateError,
+      );
+      expect(enqueued, isEmpty);
+    },
+  );
+
+  test('a failed begin emits an aborted end barrier', () async {
+    service = OnboardingSyncService(
+      syncDatabase: db,
+      enqueueMessage: (message) async {
+        if (message is SyncOnboardingSnapshotBegin) {
+          throw StateError('begin enqueue failed');
+        }
+        enqueued.add(message);
+      },
+      getHostId: () async => 'local-host',
+      getSnapshotCoverage: () async => const {'local-host': 12},
+      getLocalUserId: () => '@sync:example.org',
+      getLocalDeviceId: () => 'DESKTOP',
+      serviceClock: serviceClock,
+      roundIdFactory: () => 'failed-round',
+    );
+
+    await expectLater(
+      service.beginOutbound(
+        const OnboardingSyncTarget(
+          userId: '@sync:example.org',
+          deviceId: 'PHONE',
+        ),
+      ),
+      throwsStateError,
+    );
+
+    final end = enqueued.single as SyncOnboardingSnapshotEnd;
+    expect(end.roundId, 'failed-round');
+    expect(end.reason, OnboardingSyncEndReason.aborted);
+    expect((await db.onboardingSyncRound('failed-round'))?.state, 'ending');
+  });
+
+  test('active outbound rounds merge coverage by the highest bound', () async {
+    for (final (roundId, coverage) in [
+      ('round-a', '{"local-host":12,"peer-host":4}'),
+      ('round-b', '{"local-host":15,"second-peer":8}'),
+    ]) {
+      await db.upsertOnboardingSyncRound(
+        OnboardingSyncRoundsCompanion.insert(
+          roundId: roundId,
+          direction: 'outbound',
+          state: 'active',
+          senderHostId: 'local-host',
+          recipientHostId: const Value('phone-host'),
+          recipientUserId: '@sync:example.org',
+          recipientDeviceId: 'PHONE',
+          coverageUpperBoundsJson: coverage,
+          startedAt: serviceClock.now(),
+          updatedAt: serviceClock.now(),
+          expiresAt: serviceClock.now().add(onboardingSyncLease),
+        ),
+      );
+    }
+
+    expect(await service.activeOutboundCoverageForRequester('phone-host'), {
+      'local-host': 15,
+      'peer-host': 4,
+      'second-peer': 8,
+    });
+  });
+
+  test('malformed persisted coverage cannot suppress backfill', () async {
+    await db.upsertOnboardingSyncRound(
+      OnboardingSyncRoundsCompanion.insert(
+        roundId: 'malformed-round',
+        direction: 'inbound',
+        state: 'active',
+        senderHostId: 'desktop-host',
+        recipientUserId: '@sync:example.org',
+        recipientDeviceId: 'PHONE',
+        coverageUpperBoundsJson: '{not-json',
+        startedAt: serviceClock.now(),
+        updatedAt: serviceClock.now(),
+        expiresAt: serviceClock.now().add(onboardingSyncLease),
+      ),
+    );
+
+    expect(await service.activeInboundCoverage(), isEmpty);
+  });
+
+  test('counter range helpers reject non-positive chunk limits', () {
+    expect(
+      () => chunkCounterRanges(const [1], maxCountersPerChunk: 0),
+      throwsArgumentError,
+    );
+    expect(
+      () => expandCounterRanges(
+        const [SyncCounterRange(start: 1, end: 1)],
+        upperBound: 1,
+        maxCounters: 0,
+      ),
+      throwsArgumentError,
+    );
+  });
+
   glados.Glados<List<int>>(
     glados.any.listWithLengthInRange(0, 600, glados.any.intInRange(-20, 800)),
     glados.ExploreConfig(numRuns: 120),

@@ -176,4 +176,57 @@ void main() {
 
     expect(counters, [1, 4]);
   });
+
+  test('default timestamps keep live rounds and burned rows current', () async {
+    final oldTimestamp = DateTime.utc(2000);
+    final farFuture = DateTime.utc(2100);
+    for (final (roundId, direction, recipientHostId) in [
+      ('inbound-round', 'inbound', null),
+      ('outbound-round', 'outbound', 'phone-host'),
+    ]) {
+      await db.upsertOnboardingSyncRound(
+        OnboardingSyncRoundsCompanion.insert(
+          roundId: roundId,
+          direction: direction,
+          state: 'active',
+          senderHostId: 'desktop-host',
+          recipientHostId: Value(recipientHostId),
+          recipientUserId: '@sync:example.org',
+          recipientDeviceId: 'PHONE',
+          coverageUpperBoundsJson: '{"desktop-host":4}',
+          startedAt: oldTimestamp,
+          updatedAt: oldTimestamp,
+          expiresAt: farFuture,
+        ),
+      );
+    }
+    await db.recordSequenceEntry(
+      SyncSequenceLogCompanion(
+        hostId: const Value('desktop-host'),
+        counter: const Value(4),
+        status: Value(SyncSequenceStatus.missing.index),
+        createdAt: Value(oldTimestamp),
+        updatedAt: Value(oldTimestamp),
+      ),
+    );
+
+    expect(
+      (await db.activeInboundOnboardingSyncRounds()).single.roundId,
+      'inbound-round',
+    );
+    expect(
+      (await db.activeOutboundOnboardingSyncRounds(
+        recipientHostId: 'phone-host',
+      )).single.roundId,
+      'outbound-round',
+    );
+
+    await db.applyAuthoritativeBurnedCounters(
+      hostId: 'desktop-host',
+      counters: const [4],
+    );
+    final burned = await db.getEntryByHostAndCounter('desktop-host', 4);
+    expect(burned?.status, SyncSequenceStatus.burned.index);
+    expect(burned?.updatedAt, isNot(oldTimestamp));
+  });
 }

@@ -248,6 +248,50 @@ void main() {
     },
   );
 
+  testWidgets('onboarding failure still attempts the aborted end barrier', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = _MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(
+      () => onboarding.abortOutbound(round),
+    ).thenAnswer((_) async => throw Exception('end enqueue failed'));
+    when(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => throw Exception('history staging failed'));
+
+    await pumpModal(
+      tester,
+      onboardingTarget: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    verify(() => onboarding.abortOutbound(round)).called(1);
+    expect(find.byKey(const Key('reSyncFailed')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Last 30 days sends a deterministic 30-day interval', (
     tester,
   ) async {
