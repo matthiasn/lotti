@@ -289,12 +289,14 @@ They also emit a task-keyed form of that token. The keyed task ID survives a
 last-link deletion, when an active-link scan can no longer discover the task,
 so embedding recovery can remove derived report vectors only after confirming
 that the task still has no agent link. Local hard deletion follows the same
-rule: `AgentService.deleteAgent` reads the agent's task-link targets before the
-repository removes them, then emits local task-keyed cleanup tokens after the
-hard delete. Derived report vectors therefore remain discoverable by task long
-enough for cleanup even though the hard delete itself is intentionally not
-synced. When another task link survives, the keyed signal also reconciles the
-new canonical agent report and removes vectors left by the deleted primary.
+rule: `AgentService.deleteAgent` reads the agent's task-link targets and awaits
+deletion of every report vector found through their reverse task index before
+the repository removes those identifying rows. If cleanup fails, the hard
+delete is aborted and the topology remains available for a retry. A crash after
+vector cleanup but before topology deletion is likewise recoverable because
+startup reconciliation can rebuild the still-linked current report. After a
+successful hard delete, a local task-keyed notification reconciles any surviving
+canonical agent report. The hard delete itself remains intentionally unsynced.
 
 Legacy `WeekRollupEntity` JSON can omit `weekStart`. The shared
 `AgentDomainEntity.fromJson` read boundary repairs it only when the entity id is

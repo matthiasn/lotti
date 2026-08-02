@@ -397,6 +397,8 @@ class AiConfigRepository {
 
   /// Streams all AI configurations of a specific type while keeping the
   /// repository cache in sync with the latest emitted snapshot.
+  ///
+  /// Bootstrap and database-watch failures are emitted as stream errors.
   Stream<List<AiConfig>> watchConfigsByType(AiConfigType type) {
     return Stream<List<AiConfig>>.multi((controller) {
       StreamSubscription<List<AiConfig>>? subscription;
@@ -435,10 +437,16 @@ class AiConfigRepository {
         emit(_allConfigsSnapshot);
         _ensureWatchingAllConfigs();
       } else {
-        Future<void>(() async {
-          await _ensureAllConfigsLoaded();
-          emit(_allConfigsSnapshot);
-        });
+        unawaited(
+          Future<void>(() async {
+            try {
+              await _ensureAllConfigsLoaded();
+              emit(_allConfigsSnapshot);
+            } catch (error, stackTrace) {
+              controller.addError(error, stackTrace);
+            }
+          }),
+        );
       }
 
       controller.onCancel = () => subscription?.cancel();

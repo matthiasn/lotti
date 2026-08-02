@@ -27,6 +27,7 @@ class AgentService {
     required this.syncService,
     this.onPersistedStateChanged,
     this.sidecarReclaimer,
+    this.onTaskLinksWillBeHardDeleted,
     this.onTaskLinksHardDeleted,
   });
 
@@ -41,6 +42,8 @@ class AgentService {
   /// headless contexts without a documents directory simply skip reclamation.
   final AgentSidecarReclaimer? sidecarReclaimer;
   final void Function(String agentId)? onPersistedStateChanged;
+  final Future<void> Function(Set<String> taskIds)?
+  onTaskLinksWillBeHardDeleted;
   final void Function(Set<String> taskIds)? onTaskLinksHardDeleted;
 
   static const _uuid = Uuid();
@@ -241,8 +244,9 @@ class AgentService {
   ///
   /// Destroys the agent first if it is not already destroyed, then hard-deletes
   /// all entities, links, wake runs, and saga ops from the database. Task-link
-  /// targets are captured before deletion so derived task data can be cleaned
-  /// after the source rows disappear.
+  /// targets are captured before deletion. Derived report vectors are removed
+  /// durably before their identifying task-link rows disappear; the later
+  /// notification reconciles any surviving canonical task agent.
   Future<void> deleteAgent(String agentId) async {
     final identity = await getAgent(agentId);
     if (identity != null && identity.lifecycle != AgentLifecycle.destroyed) {
@@ -255,6 +259,10 @@ class AgentService {
       agentId,
       type: AgentLinkTypes.agentTask,
     )).map((link) => link.toId).toSet();
+    final preDeleteCleanup = onTaskLinksWillBeHardDeleted;
+    if (taskIds.isNotEmpty && preDeleteCleanup != null) {
+      await preDeleteCleanup(taskIds);
+    }
     final removed = await repository.hardDeleteAgent(agentId);
     // The rows are only half of what a synced agent leaves behind: its JSON
     // sidecars stay readable on disk otherwise, outliving the delete the user

@@ -77,6 +77,7 @@ class EmbeddingService {
   bool _fullAgentReportRecoveryPending = false;
   bool _agentReportRecoveryRunning = false;
   bool _agentReportRecoveryRerunRequested = false;
+  int _providerConfigRevision = 0;
   Timer? _availabilityRetryTimer;
 
   /// The notification tokens that indicate an embeddable entity was changed.
@@ -100,7 +101,10 @@ class EmbeddingService {
     _providerConfigSubscription = aiConfigRepository
         .watchConfigsByType(AiConfigType.inferenceProvider)
         .skip(1)
-        .listen((_) => _onProviderConfigsChanged());
+        .listen(
+          (_) => _onProviderConfigsChanged(),
+          onError: _onProviderConfigWatchError,
+        );
     _embeddingFlagSubscription = journalDb
         .watchConfigFlag(enableEmbeddingsFlag)
         .skip(1)
@@ -221,11 +225,23 @@ class EmbeddingService {
 
   /// Rechecks pending report recovery when provider configuration changes.
   void _onProviderConfigsChanged() {
+    _providerConfigRevision++;
     _availabilityRetryTimer?.cancel();
     _availabilityRetryTimer = null;
     if (_isProcessing) _entityBatchRerunRequested = true;
     _requestAgentReportRecovery();
     _resumePendingEntityBatch();
+  }
+
+  /// Keeps optional embedding configuration failures inside this service.
+  void _onProviderConfigWatchError(Object error, StackTrace stackTrace) {
+    if (_stopped) return;
+    developer.log(
+      'Ollama provider configuration watch failed',
+      error: error,
+      stackTrace: stackTrace,
+      name: 'EmbeddingService',
+    );
   }
 
   void _onEmbeddingFlagChanged(bool enabled) {
@@ -293,8 +309,12 @@ class EmbeddingService {
         return;
       }
 
+      final providerConfigRevision = _providerConfigRevision;
       final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
-      if (baseUrl == null || !_embeddingsEnabled || _stopped) {
+      if (baseUrl == null ||
+          !_embeddingsEnabled ||
+          _stopped ||
+          providerConfigRevision != _providerConfigRevision) {
         if (!_stopped) _agentReportRecoveryPending = true;
         return;
       }
@@ -347,7 +367,9 @@ class EmbeddingService {
 
       if (!fullScanRequested) {
         for (final taskId in changedTaskIds) {
-          if (_stopped || !_embeddingsEnabled) return;
+          if (_shouldStopAgentReportRecoveryPass(providerConfigRevision)) {
+            return;
+          }
           try {
             final currentLinks = await repository.getLinksTo(
               taskId,
@@ -407,7 +429,9 @@ class EmbeddingService {
       final taskLinksByTaskId = <String, List<AgentLink>>{};
       var topologyIncomplete = false;
       for (final agent in agents) {
-        if (_stopped || !_embeddingsEnabled) return;
+        if (_shouldStopAgentReportRecoveryPass(providerConfigRevision)) {
+          return;
+        }
 
         try {
           final taskLinks = await repository.getLinksFrom(
@@ -437,7 +461,9 @@ class EmbeddingService {
       }
 
       for (final entry in taskLinksByTaskId.entries) {
-        if (_stopped || !_embeddingsEnabled) return;
+        if (_shouldStopAgentReportRecoveryPass(providerConfigRevision)) {
+          return;
+        }
         final primaryLink = entry.value.selectPrimary();
         final agent = agentsById[primaryLink.fromId];
         if (agent == null) continue;
@@ -504,6 +530,11 @@ class EmbeddingService {
       }
     }
   }
+
+  bool _shouldStopAgentReportRecoveryPass(int providerConfigRevision) =>
+      _stopped ||
+      !_embeddingsEnabled ||
+      providerConfigRevision != _providerConfigRevision;
 
   /// Reconciles one agent until its durable current-report head is stable.
   ///

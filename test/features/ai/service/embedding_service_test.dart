@@ -653,6 +653,32 @@ void main() {
       });
     });
 
+    test('contains provider configuration watcher errors', () async {
+      final providerConfigs = StreamController<List<AiConfig>>.broadcast(
+        sync: true,
+      );
+      final uncaughtErrors = <Object>[];
+      addTearDown(providerConfigs.close);
+      when(
+        () => mockAiConfigRepo.watchConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) => providerConfigs.stream);
+
+      await runZonedGuarded(
+        () async {
+          service.start();
+          providerConfigs
+            ..add(const [])
+            ..addError(StateError('AI config bootstrap failed'));
+          await pumpEventQueue();
+        },
+        (error, _) => uncaughtErrors.add(error),
+      );
+
+      expect(uncaughtErrors, isEmpty);
+    });
+
     test(
       'startup recovers the latest report and removes stale report embeddings',
       () async {
@@ -2331,6 +2357,151 @@ void main() {
           ]);
           stopInZone(async);
         });
+      },
+    );
+
+    test(
+      'provider change stops the remaining old-endpoint report scan',
+      () async {
+        const oldBaseUrl = 'http://old-ollama:11434';
+        const newBaseUrl = 'http://new-ollama:11434';
+        const firstAgentId = 'agent-provider-scan-first';
+        const secondAgentId = 'agent-provider-scan-second';
+        const firstTaskId = 'task-provider-scan-first';
+        const secondTaskId = 'task-provider-scan-second';
+        final agentRepository = MockAgentRepository();
+        final providerConfigs = StreamController<List<AiConfig>>.broadcast(
+          sync: true,
+        );
+        final firstRequest = Completer<Float32List>();
+        final firstRequestStarted = Completer<void>();
+        final secondReportAttempted = Completer<String>();
+        final firstReport = _agentReport(
+          id: 'report-provider-scan-first',
+          agentId: firstAgentId,
+          content: 'First provider scan report with enough unique content.',
+        );
+        final secondReport = _agentReport(
+          id: 'report-provider-scan-second',
+          agentId: secondAgentId,
+          content: 'Second provider scan report with enough unique content.',
+        );
+        final attempts = <({String input, String baseUrl})>[];
+        var currentBaseUrl = oldBaseUrl;
+        addTearDown(providerConfigs.close);
+
+        when(
+          () => mockAiConfigRepo.watchConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) => providerConfigs.stream);
+        when(mockAiConfigRepo.resolveOllamaBaseUrl).thenAnswer(
+          (_) async => currentBaseUrl,
+        );
+        when(agentRepository.getAllAgentIdentities).thenAnswer(
+          (_) async => [
+            _agentIdentity(firstAgentId),
+            _agentIdentity(secondAgentId),
+          ],
+        );
+        when(
+          () => agentRepository.getLinksFrom(
+            firstAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _agentTaskLink(agentId: firstAgentId, taskId: firstTaskId),
+          ],
+        );
+        when(
+          () => agentRepository.getLinksFrom(
+            secondAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _agentTaskLink(agentId: secondAgentId, taskId: secondTaskId),
+          ],
+        );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: firstAgentId,
+          taskId: firstTaskId,
+        );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: secondAgentId,
+          taskId: secondTaskId,
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            firstAgentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => firstReport);
+        when(
+          () => agentRepository.getLatestReport(
+            secondAgentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => secondReport);
+        when(
+          () => mockJournalDb.journalEntityById(firstTaskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById(secondTaskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((invocation) {
+          final attempt = (
+            input: invocation.namedArguments[#input]! as String,
+            baseUrl: invocation.namedArguments[#baseUrl]! as String,
+          );
+          attempts.add(attempt);
+          if (attempts.length == 1) {
+            firstRequestStarted.complete();
+            return firstRequest.future;
+          }
+          if (attempt.input == secondReport.content &&
+              !secondReportAttempted.isCompleted) {
+            secondReportAttempted.complete(attempt.baseUrl);
+          }
+          return Future.value(_fakeEmbedding());
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        providerConfigs.add(const []);
+        await firstRequestStarted.future;
+        expect(attempts, [
+          (input: firstReport.content, baseUrl: oldBaseUrl),
+        ]);
+
+        currentBaseUrl = newBaseUrl;
+        providerConfigs.add(const []);
+        firstRequest.complete(_fakeEmbedding());
+
+        expect(await secondReportAttempted.future, newBaseUrl);
+        expect(
+          attempts.where(
+            (attempt) =>
+                attempt.input == secondReport.content &&
+                attempt.baseUrl == oldBaseUrl,
+          ),
+          isEmpty,
+        );
       },
     );
 

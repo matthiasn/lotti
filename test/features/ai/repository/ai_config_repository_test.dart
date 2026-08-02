@@ -1233,10 +1233,10 @@ void main() {
           return Future.error(Exception('DB unavailable'));
         });
 
-        // watchConfigsByType triggers _ensureAllConfigsLoaded internally via a
-        // fire-and-forget Future.  The unhandled failed Future must be collected
-        // in the test Zone to prevent a test failure.
+        // watchConfigsByType triggers _ensureAllConfigsLoaded internally. A
+        // bootstrap failure belongs on the returned stream, not in the Zone.
         final zoneErrors = <Object>[];
+        final streamErrors = <Object>[];
         await runZonedGuarded(
           () async {
             final collected = <List<AiConfig>>[];
@@ -1244,7 +1244,7 @@ void main() {
                 .watchConfigsByType(AiConfigType.inferenceProvider)
                 .listen(
                   collected.add,
-                  onError: (Object e, StackTrace s) {},
+                  onError: streamErrors.add,
                 );
 
             // Drain the event queue deterministically so the bootstrap
@@ -1262,6 +1262,9 @@ void main() {
         // short-circuit) — verified by checking that getAllConfigs was called
         // at least once (the initial bootstrap attempt).
         expect(callCount, greaterThanOrEqualTo(1));
+        expect(streamErrors, hasLength(1));
+        expect(streamErrors.single, isA<Exception>());
+        expect(zoneErrors, isEmpty);
 
         // Re-stub for the follow-up call.
         when(

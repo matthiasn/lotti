@@ -143,16 +143,20 @@ flowchart LR
   generic task notifications do not launch a full agent-topology scan.
   Task-link sync includes a task-keyed token, allowing recovery to delete
   orphaned report vectors after the final link is removed even though no active
-  link remains in the topology scan. Local agent hard deletion emits the same
-  keyed cleanup signal after capturing its task links and before those source
-  rows become undiscoverable. If another agent link survives, that same signal
-  reconciles the promoted canonical report and removes the deleted primary's
-  stale vectors without launching a global scan. Provider
+  link remains in the topology scan. Local agent hard deletion first captures
+  its task links and synchronously deletes every report vector found through
+  their reverse task index. Only after that durable cleanup succeeds does it
+  remove the topology rows, so a crash cannot strand vectors whose last task
+  link has disappeared. A post-delete keyed signal then reconciles a surviving
+  canonical agent, if any, and rebuilds its current vector. Provider
   and flag streams skip their initial snapshots because startup already
   requests one pass; later enablement resumes both pending report recovery and
   any availability-paused entity batch. Disabling embeddings cancels the retry
   timer and drops queued journal entities. Final write guards also reject
-  entity or report vectors whose provider request was already in flight, while
+  entity or report vectors whose provider request was already in flight, and
+  the guard is rechecked between chunks so no further provider calls start
+  after disablement or supersession. Provider changes stop the active report
+  scan after its current request and rerun with a freshly resolved URL, while
   report recovery keeps a full pass pending for the next enablement. Its
   long-lived read-only repository
   invalidates its own identity snapshot before each pass because writes happen

@@ -220,7 +220,9 @@ class EmbeddingProcessor {
   ///
   /// All embeddings are generated first, then old data is deleted and new
   /// data inserted. This avoids leaving an entity with no embeddings if a
-  /// transient embedding failure occurs mid-way.
+  /// transient embedding failure occurs mid-way. When [writeGuard] is
+  /// supplied, it is rechecked between provider calls and immediately before
+  /// storage so superseded work stops without replacing the old vectors.
   static Future<bool> _embedChunks({
     required String text,
     required String entityId,
@@ -246,10 +248,26 @@ class EmbeddingProcessor {
     AiAttributionSession? attributionSession;
     var completionStarted = false;
 
+    Future<bool> writeStillAllowed() async {
+      if (writeGuard == null || await writeGuard()) return true;
+      final supersededSession = attributionSession;
+      if (supersededSession != null && !completionStarted) {
+        completionStarted = true;
+        await capture!.completeSession(
+          session: supersededSession,
+          outputs: const [],
+          status: AiWorkStatus.cancelled,
+          errorCode: 'superseded',
+        );
+      }
+      return false;
+    }
+
     try {
       // Phase 1: Generate all embeddings (network calls that can fail).
       final generated = <Float32List>[];
       for (final chunk in chunks) {
+        if (generated.isNotEmpty && !await writeStillAllowed()) return false;
         final invocationWrapper = capture == null
             ? null
             : (Future<Float32List> Function() invoke) async {
@@ -295,19 +313,7 @@ class EmbeddingProcessor {
         generated.add(embedding);
       }
 
-      if (writeGuard != null && !await writeGuard()) {
-        final supersededSession = attributionSession;
-        if (supersededSession != null) {
-          completionStarted = true;
-          await capture!.completeSession(
-            session: supersededSession,
-            outputs: const [],
-            status: AiWorkStatus.cancelled,
-            errorCode: 'superseded',
-          );
-        }
-        return false;
-      }
+      if (!await writeStillAllowed()) return false;
 
       await embeddingStore.replaceEntityEmbeddings(
         entityId: entityId,

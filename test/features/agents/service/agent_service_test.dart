@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -874,6 +876,60 @@ void main() {
     }
 
     group('deleteAgent', () {
+      test('waits for durable task cleanup before hard-delete', () async {
+        final cleanupStarted = Completer<void>();
+        final releaseCleanup = Completer<void>();
+        when(
+          () => mockRepository.getEntity('agent-with-report'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockOrchestrator.removeSubscriptions('agent-with-report'),
+        ).thenReturn(null);
+        when(
+          () => mockRepository.getLinksFrom(
+            'agent-with-report',
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentLink.agentTask(
+              id: 'agent-with-report-task-link',
+              fromId: 'agent-with-report',
+              toId: 'task-with-report',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => mockRepository.hardDeleteAgent('agent-with-report'),
+        ).thenAnswer(
+          (_) async => (entityIds: <String>[], linkIds: <String>[]),
+        );
+        final deletion = AgentService(
+          repository: mockRepository,
+          orchestrator: mockOrchestrator,
+          syncService: mockSyncService,
+          onTaskLinksWillBeHardDeleted: (taskIds) async {
+            expect(taskIds, {'task-with-report'});
+            cleanupStarted.complete();
+            await releaseCleanup.future;
+          },
+        ).deleteAgent('agent-with-report');
+
+        await cleanupStarted.future;
+        verifyNever(
+          () => mockRepository.hardDeleteAgent('agent-with-report'),
+        );
+
+        releaseCleanup.complete();
+        await deletion;
+        verify(
+          () => mockRepository.hardDeleteAgent('agent-with-report'),
+        ).called(1);
+      });
+
       test('reclaims the sidecars of everything it deleted', () async {
         // The database rows are only half of what a synced agent leaves
         // behind: its JSON sidecars stay readable on disk otherwise,

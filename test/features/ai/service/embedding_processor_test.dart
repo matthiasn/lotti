@@ -1291,6 +1291,56 @@ void main() {
       verify(() => bench.service.finalize(any())).called(1);
     });
 
+    test('stops before the next chunk when the write guard changes', () async {
+      final reportContent = List.generate(
+        700,
+        (index) => 'multiChunkWord$index',
+      ).join(' ');
+      final chunks = TextChunker.chunk(reportContent);
+      expect(chunks.length, greaterThan(1));
+      var writeAllowed = true;
+      var embeddingCalls = 0;
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+          invocationWrapper: any(named: 'invocationWrapper'),
+        ),
+      ).thenAnswer((_) async {
+        embeddingCalls++;
+        writeAllowed = false;
+        return _fakeEmbedding();
+      });
+
+      final result = await EmbeddingProcessor.processAgentReport(
+        reportId: 'report-disabled-between-chunks',
+        reportContent: reportContent,
+        taskId: 'task-disabled-between-chunks',
+        categoryId: 'category-disabled-between-chunks',
+        subtype: 'current',
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        baseUrl: _baseUrl,
+        writeGuard: () => writeAllowed,
+      );
+
+      expect(result, isFalse);
+      expect(embeddingCalls, 1);
+      verifyNever(
+        () => mockEmbeddingStore.replaceEntityEmbeddings(
+          entityId: 'report-disabled-between-chunks',
+          entityType: any(named: 'entityType'),
+          modelId: any(named: 'modelId'),
+          contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
+          categoryId: any(named: 'categoryId'),
+          taskId: any(named: 'taskId'),
+          subtype: any(named: 'subtype'),
+        ),
+      );
+    });
+
     test('returns false when content is too short', () async {
       final result = await EmbeddingProcessor.processAgentReport(
         reportId: 'report-1',

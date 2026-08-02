@@ -2109,12 +2109,25 @@ void main() {
   });
 
   group('agentServiceProvider', () {
-    test('creates service with injected dependencies', () {
+    test('creates service with injected dependencies', () async {
       final mockRepo = MockAgentRepository();
       final mockOrchestrator = MockWakeOrchestrator();
       final mockSyncService = MockAgentSyncService();
       final mockOutbox = MockOutboxService();
       final mockNotifications = MockUpdateNotifications();
+      final mockEmbeddingStore = MockEmbeddingStore();
+      await getIt.reset();
+      getIt.registerSingleton<EmbeddingStore>(mockEmbeddingStore);
+      addTearDown(getIt.reset);
+      when(
+        () => mockEmbeddingStore.getEntityIdsForTask('task-1'),
+      ).thenReturn({'report-1', 'shared-report'});
+      when(
+        () => mockEmbeddingStore.getEntityIdsForTask('task-2'),
+      ).thenReturn({'report-2', 'shared-report'});
+      when(
+        () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+      ).thenReturn(null);
 
       final container = ProviderContainer(
         overrides: [
@@ -2137,6 +2150,18 @@ void main() {
 
       verify(
         () => mockNotifications.notifyUiOnly({'agent-1', agentNotification}),
+      ).called(1);
+
+      await service.onTaskLinksWillBeHardDeleted?.call({'task-1', 'task-2'});
+
+      verify(
+        () => mockEmbeddingStore.deleteEntityEmbeddings('report-1'),
+      ).called(1);
+      verify(
+        () => mockEmbeddingStore.deleteEntityEmbeddings('report-2'),
+      ).called(1);
+      verify(
+        () => mockEmbeddingStore.deleteEntityEmbeddings('shared-report'),
       ).called(1);
 
       service.onTaskLinksHardDeleted?.call({'task-1', 'task-2'});
