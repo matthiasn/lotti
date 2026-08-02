@@ -197,6 +197,10 @@ class MatrixService {
     );
   }
 
+  /// Optional composition-root hook for protocol state that must advance only
+  /// after a sync message has been accepted by Matrix.
+  Future<void> Function(SyncMessage message)? onSyncMessageSent;
+
   /// Room, device-verification and diagnostics operations, delegated to from
   /// the thin public methods below to keep this file under the size limit.
   late final MatrixServiceOps _ops;
@@ -370,12 +374,16 @@ class MatrixService {
 
   /// Sends a Matrix sync payload and records basic "sent" metrics.
   ///
-  /// Every [`SyncMessage`] variant is mapped to a coarse message-type bucket
-  /// (`journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
-  /// `aiConfigDelete`, `configFlag`, `themingSelection`, `notification`,
-  /// `notificationStateUpdate`, `backfillRequest`, `backfillResponse`,
-  /// `agentEntity`, `agentLink`, `agentBundle`, `outboxBundle`). When the SDK
-  /// reports a successful send, the corresponding counter is incremented and
+  /// Every [`SyncMessage`] variant is mapped to a coarse message-type bucket:
+  /// `journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
+  /// `aiConfigDelete`, `savedTaskFilter`, `savedTaskFilterDelete`, `configFlag`,
+  /// `themingSelection`, `dailyOsUserName`, `notification`,
+  /// `notificationStateUpdate`, `onboardingSnapshotBegin`,
+  /// `onboardingSnapshotAccepted`, `onboardingTerminalCounters`,
+  /// `onboardingSnapshotEnd`, `consumptionEvent`, `backfillRequest`,
+  /// `mediaRequest`, `backfillResponse`, `agentEntity`, `agentLink`,
+  /// `agentBundle`, `outboxBundle`, and `syncNodeProfile`. When the SDK reports
+  /// a successful send, the corresponding counter is incremented and
   /// debounced stats are emitted to the Matrix Stats UI.
   /// Completes once the ADR 0045 megolm rotation has run for this session.
   ///
@@ -418,6 +426,10 @@ class MatrixService {
       dailyOsUserName: (_) => 'dailyOsUserName',
       notification: (_) => 'notification',
       notificationStateUpdate: (_) => 'notificationStateUpdate',
+      onboardingSnapshotBegin: (_) => 'onboardingSnapshotBegin',
+      onboardingSnapshotAccepted: (_) => 'onboardingSnapshotAccepted',
+      onboardingTerminalCounters: (_) => 'onboardingTerminalCounters',
+      onboardingSnapshotEnd: (_) => 'onboardingSnapshotEnd',
       consumptionEvent: (_) => 'consumptionEvent',
       backfillRequest: (_) => 'backfillRequest',
       mediaRequest: (_) => 'mediaRequest',
@@ -436,7 +448,14 @@ class MatrixService {
         syncRoom: targetRoom,
         unverifiedDevices: getUnverifiedDevices(),
       ),
-      onSent: (String _, SyncMessage _) => incrementSentCountOf(sentType),
+      onSent: (String _, SyncMessage _) async {
+        incrementSentCountOf(sentType);
+        // The payload sender strips outbox-bundle children into an attachment
+        // before transport. Protocol lifecycle hooks need the original
+        // logical message so they can observe controls contained in that
+        // successfully sent bundle.
+        await onSyncMessageSent?.call(syncMessage);
+      },
     );
   }
 

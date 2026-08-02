@@ -8,14 +8,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
+import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -91,6 +97,8 @@ void main() {
   const handover = 'dGVzdC1oYW5kb3Zlci1kYXRh';
 
   late MockMatrixService mockMatrixService;
+  late StreamController<KeyVerificationRunner> outgoingVerifications;
+  late StreamController<KeyVerificationRunner> incomingVerifications;
 
   setUpAll(() {
     registerFallbackValue(
@@ -126,6 +134,8 @@ void main() {
     // The generate path logs failures through DomainLogger.
     ensureDomainLoggerRegistered();
     mockMatrixService = MockMatrixService();
+    outgoingVerifications = StreamController<KeyVerificationRunner>.broadcast();
+    incomingVerifications = StreamController<KeyVerificationRunner>.broadcast();
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => const MatrixConfig(
         homeServer: 'https://matrix.example.com',
@@ -139,9 +149,39 @@ void main() {
     when(
       () => mockMatrixService.getSyncDevices(),
     ).thenAnswer((_) async => existing);
+    when(
+      () => mockMatrixService.keyVerificationStream,
+    ).thenAnswer((_) => outgoingVerifications.stream);
+    when(
+      () => mockMatrixService.incomingKeyVerificationRunnerStream,
+    ).thenAnswer((_) => incomingVerifications.stream);
+    when(() => mockMatrixService.keyVerificationRunner).thenReturn(null);
+    when(
+      () => mockMatrixService.incomingKeyVerificationRunner,
+    ).thenReturn(null);
   });
 
-  tearDown(tearDownTestGetIt);
+  tearDown(() async {
+    await outgoingVerifications.close();
+    await incomingVerifications.close();
+    await tearDownTestGetIt();
+  });
+
+  KeyVerificationRunner verificationRunner({
+    required String userId,
+    required String? deviceId,
+    bool successful = true,
+  }) {
+    final verification = MockKeyVerification();
+    when(() => verification.userId).thenReturn(userId);
+    when(() => verification.deviceId).thenReturn(deviceId);
+    final runner = MockKeyVerificationRunner();
+    when(() => runner.keyVerification).thenReturn(verification);
+    when(() => runner.lastStep).thenReturn(
+      successful ? EventTypes.KeyVerificationDone : '',
+    );
+    return runner;
+  }
 
   /// Sizes the surface for the sheet's tall single column; without it the
   /// lower controls sit outside the view and taps miss.
@@ -471,13 +511,182 @@ void main() {
       expect(signal.value, AddDeviceJoinState.joined);
 
       // Joining is not sufficient: directlyVerifiedOnly key sharing withholds
-      // the keys until the emoji ceremony completes. Follow the same target
-      // identity until the roster reports it verified.
+      // the keys until the emoji ceremony completes. The ceremony itself,
+      // rather than roster ordering, names the exact target.
+      outgoingVerifications.add(
+        verificationRunner(
+          userId: '@alice:example.com',
+          deviceId: verifiedPhone.deviceId,
+        ),
+      );
       container.read(syncDevicesControllerProvider.notifier).state =
           AsyncData<List<SyncDeviceInfo>>([...existing, verifiedPhone]);
       await tester.pump();
       await tester.pump();
       expect(signal.value, AddDeviceJoinState.ready);
+      expect(signal.target?.deviceId, verifiedPhone.deviceId);
+      expect(signal.target?.userId, '@alice:example.com');
+    });
+
+    testWidgets('logs once when a verified target has no device ID', (
+      tester,
+    ) async {
+      final logger = MockDomainLogger();
+      when(
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(),
+          subDomain: 'addDeviceTarget',
+        ),
+      ).thenReturn(null);
+      await getIt.unregister<DomainLogger>();
+      getIt.registerSingleton<DomainLogger>(logger);
+
+      final signal = newSignal(tester);
+      final container = ProviderContainer(
+        overrides: overrides(calls: _Calls()),
+      );
+      addTearDown(container.dispose);
+      useTallSurface(tester);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidgetWithScaffold(
+            SingleChildScrollView(
+              child: AddDeviceView(
+                pollInterval: const Duration(days: 1),
+                signal: signal,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final malformed = verificationRunner(
+        userId: '@alice:example.com',
+        deviceId: null,
+      );
+      outgoingVerifications.add(malformed);
+      await tester.pump();
+      await tester.pump();
+
+      expect(signal.value, AddDeviceJoinState.waiting);
+      expect(signal.target, isNull);
+      verify(
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(),
+          subDomain: 'addDeviceTarget',
+        ),
+      ).called(1);
+
+      outgoingVerifications.add(malformed);
+      await tester.pump();
+      verifyNever(
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(),
+          subDomain: 'addDeviceTarget',
+        ),
+      );
+    });
+
+    testWidgets('targets the verified pairing when two devices join', (
+      tester,
+    ) async {
+      final signal = newSignal(tester);
+      final container = ProviderContainer(
+        overrides: overrides(calls: _Calls()),
+      );
+      addTearDown(container.dispose);
+      useTallSurface(tester);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidgetWithScaffold(
+            SingleChildScrollView(
+              child: AddDeviceView(
+                pollInterval: const Duration(days: 1),
+                signal: signal,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      const otherPhone = SyncDeviceInfo(
+        deviceId: 'OTHERPHONE',
+        displayName: 'Other phone',
+        isCurrentDevice: false,
+        verified: false,
+      );
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = AsyncData<List<SyncDeviceInfo>>([
+        ...existing,
+        otherPhone,
+        newPhone,
+      ]);
+      await tester.pump();
+      expect(signal.value, AddDeviceJoinState.joined);
+
+      outgoingVerifications.add(
+        verificationRunner(
+          userId: '@alice:example.com',
+          deviceId: newPhone.deviceId,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(signal.value, AddDeviceJoinState.ready);
+      expect(signal.target?.deviceId, newPhone.deviceId);
+      expect(signal.target?.userId, '@alice:example.com');
+    });
+
+    testWidgets('ignores successful verification of a pre-existing peer', (
+      tester,
+    ) async {
+      final signal = newSignal(tester);
+      await pumpAddDevice(tester, signal: signal);
+      await tester.pump();
+
+      outgoingVerifications.add(
+        verificationRunner(
+          userId: '@alice:example.com',
+          deviceId: existing.single.deviceId,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(signal.value, AddDeviceJoinState.waiting);
+      expect(signal.target, isNull);
+    });
+
+    testWidgets('ignores a successful runner retained from before opening', (
+      tester,
+    ) async {
+      final staleRunner = verificationRunner(
+        userId: '@alice:example.com',
+        deviceId: existing.single.deviceId,
+      );
+      when(
+        () => mockMatrixService.keyVerificationRunner,
+      ).thenReturn(staleRunner);
+      when(
+        () => mockMatrixService.keyVerificationStream,
+      ).thenAnswer((_) => Stream<KeyVerificationRunner>.value(staleRunner));
+      final signal = newSignal(tester);
+      await pumpAddDevice(tester, signal: signal);
+      await tester.pump();
+
+      expect(signal.value, AddDeviceJoinState.waiting);
+      expect(signal.target, isNull);
     });
 
     testWidgets('stops claiming to wait once the roster keeps failing', (
@@ -971,6 +1180,42 @@ void main() {
         find.byKey(const Key('add_device_send_messages')),
       );
       expect(sendMessages.onPressed, isNotNull);
+    });
+
+    testWidgets('opens onboarding history for the exact verified target', (
+      tester,
+    ) async {
+      const target = OnboardingSyncTarget(
+        userId: '@alice:example.com',
+        deviceId: 'NEWPHONE',
+      );
+      final signal = AddDeviceJoinSignal()
+        ..target = target
+        ..value = AddDeviceJoinState.ready;
+      addTearDown(signal.dispose);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          AddDeviceActionBar(
+            signal: signal,
+            onSendSettings: (_) async {},
+          ),
+          overrides: overrides(
+            calls: _Calls(),
+            devices: [...existing, verifiedPhone],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('add_device_send_messages')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final modal = tester.widget<ReSyncModalContent>(
+        find.byType(ReSyncModalContent),
+      );
+      expect(modal.onboardingTarget?.userId, target.userId);
+      expect(modal.onboardingTarget?.deviceId, target.deviceId);
     });
 
     testWidgets('runs the hand-off when pressed', (tester) async {

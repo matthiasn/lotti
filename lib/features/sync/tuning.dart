@@ -212,6 +212,12 @@ class SyncTuning {
   /// cancellation logic needed).
   static const Duration backfillMissingDebounce = Duration(minutes: 10);
 
+  /// Minimum time before an automatically requested counter may be requested
+  /// again. Queue-drain nudges may bypass [backfillMissingDebounce] for rows
+  /// that have never been requested, but they must not collapse this retry
+  /// floor while the earlier request or its response may still be in flight.
+  static const Duration backfillRequestRetryCooldown = Duration(hours: 1);
+
   // Large-gap logging threshold.
   // Gaps larger than this are still fully materialized so backfill can recover
   // them, but they are logged explicitly for diagnostics.

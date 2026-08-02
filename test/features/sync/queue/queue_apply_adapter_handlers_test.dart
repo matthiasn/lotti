@@ -48,6 +48,7 @@ void main() {
     processor: processor,
     journalDb: journalDb,
     logging: logging,
+    hasOlderActiveEntry: (_) async => false,
   );
 
   glados.Glados(
@@ -111,6 +112,7 @@ void main() {
           processor: localProcessor,
           journalDb: localJournalDb,
           logging: localLogging,
+          hasOlderActiveEntry: (_) async => false,
         );
         if (scenario.usePrepareBatch) {
           await adapter.bindPrepareBatch()([entry], localRoom);

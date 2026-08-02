@@ -8,8 +8,11 @@ import 'package:lotti/features/design_system/components/callouts/design_system_i
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
@@ -68,6 +71,9 @@ class AddDeviceJoinSignal extends ValueNotifier<AddDeviceJoinState> {
 
   /// Set by the body once it is mounted; read by the bar's error row.
   VoidCallback? onRetry;
+
+  /// Exact Matrix target discovered and verified by this onboarding sheet.
+  OnboardingSyncTarget? target;
 }
 
 /// The deliberate "hand this account to another device" act.
@@ -160,7 +166,11 @@ class AddDeviceActionBar extends StatelessWidget {
           leadingIcon: enabled ? Icons.history_rounded : Icons.lock_outline,
           onPressed: enabled
               ? () => unawaited(
-                  (onSendMessages ?? ReSyncModal.show)(context),
+                  onSendMessages?.call(context) ??
+                      ReSyncModal.show(
+                        context,
+                        onboardingTarget: signal.target,
+                      ),
                 )
               : null,
         );
@@ -309,6 +319,7 @@ class AddDeviceView extends ConsumerStatefulWidget {
 class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   String? _handover;
   String? _checkCode;
+  String? _localUserId;
   bool _loading = true;
   bool _revealed = false;
 
@@ -323,12 +334,17 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   /// collided with any foreign user's would read as already known and the
   /// sheet would never latch.
   Set<String>? _knownDeviceIds;
-  String? _newDeviceIdentity;
   bool _joined = false;
   bool _ready = false;
+  bool _missingTargetIdentityLogged = false;
   int _pollFailures = 0;
   bool _pollInFlight = false;
   Timer? _poll;
+  MatrixService? _verificationService;
+  StreamSubscription<KeyVerificationRunner>? _outgoingVerificationSub;
+  StreamSubscription<KeyVerificationRunner>? _incomingVerificationSub;
+  final Set<KeyVerificationRunner> _verificationRunnersPresentAtOpen =
+      Set<KeyVerificationRunner>.identity();
 
   @override
   void initState() {
@@ -340,6 +356,8 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   @override
   void dispose() {
     _poll?.cancel();
+    unawaited(_outgoingVerificationSub?.cancel());
+    unawaited(_incomingVerificationSub?.cancel());
     widget.signal?.onRetry = null;
     super.dispose();
   }
@@ -357,8 +375,10 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
       // Derived from the same account and room the code carries, so the
       // joining device computes the identical value from its decoded bundle.
       final service = ref.read(matrixServiceProvider);
+      _bindVerificationSignals(service);
       final config = await service.loadConfig();
       final roomId = service.syncRoomId;
+      _localUserId = config?.user;
       if (config != null && roomId != null) {
         check = pairingCheckCode(
           user: config.user,
@@ -388,6 +408,68 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
         if (data != null) _startPolling();
       }
     }
+  }
+
+  /// Watches the exact Matrix verification ceremony completed while this
+  /// handover sheet is open. Roster ordering is deliberately not used to pick
+  /// a target: two devices can join between polls, and "first new row" has no
+  /// relationship to the QR code the user just scanned.
+  void _bindVerificationSignals(MatrixService service) {
+    if (identical(_verificationService, service)) return;
+    _verificationService = service;
+    unawaited(_outgoingVerificationSub?.cancel());
+    unawaited(_incomingVerificationSub?.cancel());
+    final outgoingAtOpen = service.keyVerificationRunner;
+    if (outgoingAtOpen != null) {
+      _verificationRunnersPresentAtOpen.add(outgoingAtOpen);
+    }
+    final incomingAtOpen = service.incomingKeyVerificationRunner;
+    if (incomingAtOpen != null) {
+      _verificationRunnersPresentAtOpen.add(incomingAtOpen);
+    }
+    _outgoingVerificationSub = service.keyVerificationStream.listen(
+      _observeVerification,
+    );
+    _incomingVerificationSub = service.incomingKeyVerificationRunnerStream
+        .listen(_observeVerification);
+  }
+
+  void _observeVerification(KeyVerificationRunner runner) {
+    if (_ready ||
+        _verificationRunnersPresentAtOpen.contains(runner) ||
+        runner.outcome != KeyVerificationOutcome.success) {
+      return;
+    }
+    final verification = runner.keyVerification;
+    final deviceId = verification.deviceId;
+    if (deviceId == null || deviceId.isEmpty) {
+      if (!_missingTargetIdentityLogged) {
+        _missingTargetIdentityLogged = true;
+        getIt<DomainLogger>().error(
+          LogDomain.sync,
+          StateError('Verified onboarding target has no Matrix device ID'),
+          subDomain: 'addDeviceTarget',
+        );
+      }
+      return;
+    }
+    final target = OnboardingSyncTarget(
+      userId: verification.userId,
+      deviceId: deviceId,
+    );
+    final identity = _targetIdentity(target);
+    final known = _knownDeviceIds;
+    if (known != null && known.contains(identity)) {
+      return;
+    }
+    widget.signal?.target = target;
+    if (!mounted) return;
+    setState(() {
+      _joined = true;
+      _ready = true;
+    });
+    _poll?.cancel();
+    _publishJoinState();
   }
 
   void _startPolling() {
@@ -453,47 +535,34 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
     });
   }
 
-  /// Latches on the first device identity that was not present when the sheet
-  /// opened, then follows that exact device until Matrix reports it verified.
-  /// An older peer must never unlock the transfer actions for the new target.
-  ///
-  /// Derived during build rather than via `setState`: the value is a pure
-  /// function of the roster this widget already watches, and it only ever
-  /// moves forward, so no extra frame is needed to show it.
-  /// Identity of a roster row: device ids are unique only within a user.
-  static String _rosterIdentity(SyncDeviceInfo device) =>
-      '${device.userId ?? 'self'}/${device.deviceId}';
+  /// Identity of a roster row: device ids are unique only within a user. The
+  /// current account is omitted on its own roster rows, so normalize it to the
+  /// user id carried by the handover config before comparing it with a Matrix
+  /// verification target.
+  String? _rosterIdentity(SyncDeviceInfo device) {
+    final userId = device.userId ?? _localUserId;
+    if (userId == null) return null;
+    return '$userId/${device.deviceId}';
+  }
+
+  static String _targetIdentity(OnboardingSyncTarget target) =>
+      '${target.userId}/${target.deviceId}';
 
   void _observeRoster(List<SyncDeviceInfo> devices) {
     if (_ready) return;
-    final identities = devices.map(_rosterIdentity).toList(growable: false);
+    final identities = devices
+        .map(_rosterIdentity)
+        .whereType<String>()
+        .toList(growable: false);
     final known = _knownDeviceIds;
     if (known == null) {
       _knownDeviceIds = identities.toSet();
       return;
     }
 
-    for (final identity in identities) {
-      if (!known.contains(identity)) {
-        _newDeviceIdentity ??= identity;
-        break;
-      }
-    }
-    final targetIdentity = _newDeviceIdentity;
-    if (targetIdentity == null) return;
-
-    if (!_joined) {
+    if (!_joined && identities.any((identity) => !known.contains(identity))) {
       _joined = true;
       _publishJoinState();
-    }
-
-    for (final device in devices) {
-      if (_rosterIdentity(device) == targetIdentity && device.verified) {
-        _ready = true;
-        _poll?.cancel();
-        _publishJoinState();
-        break;
-      }
     }
   }
 

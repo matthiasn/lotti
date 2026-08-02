@@ -340,6 +340,31 @@ class InboundQueue {
     });
   }
 
+  /// Whether [entry] still has an earlier active row in the same room.
+  ///
+  /// Uses the queue's canonical `(origin_ts, queue_id)` ordering, including
+  /// the queue-id tie-break for Matrix events that share a millisecond. This
+  /// is the durable protocol-barrier check: retrying and attachment-pending
+  /// rows count as active even when their next due time is in the future.
+  Future<bool> hasOlderActiveEntry(InboundQueueEntry entry) async {
+    final table = _db.inboundEventQueue;
+    final query = _db.selectOnly(table)
+      ..addColumns([table.queueId])
+      ..where(
+        table.roomId.equals(entry.roomId) &
+            // Literal form keeps this eligible for the active-room partial
+            // index; a parameterized `isIn` cannot prove the predicate to
+            // SQLite's planner.
+            const CustomExpression<bool>(_peekableStatusPredicate) &
+            table.queueId.equals(entry.queueId).not() &
+            (table.originTs.isSmallerThanValue(entry.originTs) |
+                (table.originTs.equals(entry.originTs) &
+                    table.queueId.isSmallerThanValue(entry.queueId))),
+      )
+      ..limit(1);
+    return await query.getSingleOrNull() != null;
+  }
+
   // ---------------------------------------------------------------- commit
 
   /// Flips [entry] to `status='applied'` (keeping the row as an

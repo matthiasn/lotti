@@ -9,6 +9,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -298,6 +299,7 @@ void main() {
     int? maxBatchSize,
     Duration? missingDebounce,
     Duration? amnestyWindow,
+    OnboardingSyncService? onboardingSyncService,
   }) {
     final service = BackfillRequestService(
       sequenceLogService: mockSequenceService,
@@ -312,6 +314,7 @@ void main() {
       maxBatchSize: maxBatchSize,
       missingDebounce: missingDebounce,
       amnestyWindow: amnestyWindow,
+      onboardingSyncService: onboardingSyncService,
     );
     addTearDown(service.dispose);
     return service;
@@ -369,6 +372,109 @@ void main() {
   });
 
   group('BackfillRequestService', () {
+    test(
+      'automatic queue-drain requests exclude the active onboarding range',
+      () async {
+        final onboarding = MockOnboardingSyncService();
+        final requestSent = Completer<SyncBackfillRequest>();
+        final service = buildService(
+          maxBatchSize: 2,
+          domainLogger: mockLogging,
+          onboardingSyncService: onboarding,
+        );
+        when(onboarding.activeInboundCoverage).thenAnswer(
+          (_) async => {aliceHostId: 10},
+        );
+        when(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            suppressedCoverage: {aliceHostId: 10},
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((invocation) async {
+          final offset = invocation.namedArguments[#offset] as int;
+          if (offset > 0) return [];
+          return [
+            _createMissingLogItem(aliceHostId, 5),
+            _createMissingLogItem(bobHostId, 5),
+          ];
+        });
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+        ).thenAnswer((invocation) async {
+          requestSent.complete(
+            invocation.positionalArguments.single as SyncBackfillRequest,
+          );
+        });
+        when(
+          () => mockSequenceService.markAsRequested(any()),
+        ).thenAnswer((_) async {});
+
+        service.nudgeAfterDrain();
+        final request = await requestSent.future;
+
+        expect(
+          request.entries,
+          const [BackfillRequestEntry(hostId: bobHostId, counter: 5)],
+        );
+        verify(onboarding.activeInboundCoverage).called(1);
+        verify(
+          () => mockLogging.log(
+            LogDomain.sync,
+            'processBackfillRequests: filtered onboarding-suppressed=1 '
+            'already-queued=0 entries',
+            subDomain: 'backfill.process',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('enqueue failure does not start the retry cooldown', () async {
+      final service = buildService();
+      when(
+        () => mockSequenceService.getMissingEntries(
+          limit: any(named: 'limit'),
+          maxRequestCount: any(named: 'maxRequestCount'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((_) async => [_createMissingLogItem(aliceHostId, 5)]);
+      when(
+        () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+      ).thenThrow(StateError('enqueue failed'));
+
+      expect(await service.processFullBackfill(), 0);
+
+      verify(
+        () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+      ).called(1);
+      verifyNever(() => mockSequenceService.markAsRequested(any()));
+    });
+
+    test(
+      'manual full backfill deliberately ignores onboarding suppression',
+      () async {
+        final onboarding = MockOnboardingSyncService();
+        final service = buildService(onboardingSyncService: onboarding);
+        when(
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await service.processFullBackfill();
+
+        verifyNever(onboarding.activeInboundCoverage);
+      },
+    );
+
     test(
       'retires exhausted requested entries before loading the missing batch '
       'so a permanently stuck gap does not block the watermark indefinitely',
@@ -449,13 +555,14 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
         );
         verifyNever(() => mockSyncDatabase.getPendingBackfillEntries());
         verifyNever(
-          () => mockOutboxService.enqueueMessage(
+          () => mockOutboxService.enqueueMessageOrThrow(
             any<SyncMessage>(),
           ),
         );
@@ -504,6 +611,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -522,6 +630,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -537,6 +646,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -563,6 +673,7 @@ void main() {
               maxRequestCount: any(named: 'maxRequestCount'),
               maxAge: any(named: 'maxAge'),
               minAge: any(named: 'minAge'),
+              requestedMinAge: any(named: 'requestedMinAge'),
               maxPerHost: any(named: 'maxPerHost'),
               offset: any(named: 'offset'),
             ),
@@ -579,6 +690,7 @@ void main() {
               maxRequestCount: any(named: 'maxRequestCount'),
               maxAge: any(named: 'maxAge'),
               minAge: SyncTuning.backfillMissingDebounce,
+              requestedMinAge: SyncTuning.backfillRequestRetryCooldown,
               maxPerHost: any(named: 'maxPerHost'),
               offset: any(named: 'offset'),
             ),
@@ -622,6 +734,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -646,13 +759,14 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async => missingEntries);
 
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
 
         when(
@@ -667,7 +781,7 @@ void main() {
 
         // Should have enqueued 1 batched backfill request containing 2 entries
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured;
         expect(captured.length, 1);
         final request = captured[0] as SyncBackfillRequest;
@@ -723,7 +837,7 @@ void main() {
             bobHostId: bobHostId,
           ),
         );
-        when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
+        when(() => mockOutboxService.enqueueMessageOrThrow(any())).thenAnswer((
           invocation,
         ) async {
           enqueuedRequests.add(
@@ -808,6 +922,7 @@ void main() {
               maxRequestCount: any(named: 'maxRequestCount'),
               maxAge: any(named: 'maxAge'),
               minAge: any(named: 'minAge'),
+              requestedMinAge: any(named: 'requestedMinAge'),
               maxPerHost: any(named: 'maxPerHost'),
               offset: any(named: 'offset'),
             ),
@@ -823,13 +938,15 @@ void main() {
               bobHostId: bobHostId,
             ),
           );
-          when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
-            invocation,
-          ) async {
-            enqueuedRequests.add(
-              invocation.positionalArguments.single as SyncBackfillRequest,
-            );
-          });
+          when(() => mockOutboxService.enqueueMessageOrThrow(any())).thenAnswer(
+            (
+              invocation,
+            ) async {
+              enqueuedRequests.add(
+                invocation.positionalArguments.single as SyncBackfillRequest,
+              );
+            },
+          );
           when(() => mockSequenceService.markAsRequested(any())).thenAnswer((
             invocation,
           ) async {
@@ -907,12 +1024,13 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async => missingEntries);
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -922,7 +1040,7 @@ void main() {
         async.flushMicrotasks();
 
         verify(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).called(1);
         verify(() => mockSequenceService.markAsRequested(any())).called(1);
 
@@ -944,6 +1062,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -955,7 +1074,7 @@ void main() {
         );
 
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -973,6 +1092,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -994,6 +1114,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1013,7 +1134,7 @@ void main() {
         async.flushMicrotasks();
 
         // Should not enqueue any messages
-        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
 
         service.dispose();
       });
@@ -1033,6 +1154,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1075,6 +1197,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1099,6 +1222,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1118,6 +1242,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1180,7 +1305,7 @@ void main() {
         ).thenAnswer((_) async => missingEntries);
 
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -1207,6 +1332,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1238,6 +1364,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1265,6 +1392,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1276,7 +1404,7 @@ void main() {
         );
 
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -1290,7 +1418,7 @@ void main() {
 
         // Should only request entries 1 and 3 (entry 2 filtered out)
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured;
         expect(captured.length, 1);
         final request = captured[0] as SyncBackfillRequest;
@@ -1318,6 +1446,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1335,7 +1464,7 @@ void main() {
         async.flushMicrotasks();
 
         // Should not enqueue any message
-        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
 
         service.dispose();
       });
@@ -1362,6 +1491,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1379,7 +1509,7 @@ void main() {
           },
         );
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -1392,7 +1522,7 @@ void main() {
         async.flushMicrotasks();
 
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured;
         final request = captured.single as SyncBackfillRequest;
         expect(request.entries.map((e) => e.counter).toList(), [3]);
@@ -1430,7 +1560,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1444,7 +1574,7 @@ void main() {
 
           // Should have sent backfill request
           final captured = verify(
-            () => mockOutboxService.enqueueMessage(captureAny()),
+            () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
           ).captured;
           expect(captured.length, 1);
           final request = captured[0] as SyncBackfillRequest;
@@ -1457,6 +1587,33 @@ void main() {
           service.dispose();
         });
       });
+
+      test(
+        'enqueue failure does not reset or mark a re-request as sent',
+        () async {
+          final service = buildService(maxBatchSize: 50);
+          when(
+            () => mockSequenceService.getRequestedEntries(
+              limit: 50,
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((_) async => [_createRequestedLogItem(aliceHostId, 10)]);
+          when(
+            () => mockSequenceService.resetRequestCounts(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+          ).thenThrow(StateError('enqueue failed'));
+
+          expect(await service.processReRequest(), 0);
+
+          verify(
+            () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+          ).called(1);
+          verifyNever(() => mockSequenceService.resetRequestCounts(any()));
+          verifyNever(() => mockSequenceService.markAsRequested(any()));
+        },
+      );
 
       test('returns zero when no requested entries', () {
         fakeAsync((async) {
@@ -1476,7 +1633,7 @@ void main() {
           async.flushMicrotasks();
 
           expect(result, 0);
-          verifyNever(() => mockOutboxService.enqueueMessage(any()));
+          verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
 
           service.dispose();
         });
@@ -1514,7 +1671,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1525,7 +1682,7 @@ void main() {
 
           // Should only request entries 10 and 12 (entry 11 filtered out)
           final captured = verify(
-            () => mockOutboxService.enqueueMessage(captureAny()),
+            () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
           ).captured;
           expect(captured.length, 1);
           final request = captured[0] as SyncBackfillRequest;
@@ -1575,7 +1732,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1587,7 +1744,7 @@ void main() {
 
           expect(result, 1);
           final captured = verify(
-            () => mockOutboxService.enqueueMessage(captureAny()),
+            () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
           ).captured;
           final request = captured.single as SyncBackfillRequest;
           expect(request.entries.map((e) => e.counter).toList(), [12]);
@@ -1775,7 +1932,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1836,7 +1993,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1899,7 +2056,7 @@ void main() {
               () => mockSequenceService.resetRequestCounts(any()),
             ).thenAnswer((_) async {});
             when(
-              () => mockOutboxService.enqueueMessage(any()),
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
             ).thenAnswer((_) async {});
             when(
               () => mockSequenceService.markAsRequested(any()),
@@ -1946,7 +2103,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1960,7 +2117,9 @@ void main() {
           expect(result, 3);
 
           // Should have sent 2 backfill requests
-          verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+          verify(
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
+          ).called(2);
 
           service.dispose();
         });
@@ -1980,6 +2139,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1993,7 +2153,7 @@ void main() {
           ),
         ).thenAnswer((_) async => missingItems);
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -2018,7 +2178,7 @@ void main() {
             service.nudge();
             async.flushMicrotasks();
 
-            verifyNever(() => mockOutboxService.enqueueMessage(any()));
+            verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
             verifyNever(
               () => mockSequenceService.getMissingEntriesWithLimits(
                 limit: any(named: 'limit'),
@@ -2047,7 +2207,9 @@ void main() {
             service.nudge();
             async.flushMicrotasks();
 
-            verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+            verify(
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
+            ).called(1);
           });
         },
       );
@@ -2066,12 +2228,74 @@ void main() {
 
           await service.processFullBackfill();
 
-          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+          verify(
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
+          ).called(1);
         },
       );
     });
 
     group('nudgeAfterDrain', () {
+      test(
+        'coalesces a drain bypass behind an active automatic pass',
+        () {
+          fakeAsync((async) {
+            final firstQuery = Completer<List<SyncSequenceLogItem>>();
+            var queryCount = 0;
+            when(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              queryCount++;
+              if (queryCount == 1) return firstQuery.future;
+              return Future.value(<SyncSequenceLogItem>[]);
+            });
+
+            final service = buildService(
+              requestInterval: const Duration(minutes: 10),
+              missingDebounce: const Duration(minutes: 7),
+            );
+
+            service.nudge();
+            async.flushMicrotasks();
+            service
+              ..nudgeAfterDrain()
+              ..nudgeAfterDrain();
+            async.flushMicrotasks();
+
+            expect(queryCount, 1);
+            firstQuery.complete(<SyncSequenceLogItem>[]);
+            async.flushMicrotasks();
+
+            final captured = verify(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                minAge: captureAny(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            ).captured;
+            expect(
+              captured,
+              equals([const Duration(minutes: 7), Duration.zero]),
+              reason:
+                  'the active normal pass must be followed by exactly one '
+                  'coalesced drain-bypass pass',
+            );
+          });
+        },
+      );
+
       test(
         'collapses the missing-debounce minAge to zero so a row freshly '
         'flagged missing during catch-up is requested as soon as the '
@@ -2086,12 +2310,13 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
             ).thenAnswer((_) async => [_createMissingLogItem(aliceHostId, 99)]);
             when(
-              () => mockOutboxService.enqueueMessage(any()),
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
             ).thenAnswer((_) async {});
             when(
               () => mockSequenceService.markAsRequested(any()),
@@ -2110,12 +2335,15 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: captureAny(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
             ).captured;
             expect(captured.single, Duration.zero);
-            verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+            verify(
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
+            ).called(1);
           });
         },
       );
@@ -2132,6 +2360,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2153,6 +2382,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: captureAny(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2193,6 +2423,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2223,6 +2454,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2257,6 +2489,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2265,7 +2498,7 @@ void main() {
               return [missingEntry];
             });
             when(
-              () => mockOutboxService.enqueueMessage(any()),
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
             ).thenAnswer((_) async {});
             when(
               () => mockSequenceService.markAsRequested(any()),
@@ -2306,7 +2539,9 @@ void main() {
               Duration.zero,
               reason: 'nudgeAfterDrain must bypass the missing debounce',
             );
-            verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+            verify(
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
+            ).called(1);
           });
         },
       );
@@ -2334,6 +2569,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2373,6 +2609,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2425,7 +2662,7 @@ void main() {
               () => mockSequenceService.resetRequestCounts(any()),
             ).thenAnswer((_) async {});
             when(
-              () => mockOutboxService.enqueueMessage(any()),
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
             ).thenAnswer((_) async {});
             when(
               () => mockSequenceService.markAsRequested(any()),
@@ -2511,7 +2748,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -2592,7 +2829,7 @@ void main() {
               () => mockSequenceService.resetRequestCounts(any()),
             ).thenAnswer((_) async {});
             when(
-              () => mockOutboxService.enqueueMessage(any()),
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
             ).thenAnswer((_) async {});
             when(
               () => mockSequenceService.markAsRequested(any()),

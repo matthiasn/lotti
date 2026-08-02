@@ -15,6 +15,7 @@ part 'sync_db_lifecycle.dart';
 part 'sync_db_outbox.dart';
 part 'sync_db_outbox_dedup.dart';
 part 'sync_db_outbox_prune.dart';
+part 'sync_db_onboarding.dart';
 part 'sync_db_sequence.dart';
 part 'sync_db_tables.dart';
 part 'sync_db_watermarks.dart';
@@ -53,6 +54,7 @@ const _idxInboundEventQueueActiveStatusRoom =
     HostActivity,
     InboundEventQueue,
     QueueMarkers,
+    OnboardingSyncRounds,
   ],
 )
 class SyncDatabase extends _$SyncDatabase
@@ -62,6 +64,7 @@ class SyncDatabase extends _$SyncDatabase
         _SyncDbOutboxDedup,
         _SyncDbSequenceWatermarks,
         _SyncDbSequenceLog,
+        _SyncDbOnboarding,
         _SyncDbBackfill,
         _SyncDbSequenceLifecycle {
   SyncDatabase({
@@ -85,7 +88,7 @@ class SyncDatabase extends _$SyncDatabase
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 29;
 
   @override
   MigrationStrategy get migration {
@@ -605,6 +608,9 @@ class SyncDatabase extends _$SyncDatabase
           if (queueMarkersExists != null) {
             await m.addColumn(queueMarkers, queueMarkers.resumeFloorTs);
           }
+        }
+        if (from < 29) {
+          await m.createTable(onboardingSyncRounds);
         }
       },
     );

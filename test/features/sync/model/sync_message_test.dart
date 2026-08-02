@@ -199,6 +199,77 @@ void main() {
     });
   });
 
+  group('onboarding snapshot protocol', () {
+    test('begin round-trips its target, coverage, and bounded lease', () {
+      const original = SyncMessage.onboardingSnapshotBegin(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'desktop-host',
+        senderUserId: '@sync:example.org',
+        senderDeviceId: 'DESKTOP',
+        recipientUserId: '@sync:example.org',
+        recipientDeviceId: 'PHONE',
+        coverageUpperBounds: {
+          'desktop-host': 32155,
+          'old-phone-host': 867,
+        },
+        leaseSeconds: 3600,
+      );
+
+      final decoded = SyncMessage.fromJson(original.toJson());
+
+      expect(decoded, original);
+      expect(original.toJson()['runtimeType'], 'onboardingSnapshotBegin');
+    });
+
+    test('accepted round-trips the recipient host identity', () {
+      const original = SyncMessage.onboardingSnapshotAccepted(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'desktop-host',
+        senderUserId: '@sync:example.org',
+        senderDeviceId: 'DESKTOP',
+        recipientHostId: 'phone-host',
+        recipientDeviceId: 'PHONE',
+      );
+
+      expect(SyncMessage.fromJson(original.toJson()), original);
+    });
+
+    test('terminal coverage round-trips compact counter ranges', () {
+      const original = SyncMessage.onboardingTerminalCounters(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'desktop-host',
+        recipientUserId: '@sync:example.org',
+        recipientDeviceId: 'PHONE',
+        ranges: [
+          SyncCounterRange(start: 4, end: 9),
+          SyncCounterRange(start: 15, end: 15),
+        ],
+      );
+
+      expect(SyncMessage.fromJson(original.toJson()), original);
+    });
+
+    test('end distinguishes a completed round from an abort', () {
+      const original = SyncMessage.onboardingSnapshotEnd(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'desktop-host',
+        recipientUserId: '@sync:example.org',
+        recipientDeviceId: 'PHONE',
+        reason: OnboardingSyncEndReason.aborted,
+      );
+
+      final decoded =
+          SyncMessage.fromJson(original.toJson()) as SyncOnboardingSnapshotEnd;
+
+      expect(decoded.reason, OnboardingSyncEndReason.aborted);
+      expect(decoded, original);
+    });
+  });
+
   group('SyncAgentEntity serialization', () {
     final testDate = DateTime(2024, 3, 15);
     const testVectorClock = VectorClock({'host-a': 1, 'host-b': 2});

@@ -845,6 +845,66 @@ void main() {
     );
   });
 
+  group('hasOlderActiveEntry', () {
+    test(
+      'uses room, timestamp, and queue-id ordering across retries',
+      () async {
+        await queue.enqueueBatch(
+          [
+            _buildSyncEvent(
+              eventId: r'$older',
+              roomId: roomA,
+              originTsMs: 10,
+            ),
+            _buildSyncEvent(
+              eventId: r'$same-time-first',
+              roomId: roomA,
+              originTsMs: 20,
+            ),
+            _buildSyncEvent(
+              eventId: r'$barrier',
+              roomId: roomA,
+              originTsMs: 20,
+            ),
+            _buildSyncEvent(
+              eventId: r'$other-room',
+              roomId: roomB,
+              originTsMs: 1,
+            ),
+          ],
+          producer: InboundEventProducer.live,
+        );
+        final batch = await queue.peekBatchReady();
+        final older = batch.firstWhere((entry) => entry.eventId == r'$older');
+        final first = batch.firstWhere(
+          (entry) => entry.eventId == r'$same-time-first',
+        );
+        final barrier = batch.firstWhere(
+          (entry) => entry.eventId == r'$barrier',
+        );
+        final otherRoom = batch.firstWhere(
+          (entry) => entry.eventId == r'$other-room',
+        );
+
+        expect(await queue.hasOlderActiveEntry(older), isFalse);
+        expect(await queue.hasOlderActiveEntry(first), isTrue);
+        expect(await queue.hasOlderActiveEntry(barrier), isTrue);
+        expect(await queue.hasOlderActiveEntry(otherRoom), isFalse);
+
+        await queue.scheduleRetry(
+          older,
+          const Duration(hours: 1),
+          reason: RetryReason.pendingAttachment,
+        );
+        expect(await queue.hasOlderActiveEntry(barrier), isTrue);
+
+        await queue.markSkipped(older, reason: 'test');
+        await queue.markSkipped(first, reason: 'test');
+        expect(await queue.hasOlderActiveEntry(barrier), isFalse);
+      },
+    );
+  });
+
   group('waitForDrainAtMostTo', () {
     test(
       'completes immediately when current depth already satisfies the '

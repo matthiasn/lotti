@@ -881,6 +881,44 @@ void main() {
       );
 
       test(
+        'claims a negative-priority handshake alone before ordinary text',
+        () async {
+          final database = db!;
+          await database.addOutboxItem(
+            OutboxCompanion(
+              status: Value(OutboxStatus.pending.index),
+              subject: const Value('ordinary-old'),
+              message: const Value('{}'),
+              createdAt: Value(DateTime(2024, 1, 1, 0, 0)),
+              updatedAt: Value(DateTime(2024, 1, 1, 0, 0)),
+              retries: const Value(0),
+              priority: Value(OutboxPriority.normal.index),
+            ),
+          );
+          await database.addOutboxItem(
+            OutboxCompanion(
+              status: Value(OutboxStatus.pending.index),
+              subject: const Value('onboarding-begin'),
+              message: const Value('{}'),
+              createdAt: Value(DateTime(2024, 1, 1, 0, 1)),
+              updatedAt: Value(DateTime(2024, 1, 1, 0, 1)),
+              retries: const Value(0),
+              priority: const Value(-1),
+            ),
+          );
+
+          final batch = await database.claimNextOutboxBatch(maxSize: 50);
+
+          expect(batch.map((row) => row.subject), ['onboarding-begin']);
+          expect(batch.single.priority, -1);
+          expect(
+            (await database.getOutboxItemById(1))?.status,
+            OutboxStatus.pending.index,
+          );
+        },
+      );
+
+      test(
         'reclaims expired sending rows just like the single-claim path',
         () async {
           final now = DateTime(2024, 1, 1, 12);

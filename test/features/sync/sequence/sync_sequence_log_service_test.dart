@@ -3919,7 +3919,9 @@ void main() {
           maxRequestCount: any(named: 'maxRequestCount'),
           maxAge: any(named: 'maxAge'),
           minAge: any(named: 'minAge'),
+          requestedMinAge: any(named: 'requestedMinAge'),
           maxPerHost: any(named: 'maxPerHost'),
+          suppressedCoverage: any(named: 'suppressedCoverage'),
           offset: any(named: 'offset'),
         ),
       ).thenAnswer((_) async => []);
@@ -3932,7 +3934,9 @@ void main() {
           maxRequestCount: 10,
           maxAge: null,
           minAge: Duration.zero,
+          requestedMinAge: null,
           maxPerHost: null,
+          suppressedCoverage: const {},
           offset: 0,
         ),
       ).called(1);
@@ -3945,7 +3949,9 @@ void main() {
           maxRequestCount: any(named: 'maxRequestCount'),
           maxAge: any(named: 'maxAge'),
           minAge: any(named: 'minAge'),
+          requestedMinAge: any(named: 'requestedMinAge'),
           maxPerHost: any(named: 'maxPerHost'),
+          suppressedCoverage: any(named: 'suppressedCoverage'),
           offset: any(named: 'offset'),
         ),
       ).thenAnswer((_) async => []);
@@ -3955,7 +3961,9 @@ void main() {
         maxRequestCount: 5,
         maxAge: const Duration(hours: 12),
         minAge: const Duration(minutes: 3),
+        requestedMinAge: const Duration(hours: 1),
         maxPerHost: 100,
+        suppressedCoverage: const {'alice': 99},
         offset: 9,
       );
 
@@ -3965,7 +3973,9 @@ void main() {
           maxRequestCount: 5,
           maxAge: const Duration(hours: 12),
           minAge: const Duration(minutes: 3),
+          requestedMinAge: const Duration(hours: 1),
           maxPerHost: 100,
+          suppressedCoverage: const {'alice': 99},
           offset: 9,
         ),
       ).called(1);
@@ -3983,7 +3993,9 @@ void main() {
           maxRequestCount: any(named: 'maxRequestCount'),
           maxAge: any(named: 'maxAge'),
           minAge: any(named: 'minAge'),
+          requestedMinAge: any(named: 'requestedMinAge'),
           maxPerHost: any(named: 'maxPerHost'),
+          suppressedCoverage: any(named: 'suppressedCoverage'),
           offset: any(named: 'offset'),
         ),
       ).thenAnswer((_) async => entries);

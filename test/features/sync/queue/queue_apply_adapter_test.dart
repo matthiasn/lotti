@@ -43,6 +43,7 @@ void main() {
     processor: processor,
     journalDb: journalDb,
     logging: logging,
+    hasOlderActiveEntry: (_) async => false,
   );
 
   glados.Glados(
@@ -106,6 +107,7 @@ void main() {
           processor: localProcessor,
           journalDb: localJournalDb,
           logging: localLogging,
+          hasOlderActiveEntry: (_) async => false,
         );
         if (scenario.usePrepareBatch) {
           await adapter.bindPrepareBatch()([entry], localRoom);
@@ -212,6 +214,88 @@ void main() {
         journalDb: journalDb,
       ),
     ).called(1);
+  });
+
+  test('onboarding End waits behind older active queue rows', () async {
+    final entry = hBuildEntry(
+      eventId: r'$onboarding-end',
+      roomId: '!r:x',
+      originTsMs: 20,
+    );
+    final prepared = AdapterMockPreparedSyncEvent();
+    const end = SyncMessage.onboardingSnapshotEnd(
+      protocolVersion: 1,
+      roundId: 'round-1',
+      senderHostId: 'sender-host',
+      recipientUserId: 'recipient-user',
+      recipientDeviceId: 'recipient-device',
+      reason: OnboardingSyncEndReason.complete,
+    );
+    when(
+      () => processor.prepare(event: any(named: 'event')),
+    ).thenAnswer((_) async => prepared);
+    when(() => prepared.syncMessage).thenReturn(end);
+
+    final adapter = QueueApplyAdapter(
+      processor: processor,
+      journalDb: journalDb,
+      logging: logging,
+      hasOlderActiveEntry: (candidate) async {
+        expect(candidate.eventId, entry.eventId);
+        return true;
+      },
+    );
+
+    expect(await adapter.bind()(entry, room), ApplyOutcome.pendingBarrier);
+    verifyNever(
+      () => processor.apply(
+        prepared: any(named: 'prepared'),
+        journalDb: journalDb,
+      ),
+    );
+  });
+
+  test('bundled onboarding End waits behind older active queue rows', () async {
+    final entry = hBuildEntry(
+      eventId: r'$bundled-onboarding-end',
+      roomId: '!r:x',
+      originTsMs: 20,
+    );
+    final prepared = AdapterMockPreparedSyncEvent();
+    const bundle = SyncMessage.outboxBundle(
+      children: [
+        SyncMessage.onboardingSnapshotEnd(
+          protocolVersion: 1,
+          roundId: 'round-1',
+          senderHostId: 'sender-host',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          reason: OnboardingSyncEndReason.complete,
+        ),
+      ],
+    );
+    when(
+      () => processor.prepare(event: any(named: 'event')),
+    ).thenAnswer((_) async => prepared);
+    when(() => prepared.syncMessage).thenReturn(bundle);
+
+    final adapter = QueueApplyAdapter(
+      processor: processor,
+      journalDb: journalDb,
+      logging: logging,
+      hasOlderActiveEntry: (candidate) async {
+        expect(candidate.eventId, entry.eventId);
+        return true;
+      },
+    );
+
+    expect(await adapter.bind()(entry, room), ApplyOutcome.pendingBarrier);
+    verifyNever(
+      () => processor.apply(
+        prepared: any(named: 'prepared'),
+        journalDb: journalDb,
+      ),
+    );
   });
 
   test('FileSystemException during apply maps to retriable', () async {
@@ -535,6 +619,55 @@ void main() {
   });
 
   group('writesJournalDb classification', () {
+    test('onboarding controls bypass the JournalDb transaction wrap', () {
+      const controls = <SyncMessage>[
+        SyncMessage.onboardingSnapshotBegin(
+          protocolVersion: 1,
+          roundId: 'round-1',
+          senderHostId: 'sender-host',
+          senderUserId: 'sender-user',
+          senderDeviceId: 'sender-device',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          coverageUpperBounds: {'sender-host': 42},
+          leaseSeconds: 3600,
+        ),
+        SyncMessage.onboardingSnapshotAccepted(
+          protocolVersion: 1,
+          roundId: 'round-1',
+          senderHostId: 'sender-host',
+          senderUserId: 'sender-user',
+          senderDeviceId: 'sender-device',
+          recipientHostId: 'recipient-host',
+          recipientDeviceId: 'recipient-device',
+        ),
+        SyncMessage.onboardingTerminalCounters(
+          protocolVersion: 1,
+          roundId: 'round-1',
+          senderHostId: 'sender-host',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          ranges: [SyncCounterRange(start: 1, end: 2)],
+        ),
+        SyncMessage.onboardingSnapshotEnd(
+          protocolVersion: 1,
+          roundId: 'round-1',
+          senderHostId: 'sender-host',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          reason: OnboardingSyncEndReason.complete,
+        ),
+      ];
+
+      for (final control in controls) {
+        expect(
+          QueueApplyAdapter.writesJournalDb(control),
+          isFalse,
+          reason: control.runtimeType.toString(),
+        );
+      }
+    });
+
     test(
       'consumptionEvent bypasses the JournalDb transaction wrap — its apply '
       'path writes to ai_consumption.sqlite, not JournalDb',

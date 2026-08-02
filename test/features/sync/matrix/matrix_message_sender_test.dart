@@ -2220,7 +2220,7 @@ void main() {
   );
 
   test(
-    'logs and continues when onSent callback throws (lines 298-304)',
+    'awaits, logs, and continues when an async onSent callback throws',
     () async {
       when(
         () => room.sendTextEvent(
@@ -2235,7 +2235,7 @@ void main() {
       final result = await sender.sendMatrixMessage(
         message: const SyncMessage.aiConfigDelete(id: 'abc'),
         context: buildContext(),
-        onSent: (eventId, message) {
+        onSent: (eventId, message) async {
           onSentCalled = true;
           throw StateError('callback failure');
         },

@@ -86,12 +86,13 @@ class QueuePipelineCoordinator {
              syncDb: syncDb,
              settingsDb: settingsDb,
              logging: logging,
-           ),
-       _applyAdapter = QueueApplyAdapter(
-         processor: eventProcessor,
-         journalDb: journalDb,
-         logging: logging,
-       ) {
+           ) {
+    _applyAdapter = QueueApplyAdapter(
+      processor: eventProcessor,
+      journalDb: journalDb,
+      logging: logging,
+      hasOlderActiveEntry: _queue.hasOlderActiveEntry,
+    );
     _worker =
         workerOverride ??
         InboundWorker(
@@ -136,7 +137,7 @@ class QueuePipelineCoordinator {
   static const Duration _suppressionLogInterval = Duration(seconds: 30);
   final InboundQueue _queue;
   final QueueMarkerSeeder _seeder;
-  final QueueApplyAdapter _applyAdapter;
+  late final QueueApplyAdapter _applyAdapter;
   late final InboundWorker _worker;
   late final BridgeCoordinator _bridge;
 

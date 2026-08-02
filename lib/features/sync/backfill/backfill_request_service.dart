@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
@@ -30,11 +31,13 @@ class BackfillRequestService {
     this.documentsDirectory,
     this.queueCoordinator,
     this._domainLogger,
+    this._onboardingSyncService,
     Duration? requestInterval,
     int? maxBatchSize,
     int? maxRequestCount,
     Duration? maxAge,
     Duration? missingDebounce,
+    Duration? requestRetryCooldown,
     int? maxPerHost,
     Duration? amnestyWindow,
   }) : _requestInterval = requestInterval ?? SyncTuning.backfillRequestInterval,
@@ -44,6 +47,8 @@ class BackfillRequestService {
        _maxRequestCount = maxRequestCount ?? SyncTuning.backfillMaxRequestCount,
        _maxAge = maxAge ?? SyncTuning.defaultBackfillMaxAge,
        _missingDebounce = missingDebounce ?? SyncTuning.backfillMissingDebounce,
+       _requestRetryCooldown =
+           requestRetryCooldown ?? SyncTuning.backfillRequestRetryCooldown,
        _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost,
        _amnestyWindow = amnestyWindow ?? SyncTuning.backfillAmnestyWindow;
 
@@ -67,6 +72,7 @@ class BackfillRequestService {
   final VectorClockService _vectorClockService;
   final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
+  final OnboardingSyncService? _onboardingSyncService;
   final Duration _requestInterval;
   final int _maxBatchSize;
   final int _maxRequestCount;
@@ -80,11 +86,13 @@ class BackfillRequestService {
   /// via [processFullBackfill] explicitly bypasses the debounce so
   /// "request now" is not silently held back for 10 minutes.
   final Duration _missingDebounce;
+  final Duration _requestRetryCooldown;
   final int _maxPerHost;
   final Duration _amnestyWindow;
 
   Timer? _timer;
   bool _isProcessing = false;
+  bool _pendingDrainNudge = false;
   bool _isDisposed = false;
 
   /// True once we have observed a non-empty inbound queue. The drain
@@ -185,6 +193,14 @@ class BackfillRequestService {
   /// pass, not a full historical backfill.
   void nudgeAfterDrain() {
     if (_isDisposed) return;
+    if (_isProcessing) {
+      _pendingDrainNudge = true;
+      _trace(
+        'nudge after queue drain queued behind active pass',
+        subDomain: 'backfill.nudge',
+      );
+      return;
+    }
     _trace(
       'nudge after queue drain (debounce bypassed)',
       subDomain: 'backfill.nudge',
@@ -244,11 +260,9 @@ class BackfillRequestService {
         // "file exists, skip" guard.
         _sweepLocalFiles(requested);
 
-        // Reset request counts for these entries
         final entries = requested
             .map((item) => (hostId: item.hostId, counter: item.counter))
             .toList();
-        await _sequenceLogService.resetRequestCounts(entries);
 
         // Build request entries
         final requestEntries = requested
@@ -261,12 +275,17 @@ class BackfillRequestService {
             .toList();
 
         // Send backfill request message
-        await _outboxService.enqueueMessage(
+        await _outboxService.enqueueMessageOrThrow(
           SyncMessage.backfillRequest(
             entries: requestEntries,
             requesterId: requesterId,
           ),
         );
+
+        // Reset only after the durable enqueue succeeds. Otherwise a failed
+        // send attempt would mutate retry eligibility without a corresponding
+        // request in the outbox.
+        await _sequenceLogService.resetRequestCounts(entries);
 
         // Mark all as requested (increments request count and sets lastRequestedAt)
         await _sequenceLogService.markAsRequested(entries);
@@ -294,7 +313,7 @@ class BackfillRequestService {
       );
       return totalProcessed;
     } finally {
-      _isProcessing = false;
+      _finishProcessing();
     }
   }
 
@@ -313,34 +332,37 @@ class BackfillRequestService {
   }) async {
     if (_isDisposed || _isProcessing) return 0;
 
-    // Check if backfill is enabled (skip check for manual triggers)
-    if (!ignoreEnabledFlag) {
-      final enabled = await isBackfillEnabled();
-      if (!enabled) {
-        _trace(
-          'processBackfillRequests: backfill is disabled, skipping',
-          subDomain: 'backfill.process',
-        );
-        return 0;
-      }
-    }
-
-    // Suppress automatic analysis+dispatch while the reconnect bridge
-    // is forward-walking the timeline. Any "missing" counter seen now
-    // may be closed by an event already in the pipe; asking peers for
-    // it would race ahead of the inbound path and generate a bogus
-    // request. Manual triggers (`ignoreEnabledFlag`) bypass this.
-    if (!ignoreEnabledFlag && (queueCoordinator?.isBridgeInFlight ?? false)) {
-      _trace(
-        'processBackfillRequests: bridge walk in flight, skipping',
-        subDomain: 'backfill.bridgeWalk',
-      );
-      return 0;
-    }
-
+    // Claim the processing slot before any asynchronous preference or bridge
+    // checks. This closes the preflight race where two nudges could both pass
+    // the guard and then enter the request pipeline concurrently.
     _isProcessing = true;
 
     try {
+      // Check if backfill is enabled (skip check for manual triggers)
+      if (!ignoreEnabledFlag) {
+        final enabled = await isBackfillEnabled();
+        if (!enabled) {
+          _trace(
+            'processBackfillRequests: backfill is disabled, skipping',
+            subDomain: 'backfill.process',
+          );
+          return 0;
+        }
+      }
+
+      // Suppress automatic analysis+dispatch while the reconnect bridge
+      // is forward-walking the timeline. Any "missing" counter seen now
+      // may be closed by an event already in the pipe; asking peers for
+      // it would race ahead of the inbound path and generate a bogus
+      // request. Manual triggers (`ignoreEnabledFlag`) bypass this.
+      if (!ignoreEnabledFlag && (queueCoordinator?.isBridgeInFlight ?? false)) {
+        _trace(
+          'processBackfillRequests: bridge walk in flight, skipping',
+          subDomain: 'backfill.bridgeWalk',
+        );
+        return 0;
+      }
+
       // Cheap actionable-existence probe: when the sync_sequence_log has no
       // rows in `missing`/`requested`, both retire passes and the load
       // batch below would each touch sync_db while producing nothing. The
@@ -421,7 +443,7 @@ class BackfillRequestService {
           .toList();
 
       // Send single backfill request message
-      await _outboxService.enqueueMessage(
+      await _outboxService.enqueueMessageOrThrow(
         SyncMessage.backfillRequest(
           entries: entries,
           requesterId: requesterId,
@@ -449,8 +471,16 @@ class BackfillRequestService {
       );
       return 0;
     } finally {
-      _isProcessing = false;
+      _finishProcessing();
     }
+  }
+
+  void _finishProcessing() {
+    _isProcessing = false;
+    if (_isDisposed || !_pendingDrainNudge) return;
+
+    _pendingDrainNudge = false;
+    nudgeAfterDrain();
   }
 
   /// Deletes local files for entries that are about to be re-requested.
@@ -541,7 +571,8 @@ class BackfillRequestService {
     final alreadyQueued = await _syncDatabase.getPendingBackfillEntries();
     final selected = <SyncSequenceLogItem>[];
     var offset = 0;
-    var filteredCount = 0;
+    var suppressedCount = 0;
+    var alreadyQueuedCount = 0;
 
     // The debounce only protects the bounded automatic path against
     // out-of-order priority arrivals; a queue-drain nudge is precisely
@@ -549,6 +580,10 @@ class BackfillRequestService {
     // true, so the bypass collapses `minAge` to zero while keeping
     // age + per-host limits intact.
     final effectiveMinAge = bypassDebounce ? Duration.zero : _missingDebounce;
+    final suppressedCoverage = useLimits
+        ? await _onboardingSyncService?.activeInboundCoverage() ??
+              const <String, int>{}
+        : const <String, int>{};
 
     while (selected.length < _maxBatchSize) {
       final remaining = _maxBatchSize - selected.length;
@@ -558,14 +593,26 @@ class BackfillRequestService {
       // only on automatic paths so a user who presses "request missing
       // now" is not silently held back for 10 minutes.
       final page = useLimits
-          ? await _sequenceLogService.getMissingEntriesWithLimits(
-              limit: remaining,
-              maxRequestCount: _maxRequestCount,
-              maxAge: _maxAge,
-              minAge: effectiveMinAge,
-              maxPerHost: _maxPerHost,
-              offset: offset,
-            )
+          ? suppressedCoverage.isEmpty
+                ? await _sequenceLogService.getMissingEntriesWithLimits(
+                    limit: remaining,
+                    maxRequestCount: _maxRequestCount,
+                    maxAge: _maxAge,
+                    minAge: effectiveMinAge,
+                    requestedMinAge: _requestRetryCooldown,
+                    maxPerHost: _maxPerHost,
+                    offset: offset,
+                  )
+                : await _sequenceLogService.getMissingEntriesWithLimits(
+                    limit: remaining,
+                    maxRequestCount: _maxRequestCount,
+                    maxAge: _maxAge,
+                    minAge: effectiveMinAge,
+                    requestedMinAge: _requestRetryCooldown,
+                    maxPerHost: _maxPerHost,
+                    suppressedCoverage: suppressedCoverage,
+                    offset: offset,
+                  )
           : await _sequenceLogService.getMissingEntries(
               limit: remaining,
               maxRequestCount: _maxRequestCount,
@@ -577,8 +624,17 @@ class BackfillRequestService {
       }
       offset += page.length;
 
-      final filteredPage = _filterAlreadyQueuedEntries(page, alreadyQueued);
-      filteredCount += page.length - filteredPage.length;
+      final unsuppressedPage = page
+          .where(
+            (entry) => entry.counter > (suppressedCoverage[entry.hostId] ?? -1),
+          )
+          .toList();
+      final filteredPage = _filterAlreadyQueuedEntries(
+        unsuppressedPage,
+        alreadyQueued,
+      );
+      suppressedCount += page.length - unsuppressedPage.length;
+      alreadyQueuedCount += unsuppressedPage.length - filteredPage.length;
       selected.addAll(filteredPage);
 
       if (page.length < remaining) {
@@ -586,9 +642,10 @@ class BackfillRequestService {
       }
     }
 
-    if (filteredCount > 0) {
+    if (suppressedCount > 0 || alreadyQueuedCount > 0) {
       _trace(
-        'processBackfillRequests: filtered $filteredCount already-queued entries',
+        'processBackfillRequests: filtered onboarding-suppressed='
+        '$suppressedCount already-queued=$alreadyQueuedCount entries',
         subDomain: 'backfill.process',
       );
     }
@@ -612,6 +669,7 @@ class BackfillRequestService {
   /// Dispose of the service and cancel the timer.
   void dispose() {
     _isDisposed = true;
+    _pendingDrainNudge = false;
     _timer?.cancel();
     _timer = null;
     unawaited(_depthSubscription?.cancel());

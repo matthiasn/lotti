@@ -8,7 +8,15 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 /// passed explicitly — so they can be reasoned about and tested in isolation
 /// from the runner's timers, subscriptions, and database.
 
-/// Row-level dispatch priority (`OutboxPriority.index`) for [message].
+/// Priority ahead of [OutboxPriority.high] for the bounded onboarding
+/// handshake only. Negative-priority rows are also standalone dequeue
+/// boundaries, so the handshake cannot be delayed inside an ordinary bundle.
+/// The enum values retain their persisted ordering.
+const int onboardingHandshakePriority = -1;
+
+/// Row-level dispatch priority for [message]. Most values use
+/// `OutboxPriority.index`; onboarding Begin and Accepted use
+/// [onboardingHandshakePriority].
 ///
 /// Journal entities and their links jump ahead of everything else; entity
 /// definitions, AI config, and node-profile presence sit at the back so they
@@ -19,6 +27,14 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 /// lookup stays total and side-effect-free for any future caller.
 int priorityForMessage(SyncMessage message) {
   return switch (message) {
+    // Put the handshake ahead of any existing high-priority history backlog
+    // so the acceptance timeout measures peer response latency.
+    SyncOnboardingSnapshotBegin() => onboardingHandshakePriority,
+    SyncOnboardingSnapshotAccepted() => onboardingHandshakePriority,
+    SyncOnboardingTerminalCounters() => OutboxPriority.high.index,
+    // Staged only after all history rows. Low priority makes this the durable
+    // completion barrier for the onboarding snapshot.
+    SyncOnboardingSnapshotEnd() => OutboxPriority.low.index,
     SyncJournalEntity() => OutboxPriority.high.index,
     SyncEntryLink() => OutboxPriority.high.index,
     SyncBackfillRequest() => OutboxPriority.normal.index,

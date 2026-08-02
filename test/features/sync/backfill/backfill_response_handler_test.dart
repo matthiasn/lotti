@@ -1009,6 +1009,90 @@ void main() {
   });
 
   group('handleBackfillRequest', () {
+    test(
+      'defers covered requests from the onboarding recipient only',
+      () async {
+        const otherHostId = 'other-host';
+        final onboarding = MockOnboardingSyncService();
+        when(
+          () => onboarding.activeOutboundCoverageForRequester(requesterId),
+        ).thenAnswer((_) async => {bobHostId: 10});
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(otherHostId, 2),
+        ).thenAnswer((_) async => null);
+        final onboardingHandler = BackfillResponseHandler(
+          journalDb: mockJournalDb,
+          sequenceLogService: mockSequenceService,
+          outboxService: mockOutboxService,
+          loggingService: mockLogging,
+          vectorClockService: mockVcService,
+          onboardingSyncService: onboarding,
+        );
+
+        await onboardingHandler.handleBackfillRequest(
+          const SyncBackfillRequest(
+            entries: [
+              BackfillRequestEntry(hostId: bobHostId, counter: 5),
+              BackfillRequestEntry(hostId: otherHostId, counter: 2),
+            ],
+            requesterId: requesterId,
+          ),
+        );
+
+        verifyNever(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 5),
+        );
+        verify(
+          () => mockSequenceService.getEntryByHostAndCounter(otherHostId, 2),
+        ).called(1);
+      },
+    );
+
+    test('filters covered requests before applying the response cap', () async {
+      const uncoveredHost = 'uncovered-host';
+      final onboarding = MockOnboardingSyncService();
+      when(
+        () => onboarding.activeOutboundCoverageForRequester(requesterId),
+      ).thenAnswer(
+        (_) async => {
+          bobHostId: SyncTuning.maxBackfillResponseBatchSize,
+        },
+      );
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(uncoveredHost, 1),
+      ).thenAnswer((_) async => null);
+      final onboardingHandler = BackfillResponseHandler(
+        journalDb: mockJournalDb,
+        sequenceLogService: mockSequenceService,
+        outboxService: mockOutboxService,
+        loggingService: mockLogging,
+        vectorClockService: mockVcService,
+        onboardingSyncService: onboarding,
+      );
+
+      await onboardingHandler.handleBackfillRequest(
+        SyncBackfillRequest(
+          entries: [
+            for (
+              var counter = 1;
+              counter <= SyncTuning.maxBackfillResponseBatchSize;
+              counter++
+            )
+              BackfillRequestEntry(hostId: bobHostId, counter: counter),
+            const BackfillRequestEntry(hostId: uncoveredHost, counter: 1),
+          ],
+          requesterId: requesterId,
+        ),
+      );
+
+      verify(
+        () => mockSequenceService.getEntryByHostAndCounter(uncoveredHost, 1),
+      ).called(1);
+      verifyNever(
+        () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
+      );
+    });
+
     test('skips own backfill requests (self-request guard)', () async {
       // The handler's host is aliceHostId (set in setUp).
       // Send a request where requesterId matches our own host.

@@ -685,6 +685,13 @@ void main() {
       () => matrixService.keyVerificationStream,
     ).thenAnswer((_) => verificationStream.stream);
     when(
+      () => matrixService.incomingKeyVerificationRunnerStream,
+    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    when(() => matrixService.keyVerificationRunner).thenReturn(null);
+    when(
+      () => matrixService.incomingKeyVerificationRunner,
+    ).thenReturn(null);
+    when(
       () => matrixService.verifyDevice(unverifiedDevice),
     ).thenAnswer((_) async {});
     when(() => matrixService.getUnverifiedDevices()).thenReturn([]);

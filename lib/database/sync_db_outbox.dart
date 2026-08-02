@@ -50,6 +50,9 @@ mixin _SyncDbOutbox on _$SyncDatabase {
   ///  - If the head row has `filePath != null` (media attachment), the
   ///    returned list contains only that row. Media attachments always
   ///    travel alone.
+  ///  - If the head row has a negative priority (a protocol handshake), the
+  ///    returned list contains only that row so its response timeout is not
+  ///    consumed by unrelated bundle children.
   ///  - Otherwise, the returned list is the maximal prefix of consecutive
   ///    rows whose `filePath` is null, capped at [maxSize]. The walk stops
   ///    at the first media attachment, so the returned slice can be sent
@@ -119,7 +122,7 @@ mixin _SyncDbOutbox on _$SyncDatabase {
       if (candidates.isEmpty) return const <OutboxItem>[];
 
       final List<OutboxItem> selected;
-      if (candidates.first.filePath != null) {
+      if (candidates.first.filePath != null || candidates.first.priority < 0) {
         selected = [candidates.first];
       } else {
         final stopAt = candidates.indexWhere(

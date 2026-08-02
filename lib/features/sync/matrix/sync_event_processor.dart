@@ -41,6 +41,7 @@ import 'package:lotti/features/sync/matrix/sync_journal_entity_loader.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -200,6 +201,10 @@ class SyncEventProcessor {
   /// `SyncEventProcessor` ← `MatrixService` ← `OutboxService` ←
   /// `BackfillResponseHandler` during get_it wiring.
   late final BackfillResponseHandler backfillResponseHandler;
+
+  /// Assigned during DI boot after the outbox-backed onboarding coordinator
+  /// exists, breaking the processor → Matrix → outbox construction cycle.
+  OnboardingSyncService? onboardingSyncService;
 
   /// Agent repository, injected after construction to avoid circular
   /// dependency. When set, incoming agent entities and links are upserted

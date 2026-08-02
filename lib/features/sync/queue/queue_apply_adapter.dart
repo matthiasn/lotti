@@ -10,6 +10,19 @@ import 'package:matrix/matrix.dart';
 
 const _logSub = 'queue.apply';
 
+typedef HasOlderActiveInboundEntry =
+    Future<bool> Function(InboundQueueEntry entry);
+
+bool _containsOnboardingSnapshotEnd(SyncMessage message) {
+  return switch (message) {
+    SyncOnboardingSnapshotEnd() => true,
+    SyncOutboxBundle(:final children) => children.any(
+      _containsOnboardingSnapshotEnd,
+    ),
+    _ => false,
+  };
+}
+
 /// Bridges [InboundWorker] to the existing
 /// [SyncEventProcessor.prepare]/[SyncEventProcessor.apply] path.
 ///
@@ -34,11 +47,13 @@ class QueueApplyAdapter {
     required this._processor,
     required this._journalDb,
     required this._logging,
+    required this._hasOlderActiveEntry,
   });
 
   final SyncEventProcessor _processor;
   final JournalDb _journalDb;
   final DomainLogger _logging;
+  final HasOlderActiveInboundEntry _hasOlderActiveEntry;
 
   /// Cached prepare outcomes keyed by `eventId`, populated by
   /// [_prepareBatch] and drained one entry at a time by [_applyOne].
@@ -185,6 +200,32 @@ class QueueApplyAdapter {
     InboundQueueEntry entry,
     PreparedSyncEvent prepared,
   ) async {
+    // Read once. Some direct adapter tests intentionally supply a prepared
+    // mock whose non-nullable getter throws; the established safe behavior is
+    // to fall back to the wrapped apply path in that case.
+    SyncMessage? message;
+    try {
+      message = prepared.syncMessage;
+    } catch (_) {
+      message = null;
+    }
+    // Snapshot End is an inbound ordering barrier, whether it arrives directly
+    // or nested in an outbox bundle. A prior payload can be attachment-pending
+    // or retrying with a future due time while End is ready now. Applying End
+    // in that state would release backfill suppression before the snapshot has
+    // actually drained. Keep the containing event retryable until every older
+    // active row in this Matrix room has committed or been abandoned.
+    if (message != null &&
+        _containsOnboardingSnapshotEnd(message) &&
+        await _hasOlderActiveEntry(entry)) {
+      _logging.log(
+        LogDomain.sync,
+        'queue.apply.onboardingBarrierPending eventId=${entry.eventId}',
+        subDomain: _logSub,
+      );
+      return ApplyOutcome.pendingBarrier;
+    }
+
     // Step 3 — apply. Wrap in a JournalDb writer transaction ONLY for
     // payload families that actually write to JournalDb tables (entity
     // upserts, entry-link upserts, entity-definition upserts). Other
@@ -206,14 +247,11 @@ class QueueApplyAdapter {
     // `markSkipped`, so we cannot loop forever on a logic bug — the
     // worker eventually gives up without data loss from a premature
     // permanentSkip that would advance the marker past the event.
-    // `writesJournalDb` introspects `prepared.syncMessage`; tests mock
-    // `PreparedSyncEvent` without stubbing the field, so guard against
-    // a throw by falling back to the safe (wrapped) path.
+    // `message` was read through the guarded lookup above; a missing test
+    // stub therefore falls back to the safe (wrapped) path.
     var wrap = true;
-    try {
-      wrap = writesJournalDb(prepared.syncMessage);
-    } catch (_) {
-      wrap = true;
+    if (message != null) {
+      wrap = writesJournalDb(message);
     }
     try {
       if (wrap) {
@@ -338,6 +376,10 @@ class QueueApplyAdapter {
       // notifications_db.
       notification: (_) => false,
       notificationStateUpdate: (_) => false,
+      onboardingSnapshotBegin: (_) => false,
+      onboardingSnapshotAccepted: (_) => false,
+      onboardingTerminalCounters: (_) => false,
+      onboardingSnapshotEnd: (_) => false,
       // backfill handler does its own DB selection; conservatively
       // wrap so any journal-writing branch stays atomic.
       backfillRequest: (_) => true,

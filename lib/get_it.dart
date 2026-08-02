@@ -56,6 +56,7 @@ import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/media/media_repair_service.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
@@ -410,6 +411,17 @@ Future<void> registerSingletons() async {
 
   // Self-healing sync: create backfill services after OutboxService is available
   final outboxService = getIt<OutboxService>();
+  final onboardingSyncService = OnboardingSyncService(
+    syncDatabase: syncDatabase,
+    enqueueMessage: outboxService.enqueueMessageOrThrow,
+    getHostId: vectorClockService.getHost,
+    getSnapshotCoverage: syncDatabase.resolvedSequenceUpperBounds,
+    getLocalUserId: () => client.userID,
+    getLocalDeviceId: () => client.deviceID,
+    logging: domainLogger,
+  );
+  syncEventProcessor.onboardingSyncService = onboardingSyncService;
+  matrixService.onSyncMessageSent = onboardingSyncService.handleMessageSent;
 
   // Sync-aware consumption and attribution services, now that OutboxService
   // is available.
@@ -638,6 +650,7 @@ Future<void> registerSingletons() async {
     vectorClockService: vectorClockService,
     domainLogger: domainLogger,
     notificationsDb: notificationsDb,
+    onboardingSyncService: onboardingSyncService,
   )..consumptionRepository = consumptionRepository;
   final backfillRequestService = BackfillRequestService(
     sequenceLogService: syncSequenceLogService,
@@ -648,6 +661,7 @@ Future<void> registerSingletons() async {
     documentsDirectory: documentsDirectory,
     queueCoordinator: queuePipelineCoordinator,
     domainLogger: domainLogger,
+    onboardingSyncService: onboardingSyncService,
   );
   syncSequenceLogService.onMissingEntriesDetected = () {
     backfillRequestService.nudge();
@@ -664,6 +678,8 @@ Future<void> registerSingletons() async {
   // during the walk are dropped by the `isBridgeInFlight` gate, so
   // this hook is how the service learns the walk finished.
   queuePipelineCoordinator.onBridgeCompleted = backfillRequestService.nudge;
+  onboardingSyncService.onInboundSuppressionEnded =
+      backfillRequestService.nudgeAfterDrain;
 
   // Set-once assignment of the late-final `backfillResponseHandler`. Must
   // run before MatrixService consumes any inbound timeline events.
@@ -695,6 +711,7 @@ Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
     ..registerSingleton<BackfillRequestService>(backfillRequestService)
+    ..registerSingleton<OnboardingSyncService>(onboardingSyncService)
     ..registerSingleton<MediaRepairService>(
       mediaRepairService,
       dispose: (service) => service.dispose(),

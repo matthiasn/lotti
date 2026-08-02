@@ -145,6 +145,59 @@ void main() {
   setUpAll(registerSyncProcessorFallbacks);
   setUp(setUpProcessorMocks);
 
+  test('routes onboarding controls to the onboarding coordinator', () async {
+    final onboardingSyncService = MockOnboardingSyncService();
+    processor.onboardingSyncService = onboardingSyncService;
+    const controls = <SyncMessage>[
+      SyncMessage.onboardingSnapshotBegin(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        senderUserId: 'sender-user',
+        senderDeviceId: 'sender-device',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        coverageUpperBounds: {'sender-host': 42},
+        leaseSeconds: 3600,
+      ),
+      SyncMessage.onboardingSnapshotAccepted(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        senderUserId: 'sender-user',
+        senderDeviceId: 'sender-device',
+        recipientHostId: 'recipient-host',
+        recipientDeviceId: 'recipient-device',
+      ),
+      SyncMessage.onboardingTerminalCounters(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        ranges: [SyncCounterRange(start: 1, end: 2)],
+      ),
+      SyncMessage.onboardingSnapshotEnd(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        reason: OnboardingSyncEndReason.complete,
+      ),
+    ];
+    for (final control in controls) {
+      when(
+        () => onboardingSyncService.handleMessage(control),
+      ).thenAnswer((_) async {});
+      when(() => event.text).thenReturn(encodeMessage(control));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => onboardingSyncService.handleMessage(control)).called(1);
+    }
+  });
+
   test(
     'processes journal entities via loader and updates notifications',
     () async {

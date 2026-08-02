@@ -5,21 +5,21 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-07-29T09:30:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-02T16:09:19Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-src
     resource: ../../../lib/features/sync
     title: Sync feature source
-    last_modified: 2026-08-01
+    last_modified: 2026-08-02
   - id: get-it
     resource: ../../../lib/get_it.dart
     title: Default bootstrap wiring
-    last_modified: 2026-07-25
+    last_modified: 2026-08-02
   - id: tuning
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning constants
-    last_modified: 2026-05-30
+    last_modified: 2026-08-02
   - id: current-architecture
     resource: ../../../docs/architecture/sync_current_architecture.md
     title: Failure history, log-backed investigations, tuning context
@@ -136,7 +136,7 @@ stateDiagram-v2
     Joined --> PollFailed: 3 consecutive roster fetch failures
     PollFailed --> ShowingCode: Retry
     PollFailed --> Joined: Retry after the device joined
-    Joined --> Ready: the same device is emoji-verified
+    Joined --> Ready: exact Matrix verification ceremony succeeds
     Ready --> SendingSettings: Send settings (opens SyncModal)
     Ready --> SendingMessages: Send message history (opens ReSyncModal)
   }
@@ -200,10 +200,15 @@ Four properties are deliberate:
   retroactively protect a leaked bundle. Reducing what the code carries is
   tracked separately in lotti3-ujm.
 - **The inviting sheet follows one exact device through the security
-  boundary.** `_observeRoster` records the first `(userId, deviceId)` absent
-  when the sheet opened, reports that it joined, and keeps polling until that
-  same roster row is verified. An older peer cannot unlock the new target's
-  transfer actions. *Send settings* and *Send message history* remain disabled
+  boundary.** The roster reports that at least one new session joined, but it
+  never chooses the transfer target: multiple devices can appear between two
+  polls. The successful outgoing or incoming Matrix verification ceremony
+  supplies the exact `(userId, deviceId)`, and a ceremony for a session that
+  was already present when the sheet opened is ignored. Runner objects already
+  retained by `MatrixService` when the sheet opens are ignored too, including
+  the incoming stream's on-listen replay. An older peer, stale success or a
+  different concurrent join cannot unlock the new target's transfer actions.
+  *Send settings* and *Send message history* remain disabled
   until the state reaches `ready`, because
   `ShareKeysWith.directlyVerifiedOnly` means an unverified target receives the
   ciphertext but not the keys needed to read it. The inviting sheet therefore
@@ -255,7 +260,11 @@ the inviting device exposes both follow-up transfers in the sticky action bar:
 and re-enqueues that device's local history. The latter defaults to
 *Everything*, with *Last 30 days* and a validated custom interval available,
 and reports the journal, agent-entity and agent-link enqueue phases before
-confirming that the messages are queued.
+confirming that the messages are queued. The full *Everything* action first
+coordinates a bounded suppression round with that exact new device, so it does
+not request snapshot rows that are merely queued or in flight; partial and
+manual repair flows remain unchanged. The runtime contract is in
+[sequence and backfill](sequence-and-backfill.md#initial-onboarding-suppression).
 
 The agent phases stamp before they send. An agent entity or link persisted with
 `vectorClock: null` is applied by the receiving peer but skipped by

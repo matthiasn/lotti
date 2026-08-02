@@ -140,6 +140,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -794,6 +795,8 @@ class MockNotificationRepository extends Mock
 class MockNotificationScheduler extends Mock implements NotificationScheduler {}
 
 class MockOutboxService extends Mock implements OutboxService {}
+
+class MockOnboardingSyncService extends Mock implements OnboardingSyncService {}
 
 class FakeDashboardDefinition extends Fake implements DashboardDefinition {
   FakeDashboardDefinition({this.id = 'fake-dashboard-id', this.deletedAt});

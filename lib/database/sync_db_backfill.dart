@@ -49,16 +49,34 @@ mixin _SyncDbBackfill on _$SyncDatabase {
     int maxRequestCount = 10,
     int offset = 0,
     Duration minAge = Duration.zero,
+    Duration? requestedMinAge,
     DateTime? now,
   }) {
-    final cutoff = (now ?? DateTime.now()).subtract(minAge);
+    final effectiveNow = now ?? DateTime.now();
+    final cutoff = effectiveNow.subtract(minAge);
+    final effectiveRequestedMinAge = requestedMinAge ?? minAge;
+    final requestedCutoff = effectiveNow.subtract(effectiveRequestedMinAge);
     return (select(syncSequenceLog)
           ..where(
-            (t) =>
-                (t.status.equals(SyncSequenceStatus.missing.index) |
-                    t.status.equals(SyncSequenceStatus.requested.index)) &
-                t.requestCount.isSmallerThanValue(maxRequestCount) &
-                t.createdAt.isSmallerOrEqualValue(cutoff),
+            (t) {
+              final missingEligible =
+                  t.status.equals(SyncSequenceStatus.missing.index) &
+                  t.createdAt.isSmallerOrEqualValue(cutoff);
+              final requestedEligible =
+                  effectiveRequestedMinAge == Duration.zero
+                  ? t.status.equals(SyncSequenceStatus.requested.index)
+                  : t.status.equals(SyncSequenceStatus.requested.index) &
+                        ((t.lastRequestedAt.isNotNull() &
+                                t.lastRequestedAt.isSmallerOrEqualValue(
+                                  requestedCutoff,
+                                )) |
+                            (t.lastRequestedAt.isNull() &
+                                t.updatedAt.isSmallerOrEqualValue(
+                                  requestedCutoff,
+                                )));
+              return (missingEligible | requestedEligible) &
+                  t.requestCount.isSmallerThanValue(maxRequestCount);
+            },
           )
           ..orderBy([
             (t) => OrderingTerm(expression: t.createdAt),
@@ -256,18 +274,26 @@ mixin _SyncDbBackfill on _$SyncDatabase {
   ///           lets short-lived gaps caused by out-of-order priority messages
   ///           resolve via the standard sync path before backfill fires. Pass
   ///           `Duration.zero` to disable (default).
+  /// [requestedMinAge] - Independent cooldown for rows already requested;
+  ///                     defaults to [minAge] when omitted.
   /// [maxPerHost] - Maximum entries to include per host
+  /// [suppressedCoverage] - Per-host inclusive upper bounds excluded in SQL
+  ///                        before the per-host quota is applied.
   Future<List<SyncSequenceLogItem>> getMissingEntriesWithLimits({
     int limit = 50,
     int maxRequestCount = 10,
     Duration? maxAge,
     Duration minAge = Duration.zero,
+    Duration? requestedMinAge,
     int? maxPerHost,
+    Map<String, int> suppressedCoverage = const {},
     DateTime? now,
     int offset = 0,
   }) async {
     final effectiveNow = now ?? DateTime.now();
     final minAgeCutoff = effectiveNow.subtract(minAge);
+    final effectiveRequestedMinAge = requestedMinAge ?? minAge;
+    final requestedCutoff = effectiveNow.subtract(effectiveRequestedMinAge);
     // All three time/count gates (`minAge`, `maxAge`, `maxRequestCount`) are
     // pushed into the SQL WHERE so we never materialise rows we'd
     // immediately discard. The per-host cap is still post-processed because
@@ -290,13 +316,33 @@ mixin _SyncDbBackfill on _$SyncDatabase {
         // mirror `SyncSequenceStatus.missing.index = 1` and
         // `.requested.index = 2`, matching the migration's enum-order
         // assumption.
+        final missingEligible =
+            const CustomExpression<bool>('status = 1') &
+            t.createdAt.isSmallerOrEqualValue(minAgeCutoff);
+        final requestedEligible = effectiveRequestedMinAge == Duration.zero
+            ? const CustomExpression<bool>('status = 2')
+            : const CustomExpression<bool>('status = 2') &
+                  ((t.lastRequestedAt.isNotNull() &
+                          t.lastRequestedAt.isSmallerOrEqualValue(
+                            requestedCutoff,
+                          )) |
+                      (t.lastRequestedAt.isNull() &
+                          t.updatedAt.isSmallerOrEqualValue(requestedCutoff)));
         var predicate =
             const CustomExpression<bool>('status IN (1, 2)') &
             t.requestCount.isSmallerThanValue(maxRequestCount) &
-            t.createdAt.isSmallerOrEqualValue(minAgeCutoff);
+            (missingEligible | requestedEligible);
         if (maxAge != null) {
           final maxAgeCutoff = effectiveNow.subtract(maxAge);
           predicate = predicate & t.createdAt.isBiggerThanValue(maxAgeCutoff);
+        }
+        for (final entry in suppressedCoverage.entries) {
+          if (entry.key.isEmpty || entry.value < 0) continue;
+          predicate =
+              predicate &
+              (t.hostId.equals(entry.key) &
+                      t.counter.isSmallerOrEqualValue(entry.value))
+                  .not();
         }
         return predicate;
       })

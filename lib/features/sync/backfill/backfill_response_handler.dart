@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -39,6 +40,7 @@ class BackfillResponseHandler {
     required this._vectorClockService,
     this._domainLogger,
     this._notificationsDb,
+    this._onboardingSyncService,
     @visibleForTesting Duration? responseCooldown,
   }) : _responseCooldown =
            responseCooldown ?? SyncTuning.backfillResponseCooldown;
@@ -50,6 +52,7 @@ class BackfillResponseHandler {
   final VectorClockService _vectorClockService;
   final DomainLogger? _domainLogger;
   final NotificationsDb? _notificationsDb;
+  final OnboardingSyncService? _onboardingSyncService;
   final Duration _responseCooldown;
 
   /// Agent repository, injected after construction to avoid circular
@@ -125,16 +128,29 @@ class BackfillResponseHandler {
         return;
       }
 
-      // Limit entries to process to prevent outbox flooding
-      final entriesToProcess =
-          request.entries.length > SyncTuning.maxBackfillResponseBatchSize
+      final onboardingCoverage = await _onboardingSyncService
+          ?.activeOutboundCoverageForRequester(request.requesterId);
+      final coverageFilteredEntries = onboardingCoverage == null
           ? request.entries
+          : request.entries
+                .where(
+                  (entry) =>
+                      entry.counter > (onboardingCoverage[entry.hostId] ?? -1),
+                )
+                .toList();
+      // Covered stale requests must not consume the response cap and hide a
+      // genuine uncovered request later in the same event.
+      final entriesToProcess =
+          coverageFilteredEntries.length >
+              SyncTuning.maxBackfillResponseBatchSize
+          ? coverageFilteredEntries
                 .take(SyncTuning.maxBackfillResponseBatchSize)
                 .toList()
-          : request.entries;
+          : coverageFilteredEntries;
 
       final truncated =
-          request.entries.length > SyncTuning.maxBackfillResponseBatchSize;
+          coverageFilteredEntries.length >
+          SyncTuning.maxBackfillResponseBatchSize;
 
       _trace(
         'handleRequest: processing ${entriesToProcess.length} of ${request.entries.length} entries from=${request.requesterId}${truncated ? ' (truncated)' : ''} cooldownCache=${recentlyResponded.length}',

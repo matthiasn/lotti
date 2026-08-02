@@ -15,7 +15,7 @@ import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
 typedef MatrixMessageSentCallback =
-    void Function(
+    FutureOr<void> Function(
       String eventId,
       SyncMessage message,
     );
@@ -303,7 +303,7 @@ class MatrixMessageSender {
       _sentEventRegistry.register(eventId);
 
       try {
-        onSent(eventId, outboundMessage);
+        await onSent(eventId, outboundMessage);
       } catch (error, stackTrace) {
         _loggingService
           ..log(

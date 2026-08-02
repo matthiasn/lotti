@@ -206,9 +206,8 @@ void main() {
           // Invoke the onSent callback so the matrix-type bucket is
           // incremented for `agentBundle`.
           final onSent =
-              invocation.namedArguments[#onSent]
-                  as void Function(String, SyncMessage);
-          onSent(
+              invocation.namedArguments[#onSent] as MatrixMessageSentCallback;
+          await onSent(
             r'$evt-bundle',
             invocation.namedArguments[#message] as SyncMessage,
           );
@@ -220,6 +219,10 @@ void main() {
           agentId: 'agent-1',
           wakeRunKey: 'run-1',
         );
+        SyncMessage? observedSentMessage;
+        service.onSyncMessageSent = (message) async {
+          observedSentMessage = message;
+        };
         final result = await service.sendMatrixMsg(
           bundle,
           myRoomId: '!room:s',
@@ -227,8 +230,57 @@ void main() {
 
         expect(result, isTrue);
         expect(service.messageCounts['agentBundle'], 1);
+        expect(observedSentMessage, bundle);
       },
     );
+
+    test('sent hook receives original outbox bundle children', () async {
+      when(() => roomManager.currentRoom).thenReturn(null);
+      when(() => roomManager.currentRoomId).thenReturn(null);
+      when(() => client.getRoomById(any())).thenReturn(null);
+      const end = SyncMessage.onboardingSnapshotEnd(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        reason: OnboardingSyncEndReason.complete,
+      );
+      const original = SyncMessage.outboxBundle(
+        children: [
+          SyncMessage.aiConfigDelete(id: 'adjacent'),
+          end,
+        ],
+      );
+      when(
+        () => messageSender.sendMatrixMessage(
+          message: original,
+          context: any(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onSent =
+            invocation.namedArguments[#onSent] as MatrixMessageSentCallback;
+        await onSent(
+          r'$evt-bundle',
+          const SyncOutboxBundle(
+            children: [],
+            jsonPath: '/outbox_bundles/stripped.json',
+          ),
+        );
+        return true;
+      });
+
+      final service = createService();
+      SyncMessage? observed;
+      service.onSyncMessageSent = (message) async => observed = message;
+
+      expect(
+        await service.sendMatrixMsg(original, myRoomId: '!room:s'),
+        isTrue,
+      );
+      expect(observed, original);
+    });
 
     test('messageCountsController emits stats', () async {
       final service = createService();
@@ -1106,9 +1158,8 @@ void main() {
         ),
       ).thenAnswer((invocation) async {
         final onSent =
-            invocation.namedArguments[#onSent]
-                as void Function(String, SyncMessage);
-        onSent(
+            invocation.namedArguments[#onSent] as MatrixMessageSentCallback;
+        await onSent(
           r'$evt',
           invocation.namedArguments[#message] as SyncMessage,
         );
@@ -1156,6 +1207,44 @@ void main() {
     );
 
     final variantsByBucket = <String, SyncMessage>{
+      'onboardingSnapshotBegin': const SyncMessage.onboardingSnapshotBegin(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        senderUserId: 'sender-user',
+        senderDeviceId: 'sender-device',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        coverageUpperBounds: {'sender-host': 42},
+        leaseSeconds: 3600,
+      ),
+      'onboardingSnapshotAccepted':
+          const SyncMessage.onboardingSnapshotAccepted(
+            protocolVersion: 1,
+            roundId: 'round-1',
+            senderHostId: 'sender-host',
+            senderUserId: 'sender-user',
+            senderDeviceId: 'sender-device',
+            recipientHostId: 'recipient-host',
+            recipientDeviceId: 'recipient-device',
+          ),
+      'onboardingTerminalCounters':
+          const SyncMessage.onboardingTerminalCounters(
+            protocolVersion: 1,
+            roundId: 'round-1',
+            senderHostId: 'sender-host',
+            recipientUserId: 'recipient-user',
+            recipientDeviceId: 'recipient-device',
+            ranges: [SyncCounterRange(start: 1, end: 2)],
+          ),
+      'onboardingSnapshotEnd': const SyncMessage.onboardingSnapshotEnd(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        reason: OnboardingSyncEndReason.complete,
+      ),
       'entryLink': entryLink,
       'aiConfig': aiConfig,
       'notification': notification,
