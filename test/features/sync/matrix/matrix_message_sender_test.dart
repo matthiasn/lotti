@@ -2641,24 +2641,12 @@ void main() {
       );
     });
 
-    test('returns null when entity file read fails', () async {
-      final entity = AgentDomainEntity.agent(
-        id: 'agent-missing',
-        agentId: 'agent-missing',
-        kind: 'task_agent',
-        displayName: 'Test',
-        lifecycle: AgentLifecycle.active,
-        mode: AgentInteractionMode.autonomous,
-        allowedCategoryIds: const {},
-        currentStateId: 'state-1',
-        config: const AgentConfig(),
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: null,
-      );
-
+    test('returns null when the file is gone and cannot be rebuilt', () async {
+      // A declared jsonPath whose file is missing is only fatal when there is
+      // no inline payload to rebuild it from. With one, the send restores the
+      // sidecar instead — sidecar reclamation and a queued row race by design,
+      // and failing here left the row retrying until it aged out.
       final message = SyncMessage.agentEntity(
-        agentEntity: entity,
         status: SyncEntryStatus.update,
         jsonPath: '/agent_entities/agent-missing.json',
       );
