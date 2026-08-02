@@ -738,6 +738,61 @@ void main() {
         });
       });
 
+      test('a lease-deferred record stays eligible for the re-run', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final record = leased();
+            // Created inside the zone so `flushMicrotasks` runs its
+            // continuation; a root-zone Completer would stall the pass.
+            final hostGate = Completer<void>();
+            var hostLookups = 0;
+
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => []);
+            when(
+              () => repository.getDueScheduledWakeRecords(any()),
+            ).thenAnswer((_) async => [record]);
+            when(
+              () => syncService.upsertEntity(any()),
+            ).thenAnswer((_) async {});
+            when(
+              () => repository.getEntity(record.id),
+            ).thenAnswer((_) async => record);
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              requiresLease: (r) => r.workspaceKey == digestWorkspace,
+              localHostId: () async {
+                hostLookups++;
+                if (hostLookups == 1) await hostGate.future;
+                return 'host-a';
+              },
+            )..start();
+
+            // A tick lands while the first pass is stalled on the host lookup.
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(minutes: 1))
+              ..flushMicrotasks();
+
+            hostGate.complete();
+            async.flushMicrotasks();
+
+            // The re-run is answering the very timer this record armed, so
+            // skipping it as "already handled" would leave confirmation or
+            // takeover waiting for the next hourly tick.
+            expect(hostLookups, 2);
+            expectNoWake();
+
+            manager.stop();
+          });
+        });
+      });
+
       test('the deadline survives a peer in another timezone', () {
         fakeAsync((async) {
           withClock(Clock.fixed(now), () {

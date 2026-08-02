@@ -322,11 +322,12 @@ class ScheduledWakeManager {
       // As in the due-states loop: a `stop()` can land while this loop awaits
       // the identity lookup, the host lookup or the claim write.
       if (generation != _generation) return enqueued;
-      // Marked before the work, not after: if the consume-write fails the
-      // record is still pending, and a re-run microseconds later would fire it
-      // a second time — a transient write error must not become a second
-      // billed wake. It stays due for the next invocation.
-      if (!handled.recordIds.add(record.id)) continue;
+      // Skipped only once this invocation has *acted* on it. A record the
+      // lease deferred armed a one-shot re-check, and that timer is precisely
+      // what the coalesced re-run is answering — marking it here would make
+      // the re-run skip the record it was woken for, so confirmation or
+      // takeover would wait for the next hourly tick.
+      if (handled.recordIds.contains(record.id)) continue;
       try {
         // Same guard as the due-*states* loop above, and for the same reason:
         // `getDueScheduledWakeRecords` filters on the deadline, not lifecycle.
@@ -343,6 +344,7 @@ class ScheduledWakeManager {
         }
         final lifecycle = identity.mapOrNull(agent: (e) => e.lifecycle);
         if (lifecycle != AgentLifecycle.active) {
+          handled.recordIds.add(record.id);
           await _consumeStaleWakeRecord(record, now);
           continue;
         }
@@ -370,6 +372,11 @@ class ScheduledWakeManager {
                 !current.scheduledAt.isAtSameMomentAs(approved.scheduledAt))) {
           continue;
         }
+        // Marked before the enqueue, not after: if the consume-write below
+        // fails the record is still pending, and a re-run microseconds later
+        // would fire it a second time — a transient write error must not
+        // become a second billed wake. It stays due for the next invocation.
+        handled.recordIds.add(record.id);
         _orchestrator.enqueueManualWake(
           agentId: record.agentId,
           reason: record.reason,

@@ -5,7 +5,7 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-02T20:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-02T22:00:00Z }
 stale_after: 2026-11-01
 sources:
   - id: agents
@@ -228,6 +228,13 @@ fail outright and leave it pending. `enqueueManualWake` supersedes only work
 still *queued*, so firing a row twice bills twice. Rows are marked handled
 before the work, not after: a partial failure waits for the next invocation
 rather than being retried microseconds later.
+
+A record the lease *deferred* is deliberately left unmarked. It armed the very
+one-shot re-check the coalesced re-run is answering, so treating it as handled
+would make the re-run skip the record it was woken for — and confirmation or
+takeover would wait for the next hourly tick, which is the delay this whole
+mechanism exists to remove. Only records actually fired, or consumed as stale,
+are marked.
 
 Generations bound the loop at both ends. A `stop()` mid-pass cancels the queued
 re-run, since the schedule it belonged to is gone. A trigger raised by a
