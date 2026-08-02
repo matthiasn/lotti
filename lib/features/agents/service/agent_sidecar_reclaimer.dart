@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as p;
 
 /// Deletes the outbox's JSON sidecars for agent rows that are gone.
 ///
@@ -88,7 +89,13 @@ class AgentSidecarReclaimer {
           // input. A traversal segment would otherwise resolve to
           // '<docs>/agent_entities/../settings.json' and delete an unrelated
           // file outside the sidecar directory entirely.
-          if (!_isReclaimableId(id)) {
+          final relativePath = toPath(id);
+          if (id.isEmpty ||
+              !_isContained(
+                root: root,
+                relativePath: relativePath,
+                toPath: toPath,
+              )) {
             domainLogger.error(
               LogDomain.agentRuntime,
               ArgumentError.value(id, 'id', 'not a sidecar id'),
@@ -100,9 +107,7 @@ class AgentSidecarReclaimer {
           }
           // The relative paths carry a leading '/', which would otherwise make
           // this an absolute path and escape the documents directory.
-          final file = File(
-            '${root.path}${toPath(id)}',
-          );
+          final file = File('${root.path}$relativePath');
           if (deleteSidecar(file)) removed++;
         } catch (e, s) {
           domainLogger.error(
@@ -119,17 +124,26 @@ class AgentSidecarReclaimer {
     return removed;
   }
 
-  /// Whether [id] can only name a file *inside* the sidecar directory.
+  /// Whether the resolved sidecar path stays inside its own directory.
   ///
-  /// Entity ids are UUIDs in production, so this rejects nothing real. It is a
-  /// containment check rather than a format check on purpose: ids arrive from
-  /// peers over sync, and the cost of being wrong here is deleting an
-  /// unrelated file that no database write accounted for.
-  static bool _isReclaimableId(String id) =>
-      id.isNotEmpty &&
-      !id.contains('/') &&
-      !id.contains(r'\') &&
-      !id.contains('..') &&
-      // A drive letter or UNC prefix would make the join absolute on Windows.
-      !id.contains(':');
+  /// Checked by resolving the path rather than by rejecting characters: real
+  /// ids contain colons (`day_status:<dayId>:<uuid>`), so a character
+  /// blacklist refuses production rows and silently reclaims nothing. What
+  /// matters is only where the path lands.
+  ///
+  /// Ids arrive from peers over sync, and the cost of being wrong is deleting
+  /// a file no database write accounted for.
+  static bool _isContained({
+    required Directory root,
+    required String relativePath,
+    required String Function(String id) toPath,
+  }) {
+    // The directory this kind of sidecar always lives in, derived from the
+    // same builder so the two cannot drift apart.
+    final directory = p.normalize(
+      p.join(root.path, p.dirname(toPath('probe'))),
+    );
+    final resolved = p.normalize(p.join(root.path, relativePath));
+    return p.equals(p.dirname(resolved), directory);
+  }
 }

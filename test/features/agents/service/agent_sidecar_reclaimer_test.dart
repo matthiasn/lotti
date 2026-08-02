@@ -117,9 +117,20 @@ void main() {
   });
 
   test('absolute and separator-bearing ids are refused too', () async {
-    for (final id in ['/etc/passwd', 'a/b', r'a\\b', 'C:file']) {
+    for (final id in ['/etc/passwd', 'a/b', 'nested/../../escape']) {
       expect(await reclaimer.reclaim(entityIds: [id]), 0);
     }
+  });
+
+  test('a real day-status id is reclaimed, colons and all', () async {
+    // day_status:<dayId>:<uuid> — a character blacklist that rejected ':'
+    // would refuse every production day-status event and quietly reclaim
+    // nothing, which is the failure this containment check must not have.
+    const id = 'day_status:dayplan-2026-05-20:6f1c2f2e-0f0a-4f1e-8a1b-2c3d4e5f';
+    final file = writeSidecar(relativeAgentEntityPath(id));
+
+    expect(await reclaimer.reclaim(entityIds: [id]), 1);
+    expect(file.existsSync(), isFalse);
   });
 
   test(
