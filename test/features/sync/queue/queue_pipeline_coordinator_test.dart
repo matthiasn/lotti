@@ -1225,6 +1225,27 @@ void main() {
     await coordinator.stop();
   });
 
+  test('overlapping sync signals share one in-flight postLoad', () async {
+    final room = MockRoom();
+    final postLoadGate = Completer<void>();
+    when(() => room.partial).thenReturn(true);
+    when(room.postLoad).thenAnswer((_) => postLoadGate.future);
+    when(() => roomManager.currentRoom).thenReturn(room);
+
+    final coordinator = build();
+    await coordinator.start();
+
+    syncCtl
+      ..add(SyncUpdate(nextBatch: 'first'))
+      ..add(SyncUpdate(nextBatch: 'second'));
+    await pumpEventQueue();
+
+    verify(room.postLoad).called(1);
+
+    postLoadGate.complete();
+    await coordinator.stop();
+  });
+
   test(
     'onSync does not call postLoad when room is already non-partial',
     () async {
@@ -1507,6 +1528,11 @@ void main() {
         subDomain: any<String>(named: 'subDomain', that: contains('postLoad')),
       ),
     ).called(1);
+
+    syncCtl.add(SyncUpdate(nextBatch: 'retry'));
+    await pumpEventQueue();
+
+    verify(room.postLoad).called(2);
     await coordinator.stop();
   });
 

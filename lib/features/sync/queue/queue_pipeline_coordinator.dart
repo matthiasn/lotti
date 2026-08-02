@@ -220,6 +220,15 @@ class QueuePipelineCoordinator {
   /// mid-insert and trip drift's "used after close" guard.
   final Set<Future<void>> _inFlightEnqueues = <Future<void>>{};
 
+  /// Room ids whose Matrix SDK `postLoad()` call is currently in flight.
+  ///
+  /// A room remains partial while `postLoad()` awaits its network work, so
+  /// multiple sync or timeline signals can otherwise start overlapping calls.
+  /// Entries are removed when the call settles, preserving retries while the
+  /// room is still partial and allowing a future rejoin to trigger another
+  /// load.
+  final Set<String> _postLoadInFlightRoomIds = <String>{};
+
   /// Attachment-aware sinks whose bootstrap page workers have not finished.
   ///
   /// Pagination intentionally does not await these workers. Keeping the
@@ -504,6 +513,8 @@ class QueuePipelineCoordinator {
         stackTrace: stackTrace,
         subDomain: '$_logSub.postLoad',
       );
+    } finally {
+      _postLoadInFlightRoomIds.remove(roomId);
     }
   }
 
@@ -583,7 +594,7 @@ class QueuePipelineCoordinator {
     // grow `_trackedUserIds`. Using `room.partial` as the sentinel
     // instead of our own dedupe set means a room that becomes
     // partial again (e.g. after a rejoin) still gets un-partialed.
-    if (!room.partial) return;
+    if (!room.partial || !_postLoadInFlightRoomIds.add(roomId)) return;
     _trackEnqueue(_safePostLoad(room, roomId));
   }
 
