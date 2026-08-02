@@ -323,11 +323,6 @@ class MatrixService {
     );
   }
 
-  /// Test seam exposing [_startQueuePipeline] without requiring a full
-  /// `init()` flow (which drags in gateway login, connectivity, etc.).
-  @visibleForTesting
-  Future<void> debugStartQueuePipelineForTest() => _startQueuePipeline();
-
   Future<void> _startQueuePipeline() async {
     try {
       await _queueCoordinator.start();

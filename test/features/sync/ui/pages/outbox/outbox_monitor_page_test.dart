@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
-import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -54,12 +53,8 @@ MockSyncDatabase _prepareMock({
   List<OutboxItem>? items,
   bool fetchThrows = false,
   bool updateThrows = false,
-  List<OutboxDailyVolume> volumeData = const [],
 }) {
   final mock = mockSyncDatabaseWithCount(0);
-  when(
-    () => mock.getDailyOutboxVolume(days: kOutboxVolumeDays),
-  ).thenAnswer((_) async => volumeData);
   when(() => mock.updateOutboxItem(any())).thenAnswer(
     (_) async => updateThrows ? throw StateError('write failed') : 1,
   );

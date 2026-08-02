@@ -22,7 +22,6 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 part 'matrix_payload_sender_notifications.dart';
@@ -33,9 +32,7 @@ part 'matrix_payload_sender_notifications.dart';
 /// Extracted into a standalone collaborator (previously two part-file
 /// extensions) so the sender file stays under the size limit. The owning
 /// sender constructs one of these from its own dependencies and delegates the
-/// per-payload upload work to it; the sender keeps the wire envelope logic and
-/// its public/`@visibleForTesting` API. Every method here was a private helper
-/// on the sender, so none of it is part of the sender's mocked surface.
+/// per-payload upload work to it; the sender keeps the wire envelope logic.
 class MatrixPayloadSender {
   MatrixPayloadSender({
     required this.loggingService,
@@ -601,15 +598,6 @@ class MatrixPayloadSender {
     }
     return true;
   }
-
-  /// Returns true when [relativePath] is a well-formed
-  /// `/outbox_bundles/<id>.json` path with no traversal segments. Used by
-  /// [sendOutboxBundlePayload] to gate which inbound `jsonPath` values are
-  /// honoured for a freshly built bundle's metadata.
-  /// Test seam for the path-safety predicate guarding bundle child reads.
-  @visibleForTesting
-  static bool debugIsSafeOutboxBundlePath(String relativePath) =>
-      _isSafeOutboxBundlePath(relativePath);
 
   static bool _isSafeOutboxBundlePath(String relativePath) {
     if (!relativePath.startsWith(outboxBundlesSegment)) return false;

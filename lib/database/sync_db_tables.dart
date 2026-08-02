@@ -513,9 +513,8 @@ class QueueMarkers extends Table {
   TextColumn get lastAppliedEventId =>
       text().named('last_applied_event_id').nullable()();
 
-  /// Highest `originServerTs` we have applied and committed. Guarded
-  /// by `TimelineEventOrdering.isNewer`; writes only accept
-  /// monotonic advancement (F2).
+  /// Highest `originServerTs` we have applied and committed. Writes only
+  /// accept monotonic advancement (F2).
   IntColumn get lastAppliedTs =>
       integer().named('last_applied_ts').withDefault(const Constant(0))();
 

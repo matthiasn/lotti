@@ -367,42 +367,6 @@ void main() {
     },
   );
 
-  group('queue pipeline startup', () {
-    test(
-      'debugStartQueuePipelineForTest starts the coordinator',
-      () async {
-        final service = createService();
-
-        await service.debugStartQueuePipelineForTest();
-
-        verify(coordinator.start).called(1);
-      },
-    );
-
-    test(
-      'rethrows when coordinator.start fails — queue is the only '
-      'inbound path, so a start failure must surface, not be swallowed',
-      () async {
-        final coord = buildDefaultCoordinator();
-        when(coord.start).thenThrow(StateError('boom'));
-        final service = createService(queueCoordinator: coord);
-
-        await expectLater(
-          service.debugStartQueuePipelineForTest(),
-          throwsA(isA<StateError>()),
-        );
-        verify(
-          () => logging.error(
-            any<LogDomain>(),
-            any<Object>(),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: 'queue.init',
-          ),
-        ).called(1);
-      },
-    );
-  });
-
   group('getSyncMetrics queue overlay', () {
     test(
       'when the queue coordinator is running, queueActive / queueApplied '

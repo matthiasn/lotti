@@ -656,31 +656,4 @@ void main() {
       );
     });
   });
-
-  group('debugIsSafeOutboxBundlePath', () {
-    test('accepts well-formed outbox-bundle paths', () {
-      expect(
-        MatrixPayloadSender.debugIsSafeOutboxBundlePath(
-          '/outbox_bundles/abc.json',
-        ),
-        isTrue,
-      );
-    });
-
-    test(
-      'rejects paths outside the outbox-bundles prefix or with traversal',
-      () {
-        expect(
-          MatrixPayloadSender.debugIsSafeOutboxBundlePath('/elsewhere/x.json'),
-          isFalse,
-        );
-        expect(
-          MatrixPayloadSender.debugIsSafeOutboxBundlePath(
-            '/outbox_bundles/../escape.json',
-          ),
-          isFalse,
-        );
-      },
-    );
-  });
 }

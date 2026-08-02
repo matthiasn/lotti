@@ -2,7 +2,7 @@ part of 'sync_db.dart';
 
 /// Outbox introspection for [SyncDatabase]: merge-dedup lookups
 /// ([findPendingByEntryId] / [updateOutboxMessage]), pending backfill
-/// request extraction, daily volume aggregation, and health counts.
+/// request extraction and health counts.
 mixin _SyncDbOutboxDedup on _$SyncDatabase {
   /// Get (hostId, counter) pairs from queued or in-flight backfill request
   /// messages in outbox.
@@ -141,51 +141,5 @@ mixin _SyncDbOutboxDedup on _$SyncDatabase {
             filePath: filePath != null ? Value(filePath) : const Value.absent(),
           ),
         );
-  }
-
-  /// Get aggregated outbox volume per day for sent items.
-  /// Groups by send time (`updated_at`) so items appear on the day they
-  /// were actually transmitted, not the day they were created.
-  Future<List<OutboxDailyVolume>> getDailyOutboxVolume({
-    int days = 7,
-    DateTime? now,
-  }) async {
-    if (days <= 0) return const [];
-
-    final effectiveNow = (now ?? DateTime.now()).toUtc();
-    final startOfToday = DateTime.utc(
-      effectiveNow.year,
-      effectiveNow.month,
-      effectiveNow.day,
-    );
-    final cutoff = startOfToday.subtract(Duration(days: days - 1));
-
-    final cutoffSeconds = cutoff.millisecondsSinceEpoch ~/ 1000;
-    final rows = await customSelect(
-      "SELECT strftime('%Y-%m-%d', updated_at, 'unixepoch') AS day, "
-      'COALESCE(SUM(payload_size), 0) AS total_bytes, '
-      'COUNT(*) AS item_count '
-      'FROM outbox INDEXED BY idx_outbox_sent_updated_at '
-      'WHERE status = 1 AND updated_at >= ? '
-      'GROUP BY day '
-      'ORDER BY day ASC',
-      variables: [
-        Variable.withInt(cutoffSeconds),
-      ],
-    ).get();
-
-    return rows.map((row) {
-      final dayString = row.read<String>('day');
-      final parts = dayString.split('-');
-      return OutboxDailyVolume(
-        date: DateTime.utc(
-          int.parse(parts[0]),
-          int.parse(parts[1]),
-          int.parse(parts[2]),
-        ),
-        totalBytes: row.read<int>('total_bytes'),
-        itemCount: row.read<int>('item_count'),
-      );
-    }).toList();
   }
 }

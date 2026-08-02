@@ -383,19 +383,30 @@ void main() {
   });
 
   group('MatrixService error and log branches', () {
-    // Covers lib/features/sync/matrix/matrix_service.dart lines 318-323:
-    // _startQueuePipeline() catch branch logs and rethrows.
     test(
-      'debugStartQueuePipelineForTest logs and rethrows on coordinator '
-      'start failure',
+      'init logs and rethrows when the queue coordinator cannot start',
       () async {
         final failure = Exception('queue start boom');
         when(queueCoordinator.start).thenThrow(failure);
+        when(
+          () => syncEngine.initialize(
+            onLogin: any(named: 'onLogin'),
+            onLogout: any(named: 'onLogout'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => syncEngine.connect(
+            shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => secureStorage.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
 
         final service = createService();
 
         await expectLater(
-          service.debugStartQueuePipelineForTest(),
+          service.init(),
           throwsA(failure),
         );
         verify(

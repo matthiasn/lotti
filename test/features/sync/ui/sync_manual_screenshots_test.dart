@@ -745,10 +745,6 @@ void main() {
       () => syncDatabase.watchOutboxCount(),
     ).thenAnswer((_) => Stream.value(3));
     when(
-      () => syncDatabase.getDailyOutboxVolume(days: any(named: 'days')),
-    ).thenAnswer((_) async => const []);
-
-    when(
       () => nodeBroadcaster.broadcastIfChanged(
         displayNameOverride: any(named: 'displayNameOverride'),
         appVersion: any(named: 'appVersion'),

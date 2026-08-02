@@ -55,8 +55,7 @@ class CatchUpStrategy {
 
   /// True when [event] sorts strictly after the anchor (timestamp, then event
   /// id as the deterministic tie-breaker). A null [anchorTs] means there is no
-  /// anchor, so every event counts as after it. Mirrors
-  /// [TimelineEventOrdering.isNewer] for the forward-walk direction.
+  /// anchor, so every event counts as after it.
   static bool isStrictlyAfter(
     Event event, {
     required num? anchorTs,

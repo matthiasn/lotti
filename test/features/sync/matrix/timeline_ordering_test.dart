@@ -53,55 +53,6 @@ class _GeneratedOrderingScenario {
   }
 }
 
-class _GeneratedIsNewerScenario {
-  const _GeneratedIsNewerScenario({
-    required this.candidateTimestampBucket,
-    required this.candidateEventSlot,
-    required this.hasLatestTimestamp,
-    required this.hasLatestEventId,
-    required this.latestTimestampBucket,
-    required this.latestEventSlot,
-  });
-
-  final int candidateTimestampBucket;
-  final int candidateEventSlot;
-  final bool hasLatestTimestamp;
-  final bool hasLatestEventId;
-  final int latestTimestampBucket;
-  final int latestEventSlot;
-
-  int get candidateTimestamp => 1000 + candidateTimestampBucket;
-
-  String get candidateEventId => '\$generated-$candidateEventSlot';
-
-  int? get latestTimestamp =>
-      hasLatestTimestamp ? 1000 + latestTimestampBucket : null;
-
-  String? get latestEventId =>
-      hasLatestEventId ? '\$generated-$latestEventSlot' : null;
-
-  bool get expected {
-    final latestTs = latestTimestamp;
-    final latestId = latestEventId;
-    if (latestTs == null || latestId == null) return true;
-    if (candidateTimestamp > latestTs) return true;
-    if (candidateTimestamp < latestTs) return false;
-    return candidateEventId.compareTo(latestId) > 0;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedIsNewerScenario('
-        'candidateTimestampBucket: $candidateTimestampBucket, '
-        'candidateEventSlot: $candidateEventSlot, '
-        'hasLatestTimestamp: $hasLatestTimestamp, '
-        'hasLatestEventId: $hasLatestEventId, '
-        'latestTimestampBucket: $latestTimestampBucket, '
-        'latestEventSlot: $latestEventSlot'
-        ')';
-  }
-}
-
 extension _AnyTimelineOrderingScenario on glados.Any {
   glados.Generator<_GeneratedOrderingEvent> get orderingEvent =>
       glados.CombinableAny(this).combine2(
@@ -117,31 +68,6 @@ extension _AnyTimelineOrderingScenario on glados.Any {
       glados.ListAnys(this)
           .listWithLengthInRange(0, 14, orderingEvent)
           .map((events) => _GeneratedOrderingScenario(events: events));
-
-  glados.Generator<_GeneratedIsNewerScenario> get isNewerScenario =>
-      glados.CombinableAny(this).combine6(
-        glados.IntAnys(this).intInRange(0, 6),
-        glados.IntAnys(this).intInRange(0, 8),
-        glados.BoolAny(this).bool,
-        glados.BoolAny(this).bool,
-        glados.IntAnys(this).intInRange(0, 6),
-        glados.IntAnys(this).intInRange(0, 8),
-        (
-          int candidateTimestampBucket,
-          int candidateEventSlot,
-          bool hasLatestTimestamp,
-          bool hasLatestEventId,
-          int latestTimestampBucket,
-          int latestEventSlot,
-        ) => _GeneratedIsNewerScenario(
-          candidateTimestampBucket: candidateTimestampBucket,
-          candidateEventSlot: candidateEventSlot,
-          hasLatestTimestamp: hasLatestTimestamp,
-          hasLatestEventId: hasLatestEventId,
-          latestTimestampBucket: latestTimestampBucket,
-          latestEventSlot: latestEventSlot,
-        ),
-      );
 }
 
 Event _generatedEvent(_GeneratedOrderingEvent generated) {
@@ -218,82 +144,6 @@ void main() {
         expect(
           ordered.map((event) => event.eventId).toList(),
           scenario.expectedStableSortedIds(),
-        );
-      },
-      tags: 'glados',
-    );
-  });
-
-  group('TimelineEventOrdering.isNewer', () {
-    test('returns true when no previous marker exists', () {
-      expect(
-        TimelineEventOrdering.isNewer(
-          candidateTimestamp: 2000,
-          candidateEventId: r'$newer',
-          latestTimestamp: null,
-          latestEventId: null,
-        ),
-        isTrue,
-      );
-    });
-
-    test('returns true when candidate timestamp is greater', () {
-      expect(
-        TimelineEventOrdering.isNewer(
-          candidateTimestamp: 2000,
-          candidateEventId: r'$0002',
-          latestTimestamp: 1000,
-          latestEventId: r'$0001',
-        ),
-        isTrue,
-      );
-    });
-
-    test('returns false when candidate timestamp is smaller', () {
-      expect(
-        TimelineEventOrdering.isNewer(
-          candidateTimestamp: 1000,
-          candidateEventId: r'$0001',
-          latestTimestamp: 2000,
-          latestEventId: r'$0002',
-        ),
-        isFalse,
-      );
-    });
-
-    test('uses eventId lexicographically when timestamps match', () {
-      expect(
-        TimelineEventOrdering.isNewer(
-          candidateTimestamp: 2000,
-          candidateEventId: r'$0002',
-          latestTimestamp: 2000,
-          latestEventId: r'$0001',
-        ),
-        isTrue,
-      );
-
-      expect(
-        TimelineEventOrdering.isNewer(
-          candidateTimestamp: 2000,
-          candidateEventId: r'$0001',
-          latestTimestamp: 2000,
-          latestEventId: r'$0002',
-        ),
-        isFalse,
-      );
-    });
-
-    glados.Glados(glados.any.isNewerScenario).test(
-      'generated marker comparisons match timestamp then event-id ordering',
-      (scenario) {
-        expect(
-          TimelineEventOrdering.isNewer(
-            candidateTimestamp: scenario.candidateTimestamp,
-            candidateEventId: scenario.candidateEventId,
-            latestTimestamp: scenario.latestTimestamp,
-            latestEventId: scenario.latestEventId,
-          ),
-          scenario.expected,
         );
       },
       tags: 'glados',

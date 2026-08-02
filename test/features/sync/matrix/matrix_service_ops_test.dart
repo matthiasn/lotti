@@ -75,9 +75,8 @@ void main() {
         pipeline: () => currentPipeline,
         keyVerificationRequestSubscription: () => keyVerSub,
         setKeyVerificationRequestSubscription: (value) => keyVerSub = value,
-        // The service() seam is only used by the key-verification round-trips
-        // (covered by the parent MatrixService tests) and by deleteDevice's
-        // runner cancellation, which injects a mock service explicitly.
+        // The service() seam is used by key-verification round-trips and
+        // device-removal cancellation, which inject a mock service explicitly.
         service:
             service ??
             () => throw UnimplementedError('service() not used in this test'),
@@ -341,12 +340,11 @@ void main() {
     });
   });
 
-  group('deleteDevice', () {
+  group('deleteDeviceById', () {
     const userId = '@user:server';
     late MockMatrixClient client;
     late MockSyncLifecycleCoordinator lifecycle;
     late MockMatrixService svc;
-    late MockDeviceKeys deviceKeys;
 
     MatrixServiceOps buildDeleteOps() => buildOps(service: () => svc);
 
@@ -354,7 +352,6 @@ void main() {
       client = MockMatrixClient();
       lifecycle = MockSyncLifecycleCoordinator();
       svc = MockMatrixService();
-      deviceKeys = MockDeviceKeys();
 
       when(() => sessionManager.client).thenReturn(client);
       when(() => sessionManager.matrixConfig).thenReturn(
@@ -378,17 +375,13 @@ void main() {
       when(lifecycle.reconcileLifecycleState).thenAnswer((_) async {});
       when(() => svc.keyVerificationRunner).thenReturn(null);
       when(() => svc.incomingKeyVerificationRunner).thenReturn(null);
-
-      when(() => deviceKeys.deviceId).thenReturn('DEV1');
-      when(() => deviceKeys.deviceDisplayName).thenReturn('Pixel 7');
-      when(() => deviceKeys.userId).thenReturn(userId);
     });
 
     test(
       'deletes on the homeserver, then refreshes the device-key cache and '
       'nudges the pipeline so the removal unblocks sync immediately',
       () async {
-        await buildDeleteOps().deleteDevice(deviceKeys);
+        await buildDeleteOps().deleteDeviceById('DEV1');
 
         final captured = verify(
           () => gateway.deleteDevice('DEV1', auth: captureAny(named: 'auth')),
@@ -428,7 +421,7 @@ void main() {
         when(() => svc.keyVerificationRunner).thenReturn(matchingRunner);
         when(() => svc.incomingKeyVerificationRunner).thenReturn(otherRunner);
 
-        await buildDeleteOps().deleteDevice(deviceKeys);
+        await buildDeleteOps().deleteDeviceById('DEV1');
 
         verifyInOrder([
           matchingRunner.cancelVerification,
@@ -449,7 +442,7 @@ void main() {
         when(runner.cancelVerification).thenThrow(Exception('gone'));
         when(() => svc.keyVerificationRunner).thenReturn(runner);
 
-        await buildDeleteOps().deleteDevice(deviceKeys);
+        await buildDeleteOps().deleteDeviceById('DEV1');
 
         verify(
           () => logging.error(
@@ -475,7 +468,7 @@ void main() {
           ),
         ).thenThrow(Exception('offline'));
 
-        await buildDeleteOps().deleteDevice(deviceKeys);
+        await buildDeleteOps().deleteDeviceById('DEV1');
 
         verify(
           () => logging.error(
@@ -490,31 +483,11 @@ void main() {
       },
     );
 
-    test('throws ArgumentError and stays offline when deviceId is null', () {
-      when(() => deviceKeys.deviceId).thenReturn(null);
-
-      expect(
-        () => buildDeleteOps().deleteDevice(deviceKeys),
-        throwsArgumentError,
-      );
-      verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
-    });
-
     test('throws StateError when no Matrix configuration is stored', () {
       when(() => sessionManager.matrixConfig).thenReturn(null);
 
       expect(
-        () => buildDeleteOps().deleteDevice(deviceKeys),
-        throwsStateError,
-      );
-      verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
-    });
-
-    test('throws StateError when the device belongs to another user', () {
-      when(() => deviceKeys.userId).thenReturn('@intruder:server');
-
-      expect(
-        () => buildDeleteOps().deleteDevice(deviceKeys),
+        () => buildDeleteOps().deleteDeviceById('DEV1'),
         throwsStateError,
       );
       verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
@@ -530,7 +503,7 @@ void main() {
       );
 
       expect(
-        () => buildDeleteOps().deleteDevice(deviceKeys),
+        () => buildDeleteOps().deleteDeviceById('DEV1'),
         throwsUnsupportedError,
       );
       verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
