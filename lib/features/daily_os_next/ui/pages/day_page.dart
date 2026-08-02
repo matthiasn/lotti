@@ -12,6 +12,7 @@ import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.d
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/plan_view_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page_header.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
@@ -80,7 +81,13 @@ class DayPage extends ConsumerStatefulWidget {
 }
 
 class _DayPageState extends ConsumerState<DayPage> {
-  late PlanView _view = widget.hasPlan ? PlanView.agenda : PlanView.activity;
+  /// The projection to render: the user's explicit pick when there is one,
+  /// otherwise this day's default. The pick lives in
+  /// [dailyOsNextPlanViewProvider] so stepping to another day — which re-keys
+  /// this page — does not throw it away.
+  PlanView get _view =>
+      ref.watch(dailyOsNextPlanViewProvider) ??
+      (widget.hasPlan ? PlanView.agenda : PlanView.activity);
 
   /// Measurement anchor for the onboarding spotlight over the empty-Day CTA.
   final GlobalKey _checkInCtaKey = GlobalKey();
@@ -393,7 +400,9 @@ class _DayPageState extends ConsumerState<DayPage> {
               date: widget.draft.dayDate,
               selectedView: _view,
               hasPlan: widget.hasPlan,
-              onViewChanged: (next) => setState(() => _view = next),
+              onViewChanged: ref
+                  .read(dailyOsNextPlanViewProvider.notifier)
+                  .select,
               onBack: () => Navigator.of(context).maybePop(),
               onInspectAgent: () => unawaited(_openAgentInternals()),
               onSettings: () => nav_service.beamToNamed('/settings/daily-os'),

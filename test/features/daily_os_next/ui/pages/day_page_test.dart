@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -10,10 +8,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
-import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
-import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
-import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
@@ -26,7 +21,6 @@ import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -39,32 +33,23 @@ import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
 import '../../../categories/test_utils.dart';
 import '../../test_utils.dart';
+import 'day_page_test_helpers.dart';
 
-const _category = DayAgentCategory(
-  id: 'cat_focus',
-  name: 'Focus',
-  colorHex: '0080FF',
-);
-
-DraftPlan _drafted({
-  DayState state = DayState.drafted,
-  String title = 'Deep work',
-}) => DraftPlan(
-  dayDate: DateTime(2026, 5, 26),
-  blocks: const [],
-  bands: const [],
-  capacityMinutes: 240,
-  scheduledMinutes: 120,
-  state: state,
-  agendaItems: [
-    AgendaItem(
-      id: 'item_1',
-      title: title,
-      category: _category,
-      linkedBlockIds: const ['blk_1'],
-    ),
-  ],
-);
+// The fixtures live in day_page_test_helpers.dart, shared with the
+// header-layout suite; these aliases keep this file's call sites unchanged.
+const DayAgentCategory _category = dayPageCategory;
+const DraftPlan Function({DayState state, String title}) _drafted = draftedPlan;
+const Widget Function(
+  Widget, {
+  List<TimeBlock> actualBlocks,
+  List<DayActivityEntry> activityEntries,
+  MediaQueryData? mediaQueryData,
+  List<Override> overrides,
+  DailyOsSetupStatus setupStatus,
+  Size size,
+  ThemeData? theme,
+})
+_wrap = wrapDayPage;
 
 DraftPlan _draftedWithReasons() => DraftPlan(
   dayDate: DateTime(2026, 5, 26),
@@ -105,100 +90,8 @@ DraftPlan _draftedWithReasons() => DraftPlan(
   ],
 );
 
-/// Stub the realtime service so CaptureController (built by RefinePage
-/// when DayPage pushes it) can dispose cleanly without touching the AI
-/// providers during teardown.
-CaptureController _stubCapture() {
-  final recorder = MockAudioRecorderRepository();
-  final transcriber = MockAudioTranscriptionService();
-  when(recorder.stopRecording).thenAnswer((_) async {});
-  return CaptureController(
-    recorder: recorder,
-    transcriber: transcriber,
-    docDir: Directory.systemTemp.createTempSync,
-    persistAudio: (_) async => null,
-    now: () => DateTime(2026, 5, 26, 9),
-  );
-}
-
-Widget _wrap(
-  Widget child, {
-  List<Override> overrides = const [],
-  List<TimeBlock> actualBlocks = const [],
-  List<DayActivityEntry> activityEntries = const [],
-  Size size = const Size(1400, 1200),
-  MediaQueryData? mediaQueryData,
-  ThemeData? theme,
-  DailyOsSetupStatus setupStatus = const DailyOsSetupStatus(
-    hasInferenceRoute: true,
-    hasPreferredName: true,
-  ),
-}) {
-  return makeTestableWidgetNoScroll(
-    child,
-    overrides: [
-      capturesForDateProvider.overrideWith((ref, date) async => const []),
-      dayActivityProvider.overrideWith((ref, date) async => activityEntries),
-      dailyOsActualTimeBlocksProvider.overrideWith(
-        (ref, date) async => actualBlocks,
-      ),
-      // RefinePage builds a CaptureController; stub so it doesn't read
-      // the realtime service providers during dispose.
-      captureControllerProvider.overrideWith(_stubCapture),
-      dailyOsSetupStatusProvider.overrideWith(
-        (ref) async => setupStatus,
-      ),
-      ...overrides,
-    ],
-    mediaQueryData: mediaQueryData ?? MediaQueryData(size: size),
-    theme: theme,
-  );
-}
-
-ThemeData _themeWithHeaderSpacing(double step2) {
-  final theme = resolveTestTheme();
-  final tokens = theme.extension<DsTokens>()!;
-  return theme.copyWith(
-    extensions: <ThemeExtension<dynamic>>[
-      tokens.copyWith(
-        spacing: tokens.spacing.copyWith(step2: step2),
-      ),
-    ],
-  );
-}
-
-Widget _dateStripLike(String label) {
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      IconButton(
-        icon: const Icon(Icons.chevron_left_rounded),
-        onPressed: () {},
-      ),
-      Flexible(
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      IconButton(
-        icon: const Icon(Icons.chevron_right_rounded),
-        onPressed: () {},
-      ),
-    ],
-  );
-}
-
-void _setSurfaceSize(WidgetTester tester, Size size) {
-  tester.view
-    ..physicalSize = size
-    ..devicePixelRatio = 1.0;
-  addTearDown(tester.view.reset);
-}
-
 void _setSurface(WidgetTester tester) {
-  _setSurfaceSize(tester, const Size(1400, 1200));
+  setTestSurfaceSize(tester, const Size(1400, 1200));
 }
 
 /// Sets the standard surface, pumps a [DayPage] for [draft] with [agent]
@@ -1127,94 +1020,6 @@ void main() {
       expect(find.text('2026-05-26'), findsOneWidget);
     });
 
-    testWidgets('header stacks the three-view toggle when it needs room', (
-      tester,
-    ) async {
-      _setSurfaceSize(tester, const Size(640, 844));
-      const label = 'May 31, 2026';
-      await tester.pumpWidget(
-        _wrap(
-          DayPage(
-            draft: _drafted(),
-            dateStrip: _dateStripLike(label),
-          ),
-          mediaQueryData: phoneMediaQueryData.copyWith(
-            size: const Size(640, 844),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      final dateBottom = tester.getBottomLeft(find.text(label)).dy;
-      final toggleTop = tester.getTopLeft(find.byType(PlanViewToggle)).dy;
-
-      expect(toggleTop, greaterThan(dateBottom));
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('header moves the plan toggle below only when it cannot fit', (
-      tester,
-    ) async {
-      _setSurfaceSize(tester, phoneMediaQueryData.size);
-      const label = 'May 31, 2026';
-      await tester.pumpWidget(
-        _wrap(
-          DayPage(
-            draft: _drafted(),
-            dateStrip: _dateStripLike(label),
-          ),
-          mediaQueryData: phoneMediaQueryData,
-        ),
-      );
-      await tester.pump();
-
-      final dateBottom = tester.getBottomLeft(find.text(label)).dy;
-      final toggleTop = tester.getTopLeft(find.byType(PlanViewToggle)).dy;
-
-      expect(find.text(label), findsOneWidget);
-      expect(toggleTop, greaterThan(dateBottom));
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('header relayouts when design-system spacing changes', (
-      tester,
-    ) async {
-      _setSurfaceSize(tester, const Size(640, 844));
-      const label = 'May 31, 2026';
-      final mediaQueryData = phoneMediaQueryData.copyWith(
-        size: const Size(640, 844),
-      );
-      await tester.pumpWidget(
-        _wrap(
-          DayPage(
-            draft: _drafted(),
-            dateStrip: _dateStripLike(label),
-          ),
-          mediaQueryData: mediaQueryData,
-          theme: _themeWithHeaderSpacing(20),
-        ),
-      );
-      await tester.pump();
-      final firstTop = tester.getTopLeft(find.text(label)).dy;
-
-      await tester.pumpWidget(
-        _wrap(
-          DayPage(
-            draft: _drafted(),
-            dateStrip: _dateStripLike(label),
-          ),
-          mediaQueryData: mediaQueryData,
-          theme: _themeWithHeaderSpacing(32),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 250));
-      final secondTop = tester.getTopLeft(find.text(label)).dy;
-
-      expect(secondTop, greaterThan(firstTop));
-      expect(tester.takeException(), isNull);
-    });
-
     testWidgets('toggling the plan view switches Agenda → DayTimeline', (
       tester,
     ) async {
@@ -1281,7 +1086,7 @@ void main() {
       tester,
     ) async {
       const size = Size(320, 568);
-      _setSurfaceSize(tester, size);
+      setTestSurfaceSize(tester, size);
       await tester.pumpWidget(
         _wrap(
           DayPage(draft: _draftedWithReasons()),
@@ -1304,7 +1109,7 @@ void main() {
         size: size,
         textScaler: const TextScaler.linear(2),
       );
-      _setSurfaceSize(tester, size);
+      setTestSurfaceSize(tester, size);
       await tester.pumpWidget(
         _wrap(
           DayPage(draft: _draftedWithReasons()),
@@ -1638,7 +1443,7 @@ void main() {
       final mediaQueryData = phoneMediaQueryData.copyWith(
         textScaler: const TextScaler.linear(2),
       );
-      _setSurfaceSize(tester, mediaQueryData.size);
+      setTestSurfaceSize(tester, mediaQueryData.size);
       await tester.pumpWidget(
         _wrap(
           DayPage(draft: _draftedWithReasons()),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,9 +12,15 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/utils/device_region.dart';
@@ -31,6 +38,7 @@ Widget _wrap(
   List<TimeBlock> actualBlocks = const [],
   List<Override> overrides = const [],
   DailyOsSetupStatus Function()? setupStatus,
+  MediaQueryData mediaQueryData = const MediaQueryData(size: Size(1280, 900)),
 }) {
   return ProviderScope(
     overrides: [
@@ -49,10 +57,7 @@ Widget _wrap(
       ),
       ...overrides,
     ],
-    child: makeTestableWidget2(
-      child,
-      mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
-    ),
+    child: makeTestableWidget2(child, mediaQueryData: mediaQueryData),
   );
 }
 
@@ -82,6 +87,30 @@ DraftPlan _draftPlan() {
 
 /// Recorder stub whose denied permission keeps toggle() a no-op error path,
 /// so root-page tests never touch the mic or transcription stack.
+/// Asserts the date label is rendered in full at its current layout.
+///
+/// Comparing the label's *laid-out* size against the reserved width proves
+/// nothing: the `Text` sits inside the production `ConstrainedBox`, so it
+/// reports the reserved width whether or not the string fit, and the ellipsis
+/// hides the difference. The honest check is the paragraph's own intrinsic
+/// width plus its overflow flag.
+void _expectLabelNotTruncated(WidgetTester tester, Finder label) {
+  final paragraph = tester.renderObject<RenderParagraph>(label);
+  final intrinsic = paragraph.getMaxIntrinsicWidth(double.infinity);
+  expect(
+    paragraph.didExceedMaxLines,
+    isFalse,
+    reason: 'the date label was ellipsized',
+  );
+  expect(
+    paragraph.size.width,
+    greaterThanOrEqualTo(intrinsic - 0.01),
+    reason:
+        'the reserved slot (${paragraph.size.width}) is narrower than the '
+        'string needs ($intrinsic)',
+  );
+}
+
 MockAudioRecorderRepository _permissionlessRecorder() {
   final recorder = MockAudioRecorderRepository();
   when(recorder.hasPermission).thenAnswer((_) async => false);
@@ -421,7 +450,8 @@ void main() {
     );
 
     testWidgets(
-      'tapping the date label opens showDatePicker; cancelling keeps selection',
+      'the date label opens the design-system picker; dismissing keeps '
+      'the selection',
       (tester) async {
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -440,16 +470,17 @@ void main() {
 
           await tester.tap(find.text('Today'));
           await tester.pump();
-          await tester.pump(const Duration(milliseconds: 200));
-          await tester.pump(const Duration(milliseconds: 200));
+          await tester.pump(const Duration(milliseconds: 300));
 
-          final material = MaterialLocalizations.of(
-            tester.element(find.byType(DailyOsNextRoot)),
-          );
-          await tester.tap(find.text(material.cancelButtonLabel));
+          expect(find.byType(CalendarDatePicker), findsOneWidget);
+
+          Navigator.of(
+            tester.element(find.byType(CalendarDatePicker)),
+          ).pop();
           await tester.pump();
-          await tester.pump(const Duration(milliseconds: 200));
+          await tester.pump(const Duration(milliseconds: 300));
 
+          expect(find.byType(CalendarDatePicker), findsNothing);
           expect(find.text('Today'), findsOneWidget);
         });
       },
@@ -493,7 +524,376 @@ void main() {
     );
 
     testWidgets(
-      'confirming a date in the picker updates the selected date',
+      "the picker's own Today action is the phone's way back to today",
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(390, 844));
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // Step off today. The phone header carries no Today button — the
+          // date is the one thing that must stay readable at this width.
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+          expect(find.text('Wed, May 27'), findsOneWidget);
+          expect(
+            find.byKey(const Key('daily_os_date_strip_today')),
+            findsNothing,
+          );
+
+          // Tapping the date opens the design-system picker, whose header
+          // carries the Today quick action that replaces it.
+          await tester.tap(find.text('Wed, May 27'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byType(CalendarDatePicker), findsOneWidget);
+
+          await tester.tap(find.text('Today'));
+          await tester.pump();
+          await tester.tap(find.text('Done'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump();
+
+          expect(find.text('Today'), findsOneWidget);
+          expect(find.text('Wed, May 27'), findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
+      'a narrow pane in a desktop window still drops the year and Today',
+      (tester) async {
+        // The desktop sidebar is resizable to 500pt, so the window can be
+        // "desktop" while this pane is not: MediaQuery reports 1280, the
+        // render tree gets 460. The strip must follow the pane.
+        setTestSurfaceSize(tester, const Size(460, 900));
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              // Spelled out even though it matches the default: the contrast
+              // between a desktop-sized MediaQuery and the narrow surface set
+              // above is what this test is about.
+              // ignore: avoid_redundant_argument_values
+              mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          // 460pt still fits the year — it is the Today button that does
+          // not, and dropping it is what keeps the date unsqueezed.
+          expect(find.text('Wed, May 27, 2026'), findsOneWidget);
+          expect(
+            find.byKey(const Key('daily_os_date_strip_today')),
+            findsNothing,
+          );
+          _expectLabelNotTruncated(tester, find.text('Wed, May 27, 2026'));
+        });
+      },
+    );
+
+    testWidgets(
+      'a pane too narrow for the year drops it, desktop window or not',
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(405, 900));
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              // Spelled out even though it matches the default: the contrast
+              // between a desktop-sized MediaQuery and the narrow surface set
+              // above is what this test is about.
+              // ignore: avoid_redundant_argument_values
+              mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          // 405pt is inside the band where the date and both chevrons fit
+          // but the label's own step3 insets do not: budgeting them is what
+          // keeps the year from being chosen and then ellipsized.
+          expect(find.text('Wed, May 27'), findsOneWidget);
+          expect(find.text('Wed, May 27, 2026'), findsNothing);
+          _expectLabelNotTruncated(tester, find.text('Wed, May 27'));
+        });
+      },
+    );
+
+    testWidgets(
+      "a selection far from today still gets the picker's Today action",
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(390, 844));
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // More than a year out. Anchoring the picker window on the
+          // selection alone would put today outside it, and the picker
+          // disables its own Today action when today is out of range —
+          // leaving a phone, which carries no Today button, with no way back.
+          ProviderScope.containerOf(
+                tester.element(find.byType(DailyOsNextRoot)),
+              )
+              .read(dailyOsNextSelectedDateProvider.notifier)
+              .select(DateTime(2028, 2, 10));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.text('Thu, Feb 10'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byType(CalendarDatePicker), findsOneWidget);
+
+          await tester.tap(find.text('Today'));
+          await tester.pump();
+          await tester.tap(find.text('Done'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump();
+
+          expect(find.text('Today'), findsOneWidget);
+          expect(find.text('Thu, Feb 10'), findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
+      'the phone header gives day navigation a row of its own, unsqueezed',
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(390, 844));
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          final label = find.text('Wed, May 27');
+          expect(label, findsOneWidget);
+
+          // Nothing on the navigation row squeezed the date into an
+          // ellipsis.
+          _expectLabelNotTruncated(tester, label);
+
+          // Navigation owns its row: the view toggle and the trailing
+          // actions sit strictly below the chevrons.
+          final navBottom = tester
+              .getBottomLeft(find.byIcon(Icons.chevron_right_rounded))
+              .dy;
+          expect(
+            tester.getTopLeft(find.byType(PlanViewToggle)).dy,
+            greaterThanOrEqualTo(navBottom),
+          );
+          expect(
+            tester.getTopLeft(find.byType(ProcessingCategoryFilterButton)).dy,
+            greaterThanOrEqualTo(navBottom),
+          );
+        });
+      },
+    );
+
+    testWidgets(
+      'the chevrons hold their position across dates of different label width',
+      (tester) async {
+        // May 3 2026 ("Sun, May 3, 2026") vs. September 30 2026
+        // ("Wed, Sep 30, 2026") — different character counts, and the
+        // strip crosses "Today" in between.
+        await withClock(Clock.fixed(DateTime(2026, 5, 3, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          Offset nextChevron() =>
+              tester.getTopLeft(find.byIcon(Icons.chevron_right_rounded));
+          Offset prevChevron() =>
+              tester.getTopLeft(find.byIcon(Icons.chevron_left_rounded));
+
+          final anchorNext = nextChevron();
+          final anchorPrev = prevChevron();
+          final seenLabels = <String>{};
+
+          for (var step = 0; step < 5; step++) {
+            await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+            await tester.pump();
+            await tester.pump();
+            await tester.pump();
+
+            seenLabels.add(
+              tester
+                  .widgetList<Text>(find.byType(Text))
+                  .map((text) => text.data ?? '')
+                  .firstWhere(
+                    (data) => data.contains('2026'),
+                    orElse: () => '',
+                  ),
+            );
+            expect(
+              nextChevron(),
+              anchorNext,
+              reason: 'next chevron must not move between dates',
+            );
+            expect(prevChevron(), anchorPrev);
+          }
+
+          // The dates really did differ in rendered width, so the
+          // assertion above is not vacuous.
+          expect(seenLabels.length, 5);
+        });
+      },
+    );
+
+    testWidgets(
+      'the reserved date width grows with the text scale instead of clipping',
+      (tester) async {
+        Future<double> labelWidthAt(double scale) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              // A fresh scope per scale: without it the second pump reuses
+              // the first scope's container and its already-shifted date.
+              key: ValueKey(scale),
+              overrides: [
+                dailyOsActualTimeBlocksProvider.overrideWith(
+                  (ref, _) async => const [],
+                ),
+                dayActivityProvider.overrideWith((ref, _) async => const []),
+                firstDayOfWeekIndexProvider.overrideWith((ref) async => 1),
+                dailyOsSetupStatusProvider.overrideWith(
+                  (ref) async => const DailyOsSetupStatus(
+                    hasInferenceRoute: true,
+                    hasPreferredName: true,
+                  ),
+                ),
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+              child: makeTestableWidget2(
+                const DailyOsNextRoot(),
+                mediaQueryData: MediaQueryData(
+                  size: const Size(1280, 900),
+                  textScaler: TextScaler.linear(scale),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+          // Step off today so a real date string is rendered.
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          final label = find.text('Wed, Sep 30, 2026');
+          expect(label, findsOneWidget);
+          // Nothing is clipped: the reservation covers what the string
+          // actually needs at this scale, measured intrinsically rather than
+          // read back off the constrained box.
+          _expectLabelNotTruncated(tester, label);
+          return tester
+              .widget<ConstrainedBox>(
+                find
+                    .ancestor(
+                      of: label,
+                      matching: find.byType(ConstrainedBox),
+                    )
+                    .first,
+              )
+              .constraints
+              .minWidth;
+        }
+
+        await withClock(Clock.fixed(DateTime(2026, 9, 29, 9)), () async {
+          final normal = await labelWidthAt(1);
+          final large = await labelWidthAt(1.8);
+          expect(
+            large,
+            greaterThan(normal),
+            reason: 'the reservation must follow the user font size',
+          );
+        });
+      },
+    );
+
+    testWidgets(
+      'the Today button appears off-today and returns the selection',
       (tester) async {
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -510,24 +910,83 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          // Open the date picker by tapping "Today".
-          await tester.tap(find.text('Today'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 200));
-          await tester.pump(const Duration(milliseconds: 200));
-
-          // Confirm the currently selected date (May 26 2026) using the OK
-          // button — this exercises the `if (picked != null)` branch.
-          final material = MaterialLocalizations.of(
-            tester.element(find.byType(DailyOsNextRoot)),
+          final todayButton = find.byKey(
+            const Key('daily_os_date_strip_today'),
           );
-          await tester.tap(find.text(material.okButtonLabel));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 200));
-          await tester.pump(const Duration(milliseconds: 200));
+          // On today the control has nothing to do and is not rendered.
+          expect(todayButton, findsNothing);
 
-          // The widget stayed on today (same date confirmed).
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+          expect(find.text('Wed, May 27, 2026'), findsOneWidget);
+          expect(todayButton, findsOneWidget);
+
+          await tester.tap(todayButton);
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
           expect(find.text('Today'), findsOneWidget);
+          expect(find.text('Wed, May 27, 2026'), findsNothing);
+          expect(todayButton, findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
+      'the selected plan view survives day navigation and jump-to-today',
+      (tester) async {
+        final plan = _draftPlan();
+
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                capturesForDateProvider.overrideWith(
+                  (ref, _) async => const [],
+                ),
+                currentDraftPlanProvider.overrideWith(
+                  (ref, date) async => plan.copyWith(dayDate: date),
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // Default projection for a day with a plan.
+          expect(find.byType(AgendaView), findsOneWidget);
+
+          tester
+              .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+              .onChanged(PlanView.day);
+          await tester.pump();
+          expect(find.byType(DayTimeline), findsOneWidget);
+          expect(find.byType(AgendaView), findsNothing);
+
+          // Chevron navigation must not bounce the user back to Activity.
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+          expect(find.text('Wed, May 27, 2026'), findsOneWidget);
+          expect(find.byType(DayTimeline), findsOneWidget);
+          expect(find.byType(DayActivityView), findsNothing);
+
+          // Neither does the jump-to-today control.
+          await tester.tap(find.byKey(const Key('daily_os_date_strip_today')));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+          expect(find.text('Today'), findsOneWidget);
+          expect(find.byType(DayTimeline), findsOneWidget);
+          expect(find.byType(DayActivityView), findsNothing);
         });
       },
     );

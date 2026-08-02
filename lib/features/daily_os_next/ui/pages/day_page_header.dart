@@ -71,7 +71,15 @@ class DayHeader extends StatelessWidget {
           children: [
             // ADR 0032 phase 4: the day agent's observable state (working /
             // attention / day-closed), tappable straight into its internals.
-            DayAgentStatusChip(date: date, onInspectAgent: onInspectAgent),
+            // Flexible so the pill's label is what yields at large text
+            // sizes — the icon buttons beside it have no slack, so an
+            // unconstrained pill overflows the row instead.
+            Flexible(
+              child: DayAgentStatusChip(
+                date: date,
+                onInspectAgent: onInspectAgent,
+              ),
+            ),
             const ProcessingCategoryFilterButton(),
             PopupMenuButton<_DayMenuAction>(
               icon: const Icon(Icons.more_vert_rounded),
@@ -331,34 +339,20 @@ class _RenderMeasuredDayHeader extends RenderBox
         actionsSize.width;
     final fitsInline = inlineWidth <= contentWidth;
 
-    if (!fitsInline) {
-      final titleWidth = math.max<double>(
-        0,
-        contentWidth - actionsSize.width - itemGap,
-      );
-      title.layout(
-        BoxConstraints.loose(Size(titleWidth, maxChildHeight)),
-        parentUsesSize: true,
-      );
-      titleSize = title.size;
-    }
-
-    final firstRowHeight = math.max(titleSize.height, actionsSize.height);
-    final headerHeight = fitsInline
-        ? verticalPadding * 2 + math.max(firstRowHeight, toggleSize.height)
-        : verticalPadding * 2 + firstRowHeight + rowGap + toggleSize.height;
-
-    size = constraints.constrain(Size(width, headerHeight));
-
-    // A multi-line title block (chevron line + title + date) reads as a
-    // masthead: actions belong on its FIRST line, not centered against
-    // the whole block.
-    final actionsY = titleSize.height > actionsSize.height
-        ? verticalPadding
-        : verticalPadding + (firstRowHeight - actionsSize.height) / 2;
-
     if (fitsInline) {
-      final rowHeight = math.max(firstRowHeight, toggleSize.height);
+      final rowHeight = math.max(
+        math.max(titleSize.height, actionsSize.height),
+        toggleSize.height,
+      );
+      size = constraints.constrain(
+        Size(width, verticalPadding * 2 + rowHeight),
+      );
+      // A multi-line title block (chevron line + title + date) reads as a
+      // masthead: actions belong on its FIRST line, not centered against
+      // the whole block.
+      final actionsY = titleSize.height > actionsSize.height
+          ? verticalPadding
+          : verticalPadding + (rowHeight - actionsSize.height) / 2;
       _position(
         title,
         Offset(
@@ -380,20 +374,64 @@ class _RenderMeasuredDayHeader extends RenderBox
       return;
     }
 
+    // Too narrow for one row: **day navigation gets a row of its own**, and
+    // the toggle and actions share the row beneath it. Sharing row one with
+    // the actions cluster is what squeezed the date into an ellipsis on a
+    // phone — the element that must stay readable and repeatedly tappable
+    // was the one giving up its width.
+    title.layout(
+      BoxConstraints.loose(Size(contentWidth, maxChildHeight)),
+      parentUsesSize: true,
+    );
+    titleSize = title.size;
+
+    // The toggle and the actions only share the second row if they actually
+    // fit side by side. Pinning them to opposite edges without checking
+    // overlaps them the moment the actions cluster grows — a non-idle
+    // "Needs attention" agent chip, or any large text scale.
+    //
+    // "Fits" means the room left over covers the toggle's own measured
+    // width, not merely that some room is left: the segmented control
+    // shrink-wraps to a minimum, so squeezing it into a narrower loose
+    // constraint overflows its row and paints over the actions instead.
+    final toggleRoom = contentWidth - actionsSize.width - itemGap;
+    final shareSecondRow = toggleRoom >= toggleSize.width;
+
+    final secondRowHeight = shareSecondRow
+        ? math.max(toggleSize.height, actionsSize.height)
+        : toggleSize.height;
+    final thirdRowHeight = shareSecondRow ? 0.0 : actionsSize.height;
+    final thirdRowGap = shareSecondRow ? 0.0 : rowGap;
+
+    size = constraints.constrain(
+      Size(
+        width,
+        verticalPadding * 2 +
+            titleSize.height +
+            rowGap +
+            secondRowHeight +
+            thirdRowGap +
+            thirdRowHeight,
+      ),
+    );
+
+    final secondRowTop = verticalPadding + titleSize.height + rowGap;
+    _position(title, Offset(horizontalPadding, verticalPadding));
     _position(
-      title,
+      toggle,
       Offset(
         horizontalPadding,
-        verticalPadding + (firstRowHeight - titleSize.height) / 2,
+        secondRowTop + (secondRowHeight - toggleSize.height) / 2,
       ),
     );
     _position(
       actions,
-      Offset(width - horizontalPadding - actionsSize.width, actionsY),
-    );
-    _position(
-      toggle,
-      Offset(horizontalPadding, verticalPadding + firstRowHeight + rowGap),
+      Offset(
+        width - horizontalPadding - actionsSize.width,
+        shareSecondRow
+            ? secondRowTop + (secondRowHeight - actionsSize.height) / 2
+            : secondRowTop + secondRowHeight + rowGap,
+      ),
     );
   }
 

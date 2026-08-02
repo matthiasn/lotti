@@ -5,13 +5,13 @@ description: The Day page, the anchored voice template, timeline editing, the ca
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
-generated: { by: codex/5, at: 2026-08-01T17:20:39+02:00 }
+generated: { by: claude-code/opus-5, at: 2026-08-02T12:00:00+02:00 }
 stale_after: 2026-10-26
 sources:
   - id: ui
     resource: ../../../lib/features/daily_os_next/ui
     title: Daily OS widgets and pages
-    last_modified: 2026-07-29
+    last_modified: 2026-08-02
   - id: typography
     resource: ../../../lib/features/design_system/theme/typography_helpers.dart
     title: Calm typography helpers
@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/daily_os_next/state
     title: Onboarding session and trigger services
     last_modified: 2026-07-28
+  - id: plan-view-state
+    resource: ../../../lib/features/daily_os_next/state/plan_view_provider.dart
+    title: Selected plan-view projection, held across day changes
+    last_modified: 2026-08-02
   - id: onboarding-events
     resource: ../../../lib/features/onboarding/model/onboarding_event.dart
     title: Shared onboarding event vocabulary
@@ -110,6 +114,63 @@ arbitrary five or six lines.
   user-gated machinery**, not a separate path.
 
 # The Day surface
+
+## Day navigation and view memory
+
+`DailyOsNextRoot` renders one `DayPage` per selected day and injects a
+`_DateStrip` — prev chevron, tappable date label (tap opens the picker,
+long-press returns to today), next chevron, and a `Today` button shown when
+the selection has left today *and* the pane measures wide enough for it — as
+that page's header title. Nothing keys off a device class: a wide pane on a
+phone would carry the button, and a narrow pane on a desktop does not.
+
+Three invariants make repeated navigation cheap:
+
+- **The chevrons never move.** The date label reserves the width of the widest
+  string its date pattern can produce, measured with the real style and
+  `MediaQuery.textScalerOf` (`_stableDateLabelWidth`, cached per locale ×
+  pattern × style × scale) and rendered with tabular figures. The reservation
+  is measured rather than hardcoded, so it follows the user's font-size setting
+  instead of clipping at large text. Which pattern is reserved — `yMMMEd` or
+  year-less `MMMEd` — is itself a fit check against the pane (see below), not a
+  device class: the widest `yMMMEd` string plus two chevrons does not fit a
+  390 pt phone, but it does fit a wide pane on any device.
+- **Day navigation owns its row when the header stacks.** `_MeasuredDayHeader`
+  lays title, toggle and actions out inline when they fit; when they do not, the
+  date strip takes the first row alone. The toggle and the actions then share
+  the second row **only if the room left over covers the toggle's measured
+  width** — otherwise the actions drop to a third row, because the segmented
+  control shrink-wraps to a minimum and would otherwise paint over them.
+  Sharing row one with the actions cluster is what truncated the date to an
+  ellipsis on a phone.
+- **The strip sizes itself against the pane, not the window.** A `LayoutBuilder`
+  supplies the width, because the desktop sidebar is resizable to
+  `maxSidebarWidth` (500 px) and a "desktop" `MediaQuery` can still leave this
+  pane under 500 px. The year is carried only when the widest `yMMMEd` string
+  plus both chevrons fit; the `Today` button only when that *and* the button's
+  own token-derived width fit. Where `Today` is dropped, the way back survives
+  in `showDesignSystemDatePicker`, which the label opens and which carries its
+  own Today quick action.
+
+```mermaid
+stateDiagram-v2
+  [*] --> NoExplicitPick: app start
+  NoExplicitPick --> DefaultAgenda: render, day has a plan
+  NoExplicitPick --> DefaultActivity: render, day has no plan
+  DefaultAgenda --> ExplicitPick: user taps the toggle
+  DefaultActivity --> ExplicitPick: user taps the toggle
+  ExplicitPick --> ExplicitPick: date changes (chevrons / Today / picker / sidebar)
+  ExplicitPick --> [*]: app restart clears the in-memory provider
+```
+
+- **The projection survives the day change.** The root re-keys `DayPage` on
+  every date change, so the selected `PlanView` lives in
+  `dailyOsNextPlanViewProvider` rather than in the page's `State`. `null` there
+  means "not chosen yet" and the page falls back to its per-day default —
+  Agenda with a plan, Activity without one. The provider is in-memory, so a
+  fresh app start lands on that default again, while every date-change path
+  (chevrons, `Today`, the picker, the sidebar month calendar) keeps whichever
+  view the user picked.
 
 ## Tracked time
 
