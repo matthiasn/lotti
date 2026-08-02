@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -181,39 +182,43 @@ void main() {
     );
   });
 
-  test('a large batch yields the isolate instead of blocking it', () async {
+  test('a large batch yields the isolate instead of blocking it', () {
     // The deletes are synchronous, so a full sweep of ten thousand ids would
     // monopolise the isolate and show up as a startup freeze.
     //
-    // Observed rather than assumed, and awaiting the call is not enough — that
-    // lets a microtask run whether or not the loop yields. This records how
-    // many files had been handled when other scheduled work first got a turn:
-    // with the yield that is partway through, without it the whole batch has
-    // already run.
-    final ids = [for (var i = 0; i < 250; i++) 'bulk-$i'];
-    for (final id in ids) {
-      writeSidecar(relativeAgentEntityPath(id));
-    }
+    // Driven by fakeAsync rather than a real timer: the yield is a
+    // `Future.delayed`, so under fake time the batch cannot finish until time
+    // is elapsed. Without the yield it runs to completion on microtasks alone,
+    // which is exactly what this asserts.
+    fakeAsync((async) {
+      final ids = [for (var i = 0; i < 250; i++) 'bulk-$i'];
+      for (final id in ids) {
+        writeSidecar(relativeAgentEntityPath(id));
+      }
 
-    var handled = 0;
-    int? handledWhenInterleaved;
-    final realDelete = reclaimer.deleteSidecar;
-    reclaimer.deleteSidecar = (file) {
-      handled++;
-      return realDelete(file);
-    };
-    Timer.run(() => handledWhenInterleaved ??= handled);
+      int? removed;
+      unawaited(reclaimer.reclaim(entityIds: ids).then((n) => removed = n));
 
-    final removed = await reclaimer.reclaim(entityIds: ids);
+      async.flushMicrotasks();
+      expect(
+        removed,
+        isNull,
+        reason:
+            'Microtasks alone must not carry the whole batch — the loop '
+            'has to give the event loop a turn part-way through.',
+      );
 
-    expect(removed, 250);
-    expect(
-      handledWhenInterleaved,
-      allOf(isNotNull, lessThan(250)),
-      reason:
-          'Other scheduled work must get a turn mid-batch, not only once '
-          'every file has been deleted.',
-    );
+      async
+        ..elapse(Duration.zero)
+        ..flushMicrotasks();
+      expect(removed, 250);
+      for (final id in ids) {
+        expect(
+          File('${root.path}${relativeAgentEntityPath(id)}').existsSync(),
+          isFalse,
+        );
+      }
+    });
   });
 
   test(

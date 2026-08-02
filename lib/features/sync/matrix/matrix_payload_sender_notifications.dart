@@ -318,6 +318,13 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     }
     final file = File(fullPath);
     await file.parent.create(recursive: true);
-    await file.writeAsString(jsonPayload);
+    // Write-then-rename. A process kill or a failure part-way through
+    // `writeAsString` would otherwise leave a truncated sidecar in place, and
+    // the retry's existence check would accept it and upload the corrupt
+    // bytes — after which the inline payload is stripped and the good copy is
+    // gone. A rename is atomic, so the destination is either absent or whole.
+    final staged = File('$fullPath.tmp');
+    await staged.writeAsString(jsonPayload, flush: true);
+    await staged.rename(file.path);
   }
 }
