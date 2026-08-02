@@ -408,6 +408,27 @@ void main() {
         return captured;
       }
 
+      /// Stubs the coordinator's system-message log, which is where the
+      /// `dailyWakeCompleted` watermark that proves a digest ran lives.
+      void withDigestWatermarks(List<AgentMessageEntity> messages) {
+        when(
+          () => repository.getMessagesByKind(
+            dailyOsPlannerAgentId,
+            AgentMessageKind.system,
+          ),
+        ).thenAnswer((_) async => messages);
+      }
+
+      AgentMessageEntity digestWatermark(DateTime at) => makeTestMessage(
+        id: 'milestone-${at.toIso8601String()}',
+        agentId: dailyOsPlannerAgentId,
+        kind: AgentMessageKind.system,
+        createdAt: at,
+        metadata: const AgentMessageMetadata(
+          milestone: AgentMilestone.dailyWakeCompleted,
+        ),
+      );
+
       Future<void> restoreWithPlanner({
         AgentDomainEntity? existingRecord,
       }) async {
@@ -465,24 +486,91 @@ void main() {
         );
       });
 
-      test('re-arms after a consumed digest record', () async {
-        await restoreWithPlanner(
-          existingRecord: AgentDomainEntity.scheduledWake(
+      /// A digest record that fired at 06:00 today and was consumed.
+      AgentDomainEntity consumedTodayAt(DateTime slot) =>
+          AgentDomainEntity.scheduledWake(
             id: digestRecordId,
             agentId: dailyOsPlannerAgentId,
-            scheduledAt: DateTime(2026, 5, 25, 6),
+            scheduledAt: slot,
             status: ScheduledWakeStatus.consumed,
             reason: dayAgentDigestReason,
             updatedAt: now,
             vectorClock: null,
             triggerTokens: [dayAgentDigestToken('dayplan-2026-05-25')],
             workspaceKey: coordinatorDigestWorkspaceKey,
-          ),
+          );
+
+      test('re-arms tomorrow after a digest that completed today', () async {
+        withDigestWatermarks([digestWatermark(DateTime(2026, 5, 25, 6, 2))]);
+
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(DateTime(2026, 5, 25, 6)),
         );
 
         final record = upsertedWakes().single;
         expect(record.status, ScheduledWakeStatus.pending);
         expect(record.scheduledAt, DateTime(2026, 5, 26, 6));
+      });
+
+      test('retries today after a digest interrupted mid-run', () async {
+        // The record was consumed, but no watermark was written: neither the
+        // success nor the failure path ran, so the process died mid-digest.
+        withDigestWatermarks([]);
+
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(DateTime(2026, 5, 25, 6)),
+        );
+
+        final record = upsertedWakes().single;
+        expect(record.status, ScheduledWakeStatus.pending);
+        // Today's slot, already past — so the record is due on the first pass
+        // after start-up rather than tomorrow morning.
+        expect(record.scheduledAt, DateTime(2026, 5, 25, 6));
+        expect(
+          record.triggerTokens,
+          [dayAgentDigestToken('dayplan-2026-05-25')],
+        );
+      });
+
+      test(
+        "a watermark from a previous day does not count as today's run",
+        () async {
+          withDigestWatermarks([digestWatermark(DateTime(2026, 5, 24, 6, 2))]);
+
+          await restoreWithPlanner(
+            existingRecord: consumedTodayAt(DateTime(2026, 5, 25, 6)),
+          );
+
+          expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 25, 6));
+        },
+      );
+
+      test('does not retry a slot from an earlier day', () async {
+        withDigestWatermarks([]);
+
+        // The device was off; that day's briefing can no longer be usefully
+        // filled, and firing it would digest a day already moved past.
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(DateTime(2026, 5, 22, 6)),
+        );
+
+        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 26, 6));
+      });
+
+      test('an unreadable message log skips the retry', () async {
+        when(
+          () => repository.getMessagesByKind(
+            dailyOsPlannerAgentId,
+            AgentMessageKind.system,
+          ),
+        ).thenThrow(Exception('db error'));
+
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(DateTime(2026, 5, 25, 6)),
+        );
+
+        // Of the two failure modes, a duplicate digest is the one that bills.
+        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 26, 6));
       });
 
       test(

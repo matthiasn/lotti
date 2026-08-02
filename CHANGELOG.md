@@ -113,6 +113,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   English — those are now translated — and the Italian and Dutch manuals lose
   their machine-translation artifacts: garbled sentences, mistranslations, and
   formal address where the app speaks informally.
+- **A briefing interrupted by a crash is retried the same day.** If Lotti was
+  killed, or the device shut down, while the morning briefing was being written,
+  that briefing was not just unfinished — it was skipped entirely, and the next
+  one arrived the following morning. The interrupted run is now picked up the
+  next time you open the app that day. A briefing that did finish is never
+  redone, so this costs nothing when nothing went wrong.
 
 ### Changed
 - **The recovery actions on Backfill sync take the standard in-card button

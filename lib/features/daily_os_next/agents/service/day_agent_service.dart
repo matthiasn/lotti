@@ -8,6 +8,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart'
         AgentInferenceSetupMode,
         AgentInferenceSetupOrigin,
         AgentLifecycle,
+        AgentMessageKind,
+        AgentMilestone,
         AgentTemplateKind,
         ScheduledWakeStatus,
         WakeReason;
@@ -896,7 +898,7 @@ class DayAgentService {
         existing.status == ScheduledWakeStatus.pending) {
       return;
     }
-    final next = nextDigestTime(now);
+    final next = await _digestSlotToArm(existing, now);
     await syncService.upsertEntity(
       AgentDomainEntity.scheduledWake(
         id: id,
@@ -915,6 +917,70 @@ class DayAgentService {
       'scheduled coordinator digest wake for ${next.toIso8601String()}',
       subDomain: 'restore',
     );
+  }
+
+  /// The slot to arm: today's again when a run was interrupted before it could
+  /// re-arm, otherwise the ordinary next one.
+  ///
+  /// Reaching here with a *consumed* record means the record fired and neither
+  /// completion path ran — both `_scheduleNextCoordinatorDigest` calls leave a
+  /// pending record behind, on success and on failure alike. So the process
+  /// died mid-digest, and arming `nextDigestTime(now)` would skip to tomorrow:
+  /// today's briefing lost outright rather than retried.
+  ///
+  /// Re-arming the slot it already passed makes the record due immediately, so
+  /// the retry runs on the first pass after start-up.
+  Future<DateTime> _digestSlotToArm(
+    AgentDomainEntity? existing,
+    DateTime now,
+  ) async {
+    final fallback = nextDigestTime(now);
+    if (existing is! ScheduledWakeEntity ||
+        existing.status != ScheduledWakeStatus.consumed) {
+      return fallback;
+    }
+    final slot = existing.scheduledAt;
+    // Only today's briefing is recoverable. A device off for days has slots it
+    // can no longer usefully fill, and firing them would digest days the
+    // coordinator has already moved past.
+    if (slot.isAfter(now) || localDay(slot) != localDay(now)) return fallback;
+    if (await _digestRanAt(slot)) return fallback;
+    domainLogger.log(
+      LogDomain.agentRuntime,
+      'retrying interrupted coordinator digest for '
+      '${slot.toIso8601String()}',
+      subDomain: 'restore',
+    );
+    return slot;
+  }
+
+  /// Whether a digest committed its watermark at or after [slot].
+  ///
+  /// The crash can land *between* the milestone and the re-arm, and that run
+  /// did digest the day — retrying it would bill a second inference for a
+  /// briefing the user already has. An unreadable log therefore answers "yes":
+  /// of the two failure modes, a duplicate digest is the one that costs money,
+  /// and a broken message log at cold start is not a state a retry improves.
+  Future<bool> _digestRanAt(DateTime slot) async {
+    try {
+      final milestones = await repository.getMessagesByKind(
+        dailyOsPlannerAgentId,
+        AgentMessageKind.system,
+      );
+      return milestones.any(
+        (m) =>
+            m.metadata.milestone == AgentMilestone.dailyWakeCompleted &&
+            !m.createdAt.isBefore(slot),
+      );
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'failed to read digest watermark; skipping the retry',
+        stackTrace: s,
+      );
+      return true;
+    }
   }
 
   void _hydrateThrottleDeadlineFromState(

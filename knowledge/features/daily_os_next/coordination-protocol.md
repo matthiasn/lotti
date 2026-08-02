@@ -246,10 +246,20 @@ due until its asynchronous state update lands, and forgetting it at the
 generation boundary would bill the restarted scan twice. The set crosses only
 this in-flight handoff; an independent later scan starts clean.
 
-The lease recovers the **claim**, not the run. A crash after the `consumed` flip
-but before the job finishes still loses that day's briefing, because
-`_ensurePendingDigestWake` sees a consumed record and arms tomorrow's slot. That
-follows from consuming before running and is older than the lease.
+The lease recovers the **claim**, not the run — the run is recovered at cold
+start instead. Both completion paths re-arm a *pending* record, on success and
+on failure alike, so a **consumed** record found at start-up means the process
+died mid-digest. `_ensurePendingDigestWake` then re-arms the slot it already
+passed rather than tomorrow's, which makes the record due immediately and runs
+the retry on the first pass.
+
+Two bounds keep that from costing more than it saves. Only **today's** slot is
+retried: a device off for days cannot usefully fill those windows, and firing
+them would digest days the coordinator has moved past. And the retry is skipped
+when a `dailyWakeCompleted` watermark exists at or after the slot — the crash
+can land between the milestone and the re-arm, and that run did digest the day.
+An unreadable message log answers "it ran", because of the two failure modes a
+duplicate digest is the one that bills.
 
 **The lease bounds cost, not correctness.** Devices partitioned from sync while
 their model providers stay reachable can each hold a locally-consistent claim and
