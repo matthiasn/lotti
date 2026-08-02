@@ -14,6 +14,8 @@ import 'package:mocktail/mocktail.dart' as mt;
 import '../../helpers/fallbacks.dart';
 import '../../mocks/mocks.dart';
 
+const _generatedAudioExtensions = ['m4a', 'aac', 'mp3', 'wav', 'ogg'];
+
 class _GeneratedAudioFilenameScenario {
   const _GeneratedAudioFilenameScenario({
     required this.year,
@@ -46,8 +48,8 @@ class _GeneratedAudioFilenameScenario {
   int get millisecond => millisecondSeed % 1000;
 
   String get extension =>
-      AudioMetadataExtractor.supportedExtensions[millisecondSeed %
-          AudioMetadataExtractor.supportedExtensions.length];
+      _generatedAudioExtensions[millisecondSeed %
+          _generatedAudioExtensions.length];
 
   DateTime get utcTimestamp =>
       DateTime.utc(year, month, day, hour, minute, second, millisecond);
@@ -748,13 +750,6 @@ void main() {
     });
 
     group('constants', () {
-      test('supportedExtensions contains expected formats', () {
-        expect(
-          AudioMetadataExtractor.supportedExtensions,
-          containsAll(['m4a', 'aac', 'mp3', 'wav', 'ogg']),
-        );
-      });
-
       test('playerOpenTimeout is reasonable', () {
         expect(
           AudioMetadataExtractor.playerOpenTimeout,

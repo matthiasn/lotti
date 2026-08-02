@@ -39,27 +39,11 @@ AutoCompleteRule? replaceAtRecursive({
 }
 
 // ignore: unused-code
-AutoCompleteRule? removeAt(
-  AutoCompleteRule? rule, {
-  required List<int> path,
-}) {
+AutoCompleteRule? removeAt(AutoCompleteRule? rule, {required List<int> path}) {
   return replaceAtRecursive(
     rule: rule,
     currentPath: [0],
     replaceAtPath: path,
     replaceWith: null,
-  );
-}
-
-AutoCompleteRule? replaceAt(
-  AutoCompleteRule? rule, {
-  required List<int> replaceAtPath,
-  required AutoCompleteRule? replaceWith,
-}) {
-  return replaceAtRecursive(
-    rule: rule,
-    currentPath: [0],
-    replaceAtPath: replaceAtPath,
-    replaceWith: replaceWith,
   );
 }

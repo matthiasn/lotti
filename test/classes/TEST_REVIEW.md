@@ -16,7 +16,7 @@ under `test/classes/`.
 | `lib/classes/checklist_data.dart` | 16 | No | No dedicated test file; `ChecklistData` has `fromJson`/`toJson` with zero direct round-trip or equality tests |
 | `lib/classes/checklist_item_data.dart` | 25 | Yes (`checklist_item_data_test.dart`, 219 L) | Good; Glados present; `json['checkedAt']` assertion at line 126 omits the decoded value and only checks the original, not the round-tripped value |
 | `lib/classes/config.dart` | 54 | Yes (`config_test.dart`, 213 L) | Good; Glados present for both classes |
-| `lib/classes/day_plan.dart` | 271 | Yes (`day_plan_test.dart`, 735 L) | Test file is the longest in scope (735 L); `DayPlanStatusCommitted` is the only status variant not covered by a JSON round-trip static test (only implied by Glados); `isCommitted` extension getter is never tested |
+| `lib/classes/day_plan.dart` | 271 | Yes (`day_plan_test.dart`, 735 L) | Test file is the longest in scope (735 L); committed serialization remains covered after the unused status convenience getters and `DayPlanDataX` extension were removed |
 | `lib/classes/entity_definitions.dart` | 327 | Yes (`entity_definitions_test.dart`, 338 L) | `EntityDefinition` union (5 variants: `MeasurableDataType`, `CategoryDefinition`, `LabelDefinition`, `HabitDefinition`, `DashboardDefinition`) has **no JSON round-trip tests at all**; `DashboardItem` union (5 variants) also untested |
 | `lib/classes/entry_link.dart` | 47 | Partial (`entry_link_collapsed_test.dart`, 390 L) | File name violates the "one test file per source file" rule — should be `entry_link_test.dart`; `RatingLink` variant's round-trip is exercised by Glados but never by a named static test |
 | `lib/classes/entry_text.dart` | 18 | No | No dedicated test file; `EntryText` has optional `markdown`/`quill` fields whose serialization is untested |
@@ -66,7 +66,7 @@ under `test/classes/`.
   **RESOLVED:** done — added `expect(restored.checkedAt, data.checkedAt)` and `expect(restored.checkedBy, data.checkedBy)` so the decoded object's provenance fields are asserted directly, not only the pre-encode values.
 
 - [x] **[LOW]** `test/classes/day_plan_test.dart` line 424 — `status helper methods work correctly` tests `isAgreed`, `isDraft`, `needsReview` but not `isCommitted` (the `DayPlanStatusCommitted` variant added in the impl at `day_plan.dart:89`). The `isCommitted` getter is only implied by Glados indirectly.
-  **RESOLVED:** (stale) no `isCommitted` getter exists in `day_plan.dart` (only `isDraft`/`isAgreed`/`needsReview` in `DayPlanDataX`). The committed variant is already covered by the parameterized status-getter dispatch table (`day_plan_test.dart:273`) asserting it reports false on all three getters, plus a dedicated `committed can be serialized and deserialized` round-trip test.
+  **RESOLVED:** stale — the status convenience getters and `DayPlanDataX` were removed because they had no production callers. The committed variant remains covered by its serialization round-trip test.
 
 ---
 

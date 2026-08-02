@@ -159,10 +159,7 @@ void main() {
           endTime: DateTime(2026, 1, 14, 11, 30),
         );
 
-        expect(
-          block.duration,
-          equals(const Duration(hours: 2, minutes: 30)),
-        );
+        expect(block.duration, equals(const Duration(hours: 2, minutes: 30)));
       });
 
       test('can be serialized without note', () {
@@ -237,10 +234,7 @@ void main() {
       });
 
       test('defaults sortOrder to 0', () {
-        const ref = PinnedTaskRef(
-          taskId: 'task-123',
-          categoryId: 'category-1',
-        );
+        const ref = PinnedTaskRef(taskId: 'task-123', categoryId: 'category-1');
 
         expect(ref.sortOrder, equals(0));
       });
@@ -250,9 +244,7 @@ void main() {
       test('can be serialized and deserialized with all fields', () {
         final data = DayPlanData(
           planDate: DateTime(2026, 1, 14),
-          status: DayPlanStatus.agreed(
-            agreedAt: DateTime(2026, 1, 14, 8),
-          ),
+          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 14, 8)),
           dayLabel: 'Focused Workday',
           agreedAt: DateTime(2026, 1, 14, 8),
           completedAt: DateTime(2026, 1, 14, 18),
@@ -271,10 +263,7 @@ void main() {
             ),
           ],
           pinnedTasks: const [
-            PinnedTaskRef(
-              taskId: 'task-1',
-              categoryId: 'category-work',
-            ),
+            PinnedTaskRef(taskId: 'task-1', categoryId: 'category-work'),
           ],
         );
 
@@ -297,111 +286,6 @@ void main() {
         expect(data.plannedBlocks, isEmpty);
         expect(data.pinnedTasks, isEmpty);
       });
-
-      test('blocksForCategory returns sorted blocks', () {
-        final data = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          plannedBlocks: [
-            PlannedBlock(
-              id: 'block-2',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 1, 14, 14),
-              endTime: DateTime(2026, 1, 14, 16),
-            ),
-            PlannedBlock(
-              id: 'block-1',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 1, 14, 9),
-              endTime: DateTime(2026, 1, 14, 12),
-            ),
-            PlannedBlock(
-              id: 'block-3',
-              categoryId: 'cat-2',
-              startTime: DateTime(2026, 1, 14, 10),
-              endTime: DateTime(2026, 1, 14, 11),
-            ),
-          ],
-        );
-
-        final blocks = data.blocksForCategory('cat-1');
-        expect(blocks.length, equals(2));
-        expect(blocks[0].id, equals('block-1'));
-        expect(blocks[1].id, equals('block-2'));
-      });
-
-      test('categoryIds returns all unique categories', () {
-        final data = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          plannedBlocks: [
-            PlannedBlock(
-              id: 'block-1',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 1, 14, 9),
-              endTime: DateTime(2026, 1, 14, 11),
-            ),
-            PlannedBlock(
-              id: 'block-2',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 1, 14, 14),
-              endTime: DateTime(2026, 1, 14, 15),
-            ),
-            PlannedBlock(
-              id: 'block-3',
-              categoryId: 'cat-2',
-              startTime: DateTime(2026, 1, 14, 12),
-              endTime: DateTime(2026, 1, 14, 13),
-            ),
-          ],
-        );
-
-        expect(data.categoryIds, equals({'cat-1', 'cat-2'}));
-      });
-
-      glados.Glados<_GeneratedDayPlanBlocks>(
-        glados.any.dayPlanBlocks,
-        glados.ExploreConfig(numRuns: 140),
-      ).test('category grouping invariants hold', (generated) {
-        final blocks = generated.toBlocks();
-        final data = DayPlanData(
-          planDate: DateTime(2026, 5, 25),
-          status: const DayPlanStatus.draft(),
-          plannedBlocks: blocks,
-        );
-
-        final expectedCategories = {
-          for (final block in blocks) block.categoryId,
-        };
-        expect(data.categoryIds, expectedCategories, reason: '$generated');
-
-        for (final categoryId in expectedCategories) {
-          final categoryBlocks = data.blocksForCategory(categoryId);
-          expect(
-            categoryBlocks.every((block) => block.categoryId == categoryId),
-            isTrue,
-            reason: '$generated',
-          );
-          expect(
-            categoryBlocks.map((block) => block.id),
-            unorderedEquals(
-              blocks
-                  .where((block) => block.categoryId == categoryId)
-                  .map((block) => block.id),
-            ),
-            reason: '$generated',
-          );
-          for (var i = 1; i < categoryBlocks.length; i++) {
-            expect(
-              categoryBlocks[i].startTime.isBefore(
-                categoryBlocks[i - 1].startTime,
-              ),
-              isFalse,
-              reason: '$generated',
-            );
-          }
-        }
-      }, tags: 'glados');
 
       glados.Glados<_GeneratedDayPlanBlocks>(
         glados.any.dayPlanBlocks,
@@ -435,10 +319,7 @@ void main() {
             jsonDecode(json) as Map<String, dynamic>,
           );
 
-          expect(
-            (fromJson as DayPlanStatusNeedsReview).reason,
-            equals(reason),
-          );
+          expect((fromJson as DayPlanStatusNeedsReview).reason, equals(reason));
         }
       });
     });

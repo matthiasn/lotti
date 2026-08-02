@@ -19,9 +19,6 @@ class OutboxDailyVolume {
   /// Number of outbox items sent on this day.
   final int itemCount;
 
-  /// Convenience getter for megabytes.
-  double get totalMegabytes => totalBytes / (1024 * 1024);
-
   @override
   String toString() =>
       'OutboxDailyVolume(date: $date, totalBytes: $totalBytes, '

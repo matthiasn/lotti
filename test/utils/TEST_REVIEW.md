@@ -65,7 +65,7 @@
 - [x] **[LOW]** `test/utils/segmented_button_test.dart:37` — `expect(find.text(testLabel), findsOneWidget)` alone proves nothing beyond "widget built". The test should also verify that the `semanticsLabel` defaults to `label` when unspecified, and overrides it when a custom value is supplied.
   **RESOLVED:** (already addressed in the test file by a prior batch — confirmed true, no change) the file now carries `uses label as semanticsLabel when semanticsLabel is not provided` (asserts `Text.semanticsLabel == label`), `uses explicit semanticsLabel when provided` (asserts the override + value pass-through), and an exhaustive 5×4 label × semanticsLabel matrix asserting `semanticsLabel ?? label` and `value` for every combination. The original `findsOneWidget` test also retains a value-field assertion, so no vacuous test remains.
 - [x] **[LOW]** `test/utils/immediate_exit_test.dart:19-23` — `expect(immediateExit, isA<Function>())` tests existence, not behavior. Per AGENTS.md "no constructor smoke tests" rule, this has zero value. The two FFI-resolution tests are legitimate; the function-type check should be removed.
-  **RESOLVED:** deleted the `immediateExit is a callable function` test. The two FFI-resolution tests remain and still cover `canResolveImmediateExit` (which transitively forces the same `_posixExit` symbol lookup `immediateExit` would use). The `lotti/utils/immediate_exit.dart` import stays valid because `canResolveImmediateExit` is exported from it.
+  **RESOLVED:** deleted the smoke test. The test-only FFI-resolution shim was subsequently removed because it had no runtime caller and did not exercise process termination behavior.
 
 ---
 

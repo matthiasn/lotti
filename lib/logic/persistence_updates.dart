@@ -1,9 +1,6 @@
-import 'dart:async';
-
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
-import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -23,7 +20,7 @@ import 'package:lotti/utils/file_utils.dart';
 /// Update, geolocation and definition entry points of [PersistenceLogic].
 ///
 /// Owns the public `updateXxx` wrappers (routing through the facade to the
-/// update-ops builders), [addGeolocation]/[addGeolocationAsync], the
+/// update-ops builders), [addGeolocation], the
 /// label-preserving [updateJournalEntity], the core [updateDbEntity] writer
 /// and the definition-op wrappers.
 class PersistenceUpdates extends PersistenceCollaboratorBase {
@@ -68,15 +65,6 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
     data: data,
     entryText: entryText,
   );
-
-  /// Adds geolocation to a journal entry asynchronously.
-  ///
-  /// Delegates to [GeolocationService.addGeolocationAsync].
-  FutureOr<Geolocation?> addGeolocationAsync(String journalEntityId) =>
-      geolocationService.addGeolocationAsync(
-        journalEntityId,
-        logic.updateDbEntity,
-      );
 
   /// Fire-and-forget: add geolocation to entry.
   ///

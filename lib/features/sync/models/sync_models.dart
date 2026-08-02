@@ -19,23 +19,10 @@ enum SyncStep {
 
 /// Per-step progress counters (`processed`/`total`) for the re-sync UI.
 class StepProgress {
-  const StepProgress({
-    required this.processed,
-    required this.total,
-  });
+  const StepProgress({required this.processed, required this.total});
 
   final int processed;
   final int total;
-
-  StepProgress copyWith({
-    int? processed,
-    int? total,
-  }) {
-    return StepProgress(
-      processed: processed ?? this.processed,
-      total: total ?? this.total,
-    );
-  }
 }
 
 /// Immutable snapshot of a re-sync run: whether it is active, overall

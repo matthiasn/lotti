@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'rating_question.freezed.dart';
-part 'rating_question.g.dart';
 
 /// Defines a single question within a rating catalog.
 ///
@@ -44,7 +43,4 @@ abstract class RatingQuestionOption with _$RatingQuestionOption {
     /// Normalized value (0.0-1.0) assigned when this option is selected.
     required double value,
   }) = _RatingQuestionOption;
-
-  factory RatingQuestionOption.fromJson(Map<String, dynamic> json) =>
-      _$RatingQuestionOptionFromJson(json);
 }

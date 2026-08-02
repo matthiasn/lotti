@@ -88,9 +88,8 @@ sealed class DayPlanStatus with _$DayPlanStatus {
   const factory DayPlanStatus.draft() = DayPlanStatusDraft;
 
   /// User has agreed to this plan.
-  const factory DayPlanStatus.agreed({
-    required DateTime agreedAt,
-  }) = DayPlanStatusAgreed;
+  const factory DayPlanStatus.agreed({required DateTime agreedAt}) =
+      DayPlanStatusAgreed;
 
   /// Plan needs review due to changes after agreement.
   const factory DayPlanStatus.needsReview({
@@ -104,9 +103,8 @@ sealed class DayPlanStatus with _$DayPlanStatus {
   /// Day-agent terminal state: user committed to the plan and the agent
   /// has shifted from drafting to shepherding mode. One-way from
   /// [DayPlanStatus.draft]; further changes require an explicit refine.
-  const factory DayPlanStatus.committed({
-    required DateTime committedAt,
-  }) = DayPlanStatusCommitted;
+  const factory DayPlanStatus.committed({required DateTime committedAt}) =
+      DayPlanStatusCommitted;
 
   factory DayPlanStatus.fromJson(Map<String, dynamic> json) =>
       _$DayPlanStatusFromJson(json);
@@ -215,16 +213,4 @@ abstract class DayPlanData with _$DayPlanData {
 
   factory DayPlanData.fromJson(Map<String, dynamic> json) =>
       _$DayPlanDataFromJson(json);
-}
-
-/// Extension methods for DayPlanData.
-extension DayPlanDataX on DayPlanData {
-  /// Get all unique category IDs that have planned blocks.
-  Set<String> get categoryIds =>
-      plannedBlocks.map((block) => block.categoryId).toSet();
-
-  /// Get planned blocks for a specific category, sorted by start time.
-  List<PlannedBlock> blocksForCategory(String categoryId) =>
-      plannedBlocks.where((block) => block.categoryId == categoryId).toList()
-        ..sort((a, b) => a.startTime.compareTo(b.startTime));
 }

@@ -144,14 +144,7 @@ void main() {
     });
 
     test('defines reasonable file size limit', () {
-      expect(
-        AudioImportConstants.maxFileSizeBytes,
-        equals(500 * 1024 * 1024),
-      );
-    });
-
-    test('defines logging domain', () {
-      expect(AudioImportConstants.loggingDomain, equals('audio_import'));
+      expect(AudioImportConstants.maxFileSizeBytes, equals(500 * 1024 * 1024));
     });
   });
 

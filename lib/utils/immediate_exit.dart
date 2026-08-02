@@ -1,7 +1,5 @@
 import 'dart:ffi';
 
-import 'package:meta/meta.dart';
-
 /// Calls POSIX `_exit()` to terminate the process immediately.
 ///
 /// Unlike Dart's `exit()` (which calls C `exit()`), POSIX `_exit()` does NOT:
@@ -30,18 +28,4 @@ void Function(int) _lookupPosixExit() {
   return dylib.lookupFunction<Void Function(Int32), void Function(int)>(
     '_exit',
   );
-}
-
-/// Returns true if the POSIX `_exit` symbol can be resolved.
-/// Used in tests to verify FFI availability without actually exiting.
-@visibleForTesting
-bool canResolveImmediateExit() {
-  try {
-    // Force resolution of the lazy field.
-    // ignore: unnecessary_statements
-    _posixExit;
-    return true;
-  } catch (_) {
-    return false;
-  }
 }
