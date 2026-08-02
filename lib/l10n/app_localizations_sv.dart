@@ -3655,6 +3655,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextActivityRetryLoad => 'Try loading again';
 
   @override
+  String get dailyOsNextActivityRetryStep => 'Försök igen';
+
+  @override
   String get dailyOsNextActivitySaved => 'Saved locally';
 
   @override

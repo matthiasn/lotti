@@ -1,7 +1,11 @@
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/service/agent_retention_service.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 
 import 'day_planner_corpus.dart';
 
@@ -75,6 +79,42 @@ void _expectNoHistoryGrowth({
   );
 }
 
+/// Seeds [days] of history, sweeps retention over it, and reports the live
+/// row counts per entity type that survived.
+Future<Map<String, int>> _sweptCountsByType(int days) async {
+  final agentDb = AgentDatabase(inMemoryDatabase: true, background: false);
+  final processingDb = DayProcessingDb(
+    inMemoryDatabase: true,
+    background: false,
+  );
+  addTearDown(agentDb.close);
+  addTearDown(processingDb.close);
+
+  final corpus = DayPlannerCorpus(
+    agentDb: agentDb,
+    processingDb: processingDb,
+    days: days,
+  );
+  await corpus.seed();
+  // The corpus is seeded backwards from DayPlannerCorpus.baseDay, so the sweep
+  // has to run at that same instant for the age horizons to mean anything.
+  await withClock(
+    Clock.fixed(
+      DateTime(
+        DayPlannerCorpus.baseDay.year,
+        DayPlannerCorpus.baseDay.month,
+        DayPlannerCorpus.baseDay.day,
+        18,
+      ),
+    ),
+    AgentRetentionService(
+      repository: corpus.repository,
+      domainLogger: DomainLogger(loggingService: LoggingService()),
+    ).sweep,
+  );
+  return corpus.countsByType();
+}
+
 void main() {
   test('the harness produces its full metric set', () async {
     // Deliberately tiny: this asserts the harness still measures what it
@@ -97,9 +137,11 @@ void main() {
       ]),
     );
     expect(result['days'], 2);
-    // Two days of the documented per-day shape: plan + 3 captures + 6 status
-    // events + 2 change sets.
-    expect(result['agentEntities'], 2 * (1 + 3 + 6 + 2));
+    // Two days of the documented per-day shape — plan + 3 captures + 6 status
+    // events + 4 observations (each a message and its payload) + 2 change
+    // sets — plus the one completed-digest milestone the corpus seeds so
+    // retention's watermark floor does not suppress the whole sweep.
+    expect(result['agentEntities'], 2 * (1 + 3 + 6 + 4 * 2 + 2) + 1);
     expect(result['processingJobs'], 2 * 3);
   });
 
@@ -215,6 +257,68 @@ void main() {
     expect(counter.statements, 7);
     expect(counter.rowsReturned, 1);
   });
+
+  test(
+    'retention holds the swept types flat as history accumulates',
+    () async {
+      final sixMonths = await _sweptCountsByType(
+        dayPlannerBenchmarkCorpora['6 months']!,
+      );
+      final twelveMonths = await _sweptCountsByType(
+        dayPlannerBenchmarkCorpora['12 months']!,
+      );
+
+      // The corpus really did double: user-authored rows grow with install
+      // age, which is exactly what retention must never touch.
+      expect(
+        twelveMonths['day_plan'],
+        dayPlannerBenchmarkCorpora['12 months'],
+      );
+      expect(
+        twelveMonths['day_plan'],
+        greaterThan(sixMonths['day_plan']!),
+        reason: 'Without this the comparison below proves nothing.',
+      );
+      expect(
+        twelveMonths['day_capture'],
+        greaterThan(sixMonths['day_capture']!),
+      );
+
+      // ... while what retention DOES sweep reads the same at twelve months
+      // as at six. Observations are deliberately excluded for now (they sit
+      // inside the message DAG, see AgentRetentionPolicy), so they still grow
+      // — asserted here so the exclusion is visible rather than assumed.
+      expect(
+        twelveMonths['agentMessage'],
+        greaterThan(sixMonths['agentMessage']!),
+        reason:
+            'Not yet bounded. When the observation sweep lands this assertion '
+            'inverts, which is the point of stating it.',
+      );
+      // Not flat, and deliberately so: each day's newest event is kept
+      // because the persona provider reads it, so retention turns
+      // `statusEventsPerDay` rows per day into exactly one. Growth is
+      // therefore linear in days at 1/day rather than 6/day — a 6x
+      // reduction, not elimination, and the gate says which.
+      final extraDays =
+          dayPlannerBenchmarkCorpora['12 months']! -
+          dayPlannerBenchmarkCorpora['6 months']!;
+      expect(
+        twelveMonths['day_status_event']! - sixMonths['day_status_event']!,
+        extraDays,
+        reason: 'One retained event per aged-out day, not six.',
+      );
+      expect(
+        twelveMonths['day_status_event'],
+        lessThan(
+          dayPlannerBenchmarkCorpora['12 months']! *
+              DayPlannerCorpus.statusEventsPerDay,
+        ),
+        reason: 'Still far below the unpruned pile.',
+      );
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
 
   test(
     'current-day storage operations do not grow from 1 to 12 months',

@@ -1670,6 +1670,7 @@
   "dailyOsNextActivityReady": "Gata de utilizare",
   "dailyOsNextActivityRetry": "Reîncercați transcrierea",
   "dailyOsNextActivityRetryLoad": "Încărcați din nou",
+  "dailyOsNextActivityRetryStep": "Reîncercați",
   "dailyOsNextActivitySaved": "Salvat local",
   "dailyOsNextActivitySetupRequired": "Înregistrarea dvs. este în siguranță. Configurați un model de transcriere audio, apoi încercați din nou.",
   "dailyOsNextActivitySubmitted": "Adăugat la zi",

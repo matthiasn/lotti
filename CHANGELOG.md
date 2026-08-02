@@ -40,6 +40,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   finished — a new install, or a run of failures — it reaches back about two
   days rather than to the beginning.
 
+### Changed
+- **The agent store stops growing without limit.** Day-status events — the
+  running record of how each day was going, raised several times a day — were
+  kept indefinitely, so the database grew every month with nothing ever
+  released. The full record is now kept for ninety days, and older days keep
+  only their final status, which is what the app shows when you scroll back to
+  them. Space already taken on disk is reused for new data rather than handed
+  back, so the file stops growing rather than shrinking. **Nothing you wrote is ever affected**: check-ins, plans, day
+  summaries, directives, saved knowledge, reports and personalities are kept for
+  good, as are weekly totals, your run history and ratings, and the record behind
+  every suggestion you accepted or rejected. Tidying runs in the background after
+  start-up and can be interrupted safely.
+
 ## [1.0.0]
 ### Changed
 - **The habits tab and consistency heatmap open faster.** Loading habit

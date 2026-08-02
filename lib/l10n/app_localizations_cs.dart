@@ -3699,6 +3699,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextActivityRetryLoad => 'Zkusit načíst znovu';
 
   @override
+  String get dailyOsNextActivityRetryStep => 'Zkusit znovu';
+
+  @override
   String get dailyOsNextActivitySaved => 'Uloženo místně';
 
   @override

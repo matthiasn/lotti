@@ -1670,6 +1670,7 @@
   "dailyOsNextActivityReady": "Prêt à utiliser",
   "dailyOsNextActivityRetry": "Réessayer la transcription",
   "dailyOsNextActivityRetryLoad": "Recharger",
+  "dailyOsNextActivityRetryStep": "Réessayer",
   "dailyOsNextActivitySaved": "Enregistré localement",
   "dailyOsNextActivitySetupRequired": "Ton enregistrement est en sécurité. Configure un modèle de transcription audio, puis réessaie.",
   "dailyOsNextActivitySubmitted": "Ajouté à la journée",

@@ -1841,6 +1841,7 @@
   "dailyOsNextActivityAgentJobSetupRequired": "Ingen AI-modell är ännu inställd för planering.",
   "dailyOsNextActivityAgentJobTemporary": "AI-tjänsten var upptagen eller gick inte att nå.",
   "dailyOsNextActivityOpenAiSetup": "Öppna Daily OS-inställningar",
+  "dailyOsNextActivityRetryStep": "Försök igen",
   "dailyOsNextAgendaCapacityComfortable": "Bekvämt",
   "dailyOsNextAgendaCapacityNearFull": "Nästan full",
   "dailyOsNextAgendaCapacityNoPlan": "Ingen plan än",

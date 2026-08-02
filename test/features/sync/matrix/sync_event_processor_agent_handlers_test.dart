@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -441,7 +442,10 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await withClock(
+        Clock.fixed(DateTime(2026, 8, 1, 9)),
+        () => processor.process(event: event, journalDb: journalDb),
+      );
 
       verifyNever(() => mockAgentRepo.upsertEntity(any()));
     });
@@ -1290,7 +1294,10 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await withClock(
+        Clock.fixed(DateTime(2026, 8, 1, 9)),
+        () => processor.process(event: event, journalDb: journalDb),
+      );
 
       verifyNever(() => mockAgentRepo.upsertEntity(any()));
       verify(

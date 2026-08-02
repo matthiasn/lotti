@@ -328,7 +328,12 @@ class _ActivityCard extends StatelessWidget {
               children: [
                 if (_canRetry(entry))
                   _AsyncActivityButton(
-                    label: context.messages.dailyOsNextActivityRetry,
+                    // The shared label reads "Retry transcription", which is
+                    // wrong on a draft, refine or capture-parse row — none of
+                    // them transcribes anything.
+                    label: entry.kind == DayActivityEntryKind.agentJob
+                        ? context.messages.dailyOsNextActivityRetryStep
+                        : context.messages.dailyOsNextActivityRetry,
                     action: onRetry!,
                     // A draft job has no recording to reassure the user about.
                     failureMessage: entry.kind == DayActivityEntryKind.agentJob

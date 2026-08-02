@@ -3708,6 +3708,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextActivityRetryLoad => 'Încărcați din nou';
 
   @override
+  String get dailyOsNextActivityRetryStep => 'Reîncercați';
+
+  @override
   String get dailyOsNextActivitySaved => 'Salvat local';
 
   @override

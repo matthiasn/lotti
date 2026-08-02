@@ -7111,4 +7111,32 @@ void main() {
       ).called(1);
     });
   });
+
+  group('retention delegation', () {
+    // The collaborator's own behaviour is covered in
+    // agent_repo_retention_test.dart; what the facade adds is the wiring, so
+    // this goes through the facade against a real database.
+    test('pruneDayStatusEventsBefore reaches the store', () async {
+      // Two, so one is prunable — each day's newest event is kept.
+      for (final (id, hour) in [('ancient', 1), ('ancient-newer', 2)]) {
+        await repo.upsertEntity(
+          makeTestDayStatusEvent(
+            id: id,
+            raisedAt: DateTime(2020, 1, 1, hour),
+            createdAt: DateTime(2020, 1, 1, hour),
+          ),
+        );
+      }
+
+      expect(
+        await repo.pruneDayStatusEventsBefore(
+          DateTime(2021),
+          batchSize: 10,
+          maxBatches: 5,
+        ),
+        1,
+      );
+      expect(await repo.getEntity('ancient'), isNull);
+    });
+  });
 }

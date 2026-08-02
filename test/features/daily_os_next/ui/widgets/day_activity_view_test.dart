@@ -774,7 +774,10 @@ void main() {
       );
       expect(find.text(messages.dailyOsNextActivityUseToPlan), findsNothing);
 
-      await tester.tap(find.text(messages.dailyOsNextActivityRetry));
+      // Not the shared "Retry transcription" label — nothing here
+      // transcribes.
+      expect(find.text(messages.dailyOsNextActivityRetry), findsNothing);
+      await tester.tap(find.text(messages.dailyOsNextActivityRetryStep));
       await tester.pump();
 
       verify(() => outbox.retryNow('draft_dayplan-2026-07-18')).called(1);

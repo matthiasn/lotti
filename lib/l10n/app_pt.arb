@@ -1840,6 +1840,7 @@
   "dailyOsNextActivityAgentJobSetupRequired": "Ainda não há nenhum modelo de IA configurado para planear.",
   "dailyOsNextActivityAgentJobTemporary": "O serviço de IA estava ocupado ou inacessível.",
   "dailyOsNextActivityOpenAiSetup": "Abrir a configuração do Daily OS",
+  "dailyOsNextActivityRetryStep": "Tentar de novo",
   "dailyOsNextAgendaCapacityComfortable": "Confortável",
   "dailyOsNextAgendaCapacityNearFull": "Quase cheio",
   "dailyOsNextAgendaCapacityNoPlan": "Ainda não há plano",

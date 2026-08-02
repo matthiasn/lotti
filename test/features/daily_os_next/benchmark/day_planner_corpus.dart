@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -50,6 +51,11 @@ class DayPlannerCorpus {
   static const int statusEventsPerDay = 6;
   static const int changeSetsPerDay = 2;
 
+  /// Observations the coordinator writes about itself per day. Each is two
+  /// rows — the message and the payload carrying its text — which is what
+  /// makes this the heaviest derived type by bytes.
+  static const int observationsPerDay = 4;
+
   final AgentDatabase agentDb;
   final DayProcessingDb processingDb;
 
@@ -76,10 +82,28 @@ class DayPlannerCorpus {
 
   /// Seeds the whole corpus under the coordinator.
   ///
+  /// Includes one completed-digest milestone at [baseDay]: retention floors
+  /// its status-event cutoff at the digest watermark, so a corpus with no
+  /// completed digest legitimately prunes nothing and the growth gate would
+  /// measure that instead of the age bound. A real install has digested.
+  ///
   /// Under the coordinator specifically, because that is the agent that
   /// actually accumulates — a `day_agent:<dayId>` holds one day and goes cold,
   /// so seeding those would measure nothing.
   Future<void> seed() async {
+    await repository.upsertEntity(
+      AgentDomainEntity.agentMessage(
+        id: 'digest-watermark',
+        agentId: dailyOsPlannerAgentId,
+        threadId: 'thread-digest',
+        kind: AgentMessageKind.system,
+        createdAt: DateTime(baseDay.year, baseDay.month, baseDay.day, 6),
+        vectorClock: null,
+        metadata: const AgentMessageMetadata(
+          milestone: AgentMilestone.dailyWakeCompleted,
+        ),
+      ),
+    );
     for (var offset = 0; offset < days; offset++) {
       final day = dayAt(offset);
       final dayId = dayPlanId(day);
@@ -138,6 +162,34 @@ class DayPlannerCorpus {
             raisedAt: at,
             createdAt: at,
             vectorClock: null,
+          ),
+        );
+      }
+
+      for (var i = 0; i < observationsPerDay; i++) {
+        // Under the DAY agent, not the coordinator. That is where Daily OS
+        // actually writes them, and it is the growth axis a per-agent cap
+        // cannot see: one more cold identity, with a full quota of its own,
+        // every day forever.
+        await repository.upsertEntity(
+          AgentDomainEntity.agentMessagePayload(
+            id: 'observation-payload-$dayId-$i',
+            agentId: 'day_agent:$dayId',
+            createdAt: at,
+            vectorClock: null,
+            content: {'text': 'The user protected the morning block ($i).'},
+          ),
+        );
+        await repository.upsertEntity(
+          AgentDomainEntity.agentMessage(
+            id: 'observation-$dayId-$i',
+            agentId: 'day_agent:$dayId',
+            threadId: 'thread-$dayId',
+            kind: AgentMessageKind.observation,
+            createdAt: at,
+            vectorClock: null,
+            contentEntryId: 'observation-payload-$dayId-$i',
+            metadata: const AgentMessageMetadata(),
           ),
         );
       }
@@ -304,6 +356,19 @@ class DayPlannerCorpus {
       'days': days,
       'agentEntities': agentRows.read<int>('c'),
       'processingJobs': jobRows.read<int>('c'),
+    };
+  }
+
+  /// Live agent-entity row counts per `type`, so a retention assertion can
+  /// name which rows a sweep removed rather than only how many.
+  Future<Map<String, int>> countsByType() async {
+    final rows = await agentDb
+        .customSelect(
+          'SELECT type, COUNT(*) AS c FROM agent_entities GROUP BY type',
+        )
+        .get();
+    return {
+      for (final row in rows) row.read<String>('type'): row.read<int>('c'),
     };
   }
 

@@ -1670,6 +1670,7 @@
   "dailyOsNextActivityReady": "Bereit",
   "dailyOsNextActivityRetry": "Transkription erneut versuchen",
   "dailyOsNextActivityRetryLoad": "Erneut laden",
+  "dailyOsNextActivityRetryStep": "Erneut versuchen",
   "dailyOsNextActivitySaved": "Lokal gespeichert",
   "dailyOsNextActivitySetupRequired": "Deine Aufnahme ist sicher. Richte ein Modell für Audiotranskription ein und versuch es dann erneut.",
   "dailyOsNextActivitySubmitted": "Zum Tag hinzugefügt",

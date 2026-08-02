@@ -63,6 +63,21 @@ lib/features/agents/
 └── ui/           # AI summary card, internals panel, settings tabs
 ```
 
+## What the store forgets, and what it never forgets
+
+**The user's own material is never deleted by retention** — captures, plans, day
+summaries, directives, saved knowledge, reports and personalities are kept for
+good, as are weekly totals, run history and ratings, and the record behind every
+suggestion accepted or rejected.
+
+What the app does forget is the machine's own working residue. Today that means
+day-status events older than ninety days, keeping each day's last one. Tidying
+runs in the background after start-up and is safe to interrupt.
+
+The policy, what is deliberately kept and why, how it behaves across devices,
+and what is still classified but not yet swept are in
+[agent persistence and sync](../../../knowledge/features/agents/persistence-and-sync.md).
+
 ## How it works
 
 Design decisions behind the runtime are recorded in
