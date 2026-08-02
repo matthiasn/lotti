@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/database/agent_repo_links.dart';
 import 'package:lotti/features/agents/database/agent_repo_observation_retention.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/agent_event_adapter.dart';
@@ -334,6 +335,83 @@ void main() {
         expect((await sweep()).isEmpty, isTrue);
       },
     );
+  });
+
+  group('critical observations', () {
+    Future<void> seedObservationWithPriority(
+      String id,
+      DateTime at,
+      String priority, {
+      String? parentId,
+    }) async {
+      final payloadId = 'payload-$id';
+      await core.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: payloadId,
+          agentId: agentId,
+          createdAt: at,
+          vectorClock: null,
+          content: <String, Object?>{
+            'text': 'note',
+            'priority': priority,
+            'category': 'grievance',
+          },
+        ),
+      );
+      await core.upsertEntity(
+        makeTestMessage(
+          id: id,
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: at,
+          contentEntryId: payloadId,
+        ),
+      );
+      if (parentId != null) {
+        await links.upsertLink(
+          AgentLink.messagePrev(
+            id: 'link-$id',
+            fromId: id,
+            toId: parentId,
+            createdAt: at,
+            updatedAt: at,
+            vectorClock: null,
+          ),
+        );
+      }
+      await setHead(id);
+    }
+
+    test('a critical note is never pruned, however old', () async {
+      // ObservationPriority.critical is a user grievance or excellence note
+      // that must be reviewed at the next one-on-one. Six months without one
+      // is exactly when it matters, and is exactly when the horizon lapses.
+      await seedObservationWithPriority('critical-1', oldest, 'critical');
+      await seedMessage('tip', young, parentId: 'critical-1');
+
+      expect((await sweep()).isEmpty, isTrue);
+      expect(await messageIds(), ['critical-1', 'tip']);
+    });
+
+    test('a routine note next to it is still collected', () async {
+      await seedObservationWithPriority('routine-1', oldest, 'routine');
+      await seedMessage('tip', young, parentId: 'routine-1');
+
+      expect((await sweep()).messageIds, ['routine-1']);
+    });
+
+    test('a critical note blocks what follows it, like a summary', () async {
+      await seedObservationWithPriority('critical-1', oldest, 'critical');
+      await seedMessage('after', older, parentId: 'critical-1');
+      await seedMessage('tip', young, parentId: 'after');
+
+      expect(
+        (await sweep()).isEmpty,
+        isTrue,
+        reason: 'Pruning `after` would strand the critical note as a head.',
+      );
+    });
   });
 
   group('partial sync', () {

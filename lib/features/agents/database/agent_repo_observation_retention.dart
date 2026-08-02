@@ -115,14 +115,21 @@ class AgentRepoObservationRetention {
   }) => _db.transaction(() async {
     final rows = await _db
         .customSelect(
-          'SELECT id, subtype, created_at, '
-          r"json_extract(serialized, '$.prevMessageId') AS prev_message_id "
-          'FROM agent_entities WHERE agent_id = ?1 AND type = ?2 '
-          'AND deleted_at IS NULL ORDER BY created_at, id LIMIT ?3',
+          'SELECT e.id AS id, e.subtype AS subtype, '
+          'e.created_at AS created_at, '
+          r"json_extract(e.serialized, '$.prevMessageId') AS prev_message_id, "
+          r"json_extract(p.serialized, '$.content.priority') AS priority "
+          'FROM agent_entities AS e '
+          'LEFT JOIN agent_entities AS p '
+          r"  ON p.id = json_extract(e.serialized, '$.contentEntryId') "
+          '  AND p.type = ?4 AND p.deleted_at IS NULL '
+          'WHERE e.agent_id = ?1 AND e.type = ?2 '
+          'AND e.deleted_at IS NULL ORDER BY e.created_at, e.id LIMIT ?3',
           variables: [
             Variable<String>(agentId),
             const Variable<String>(AgentEntityTypes.agentMessage),
             Variable<int>(maxMessages + 1),
+            const Variable<String>(_payloadType),
           ],
           readsFrom: {_db.agentEntities},
         )
@@ -163,8 +170,14 @@ class AgentRepoObservationRetention {
           PrunableMessage(
             id: row.read<String>('id'),
             createdAt: row.read<DateTime>('created_at'),
+            // A critical observation is a user grievance or excellence note
+            // that must be reviewed at the next one-on-one, so it is not
+            // residue and is never prunable. Read through one join rather
+            // than per-row payload reads, which would undo the bounding this
+            // sweep is built around.
             isObservation:
-                row.readNullable<String>('subtype') == _observationSubtype,
+                row.readNullable<String>('subtype') == _observationSubtype &&
+                row.readNullable<String>('priority') != _criticalPriority,
             parentIds: parents[row.read<String>('id')] ?? const [],
             hintedParentIds: hints[row.read<String>('id')] ?? const [],
           ),
@@ -284,3 +297,7 @@ class AgentRepoObservationRetention {
 }
 
 const _observationSubtype = 'observation';
+const _criticalPriority = 'critical';
+
+/// `AgentDbConversions.entityType` for `agentMessagePayload`.
+const _payloadType = 'agentMessagePayload';

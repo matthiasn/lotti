@@ -355,6 +355,14 @@ inside the agent's causal message DAG, which is where a naive sweep does damage:
 invariants are testable without a database; `AgentRepoObservationRetention`
 only supplies the rows and executes the plan.
 
+**A critical observation is never residue.** `ObservationPriority.critical`
+marks a user grievance or excellence note that must be reviewed at the next
+one-on-one, so it is excluded from pruning however old it is — and, like a
+retained summary, it blocks everything causally after it. The priority lives in
+the observation's *payload* rather than its message row, so the sweep reads it
+through a single `LEFT JOIN` on `contentEntryId`; per-candidate payload reads
+would undo the bounding the sweep is built around.
+
 **Age alone never decides.** Causal and wall-clock order diverge across devices,
 so the cutoff only marks *candidates* — a message is prunable when it is an old
 observation **and every parent of it is prunable**, which stops dead at the first
