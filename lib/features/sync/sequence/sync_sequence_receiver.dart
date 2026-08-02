@@ -511,6 +511,8 @@ class SyncSequenceReceiver {
   ///
   /// [minAge] defers returning rows freshly flagged as missing for that long
   /// — see [SyncDatabase.getMissingEntries] for the rationale.
+  /// [requestedMinAge] separately controls when an already-requested row may
+  /// be retried; when omitted it follows [minAge].
   Future<List<SyncSequenceLogItem>> getMissingEntries({
     int limit = 50,
     int maxRequestCount = 10,

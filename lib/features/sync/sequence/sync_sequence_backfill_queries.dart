@@ -119,6 +119,9 @@ class SyncSequenceBackfillQueries {
   ///
   /// [minAge] defers rows freshly flagged as missing — see
   /// [SyncDatabase.getMissingEntriesWithLimits] for the rationale.
+  /// [requestedMinAge] independently cools down rows already requested; when
+  /// omitted it follows [minAge]. [suppressedCoverage] is applied before the
+  /// per-host quota.
   Future<List<SyncSequenceLogItem>> getMissingEntriesWithLimits({
     int limit = 50,
     int maxRequestCount = 10,
@@ -126,6 +129,7 @@ class SyncSequenceBackfillQueries {
     Duration minAge = Duration.zero,
     Duration? requestedMinAge,
     int? maxPerHost,
+    Map<String, int> suppressedCoverage = const {},
     int offset = 0,
   }) {
     return _syncDatabase.getMissingEntriesWithLimits(
@@ -135,6 +139,7 @@ class SyncSequenceBackfillQueries {
       minAge: minAge,
       requestedMinAge: requestedMinAge,
       maxPerHost: maxPerHost,
+      suppressedCoverage: suppressedCoverage,
       offset: offset,
     );
   }

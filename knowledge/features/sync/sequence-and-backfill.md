@@ -158,12 +158,13 @@ for that device's durable `onboardingSnapshotAccepted` before staging history.
 
 ```mermaid
 stateDiagram-v2
+  note right of AwaitingAcceptance: Sender-side lifecycle
   [*] --> AwaitingAcceptance: sender persists begin
   AwaitingAcceptance --> Active: target persists lease and accepts
   AwaitingAcceptance --> Ending: acceptance times out, abort queued
   Active --> Ending: sender queues end barrier
-  Ending --> Completed: sender observes complete end echo
-  Ending --> Aborted: sender observes aborted end echo, cooldown remains
+  Ending --> Completed: Matrix sends complete end
+  Ending --> Aborted: Matrix sends aborted end, cooldown remains
   Active --> [*]: lease timestamp expires
   Ending --> [*]: lease timestamp expires
   Completed --> [*]
@@ -173,10 +174,13 @@ stateDiagram-v2
 The persisted state strings are `awaitingAcceptance`, `active`, `ending`,
 `completed` and `aborted`. `ending` keeps sender-side filtering alive while the
 low-priority end barrier drains; the sender terminalizes it only when Matrix
-echoes that end event back in room order. A completed round stops suppressing
-immediately. An aborted round deliberately remains suppressive until its
-original lease expires, giving a failed partial transfer the same hour-scale
-cooldown as a disconnected sender. Expiry is not another stored state:
+confirms that event was sent. Sender echoes are consumed by the sent-event
+registry and are not a lifecycle signal. On the receiver, an inbound round is
+only `active` and transitions directly to `completed` or `aborted` when its
+matching End arrives. A completed round stops suppressing immediately. An
+aborted round deliberately remains suppressive until its original lease
+expires, giving a failed partial transfer the same hour-scale cooldown as a
+disconnected sender. Expiry is not another stored state:
 suppression queries require `expiresAt` to remain in the future. The fixed,
 non-renewing lease is one hour.
 A duplicate begin can re-acknowledge a still-active round, but never renews its
@@ -187,10 +191,11 @@ repair forever.
 The begin freezes a `coverageUpperBounds` map from every origin host in the
 sender's resolved sequence history to that host's highest included counter.
 While the inbound lease is active, automatic request selection omits counters
-at or below those per-host bounds. Once the sender learns the accepting
-device's host id, it likewise ignores already-sent backfill requests from that
-exact device for every covered origin range. Requests from other devices,
-unknown origin hosts and counters above the snapshot remain actionable.
+at or below those per-host bounds before applying per-host quotas. Once the
+sender learns the accepting device's host id, it likewise ignores already-sent
+backfill requests from that exact device for every covered origin range before
+applying the response cap. Requests from other devices, unknown origin hosts
+and counters above the snapshot remain actionable.
 
 A begin cannot retract a backfill event the sender already processed before
 the handshake reached the room. That small pre-handshake window can still
@@ -199,7 +204,10 @@ of requests from the target host is filtered even when those requests were
 emitted just before begin; the protocol prevents the repeated amplification,
 not time travel.
 
-Before history is staged, the sender emits its own authoritative `burned`
+Begin and Accepted use a dedicated priority ahead of the normal high-priority
+queue so a pre-existing history backlog cannot consume the one-minute
+acceptance timeout. Before history is staged, the sender emits its own
+authoritative `burned`
 counters at or below its origin-host bound as compact ranges, with at most 250
 represented counters per event. It cannot claim burns for other origin hosts;
 any genuine residual gaps there become eligible when the barrier or lease ends.

@@ -16,8 +16,10 @@ import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -482,6 +484,74 @@ void main() {
       expect(signal.value, AddDeviceJoinState.ready);
       expect(signal.target?.deviceId, verifiedPhone.deviceId);
       expect(signal.target?.userId, '@alice:example.com');
+    });
+
+    testWidgets('logs once when a verified target has no resolvable user ID', (
+      tester,
+    ) async {
+      when(() => mockMatrixService.loadConfig()).thenAnswer((_) async => null);
+      final logger = MockDomainLogger();
+      when(
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(),
+          subDomain: 'addDeviceTarget',
+        ),
+      ).thenReturn(null);
+      await getIt.unregister<DomainLogger>();
+      getIt.registerSingleton<DomainLogger>(logger);
+
+      final signal = newSignal(tester);
+      final container = ProviderContainer(
+        overrides: overrides(calls: _Calls()),
+      );
+      addTearDown(container.dispose);
+      useTallSurface(tester);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidgetWithScaffold(
+            SingleChildScrollView(
+              child: AddDeviceView(
+                pollInterval: const Duration(days: 1),
+                signal: signal,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      container.read(syncDevicesControllerProvider.notifier).state =
+          AsyncData<List<SyncDeviceInfo>>([...existing, newPhone]);
+      await tester.pump();
+      await tester.pump();
+      container.read(syncDevicesControllerProvider.notifier).state =
+          AsyncData<List<SyncDeviceInfo>>([...existing, verifiedPhone]);
+      await tester.pump();
+      await tester.pump();
+
+      expect(signal.value, AddDeviceJoinState.joined);
+      expect(signal.target, isNull);
+      verify(
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(),
+          subDomain: 'addDeviceTarget',
+        ),
+      ).called(1);
+
+      container.read(syncDevicesControllerProvider.notifier).state =
+          AsyncData<List<SyncDeviceInfo>>([...existing, verifiedPhone]);
+      await tester.pump();
+      verifyNever(
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(),
+          subDomain: 'addDeviceTarget',
+        ),
+      );
     });
 
     testWidgets('stops claiming to wait once the roster keeps failing', (

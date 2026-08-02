@@ -106,7 +106,7 @@ void main() {
         {'local-host': 12, 'peer-host': 7},
         reason: 'the sender remains protected while the end barrier drains',
       );
-      await service.handleMessage(
+      await service.handleMessageSent(
         enqueued.whereType<SyncOnboardingSnapshotEnd>().single,
       );
       expect((await db.onboardingSyncRound('round-1'))?.state, 'completed');
@@ -403,6 +403,72 @@ void main() {
     expect(end.roundId, 'failed-round');
     expect(end.reason, OnboardingSyncEndReason.aborted);
     expect((await db.onboardingSyncRound('failed-round'))?.state, 'ending');
+  });
+
+  test(
+    'acceptance timeout emits an aborted end without a real timer',
+    () async {
+      service = OnboardingSyncService(
+        syncDatabase: db,
+        enqueueMessage: (message) async => enqueued.add(message),
+        getHostId: () async => 'local-host',
+        getSnapshotCoverage: () async => const {'local-host': 12},
+        getLocalUserId: () => '@sync:example.org',
+        getLocalDeviceId: () => 'DESKTOP',
+        serviceClock: serviceClock,
+        roundIdFactory: () => 'timeout-round',
+        acceptanceWaiter: (_, _) async =>
+            throw TimeoutException('acceptance timed out'),
+      );
+
+      await expectLater(
+        service.beginOutbound(
+          const OnboardingSyncTarget(
+            userId: '@sync:example.org',
+            deviceId: 'PHONE',
+          ),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+
+      expect(enqueued.whereType<SyncOnboardingSnapshotBegin>(), hasLength(1));
+      final end = enqueued.whereType<SyncOnboardingSnapshotEnd>().single;
+      expect(end.reason, OnboardingSyncEndReason.aborted);
+    },
+  );
+
+  test('abort failure preserves the original begin error', () async {
+    service = OnboardingSyncService(
+      syncDatabase: db,
+      enqueueMessage: (message) async {
+        if (message is SyncOnboardingSnapshotBegin) {
+          throw StateError('original begin failure');
+        }
+        throw StateError('abort enqueue failure');
+      },
+      getHostId: () async => 'local-host',
+      getSnapshotCoverage: () async => const {'local-host': 12},
+      getLocalUserId: () => '@sync:example.org',
+      getLocalDeviceId: () => 'DESKTOP',
+      serviceClock: serviceClock,
+      roundIdFactory: () => 'double-failure-round',
+    );
+
+    await expectLater(
+      service.beginOutbound(
+        const OnboardingSyncTarget(
+          userId: '@sync:example.org',
+          deviceId: 'PHONE',
+        ),
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'original begin failure',
+        ),
+      ),
+    );
   });
 
   test('active outbound rounds merge coverage by the highest bound', () async {

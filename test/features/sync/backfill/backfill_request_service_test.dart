@@ -48,9 +48,6 @@ class _UndeletableFile implements File {
   dynamic noSuchMethod(Invocation i) => _real.noSuchMethod(i);
 }
 
-class _MockOnboardingSyncService extends Mock
-    implements OnboardingSyncService {}
-
 class _GeneratedBackfillCandidate {
   const _GeneratedBackfillCandidate({
     required this.useAliceHost,
@@ -378,10 +375,11 @@ void main() {
     test(
       'automatic queue-drain requests exclude the active onboarding range',
       () async {
-        final onboarding = _MockOnboardingSyncService();
+        final onboarding = MockOnboardingSyncService();
         final requestSent = Completer<SyncBackfillRequest>();
         final service = buildService(
           maxBatchSize: 2,
+          domainLogger: mockLogging,
           onboardingSyncService: onboarding,
         );
         when(onboarding.activeInboundCoverage).thenAnswer(
@@ -395,6 +393,7 @@ void main() {
             minAge: any(named: 'minAge'),
             requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            suppressedCoverage: {aliceHostId: 10},
             offset: any(named: 'offset'),
           ),
         ).thenAnswer((invocation) async {
@@ -406,7 +405,7 @@ void main() {
           ];
         });
         when(
-          () => mockOutboxService.enqueueMessage(any<SyncMessage>()),
+          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
         ).thenAnswer((invocation) async {
           requestSent.complete(
             invocation.positionalArguments.single as SyncBackfillRequest,
@@ -424,13 +423,42 @@ void main() {
           const [BackfillRequestEntry(hostId: bobHostId, counter: 5)],
         );
         verify(onboarding.activeInboundCoverage).called(1);
+        verify(
+          () => mockLogging.log(
+            LogDomain.sync,
+            'processBackfillRequests: filtered onboarding-suppressed=1 '
+            'already-queued=0 entries',
+            subDomain: 'backfill.process',
+          ),
+        ).called(1);
       },
     );
+
+    test('enqueue failure does not start the retry cooldown', () async {
+      final service = buildService();
+      when(
+        () => mockSequenceService.getMissingEntries(
+          limit: any(named: 'limit'),
+          maxRequestCount: any(named: 'maxRequestCount'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((_) async => [_createMissingLogItem(aliceHostId, 5)]);
+      when(
+        () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+      ).thenThrow(StateError('enqueue failed'));
+
+      expect(await service.processFullBackfill(), 0);
+
+      verify(
+        () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+      ).called(1);
+      verifyNever(() => mockSequenceService.markAsRequested(any()));
+    });
 
     test(
       'manual full backfill deliberately ignores onboarding suppression',
       () async {
-        final onboarding = _MockOnboardingSyncService();
+        final onboarding = MockOnboardingSyncService();
         final service = buildService(onboardingSyncService: onboarding);
         when(
           () => mockSequenceService.getMissingEntries(
@@ -534,7 +562,7 @@ void main() {
         );
         verifyNever(() => mockSyncDatabase.getPendingBackfillEntries());
         verifyNever(
-          () => mockOutboxService.enqueueMessage(
+          () => mockOutboxService.enqueueMessageOrThrow(
             any<SyncMessage>(),
           ),
         );
@@ -738,7 +766,7 @@ void main() {
         ).thenAnswer((_) async => missingEntries);
 
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
 
         when(
@@ -753,7 +781,7 @@ void main() {
 
         // Should have enqueued 1 batched backfill request containing 2 entries
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured;
         expect(captured.length, 1);
         final request = captured[0] as SyncBackfillRequest;
@@ -809,7 +837,7 @@ void main() {
             bobHostId: bobHostId,
           ),
         );
-        when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
+        when(() => mockOutboxService.enqueueMessageOrThrow(any())).thenAnswer((
           invocation,
         ) async {
           enqueuedRequests.add(
@@ -910,13 +938,15 @@ void main() {
               bobHostId: bobHostId,
             ),
           );
-          when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
-            invocation,
-          ) async {
-            enqueuedRequests.add(
-              invocation.positionalArguments.single as SyncBackfillRequest,
-            );
-          });
+          when(() => mockOutboxService.enqueueMessageOrThrow(any())).thenAnswer(
+            (
+              invocation,
+            ) async {
+              enqueuedRequests.add(
+                invocation.positionalArguments.single as SyncBackfillRequest,
+              );
+            },
+          );
           when(() => mockSequenceService.markAsRequested(any())).thenAnswer((
             invocation,
           ) async {
@@ -1000,7 +1030,7 @@ void main() {
           ),
         ).thenAnswer((_) async => missingEntries);
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -1010,7 +1040,7 @@ void main() {
         async.flushMicrotasks();
 
         verify(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).called(1);
         verify(() => mockSequenceService.markAsRequested(any())).called(1);
 
@@ -1044,7 +1074,7 @@ void main() {
         );
 
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -1104,7 +1134,7 @@ void main() {
         async.flushMicrotasks();
 
         // Should not enqueue any messages
-        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
 
         service.dispose();
       });
@@ -1275,7 +1305,7 @@ void main() {
         ).thenAnswer((_) async => missingEntries);
 
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -1374,7 +1404,7 @@ void main() {
         );
 
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -1388,7 +1418,7 @@ void main() {
 
         // Should only request entries 1 and 3 (entry 2 filtered out)
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured;
         expect(captured.length, 1);
         final request = captured[0] as SyncBackfillRequest;
@@ -1434,7 +1464,7 @@ void main() {
         async.flushMicrotasks();
 
         // Should not enqueue any message
-        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
 
         service.dispose();
       });
@@ -1479,7 +1509,7 @@ void main() {
           },
         );
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -1492,7 +1522,7 @@ void main() {
         async.flushMicrotasks();
 
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured;
         final request = captured.single as SyncBackfillRequest;
         expect(request.entries.map((e) => e.counter).toList(), [3]);
@@ -1530,7 +1560,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1544,7 +1574,7 @@ void main() {
 
           // Should have sent backfill request
           final captured = verify(
-            () => mockOutboxService.enqueueMessage(captureAny()),
+            () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
           ).captured;
           expect(captured.length, 1);
           final request = captured[0] as SyncBackfillRequest;
@@ -1556,6 +1586,29 @@ void main() {
 
           service.dispose();
         });
+      });
+
+      test('enqueue failure does not mark a re-request as sent', () async {
+        final service = buildService(maxBatchSize: 50);
+        when(
+          () => mockSequenceService.getRequestedEntries(
+            limit: 50,
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => [_createRequestedLogItem(aliceHostId, 10)]);
+        when(
+          () => mockSequenceService.resetRequestCounts(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+        ).thenThrow(StateError('enqueue failed'));
+
+        expect(await service.processReRequest(), 0);
+
+        verify(
+          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+        ).called(1);
+        verifyNever(() => mockSequenceService.markAsRequested(any()));
       });
 
       test('returns zero when no requested entries', () {
@@ -1576,7 +1629,7 @@ void main() {
           async.flushMicrotasks();
 
           expect(result, 0);
-          verifyNever(() => mockOutboxService.enqueueMessage(any()));
+          verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
 
           service.dispose();
         });
@@ -1614,7 +1667,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1625,7 +1678,7 @@ void main() {
 
           // Should only request entries 10 and 12 (entry 11 filtered out)
           final captured = verify(
-            () => mockOutboxService.enqueueMessage(captureAny()),
+            () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
           ).captured;
           expect(captured.length, 1);
           final request = captured[0] as SyncBackfillRequest;
@@ -1675,7 +1728,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1687,7 +1740,7 @@ void main() {
 
           expect(result, 1);
           final captured = verify(
-            () => mockOutboxService.enqueueMessage(captureAny()),
+            () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
           ).captured;
           final request = captured.single as SyncBackfillRequest;
           expect(request.entries.map((e) => e.counter).toList(), [12]);
@@ -1875,7 +1928,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1936,7 +1989,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -1999,7 +2052,7 @@ void main() {
               () => mockSequenceService.resetRequestCounts(any()),
             ).thenAnswer((_) async {});
             when(
-              () => mockOutboxService.enqueueMessage(any()),
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
             ).thenAnswer((_) async {});
             when(
               () => mockSequenceService.markAsRequested(any()),
@@ -2046,7 +2099,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -2060,7 +2113,9 @@ void main() {
           expect(result, 3);
 
           // Should have sent 2 backfill requests
-          verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+          verify(
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
+          ).called(2);
 
           service.dispose();
         });
@@ -2094,7 +2149,7 @@ void main() {
           ),
         ).thenAnswer((_) async => missingItems);
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((_) async {});
         when(
           () => mockSequenceService.markAsRequested(any()),
@@ -2119,7 +2174,7 @@ void main() {
             service.nudge();
             async.flushMicrotasks();
 
-            verifyNever(() => mockOutboxService.enqueueMessage(any()));
+            verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
             verifyNever(
               () => mockSequenceService.getMissingEntriesWithLimits(
                 limit: any(named: 'limit'),
@@ -2148,7 +2203,9 @@ void main() {
             service.nudge();
             async.flushMicrotasks();
 
-            verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+            verify(
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
+            ).called(1);
           });
         },
       );
@@ -2167,7 +2224,9 @@ void main() {
 
           await service.processFullBackfill();
 
-          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+          verify(
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
+          ).called(1);
         },
       );
     });
@@ -2193,7 +2252,7 @@ void main() {
               ),
             ).thenAnswer((_) async => [_createMissingLogItem(aliceHostId, 99)]);
             when(
-              () => mockOutboxService.enqueueMessage(any()),
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
             ).thenAnswer((_) async {});
             when(
               () => mockSequenceService.markAsRequested(any()),
@@ -2218,7 +2277,9 @@ void main() {
               ),
             ).captured;
             expect(captured.single, Duration.zero);
-            verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+            verify(
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
+            ).called(1);
           });
         },
       );
@@ -2373,7 +2434,7 @@ void main() {
               return [missingEntry];
             });
             when(
-              () => mockOutboxService.enqueueMessage(any()),
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
             ).thenAnswer((_) async {});
             when(
               () => mockSequenceService.markAsRequested(any()),
@@ -2414,7 +2475,9 @@ void main() {
               Duration.zero,
               reason: 'nudgeAfterDrain must bypass the missing debounce',
             );
-            verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+            verify(
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
+            ).called(1);
           });
         },
       );
@@ -2535,7 +2598,7 @@ void main() {
               () => mockSequenceService.resetRequestCounts(any()),
             ).thenAnswer((_) async {});
             when(
-              () => mockOutboxService.enqueueMessage(any()),
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
             ).thenAnswer((_) async {});
             when(
               () => mockSequenceService.markAsRequested(any()),
@@ -2621,7 +2684,7 @@ void main() {
             () => mockSequenceService.resetRequestCounts(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOutboxService.enqueueMessage(any()),
+            () => mockOutboxService.enqueueMessageOrThrow(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockSequenceService.markAsRequested(any()),
@@ -2702,7 +2765,7 @@ void main() {
               () => mockSequenceService.resetRequestCounts(any()),
             ).thenAnswer((_) async {});
             when(
-              () => mockOutboxService.enqueueMessage(any()),
+              () => mockOutboxService.enqueueMessageOrThrow(any()),
             ).thenAnswer((_) async {});
             when(
               () => mockSequenceService.markAsRequested(any()),

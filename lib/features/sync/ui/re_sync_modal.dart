@@ -87,6 +87,9 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
       _includeJournalEntities &&
       _includeAgentEntities;
 
+  OnboardingSyncService get _onboardingService =>
+      widget.onboardingSyncService ?? getIt<OnboardingSyncService>();
+
   Future<void> _start() async {
     if (!_canStart) return;
 
@@ -109,9 +112,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     OutboundOnboardingRound? onboardingRound;
     try {
       if (_isFullOnboarding) {
-        final onboardingService =
-            widget.onboardingSyncService ?? getIt<OnboardingSyncService>();
-        onboardingRound = await onboardingService.beginOutbound(
+        onboardingRound = await _onboardingService.beginOutbound(
           widget.onboardingTarget!,
         );
       }
@@ -131,9 +132,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
             },
           );
       if (onboardingRound != null) {
-        final onboardingService =
-            widget.onboardingSyncService ?? getIt<OnboardingSyncService>();
-        await onboardingService.completeOutbound(onboardingRound);
+        await _onboardingService.completeOutbound(onboardingRound);
       }
       if (!mounted) return;
       setState(() {
@@ -143,9 +142,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     } catch (error, stackTrace) {
       if (onboardingRound != null) {
         try {
-          final onboardingService =
-              widget.onboardingSyncService ?? getIt<OnboardingSyncService>();
-          await onboardingService.abortOutbound(onboardingRound);
+          await _onboardingService.abortOutbound(onboardingRound);
         } catch (abortError, abortStackTrace) {
           getIt<DomainLogger>().error(
             LogDomain.sync,

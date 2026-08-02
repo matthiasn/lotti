@@ -128,27 +128,29 @@ class BackfillResponseHandler {
         return;
       }
 
-      // Limit entries to process to prevent outbox flooding
-      final boundedEntries =
-          request.entries.length > SyncTuning.maxBackfillResponseBatchSize
-          ? request.entries
-                .take(SyncTuning.maxBackfillResponseBatchSize)
-                .toList()
-          : request.entries;
-
       final onboardingCoverage = await _onboardingSyncService
           ?.activeOutboundCoverageForRequester(request.requesterId);
-      final entriesToProcess = onboardingCoverage == null
-          ? boundedEntries
-          : boundedEntries
+      final coverageFilteredEntries = onboardingCoverage == null
+          ? request.entries
+          : request.entries
                 .where(
                   (entry) =>
                       entry.counter > (onboardingCoverage[entry.hostId] ?? -1),
                 )
                 .toList();
+      // Covered stale requests must not consume the response cap and hide a
+      // genuine uncovered request later in the same event.
+      final entriesToProcess =
+          coverageFilteredEntries.length >
+              SyncTuning.maxBackfillResponseBatchSize
+          ? coverageFilteredEntries
+                .take(SyncTuning.maxBackfillResponseBatchSize)
+                .toList()
+          : coverageFilteredEntries;
 
       final truncated =
-          request.entries.length > SyncTuning.maxBackfillResponseBatchSize;
+          coverageFilteredEntries.length >
+          SyncTuning.maxBackfillResponseBatchSize;
 
       _trace(
         'handleRequest: processing ${entriesToProcess.length} of ${request.entries.length} entries from=${request.requesterId}${truncated ? ' (truncated)' : ''} cooldownCache=${recentlyResponded.length}',

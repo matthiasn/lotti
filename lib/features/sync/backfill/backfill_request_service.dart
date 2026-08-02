@@ -268,7 +268,7 @@ class BackfillRequestService {
             .toList();
 
         // Send backfill request message
-        await _outboxService.enqueueMessage(
+        await _outboxService.enqueueMessageOrThrow(
           SyncMessage.backfillRequest(
             entries: requestEntries,
             requesterId: requesterId,
@@ -428,7 +428,7 @@ class BackfillRequestService {
           .toList();
 
       // Send single backfill request message
-      await _outboxService.enqueueMessage(
+      await _outboxService.enqueueMessageOrThrow(
         SyncMessage.backfillRequest(
           entries: entries,
           requesterId: requesterId,
@@ -548,7 +548,8 @@ class BackfillRequestService {
     final alreadyQueued = await _syncDatabase.getPendingBackfillEntries();
     final selected = <SyncSequenceLogItem>[];
     var offset = 0;
-    var filteredCount = 0;
+    var suppressedCount = 0;
+    var alreadyQueuedCount = 0;
 
     // The debounce only protects the bounded automatic path against
     // out-of-order priority arrivals; a queue-drain nudge is precisely
@@ -569,15 +570,26 @@ class BackfillRequestService {
       // only on automatic paths so a user who presses "request missing
       // now" is not silently held back for 10 minutes.
       final page = useLimits
-          ? await _sequenceLogService.getMissingEntriesWithLimits(
-              limit: remaining,
-              maxRequestCount: _maxRequestCount,
-              maxAge: _maxAge,
-              minAge: effectiveMinAge,
-              requestedMinAge: _requestRetryCooldown,
-              maxPerHost: _maxPerHost,
-              offset: offset,
-            )
+          ? suppressedCoverage.isEmpty
+                ? await _sequenceLogService.getMissingEntriesWithLimits(
+                    limit: remaining,
+                    maxRequestCount: _maxRequestCount,
+                    maxAge: _maxAge,
+                    minAge: effectiveMinAge,
+                    requestedMinAge: _requestRetryCooldown,
+                    maxPerHost: _maxPerHost,
+                    offset: offset,
+                  )
+                : await _sequenceLogService.getMissingEntriesWithLimits(
+                    limit: remaining,
+                    maxRequestCount: _maxRequestCount,
+                    maxAge: _maxAge,
+                    minAge: effectiveMinAge,
+                    requestedMinAge: _requestRetryCooldown,
+                    maxPerHost: _maxPerHost,
+                    suppressedCoverage: suppressedCoverage,
+                    offset: offset,
+                  )
           : await _sequenceLogService.getMissingEntries(
               limit: remaining,
               maxRequestCount: _maxRequestCount,
@@ -598,7 +610,8 @@ class BackfillRequestService {
         unsuppressedPage,
         alreadyQueued,
       );
-      filteredCount += page.length - filteredPage.length;
+      suppressedCount += page.length - unsuppressedPage.length;
+      alreadyQueuedCount += unsuppressedPage.length - filteredPage.length;
       selected.addAll(filteredPage);
 
       if (page.length < remaining) {
@@ -606,9 +619,10 @@ class BackfillRequestService {
       }
     }
 
-    if (filteredCount > 0) {
+    if (suppressedCount > 0 || alreadyQueuedCount > 0) {
       _trace(
-        'processBackfillRequests: filtered $filteredCount already-queued entries',
+        'processBackfillRequests: filtered onboarding-suppressed='
+        '$suppressedCount already-queued=$alreadyQueuedCount entries',
         subDomain: 'backfill.process',
       );
     }

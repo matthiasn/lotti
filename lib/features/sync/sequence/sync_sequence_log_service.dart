@@ -165,6 +165,8 @@ class SyncSequenceLogService {
   Future<bool> hasActionableEntries() => _receiver.hasActionableEntries();
 
   /// Get entries marked as missing or requested for sending backfill requests.
+  /// [minAge] debounces newly missing rows, while [requestedMinAge]
+  /// independently controls when an already-requested row may be retried.
   Future<List<SyncSequenceLogItem>> getMissingEntries({
     int limit = 50,
     int maxRequestCount = 10,
@@ -296,6 +298,9 @@ class SyncSequenceLogService {
       _backfillQueries.watchBackfillMissingCount();
 
   /// Get missing entries with age and per-host limits for automatic backfill.
+  /// [requestedMinAge] separately cools down requested rows, while [minAge]
+  /// debounces newly missing rows. [suppressedCoverage] is applied before
+  /// per-host quotas so covered onboarding rows cannot consume them.
   Future<List<SyncSequenceLogItem>> getMissingEntriesWithLimits({
     int limit = 50,
     int maxRequestCount = 10,
@@ -303,6 +308,7 @@ class SyncSequenceLogService {
     Duration minAge = Duration.zero,
     Duration? requestedMinAge,
     int? maxPerHost,
+    Map<String, int> suppressedCoverage = const {},
     int offset = 0,
   }) => _backfillQueries.getMissingEntriesWithLimits(
     limit: limit,
@@ -311,6 +317,7 @@ class SyncSequenceLogService {
     minAge: minAge,
     requestedMinAge: requestedMinAge,
     maxPerHost: maxPerHost,
+    suppressedCoverage: suppressedCoverage,
     offset: offset,
   );
 

@@ -234,7 +234,8 @@ class _GeneratedPriorityScenario {
   int get expectedPriority {
     return switch (kind) {
       _GeneratedPriorityMessageKind.onboardingSnapshotBegin ||
-      _GeneratedPriorityMessageKind.onboardingSnapshotAccepted ||
+      _GeneratedPriorityMessageKind.onboardingSnapshotAccepted =>
+        onboardingHandshakePriority,
       _GeneratedPriorityMessageKind.onboardingTerminalCounters =>
         OutboxPriority.high.index,
       _GeneratedPriorityMessageKind.onboardingSnapshotEnd =>
@@ -325,6 +326,23 @@ void main() {
         );
       },
     );
+
+    test('onboarding handshake precedes high-priority history', () {
+      final begin = const _GeneratedPriorityScenario(
+        kind: _GeneratedPriorityMessageKind.onboardingSnapshotBegin,
+        statusIsUpdate: false,
+        counterSlot: 1,
+        deleted: false,
+      ).message;
+      final journal = const _GeneratedPriorityScenario(
+        kind: _GeneratedPriorityMessageKind.journalEntity,
+        statusIsUpdate: false,
+        counterSlot: 1,
+        deleted: false,
+      ).message;
+
+      expect(priorityForMessage(begin), lessThan(priorityForMessage(journal)));
+    });
   });
 
   final now = DateTime(2024, 3, 15, 12);

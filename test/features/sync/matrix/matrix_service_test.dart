@@ -206,9 +206,8 @@ void main() {
           // Invoke the onSent callback so the matrix-type bucket is
           // incremented for `agentBundle`.
           final onSent =
-              invocation.namedArguments[#onSent]
-                  as void Function(String, SyncMessage);
-          onSent(
+              invocation.namedArguments[#onSent] as MatrixMessageSentCallback;
+          await onSent(
             r'$evt-bundle',
             invocation.namedArguments[#message] as SyncMessage,
           );
@@ -220,6 +219,10 @@ void main() {
           agentId: 'agent-1',
           wakeRunKey: 'run-1',
         );
+        SyncMessage? observedSentMessage;
+        service.onSyncMessageSent = (message) async {
+          observedSentMessage = message;
+        };
         final result = await service.sendMatrixMsg(
           bundle,
           myRoomId: '!room:s',
@@ -227,6 +230,7 @@ void main() {
 
         expect(result, isTrue);
         expect(service.messageCounts['agentBundle'], 1);
+        expect(observedSentMessage, bundle);
       },
     );
 
@@ -1106,9 +1110,8 @@ void main() {
         ),
       ).thenAnswer((invocation) async {
         final onSent =
-            invocation.namedArguments[#onSent]
-                as void Function(String, SyncMessage);
-        onSent(
+            invocation.namedArguments[#onSent] as MatrixMessageSentCallback;
+        await onSent(
           r'$evt',
           invocation.namedArguments[#message] as SyncMessage,
         );

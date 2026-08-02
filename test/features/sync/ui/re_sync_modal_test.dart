@@ -23,9 +23,6 @@ import '../../../widget_test_utils.dart';
 
 // ignore_for_file: avoid_redundant_argument_values
 
-class _MockOnboardingSyncService extends Mock
-    implements OnboardingSyncService {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -217,7 +214,7 @@ void main() {
         target: target,
         coverageUpperBounds: {'desktop-host': 99},
       );
-      final onboarding = _MockOnboardingSyncService();
+      final onboarding = MockOnboardingSyncService();
       when(
         () => onboarding.beginOutbound(target),
       ).thenAnswer((_) async => round);
@@ -248,6 +245,36 @@ void main() {
     },
   );
 
+  testWidgets('partial target sync does not start onboarding suppression', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    final onboarding = MockOnboardingSyncService();
+    await pumpModal(
+      tester,
+      onboardingTarget: target,
+      onboardingSyncService: onboarding,
+    );
+    await selectPreset(tester, ReSyncRangePreset.last30Days);
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    verifyNever(() => onboarding.beginOutbound(target));
+    verify(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: true,
+        includeAgentEntities: true,
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).called(1);
+  });
+
   testWidgets('onboarding failure still attempts the aborted end barrier', (
     tester,
   ) async {
@@ -261,7 +288,7 @@ void main() {
       target: target,
       coverageUpperBounds: {'desktop-host': 99},
     );
-    final onboarding = _MockOnboardingSyncService();
+    final onboarding = MockOnboardingSyncService();
     when(
       () => onboarding.beginOutbound(target),
     ).thenAnswer((_) async => round);

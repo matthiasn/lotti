@@ -274,7 +274,11 @@ mixin _SyncDbBackfill on _$SyncDatabase {
   ///           lets short-lived gaps caused by out-of-order priority messages
   ///           resolve via the standard sync path before backfill fires. Pass
   ///           `Duration.zero` to disable (default).
+  /// [requestedMinAge] - Independent cooldown for rows already requested;
+  ///                     defaults to [minAge] when omitted.
   /// [maxPerHost] - Maximum entries to include per host
+  /// [suppressedCoverage] - Per-host inclusive upper bounds excluded in SQL
+  ///                        before the per-host quota is applied.
   Future<List<SyncSequenceLogItem>> getMissingEntriesWithLimits({
     int limit = 50,
     int maxRequestCount = 10,
@@ -282,6 +286,7 @@ mixin _SyncDbBackfill on _$SyncDatabase {
     Duration minAge = Duration.zero,
     Duration? requestedMinAge,
     int? maxPerHost,
+    Map<String, int> suppressedCoverage = const {},
     DateTime? now,
     int offset = 0,
   }) async {
@@ -330,6 +335,14 @@ mixin _SyncDbBackfill on _$SyncDatabase {
         if (maxAge != null) {
           final maxAgeCutoff = effectiveNow.subtract(maxAge);
           predicate = predicate & t.createdAt.isBiggerThanValue(maxAgeCutoff);
+        }
+        for (final entry in suppressedCoverage.entries) {
+          if (entry.key.isEmpty || entry.value < 0) continue;
+          predicate =
+              predicate &
+              (t.hostId.equals(entry.key) &
+                      t.counter.isSmallerOrEqualValue(entry.value))
+                  .not();
         }
         return predicate;
       })

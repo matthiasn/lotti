@@ -21,6 +21,9 @@ const _ending = 'ending';
 const _completed = 'completed';
 const _aborted = 'aborted';
 
+typedef OnboardingAcceptanceWaiter =
+    Future<void> Function(Future<void> acceptance, Duration timeout);
+
 class OnboardingSyncTarget {
   const OnboardingSyncTarget({required this.userId, required this.deviceId});
 
@@ -59,8 +62,12 @@ class OnboardingSyncService {
     this._acceptanceTimeout = onboardingSyncAcceptanceTimeout,
     this._lease = onboardingSyncLease,
     this._terminalCounterChunkSize = onboardingTerminalCounterChunkSize,
+    OnboardingAcceptanceWaiter? acceptanceWaiter,
   }) : _clock = serviceClock ?? const Clock(),
        _roundIdFactory = roundIdFactory ?? const Uuid().v4,
+       _acceptanceWaiter =
+           acceptanceWaiter ??
+           ((acceptance, timeout) => acceptance.timeout(timeout)),
        assert(
          _terminalCounterChunkSize > 0,
          'terminalCounterChunkSize must be positive',
@@ -78,6 +85,7 @@ class OnboardingSyncService {
   final Duration _acceptanceTimeout;
   final Duration _lease;
   final int _terminalCounterChunkSize;
+  final OnboardingAcceptanceWaiter _acceptanceWaiter;
   final Map<String, Completer<void>> _acceptances = {};
 
   /// Assigned by the composition root after the backfill requester exists.
@@ -142,13 +150,22 @@ class OnboardingSyncService {
           leaseSeconds: _lease.inSeconds,
         ),
       );
-      await acceptance.future.timeout(_acceptanceTimeout);
+      await _acceptanceWaiter(acceptance.future, _acceptanceTimeout);
       await _enqueueTerminalCounters(round);
       _trace('accepted round=$roundId hosts=${coverageUpperBounds.length}');
       return round;
-    } on Object {
-      await abortOutbound(round);
-      rethrow;
+    } on Object catch (error, stackTrace) {
+      try {
+        await abortOutbound(round);
+      } on Object catch (abortError, abortStackTrace) {
+        _logging?.error(
+          LogDomain.sync,
+          abortError,
+          stackTrace: abortStackTrace,
+          subDomain: 'onboardingSync.abort',
+        );
+      }
+      Error.throwWithStackTrace(error, stackTrace);
     } finally {
       _acceptances.remove(roundId);
     }
@@ -222,6 +239,15 @@ class OnboardingSyncService {
         await _handleEnd(end);
       default:
         return;
+    }
+  }
+
+  /// Finalizes an outbound round only after Matrix confirms the End event was
+  /// sent. Sender echoes are filtered by the sent-event registry, so the
+  /// durable sender lifecycle cannot depend on receiving its own event.
+  Future<void> handleMessageSent(SyncMessage message) async {
+    if (message case final SyncOnboardingSnapshotEnd end) {
+      await _handleOutboundEndSent(end);
     }
   }
 
@@ -354,7 +380,6 @@ class OnboardingSyncService {
       return;
     }
     if (!_isLocalTarget(message.recipientUserId, message.recipientDeviceId)) {
-      await _handleOutboundEndEcho(message);
       return;
     }
     final row = await _syncDatabase.onboardingSyncRound(message.roundId);
@@ -381,7 +406,7 @@ class OnboardingSyncService {
     }
   }
 
-  Future<void> _handleOutboundEndEcho(
+  Future<void> _handleOutboundEndSent(
     SyncOnboardingSnapshotEnd message,
   ) async {
     final localHostId = await _getHostId();
@@ -429,18 +454,7 @@ class OnboardingSyncService {
     final rounds = await _syncDatabase.activeInboundOnboardingSyncRounds(
       now: _clock.now(),
     );
-    final coverage = <String, int>{};
-    for (final round in rounds) {
-      for (final entry in _decodeCoverage(
-        round.coverageUpperBoundsJson,
-      ).entries) {
-        final previous = coverage[entry.key];
-        if (previous == null || entry.value > previous) {
-          coverage[entry.key] = entry.value;
-        }
-      }
-    }
-    return coverage;
+    return _mergedCoverage(rounds);
   }
 
   Future<Map<String, int>> activeOutboundCoverageForRequester(
@@ -450,6 +464,10 @@ class OnboardingSyncService {
       recipientHostId: requesterHostId,
       now: _clock.now(),
     );
+    return _mergedCoverage(rounds);
+  }
+
+  Map<String, int> _mergedCoverage(Iterable<OnboardingSyncRoundItem> rounds) {
     final coverage = <String, int>{};
     for (final round in rounds) {
       for (final entry in _decodeCoverage(

@@ -335,6 +335,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   String? _newDeviceIdentity;
   bool _joined = false;
   bool _ready = false;
+  bool _missingTargetUserLogged = false;
   int _pollFailures = 0;
   bool _pollInFlight = false;
   Timer? _poll;
@@ -500,7 +501,17 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
     for (final device in devices) {
       if (_rosterIdentity(device) == targetIdentity && device.verified) {
         final userId = device.userId ?? _localUserId;
-        if (userId == null) return;
+        if (userId == null) {
+          if (!_missingTargetUserLogged) {
+            _missingTargetUserLogged = true;
+            getIt<DomainLogger>().error(
+              LogDomain.sync,
+              StateError('Verified onboarding target has no Matrix user ID'),
+              subDomain: 'addDeviceTarget',
+            );
+          }
+          return;
+        }
         widget.signal?.target = OnboardingSyncTarget(
           userId: userId,
           deviceId: device.deviceId,

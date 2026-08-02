@@ -421,6 +421,7 @@ Future<void> registerSingletons() async {
     logging: domainLogger,
   );
   syncEventProcessor.onboardingSyncService = onboardingSyncService;
+  matrixService.onSyncMessageSent = onboardingSyncService.handleMessageSent;
 
   // Sync-aware consumption and attribution services, now that OutboxService
   // is available.

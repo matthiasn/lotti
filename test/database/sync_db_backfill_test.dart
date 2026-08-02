@@ -636,6 +636,29 @@ void main() {
       await db?.close();
     });
 
+    test('onboarding coverage is excluded before the per-host quota', () async {
+      final database = db!;
+      final createdAt = DateTime.utc(2026, 7, 27);
+      await database.batchInsertSequenceEntries([
+        for (var counter = 1; counter <= 251; counter++)
+          SyncSequenceLogCompanion(
+            hostId: const Value('covered-host'),
+            counter: Value(counter),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(createdAt.add(Duration(seconds: counter))),
+            updatedAt: Value(createdAt.add(Duration(seconds: counter))),
+          ),
+      ]);
+
+      final result = await database.getMissingEntriesWithLimits(
+        limit: 250,
+        maxPerHost: 250,
+        suppressedCoverage: const {'covered-host': 250},
+      );
+
+      expect(result.map((entry) => entry.counter), [251]);
+    });
+
     Glados(any.missingLimitsScenario, ExploreConfig(numRuns: 40)).test(
       'per-host cap, offset, limit, and actionability invariants hold for '
       'arbitrary row sets',

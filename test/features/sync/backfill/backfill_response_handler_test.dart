@@ -10,7 +10,6 @@ import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -28,9 +27,6 @@ import '../../ai_consumption/test_utils.dart';
 // ---------------------------------------------------------------------------
 
 enum _GeneratedRequestHost { own, foreign }
-
-class _MockOnboardingSyncService extends Mock
-    implements OnboardingSyncService {}
 
 enum _GeneratedLogEntryShape { absent, withoutEntryId, withEntryId }
 
@@ -1017,7 +1013,7 @@ void main() {
       'defers covered requests from the onboarding recipient only',
       () async {
         const otherHostId = 'other-host';
-        final onboarding = _MockOnboardingSyncService();
+        final onboarding = MockOnboardingSyncService();
         when(
           () => onboarding.activeOutboundCoverageForRequester(requesterId),
         ).thenAnswer((_) async => {bobHostId: 10});
@@ -1051,6 +1047,51 @@ void main() {
         ).called(1);
       },
     );
+
+    test('filters covered requests before applying the response cap', () async {
+      const uncoveredHost = 'uncovered-host';
+      final onboarding = MockOnboardingSyncService();
+      when(
+        () => onboarding.activeOutboundCoverageForRequester(requesterId),
+      ).thenAnswer(
+        (_) async => {
+          bobHostId: SyncTuning.maxBackfillResponseBatchSize,
+        },
+      );
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(uncoveredHost, 1),
+      ).thenAnswer((_) async => null);
+      final onboardingHandler = BackfillResponseHandler(
+        journalDb: mockJournalDb,
+        sequenceLogService: mockSequenceService,
+        outboxService: mockOutboxService,
+        loggingService: mockLogging,
+        vectorClockService: mockVcService,
+        onboardingSyncService: onboarding,
+      );
+
+      await onboardingHandler.handleBackfillRequest(
+        SyncBackfillRequest(
+          entries: [
+            for (
+              var counter = 1;
+              counter <= SyncTuning.maxBackfillResponseBatchSize;
+              counter++
+            )
+              BackfillRequestEntry(hostId: bobHostId, counter: counter),
+            const BackfillRequestEntry(hostId: uncoveredHost, counter: 1),
+          ],
+          requesterId: requesterId,
+        ),
+      );
+
+      verify(
+        () => mockSequenceService.getEntryByHostAndCounter(uncoveredHost, 1),
+      ).called(1);
+      verifyNever(
+        () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
+      );
+    });
 
     test('skips own backfill requests (self-request guard)', () async {
       // The handler's host is aliceHostId (set in setUp).
