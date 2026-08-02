@@ -136,6 +136,13 @@ const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 const linkNotification = 'LINK_CHANGED';
 const agentNotification = 'AGENT_CHANGED';
 
+/// Fired when an agent identity arrives or changes through sync.
+///
+/// Report recovery uses this narrow signal to retry topology that previously
+/// referenced an identity row which had not arrived yet, without reacting to
+/// unrelated agent messages, state, usage, or template updates.
+const agentIdentityNotification = 'AGENT_IDENTITY_CHANGED';
+
 /// Fired when the durable current-report head for an agent changes.
 ///
 /// This is narrower than [agentNotification], which also covers messages,

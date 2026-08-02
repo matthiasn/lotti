@@ -198,6 +198,7 @@ class EmbeddingService {
     );
     final changedTaskIds = _idsWithPrefix(tokens, taskNotificationPrefix);
     final requiresFullScan =
+        tokens.contains(agentIdentityNotification) ||
         tokens.contains(agentReportHeadNotification) ||
         tokens.contains(agentReportNotification) ||
         tokens.contains(agentTaskLinkNotification);
@@ -305,7 +306,10 @@ class EmbeddingService {
             taskId,
             type: AgentLinkTypes.agentTask,
           );
-          if (currentLinks.isNotEmpty) continue;
+          if (currentLinks.isNotEmpty) {
+            changedTaskIds.add(taskId);
+            continue;
+          }
           final reportIds = await embeddingStore.getEntityIdsForTask(taskId);
           for (final reportId in reportIds) {
             await embeddingStore.deleteEntityEmbeddings(reportId);

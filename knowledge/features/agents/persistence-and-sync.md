@@ -276,10 +276,13 @@ Concurrent agent state converges without user involvement — see
 G-counter merge that keeps concurrent wake counters from being lost.
 
 Every applied agent entity still emits the broad `agentNotification` topic for
-UI invalidation. A synced `AgentReportHeadEntity` in the `current` scope also
-emits the narrower `agentReportHeadNotification`; background embedding recovery
-subscribes to that token so messages, state updates, and token-usage rows do not
-launch full report-head scans. Applied `AgentTaskLink` rows likewise emit
+UI invalidation. Applied `AgentIdentityEntity` rows additionally emit
+`agentIdentityNotification`, allowing background embedding recovery to retry a
+report or link that arrived before its referenced identity without subscribing
+to unrelated agent updates. A synced `AgentReportHeadEntity` in the `current`
+scope also emits the narrower `agentReportHeadNotification`; recovery subscribes
+to that token so messages, state updates, and token-usage rows do not launch full
+report-head scans. Applied `AgentTaskLink` rows likewise emit
 `agentTaskLinkNotification`, allowing recovery to reselect the canonical agent
 when task ownership changes without subscribing to every agent link mutation.
 They also emit a task-keyed form of that token. The keyed task ID survives a
@@ -290,7 +293,8 @@ rule: `AgentService.deleteAgent` reads the agent's task-link targets before the
 repository removes them, then emits local task-keyed cleanup tokens after the
 hard delete. Derived report vectors therefore remain discoverable by task long
 enough for cleanup even though the hard delete itself is intentionally not
-synced.
+synced. When another task link survives, the keyed signal also reconciles the
+new canonical agent report and removes vectors left by the deleted primary.
 
 Legacy `WeekRollupEntity` JSON can omit `weekStart`. The shared
 `AgentDomainEntity.fromJson` read boundary repairs it only when the entity id is

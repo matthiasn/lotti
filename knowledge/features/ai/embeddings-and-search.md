@@ -130,18 +130,21 @@ flowchart LR
   call, instead of emitting one stack trace per remaining item.
 - `EmbeddingService` scans durable current task-agent report heads at startup
   and re-runs reconciliation when sync emits a dedicated current-report body,
-  head, task-keyed change, or task-agent-link token, or when
+  head, agent-identity, task-keyed change, or task-agent-link token, or when
   embedding/provider configuration changes;
   generic agent messages, state, and usage changes do not trigger a global
-  scan. Report-body sync closes the sequence-gap case where a head arrives
-  before its referenced report, while task sync uses the keyed task ID to
+  scan. Identity sync retries topology that arrived before its referenced
+  identity, while report-body sync closes the sequence-gap case where a head
+  arrives before its referenced report. Task sync uses the keyed task ID to
   relocate only that task's current vector after a remote category change;
   generic task notifications do not launch a full agent-topology scan.
   Task-link sync includes a task-keyed token, allowing recovery to delete
   orphaned report vectors after the final link is removed even though no active
   link remains in the topology scan. Local agent hard deletion emits the same
   keyed cleanup signal after capturing its task links and before those source
-  rows become undiscoverable. Provider
+  rows become undiscoverable. If another agent link survives, that same signal
+  reconciles the promoted canonical report and removes the deleted primary's
+  stale vectors without launching a global scan. Provider
   and flag streams skip their initial snapshots because startup already
   requests one pass; later changes resume both pending report recovery and any
   availability-paused entity batch. Its long-lived read-only repository

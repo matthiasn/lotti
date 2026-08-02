@@ -83,7 +83,7 @@ void main() {
       ).called(1);
       verify(
         () => updateNotifications.notify(
-          {'agent-1', 'AGENT_CHANGED'},
+          {'agent-1', agentNotification, agentIdentityNotification},
           fromSync: true,
         ),
       ).called(1);

@@ -2181,6 +2181,84 @@ void main() {
       });
     });
 
+    test('local hard-delete signal reconciles a surviving primary', () {
+      fakeAsync((async) {
+        const agentId = 'agent-promoted-after-local-hard-delete';
+        const taskId = 'task-with-surviving-agent-link';
+        const deletedReportId = 'report-left-by-deleted-primary';
+        final report = _agentReport(
+          id: 'report-from-promoted-primary',
+          agentId: agentId,
+        );
+        final agentRepository = MockAgentRepository();
+        var scanCount = 0;
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async {
+          scanCount++;
+          return [];
+        });
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        when(
+          () => agentRepository.getEntity(agentId),
+        ).thenAnswer((_) async => _agentIdentity(agentId));
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => report);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockEmbeddingStore.getEntityIdsForTask(taskId),
+        ).thenReturn({deletedReportId, report.id});
+        when(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(deletedReportId),
+        ).thenReturn(null);
+        stubEmbedding();
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+        expect(scanCount, 1);
+
+        updateNotifications.notify({
+          '$agentTaskLinkNotificationPrefix$taskId',
+        });
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).called(1);
+        verify(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(deletedReportId),
+        ).called(1);
+        expect(scanCount, 1);
+        stopInZone(async);
+      });
+    });
+
     test('synced task link update retains report vectors', () {
       fakeAsync((async) {
         const taskId = 'task-with-an-active-agent-link';
@@ -2293,7 +2371,7 @@ void main() {
       });
     });
 
-    test('synced agent notifications request report reconciliation', () {
+    test('synced identity arrival retries report reconciliation', () {
       fakeAsync((async) {
         const agentId = 'agent-notification-recovery';
         const taskId = 'task-notification-recovery';
@@ -2344,7 +2422,7 @@ void main() {
         expect(scanCount, 1);
 
         updateNotifications.notify(
-          {agentId, agentReportHeadNotification},
+          {agentId, agentNotification, agentIdentityNotification},
           fromSync: true,
         );
         async
