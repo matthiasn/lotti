@@ -600,6 +600,35 @@ void main() {
       },
     );
 
+    test('a failed upload does not leave the rebuilt file behind', () async {
+      // The row is retried, and the retry would find the file present, leave
+      // restoredForThisSend false, and never remove it — so one failed attempt
+      // would permanently undo the reclamation.
+      final entity = makeTestCapture(id: 'entity-fail');
+      final relativePath = relativeAgentEntityPath('entity-fail');
+      final file = File('${documentsDirectory.path}$relativePath');
+      expect(file.existsSync(), isFalse);
+
+      when(
+        () => room.sendFileEvent(
+          any(),
+          extraContent: any(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final result = await payloadSender.enrichAndUploadAgentPayload(
+        room: room,
+        message: SyncMessage.agentEntity(
+          agentEntity: entity,
+          jsonPath: relativePath,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      expect(result, isNull);
+      expect(file.existsSync(), isFalse);
+    });
+
     test('a sidecar it did not rebuild is left alone', () async {
       final entity = makeTestCapture(id: 'entity-2');
       final relativePath = relativeAgentEntityPath('entity-2');

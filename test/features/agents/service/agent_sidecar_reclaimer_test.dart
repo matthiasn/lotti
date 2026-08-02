@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -182,20 +183,37 @@ void main() {
 
   test('a large batch yields the isolate instead of blocking it', () async {
     // The deletes are synchronous, so a full sweep of ten thousand ids would
-    // monopolise the isolate and show up as a startup freeze. Crossing the
-    // yield threshold must not change what gets removed.
+    // monopolise the isolate and show up as a startup freeze.
+    //
+    // Observed rather than assumed, and awaiting the call is not enough — that
+    // lets a microtask run whether or not the loop yields. This records how
+    // many files had been handled when other scheduled work first got a turn:
+    // with the yield that is partway through, without it the whole batch has
+    // already run.
     final ids = [for (var i = 0; i < 250; i++) 'bulk-$i'];
     for (final id in ids) {
       writeSidecar(relativeAgentEntityPath(id));
     }
 
-    expect(await reclaimer.reclaim(entityIds: ids), 250);
-    for (final id in ids) {
-      expect(
-        File('${root.path}${relativeAgentEntityPath(id)}').existsSync(),
-        isFalse,
-      );
-    }
+    var handled = 0;
+    int? handledWhenInterleaved;
+    final realDelete = reclaimer.deleteSidecar;
+    reclaimer.deleteSidecar = (file) {
+      handled++;
+      return realDelete(file);
+    };
+    Timer.run(() => handledWhenInterleaved ??= handled);
+
+    final removed = await reclaimer.reclaim(entityIds: ids);
+
+    expect(removed, 250);
+    expect(
+      handledWhenInterleaved,
+      allOf(isNotNull, lessThan(250)),
+      reason:
+          'Other scheduled work must get a turn mid-batch, not only once '
+          'every file has been deleted.',
+    );
   });
 
   test(

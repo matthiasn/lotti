@@ -194,10 +194,14 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
       relativePath: enrichedPath,
       logLabel: logLabel,
     );
-    if (!uploaded) return null;
+    // Clean up whether or not the upload succeeded. On failure the row is
+    // retried, and the retry would find the file already present, leave
+    // `restoredForThisSend` false, and never remove it — so a single failed
+    // attempt would permanently undo the reclamation.
     if (restoredForThisSend) {
       await _deletePayloadFromDisk(enrichedPath);
     }
+    if (!uploaded) return null;
 
     return switch (message) {
       // Agent entities can be large — strip inline, use file only.
