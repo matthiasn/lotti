@@ -355,6 +355,16 @@ inside the agent's causal message DAG, which is where a naive sweep does damage:
 invariants are testable without a database; `AgentRepoObservationRetention`
 only supplies the rows and executes the plan.
 
+**Pruning changes what an old wake prompt reconstructs to.**
+`WakePromptReconstructor` rebuilds a retained prompt through
+`AgentLogCompactor.assembleContextAsOf`, which reads observation rows via
+`getMessagesByKind`. So once observations past the horizon are collected, a
+prompt record older than that window re-renders *without* them — it no longer
+reproduces the bytes that were actually sent. That is an audit-fidelity loss
+rather than a behaviour change (nothing acts on the reconstruction), but it is
+silent, and a reconstruction that quietly differs from history is worse than
+one that says it cannot be complete. Tracked as `lotti3-1e0`.
+
 **A critical observation is never residue.** `ObservationPriority.critical`
 marks a user grievance or excellence note that must be reviewed at the next
 one-on-one, so it is excluded from pruning however old it is — and, like a
