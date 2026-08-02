@@ -101,12 +101,18 @@ class AgentRepoObservationRetention {
   /// [maxMessages] bounds the read; a log longer than it is left for a later
   /// sweep rather than partially reasoned about, since a truncated view hides
   /// the parents that block a delete.
+  ///
+  /// **The read, the plan and the delete share one transaction.** Inbound sync
+  /// is wired before this start-up sweep, so an `AgentStateEntity` carrying a
+  /// new `recentHeadMessageId` can land between reading the protected ids and
+  /// running the delete — and that head may be a row the plan is about to
+  /// take, leaving live state pointing at nothing.
   Future<ObservationSweepResult> pruneAgent({
     required String agentId,
     required DateTime cutoff,
     required int limit,
     required int maxMessages,
-  }) async {
+  }) => _db.transaction(() async {
     final rows = await _db
         .customSelect(
           'SELECT id, subtype, created_at, '
@@ -164,15 +170,13 @@ class AgentRepoObservationRetention {
     );
     if (plan.isEmpty) return const ObservationSweepResult.empty();
 
-    return _db.transaction(() async {
-      final linkIds = await _deleteLinksInto(plan.messageIds);
-      await _deleteEntities(plan.messageIds);
-      return ObservationSweepResult(
-        messageIds: plan.messageIds,
-        linkIds: linkIds,
-      );
-    });
-  }
+    final linkIds = await _deleteLinksInto(plan.messageIds);
+    await _deleteEntities(plan.messageIds);
+    return ObservationSweepResult(
+      messageIds: plan.messageIds,
+      linkIds: linkIds,
+    );
+  });
 
   /// `messagePrev` edges run child → parent, so `from_id` is the child.
   Future<Map<String, List<String>>> _messagePrevParents(
