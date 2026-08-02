@@ -576,6 +576,86 @@ void main() {
     );
 
     testWidgets(
+      'a narrow pane in a desktop window still drops the year and Today',
+      (tester) async {
+        // The desktop sidebar is resizable to 500pt, so the window can be
+        // "desktop" while this pane is not: MediaQuery reports 1280, the
+        // render tree gets 460. The strip must follow the pane.
+        setTestSurfaceSize(tester, const Size(460, 900));
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              // Spelled out even though it matches the default: the contrast
+              // between a desktop-sized MediaQuery and the narrow surface set
+              // above is what this test is about.
+              // ignore: avoid_redundant_argument_values
+              mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          // 460pt still fits the year — it is the Today button that does
+          // not, and dropping it is what keeps the date unsqueezed.
+          expect(find.text('Wed, May 27, 2026'), findsOneWidget);
+          expect(
+            find.byKey(const Key('daily_os_date_strip_today')),
+            findsNothing,
+          );
+          _expectLabelNotTruncated(tester, find.text('Wed, May 27, 2026'));
+        });
+      },
+    );
+
+    testWidgets(
+      'a pane too narrow for the year drops it, desktop window or not',
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(380, 900));
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              // Spelled out even though it matches the default: the contrast
+              // between a desktop-sized MediaQuery and the narrow surface set
+              // above is what this test is about.
+              // ignore: avoid_redundant_argument_values
+              mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.text('Wed, May 27'), findsOneWidget);
+          expect(find.text('Wed, May 27, 2026'), findsNothing);
+          _expectLabelNotTruncated(tester, find.text('Wed, May 27'));
+        });
+      },
+    );
+
+    testWidgets(
       "a selection far from today still gets the picker's Today action",
       (tester) async {
         setTestSurfaceSize(tester, const Size(390, 844));

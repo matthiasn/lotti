@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/daily_os_next/state
     title: Onboarding session and trigger services
     last_modified: 2026-07-28
+  - id: plan-view-state
+    resource: ../../../lib/features/daily_os_next/state/plan_view_provider.dart
+    title: Selected plan-view projection, held across day changes
+    last_modified: 2026-08-02
   - id: onboarding-events
     resource: ../../../lib/features/onboarding/model/onboarding_event.dart
     title: Shared onboarding event vocabulary
@@ -130,12 +134,20 @@ Three invariants make repeated navigation cheap:
   string plus two chevrons does not fit a 390 pt phone.
 - **Day navigation owns its row when the header stacks.** `_MeasuredDayHeader`
   lays title, toggle and actions out inline when they fit; when they do not, the
-  date strip takes the first row alone and the toggle and actions share the
-  second. Sharing row one with the actions cluster is what truncated the date
-  to an ellipsis on a phone. The phone also drops the `Today` button entirely —
-  `showDesignSystemDatePicker`, which the label opens, carries its own Today
-  quick action, so the way back to today survives without spending header
-  width on it.
+  date strip takes the first row alone. The toggle and the actions then share
+  the second row **only if the room left over covers the toggle's measured
+  width** — otherwise the actions drop to a third row, because the segmented
+  control shrink-wraps to a minimum and would otherwise paint over them.
+  Sharing row one with the actions cluster is what truncated the date to an
+  ellipsis on a phone.
+- **The strip sizes itself against the pane, not the window.** A `LayoutBuilder`
+  supplies the width, because the desktop sidebar is resizable to
+  `maxSidebarWidth` (500 px) and a "desktop" `MediaQuery` can still leave this
+  pane under 500 px. The year is carried only when the widest `yMMMEd` string
+  plus both chevrons fit; the `Today` button only when that *and* the button's
+  own token-derived width fit. Where `Today` is dropped, the way back survives
+  in `showDesignSystemDatePicker`, which the label opens and which carries its
+  own Today quick action.
 ```mermaid
 stateDiagram-v2
   [*] --> NoExplicitPick: app start

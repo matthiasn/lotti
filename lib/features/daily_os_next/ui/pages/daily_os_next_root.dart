@@ -192,6 +192,16 @@ class _DateStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      // The pane, not the window. `MediaQuery` reports the whole window, but
+      // the desktop sidebar is user-resizable up to 500 px, so a "desktop"
+      // window can leave this strip barely 460 px — where the year and the
+      // Today button do not fit even though the breakpoint says they should.
+      builder: (context, constraints) => _build(context, constraints.maxWidth),
+    );
+  }
+
+  Widget _build(BuildContext context, double available) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final material = MaterialLocalizations.of(context);
@@ -201,11 +211,30 @@ class _DateStrip extends StatelessWidget {
       color: tokens.colors.text.highEmphasis,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
-    final wide = isDesktopLayout(context);
-    // A phone drops the year: reserving the widest possible "Wed, Sep 30,
-    // 2026" plus two chevrons does not fit 390 pt, and the year is the least
-    // useful part of it while stepping through nearby days.
     final locale = Localizations.localeOf(context).toString();
+    final todayLabel = messages.dailyOsTodayButton;
+    // What the year-carrying variant needs: the widest date this locale can
+    // produce plus both chevrons, each of which occupies a minimum tap
+    // target. Dropping the year is what buys a narrow pane its full date —
+    // the year is the least useful part while stepping through nearby days.
+    final wideReserved = _stableDateLabelWidth(
+      context,
+      format: DateFormat.yMMMEd(locale),
+      style: labelStyle,
+      todayLabel: todayLabel,
+    );
+    const chevrons = kMinInteractiveDimension * 2;
+    // Unbounded width (a test or an intrinsic pass) cannot be measured
+    // against; fall back to the window breakpoint there.
+    final wide = available.isFinite
+        ? available >= wideReserved + chevrons
+        : isDesktopLayout(context);
+    final showToday =
+        !isToday &&
+        wide &&
+        (!available.isFinite ||
+            available >=
+                wideReserved + chevrons + _todayControlWidth(context, tokens));
     final format = wide ? DateFormat.yMMMEd(locale) : DateFormat.MMMEd(locale);
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -259,7 +288,7 @@ class _DateStrip extends StatelessWidget {
         // spare beside the date — the button squeezed the date into an
         // ellipsis — and the picker this label opens carries its own Today
         // quick action, so nothing is lost by leaving it out there.
-        if (!isToday && wide) ...[
+        if (showToday) ...[
           SizedBox(width: tokens.spacing.step2),
           DesignSystemButton(
             key: const Key('daily_os_date_strip_today'),
@@ -277,6 +306,31 @@ class _DateStrip extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Width the jump-to-today control occupies, derived from the design
+/// system's `dense` button spec (caption label, caption-height icon, a
+/// `step2` inset on each side and a `step2` icon gap) plus the `step2`
+/// lead-in the strip puts before it.
+///
+/// Measured rather than assumed so the fit check follows the user's
+/// font-size setting, and deliberately whole-token rather than pixel-exact:
+/// erring high hides the button slightly early, which is the safe direction.
+double _todayControlWidth(BuildContext context, DsTokens tokens) {
+  final painter = TextPainter(
+    text: TextSpan(
+      text: context.messages.dailyOsTodayButton,
+      style: tokens.typography.styles.others.caption,
+    ),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  final labelWidth = painter.width;
+  painter.dispose();
+  return labelWidth +
+      tokens.typography.lineHeight.caption +
+      tokens.spacing.step2 * 4;
 }
 
 /// Cache of measured label widths, keyed by everything that can change one:
