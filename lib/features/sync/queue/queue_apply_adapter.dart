@@ -7,7 +7,6 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
-import 'package:meta/meta.dart';
 
 const _logSub = 'queue.apply';
 
@@ -207,12 +206,12 @@ class QueueApplyAdapter {
     // `markSkipped`, so we cannot loop forever on a logic bug — the
     // worker eventually gives up without data loss from a premature
     // permanentSkip that would advance the marker past the event.
-    // `_writesJournalDb` introspects `prepared.syncMessage`; tests mock
+    // `writesJournalDb` introspects `prepared.syncMessage`; tests mock
     // `PreparedSyncEvent` without stubbing the field, so guard against
     // a throw by falling back to the safe (wrapped) path.
     var wrap = true;
     try {
-      wrap = _writesJournalDb(prepared.syncMessage);
+      wrap = writesJournalDb(prepared.syncMessage);
     } catch (_) {
       wrap = true;
     }
@@ -306,11 +305,7 @@ class QueueApplyAdapter {
   /// transaction is pure overhead and serialises every concurrent
   /// reader. Errs conservatively: any new payload type defaults to
   /// `true` so we keep the old behaviour until explicitly opted out.
-  @visibleForTesting
-  static bool writesJournalDbForTesting(SyncMessage message) =>
-      _writesJournalDb(message);
-
-  static bool _writesJournalDb(SyncMessage message) {
+  static bool writesJournalDb(SyncMessage message) {
     return message.map(
       // SyncJournalEntity owns its own narrow tx inside
       // `_persistJournalEntity`; the outer wrap used to also encompass

@@ -103,8 +103,6 @@ class InboundWorker {
   Completer<void>? _loopCompleted;
   bool _running = false;
 
-  bool get isRunning => _running;
-
   /// Starts the drain loop in the background. Idempotent: a call while already
   /// running is a no-op. The returned future completes once the loop is
   /// scheduled, not when draining finishes.

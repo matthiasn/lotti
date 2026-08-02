@@ -41,7 +41,7 @@ SliverWoltModalSheetPage provisionedConfigPage({
         const EdgeInsets.only(
           bottom: WoltModalConfig.stickyActionBarClearance,
         ),
-    child: ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+    child: const ProvisionedConfigWidget(),
   );
 }
 
@@ -208,12 +208,7 @@ class _ConfigActionBar extends ConsumerWidget {
 }
 
 class ProvisionedConfigWidget extends ConsumerWidget {
-  const ProvisionedConfigWidget({
-    required this.pageIndexNotifier,
-    super.key,
-  });
-
-  final ValueNotifier<int> pageIndexNotifier;
+  const ProvisionedConfigWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -1225,6 +1225,27 @@ void main() {
     await coordinator.stop();
   });
 
+  test('overlapping sync signals share one in-flight postLoad', () async {
+    final room = MockRoom();
+    final postLoadGate = Completer<void>();
+    when(() => room.partial).thenReturn(true);
+    when(room.postLoad).thenAnswer((_) => postLoadGate.future);
+    when(() => roomManager.currentRoom).thenReturn(room);
+
+    final coordinator = build();
+    await coordinator.start();
+
+    syncCtl
+      ..add(SyncUpdate(nextBatch: 'first'))
+      ..add(SyncUpdate(nextBatch: 'second'));
+    await pumpEventQueue();
+
+    verify(room.postLoad).called(1);
+
+    postLoadGate.complete();
+    await coordinator.stop();
+  });
+
   test(
     'onSync does not call postLoad when room is already non-partial',
     () async {
@@ -1507,6 +1528,11 @@ void main() {
         subDomain: any<String>(named: 'subDomain', that: contains('postLoad')),
       ),
     ).called(1);
+
+    syncCtl.add(SyncUpdate(nextBatch: 'retry'));
+    await pumpEventQueue();
+
+    verify(room.postLoad).called(2);
     await coordinator.stop();
   });
 
@@ -2588,7 +2614,6 @@ void main() {
               'separate ones',
         );
         // Single call covers the whole burst.
-        verifyNever(() => queue.resurrectByPath(any()));
 
         await coordinator.stop();
       },
@@ -4960,7 +4985,7 @@ void main() {
         // processor's retriable flag so the next prepare succeeds,
         // then record an attachment event for the matching path. The
         // coordinator's `pathRecorded` subscription fires, calls
-        // `queue.resurrectByPath`, and the worker wakes.
+        // `queue.resurrectByPaths`, and the worker wakes.
         attachmentAvailable = true;
 
         final attachmentEvent = MockEvent();
@@ -5105,7 +5130,7 @@ void main() {
         // `AttachmentIngestor.process` which calls
         // `attachmentIndex.record(event)` synchronously. That fires
         // `pathRecorded` -> the coordinator's own subscription calls
-        // `queue.resurrectByPath(path)` -> the row flips back to
+        // `queue.resurrectByPaths([path])` -> the row flips back to
         // `enqueued` and the next prepare succeeds (we flip the flag
         // right before emitting the event).
         attachmentAvailable = true;

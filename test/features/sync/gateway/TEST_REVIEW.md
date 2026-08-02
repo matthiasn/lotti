@@ -39,8 +39,8 @@
 
 ## Generative (Glados) testing opportunities
 
-- [x] **[MED]** `MatrixSdkGateway.sendText` / `sendFile`: the event-registration path in `SentEventRegistry` (`sentEventRegistry.consume(id)`, `debugSource(id)`) is pure and deterministic. A small Glados property could verify that: for any generated event ID string, `consume` returns `true` exactly once and `false` on a second call, across both `SentEventSource.text` and `SentEventSource.file`. This is a genuine round-trip property that example-based tests cannot exhaustively cover.
-  - **RESOLVED:** (stale, premise corrected) — `consume` is intentionally repeatable within the TTL (suppressed IDs stay registered so retries short-circuit), so a consume-once property would pin the wrong contract. The registry already has a Glados model property in `sent_event_registry_test.dart` ('generated operation sequences preserve TTL, FIFO cap, and sources') covering register/consume/expiry round-trips.
+- [x] **[MED]** `MatrixSdkGateway.sendText` / `sendFile`: the event-registration path in `SentEventRegistry` is pure and deterministic.
+  - **RESOLVED:** `consume` is intentionally repeatable within the TTL (suppressed IDs stay registered so retries short-circuit). The registry has a Glados model property in `sent_event_registry_test.dart` covering register/consume/expiry and FIFO-capacity round-trips.
 
 - [x] **[LOW]** `RoomInviteEvent` value equality: a Glados round-trip over generated `(roomId, senderId)` string pairs would replace the smoke test with a real property.
   - **RESOLVED:** no change (premise corrected) — `RoomInviteEvent` (lib/features/sync/gateway/matrix_sync_gateway.dart:85) is a plain const class with two `final String` fields and **no `==`/`hashCode` override and no freezed/equatable mixin**, so it has identity equality. A "value equality" property would assert a contract that does not exist (two distinct instances with equal fields are not `==`). The only true generative property left is "constructor stores the fields", which is exactly the forbidden constructor smoke test. The real behavior of `RoomInviteEvent` — that the gateway emits one with the correct `roomId`/`senderId` for invites targeted at this user — is already covered by the `'invite stream emits only invite membership events'` and `'invite stream ignores invites targeted at other users'` tests in `matrix_sdk_gateway_test.dart`.
@@ -58,7 +58,7 @@
   - **RESOLVED:** done — added `'keyVerificationRequests forwards the injected stream'` mirroring the loginStateChanges pattern (emit on the controller, assert delivery).
 
 - [x] **[LOW]** `sendFile` with `extraContent: null` (no extra payload) is not tested. The overload that omits the named parameter is the common path.
-  - **RESOLVED:** done — added `'sendFile omits extraContent and registers id on the default path'`. It stubs only the no-`extraContent` overload (`room.sendFileEvent(any())`), asserts the impl calls that form (and `verifyNever` on the `extraContent:` overload), returns the id, and registers it with `SentEventSource.file`. This covers the `extraContent == null` branch of `sendFile` that was previously unexercised.
+  - **RESOLVED:** done — added `'sendFile omits extraContent and registers id on the default path'`. It stubs only the no-`extraContent` overload (`room.sendFileEvent(any())`), asserts the impl calls that form (and `verifyNever` on the `extraContent:` overload), returns the id, and verifies that the registry contains it. This covers the `extraContent == null` branch of `sendFile` that was previously unexercised.
 
 ---
 

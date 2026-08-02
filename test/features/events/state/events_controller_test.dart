@@ -75,7 +75,7 @@ LinkedDbEntry _link(String id, {required String from, required String to}) {
 }
 
 Future<List<ResolvedEvent>> _loadAllResolvedEvents() =>
-    loadResolvedEventsPage(limit: eventsQueryLimit, offset: 0);
+    loadResolvedEventsPage(limit: 1000, offset: 0);
 
 void main() {
   late MockJournalDb db;

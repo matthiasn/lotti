@@ -559,9 +559,7 @@ void main() {
   group('lifecycle', () {
     test('stop() returns immediately when worker never started', () async {
       final worker = buildWorker(apply: (_) async => ApplyOutcome.applied);
-      expect(worker.isRunning, isFalse);
       await worker.stop();
-      expect(worker.isRunning, isFalse);
     });
 
     test('start() is idempotent and stop() completes the loop', () async {
@@ -569,9 +567,7 @@ void main() {
       await worker.start();
       // A second start while running is a no-op (no new loop spawned).
       await worker.start();
-      expect(worker.isRunning, isTrue);
       await worker.stop();
-      expect(worker.isRunning, isFalse);
     });
 
     test(
@@ -594,7 +590,6 @@ void main() {
         await appliedDone.future;
         expect(applied, [r'$live']);
         await worker.stop();
-        expect(worker.isRunning, isFalse);
       },
     );
 
@@ -709,7 +704,6 @@ void main() {
         await worker.start();
         await loopErrorCaptured.future;
         await worker.stop();
-        expect(worker.isRunning, isFalse);
         verify(
           () => logging.error(
             any<LogDomain>(),

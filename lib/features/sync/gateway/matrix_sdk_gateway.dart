@@ -165,7 +165,7 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     if (eventId == null) {
       throw Exception('Failed to send text message to room $roomId');
     }
-    _sentEventRegistry.register(eventId, source: SentEventSource.text);
+    _sentEventRegistry.register(eventId);
     return eventId;
   }
 
@@ -185,7 +185,7 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     if (eventId == null) {
       throw Exception('Failed to send file message to room $roomId');
     }
-    _sentEventRegistry.register(eventId, source: SentEventSource.file);
+    _sentEventRegistry.register(eventId);
     return eventId;
   }
 

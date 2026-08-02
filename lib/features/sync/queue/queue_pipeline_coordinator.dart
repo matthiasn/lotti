@@ -157,7 +157,7 @@ class QueuePipelineCoordinator {
   /// Accumulates `pathRecorded` paths between flushes of
   /// [_attachmentPathFlushTimer]. A burst of attachment downloads
   /// (matrix-sync catch-up) used to fan out one
-  /// `resurrectByPath` call per path; each opened a writer
+  /// single-path `resurrectByPaths` call per path; each opened a writer
   /// transaction whose lock starved the next call's SELECT. The
   /// 2026-05-12 desktop super_slow log captured 222 hits/day of
   /// `inbound_event_queue WHERE … json_path = ?` at ~384 ms each,
@@ -220,9 +220,14 @@ class QueuePipelineCoordinator {
   /// mid-insert and trip drift's "used after close" guard.
   final Set<Future<void>> _inFlightEnqueues = <Future<void>>{};
 
-  /// Tracks which room ids we have un-partialled via `room.postLoad()`
-  /// so we only pay the DB load cost once per room.
-  final Set<String> _postLoadedRoomIds = <String>{};
+  /// Room ids whose Matrix SDK `postLoad()` call is currently in flight.
+  ///
+  /// A room remains partial while `postLoad()` awaits its network work, so
+  /// multiple sync or timeline signals can otherwise start overlapping calls.
+  /// Entries are removed when the call settles, preserving retries while the
+  /// room is still partial and allowing a future rejoin to trigger another
+  /// load.
+  final Set<String> _postLoadInFlightRoomIds = <String>{};
 
   /// Attachment-aware sinks whose bootstrap page workers have not finished.
   ///
@@ -302,10 +307,9 @@ class QueuePipelineCoordinator {
   /// row so `_readMarkerTs` returns something sensible, (2) does not
   /// leave stranded rows from the previous room that the worker would
   /// replay against the wrong room (`InboundWorker._runBatch` resolves a
-  /// single current room per batch), and (3) drops the dedupe bookkeeping
-  /// so the next sync re-attempts `room.postLoad()` on the new room.
+  /// single current room per batch), and (3) lets the next sync re-attempt
+  /// `room.postLoad()` on the new room when it is partial.
   Future<void> onRoomChanged(String roomId) async {
-    _postLoadedRoomIds.clear();
     try {
       await _seeder.seedIfAbsent(roomId);
       await _queue.pruneStrandedEntries(roomId);
@@ -503,15 +507,14 @@ class QueuePipelineCoordinator {
         subDomain: '$_logSub.postLoad',
       );
     } catch (error, stackTrace) {
-      // If the post-load fails, drop the "done" marker so a later
-      // event retries. Device discovery is important enough to retry.
-      _postLoadedRoomIds.remove(roomId);
       _logging.error(
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
         subDomain: '$_logSub.postLoad',
       );
+    } finally {
+      _postLoadInFlightRoomIds.remove(roomId);
     }
   }
 
@@ -591,10 +594,7 @@ class QueuePipelineCoordinator {
     // grow `_trackedUserIds`. Using `room.partial` as the sentinel
     // instead of our own dedupe set means a room that becomes
     // partial again (e.g. after a rejoin) still gets un-partialed.
-    if (!room.partial) {
-      _postLoadedRoomIds.add(roomId);
-      return;
-    }
+    if (!room.partial || !_postLoadInFlightRoomIds.add(roomId)) return;
     _trackEnqueue(_safePostLoad(room, roomId));
   }
 

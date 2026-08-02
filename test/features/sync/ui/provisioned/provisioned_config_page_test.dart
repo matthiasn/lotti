@@ -8,7 +8,6 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
@@ -23,7 +22,6 @@ import 'package:lotti/features/sync/ui/widgets/sync_wizard_progress_track.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -69,7 +67,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockMatrixService mockMatrixService;
-  late ValueNotifier<int> pageIndexNotifier;
 
   /// A peer awaiting the emoji ceremony. The launcher keys devices by
   /// `(userId, deviceId)`, so both have to be stubbed.
@@ -98,7 +95,6 @@ void main() {
 
   setUp(() {
     mockMatrixService = MockMatrixService();
-    pageIndexNotifier = ValueNotifier(1);
 
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
     when(
@@ -136,10 +132,6 @@ void main() {
     ).thenAnswer((_) => const Stream.empty());
   });
 
-  tearDown(() {
-    pageIndexNotifier.dispose();
-  });
-
   /// Pumps the widget under test with the standard matrix-service
   /// override and the provisioning controller seeded to [state].
   Future<void> pumpConfigWidget(
@@ -149,7 +141,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+        const ProvisionedConfigWidget(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
           provisioningControllerProvider.overrideWith(
@@ -233,40 +225,6 @@ void main() {
       expect(find.byType(SyncDevicePairMotif), findsOneWidget);
       expect(find.byType(DesignSystemProgressBar), findsNothing);
     });
-
-    testWidgets(
-      'does not auto-advance on mobile when verification completes',
-      (tester) async {
-        final wasDesktop = isDesktop;
-        isDesktop = false;
-        addTearDown(() => isDesktop = wasDesktop);
-
-        final keyVerification = MockKeyVerification();
-        final runner = MockKeyVerificationRunner();
-        final outgoingController =
-            StreamController<KeyVerificationRunner>.broadcast();
-        addTearDown(outgoingController.close);
-
-        when(() => keyVerification.isDone).thenReturn(true);
-        when(() => runner.lastStep).thenReturn('m.key.verification.done');
-        when(() => runner.keyVerification).thenReturn(keyVerification);
-        when(
-          () => mockMatrixService.keyVerificationStream,
-        ).thenAnswer((_) => outgoingController.stream);
-        when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
-
-        await pumpConfigWidget(
-          tester,
-          const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-        );
-
-        outgoingController.add(runner);
-        await tester.pump(const Duration(seconds: 2));
-
-        // Should not auto-advance on mobile
-        expect(pageIndexNotifier.value, 1);
-      },
-    );
 
     testWidgets('shows success when in done state', (tester) async {
       await pumpConfigWidget(
@@ -683,8 +641,7 @@ void main() {
     /// returns the sheet is visible and fully settled.
     ///
     /// A fresh [ValueNotifier] starting at 0 is required so the single-page
-    /// WoltModalSheet does not receive an out-of-range index from the shared
-    /// [pageIndexNotifier] (which starts at 1 in setUp).
+    /// WoltModalSheet receives a valid initial index.
     Future<ValueNotifier<int>> pumpConfigPage(
       WidgetTester tester, {
       required ProvisioningState state,

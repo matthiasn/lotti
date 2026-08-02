@@ -661,7 +661,6 @@ void main() {
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
     );
-    expect(sentEventRegistry.length, 0);
   });
 
   test('registers text event ID in sent registry on success', () async {
@@ -844,7 +843,6 @@ void main() {
     );
 
     expect(result, isFalse);
-    expect(sentEventRegistry.length, 0);
   });
 
   test(
@@ -3507,7 +3505,8 @@ void main() {
         );
 
         expect(result, isTrue);
-        expect(sentEventRegistry.length, 2);
+        expect(sentEventRegistry.consume(r'$bundle-file-id'), isTrue);
+        expect(sentEventRegistry.consume(r'$bundle-text-id'), isTrue);
 
         // The text event no longer carries inline children — they live in
         // the manifest referenced by jsonPath.
@@ -4239,15 +4238,6 @@ void main() {
     // ──────────────────────────────────────────────────────────────────────
     // Coverage for uncovered lines
     // ──────────────────────────────────────────────────────────────────────
-
-    test(
-      'sentEventRegistry getter exposes the registry instance (line 50)',
-      () {
-        // The getter is the simplest way the outbox processor reads the
-        // registry; verify it returns the same object passed to the constructor.
-        expect(sender.sentEventRegistry, same(sentEventRegistry));
-      },
-    );
 
     test(
       'sends audio attachment when resendAttachments is false but status is '

@@ -463,10 +463,6 @@ class InboundQueue {
 
   // ----------------------------------------------------------- resurrect
 
-  /// See [InboundQueueResurrection.resurrectByPath].
-  Future<int> resurrectByPath(String path, {int hardCap = 50}) =>
-      _resurrection.resurrectByPath(path, hardCap: hardCap);
-
   /// See [InboundQueueResurrection.resurrectByPaths].
   Future<int> resurrectByPaths(Iterable<String> paths, {int hardCap = 50}) =>
       _resurrection.resurrectByPaths(paths, hardCap: hardCap);
