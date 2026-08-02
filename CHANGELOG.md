@@ -44,10 +44,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The morning briefing is prepared once, not once per device.** Every device
   signed in to the same account woke up and produced its own copy of the same
   daily briefing, so a laptop, a phone and a tablet meant three AI calls billed
-  for one result, every morning, forever. The devices now agree among themselves
-  which one prepares it — no server involved, just the record they already
-  share. If that device is asleep or loses connection before it finishes,
-  another picks the work up rather than the briefing being skipped.
+  for one result, every morning, forever. Devices signed in to sync now agree
+  among themselves which one prepares it, using the record they already share
+  rather than anything new. If the chosen device goes away before it starts,
+  another takes the window over shortly after. A device that is not signed in
+  to sync has no one to coordinate with and still prepares its own.
 - **The agent store stops growing without limit.** Day-status events — the
   running record of how each day was going, raised several times a day — were
   kept indefinitely, so the database grew every month with nothing ever
