@@ -5,13 +5,13 @@ description: The Day page, the anchored voice template, timeline editing, the ca
 resource: ../../../lib/features/daily_os_next/ui
 tags: [daily-os, ui, voice, timeline, onboarding]
 status: stable
-generated: { by: codex/5, at: 2026-08-01T17:20:39+02:00 }
+generated: { by: claude-code/opus-5, at: 2026-08-02T12:00:00+02:00 }
 stale_after: 2026-10-26
 sources:
   - id: ui
     resource: ../../../lib/features/daily_os_next/ui
     title: Daily OS widgets and pages
-    last_modified: 2026-07-29
+    last_modified: 2026-08-02
   - id: typography
     resource: ../../../lib/features/design_system/theme/typography_helpers.dart
     title: Calm typography helpers
@@ -110,6 +110,31 @@ arbitrary five or six lines.
   user-gated machinery**, not a separate path.
 
 # The Day surface
+
+## Day navigation and view memory
+
+`DailyOsNextRoot` renders one `DayPage` per selected day and injects a
+`_DateStrip` — prev chevron, tappable date label (tap opens the picker,
+long-press returns to today), next chevron, and a `Today` button shown only
+when the selection has left today — as that page's header title.
+
+Two invariants make repeated navigation cheap:
+
+- **The chevrons never move.** The date label reserves the width of the widest
+  string its locale's `yMMMEd` pattern can produce, measured with the real
+  style and `MediaQuery.textScalerOf` (`_stableDateLabelWidth`, cached per
+  locale × style × scale) and rendered with tabular figures. The reservation is
+  measured rather than hardcoded, so it follows the user's font-size setting
+  instead of clipping at large text. The `Today` button sits *after* the next
+  chevron, so appearing and disappearing cannot displace either arrow.
+- **The projection survives the day change.** The root re-keys `DayPage` on
+  every date change, so the selected `PlanView` lives in
+  `dailyOsNextPlanViewProvider` rather than in the page's `State`. `null` there
+  means "not chosen yet" and the page falls back to its per-day default —
+  Agenda with a plan, Activity without one. The provider is in-memory, so a
+  fresh app start lands on that default again, while every date-change path
+  (chevrons, `Today`, the picker, the sidebar month calendar) keeps whichever
+  view the user picked.
 
 ## Tracked time
 
