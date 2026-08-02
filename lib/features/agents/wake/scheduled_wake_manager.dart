@@ -91,6 +91,10 @@ class ScheduledWakeManager {
   int _generation = 0;
   bool _isChecking = false;
 
+  /// Set when a trigger arrives while a pass is already running, so that pass
+  /// runs once more instead of the trigger being lost. See [_checkAndEnqueue].
+  bool _rerunRequested = false;
+
   /// Start periodic checking. Also immediately checks for missed wakes.
   void start() {
     unawaited(_checkAndEnqueue());
@@ -128,9 +132,34 @@ class ScheduledWakeManager {
     });
   }
 
+  /// Runs a due-record pass, coalescing any trigger that arrives during it.
+  ///
+  /// Dropping the overlapping trigger would lose it outright: the re-checks
+  /// armed by [_scheduleRecheck] are one-shot timers, so a foreign lease
+  /// expiring while another pass is in flight would wait for the next hourly
+  /// tick before any device could take it over. Re-running once afterwards
+  /// costs one extra query and answers every trigger, however many arrived.
   Future<void> _checkAndEnqueue() async {
-    if (_isChecking) return;
+    if (_isChecking) {
+      _rerunRequested = true;
+      return;
+    }
     _isChecking = true;
+    // A stop during the pass must not be followed by a re-run: the generation
+    // it was queued under is gone, and a restarted manager owns the schedule.
+    final entryGeneration = _generation;
+    try {
+      do {
+        _rerunRequested = false;
+        await _runPass();
+      } while (_rerunRequested && _generation == entryGeneration);
+    } finally {
+      _rerunRequested = false;
+      _isChecking = false;
+    }
+  }
+
+  Future<void> _runPass() async {
     // Captured before the first await: `stop()` may land while this pass is
     // waiting on the repository, the host lookup or the claim write, and the
     // continuation must not then arm a timer the stop could never cancel.
@@ -214,8 +243,6 @@ class ScheduledWakeManager {
       }
     } catch (e, s) {
       _logError('error checking scheduled wakes', error: e, stackTrace: s);
-    } finally {
-      _isChecking = false;
     }
   }
 

@@ -212,6 +212,15 @@ The lease expires. A device that claims and then crashes or goes offline
 `leaseUntil` any device takes over. A device with no sync host fires unleased —
 it has no peers to race.
 
+Takeover is timely because every "not yet" branch arms its own one-shot
+re-check: the periodic tick is hourly, so a lease expiring at 06:34 would
+otherwise wait until 07:00. Those re-checks are timers that fire once, so
+`_checkAndEnqueue` **coalesces** a trigger arriving during an in-flight pass and
+re-runs once when that pass finishes, rather than dropping it on the
+already-running guard — which would lose the trigger outright, not delay it. A
+`stop()` mid-pass cancels the queued re-run: the generation it was queued under
+is gone.
+
 The lease recovers the **claim**, not the run. A crash after the `consumed` flip
 but before the job finishes still loses that day's briefing, because
 `_ensurePendingDigestWake` sees a consumed record and arms tomorrow's slot. That

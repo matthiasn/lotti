@@ -1938,6 +1938,108 @@ void main() {
       });
     });
 
+    group('overlapping triggers', () {
+      /// Stubs the due query so the first pass blocks on [gate], and counts
+      /// how many passes reached it.
+      int Function() gatedDueQuery(Completer<void> gate, List<int> counter) {
+        when(() => repository.getDueScheduledAgentStates(any())).thenAnswer((
+          _,
+        ) async {
+          counter[0]++;
+          if (counter[0] == 1) await gate.future;
+          return <AgentStateEntity>[];
+        });
+        return () => counter[0];
+      }
+
+      test('a tick during an in-flight pass re-runs it once, not never', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final gate = Completer<void>();
+            final passes = gatedDueQuery(gate, [0]);
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+            expect(passes(), 1, reason: 'first pass is blocked on the gate');
+
+            // The periodic tick lands while that pass is still running. The
+            // re-checks armed for lease expiry are one-shot timers, so
+            // dropping this would lose the trigger, not merely delay it.
+            async
+              ..elapse(const Duration(minutes: 1))
+              ..flushMicrotasks();
+            expect(passes(), 1, reason: 'still one pass — the tick coalesced');
+
+            gate.complete();
+            async.flushMicrotasks();
+
+            // Re-run happens on completion, without waiting for another tick.
+            expect(passes(), 2);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test(
+        'several triggers during one pass coalesce into a single re-run',
+        () {
+          final now = DateTime(2024, 3, 15, 10, 30);
+
+          fakeAsync((async) {
+            withClock(Clock.fixed(now), () {
+              final gate = Completer<void>();
+              final passes = gatedDueQuery(gate, [0]);
+
+              final manager = createAndStart();
+              async.flushMicrotasks();
+
+              async
+                ..elapse(const Duration(minutes: 3))
+                ..flushMicrotasks();
+
+              gate.complete();
+              async.flushMicrotasks();
+
+              // Three ticks were absorbed; the point is to answer them, not to
+              // replay one pass per dropped trigger.
+              expect(passes(), 2);
+
+              manager.stop();
+            });
+          });
+        },
+      );
+
+      test('a stop during the pass cancels the queued re-run', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final gate = Completer<void>();
+            final passes = gatedDueQuery(gate, [0]);
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            async
+              ..elapse(const Duration(minutes: 1))
+              ..flushMicrotasks();
+
+            // The generation the re-run was queued under is gone; a restarted
+            // manager owns the schedule from here.
+            manager.stop();
+            gate.complete();
+            async.flushMicrotasks();
+
+            expect(passes(), 1);
+          });
+        });
+      });
+    });
+
     group('beforeCheck', () {
       test('runs before every due-record pass, not just the first', () {
         final now = DateTime(2024, 3, 15, 10, 30);
