@@ -90,12 +90,7 @@ class AgentSidecarReclaimer {
           // '<docs>/agent_entities/../settings.json' and delete an unrelated
           // file outside the sidecar directory entirely.
           final relativePath = toPath(id);
-          if (id.isEmpty ||
-              !_isContained(
-                root: root,
-                relativePath: relativePath,
-                toPath: toPath,
-              )) {
+          if (!isReclaimable(root: root, id: id, toPath: toPath)) {
             domainLogger.error(
               LogDomain.agentRuntime,
               ArgumentError.value(id, 'id', 'not a sidecar id'),
@@ -133,6 +128,26 @@ class AgentSidecarReclaimer {
   ///
   /// Ids arrive from peers over sync, and the cost of being wrong is deleting
   /// a file no database write accounted for.
+  @visibleForTesting
+  static bool isReclaimable({
+    required Directory root,
+    required String id,
+    required String Function(String id) toPath,
+  }) {
+    // An id is a leaf name, never a path. Rejecting separators and '..' is
+    // what stops `../agent_entities/victim` — which normalises back *into*
+    // this directory and would delete a different row's sidecar, passing a
+    // containment check that only compares the parent directory.
+    const backslash = r'\';
+    if (id.isEmpty ||
+        id.contains('/') ||
+        id.contains(backslash) ||
+        id.contains('..')) {
+      return false;
+    }
+    return _isContained(root: root, relativePath: toPath(id), toPath: toPath);
+  }
+
   static bool _isContained({
     required Directory root,
     required String relativePath,

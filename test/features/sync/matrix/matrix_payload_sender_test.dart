@@ -529,7 +529,7 @@ void main() {
   });
 
   group('enrichAndUploadAgentPayload restores a reclaimed sidecar', () {
-    test('rewrites the file from the inline payload when it is gone', () async {
+    test('rebuilds it for the upload, then removes it again', () async {
       // Sidecar reclamation can take a file while a row referencing it is
       // still queued: a hard delete and a pending send race by design. The
       // restore path used to run only when jsonPath was null, so a declared
@@ -562,10 +562,40 @@ void main() {
 
       expect(
         file.existsSync(),
-        isTrue,
+        isFalse,
         reason:
-            'The row still carries the payload inline, so it is rewritten '
-            'rather than the send failing forever.',
+            'Rebuilt for the upload, then removed again — leaving it would '
+            'undo the reclamation that deleted it and keep the data readable.',
+      );
+    });
+
+    test('a sidecar it did not rebuild is left alone', () async {
+      final entity = makeTestCapture(id: 'entity-2');
+      final relativePath = relativeAgentEntityPath('entity-2');
+      final file = File('${documentsDirectory.path}$relativePath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('{"already":"here"}');
+
+      when(
+        () => room.sendFileEvent(
+          any(),
+          extraContent: any(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'evt-2');
+
+      await payloadSender.enrichAndUploadAgentPayload(
+        room: room,
+        message: SyncMessage.agentEntity(
+          agentEntity: entity,
+          jsonPath: relativePath,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      expect(
+        file.existsSync(),
+        isTrue,
+        reason: 'The normal path must not start deleting live sidecars.',
       );
     });
   });

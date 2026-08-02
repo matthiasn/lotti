@@ -147,6 +147,11 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     }
 
     var enrichedPath = jsonPath;
+    // A sidecar this send had to rebuild is deleted again once it is up: the
+    // row was queued for an entity retention or a hard delete already
+    // reclaimed, so leaving the file behind would silently undo that
+    // reclamation and keep deleted agent data readable on disk.
+    var restoredForThisSend = false;
     // Enrich legacy items that lack jsonPath but have inline payload
     if (enrichedPath == null && inlineJson != null) {
       final id = switch (message) {
@@ -162,6 +167,7 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     } else if (enrichedPath != null &&
         inlineJson != null &&
         !_payloadExists(enrichedPath)) {
+      restoredForThisSend = true;
       // The path is declared but the file is gone. Sidecar reclamation can
       // take a file while a row referencing it is still queued — a hard
       // delete and a pending send race by design — and without this the
@@ -189,6 +195,9 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
       logLabel: logLabel,
     );
     if (!uploaded) return null;
+    if (restoredForThisSend) {
+      await _deletePayloadFromDisk(enrichedPath);
+    }
 
     return switch (message) {
       // Agent entities can be large — strip inline, use file only.
@@ -234,6 +243,26 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
       relativePath: relativePath,
       bytes: jsonBytes,
     );
+  }
+
+  /// Removes a sidecar this send rebuilt, so restoring it for the upload does
+  /// not resurrect a file reclamation deleted. Best-effort: the send already
+  /// succeeded and a failure here must not fail it.
+  Future<void> _deletePayloadFromDisk(String relativePath) async {
+    try {
+      final relativeJoined = p.joinAll(
+        relativePath.split('/').where((part) => part.isNotEmpty),
+      );
+      final file = File(p.join(documentsDirectory.path, relativeJoined));
+      if (file.existsSync()) file.deleteSync();
+    } catch (error, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg',
+      );
+    }
   }
 
   /// Whether the sidecar at [relativePath] is still on disk.

@@ -122,15 +122,37 @@ void main() {
     }
   });
 
-  test('a real day-status id is reclaimed, colons and all', () async {
-    // day_status:<dayId>:<uuid> — a character blacklist that rejected ':'
-    // would refuse every production day-status event and quietly reclaim
-    // nothing, which is the failure this containment check must not have.
-    const id = 'day_status:dayplan-2026-05-20:6f1c2f2e-0f0a-4f1e-8a1b-2c3d4e5f';
-    final file = writeSidecar(relativeAgentEntityPath(id));
+  test('a real day-status id passes the containment check', () async {
+    // day_status:<dayId>:<uuid>. Asserted through the predicate rather than
+    // by writing the file: Windows rejects colons in filenames, and the suite
+    // runs a Windows shard, so creating one would fail the test before it
+    // reached `reclaim`. (That the sidecar itself is unwritable on Windows is
+    // a platform question older and wider than this change.)
+    expect(
+      AgentSidecarReclaimer.isReclaimable(
+        root: root,
+        id: 'day_status:dayplan-2026-05-20:6f1c2f2e-0f0a-4f1e-8a1b-2c3d4e5f',
+        toPath: relativeAgentEntityPath,
+      ),
+      isTrue,
+      reason:
+          'A character blacklist that rejected ":" would refuse every '
+          'production day-status event and silently reclaim nothing.',
+    );
+  });
 
-    expect(await reclaimer.reclaim(entityIds: [id]), 1);
-    expect(file.existsSync(), isFalse);
+  test('an id that re-enters the sidecar directory is refused', () async {
+    // '../agent_entities/victim' normalises back to
+    // '<docs>/agent_entities/victim.json', so a check that only compares the
+    // parent directory accepts it — and the delete then takes a *different*
+    // row's live sidecar.
+    final victim = writeSidecar(relativeAgentEntityPath('victim'));
+
+    expect(
+      await reclaimer.reclaim(entityIds: ['../agent_entities/victim']),
+      0,
+    );
+    expect(victim.existsSync(), isTrue);
   });
 
   test('a large batch yields the isolate instead of blocking it', () async {
