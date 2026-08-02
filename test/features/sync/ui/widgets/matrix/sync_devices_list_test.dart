@@ -53,7 +53,8 @@ void main() {
     verified: true,
   );
 
-  setUp(() {
+  setUp(() async {
+    await setUpTestGetIt();
     mockMatrixService = MockMatrixService();
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
     when(
@@ -64,6 +65,8 @@ void main() {
     when(() => mockMatrixService.client).thenReturn(mockClient);
     when(() => mockClient.userID).thenReturn('@alice:example.com');
   });
+
+  tearDown(tearDownTestGetIt);
 
   Future<void> pumpList(
     WidgetTester tester, {

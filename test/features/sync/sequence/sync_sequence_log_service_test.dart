@@ -3993,7 +3993,9 @@ void main() {
           maxRequestCount: any(named: 'maxRequestCount'),
           maxAge: any(named: 'maxAge'),
           minAge: any(named: 'minAge'),
+          requestedMinAge: any(named: 'requestedMinAge'),
           maxPerHost: any(named: 'maxPerHost'),
+          suppressedCoverage: any(named: 'suppressedCoverage'),
           offset: any(named: 'offset'),
         ),
       ).thenAnswer((_) async => entries);
