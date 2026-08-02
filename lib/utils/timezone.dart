@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:lotti/utils/platform.dart';
+import 'package:timezone/timezone.dart';
 
 /// Path segments that precede the IANA name in `/etc/localtime`'s symlink
 /// target. macOS and Linux ship the zoneinfo tree in different places.
@@ -60,6 +61,33 @@ Future<String> getLocalTimezone({
   if (fromLink != null) return fromLink;
 
   return now.timeZoneName;
+}
+
+/// Points the `timezone` package's [local] at the device's actual zone.
+///
+/// Without this the package's `local` is **UTC**: `initializeTimeZones()` only
+/// loads the database, it does not choose a zone. Anything that builds
+/// wall-clock components against `local` — `TZDateTime` in notification
+/// scheduling — would then place a 09:00 reminder at 09:00 UTC, an hour or
+/// more away from the 09:00 the user asked for.
+///
+/// Called once at start-up, and deliberately total: a device whose zone cannot
+/// be resolved to an IANA name keeps the package's UTC default, which is what
+/// it had before this existed. Start-up must not fail over a timezone.
+///
+/// [resolve] is a test seam — [getLocalTimezone] short-circuits to the
+/// abbreviation under `isTestEnv`, so without it neither branch here could be
+/// exercised.
+Future<void> configureLocalTimezone({
+  Future<String> Function()? resolve,
+}) async {
+  try {
+    setLocalLocation(getLocation(await (resolve ?? getLocalTimezone)()));
+  } on Object {
+    // Left at the package default. [getLocalTimezone] can still hand back an
+    // abbreviation on a platform with no zoneinfo tree, and `getLocation`
+    // rejects those.
+  }
 }
 
 /// Reads an IANA name from a plain-text file such as `/etc/timezone`.

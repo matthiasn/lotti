@@ -68,6 +68,11 @@ class NotificationService {
   /// user's exact zone is still worth scheduling in the process-local zone; it
   /// is never worth throwing, because this runs inside entry creation and the
   /// entry has already been written by the time it would.
+  ///
+  /// [local] is only a sane fallback because `configureLocalTimezone()` points
+  /// it at the device's zone during start-up. The `timezone` package defaults
+  /// it to **UTC**, and falling back to that would move a 09:00 reminder by
+  /// the device's whole offset rather than degrade gracefully.
   Location _resolveLocation(String timezone) {
     try {
       return getLocation(timezone);

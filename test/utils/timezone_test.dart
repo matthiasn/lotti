@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/utils/timezone.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
   // Fixed reference moment used to assert the function returns the same
@@ -29,15 +31,30 @@ void main() {
     );
 
     test(
-      'returns system timezone on non-Linux when isTestEnv is false',
+      'falls back to the platform abbreviation when nothing resolves',
       () async {
-        if (Platform.isLinux) return;
+        // Previously this asserted the abbreviation on any non-Linux host with
+        // no fixtures at all, which read the machine's real /etc/localtime. On
+        // a macOS runner in a named zone that now resolves to Europe/Berlin,
+        // so the assertion described the bug rather than the contract — and
+        // Buildkite runs `make junit_test` on macOS, where it would fail.
+        //
+        // Both lookups are pointed at paths that do not exist, which is the
+        // condition the fallback actually documents, and is the same on every
+        // platform.
+        final tempDir = await Directory.systemTemp.createTemp('tz_fallback');
 
-        final tz = await getLocalTimezone(
-          overrideIsTestEnv: false,
-          clock: clock,
-        );
-        expect(tz, fixedNow.timeZoneName);
+        try {
+          final tz = await getLocalTimezone(
+            linuxTimezoneFilePath: '${tempDir.path}/absent',
+            localtimeLinkPath: '${tempDir.path}/absent-link',
+            overrideIsTestEnv: false,
+            clock: clock,
+          );
+          expect(tz, fixedNow.timeZoneName);
+        } finally {
+          await tempDir.delete(recursive: true);
+        }
       },
     );
 
@@ -318,5 +335,44 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  group('configureLocalTimezone', () {
+    // Without this the package's `local` is UTC — initializeTimeZones() loads
+    // the database but chooses nothing — so anything building wall-clock
+    // components against it schedules in the wrong zone.
+    setUp(tzdata.initializeTimeZones);
+
+    test('points the package at the resolved IANA zone', () async {
+      await configureLocalTimezone(resolve: () async => 'Europe/Berlin');
+
+      expect(tz.local.name, 'Europe/Berlin');
+      // The point of setting it: a wall-clock time is built in the user's
+      // zone, not two hours away in UTC.
+      expect(
+        tz.TZDateTime(tz.local, 2024, 7, 1, 9).toUtc().hour,
+        7,
+        reason: '09:00 in Berlin in July is 07:00 UTC',
+      );
+    });
+
+    test(
+      'leaves the default in place when the zone is an abbreviation',
+      () async {
+        await configureLocalTimezone(resolve: () async => 'Europe/Berlin');
+        // getLocation rejects abbreviations; start-up must survive that rather
+        // than throw out of main().
+        await configureLocalTimezone(resolve: () async => 'CEST');
+
+        expect(tz.local.name, 'Europe/Berlin');
+      },
+    );
+
+    test('survives a resolver that throws', () async {
+      await expectLater(
+        configureLocalTimezone(resolve: () async => throw StateError('no tz')),
+        completes,
+      );
+    });
   });
 }
