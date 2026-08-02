@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/database/agent_repo_observation_retention.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_retention_policy.dart';
@@ -60,6 +61,21 @@ void main() {
         maxBatches: any(named: 'maxBatches'),
       ),
     ).thenAnswer((_) async => <String>[]);
+    when(
+      () => repository.agentsWithAgedObservations(
+        any(),
+        limit: any(named: 'limit'),
+        afterAgentId: any(named: 'afterAgentId'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.pruneAgentObservations(
+        agentId: any(named: 'agentId'),
+        cutoff: any(named: 'cutoff'),
+        limit: any(named: 'limit'),
+        maxMessages: any(named: 'maxMessages'),
+      ),
+    ).thenAnswer((_) async => const ObservationSweepResult.empty());
     service = AgentRetentionService(
       repository: repository,
       domainLogger: domainLogger,
@@ -77,6 +93,232 @@ void main() {
         maxBatches: policy.maxBatchesPerSweep,
       ),
     ).called(1);
+  });
+
+  group('observations', () {
+    void seedAgents(List<String> agents) {
+      when(
+        () => repository.agentsWithAgedObservations(
+          any(),
+          limit: any(named: 'limit'),
+          afterAgentId: any(named: 'afterAgentId'),
+        ),
+      ).thenAnswer((_) async => agents);
+    }
+
+    test('sweeps each aged agent on the observation horizon', () async {
+      seedAgents(['agent-1', 'agent-2']);
+      when(
+        () => repository.pruneAgentObservations(
+          agentId: any(named: 'agentId'),
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenAnswer(
+        (_) async => const ObservationSweepResult(
+          messageIds: ['m1', 'm2'],
+          linkIds: ['l1'],
+        ),
+      );
+
+      final result = await withClock(Clock.fixed(now), service.sweep);
+
+      const policy = AgentRetentionPolicy();
+      expect(result.observations, 4);
+      verify(
+        () => repository.pruneAgentObservations(
+          agentId: 'agent-1',
+          cutoff: now.subtract(policy.observations),
+          limit: policy.batchSize,
+          maxMessages: policy.maxAgentMessages,
+        ),
+      ).called(1);
+    });
+
+    test('the observation horizon is not the status-event one', () async {
+      seedAgents([]);
+
+      await withClock(Clock.fixed(now), service.sweep);
+
+      const policy = AgentRetentionPolicy();
+      verify(
+        () => repository.agentsWithAgedObservations(
+          now.subtract(policy.observations),
+          limit: policy.agentsPerSweep,
+          afterAgentId: any(named: 'afterAgentId'),
+        ),
+      ).called(1);
+    });
+
+    test('walks past unprunable agents within one sweep', () async {
+      // The service is built fresh for each start-up sweep, so a cursor held
+      // across sweeps would always begin at null and every start would
+      // re-examine the same leading agents. Walking until the delete budget is
+      // spent reaches the later ones in the same pass instead.
+      const policy = AgentRetentionPolicy();
+      var page = 0;
+      when(
+        () => repository.agentsWithAgedObservations(
+          any(),
+          limit: any(named: 'limit'),
+          afterAgentId: any(named: 'afterAgentId'),
+        ),
+      ).thenAnswer((_) async {
+        page++;
+        if (page > 2) return [];
+        return [
+          for (var i = 0; i < policy.agentsPerSweep; i++) 'page$page-agent-$i',
+        ];
+      });
+
+      await withClock(Clock.fixed(now), service.sweep);
+
+      // Every agent on the first page yields nothing, so the sweep must ask
+      // for a second page rather than stopping at the page boundary.
+      verify(
+        () => repository.agentsWithAgedObservations(
+          any(),
+          limit: any(named: 'limit'),
+          afterAgentId: 'page1-agent-${policy.agentsPerSweep - 1}',
+        ),
+      ).called(1);
+    });
+
+    test('stops once the delete budget is spent', () async {
+      const policy = AgentRetentionPolicy();
+      seedAgents(['agent-a', 'agent-b']);
+      when(
+        () => repository.pruneAgentObservations(
+          agentId: any(named: 'agentId'),
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenAnswer(
+        (_) async => ObservationSweepResult(
+          messageIds: [for (var i = 0; i < policy.batchSize; i++) 'm$i'],
+          linkIds: const [],
+        ),
+      );
+
+      final result = await withClock(Clock.fixed(now), service.sweep);
+
+      // One agent already fills the budget, so the pass ends rather than
+      // walking the rest of the store on a single start-up.
+      expect(result.observations, policy.batchSize);
+    });
+
+    test('a status-event failure does not stop observation sweeping', () async {
+      // The two sources are independent. Sharing one catch meant a repeatable
+      // failure in the status-event pass — its watermark read, its delete, or
+      // its sidecar reclamation — stopped observations from ever running.
+      when(
+        () => repository.pruneDayStatusEventsBefore(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          maxBatches: any(named: 'maxBatches'),
+        ),
+      ).thenThrow(Exception('status events are broken'));
+      seedAgents(['agent-1']);
+      when(
+        () => repository.pruneAgentObservations(
+          agentId: any(named: 'agentId'),
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenAnswer(
+        (_) async => const ObservationSweepResult(
+          messageIds: ['m1'],
+          linkIds: [],
+        ),
+      );
+
+      final result = await withClock(Clock.fixed(now), service.sweep);
+
+      expect(result.dayStatusEvents, 0);
+      expect(result.observations, 1);
+    });
+
+    test('one failing agent does not stop the others', () async {
+      seedAgents(['boom', 'fine']);
+      when(
+        () => repository.pruneAgentObservations(
+          agentId: 'boom',
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenThrow(Exception('malformed log'));
+      when(
+        () => repository.pruneAgentObservations(
+          agentId: 'fine',
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenAnswer(
+        (_) async => const ObservationSweepResult(
+          messageIds: ['m1'],
+          linkIds: [],
+        ),
+      );
+
+      final result = await withClock(Clock.fixed(now), service.sweep);
+
+      expect(
+        result.observations,
+        1,
+        reason:
+            'One malformed log must not stop every other agent from being '
+            'collected.',
+      );
+      verify(
+        () => domainLogger.error(
+          any(),
+          any(),
+          message: any(named: 'message'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    });
+
+    test('reclaims the sidecars of pruned messages and links', () async {
+      seedAgents(['agent-1']);
+      when(
+        () => repository.pruneAgentObservations(
+          agentId: any(named: 'agentId'),
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenAnswer(
+        (_) async => const ObservationSweepResult(
+          messageIds: ['m1'],
+          linkIds: ['l1'],
+        ),
+      );
+      final reclaimer = MockAgentSidecarReclaimer();
+      when(
+        () => reclaimer.reclaim(
+          entityIds: any(named: 'entityIds'),
+          linkIds: any(named: 'linkIds'),
+        ),
+      ).thenAnswer((_) async => 1);
+      service = AgentRetentionService(
+        repository: repository,
+        domainLogger: domainLogger,
+        sidecarReclaimer: reclaimer,
+      );
+
+      await withClock(Clock.fixed(now), service.sweep);
+
+      verify(
+        () => reclaimer.reclaim(entityIds: ['m1'], linkIds: ['l1']),
+      ).called(1);
+    });
   });
 
   test('takes the newest marker regardless of the order returned', () async {

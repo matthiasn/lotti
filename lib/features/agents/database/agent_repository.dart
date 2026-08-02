@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/database/agent_repo_evolution.dart';
 import 'package:lotti/features/agents/database/agent_repo_internals.dart';
 import 'package:lotti/features/agents/database/agent_repo_links.dart';
+import 'package:lotti/features/agents/database/agent_repo_observation_retention.dart';
 import 'package:lotti/features/agents/database/agent_repo_queries.dart';
 import 'package:lotti/features/agents/database/agent_repo_retention.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -61,6 +62,7 @@ class AgentRepository {
     : _core = AgentRepoCore(db),
       _links = AgentRepoLinks(db, domainLogger),
       _retention = AgentRepoRetention(db),
+      _observationRetention = AgentRepoObservationRetention(db),
       _ledger = AgentProposalLedger(db) {
     // Core ↔ projection form a cycle: the projection hydrates source rows via
     // `core.getEntitiesByIds`, and `core.upsertEntity` refreshes the projection
@@ -75,6 +77,7 @@ class AgentRepository {
   final AgentRepoCore _core;
   final AgentRepoLinks _links;
   final AgentRepoRetention _retention;
+  final AgentRepoObservationRetention _observationRetention;
   final AgentProposalLedger _ledger;
   late final AgentAttentionProjection _projection;
   late final AgentRepoQueries _queries;
@@ -696,5 +699,31 @@ class AgentRepository {
     cutoff,
     batchSize: batchSize,
     maxBatches: maxBatches,
+  );
+
+  /// Agents holding at least one observation older than [cutoff], after
+  /// [afterAgentId] in id order.
+  Future<List<String>> agentsWithAgedObservations(
+    DateTime cutoff, {
+    required int limit,
+    String? afterAgentId,
+  }) => _observationRetention.agentsWithAgedObservations(
+    cutoff,
+    limit: limit,
+    afterAgentId: afterAgentId,
+  );
+
+  /// Prunes one agent's aged observations and the `messagePrev` edges into
+  /// them. Returns the removed ids so their sidecars can be reclaimed.
+  Future<ObservationSweepResult> pruneAgentObservations({
+    required String agentId,
+    required DateTime cutoff,
+    required int limit,
+    required int maxMessages,
+  }) => _observationRetention.pruneAgent(
+    agentId: agentId,
+    cutoff: cutoff,
+    limit: limit,
+    maxMessages: maxMessages,
   );
 }

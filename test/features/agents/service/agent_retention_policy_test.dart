@@ -64,18 +64,32 @@ void main() {
   });
 
   group('what is bounded', () {
-    test('an observation is classified but not yet swept', () {
+    test('an observation is bounded on its own, longer window', () {
       final observation = makeTestMessage(kind: AgentMessageKind.observation);
 
       expect(policy.classify(observation), AgentRetentionClass.observation);
       expect(
         policy.horizonFor(observation),
-        isNull,
+        policy.observations,
         reason:
-            'Observations sit inside the message DAG — message_prev edges, '
-            'agent-state heads, and content-addressed payloads shared by '
-            'link. Until the sweep answers for all of those, dropping them '
-            'on ingest would delete rows this device never prunes locally.',
+            'Observations are swept, but on their own horizon — they are the '
+            'agent working notes a wake may still summarise months later.',
+      );
+      expect(
+        policy.observations,
+        greaterThan(policy.dayStatusEvents),
+        reason:
+            'Losing an observation early loses context permanently, so it is '
+            'kept longer than a status event.',
+      );
+    });
+
+    test('a summary is never bounded, however old', () {
+      // The horizon applies to observations alone; every other message kind
+      // is the agent durable memory.
+      expect(
+        policy.horizonFor(makeTestMessage(kind: AgentMessageKind.summary)),
+        isNull,
       );
     });
 

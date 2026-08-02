@@ -57,6 +57,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than anything new. If the chosen device goes away before it starts,
   another takes the window over about half an hour later. A device with no sync
   identity of its own has no one to coordinate with and still prepares its own.
+- **The assistant's own working notes are now tidied away too.** As it works,
+  an assistant writes private notes to itself about what it just did. Those were
+  kept forever, and on a long-lived assistant they became the fastest-growing
+  thing in the database. Notes older than six months are now cleared out, oldest
+  first where they can be, and never leaving a gap in the middle — the
+  assistant's memory of what happened stays readable rather than developing
+  holes. Kept regardless: its summaries, the note it is working from right now,
+  anything it flagged as a complaint or a piece of praise worth revisiting, and
+  anything you wrote.
 - **Old day-status records stop piling up.** These are the running record of
   how each day was going, raised several times a day and kept indefinitely, so
   the database grew every month with nothing ever released. The full record is

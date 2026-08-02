@@ -8,14 +8,22 @@ import 'package:lotti/services/domain_logging.dart';
 
 /// Outcome of one retention sweep, per source.
 class AgentRetentionResult {
-  const AgentRetentionResult({this.dayStatusEvents = 0});
+  const AgentRetentionResult({this.dayStatusEvents = 0, this.observations = 0});
 
   final int dayStatusEvents;
+  final int observations;
 
-  int get total => dayStatusEvents;
+  int get total => dayStatusEvents + observations;
+
+  AgentRetentionResult copyWith({int? dayStatusEvents, int? observations}) =>
+      AgentRetentionResult(
+        dayStatusEvents: dayStatusEvents ?? this.dayStatusEvents,
+        observations: observations ?? this.observations,
+      );
 
   @override
-  String toString() => 'dayStatusEvents=$dayStatusEvents';
+  String toString() =>
+      'dayStatusEvents=$dayStatusEvents, observations=$observations';
 }
 
 /// Forgets the derived rows the agent store no longer needs.
@@ -97,6 +105,65 @@ class AgentRetentionService {
     }
   }
 
+  /// Prunes aged observations agent by agent.
+  ///
+  /// Each agent is its own transaction, so a sweep cut short leaves a
+  /// consistent DAG behind and the next start resumes where this one stopped.
+  /// An agent that fails is logged and skipped rather than aborting the pass —
+  /// one malformed log must not stop every other agent from being collected.
+  Future<int> _sweepObservations(DateTime now) async {
+    final cutoff = now.subtract(policy.observations);
+    var pruned = 0;
+    var scanned = 0;
+    String? cursor;
+
+    // Budgeted by rows actually removed, not by agents visited. The service is
+    // constructed fresh for each start-up sweep, so a cursor held in a field
+    // would always begin at null and every start would re-examine the same
+    // leading agents — the starvation a cursor was meant to fix. Walking until
+    // the delete budget is spent instead means an agent that yields nothing
+    // costs one bounded read and the sweep moves past it within the same pass.
+    while (pruned < policy.batchSize && scanned < policy.maxAgentsPerSweep) {
+      final agents = await repository.agentsWithAgedObservations(
+        cutoff,
+        limit: policy.agentsPerSweep,
+        afterAgentId: cursor,
+      );
+      if (agents.isEmpty) break;
+      cursor = agents.last;
+      scanned += agents.length;
+
+      for (final agentId in agents) {
+        if (pruned >= policy.batchSize) break;
+        try {
+          final swept = await repository.pruneAgentObservations(
+            agentId: agentId,
+            cutoff: cutoff,
+            limit: policy.batchSize,
+            maxMessages: policy.maxAgentMessages,
+          );
+          if (swept.isEmpty) continue;
+          await sidecarReclaimer?.reclaim(
+            entityIds: swept.messageIds,
+            linkIds: swept.linkIds,
+          );
+          pruned += swept.messageIds.length;
+        } catch (e, s) {
+          domainLogger.error(
+            LogDomain.agentRuntime,
+            e,
+            message:
+                'observation retention failed for agent '
+                '${DomainLogger.sanitizeId(agentId)}; skipping it',
+            stackTrace: s,
+          );
+        }
+      }
+      if (agents.length < policy.agentsPerSweep) break;
+    }
+    return pruned;
+  }
+
   /// Sweeps every retention-eligible source once.
   ///
   /// Fail-soft: retention is housekeeping and must never keep the app from
@@ -130,7 +197,19 @@ class AgentRetentionService {
         message: 'agent retention sweep failed after $result',
         stackTrace: s,
       );
-      return result;
+      // Deliberately falls through rather than returning: the sources are
+      // independent, and a repeatable status-event failure must not stop
+      // observations from ever being collected.
+    }
+    try {
+      result = result.copyWith(observations: await _sweepObservations(now));
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'observation retention failed after $result',
+        stackTrace: s,
+      );
     }
     if (result.total > 0) {
       domainLogger.log(

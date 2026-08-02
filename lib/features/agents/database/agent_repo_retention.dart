@@ -1,17 +1,13 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:meta/meta.dart';
 
 /// Batched hard deletes for the derived rows retention may forget.
 ///
-/// **Scope: day-status events.** Observations are classified as bounded (see
-/// `AgentRetentionPolicy`) but are deliberately NOT swept here. They sit inside
-/// the agent's causal message DAG — `message_prev` edges, agent-state heads,
-/// and content-addressed payloads shared through `messagePayload` links — and
-/// removing one safely means answering what happens to each of those, which is
-/// a subsystem's worth of invariants rather than another `DELETE`. Day-status
-/// events carry no such entanglement.
+/// **Scope: day-status events**, which carry no causal entanglement and so can
+/// be deleted row by row. Observations sit inside the agent's `messagePrev`
+/// DAG and need an ancestor-closed set plus the edges into it, which is
+/// `AgentRepoObservationRetention`'s job.
 ///
 /// **Hard delete, no tombstone.** A tombstone per pruned row would grow the
 /// sync payload in exactly the dimension retention exists to shrink, and there
@@ -30,7 +26,8 @@ import 'package:meta/meta.dart';
 /// Exceeding it throws, which rolls back the surrounding transaction and
 /// leaves every start-up retrying the same batch — retention that never makes
 /// progress, which is worse than not sweeping at all.
-@visibleForTesting
+///
+/// Shared by every retention sweep that deletes by id list.
 Iterable<List<String>> chunkForStatement(List<String> ids, int size) sync* {
   for (var start = 0; start < ids.length; start += size) {
     final end = start + size > ids.length ? ids.length : start + size;
