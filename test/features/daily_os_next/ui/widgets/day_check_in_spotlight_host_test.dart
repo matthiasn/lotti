@@ -293,7 +293,6 @@ void main() {
       await tester.tap(find.text('Not now'));
       await tester.pump();
 
-      expect(session!.skipRecorded, isTrue);
       expect(controller.state, isNull);
       expect(find.byType(DailyOsOnboardingSpotlight), findsNothing);
     });

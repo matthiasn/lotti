@@ -150,43 +150,6 @@ void main() {
       ).called(1);
     });
 
-    test('setCategoryEnabled persists the excluded category list', () {
-      final notifier = container.read(
-        dailyOsPreferencesControllerProvider.notifier,
-      );
-      void setHealthCategory({required bool enabled}) {
-        notifier.setCategoryEnabled('cat_health', enabled: enabled);
-      }
-
-      setHealthCategory(enabled: false);
-      expect(
-        container
-            .read(dailyOsPreferencesControllerProvider)
-            .excludedCategoryIds,
-        {'cat_health'},
-      );
-      verify(
-        () => mocks.settingsDb.saveSettingsItem(
-          dailyOsExcludedCategoryIdsSettingsKey,
-          '["cat_health"]',
-        ),
-      ).called(1);
-
-      setHealthCategory(enabled: true);
-      expect(
-        container
-            .read(dailyOsPreferencesControllerProvider)
-            .excludedCategoryIds,
-        isEmpty,
-      );
-      verify(
-        () => mocks.settingsDb.saveSettingsItem(
-          dailyOsExcludedCategoryIdsSettingsKey,
-          '[]',
-        ),
-      ).called(1);
-    });
-
     test('setIncludedCategoryIds persists omitted actual categories', () {
       container
           .read(dailyOsPreferencesControllerProvider.notifier)
@@ -205,33 +168,6 @@ void main() {
         () => mocks.settingsDb.saveSettingsItem(
           dailyOsExcludedCategoryIdsSettingsKey,
           '["cat_meals"]',
-        ),
-      ).called(1);
-    });
-
-    test('includeAllCategories clears exclusions and persists empty list', () {
-      final notifier = container.read(
-        dailyOsPreferencesControllerProvider.notifier,
-      )..setCategoryEnabled('cat_health', enabled: false);
-      expect(
-        container
-            .read(dailyOsPreferencesControllerProvider)
-            .excludedCategoryIds,
-        {'cat_health'},
-      );
-
-      notifier.includeAllCategories();
-
-      expect(
-        container
-            .read(dailyOsPreferencesControllerProvider)
-            .excludedCategoryIds,
-        isEmpty,
-      );
-      verify(
-        () => mocks.settingsDb.saveSettingsItem(
-          dailyOsExcludedCategoryIdsSettingsKey,
-          '[]',
         ),
       ).called(1);
     });

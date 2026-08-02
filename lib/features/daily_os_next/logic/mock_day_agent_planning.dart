@@ -46,7 +46,6 @@ class MockDayAgentPlanning {
     if (currentPlan.blocks.isEmpty) {
       return PlanDiff(
         id: 'diff_$_diffSeq',
-        transcript: voiceTranscript,
         changes: const [],
         updatedPlan: currentPlan,
       );
@@ -116,7 +115,6 @@ class MockDayAgentPlanning {
 
     return PlanDiff(
       id: 'diff_$_diffSeq',
-      transcript: voiceTranscript,
       changes: [
         PlanDiffChange(
           id: 'c_moved_deck',
@@ -124,7 +122,6 @@ class MockDayAgentPlanning {
           title: deck.title,
           category: deck.category,
           reason: 'Earlier start matches your high-energy window.',
-          affectedBlockId: deck.id,
           fromStart: deck.start,
           fromEnd: deck.end,
           toStart: movedDeck.start,
@@ -136,7 +133,6 @@ class MockDayAgentPlanning {
           title: onboarding.title,
           category: onboarding.category,
           reason: 'Dropped per your "skip onboarding" request.',
-          affectedBlockId: onboarding.id,
           fromStart: onboarding.start,
           fromEnd: onboarding.end,
         ),
@@ -146,7 +142,6 @@ class MockDayAgentPlanning {
           title: 'Afternoon buffer',
           category: mockBufferCategory,
           reason: 'Protects recovery time after lunch.',
-          affectedBlockId: addedBuffer.id,
           toStart: addedBuffer.start,
           toEnd: addedBuffer.end,
         ),
@@ -189,7 +184,6 @@ class MockDayAgentPlanning {
     await Future<void>.delayed(summarizeLatency);
     return const [
       LearningCard(
-        id: 'l_yesterday',
         overline: 'YESTERDAY',
         summary: 'Strong morning, distracted afternoon.',
         bullets: [
@@ -208,7 +202,6 @@ class MockDayAgentPlanning {
         ],
       ),
       LearningCard(
-        id: 'l_week',
         overline: 'THIS WEEK SO FAR',
         summary: 'Mornings holding, afternoons slipping.',
         bullets: [
@@ -227,7 +220,6 @@ class MockDayAgentPlanning {
         ],
       ),
       LearningCard(
-        id: 'l_nudge',
         overline: 'GENTLE NUDGE',
         summary:
             'You pushed deep work later three days running. '
@@ -395,14 +387,12 @@ class MockDayAgentPlanning {
     return (
       completed: const [
         CompletedItem(
-          taskId: 't_deck_review',
           title: 'Deck review — Q2 leadership update',
           category: mockWorkCategory,
           durationMinutes: 95,
           note: 'Two focus sessions, draft sent to Sarah.',
         ),
         CompletedItem(
-          taskId: 't_morning_run',
           title: 'Morning run · 5km',
           category: mockHealthCategory,
           durationMinutes: 28,
@@ -463,7 +453,6 @@ class MockDayAgentPlanning {
           "You started the Onboarding doc and stopped 40m in. I'll start "
           'the draft with it placed in your morning, alongside the '
           'carryover, and ask if you want to keep that.',
-      maturity: 1,
     );
   }
 

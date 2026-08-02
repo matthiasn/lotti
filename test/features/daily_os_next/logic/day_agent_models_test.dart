@@ -447,17 +447,9 @@ void main() {
       },
     );
 
-    test('TriageResult: deferredTo only accompanies the defer action', () {
-      const done = TriageResult(taskId: 't1', action: TriageAction.done);
-      expect(done.deferredTo, isNull);
-
-      final deferred = TriageResult(
-        taskId: 't1',
-        action: TriageAction.defer,
-        deferredTo: DateTime(2024, 3, 18),
-      );
+    test('TriageResult carries the applied action', () {
+      const deferred = TriageResult(action: TriageAction.defer);
       expect(deferred.action, TriageAction.defer);
-      expect(deferred.deferredTo, DateTime(2024, 3, 18));
     });
 
     test('ParsedItem: matched-task and anchor optionals land verbatim', () {
@@ -500,13 +492,11 @@ void main() {
       );
       final diff = PlanDiff(
         id: 'd1',
-        transcript: 'move the gym',
         changes: const [],
         updatedPlan: updated,
       );
       expect(diff.updatedPlan.scheduledMinutes, 60);
       expect(diff.changes, isEmpty);
-      expect(diff.transcript, 'move the gym');
     });
 
     test('Shutdown models: metrics, completed/carryover items, note', () {
@@ -522,7 +512,6 @@ void main() {
       expect(metrics.energyDeltaVsWeek, 0.5);
 
       const completedItem = CompletedItem(
-        taskId: 't1',
         title: 'Ship release',
         category: cat,
         durationMinutes: 90,
@@ -539,8 +528,7 @@ void main() {
       );
       expect(carryover.suggestedTarget, '→ tomorrow morning');
 
-      const note = TomorrowNote(body: 'Start with the deck.', maturity: 2);
-      expect(note.maturity, inInclusiveRange(1, 3));
+      const note = TomorrowNote(body: 'Start with the deck.');
       expect(note.body, isNotEmpty);
     });
   });

@@ -464,7 +464,6 @@ void main() {
       final agent = RecordingDayAgent(
         diff: PlanDiff(
           id: 'activity-refine-diff',
-          transcript: 'Make the afternoon lighter.',
           changes: const [],
           updatedPlan: _drafted(),
         ),
@@ -1564,7 +1563,6 @@ void main() {
         final agent = RecordingDayAgent(
           diff: PlanDiff(
             id: 'quick_diff',
-            transcript: 'quick',
             changes: const [],
             updatedPlan: _draftedWithReasons(),
           ),
@@ -1595,7 +1593,6 @@ void main() {
         final agent = RecordingDayAgent(
           diff: PlanDiff(
             id: 'quick_${scenario.replaceAll(' ', '_')}_diff',
-            transcript: scenario,
             changes: const [],
             updatedPlan: _draftedWithReasons(),
           ),
@@ -1634,7 +1631,6 @@ void main() {
       final agent = RecordingDayAgent(
         diff: PlanDiff(
           id: 'compact_diff',
-          transcript: 'compact',
           changes: const [],
           updatedPlan: _draftedWithReasons(),
         ),
@@ -1680,7 +1676,6 @@ void main() {
         final acceptedPlan = draft.copyWith(scheduledMinutes: 210);
         final diff = PlanDiff(
           id: 'diff_day',
-          transcript: 'move one thing',
           changes: const [
             PlanDiffChange(
               id: 'chg_day',
@@ -1688,7 +1683,6 @@ void main() {
               title: 'Move focus',
               category: _category,
               reason: 'one change resolves the modal',
-              affectedBlockId: 'blk_1',
             ),
           ],
           updatedPlan: acceptedPlan,

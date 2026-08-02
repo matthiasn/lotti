@@ -58,7 +58,6 @@ class RefineState {
     this.resolvingChangeId,
     this.diff,
     this.problem,
-    this.problemDetail,
     this.accepting = false,
   });
 
@@ -69,7 +68,6 @@ class RefineState {
   final Map<String, PlanDiffChangeDecision> decisions;
   final String? resolvingChangeId;
   final RefineProblem? problem;
-  final String? problemDetail;
 
   /// True while the whole-diff [RefineController.accept] round-trip is in
   /// flight. The action bar treats this as busy so a second tap can't
@@ -85,7 +83,6 @@ class RefineState {
     Map<String, PlanDiffChangeDecision>? decisions,
     String? resolvingChangeId,
     RefineProblem? problem,
-    String? problemDetail,
     bool? accepting,
     bool clearDiff = false,
     bool clearResolvingChangeId = false,
@@ -101,9 +98,6 @@ class RefineState {
           ? null
           : (resolvingChangeId ?? this.resolvingChangeId),
       problem: clearProblem ? null : (problem ?? this.problem),
-      problemDetail: clearProblem
-          ? null
-          : (problemDetail ?? this.problemDetail),
       accepting: accepting ?? this.accepting,
     );
   }
@@ -140,23 +134,6 @@ class RefineController extends Notifier<RefineState> {
       transcript: '',
       currentPlan: originalPlan,
     );
-  }
-
-  void toggleListening() {
-    switch (state.phase) {
-      case RefinePhase.idle:
-      case RefinePhase.diffReady:
-        beginListening(resetTranscript: state.phase == RefinePhase.idle);
-      case RefinePhase.listening:
-        // CaptureController stops the microphone and calls finishWithTranscript.
-        break;
-      case RefinePhase.reviewing:
-        beginListening(resetTranscript: true);
-      case RefinePhase.thinking:
-      case RefinePhase.accepted:
-        // No-op — we're mid-flight.
-        break;
-    }
   }
 
   /// User tapped "Keep talking" — re-arms listening without
@@ -228,7 +205,6 @@ class RefineController extends Notifier<RefineState> {
       state = state.copyWith(
         accepting: false,
         problem: RefineProblem.proposalFailed,
-        problemDetail: error.toString(),
       );
     }
   }
@@ -276,7 +252,7 @@ class RefineController extends Notifier<RefineState> {
     // `accepting` guard: starting a listening flow while a whole-diff
     // accept round-trip is in flight would race `acceptDiff`'s completion
     // (last-write-wins on `phase`/`transcript`). This is the choke point
-    // for every listening entry (toggleListening, keepTalking), mirroring
+    // for every listening entry, mirroring
     // the guards in accept()/revert()/_resolveChange().
     if (state.accepting) return;
     _transcriptPrefix = resetTranscript ? '' : state.transcript.trim();
@@ -287,13 +263,6 @@ class RefineController extends Notifier<RefineState> {
       decisions: const {},
       clearResolvingChangeId: true,
       clearProblem: true,
-    );
-  }
-
-  void updateActiveTranscript(String transcript) {
-    if (state.phase != RefinePhase.listening) return;
-    state = state.copyWith(
-      transcript: _joinTranscript(_transcriptPrefix, transcript),
     );
   }
 
@@ -342,7 +311,6 @@ class RefineController extends Notifier<RefineState> {
         transcript: nextTranscript,
         clearDiff: true,
         problem: RefineProblem.proposalFailed,
-        problemDetail: error.toString(),
         decisions: const {},
         clearResolvingChangeId: true,
       );

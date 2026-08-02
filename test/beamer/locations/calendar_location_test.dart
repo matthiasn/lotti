@@ -74,7 +74,6 @@ class _RouteDayAgent extends MockDayAgent {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 26, 18),
       );
 
   @override
@@ -100,7 +99,7 @@ class _RouteDayAgent extends MockDayAgent {
 
   @override
   Future<TomorrowNote> generateTomorrowNote({required DateTime forDate}) async {
-    return const TomorrowNote(body: '', maturity: 1);
+    return const TomorrowNote(body: '');
   }
 }
 

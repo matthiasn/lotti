@@ -1,11 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/rating_data.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -17,99 +13,6 @@ import '../../../mocks/mocks.dart';
 import 'actual_time_blocks_provider_test_helpers.dart';
 
 void main() {
-  group('debugResolveLinkedFrom (pure linked-from picker)', () {
-    final day = DateTime(2026, 5, 27);
-
-    glados.Glados(
-      glados.ListAnys(glados.any).listWithLengthInRange(
-        0,
-        5,
-        glados.AnyUtils(
-          glados.any,
-        ).choose(const ['task', 'entry', 'rating', 'deleted-task', 'missing']),
-      ),
-      glados.ExploreConfig(numRuns: 140),
-    ).test(
-      'prefers tasks, excludes ratings and tombstones, falls back to the '
-      'first surviving non-task',
-      (kinds) {
-        final pool = <String, JournalEntity>{
-          'task': hTask(
-            id: 'task',
-            title: 'A task',
-            categoryId: 'cat',
-            day: day,
-          ),
-          'entry': hEntry(id: 'entry', day: day, startHour: 9, endHour: 10),
-          'rating': JournalEntity.rating(
-            meta: Metadata(
-              id: 'rating',
-              createdAt: day,
-              updatedAt: day,
-              dateFrom: day,
-              dateTo: day,
-            ),
-            data: const RatingData(targetId: 'entry', dimensions: []),
-          ),
-          'deleted-task': JournalEntity.task(
-            meta: Metadata(
-              id: 'deleted-task',
-              createdAt: day,
-              updatedAt: day,
-              dateFrom: day,
-              dateTo: day,
-              deletedAt: day,
-            ),
-            data: TaskData(
-              status: TaskStatus.open(
-                id: 'dt-status',
-                createdAt: day,
-                utcOffset: 0,
-              ),
-              dateFrom: day,
-              dateTo: day,
-              statusHistory: const [],
-              title: 'Deleted',
-            ),
-          ),
-        };
-        // Insertion-ordered set mirrors the production LinkedHashSet input.
-        final ids = <String>{...kinds};
-
-        final result = debugResolveLinkedFrom(
-          linkedFromIds: ids,
-          linkedFromById: pool,
-        );
-        final reason = 'kinds=$kinds';
-
-        // Oracle: first surviving Task wins; else first non-rating
-        // survivor; tombstones and ratings never surface.
-        JournalEntity? expected;
-        for (final id in ids) {
-          final entity = pool[id];
-          if (entity == null || entity.meta.deletedAt != null) continue;
-          if (entity is Task) {
-            expected = entity;
-            break;
-          }
-          if (entity is RatingEntry) continue;
-          expected ??= entity;
-        }
-
-        expect(result?.meta.id, expected?.meta.id, reason: reason);
-        expect(result is RatingEntry, isFalse, reason: reason);
-        expect(result?.meta.deletedAt, isNull, reason: reason);
-
-        // Null ids short-circuit to null.
-        expect(
-          debugResolveLinkedFrom(linkedFromIds: null, linkedFromById: pool),
-          isNull,
-        );
-      },
-      tags: 'glados',
-    );
-  });
-
   group('actualTimelineUpdateBatches', () {
     test('refreshes for any non-empty database update batch', () async {
       final batches = actualTimelineUpdateBatches(

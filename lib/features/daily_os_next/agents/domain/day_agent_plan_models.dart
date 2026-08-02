@@ -134,20 +134,6 @@ class DayAgentLearningCard {
     this.kind = 'standard',
   }) : bullets = List.unmodifiable(bullets);
 
-  /// Creates a learning card from JSON.
-  factory DayAgentLearningCard.fromJson(Map<String, dynamic> json) {
-    return DayAgentLearningCard(
-      id: json['id'] as String,
-      overline: json['overline'] as String,
-      summary: json['summary'] as String,
-      bullets: [
-        for (final bullet in json['bullets'] as List<dynamic>)
-          DayAgentLearningBullet.fromJson(bullet as Map<String, dynamic>),
-      ],
-      kind: json['kind'] as String? ?? 'standard',
-    );
-  }
-
   /// Card id.
   final String id;
 

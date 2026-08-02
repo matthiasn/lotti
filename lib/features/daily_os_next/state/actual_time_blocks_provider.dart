@@ -121,29 +121,6 @@ List<TimeBlock> actualTimeBlocksForEntries({
   return out;
 }
 
-/// Test-only seam for the pure linked-from picker (shared core:
-/// [resolveLinkedFrom] in `logic/recorded_time.dart`).
-@visibleForTesting
-JournalEntity? debugResolveLinkedFrom({
-  required Set<String>? linkedFromIds,
-  required Map<String, JournalEntity> linkedFromById,
-}) => resolveLinkedFrom(
-  linkedFromIds: linkedFromIds,
-  linkedFromById: linkedFromById,
-);
-
-/// Test-only seam for [_projectCategory] — the pure category/color
-/// normalizer.
-@visibleForTesting
-DayAgentCategory debugProjectCategory(
-  String? categoryId,
-  CategoryDefinition? Function(String id) categoryById,
-) => _projectCategory(categoryId, categoryById);
-
-/// The fallback category used when no category is resolvable.
-@visibleForTesting
-DayAgentCategory get debugFallbackActualCategory => _fallbackActualCategory;
-
 DayAgentCategory _projectCategory(
   String? categoryId,
   CategoryDefinition? Function(String id) categoryById,

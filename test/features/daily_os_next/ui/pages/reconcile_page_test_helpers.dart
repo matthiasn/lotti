@@ -63,7 +63,6 @@ MockDayAgent hFastAgent() => MockDayAgent(
   parseLatency: Duration.zero,
   pendingLatency: Duration.zero,
   triageLatency: Duration.zero,
-  clock: () => DateTime(2026, 5, 25, 9),
 );
 
 class EmptyParsedAgent extends MockDayAgent {
@@ -72,7 +71,6 @@ class EmptyParsedAgent extends MockDayAgent {
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   @override
@@ -85,7 +83,6 @@ class ThrowingReconcileAgent extends MockDayAgent {
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   @override
@@ -100,7 +97,6 @@ class InitialBlockingReconcileAgent extends MockDayAgent {
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   final parsed = Completer<List<ParsedItem>>();
@@ -125,7 +121,6 @@ class RefreshBlockingAgent extends MockDayAgent {
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   final pendingParsedRefresh = Completer<List<ParsedItem>>();
@@ -157,7 +152,6 @@ class LateParseAgent extends MockDayAgent {
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   bool ready = false;
@@ -201,7 +195,7 @@ ParsedItem hParsed(
 
 /// Builds a [TriageResult] for the given action.
 TriageResult hTriage(String taskId, TriageAction action) =>
-    TriageResult(taskId: taskId, action: action);
+    TriageResult(action: action);
 
 ReconcileData hReconcileData({
   List<ParsedItem> parsed = const [],
@@ -273,7 +267,6 @@ class MatchedWithoutTaskIdAgent extends MockDayAgent {
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   @override
@@ -295,7 +288,6 @@ class BreakLinkRecordingAgent extends MockDayAgent {
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   final List<String> brokenItemIds = [];
@@ -354,9 +346,8 @@ class SelectionSpec {
 
   String? get triageTaskId => hasTriage ? 't_$triageSeed' : null;
 
-  TriageResult? get triageResult => hasTriage
-      ? TriageResult(taskId: triageTaskId!, action: triageAction)
-      : null;
+  TriageResult? get triageResult =>
+      hasTriage ? TriageResult(action: triageAction) : null;
 
   @override
   String toString() =>

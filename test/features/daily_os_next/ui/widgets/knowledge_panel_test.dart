@@ -56,7 +56,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      panel(const PlannerKnowledgeView.empty(), MockDayAgentKnowledgeService()),
+      panel(
+        const PlannerKnowledgeView(confirmed: [], proposed: []),
+        MockDayAgentKnowledgeService(),
+      ),
     );
     await tester.pump();
 

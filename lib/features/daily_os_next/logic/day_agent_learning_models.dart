@@ -26,14 +26,12 @@ enum LearningBulletTone {
 @immutable
 class LearningCard {
   const LearningCard({
-    required this.id,
     required this.overline,
     required this.summary,
     required this.bullets,
     this.kind = LearningCardKind.standard,
   });
 
-  final String id;
   final String overline;
   final String summary;
   final List<LearningBullet> bullets;
@@ -65,7 +63,6 @@ class PlanDiffChange {
     required this.title,
     required this.category,
     required this.reason,
-    required this.affectedBlockId,
     this.fromStart,
     this.fromEnd,
     this.toStart,
@@ -79,12 +76,6 @@ class PlanDiffChange {
 
   /// The agent's verbatim explanation for this individual change.
   final String reason;
-
-  /// Block on the **current** plan the change attaches to. For
-  /// `added` the ping anchors to the position the new block would
-  /// land at; the mock keeps that simple by pointing at the block
-  /// the new one displaces.
-  final String affectedBlockId;
 
   final DateTime? fromStart;
   final DateTime? fromEnd;
@@ -100,13 +91,11 @@ class PlanDiffChange {
 class PlanDiff {
   const PlanDiff({
     required this.id,
-    required this.transcript,
     required this.changes,
     required this.updatedPlan,
   });
 
   final String id;
-  final String transcript;
   final List<PlanDiffChange> changes;
 
   /// The plan that results from applying every [changes] entry. The

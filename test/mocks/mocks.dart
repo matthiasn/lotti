@@ -401,7 +401,6 @@ class RefreshBlockingShutdownAgent extends MockDayAgent {
         pendingLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   final pendingShutdownRefresh =
@@ -430,7 +429,7 @@ class RefreshBlockingShutdownAgent extends MockDayAgent {
 
   @override
   Future<TomorrowNote> generateTomorrowNote({required DateTime forDate}) async {
-    return const TomorrowNote(body: 'Tomorrow stays queued.', maturity: 1);
+    return const TomorrowNote(body: 'Tomorrow stays queued.');
   }
 }
 
@@ -441,7 +440,6 @@ class ThrowingShutdownAgent extends MockDayAgent {
         pendingLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   @override

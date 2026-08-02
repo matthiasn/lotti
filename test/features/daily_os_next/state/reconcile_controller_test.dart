@@ -128,7 +128,6 @@ void main() {
       final data = state.value!;
       expect(data.triageDecisions, hasLength(1));
       expect(data.triageDecisions['t_dentist']!.action, TriageAction.defer);
-      expect(data.triageDecisions['t_dentist']!.deferredTo, isNotNull);
     });
 
     test(
@@ -281,7 +280,6 @@ void main() {
         expect(data.copyWith().triageDecisions, data.triageDecisions);
 
         const replacement = TriageResult(
-          taskId: 't',
           action: TriageAction.today,
         );
         final updated = data.copyWith(
@@ -418,7 +416,6 @@ class _ZeroLatencyAgent extends MockDayAgent {
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 }
 

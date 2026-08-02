@@ -48,7 +48,6 @@ MockDayAgent _fastAgent() => MockDayAgent(
   triageLatency: Duration.zero,
   draftLatency: Duration.zero,
   summarizeLatency: Duration.zero,
-  clock: () => DateTime(2026, 5, 25, 9),
 );
 
 /// Agent whose tomorrow note is fully controlled by the test.
@@ -60,7 +59,6 @@ class _TomorrowNoteAgent extends MockDayAgent {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   final TomorrowNote note;
@@ -79,7 +77,6 @@ class _LongCarryoverCategoryAgent extends MockDayAgent {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   static const categoryName =
@@ -661,7 +658,7 @@ void main() {
     ) async {
       await pumpWithNote(
         tester,
-        const TomorrowNote(body: 'Pack slides for the standup.', maturity: 2),
+        const TomorrowNote(body: 'Pack slides for the standup.'),
       );
 
       final context = tester.element(find.byType(ShutdownPage));
@@ -675,7 +672,7 @@ void main() {
     testWidgets('an empty note body still renders the titled card', (
       tester,
     ) async {
-      await pumpWithNote(tester, const TomorrowNote(body: '', maturity: 0));
+      await pumpWithNote(tester, const TomorrowNote(body: ''));
 
       // _TomorrowNoteCard has no dedicated empty-state branch (and no
       // maturity indicator); an empty body renders as an empty Text under
