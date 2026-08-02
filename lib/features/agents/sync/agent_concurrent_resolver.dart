@@ -70,8 +70,12 @@ ConcurrentWinner resolveConcurrent({
 /// - **Scheduled wakes — a future reschedule beats a past consume.** A pending
 ///   pre-warm targeting a strictly-later instant wins over a concurrent consume
 ///   of an earlier instant, so a re-armed wake is not silently dropped.
-///   Same-instant conflicts defer to LWW (the consume wins), so a stale pending
-///   can never resurrect a wake that already fired — no double-fire.
+///   For the **same** instant, consumption is terminal and wins in both
+///   directions. Deferring to LWW there was the bug this replaces: a peer that
+///   missed the consume can take over past `leaseUntil` and stamp a younger
+///   pending claim, and `updatedAt` LWW would then let that claim beat the
+///   completion — resurrecting a wake that already fired. Same-status
+///   conflicts at one instant are what still defer.
 /// - **Day summaries — earliest `createdAt` wins.** A day summary is the
 ///   planner's contemporaneous testimony about a day; plain LWW would let a
 ///   later (less contemporaneous, possibly stale-device) write silently
