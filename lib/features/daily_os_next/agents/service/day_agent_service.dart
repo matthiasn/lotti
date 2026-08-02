@@ -706,12 +706,12 @@ class DayAgentService {
     agentService.cancelPendingWake(agentId);
   }
 
-  /// How long a per-day agent stays active past its own day.
+  /// How many calendar days a per-day agent stays active past its own day.
   ///
-  /// One day, so it can wake the morning after and hand the coordinator
-  /// anything its day left unreported. After that the day is finished and
-  /// there is nothing for it to do on a timer.
-  static const dayAgentHandoverWindow = Duration(days: 1);
+  /// One, so it can wake the morning after and hand the coordinator anything
+  /// its day left unreported. After that the day is finished and there is
+  /// nothing for it to do on a timer.
+  static const dayAgentHandoverDays = 1;
 
   /// Stands down per-day agents whose day is over.
   ///
@@ -727,14 +727,18 @@ class DayAgentService {
   /// manager (its `_isActiveAgent` guard already skips non-active agents), and
   /// clearing the deadline stops the row surfacing in the due query at all.
   ///
-  /// **Retired is not deleted.** The day's artifacts stay exactly where they
-  /// are and the day stays readable. Nothing revives a retired agent on a
-  /// timer; only an explicit resolution through [getOrCreateDayAgentForDate]
-  /// does, because that is work someone asked for rather than work that
-  /// happens on its own.
+  /// **Retired is not deleted, and not revived.** The day's artifacts stay
+  /// exactly where they are and the day stays readable.
+  /// [getOrCreateDayAgentForDate] returns a dormant agent unchanged:
+  /// reactivating there cannot tell retirement apart from a deliberate pause
+  /// — `AgentService.pauseAgent` writes the same `dormant` — so it would
+  /// silently resume an agent the user switched off.
   Future<int> retirePastDayAgents() async {
+    // Calendar arithmetic, not a 24-hour subtraction: across a DST change a
+    // fixed Duration does not reliably land on the previous calendar date.
+    final today = localDay(clock.now());
     final cutoff = dayAgentIdForDate(
-      clock.now().subtract(dayAgentHandoverWindow),
+      DateTime(today.year, today.month, today.day - dayAgentHandoverDays),
     );
     final active = await agentService.listAgents(
       lifecycle: AgentLifecycle.active,
@@ -769,19 +773,21 @@ class DayAgentService {
 
   Future<void> _retireDayAgent(AgentIdentityEntity agent) async {
     final now = clock.now();
-    // Deadline first, lifecycle second. Future passes only look at *active*
-    // identities, so flipping first and then failing would strand a dormant
-    // agent that still holds a wake and can never be retried. In this order a
-    // failure leaves it active, and the next pass simply tries again.
-    final state = await repository.getAgentState(agent.agentId);
-    if (state?.scheduledWakeAt != null) {
+    // One transaction: either the agent is dormant *and* its deadline is gone,
+    // or neither happened and the next pass retries. Half a retirement is a
+    // live agent robbed of its pre-warm, or a dormant one still holding a wake
+    // that later passes cannot see — they list active identities only.
+    await syncService.runInTransaction(() async {
+      final state = await repository.getAgentState(agent.agentId);
+      if (state?.scheduledWakeAt != null) {
+        await syncService.upsertEntity(
+          state!.copyWith(scheduledWakeAt: null, updatedAt: now),
+        );
+      }
       await syncService.upsertEntity(
-        state!.copyWith(scheduledWakeAt: null, updatedAt: now),
+        agent.copyWith(lifecycle: AgentLifecycle.dormant, updatedAt: now),
       );
-    }
-    await syncService.upsertEntity(
-      agent.copyWith(lifecycle: AgentLifecycle.dormant, updatedAt: now),
-    );
+    });
     // Surfaces watching lifecycle refresh on this, as they do for every other
     // identity mutation in this service.
     onPersistedStateChanged?.call(agent.agentId);

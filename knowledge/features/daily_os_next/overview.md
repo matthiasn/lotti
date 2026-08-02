@@ -5,13 +5,13 @@ description: The day-planning runtime — one coordinator plus per-day agents, a
 resource: ../../../lib/features/daily_os_next
 tags: [daily-os, planning, day-agent, calendar]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T23:33:17+02:00 }
+generated: { by: claude-code/opus-5, at: 2026-08-02T12:00:00Z }
 stale_after: 2026-10-26
 sources:
   - id: src
     resource: ../../../lib/features/daily_os_next
     title: Daily OS Next source
-    last_modified: 2026-07-28
+    last_modified: 2026-08-02
   - id: day-plan
     resource: ../../../lib/classes/day_plan.dart
     title: Shared day-plan aggregate
@@ -179,5 +179,3 @@ categories instead.
 
 - **Shutdown is still mock-backed.** `ShutdownController` and its surfaces do not
   read real data.
-- Day-close dormancy (ADR 0032 phase 3) **is** implemented — see
-  [coordination protocol](coordination-protocol.md#a-per-day-agent-is-retired-when-its-day-is-done).
