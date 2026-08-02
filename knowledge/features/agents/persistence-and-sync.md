@@ -382,13 +382,22 @@ response.** `BackfillResponseHandler._processAgentBackfillEntry` sends one when
 the payload cannot be loaded, so the requester stops asking instead of retrying
 against silence — no change to the sync contract. That is the right answer
 because both callers only reclaim rows that are intentionally gone: a destroyed
-agent's lifecycle syncs to every device, and retention prunes by a rule every
-device applies to the same rows.
+agent's lifecycle is broadcast to every device (with the caveat below), and
+retention prunes by a rule every device applies to the same rows.
 
 The propagation is asynchronous, though, and worth stating plainly:
 `hardDeleteAgent` is local-only, so a peer can still hold the old payload — or
 ask for it — until the lifecycle update reaches it. The deleted response is what
 makes that window terminate cleanly; it is not something reclamation prevents.
+
+**And it is not guaranteed to close.** A peer that missed the `destroyed`
+identity update and then asks for it gets that same deleted response, because
+`hardDeleteAgent` has already removed the row it would have been served from.
+`SyncSequenceBackfillResponder` marks the counter deleted and moves on, so the
+lifecycle is never applied and that peer can keep an agent this device
+destroyed. Reclaiming the sidecar does not cause that — the row is gone either
+way — but the sentence above should not be read as a promise that every device
+converges on the delete.
 
 Reclamation is best-effort. A file that is already absent is the normal case —
 the entity may never have synced — and neither a missing documents directory
