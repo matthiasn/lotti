@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_create_ops.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -24,6 +25,7 @@ import '../widget_test_utils.dart';
 /// [MockPersistenceLogic] standing in as the facade.
 void main() {
   late MockPersistenceLogic logic;
+  late MockDomainLogger domainLogger;
   late PersistenceCreateOps ops;
 
   Metadata metaFor(String id) => Metadata(
@@ -36,9 +38,13 @@ void main() {
 
   setUp(() async {
     registerAllFallbackValues();
+    domainLogger = MockDomainLogger();
     await setUpTestGetIt(
       additionalSetup: () {
-        getIt.registerSingleton<NotificationService>(MockNotificationService());
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(domainLogger)
+          ..registerSingleton<NotificationService>(MockNotificationService());
       },
     );
     logic = MockPersistenceLogic();
@@ -111,10 +117,7 @@ void main() {
 
       expect(result, isA<JournalEvent>());
       verify(
-        () => logic.createDbEntity(
-          any<JournalEntity>(),
-          linkedId: 'parent-1',
-        ),
+        () => logic.createDbEntity(any<JournalEntity>(), linkedId: 'parent-1'),
       ).called(1);
     },
   );
@@ -226,6 +229,14 @@ void main() {
             'failed write',
       );
       expect(result!.data.habitId, habitFlossing.id);
+      verify(
+        () => domainLogger.error(
+          LogDomain.persistence,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'createHabitCompletionEntry.scheduleNotification',
+        ),
+      ).called(1);
     },
   );
 }

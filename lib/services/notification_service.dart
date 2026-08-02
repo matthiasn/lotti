@@ -27,6 +27,28 @@ bool get _skipNotificationsOnCurrentPlatform =>
     defaultTargetPlatform == TargetPlatform.windows ||
     defaultTargetPlatform == TargetPlatform.linux;
 
+/// Resolves notification timezones while suppressing duplicate diagnostics for
+/// persistent invalid zone strings.
+class NotificationLocationResolver {
+  final Set<String> _loggedUnresolvedTimezones = {};
+
+  Location resolve(String timezone) {
+    try {
+      return getLocation(timezone);
+    } catch (exception, stackTrace) {
+      if (_loggedUnresolvedTimezones.add(timezone)) {
+        getIt<DomainLogger>().error(
+          LogDomain.notifications,
+          exception,
+          stackTrace: stackTrace,
+          subDomain: 'resolveLocation',
+        );
+      }
+      return local;
+    }
+  }
+}
+
 class NotificationService {
   NotificationService() {
     try {
@@ -35,9 +57,7 @@ class NotificationService {
           linux: LinuxInitializationSettings(
             defaultActionName: NotificationConstants.defaultActionName,
           ),
-          macOS: DarwinInitializationSettings(
-            requestSoundPermission: false,
-          ),
+          macOS: DarwinInitializationSettings(requestSoundPermission: false),
           iOS: DarwinInitializationSettings(
             requestSoundPermission: false,
             requestBadgePermission: false,
@@ -58,6 +78,8 @@ class NotificationService {
   int badgeCount = 0;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  final NotificationLocationResolver _locationResolver =
+      NotificationLocationResolver();
 
   /// Resolves the local [Location] for scheduling, degrading to [local]
   /// rather than throwing.
@@ -73,19 +95,8 @@ class NotificationService {
   /// it at the device's zone during start-up. The `timezone` package defaults
   /// it to **UTC**, and falling back to that would move a 09:00 reminder by
   /// the device's whole offset rather than degrade gracefully.
-  Location _resolveLocation(String timezone) {
-    try {
-      return getLocation(timezone);
-    } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.notifications,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'resolveLocation',
-      );
-      return local;
-    }
-  }
+  Location _resolveLocation(String timezone) =>
+      _locationResolver.resolve(timezone);
 
   Future<void> _requestPermissions() async {
     if (_skipNotificationsOnCurrentPlatform) {
@@ -96,19 +107,13 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin
         >()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-        );
+        ?.requestPermissions(alert: true, badge: true);
 
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
           MacOSFlutterLocalNotificationsPlugin
         >()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-        );
+        ?.requestPermissions(alert: true, badge: true);
   }
 
   Future<void> updateBadge() async {
@@ -190,9 +195,7 @@ class NotificationService {
 
     if (alertAtTime != null) {
       final notifyAt = DateTime.now()
-          .add(
-            Duration(days: daysToAdd),
-          )
+          .add(Duration(days: daysToAdd))
           .copyWith(
             hour: alertAtTime.hour,
             minute: alertAtTime.minute,

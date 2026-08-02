@@ -72,21 +72,25 @@ Future<String> getLocalTimezone({
 /// more away from the 09:00 the user asked for.
 ///
 /// Called once at start-up, and deliberately total: a device whose zone cannot
-/// be resolved to an IANA name keeps the package's UTC default, which is what
-/// it had before this existed. Start-up must not fail over a timezone.
+/// be resolved to an IANA name keeps the currently configured [local] location
+/// (the package's UTC default during normal startup). Start-up must not fail
+/// over a timezone.
 ///
 /// [resolve] is a test seam — [getLocalTimezone] short-circuits to the
 /// abbreviation under `isTestEnv`, so without it neither branch here could be
-/// exercised.
+/// exercised. [onError] surfaces resolution failures without coupling this
+/// utility to the application's logging service.
 Future<void> configureLocalTimezone({
   Future<String> Function()? resolve,
+  void Function(Object error, StackTrace stackTrace)? onError,
 }) async {
   try {
     setLocalLocation(getLocation(await (resolve ?? getLocalTimezone)()));
-  } on Object {
-    // Left at the package default. [getLocalTimezone] can still hand back an
-    // abbreviation on a platform with no zoneinfo tree, and `getLocation`
-    // rejects those.
+  } on Object catch (error, stackTrace) {
+    onError?.call(error, stackTrace);
+    // Leave the existing location unchanged. [getLocalTimezone] can still hand
+    // back an abbreviation on a platform with no zoneinfo tree, and
+    // `getLocation` rejects those.
   }
 }
 
@@ -119,7 +123,13 @@ Future<String?> _resolveLocaltimeLink(String path) async {
       // different root, and the IANA name is still whatever follows it.
       final index = target.indexOf(prefix);
       if (index != -1) {
-        final name = target.substring(index + prefix.length);
+        var name = target.substring(index + prefix.length);
+        for (final variant in const ['posix/', 'right/']) {
+          if (name.startsWith(variant)) {
+            name = name.substring(variant.length);
+            break;
+          }
+        }
         return name.isEmpty ? null : name;
       }
     }
