@@ -503,10 +503,28 @@ Future<void> agentInitialization(Ref ref) async {
   // 3. Start the orchestrator on the local update stream.
   await orchestrator.start(updateNotifications.localUpdateStream);
 
-  // 3.5. Start the scheduled wake manager.
+  // 3.5. Retire finished day agents BEFORE the wake manager starts.
+  //
+  // `start()` runs a check immediately, and `restoreSubscriptions` — which
+  // otherwise owns retirement — is several awaits further down. A day agent
+  // whose day is over is still `active` at that moment, so its overdue wake
+  // fires once per cold start: precisely the spend retirement exists to stop.
+  // Best-effort, like every other step here; a failure must not stop start-up.
+  try {
+    await ref.read(dayAgentServiceProvider).retirePastDayAgents();
+  } catch (e, s) {
+    getIt<DomainLogger>().error(
+      LogDomain.agentRuntime,
+      e,
+      message: 'failed to retire past day agents before wake manager start',
+      stackTrace: s,
+    );
+  }
+
+  // 3.6. Start the scheduled wake manager.
   ref.watch(scheduledWakeManagerProvider).start();
 
-  // 3.6. Track project-linked activity without triggering immediate wakes.
+  // 3.7. Track project-linked activity without triggering immediate wakes.
   projectActivityMonitor.start();
 
   // 4. Wire the sync event processor for cross-device agent data.

@@ -45,6 +45,12 @@ because `getDueScheduledAgentStates` filters on `scheduledWakeAt` **only, not
 lifecycle**: a finished day still holding a deadline is otherwise due on every
 tick, forever.
 
+Retirement runs **before `ScheduledWakeManager.start()`**, not only from
+`restoreSubscriptions`. `start()` checks immediately, and the restore pass is
+several awaits further down the provider's init — so a finished agent would
+otherwise still be `active` for that first check and fire once per cold start,
+which is the spend this exists to stop.
+
 Without this the active set grew by one per day of use and
 `restoreSubscriptions` re-hydrated every one of them on each launch — model
 spend on days that are over, and the pressure behind much of the bounding work
