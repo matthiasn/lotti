@@ -94,6 +94,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   days rather than to the beginning.
 
 ### Changed
+- **The recovery actions on Backfill sync take the standard in-card button
+  size.** The buttons under Advanced recovery were one size up from what the
+  design system prescribes for actions living inside a card, so each one
+  out-weighed the title and description it belongs to. They now match
+  comparable in-card actions across the app. The rest of that page's
+  hand-picked values — separators, glyph sizes, title weights and the page
+  margin — now come from the design tokens too, with no visible change.
 - **The morning briefing is prepared once, not once per device.** Every device
   signed in to the same account woke up and produced its own copy of the same
   daily briefing, so a laptop, a phone and a tablet meant three AI calls billed

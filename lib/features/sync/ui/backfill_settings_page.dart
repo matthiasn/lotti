@@ -34,7 +34,9 @@ class BackfillSettingsPage extends StatelessWidget {
         title: context.messages.backfillSettingsTitle,
         subtitle: context.messages.backfillSettingsSubtitle,
         showBackButton: true,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(
+          horizontal: context.designTokens.spacing.step5,
+        ),
         child: const BackfillSettingsBody(),
       ),
     );
@@ -225,7 +227,7 @@ class _AutomaticBackfillCard extends StatelessWidget {
         children: [
           Icon(
             Icons.sync,
-            size: 18,
+            size: IconSizes.m,
             color: tokens.colors.interactive.enabled,
           ),
           SizedBox(width: tokens.spacing.step3),
@@ -237,7 +239,6 @@ class _AutomaticBackfillCard extends StatelessWidget {
                   messages.backfillToggleTitle,
                   style: tokens.typography.styles.subtitle.subtitle2.copyWith(
                     color: tokens.colors.text.highEmphasis,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step1),

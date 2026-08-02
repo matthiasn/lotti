@@ -112,14 +112,14 @@ class _StatusCell extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 12, color: resolvedLabelColor),
+              Icon(icon, size: IconSizes.xs, color: resolvedLabelColor),
               SizedBox(width: tokens.spacing.step2),
               Flexible(
                 child: Text(
                   label,
                   style: tokens.typography.styles.others.caption.copyWith(
                     color: resolvedLabelColor,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: tokens.typography.weight.semiBold,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -172,7 +172,7 @@ class SyncStatsCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.bar_chart_rounded,
-                size: 18,
+                size: IconSizes.m,
                 color: tokens.colors.text.mediumEmphasis,
               ),
               SizedBox(width: tokens.spacing.step3),
@@ -181,7 +181,6 @@ class SyncStatsCard extends StatelessWidget {
                   messages.backfillStatsTitle,
                   style: tokens.typography.styles.subtitle.subtitle2.copyWith(
                     color: tokens.colors.text.highEmphasis,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),

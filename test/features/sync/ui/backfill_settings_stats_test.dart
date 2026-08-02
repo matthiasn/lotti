@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -69,6 +70,48 @@ void main() {
         contains(const FontFeature.tabularFigures()),
       );
     });
+
+    // The next two pin values a revert would reproduce (IconSizes.xs is the
+    // 12 the cells carried as a literal; the ramp's semiBold is w600), so
+    // they hold the contract going forward rather than catch the literals.
+    testWidgets('rides its cell glyphs on the caption icon tier', (
+      tester,
+    ) async {
+      await pumpRow(tester);
+
+      final glyphs = tester
+          .widgetList<Icon>(
+            find.descendant(
+              of: find.byType(StatusRow),
+              matching: find.byType(Icon),
+            ),
+          )
+          .toList();
+      expect(glyphs, hasLength(3));
+      for (final glyph in glyphs) {
+        expect(glyph.size, IconSizes.xs);
+      }
+    });
+
+    testWidgets('weights its labels from the ramp', (tester) async {
+      final tokens = await pumpRow(tester);
+      final messages = tester.element(find.byType(StatusRow)).messages;
+
+      for (final label in [
+        messages.backfillStatusInboundQueue,
+        messages.backfillStatusMissing,
+        messages.backfillStatusSkipped,
+      ]) {
+        final text = tester.widget<Text>(find.text(label));
+        expect(
+          text.style!.fontWeight,
+          tokens.typography.weight.semiBold,
+          reason:
+              '"$label" caption is deliberately raised to semiBold — '
+              'from the ramp, not a literal',
+        );
+      }
+    });
   });
 
   group('SyncStatsCard ledger', () {
@@ -95,6 +138,29 @@ void main() {
       expect(find.text('120'), findsOneWidget);
       expect(find.text('96'), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
+    });
+
+    testWidgets('leads its header with a control-tier glyph', (tester) async {
+      // Pins IconSizes.m, which equals the raw 18 it replaced.
+      await pumpCard(tester);
+
+      final glyph = tester.widget<Icon>(find.byIcon(Icons.bar_chart_rounded));
+      expect(glyph.size, IconSizes.m);
+    });
+
+    testWidgets('takes its header weight from subtitle2 itself', (
+      tester,
+    ) async {
+      final tokens = await pumpCard(tester);
+      final messages = tester.element(find.byType(SyncStatsCard)).messages;
+
+      final title = tester.widget<Text>(find.text(messages.backfillStatsTitle));
+      expect(title.style!.fontWeight, tokens.typography.weight.semiBold);
+      expect(
+        title.style!.fontWeight,
+        tokens.typography.styles.subtitle.subtitle2.fontWeight,
+        reason: 'the weight must come from the style, not a layered override',
+      );
     });
 
     testWidgets('weights every ledger value on the type ramp', (tester) async {

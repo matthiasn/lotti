@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -140,6 +142,85 @@ void main() {
       expect(fills, contains(scheme.errorContainer));
       expect(fills, contains(tokens.colors.surface.enabled));
       expect(scheme.errorContainer, isNot(tokens.colors.surface.enabled));
+    });
+  });
+
+  group('the collapsible header', () {
+    // Both assertions pin values a revert would reproduce (subtitle2 already
+    // carries semiBold; IconSizes.m equals the 18 it replaced), so they hold
+    // the contract going forward rather than catching the old literals.
+    testWidgets('takes its title weight from subtitle2 itself', (tester) async {
+      final tokens = await pumpExpanded(tester);
+      final context = tester.element(find.byType(AdvancedRecoveryGroup));
+
+      final title = tester.widget<Text>(
+        find.text(context.messages.backfillAdvancedRecoveryTitle),
+      );
+      expect(title.style!.fontWeight, tokens.typography.weight.semiBold);
+      expect(
+        title.style!.fontWeight,
+        tokens.typography.styles.subtitle.subtitle2.fontWeight,
+        reason: 'the weight must come from the style, not a layered override',
+      );
+    });
+
+    testWidgets('sizes its chevron on the control-glyph tier', (tester) async {
+      await pumpExpanded(tester);
+
+      final chevron = tester.widget<Icon>(find.byIcon(Icons.chevron_right));
+      expect(chevron.size, IconSizes.m);
+    });
+  });
+
+  group('the expanded action list', () {
+    testWidgets('separates actions with design-system dividers', (
+      tester,
+    ) async {
+      await pumpExpanded(tester);
+
+      final dividers = find.descendant(
+        of: find.byType(AdvancedRecoveryGroup),
+        matching: find.byType(DesignSystemDivider),
+      );
+      // One rule under the header plus one between each adjacent pair:
+      // as many dividers as actions. skipped = 3 adds the retry action
+      // to the base seven. A revert to hand-rolled 1px Containers fails
+      // here — the component, not its rendering, is the contract.
+      expect(dividers, findsNWidgets(8));
+    });
+
+    testWidgets('draws no divider while collapsed', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SingleChildScrollView(
+            child: AdvancedRecoveryGroup(
+              stats: stats,
+              skipped: 3,
+              coordinator: null,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(DesignSystemDivider), findsNothing);
+    });
+
+    testWidgets('keeps every CTA at the card-internal default size', (
+      tester,
+    ) async {
+      await pumpExpanded(tester);
+
+      // component-contracts.md: card-internal actions belong at dense or the
+      // default small — medium out-weighs the row titles beside it. Reverting
+      // to an explicit `size: medium` fails this.
+      final buttons = tester
+          .widgetList<DesignSystemButton>(find.byType(DesignSystemButton))
+          .toList();
+      expect(buttons, hasLength(8));
+      for (final button in buttons) {
+        expect(button.size, DesignSystemButtonSize.small);
+      }
     });
   });
 }

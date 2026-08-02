@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -105,7 +106,6 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
                         style: tokens.typography.styles.subtitle.subtitle2
                             .copyWith(
                               color: tokens.colors.text.highEmphasis,
-                              fontWeight: FontWeight.w600,
                             ),
                       ),
                     ),
@@ -125,7 +125,7 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
                       ),
                       child: Icon(
                         Icons.chevron_right,
-                        size: 18,
+                        size: IconSizes.m,
                         color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),
@@ -135,16 +135,9 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
             ),
           ),
           if (_open) ...[
-            Container(
-              height: 1,
-              color: tokens.colors.decorative.level01,
-            ),
+            const DesignSystemDivider(),
             for (var i = 0; i < actions.length; i++) ...[
-              if (i > 0)
-                Container(
-                  height: 1,
-                  color: tokens.colors.decorative.level01,
-                ),
+              if (i > 0) const DesignSystemDivider(),
               actions[i],
             ],
           ],
@@ -501,7 +494,6 @@ class _RecoveryAction extends StatelessWidget {
                       style: tokens.typography.styles.subtitle.subtitle2
                           .copyWith(
                             color: tokens.colors.text.highEmphasis,
-                            fontWeight: FontWeight.w600,
                           ),
                     ),
                     SizedBox(height: tokens.spacing.step1),
@@ -527,7 +519,6 @@ class _RecoveryAction extends StatelessWidget {
               _RecoveryTone.dangerGhost =>
                 DesignSystemButtonVariant.dangerSecondary,
             },
-            size: DesignSystemButtonSize.medium,
           ),
         ],
       ),

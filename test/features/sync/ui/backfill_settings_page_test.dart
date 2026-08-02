@@ -7,12 +7,15 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -291,6 +294,38 @@ void main() {
       expect(toggle.value, isTrue);
     });
 
+    // The next two pin values a revert would reproduce (IconSizes.m is the
+    // 18 the card carried as a literal; subtitle2 already weighs semiBold),
+    // so they hold the contract going forward rather than catch the literals.
+    testWidgets('leads the card with a control-tier glyph', (tester) async {
+      await pumpBody(tester);
+
+      // The collapsed recovery group keeps its Icons.sync CTA out of the
+      // tree, so the card's leading glyph is the only match.
+      final glyph = tester.widget<Icon>(find.byIcon(Icons.sync));
+      expect(glyph.size, IconSizes.m);
+    });
+
+    testWidgets('takes its title weight from subtitle2 itself', (
+      tester,
+    ) async {
+      await pumpBody(tester);
+      final messages = messagesOf(tester);
+      final tokens = tester
+          .element(find.byType(BackfillSettingsBody))
+          .designTokens;
+
+      final title = tester.widget<Text>(
+        find.text(messages.backfillToggleTitle),
+      );
+      expect(title.style!.fontWeight, tokens.typography.weight.semiBold);
+      expect(
+        title.style!.fontWeight,
+        tokens.typography.styles.subtitle.subtitle2.fontWeight,
+        reason: 'the weight must come from the style, not a layered override',
+      );
+    });
+
     testWidgets('tap flips the persisted preference', (tester) async {
       await pumpBody(tester);
 
@@ -526,6 +561,30 @@ void main() {
         expect(btn.onPressed, isNull);
       },
     );
+  });
+
+  group('BackfillSettingsPage · page chrome', () {
+    testWidgets('resolves its horizontal padding from the spacing scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      final host = find.byType(SliverBoxAdapterPage);
+      final tokens = tester.element(host).designTokens;
+      final page = tester.widget<SliverBoxAdapterPage>(host);
+
+      // step5 equals the 16 the page used to hardcode, so a literal revert
+      // renders identically; the assertion pins the sibling-page contract
+      // (provisioned_sync_page uses step5 for the same role).
+      expect(
+        page.padding,
+        EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+      );
+    });
   });
 
   group('BackfillSettingsPage · gate', () {
@@ -1044,6 +1103,10 @@ void main() {
         tester,
         overrides: [
           syncMaintenanceRepositoryProvider.overrideWithValue(repo),
+          // getIt<DomainLogger> is unregistered in this harness; without the
+          // override the controller's logger provider is in error state and
+          // syncAll dies before reaching the operations.
+          syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
         ],
       );
       final messages = messagesOf(tester);
@@ -1064,19 +1127,27 @@ void main() {
       for (var i = 0; i < 12; i++) {
         await tester.pump(const Duration(milliseconds: 250));
       }
-      // Both halves are requested as one repair: they are the same fix over
-      // two tables, and each no-ops when nothing is missing a clock.
       // The action requests exactly the two clock steps as one repair — they
       // are the same fix over two tables, and each no-ops when nothing is
-      // missing a clock. Asserted at the totals call rather than on the two
-      // operations: driving them through the shared controller from this
-      // harness proved unreliable, and the stamping itself is covered
-      // directly in test/database/maintenance_test.dart.
+      // missing a clock. The stamping itself is covered directly in
+      // test/database/maintenance_test.dart.
       verify(
         () => repo.fetchTotalsForSteps({
           SyncStep.backfillAgentEntityClocks,
           SyncStep.backfillAgentLinkClocks,
         }),
+      ).called(1);
+      verify(
+        () => repo.backfillAgentEntityClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).called(1);
+      verify(
+        () => repo.backfillAgentLinkClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
       ).called(1);
     });
 
@@ -1098,6 +1169,10 @@ void main() {
         tester,
         overrides: [
           syncMaintenanceRepositoryProvider.overrideWithValue(repo),
+          // Without the logger override syncAll dies on the errored logger
+          // provider before reaching the operations — the failure toast would
+          // show, but not because of the stubbed throw above.
+          syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
         ],
       );
       final messages = messagesOf(tester);
@@ -1117,7 +1192,14 @@ void main() {
         await tester.pump(const Duration(milliseconds: 250));
       }
 
-      // The localized label is shown instead of the raw exception text.
+      // The failure must originate from the stubbed operation, and the
+      // localized label is shown instead of the raw exception text.
+      verify(
+        () => repo.backfillAgentEntityClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).called(1);
       expect(find.text(messages.backfillAgentClocksFailed), findsOneWidget);
       expect(find.text('Exception: boom'), findsNothing);
     });
@@ -1382,6 +1464,75 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
     });
+
+    testWidgets(
+      'agent-clocks shows the processing label in flight and toasts success',
+      (tester) async {
+        final repo = MockSyncMaintenanceRepository();
+        final totals = Completer<Map<SyncStep, int>>();
+        when(
+          () => repo.fetchTotalsForSteps(any()),
+        ).thenAnswer((_) => totals.future);
+        when(
+          () => repo.backfillAgentEntityClocks(
+            onProgress: any(named: 'onProgress'),
+            onDetailedProgress: any(named: 'onDetailedProgress'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => repo.backfillAgentLinkClocks(
+            onProgress: any(named: 'onProgress'),
+            onDetailedProgress: any(named: 'onDetailedProgress'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await pumpBody(
+          tester,
+          overrides: [
+            syncMaintenanceRepositoryProvider.overrideWithValue(repo),
+            // Without a logger the controller's build errors mid-syncAll
+            // (getIt<DomainLogger> is unregistered here) and every repair
+            // takes the failure path.
+            syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
+          ],
+        );
+        final messages = messagesOf(tester);
+        await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        final btn = find.widgetWithText(
+          DesignSystemButton,
+          messages.backfillAgentClocksTrigger,
+        );
+        await tester.ensureVisible(btn);
+        await tester.pump();
+        await tester.tap(btn);
+        await tester.pump();
+
+        // The repair shares the manual-backfill processing string rather
+        // than minting its own.
+        expectBusy(
+          tester,
+          triggerLabel: messages.backfillAgentClocksTrigger,
+          processingLabel: messages.backfillManualProcessing,
+        );
+
+        totals.complete(<SyncStep, int>{});
+        for (var i = 0; i < 12; i++) {
+          await tester.pump(const Duration(milliseconds: 250));
+        }
+
+        // Success surfaces as a toast that reuses the action title — a
+        // second occurrence beside the row's own — and never the failure
+        // string.
+        expect(find.text(messages.backfillAgentClocksFailed), findsNothing);
+        expect(
+          find.text(messages.backfillAgentClocksTitle),
+          findsNWidgets(2),
+        );
+      },
+    );
 
     testWidgets('retire-stuck shows the retiring label after confirm', (
       tester,
