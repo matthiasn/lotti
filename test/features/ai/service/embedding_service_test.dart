@@ -692,6 +692,126 @@ void main() {
     );
 
     test(
+      'startup reconciles only the primary agent for a shared task',
+      () async {
+        const olderAgentId = 'agent-shared-task-older';
+        const primaryAgentId = 'agent-shared-task-primary';
+        const taskId = 'task-shared-by-agents';
+        final agentRepository = MockAgentRepository();
+        final olderAgent = _agentIdentity(olderAgentId);
+        final primaryAgent = _agentIdentity(primaryAgentId);
+        final olderReport = _agentReport(
+          id: 'report-shared-task-older',
+          agentId: olderAgentId,
+        );
+        final primaryReport = _agentReport(
+          id: 'report-shared-task-primary',
+          agentId: primaryAgentId,
+        );
+        final olderLink = AgentLink.basic(
+          id: 'link-shared-task-older',
+          fromId: olderAgentId,
+          toId: taskId,
+          createdAt: _agentTestDate.subtract(const Duration(minutes: 1)),
+          updatedAt: _agentTestDate.subtract(const Duration(minutes: 1)),
+          vectorClock: null,
+        );
+        final primaryLink = AgentLink.basic(
+          id: 'link-shared-task-primary',
+          fromId: primaryAgentId,
+          toId: taskId,
+          createdAt: _agentTestDate,
+          updatedAt: _agentTestDate,
+          vectorClock: null,
+        );
+        final primaryStored = Completer<void>();
+
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [olderAgent, primaryAgent]);
+        when(
+          () => agentRepository.getLinksFrom(
+            olderAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [olderLink]);
+        when(
+          () => agentRepository.getLinksFrom(
+            primaryAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [primaryLink]);
+        when(
+          () => agentRepository.getLatestReport(
+            olderAgentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => olderReport);
+        when(
+          () => agentRepository.getLatestReport(
+            primaryAgentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => primaryReport);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        stubEmbedding();
+        when(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: primaryReport.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) {
+          primaryStored.complete();
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+
+        await primaryStored.future;
+        await pumpEventQueue();
+
+        verifyNever(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: olderReport.id,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        );
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: primaryReport.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'startup skips a report superseded before its store write',
       () async {
         const agentId = 'agent-superseded-before-store';
@@ -1160,7 +1280,7 @@ void main() {
         expect(scanCount, 1);
 
         updateNotifications.notify(
-          {agentId, agentNotification},
+          {agentId, agentReportHeadNotification},
           fromSync: true,
         );
         async
@@ -1180,6 +1300,39 @@ void main() {
             subtype: AgentReportScopes.current,
           ),
         ).called(1);
+        stopInZone(async);
+      });
+    });
+
+    test('generic synced agent notifications do not scan report heads', () {
+      fakeAsync((async) {
+        final agentRepository = MockAgentRepository();
+        var scanCount = 0;
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async {
+          scanCount++;
+          return [];
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+        expect(scanCount, 1);
+
+        updateNotifications.notify(
+          {agentNotification},
+          fromSync: true,
+        );
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+
+        expect(scanCount, 1);
         stopInZone(async);
       });
     });
@@ -1279,7 +1432,7 @@ void main() {
         expect(embedCallCount, 1);
 
         updateNotifications.notify(
-          {agentNotification},
+          {agentReportHeadNotification},
           fromSync: true,
         );
         async
@@ -1535,6 +1688,108 @@ void main() {
         () => agentRepository.getLinksFrom(
           recoveredAgentId,
           type: AgentLinkTypes.agentTask,
+        ),
+      ).called(1);
+    });
+
+    test('startup report recovery continues after one task fails', () async {
+      const failedAgentId = 'agent-report-failed';
+      const failedTaskId = 'task-report-failed';
+      const recoveredAgentId = 'agent-report-recovered';
+      const recoveredTaskId = 'task-report-recovered';
+      final agentRepository = MockAgentRepository();
+      final report = _agentReport(
+        id: 'report-after-task-failure',
+        agentId: recoveredAgentId,
+      );
+      final reportStored = Completer<void>();
+
+      when(agentRepository.getAllAgentIdentities).thenAnswer(
+        (_) async => [
+          _agentIdentity(failedAgentId),
+          _agentIdentity(recoveredAgentId),
+        ],
+      );
+      when(
+        () => agentRepository.getLinksFrom(
+          failedAgentId,
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          _agentTaskLink(agentId: failedAgentId, taskId: failedTaskId),
+        ],
+      );
+      when(
+        () => agentRepository.getLinksFrom(
+          recoveredAgentId,
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          _agentTaskLink(
+            agentId: recoveredAgentId,
+            taskId: recoveredTaskId,
+          ),
+        ],
+      );
+      when(
+        () => agentRepository.getLatestReport(
+          failedAgentId,
+          AgentReportScopes.current,
+        ),
+      ).thenThrow(StateError('report head read failed'));
+      when(
+        () => agentRepository.getLatestReport(
+          recoveredAgentId,
+          AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) async => report);
+      when(
+        () => agentRepository.getEntitiesByAgentIdAndSubtype(
+          recoveredAgentId,
+          type: AgentEntityTypes.agentReport,
+          subtype: AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) async => [report]);
+      when(
+        () => mockJournalDb.journalEntityById(failedTaskId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(recoveredTaskId),
+      ).thenAnswer((_) async => null);
+      stubEmbedding();
+      when(
+        () => mockEmbeddingStore.replaceEntityEmbeddings(
+          entityId: report.id,
+          entityType: any(named: 'entityType'),
+          modelId: any(named: 'modelId'),
+          contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
+          categoryId: any(named: 'categoryId'),
+          taskId: recoveredTaskId,
+          subtype: AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) {
+        reportStored.complete();
+      });
+
+      service = EmbeddingService(
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        journalDb: mockJournalDb,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: mockAiConfigRepo,
+        agentRepository: agentRepository,
+      )..start();
+
+      await reportStored.future;
+      await pumpEventQueue();
+
+      verify(
+        () => agentRepository.getLatestReport(
+          failedAgentId,
+          AgentReportScopes.current,
         ),
       ).called(1);
     });

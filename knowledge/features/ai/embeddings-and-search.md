@@ -57,7 +57,7 @@ flowchart LR
 
 | Component | Role |
 |-----------|------|
-| `EmbeddingService` | Listens to local update notifications, performs real-time embedding work, and reconciles current task-agent reports at startup |
+| `EmbeddingService` | Listens to local entity and synced report-head notifications, performs real-time embedding work, and reconciles current task-agent reports at startup |
 | `EmbeddingProcessor` | Hashes content, chunks text, generates embeddings, writes atomically |
 | `EmbeddingStore` | Storage abstraction |
 | `ShardedEmbeddingStore` | Production implementation, backed by **per-category ObjectBox shards** |
@@ -103,17 +103,21 @@ flowchart LR
   initial transport budget is exhausted or a known cooldown suppresses the
   call, instead of emitting one stack trace per remaining item.
 - `EmbeddingService` scans durable current task-agent report heads at startup
-  and re-runs reconciliation when sync emits an agent change. Content hashes
-  keep unchanged reports cheap. Recovery revalidates the durable head before
-  and after vector storage, then reads cleanup candidates from the embedding
-  store's reverse task index and revalidates the head again. It never loads the
-  agent's historical report bodies or treats wall-clock timestamps as ordering
-  authority. If the head advances during any of those awaits, recovery removes
-  only a stale vector it just wrote, follows the successor until the head is
-  stable, and then deletes every indexed non-head report ID. An availability
-  failure leaves reconciliation pending on the shared retry timer, while a
-  later journal or agent notification rechecks disabled/provider gates without
-  requiring an app restart.
+  and re-runs reconciliation only when sync emits the dedicated current-report
+  head token; generic agent messages, state, and usage changes do not trigger a
+  global scan. When multiple agents are linked to one task, the same canonical
+  primary-link ordering used by task report reads selects the only report that
+  recovery may keep searchable. Content hashes keep unchanged reports cheap.
+  Recovery revalidates the durable head before and after vector storage, then
+  reads cleanup candidates from the embedding store's reverse task index and
+  revalidates the head again. It never loads the agent's historical report
+  bodies or treats wall-clock timestamps as ordering authority. If the head
+  advances during any of those awaits, recovery removes only a stale vector it
+  just wrote, follows the successor until the head is stable, and then deletes
+  every indexed non-head report ID. An availability failure leaves
+  reconciliation pending on the shared retry timer, while a later journal or
+  report-head notification rechecks disabled/provider gates without requiring
+  an app restart.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
   maps it to the active locale; the suppression count and retry timestamp stay
   in diagnostic logs. A failed optional embedding never rolls back the
@@ -121,11 +125,13 @@ flowchart LR
   failures defer the latest report per task until `retryAt`; a newer report
   synchronously supersedes the queued one. The workflow checks both its local
   claim and the durable report head after asynchronous URL/task resolution,
-  immediately before vector storage, and after the atomic store replacement. A
-  report superseded during the write has only its newly written vector removed;
-  it never deletes the searchable predecessor. Coalesced reports carry forward
-  the last predecessor that was actually searchable, and a deferred retry whose
-  head advanced through sync is abandoned before provider or storage work.
+  immediately before vector storage, and after the atomic store replacement.
+  Each durable lookup rechecks the local claim after its await so a successor
+  cannot race an older snapshot. A report superseded during the write has only
+  its newly written vector removed; it never deletes the searchable predecessor.
+  Coalesced reports carry forward the last predecessor that was actually
+  searchable, and a deferred retry whose head advanced through sync is
+  abandoned before provider or storage work.
 
 ```mermaid
 stateDiagram-v2

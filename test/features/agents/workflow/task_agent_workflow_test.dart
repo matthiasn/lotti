@@ -4308,7 +4308,7 @@ not describe task configuration or tool activity as progress.
       );
 
       test(
-        'removes a report superseded while its store write is in flight',
+        'removes reports superseded during store and durable head lookup',
         () async {
           const baseUrl = 'http://localhost:11434';
           const embeddedPredecessorId = 'embedded-predecessor';
@@ -4319,8 +4319,12 @@ not describe task configuration or tool activity as progress.
           final deletedReportIds = <String>[];
           final firstStoreStarted = Completer<void>();
           final releaseFirstStore = Completer<void>();
+          final secondHeadReadStarted = Completer<void>();
+          final releaseSecondHeadRead = Completer<void>();
+          var secondStoreFinished = false;
+          var secondHeadReadGated = false;
           var reportCallCount = 0;
-          mockConversationRepository.maxDelegateCalls = 2;
+          mockConversationRepository.maxDelegateCalls = 3;
           final workflowWithEmbeddings = TaskAgentWorkflow(
             agentRepository: mockAgentRepository,
             conversationRepository: mockConversationRepository,
@@ -4363,10 +4367,20 @@ not describe task configuration or tool activity as progress.
               agentId,
               AgentReportScopes.current,
             ),
-          ).thenAnswer(
-            (_) async =>
-                persistedReports.isEmpty ? null : persistedReports.last,
-          );
+          ).thenAnswer((_) async {
+            final snapshot = persistedReports.isEmpty
+                ? null
+                : persistedReports.last;
+            if (secondStoreFinished &&
+                !secondHeadReadGated &&
+                persistedReports.length >= 2 &&
+                snapshot?.id == persistedReports[1].id) {
+              secondHeadReadGated = true;
+              secondHeadReadStarted.complete();
+              await releaseSecondHeadRead.future;
+            }
+            return snapshot;
+          });
           when(
             () => mockAiConfigRepository.resolveOllamaBaseUrl(),
           ).thenAnswer((_) async => baseUrl);
@@ -4406,6 +4420,9 @@ not describe task configuration or tool activity as progress.
             if (reportId == persistedReports.first.id) {
               firstStoreStarted.complete();
               await releaseFirstStore.future;
+            } else if (persistedReports.length >= 2 &&
+                reportId == persistedReports[1].id) {
+              secondStoreFinished = true;
             }
           });
           when(
@@ -4435,7 +4452,11 @@ not describe task configuration or tool activity as progress.
               }) async {
                 if (strategy is TaskAgentStrategy) {
                   reportCallCount++;
-                  final ordinal = reportCallCount == 1 ? 'First' : 'Second';
+                  final ordinal = switch (reportCallCount) {
+                    1 => 'First',
+                    2 => 'Second',
+                    _ => 'Third',
+                  };
                   await strategy.processToolCalls(
                     toolCalls: [
                       ChatCompletionMessageToolCall(
@@ -4476,19 +4497,37 @@ not describe task configuration or tool activity as progress.
             threadId: threadId,
           );
           expect(secondResult.success, isTrue, reason: secondResult.error);
+          await secondHeadReadStarted.future;
+
+          final thirdResult = await workflowWithEmbeddings.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: '$runKey-third',
+            triggerTokens: {'entity-c'},
+            threadId: threadId,
+          );
+          expect(thirdResult.success, isTrue, reason: thirdResult.error);
           await pumpEventQueue();
-          expect(persistedReports, hasLength(2));
+          expect(persistedReports, hasLength(3));
           expect(deletedReportIds, [embeddedPredecessorId]);
+
+          releaseSecondHeadRead.complete();
+          await pumpEventQueue();
+          expect(deletedReportIds, [
+            embeddedPredecessorId,
+            persistedReports[1].id,
+          ]);
 
           releaseFirstStore.complete();
           await pumpEventQueue();
 
           expect(storedReportIds, [
             persistedReports.first.id,
+            persistedReports[1].id,
             persistedReports.last.id,
           ]);
           expect(deletedReportIds, [
             embeddedPredecessorId,
+            persistedReports[1].id,
             persistedReports.first.id,
           ]);
         },

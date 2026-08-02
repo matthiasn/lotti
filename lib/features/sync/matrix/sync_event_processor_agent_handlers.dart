@@ -263,6 +263,9 @@ extension _AgentHandlers on SyncEventProcessor {
               resolvedEntity.templateId != null)
             resolvedEntity.templateId!,
           agentNotification,
+          if (resolvedEntity is AgentReportHeadEntity &&
+              resolvedEntity.scope == AgentReportScopes.current)
+            agentReportHeadNotification,
         },
         fromSync: true,
       );

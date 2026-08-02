@@ -856,6 +856,16 @@ void main() {
       await processor.process(event: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {
+            'agent-1',
+            'AGENT_CHANGED',
+            agentReportHeadNotification,
+          },
+          fromSync: true,
+        ),
+      ).called(1);
     });
 
     test(

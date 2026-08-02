@@ -171,7 +171,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     }
   }
 
-  /// Confirms both the workflow-local claim and the durable report head.
+  /// Confirms the local claim before and after reading the durable report head.
   Future<bool> _isCurrentAgentReport({
     required String agentId,
     required String taskId,
@@ -182,7 +182,8 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
       agentId,
       AgentReportScopes.current,
     );
-    return durableHead?.id == reportId;
+    return _latestReportEmbeddingIds[taskId] == reportId &&
+        durableHead?.id == reportId;
   }
 
   void _completeAgentReportEmbedding(String taskId, String reportId) {

@@ -43,7 +43,7 @@ sources:
   - id: sync-processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
-    last_modified: 2026-08-01
+    last_modified: 2026-08-02
   - id: queue-adapter
     resource: ../../../lib/features/sync/queue/queue_apply_adapter.dart
     title: QueueApplyAdapter
@@ -266,6 +266,12 @@ attaches the sync event processor when one is registered.
 Concurrent agent state converges without user involvement — see
 [vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md) for the
 G-counter merge that keeps concurrent wake counters from being lost.
+
+Every applied agent entity still emits the broad `agentNotification` topic for
+UI invalidation. A synced `AgentReportHeadEntity` in the `current` scope also
+emits the narrower `agentReportHeadNotification`; background embedding recovery
+subscribes to that token so messages, state updates, and token-usage rows do not
+launch full report-head scans.
 
 Legacy `WeekRollupEntity` JSON can omit `weekStart`. The shared
 `AgentDomainEntity.fromJson` read boundary repairs it only when the entity id is

@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
@@ -16,8 +17,9 @@ import 'package:lotti/utils/consts.dart';
 /// Background embedding generation service.
 ///
 /// Listens to [UpdateNotifications.localUpdateStream] for entity changes and
-/// [UpdateNotifications.syncUpdateStream] for durable agent-head changes, then
-/// generates embeddings for text-rich entries using Ollama's `/api/embed`.
+/// [UpdateNotifications.syncUpdateStream] for durable current-report-head
+/// changes, then generates embeddings for text-rich entries using Ollama's
+/// `/api/embed`.
 /// When [agentRepository] is available, startup also reconciles durable current
 /// task-agent reports so an interrupted in-memory retry is recovered.
 ///
@@ -142,9 +144,9 @@ class EmbeddingService {
     _startAgentReportRecovery();
   }
 
-  /// Reconciles derived report vectors when sync advances an agent head.
+  /// Reconciles derived vectors when sync advances a current report head.
   void _onSyncBatch(Set<String> tokens) {
-    if (!tokens.contains(agentNotification)) return;
+    if (!tokens.contains(agentReportHeadNotification)) return;
     if (_availabilityRetryTimer?.isActive ?? false) {
       _availabilityRetryTimer?.cancel();
       _availabilityRetryTimer = null;
@@ -198,13 +200,41 @@ class EmbeddingService {
       Object? firstError;
       StackTrace? firstStackTrace;
 
+      void recordFailure(Object error, StackTrace stackTrace) {
+        failureCount++;
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
+
+      final agentsById = {for (final agent in agents) agent.id: agent};
+      final taskLinksByTaskId = <String, List<AgentLink>>{};
       for (final agent in agents) {
         if (_stopped) return;
 
         try {
-          await _recoverAgentReportsForIdentity(
+          final taskLinks = await repository.getLinksFrom(
+            agent.id,
+            type: AgentLinkTypes.agentTask,
+          );
+          for (final link in taskLinks) {
+            taskLinksByTaskId.putIfAbsent(link.toId, () => []).add(link);
+          }
+        } catch (error, stackTrace) {
+          recordFailure(error, stackTrace);
+        }
+      }
+
+      for (final entry in taskLinksByTaskId.entries) {
+        if (_stopped) return;
+        final primaryLink = entry.value.selectPrimary();
+        final agent = agentsById[primaryLink.fromId];
+        if (agent == null) continue;
+
+        try {
+          await _recoverAgentReportsForTask(
             repository: repository,
             agent: agent,
+            taskId: entry.key,
             baseUrl: baseUrl,
           );
         } on OllamaEmbeddingAvailabilityException catch (error) {
@@ -222,9 +252,7 @@ class EmbeddingService {
           }
           return;
         } catch (error, stackTrace) {
-          failureCount++;
-          firstError ??= error;
-          firstStackTrace ??= stackTrace;
+          recordFailure(error, stackTrace);
         }
       }
 
@@ -261,18 +289,12 @@ class EmbeddingService {
   /// network or storage work. Following the new head here ensures cleanup is
   /// based on the eventual searchable successor instead of stopping after the
   /// superseded attempt.
-  Future<void> _recoverAgentReportsForIdentity({
+  Future<void> _recoverAgentReportsForTask({
     required AgentRepository repository,
     required AgentIdentityEntity agent,
+    required String taskId,
     required String baseUrl,
   }) async {
-    final taskLinks = await repository.getLinksFrom(
-      agent.id,
-      type: AgentLinkTypes.agentTask,
-    );
-    if (taskLinks.isEmpty) return;
-
-    final taskId = taskLinks.first.toId;
     final task = await journalDb.journalEntityById(taskId);
     final attemptedReportIds = <String>{};
     final removedReportIds = <String>{};

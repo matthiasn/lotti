@@ -130,6 +130,12 @@ const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 const linkNotification = 'LINK_CHANGED';
 const agentNotification = 'AGENT_CHANGED';
 
+/// Fired when the durable current-report head for an agent changes.
+///
+/// This is narrower than [agentNotification], which also covers messages,
+/// state, usage, templates, and every other agent-domain mutation.
+const agentReportHeadNotification = 'AGENT_REPORT_HEAD_CHANGED';
+
 /// Fired alongside the affected task/category ids whenever an AI consumption
 /// event is recorded or arrives via sync. Consumption dashboards subscribe to
 /// this to refresh per-task and per-category aggregates.
