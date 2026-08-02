@@ -2975,14 +2975,6 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
     ).map((QueryRow row) => row.readNullable<String>('vector_clock'));
   }
 
-  Selectable<ConsumptionEvent> getConsumptionEventsWithNullVectorClock() {
-    return customSelect(
-      'SELECT * FROM consumption_events WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
-      variables: [],
-      readsFrom: {consumptionEvents},
-    ).asyncMap(consumptionEvents.mapFromRow);
-  }
-
   Selectable<SumConsumptionByTaskResult> sumConsumptionByTask(String? taskId) {
     return customSelect(
       'SELECT COUNT(*) AS call_count, COUNT(energy_kwh) AS impact_call_count, CAST(COALESCE(SUM(input_tokens), 0) AS INT) AS input_tokens, CAST(COALESCE(SUM(output_tokens), 0) AS INT) AS output_tokens, CAST(COALESCE(SUM(cached_input_tokens), 0) AS INT) AS cached_input_tokens, CAST(COALESCE(SUM(thoughts_tokens), 0) AS INT) AS thoughts_tokens, CAST(COALESCE(SUM(total_tokens), 0) AS INT) AS total_tokens, COALESCE(SUM(credits), 0.0) AS credits, COALESCE(SUM(energy_kwh), 0.0) AS energy_kwh, COALESCE(SUM(carbon_g_co2), 0.0) AS carbon_g_co2, COALESCE(SUM(water_liters), 0.0) AS water_liters FROM consumption_events WHERE task_id = ?1',

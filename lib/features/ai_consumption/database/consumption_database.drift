@@ -123,11 +123,6 @@ getConsumptionEventVectorClockById:
   SELECT json_extract(serialized, '$.vectorClock') AS vector_clock
   FROM consumption_events WHERE id = :id;
 
-getConsumptionEventsWithNullVectorClock:
-  SELECT * FROM consumption_events
-  WHERE json_extract(serialized, '$.vectorClock') IS NULL
-  ORDER BY created_at ASC;
-
 -- Per-task lifetime totals. COALESCE keeps the sums 0 (not NULL) when a task
 -- has no rows or all-null impact columns; COUNT(energy_kwh) counts only the
 -- calls that actually reported impact.

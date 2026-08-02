@@ -128,12 +128,6 @@ void main() {
         dueAt: any(named: 'dueAt'),
       ),
     ).thenReturn(null);
-    when(
-      () => repository.getActiveAgentByKindAndActiveDayId(
-        kind: any(named: 'kind'),
-        activeDayId: any(named: 'activeDayId'),
-      ),
-    ).thenAnswer((_) async => null);
     // Default: no identity exists for arbitrary ids (ADR 0032 per-day agents
     // are created lazily), but the planner already exists (enqueue paths
     // resolve it via getDayAgentForDate → getAgent). Registration order

@@ -151,28 +151,4 @@ void main() {
       expect(inputs.isEmpty, isFalse);
     });
   });
-
-  group('rebuildAttentionClaimProjection', () {
-    test('re-derives the index from the source rows', () async {
-      await core.upsertEntity(makeClaim(id: 'claim-r'));
-
-      // Wipe the index out-of-band, then prove the rebuild restores it.
-      await db.customStatement('DELETE FROM attention_claim_index');
-      expect(
-        await projection.getAttentionClaimsForWindow(
-          start: DateTime(2026, 3, 15, 8),
-          end: DateTime(2026, 3, 15, 13),
-        ),
-        isEmpty,
-      );
-
-      await projection.rebuildAttentionClaimProjection();
-
-      final claims = await projection.getAttentionClaimsForWindow(
-        start: DateTime(2026, 3, 15, 8),
-        end: DateTime(2026, 3, 15, 13),
-      );
-      expect(claims.map((c) => c.id), ['claim-r']);
-    });
-  });
 }

@@ -3,7 +3,6 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/database/agent_proposal_ledger.dart';
 import 'package:lotti/features/agents/database/agent_repo_core.dart';
-import 'package:lotti/features/agents/database/agent_repo_internals.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart'
     show AgentRepository;
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -146,34 +145,6 @@ class AgentRepoEvolution {
     return _db.countAgentEntitiesWithNullVectorClock().getSingle();
   }
 
-  /// Fetch all non-deleted agent entities, ordered by `created_at` ascending.
-  ///
-  /// Used by the maintenance sync step to enqueue all agent entities for
-  /// cross-device synchronization.
-  Future<List<AgentDomainEntity>> getAllEntities() async {
-    final rows = await _db.getAllAgentEntities().get();
-    return rows.map(AgentDbConversions.fromEntityRow).toList();
-  }
-
-  /// Fetch active agent entities in stable ID order for bounded maintenance.
-  Future<List<AgentDomainEntity>> getEntitiesPage({
-    required int limit,
-    String? afterId,
-  }) async {
-    final query = _db.select(_db.agentEntities)
-      ..where(
-        (row) =>
-            row.deletedAt.isNull() &
-            (afterId == null
-                ? const Constant(true)
-                : row.id.isBiggerThanValue(afterId)),
-      )
-      ..orderBy([(row) => OrderingTerm.asc(row.id)])
-      ..limit(limit);
-    final rows = await query.get();
-    return rows.map(AgentDbConversions.fromEntityRow).toList();
-  }
-
   /// Fetches agent entities (including soft-deleted) updated in the
   /// half-open interval [start, end), paginated.
   Future<List<AgentDomainEntity>> getEntitiesInInterval({
@@ -197,25 +168,10 @@ class AgentRepoEvolution {
     return _db.countAgentEntitiesInInterval(start, end).getSingle();
   }
 
-  /// Counts agent entities of [type] owned by [agentId], including
-  /// soft-deleted ones.
-  ///
-  /// Used by eligibility gates that must know whether an agent has EVER
-  /// produced an entity of a given type, not merely whether one currently
-  /// exists (e.g. the Daily OS onboarding walkthrough must not re-offer
-  /// itself to a user whose only day plan was later deleted).
-  Future<int> countEntitiesByAgentAndType({
-    required String agentId,
-    required String type,
-  }) {
-    return _db.countAgentEntitiesByAgentAndType(agentId, type).getSingle();
-  }
-
   /// Counts agent entities of [type] across all agents, including
   /// soft-deleted ones.
   ///
-  /// Same tombstone-inclusive semantics as [countEntitiesByAgentAndType]
-  /// without the owner filter: under ADR 0032 day plans are written by
+  /// The count includes tombstones: under ADR 0032 day plans are written by
   /// whichever identity owns the day, so eligibility gates that ask "has a
   /// plan EVER existed" must not key on a single agent id.
   Future<int> countEntitiesByType({required String type}) {
@@ -297,14 +253,6 @@ class AgentRepoEvolution {
         .toList();
   }
 
-  /// Fetch the persisted recap for [sessionId], if one exists.
-  Future<EvolutionSessionRecapEntity?> getEvolutionSessionRecap(
-    String sessionId,
-  ) async {
-    final entity = await _core.getEntity(evolutionSessionRecapId(sessionId));
-    return entity?.mapOrNull(evolutionSessionRecap: (recap) => recap);
-  }
-
   /// Fetch evolution notes for [templateId], newest-first.
   Future<List<EvolutionNoteEntity>> getEvolutionNotes(
     String templateId, {
@@ -328,29 +276,6 @@ class AgentRepoEvolution {
     return _db
         .countEntitiesChangedSinceForTemplate(templateId, since)
         .getSingle();
-  }
-
-  /// Update the user rating on a wake-run log entry.
-  ///
-  /// Throws [StateError] if [runKey] does not match any existing row.
-  Future<void> updateWakeRunRating(
-    String runKey, {
-    required double rating,
-    required DateTime ratedAt,
-  }) async {
-    final updatedRows =
-        await (_db.update(
-          _db.wakeRunLog,
-        )..where((t) => t.runKey.equals(runKey))).write(
-          WakeRunLogCompanion(
-            userRating: Value(rating),
-            ratedAt: Value(ratedAt),
-          ),
-        );
-
-    if (updatedRows == 0) {
-      throw StateError('No wake_run_log row found for runKey: $runKey');
-    }
   }
 
   // ── Change set queries ──────────────────────────────────────────────────────
@@ -379,32 +304,6 @@ class AgentRepoEvolution {
         .whereType<ChangeSetEntity>()
         .toList();
     return results;
-  }
-
-  /// Fetch recent change decisions for [agentId], optionally filtered by
-  /// [taskId].
-  ///
-  /// The persisted field is historically named `taskId`, but stores the target
-  /// entity ID for both task-scoped and project-scoped decisions.
-  ///
-  /// Returns newest-first, capped at [limit]. The [taskId] filter is applied
-  /// in Dart (same rationale as [getPendingChangeSets]). Used by the context
-  /// builder to assemble decision history for the agent's system prompt.
-  Future<List<ChangeDecisionEntity>> getRecentDecisions(
-    String agentId, {
-    String? taskId,
-    int limit = 20,
-  }) async {
-    final dbLimit = taskId != null ? limit * overFetchMultiplier : limit;
-    final rows = await _db.getRecentDecisionsForAgent(agentId, dbLimit).get();
-    var results = rows
-        .map(AgentDbConversions.fromEntityRow)
-        .whereType<ChangeDecisionEntity>()
-        .toList();
-    if (taskId != null) {
-      results = results.where((d) => d.taskId == taskId).toList();
-    }
-    return results.take(limit).toList();
   }
 
   /// Build a [ProposalLedger] for [taskId] under [agentId]. See

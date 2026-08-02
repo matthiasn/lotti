@@ -267,69 +267,6 @@ void main() {
     });
   });
 
-  group('getRecentDecisions', () {
-    test('returns decisions for agent ordered newest-first', () async {
-      for (var i = 0; i < 3; i++) {
-        await repo.upsertEntity(
-          makeTestChangeDecision(
-            id: 'cd-$i',
-            itemIndex: i,
-            createdAt: kAgentTestDate.add(Duration(hours: i)),
-          ),
-        );
-      }
-
-      final results = await repo.getRecentDecisions(kTestAgentId);
-
-      expect(results, hasLength(3));
-      // Newest first (created_at DESC).
-      expect(results.first.id, 'cd-2');
-      expect(results.last.id, 'cd-0');
-    });
-
-    test('filters by taskId when provided', () async {
-      await repo.upsertEntity(
-        makeTestChangeDecision(
-          id: 'cd-task-a',
-          taskId: 'task-A',
-        ),
-      );
-      await repo.upsertEntity(
-        makeTestChangeDecision(
-          id: 'cd-task-b',
-          taskId: 'task-B',
-        ),
-      );
-
-      final results = await repo.getRecentDecisions(
-        kTestAgentId,
-        taskId: 'task-A',
-      );
-
-      expect(results, hasLength(1));
-      expect(results.first.taskId, 'task-A');
-    });
-
-    test('respects limit parameter', () async {
-      for (var i = 0; i < 10; i++) {
-        await repo.upsertEntity(
-          makeTestChangeDecision(
-            id: 'cd-$i',
-            itemIndex: i,
-            createdAt: kAgentTestDate.add(Duration(hours: i)),
-          ),
-        );
-      }
-
-      final results = await repo.getRecentDecisions(
-        kTestAgentId,
-        limit: 5,
-      );
-
-      expect(results, hasLength(5));
-    });
-  });
-
   group('getRecentDecisionsForTemplate', () {
     test('returns decisions across all template instances', () async {
       // Set up template assignment link.
@@ -468,17 +405,6 @@ void main() {
         expect(
           pending.map((changeSet) => changeSet.id).toList(),
           scenario.expectedPendingIds(limit: scenario.pendingLimit),
-          reason: '$scenario',
-        );
-
-        final recentDecisions = await localRepo.getRecentDecisions(
-          generatedChangeTargetAgentId,
-          taskId: generatedChangeTargetTaskId,
-          limit: scenario.decisionLimit,
-        );
-        expect(
-          recentDecisions.map((decision) => decision.id).toList(),
-          scenario.expectedRecentDecisionIds(limit: scenario.decisionLimit),
           reason: '$scenario',
         );
 

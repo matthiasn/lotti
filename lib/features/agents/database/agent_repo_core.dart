@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/database/agent_repository.dart'
     show AgentRepository;
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 
 /// Entity CRUD, transaction scoping, and the shared batched-read primitives for
 /// [AgentRepository]. Collaborator extracted from the former `_AgentRepoCore`
@@ -614,55 +613,6 @@ class AgentRepoCore {
       }
     }
     return result;
-  }
-
-  /// Fetch the newest active agent identity of [kind] whose latest state has
-  /// `AgentSlots.activeDayId == activeDayId`.
-  ///
-  /// This keeps the day-agent lookup in SQL instead of loading every active
-  /// day-agent state into Dart and filtering in memory.
-  Future<AgentIdentityEntity?> getActiveAgentByKindAndActiveDayId({
-    required String kind,
-    required String activeDayId,
-  }) async {
-    final rows = await _db
-        .customSelect(
-          r'''
-            SELECT identity.*
-            FROM agent_entities AS identity
-            INNER JOIN agent_entities AS state
-              ON state.id = (
-                SELECT latest_state.id
-                FROM agent_entities AS latest_state
-                WHERE latest_state.agent_id = identity.agent_id
-                  AND latest_state.type = ?
-                  AND latest_state.deleted_at IS NULL
-                ORDER BY latest_state.created_at DESC, latest_state.id DESC
-                LIMIT 1
-              )
-            WHERE identity.type = 'agent'
-              AND identity.subtype = ?
-              AND identity.deleted_at IS NULL
-              AND json_extract(identity.serialized, '$.lifecycle') = ?
-              AND json_extract(state.serialized, '$.slots.activeDayId') = ?
-            ORDER BY identity.created_at DESC, identity.agent_id DESC
-            LIMIT 1
-          ''',
-          variables: [
-            Variable.withString(AgentEntityTypes.agentState),
-            Variable.withString(kind),
-            Variable.withString(AgentLifecycle.active.name),
-            Variable.withString(activeDayId),
-          ],
-          readsFrom: {_db.agentEntities},
-        )
-        .get();
-    if (rows.isEmpty) return null;
-
-    final entity = AgentDbConversions.fromEntityRow(
-      await _db.agentEntities.mapFromRow(rows.first),
-    );
-    return entity.mapOrNull(agent: (agent) => agent);
   }
 
   /// Batch-resolve the active [SoulDocumentVersionEntity] for each soul id.

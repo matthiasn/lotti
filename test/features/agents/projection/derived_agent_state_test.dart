@@ -1,9 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/projection/derived_agent_state.dart';
-import 'package:lotti/features/agents/projection/shadow_projection.dart';
 
 import '../test_data/constants.dart';
 import '../test_data/entity_factories.dart';
@@ -228,81 +226,5 @@ void main() {
 
       expect(deviceA, deviceB, reason: '$scenario');
     }, tags: 'glados');
-  });
-
-  group('compareDerivedAgentState', () {
-    test('equivalent when the cache reproduces the log-derived state', () {
-      final messages = [
-        makeTestMessage(id: 'm1', createdAt: hDay(1)),
-        hMarker('w1', AgentMilestone.wakeCompleted, hDay(2)),
-      ];
-      final links = [
-        makeTestMessagePrevLink(fromId: 'w1', toId: 'm1'),
-        makeTestAgentTaskLink(toId: 'task-9'),
-      ];
-      final live = makeTestState(
-        slots: const AgentSlots(activeTaskId: 'task-9'),
-        lastWakeAt: hDay(2),
-      ).copyWith(recentHeadMessageId: 'w1');
-
-      final report = compareDerivedAgentState(
-        messages: messages,
-        links: links,
-        liveState: live,
-      );
-
-      expect(report.equivalent, isTrue);
-      expect(report.fieldMismatches, isEmpty);
-      expect(report.shadow.status, ShadowProjectionStatus.match);
-    });
-
-    test('reports the diverging field when the cache is stale', () {
-      final messages = [hMarker('w1', AgentMilestone.wakeCompleted, hDay(5))];
-      final live = makeTestState(
-        lastWakeAt: hDay(1), // stale — log says day 5
-      ).copyWith(recentHeadMessageId: 'w1');
-
-      final report = compareDerivedAgentState(
-        messages: messages,
-        links: const [],
-        liveState: live,
-      );
-
-      expect(report.equivalent, isFalse);
-      expect(
-        report.fieldMismatches.map((m) => m.field),
-        contains('lastWakeAt'),
-      );
-      final mismatch = report.fieldMismatches.singleWhere(
-        (m) => m.field == 'lastWakeAt',
-      );
-      expect(mismatch.derived, hDay(5));
-      expect(mismatch.live, hDay(1));
-    });
-
-    test('captures a structural fold failure as error', () {
-      // A messagePrev cycle (m1 → m2 → m1) makes canonicalOrder throw; the
-      // compare must capture it as an error rather than crash.
-      final messages = [
-        makeTestMessage(id: 'm1', createdAt: hDay(1)),
-        makeTestMessage(id: 'm2', createdAt: hDay(2)),
-      ];
-      final links = [
-        makeTestMessagePrevLink(id: 'e1', fromId: 'm1', toId: 'm2'),
-        makeTestMessagePrevLink(id: 'e2', fromId: 'm2', toId: 'm1'),
-      ];
-      final live = makeTestState();
-
-      final report = compareDerivedAgentState(
-        messages: messages,
-        links: links,
-        liveState: live,
-      );
-
-      // The messagePrev cycle surfaces as the kernel's structural exception,
-      // captured (not thrown) so the compare never crashes a production path.
-      expect(report.error, contains('ProjectionCycleException'));
-      expect(report.equivalent, isFalse);
-    });
   });
 }

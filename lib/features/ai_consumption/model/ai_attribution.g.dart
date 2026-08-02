@@ -150,37 +150,3 @@ const _$AiWorkStatusEnumMap = {
   AiWorkStatus.cancelled: 'cancelled',
   AiWorkStatus.partial: 'partial',
 };
-
-_AiAttributionSession _$AiAttributionSessionFromJson(
-  Map<String, dynamic> json,
-) => _AiAttributionSession(
-  id: json['id'] as String,
-  workType: $enumDecode(_$AiWorkTypeEnumMap, json['workType']),
-  initiator: AiActorSnapshot.fromJson(
-    json['initiator'] as Map<String, dynamic>,
-  ),
-  trigger: AiTriggerSnapshot.fromJson(json['trigger'] as Map<String, dynamic>),
-  startedAt: DateTime.parse(json['startedAt'] as String),
-  intendedOutputs:
-      (json['intendedOutputs'] as List<dynamic>?)
-          ?.map((e) => AiArtifactReference.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const <AiArtifactReference>[],
-  parentAttributionId: json['parentAttributionId'] as String?,
-  taskId: json['taskId'] as String?,
-  categoryId: json['categoryId'] as String?,
-);
-
-Map<String, dynamic> _$AiAttributionSessionToJson(
-  _AiAttributionSession instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'workType': _$AiWorkTypeEnumMap[instance.workType]!,
-  'initiator': instance.initiator,
-  'trigger': instance.trigger,
-  'startedAt': instance.startedAt.toIso8601String(),
-  'intendedOutputs': instance.intendedOutputs,
-  'parentAttributionId': instance.parentAttributionId,
-  'taskId': instance.taskId,
-  'categoryId': instance.categoryId,
-};

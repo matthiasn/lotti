@@ -247,13 +247,6 @@ void main() {
       () => mockAgentRepository.getLinksTo(any(), type: 'agent_task'),
     ).thenAnswer((_) async => <AgentLink>[]);
     when(
-      () => mockAgentRepository.getRecentDecisions(
-        any(),
-        taskId: any(named: 'taskId'),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => <ChangeDecisionEntity>[]);
-    when(
       () => mockAgentRepository.getPendingChangeSets(
         any(),
         taskId: any(named: 'taskId'),

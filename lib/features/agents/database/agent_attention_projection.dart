@@ -269,62 +269,6 @@ class AgentAttentionProjection {
     ];
   }
 
-  /// Rebuild the local attention claim indexes from the synced source tables.
-  ///
-  /// This is for migrations, repair, and diagnostics. Planner reads must use
-  /// `getAttentionClaimsForWindow`, not a source-table scan.
-  Future<void> rebuildAttentionClaimProjection() async {
-    await _db.transaction(() async {
-      await _db.customStatement('DELETE FROM attention_claim_index');
-      final rows = await _db
-          .customSelect(
-            '''
-              SELECT id
-              FROM agent_entities
-              WHERE type = ?
-                AND deleted_at IS NULL
-              ORDER BY created_at ASC, id ASC
-            ''',
-            variables: [
-              Variable.withString(AgentEntityTypes.attentionRequest),
-            ],
-            readsFrom: {_db.agentEntities},
-          )
-          .get();
-      for (final row in rows) {
-        await _refreshAttentionClaimProjection(row.read<String>('id'));
-      }
-    });
-  }
-
-  /// Rebuild the local standing agreement index from synced source rows.
-  ///
-  /// This is for migrations, repair, and diagnostics. Planner reads must use
-  /// `getStandingAgreementsForWindow`, not a source-table scan.
-  Future<void> rebuildStandingAgreementProjection() async {
-    await _db.transaction(() async {
-      await _db.customStatement('DELETE FROM standing_agreement_index');
-      final rows = await _db
-          .customSelect(
-            '''
-              SELECT id
-              FROM agent_entities
-              WHERE type = ?
-                AND deleted_at IS NULL
-              ORDER BY created_at ASC, id ASC
-            ''',
-            variables: [
-              Variable.withString(AgentEntityTypes.standingAgreement),
-            ],
-            readsFrom: {_db.agentEntities},
-          )
-          .get();
-      for (final row in rows) {
-        await _refreshStandingAgreementProjection(row.read<String>('id'));
-      }
-    });
-  }
-
   /// Refresh the attention-claim projection row implied by [entity] after a
   /// write. Called transactionally from [AgentRepoCore.upsertEntity].
   Future<void> refreshAttentionClaimProjectionForEntity(

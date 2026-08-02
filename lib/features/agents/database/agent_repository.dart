@@ -4,7 +4,6 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_proposal_ledger.dart';
 import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/database/agent_repo_evolution.dart';
-import 'package:lotti/features/agents/database/agent_repo_internals.dart';
 import 'package:lotti/features/agents/database/agent_repo_links.dart';
 import 'package:lotti/features/agents/database/agent_repo_observation_retention.dart';
 import 'package:lotti/features/agents/database/agent_repo_queries.dart';
@@ -15,7 +14,6 @@ import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:meta/meta.dart';
 
 /// The claim and standing-agreement inputs a day planner needs for a window,
 /// returned by [AgentRepository.getAttentionPlanningInputsForWindow].
@@ -104,21 +102,6 @@ class AgentRepository {
     );
   }
 
-  /// Test-only seam for `sqliteInClauseChunks` — the pure dedup-and-chunk
-  /// iterator that guards every batched `IN (...)` query against SQLite's
-  /// `SQLITE_MAX_VARIABLE_NUMBER` cap. The chunk size is exposed alongside so
-  /// property tests can assert the no-chunk-exceeds-the-limit invariant
-  /// without hard-coding the constant.
-  @visibleForTesting
-  static const int debugInClauseChunkSize = sqliteInClauseChunkSize;
-
-  /// Test-only seam for `sqliteInClauseChunks`.
-  @visibleForTesting
-  static Iterable<List<T>> debugSqliteInClauseChunks<T>(
-    Iterable<T> values, {
-    int reserve = 0,
-  }) => sqliteInClauseChunks(values, reserve: reserve);
-
   // ── Core: entity CRUD + shared batched reads ───────────────────────────────
 
   Future<T> runInTransaction<T>(Future<T> Function() action) =>
@@ -203,14 +186,6 @@ class AgentRepository {
     alsoIncludeAgentIds: alsoIncludeAgentIds,
   );
 
-  Future<AgentIdentityEntity?> getActiveAgentByKindAndActiveDayId({
-    required String kind,
-    required String activeDayId,
-  }) => _core.getActiveAgentByKindAndActiveDayId(
-    kind: kind,
-    activeDayId: activeDayId,
-  );
-
   Future<Map<String, SoulDocumentVersionEntity>>
   getActiveSoulDocumentVersionsBySoulIds(List<String> soulIds) =>
       _core.getActiveSoulDocumentVersionsBySoulIds(soulIds);
@@ -276,28 +251,6 @@ class AgentRepository {
     agreementLimit: agreementLimit,
   );
 
-  Future<List<StandingAgreementEntity>> getStandingAgreementsForWindow({
-    required DateTime start,
-    required DateTime end,
-    Set<StandingAgreementStatus> statuses = const {
-      StandingAgreementStatus.active,
-    },
-    Set<StandingAgreementScope>? scopes,
-    int limit = 200,
-  }) => _projection.getStandingAgreementsForWindow(
-    start: start,
-    end: end,
-    statuses: statuses,
-    scopes: scopes,
-    limit: limit,
-  );
-
-  Future<void> rebuildAttentionClaimProjection() =>
-      _projection.rebuildAttentionClaimProjection();
-
-  Future<void> rebuildStandingAgreementProjection() =>
-      _projection.rebuildStandingAgreementProjection();
-
   // ── Queries: reports, templates, soul documents, messages ──────────────────
 
   Future<List<AgentMessageEntity>> getMessagesByKind(
@@ -315,12 +268,6 @@ class AgentRepository {
     DateTime since, {
     required int limit,
   }) => _queries.getDayStatusEventsSinceNewestFirst(since, limit: limit);
-
-  Future<List<AgentMessageEntity>> getMessagesForThread(
-    String agentId,
-    String threadId, {
-    int? limit,
-  }) => _queries.getMessagesForThread(agentId, threadId, limit: limit);
 
   Future<AgentReportEntity?> getLatestReport(String agentId, String scope) =>
       _queries.getLatestReport(agentId, scope);
@@ -415,15 +362,6 @@ class AgentRepository {
   Future<int> countEntitiesWithNullVectorClock() =>
       _evolution.countEntitiesWithNullVectorClock();
 
-  Future<List<AgentDomainEntity>> getAllEntities() =>
-      _evolution.getAllEntities();
-
-  /// Fetch active agent entities in bounded, stable-ID pages.
-  Future<List<AgentDomainEntity>> getEntitiesPage({
-    required int limit,
-    String? afterId,
-  }) => _evolution.getEntitiesPage(limit: limit, afterId: afterId);
-
   Future<List<AgentDomainEntity>> getEntitiesInInterval({
     required DateTime start,
     required DateTime end,
@@ -440,11 +378,6 @@ class AgentRepository {
     required DateTime start,
     required DateTime end,
   }) => _evolution.countEntitiesInInterval(start: start, end: end);
-
-  Future<int> countEntitiesByAgentAndType({
-    required String agentId,
-    required String type,
-  }) => _evolution.countEntitiesByAgentAndType(agentId: agentId, type: type);
 
   Future<int> countEntitiesByType({required String type}) =>
       _evolution.countEntitiesByType(type: type);
@@ -472,10 +405,6 @@ class AgentRepository {
     int limit = 50,
   }) => _evolution.getEvolutionSessionRecaps(templateId, limit: limit);
 
-  Future<EvolutionSessionRecapEntity?> getEvolutionSessionRecap(
-    String sessionId,
-  ) => _evolution.getEvolutionSessionRecap(sessionId);
-
   Future<List<EvolutionNoteEntity>> getEvolutionNotes(
     String templateId, {
     int limit = 50,
@@ -486,24 +415,11 @@ class AgentRepository {
     DateTime? since,
   ) => _evolution.countChangedSinceForTemplate(templateId, since);
 
-  Future<void> updateWakeRunRating(
-    String runKey, {
-    required double rating,
-    required DateTime ratedAt,
-  }) =>
-      _evolution.updateWakeRunRating(runKey, rating: rating, ratedAt: ratedAt);
-
   Future<List<ChangeSetEntity>> getPendingChangeSets(
     String agentId, {
     String? taskId,
     int limit = 20,
   }) => _evolution.getPendingChangeSets(agentId, taskId: taskId, limit: limit);
-
-  Future<List<ChangeDecisionEntity>> getRecentDecisions(
-    String agentId, {
-    String? taskId,
-    int limit = 20,
-  }) => _evolution.getRecentDecisions(agentId, taskId: taskId, limit: limit);
 
   Future<ProposalLedger> getProposalLedger(
     String agentId, {
@@ -560,8 +476,6 @@ class AgentRepository {
 
   Future<int> countLinksWithNullVectorClock() =>
       _links.countLinksWithNullVectorClock();
-
-  Future<List<model.AgentLink>> getAllLinks() => _links.getAllLinks();
 
   Future<List<model.AgentLink>> getLinksInInterval({
     required DateTime start,
@@ -628,14 +542,6 @@ class AgentRepository {
     until: until,
   );
 
-  Future<List<WakeRunLogData>> getWakeRunsInWindow({
-    required DateTime since,
-    required DateTime until,
-  }) => _links.getWakeRunsInWindow(since: since, until: until);
-
-  Future<WakeRunLogData?> getWakeRun(String runKey) =>
-      _links.getWakeRun(runKey);
-
   Future<WakeRunLogData?> getWakeRunByThreadId(
     String agentId,
     String threadId,
@@ -656,22 +562,7 @@ class AgentRepository {
     required DateTime since,
   }) => _links.getTokenUsageForTemplateSince(templateId, since: since);
 
-  Future<List<WakeTokenUsageEntity>> getGlobalTokenUsageSince({
-    required DateTime since,
-  }) => _links.getGlobalTokenUsageSince(since: since);
-
   Future<int> abandonOrphanedWakeRuns() => _links.abandonOrphanedWakeRuns();
-
-  Future<void> insertSagaOp({required SagaLogData entry}) =>
-      _links.insertSagaOp(entry: entry);
-
-  Future<void> updateSagaStatus(
-    String operationId,
-    String status, {
-    String? lastError,
-  }) => _links.updateSagaStatus(operationId, status, lastError: lastError);
-
-  Future<List<SagaLogData>> getPendingSagaOps() => _links.getPendingSagaOps();
 
   /// Permanently deletes every row for [agentId].
   ///

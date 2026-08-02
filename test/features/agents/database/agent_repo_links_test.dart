@@ -175,9 +175,7 @@ void main() {
       );
 
       await links.updateWakeRunStatus('run-1', 'completed');
-      final run = await links.getWakeRun('run-1');
-      expect(run, isNotNull);
-      expect(run!.status, 'completed');
+      expect((await getWakeRun(db, 'run-1'))?.status, 'completed');
     });
 
     test('insertWakeRun throws on a duplicate run key', () async {
@@ -205,21 +203,7 @@ void main() {
 
       final count = await links.abandonOrphanedWakeRuns();
       expect(count, 1);
-      expect((await links.getWakeRun('orphan'))!.status, 'abandoned');
-    });
-  });
-
-  group('saga log', () {
-    test('insert then status update flows through getPendingSagaOps', () async {
-      await links.insertSagaOp(
-        entry: makeTestSagaOp(operationId: 'op-1', createdAt: testDate),
-      );
-      expect((await links.getPendingSagaOps()).map((s) => s.operationId), [
-        'op-1',
-      ]);
-
-      await links.updateSagaStatus('op-1', 'completed');
-      expect(await links.getPendingSagaOps(), isEmpty);
+      expect((await getWakeRun(db, 'orphan'))?.status, 'abandoned');
     });
   });
 
@@ -246,7 +230,7 @@ void main() {
       await links.hardDeleteAgent('agent-del');
 
       expect(await links.getLinksFrom('agent-del'), isEmpty);
-      expect(await links.getWakeRun('run-del'), isNull);
+      expect(await getWakeRun(db, 'run-del'), isNull);
     });
 
     test('reports links between two of the agent-owned entities', () async {

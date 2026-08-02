@@ -78,17 +78,6 @@ class AgentTemplateMetrics {
     );
   }
 
-  /// Fetch token usage for [templateId] created on or after [since].
-  Future<List<WakeTokenUsageEntity>> getTokenUsageSince(
-    String templateId, {
-    required DateTime since,
-  }) {
-    return repository.getTokenUsageForTemplateSince(
-      templateId,
-      since: since,
-    );
-  }
-
   // ── Evolution data fetching ─────────────────────────────────────────────
 
   /// Fetch the N most recent reports from all instances of this template.
@@ -130,13 +119,6 @@ class AgentTemplateMetrics {
     int limit = 50,
   }) {
     return repository.getEvolutionSessionRecaps(templateId, limit: limit);
-  }
-
-  /// Fetch the recap for a single ritual session.
-  Future<EvolutionSessionRecapEntity?> getEvolutionSessionRecap(
-    String sessionId,
-  ) {
-    return repository.getEvolutionSessionRecap(sessionId);
   }
 
   /// Count entities changed since [since] for all instances of [templateId].
@@ -199,34 +181,5 @@ class AgentTemplateMetrics {
       observationPayloads: observationPayloads,
       changesSinceLastSession: batchResults.$2,
     );
-  }
-
-  /// Checks whether any templates, template versions, or agent configs
-  /// reference the given [profileId].
-  ///
-  /// Returns `true` if the profile is in use and should not be deleted.
-  Future<bool> profileInUse(String profileId) async {
-    final templates = await repository.getAllTemplates();
-    for (final t in templates) {
-      if (t.profileId == profileId) return true;
-    }
-
-    // Check all template versions in parallel.
-    final allVersions = await Future.wait(
-      templates.map((t) => crud.getVersionHistory(t.id, limit: -1)),
-    );
-    if (allVersions.any(
-      (versions) => versions.any((v) => v.profileId == profileId),
-    )) {
-      return true;
-    }
-
-    // Check agent identity configs.
-    final agents = await repository.getAllAgentIdentities();
-    for (final agent in agents) {
-      if (agent.config.profileId == profileId) return true;
-    }
-
-    return false;
   }
 }

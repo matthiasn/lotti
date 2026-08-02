@@ -774,10 +774,6 @@ void main() {
         ).thenAnswer((_) async => []);
       }
       when(
-        () => mockAgentRepository.getAllEntities(),
-      ).thenAnswer((_) async => []);
-      when(() => mockAgentRepository.getAllLinks()).thenAnswer((_) async => []);
-      when(
         () => mockAgentRepository.countEntitiesWithNullVectorClock(),
       ).thenAnswer((_) async => 0);
       when(

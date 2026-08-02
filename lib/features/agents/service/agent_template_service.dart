@@ -222,12 +222,6 @@ class AgentTemplateService {
     required DateTime until,
   }) => _metrics.getWakeRunsInWindow(templateId, since: since, until: until);
 
-  /// Fetch token usage for [templateId] created on or after [since].
-  Future<List<WakeTokenUsageEntity>> getTokenUsageSince(
-    String templateId, {
-    required DateTime since,
-  }) => _metrics.getTokenUsageSince(templateId, since: since);
-
   /// Fetch the N most recent reports from all instances of this template.
   Future<List<AgentReportEntity>> getRecentInstanceReports(
     String templateId, {
@@ -259,34 +253,12 @@ class AgentTemplateService {
     int limit = 50,
   }) => _metrics.getEvolutionSessionRecaps(templateId, limit: limit);
 
-  /// Fetch the recap for a single ritual session.
-  Future<EvolutionSessionRecapEntity?> getEvolutionSessionRecap(
-    String sessionId,
-  ) => _metrics.getEvolutionSessionRecap(sessionId);
-
-  /// Count entities changed since [since] for all instances of [templateId].
-  Future<int> countChangesSince(String templateId, DateTime? since) =>
-      _metrics.countChangesSince(templateId, since);
-
   /// Gather all data needed for an evolution session context in parallel.
   Future<EvolutionDataBundle> gatherEvolutionData(String templateId) =>
       _metrics.gatherEvolutionData(templateId);
-
-  /// Checks whether any templates, template versions, or agent configs
-  /// reference the given [profileId].
-  Future<bool> profileInUse(String profileId) =>
-      _metrics.profileInUse(profileId);
 
   // ── Seeding ───────────────────────────────────────────────────────────────
 
   /// Idempotent seed of default templates.
   Future<void> seedDefaults() => _seeding.seedDefaults();
-
-  /// Populate `generalDirective` and `reportDirective` on existing template
-  /// versions where both fields are empty.
-  Future<void> seedDirectiveFields() => _seeding.seedDirectiveFields();
-
-  /// Advances existing Shepherd templates to the capture/reconcile directive.
-  Future<void> seedDayAgentCaptureReconcileDirective() =>
-      _seeding.seedDayAgentCaptureReconcileDirective();
 }
