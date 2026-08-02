@@ -32,11 +32,7 @@ class _GeneratedGeolocationPendingScenario {
 extension _AnyGeneratedGeolocationPendingScenario on glados.Any {
   glados.Generator<_GeneratedGeolocationPendingScenario>
   get geolocationPendingScenario => glados.ListAnys(this)
-      .listWithLengthInRange(
-        1,
-        12,
-        glados.IntAnys(this).intInRange(0, 1000),
-      )
+      .listWithLengthInRange(1, 12, glados.IntAnys(this).intInRange(0, 1000))
       .map((idSlots) => _GeneratedGeolocationPendingScenario(idSlots: idSlots));
 }
 
@@ -107,61 +103,6 @@ void main() {
       );
     });
 
-    group('isPending', () {
-      test('returns false when no operation is pending', () {
-        expect(geolocationService.isPending('some-id'), isFalse);
-      });
-
-      test('returns true when operation is pending', () async {
-        // Setup: device location returns a delayed response
-        final completer = Completer<Geolocation?>();
-        when(
-          () => mockDeviceLocation.getCurrentGeoLocation(),
-        ).thenAnswer((_) => completer.future);
-
-        // Start the async operation (don't await)
-        final future = geolocationService.addGeolocationAsync(
-          'test-id',
-          (_) async => true,
-        );
-
-        // Should be pending now
-        expect(geolocationService.isPending('test-id'), isTrue);
-
-        // Complete and cleanup
-        completer.complete(null);
-        await future;
-
-        // Should no longer be pending
-        expect(geolocationService.isPending('test-id'), isFalse);
-      });
-    });
-
-    group('pendingCount', () {
-      test('returns 0 initially', () {
-        expect(geolocationService.pendingCount, equals(0));
-      });
-
-      test('increments during operation', () async {
-        final completer = Completer<Geolocation?>();
-        when(
-          () => mockDeviceLocation.getCurrentGeoLocation(),
-        ).thenAnswer((_) => completer.future);
-
-        final future = geolocationService.addGeolocationAsync(
-          'test-id',
-          (_) async => true,
-        );
-
-        expect(geolocationService.pendingCount, equals(1));
-
-        completer.complete(null);
-        await future;
-
-        expect(geolocationService.pendingCount, equals(0));
-      });
-    });
-
     group('addGeolocationAsync', () {
       test('returns null when another operation is already pending', () async {
         final completer = Completer<Geolocation?>();
@@ -208,10 +149,7 @@ void main() {
           (_) async => true,
         );
 
-        // Both should be pending
-        expect(geolocationService.isPending('test-id-1'), isTrue);
-        expect(geolocationService.isPending('test-id-2'), isTrue);
-        expect(geolocationService.pendingCount, equals(2));
+        expect(callCount, equals(2));
 
         // Cleanup
         completer1.complete(null);
@@ -279,13 +217,12 @@ void main() {
         ).thenAnswer((_) async => entryWithGeolocation);
 
         var persisterCalled = false;
-        final result = await geolocationService.addGeolocationAsync(
-          'test-id',
-          (_) async {
-            persisterCalled = true;
-            return true;
-          },
-        );
+        final result = await geolocationService.addGeolocationAsync('test-id', (
+          _,
+        ) async {
+          persisterCalled = true;
+          return true;
+        });
 
         expect(result, equals(testGeolocation));
         expect(persisterCalled, isFalse);
@@ -308,13 +245,12 @@ void main() {
         ).thenAnswer((_) async => updatedMetadata);
 
         JournalEntity? persistedEntity;
-        final result = await geolocationService.addGeolocationAsync(
-          'test-id',
-          (entity) async {
-            persistedEntity = entity;
-            return true;
-          },
-        );
+        final result = await geolocationService.addGeolocationAsync('test-id', (
+          entity,
+        ) async {
+          persistedEntity = entity;
+          return true;
+        });
 
         expect(result, equals(testGeolocation));
         expect(persistedEntity, isNotNull);
@@ -325,42 +261,6 @@ void main() {
         );
 
         verify(() => mockMetadataService.updateMetadata(any())).called(1);
-      });
-
-      test('clears pending set after successful completion', () async {
-        final entry = createTestEntry(id: 'test-id');
-
-        when(
-          () => mockDeviceLocation.getCurrentGeoLocation(),
-        ).thenAnswer((_) async => testGeolocation);
-        when(
-          () => mockJournalDb.journalEntityById('test-id'),
-        ).thenAnswer((_) async => entry);
-        when(
-          () => mockMetadataService.updateMetadata(any()),
-        ).thenAnswer((_) async => updatedMetadata);
-
-        expect(geolocationService.isPending('test-id'), isFalse);
-
-        await geolocationService.addGeolocationAsync(
-          'test-id',
-          (_) async => true,
-        );
-
-        expect(geolocationService.isPending('test-id'), isFalse);
-      });
-
-      test('clears pending set after error', () async {
-        when(
-          () => mockDeviceLocation.getCurrentGeoLocation(),
-        ).thenThrow(Exception('Location error'));
-
-        await geolocationService.addGeolocationAsync(
-          'test-id',
-          (_) async => true,
-        );
-
-        expect(geolocationService.isPending('test-id'), isFalse);
       });
 
       test('logs exception when getting location fails', () async {
@@ -437,15 +337,12 @@ void main() {
         // Fire-and-forget call
         geolocationService.addGeolocation('test-id', (_) async => true);
 
-        // Should be pending
-        expect(geolocationService.isPending('test-id'), isTrue);
+        verify(() => mockDeviceLocation.getCurrentGeoLocation()).called(1);
 
         // Cleanup
         completer.complete(null);
 
-        // Wait for the background operation to complete
-        await Future<void>.delayed(Duration.zero);
-        expect(geolocationService.isPending('test-id'), isFalse);
+        await completer.future;
       });
     });
 
@@ -466,8 +363,7 @@ void main() {
           geolocationService.addGeolocationAsync('test-id', (_) async => true),
         ];
 
-        // Only one should be pending
-        expect(geolocationService.pendingCount, equals(1));
+        expect(locationCallCount, equals(1));
 
         // Complete and wait for all futures
         locationCompleter.complete(null);
@@ -527,13 +423,10 @@ void main() {
         ];
 
         expect(
-          geolocationService.pendingCount,
+          locationCallCount,
           scenario.uniqueIds.length,
           reason: '$scenario',
         );
-        for (final id in scenario.uniqueIds) {
-          expect(geolocationService.isPending(id), isTrue, reason: '$scenario');
-        }
 
         locationCompleter.complete(null);
         final results = await Future.wait(futures);
@@ -544,7 +437,6 @@ void main() {
           scenario.uniqueIds.length,
           reason: '$scenario',
         );
-        expect(geolocationService.pendingCount, 0, reason: '$scenario');
       }, tags: 'glados');
     });
   });

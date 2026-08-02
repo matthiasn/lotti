@@ -10,7 +10,6 @@ import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:uuid/uuid.dart';
 
 /// Shared dependencies for the [PersistenceLogic] collaborators.
 ///
@@ -34,7 +33,6 @@ abstract class PersistenceCollaboratorBase {
       getIt.isRegistered<SyncSequenceLogService>()
       ? getIt<SyncSequenceLogService>()
       : null;
-  final Uuid uuid = const Uuid();
 
   /// Records that [entity] was sent, so the sync sequence log can detect gaps.
   ///

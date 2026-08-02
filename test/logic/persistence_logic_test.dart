@@ -418,10 +418,7 @@ Set<String> _expectedAffectedIds(
   String id,
 ) {
   return switch (kind) {
-    _GeneratedPersistenceEntityKind.journalEntry => {
-      id,
-      textEntryNotification,
-    },
+    _GeneratedPersistenceEntityKind.journalEntry => {id, textEntryNotification},
     _GeneratedPersistenceEntityKind.event => {id, eventNotification},
     _GeneratedPersistenceEntityKind.task => {id, taskNotification},
     _GeneratedPersistenceEntityKind.measurement => {
@@ -509,15 +506,12 @@ void main() {
 
       when(mockNotificationService.updateBadge).thenAnswer((_) async {});
 
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
 
       when(
-        () => mockFts5Db.insertText(
-          any(),
-          removePrevious: true,
-        ),
+        () => mockFts5Db.insertText(any(), removePrevious: true),
       ).thenAnswer((_) async {});
 
       when(
@@ -560,9 +554,7 @@ void main() {
         ..registerSingleton<NotificationService>(mockNotificationService)
         ..registerSingleton<VectorClockService>(VectorClockService())
         ..registerSingleton<MetadataService>(
-          MetadataService(
-            vectorClockService: getIt<VectorClockService>(),
-          ),
+          MetadataService(vectorClockService: getIt<VectorClockService>()),
         )
         ..registerSingleton<GeolocationService>(
           GeolocationService(
@@ -588,54 +580,51 @@ void main() {
       await syncDb.close();
     });
 
-    test(
-      'create and retrieve text entry',
-      () async {
-        final testDate = DateTime(2024, 3, 15, 10, 30);
-        const testText = 'test text';
-        const updatedTestText = 'updated test text';
+    test('create and retrieve text entry', () async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      const testText = 'test text';
+      const updatedTestText = 'updated test text';
 
-        // create test entry
-        final textEntry = await JournalRepository.createTextEntry(
-          const EntryText(plainText: testText),
-          id: uuid.v1(),
-          started: testDate,
-        );
+      // create test entry
+      final textEntry = await JournalRepository.createTextEntry(
+        const EntryText(plainText: testText),
+        id: uuid.v1(),
+        started: testDate,
+      );
 
-        // expect to find created entry
-        expect(
-          (await getIt<JournalDb>().journalEntityById(
-            textEntry!.meta.id,
-          ))?.entryText?.plainText,
-          testText,
-        );
+      // expect to find created entry
+      expect(
+        (await getIt<JournalDb>().journalEntityById(
+          textEntry!.meta.id,
+        ))?.entryText?.plainText,
+        testText,
+      );
 
-        _verifyAndResetBadge(mockNotificationService);
+      _verifyAndResetBadge(mockNotificationService);
 
-        // update entry with new plaintext
-        await getIt<PersistenceLogic>().updateJournalEntityText(
+      // update entry with new plaintext
+      await getIt<PersistenceLogic>().updateJournalEntityText(
+        textEntry.meta.id,
+        const EntryText(plainText: updatedTestText),
+        DateTime(2024, 3, 15, 10, 35),
+      );
+
+      // Yield to allow real SQLite I/O to complete
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // expect to find updated entry
+      expect(
+        (await getIt<JournalDb>().journalEntityById(
           textEntry.meta.id,
-          const EntryText(plainText: updatedTestText),
-          DateTime(2024, 3, 15, 10, 35),
-        );
+        ))?.entryText?.plainText,
+        updatedTestText,
+      );
 
-        // Yield to allow real SQLite I/O to complete
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-
-        // expect to find updated entry
-        expect(
-          (await getIt<JournalDb>().journalEntityById(
-            textEntry.meta.id,
-          ))?.entryText?.plainText,
-          updatedTestText,
-        );
-
-        verify(
-          () => mockFts5Db.insertText(any(), removePrevious: true),
-        ).called(2);
-        _verifyAndResetBadge(mockNotificationService);
-      },
-    );
+      verify(
+        () => mockFts5Db.insertText(any(), removePrevious: true),
+      ).called(2);
+      _verifyAndResetBadge(mockNotificationService);
+    });
 
     test('create and retrieve task', () async {
       final testDate = DateTime(2024, 3, 15, 11);
@@ -781,9 +770,7 @@ void main() {
 
       await getIt<PersistenceLogic>().updateJournalEntityText(
         comment!.meta.id,
-        const EntryText(
-          plainText: updatedTestText,
-        ),
+        const EntryText(plainText: updatedTestText),
         comment.meta.dateTo,
       );
 
@@ -803,10 +790,7 @@ void main() {
 
       // unlink comment from task
       expect(
-        await getIt<JournalDb>().deleteLink(
-          task.meta.id,
-          comment.meta.id,
-        ),
+        await getIt<JournalDb>().deleteLink(task.meta.id, comment.meta.id),
         1,
       );
 
@@ -895,10 +879,7 @@ void main() {
 
       // measurement data from db equals data used for creating measurement
       final measurement = await getIt<PersistenceLogic>()
-          .createMeasurementEntry(
-            data: measurementData,
-            private: false,
-          );
+          .createMeasurementEntry(data: measurementData, private: false);
 
       expect(measurement?.data, measurementData);
 
@@ -912,10 +893,10 @@ void main() {
       );
 
       // measurable types can be retrieved
-      expect(
-        (await getIt<JournalDb>().getAllMeasurableDataTypes()).toSet(),
-        {measurableChocolate, measurableWater},
-      );
+      expect((await getIt<JournalDb>().getAllMeasurableDataTypes()).toSet(), {
+        measurableChocolate,
+        measurableWater,
+      });
 
       expect(
         await getIt<JournalDb>().getMeasurableDataTypeById(
@@ -936,10 +917,9 @@ void main() {
         null,
       );
 
-      expect(
-        (await getIt<JournalDb>().getAllMeasurableDataTypes()).toSet(),
-        {measurableWater},
-      );
+      expect((await getIt<JournalDb>().getAllMeasurableDataTypes()).toSet(), {
+        measurableWater,
+      });
     });
 
     test('create, retrieve and delete dashboard', () async {
@@ -986,10 +966,9 @@ void main() {
       expect(habitCompletion?.data, habitCompletionData);
 
       // habit can be retrieved
-      expect(
-        (await getIt<JournalDb>().getAllHabitDefinitions()).toSet(),
-        {habitFlossing},
-      );
+      expect((await getIt<JournalDb>().getAllHabitDefinitions()).toSet(), {
+        habitFlossing,
+      });
 
       expect(
         await getIt<JournalDb>().getHabitById(habitFlossing.id),
@@ -1001,10 +980,7 @@ void main() {
         habitFlossing.copyWith(deletedAt: DateTime(2024, 3, 15, 12)),
       );
 
-      expect(
-        await getIt<JournalDb>().getHabitById(habitFlossing.id),
-        null,
-      );
+      expect(await getIt<JournalDb>().getHabitById(habitFlossing.id), null);
     });
 
     test('create and retrieve AI response entry', () async {
@@ -1035,10 +1011,7 @@ void main() {
 
       // Verify it's the correct type and has the right data
       expect(retrievedResponse, isA<AiResponseEntry>());
-      expect(
-        retrievedResponse?.data.prompt,
-        'What is the meaning of life?',
-      );
+      expect(retrievedResponse?.data.prompt, 'What is the meaning of life?');
       expect(retrievedResponse?.data.response, '42');
 
       // Test creating with linked ID
@@ -1151,44 +1124,6 @@ void main() {
       verify(() => mockUpdateNotifications.notify(any()));
     });
 
-    test('add geolocation to entry', () async {
-      final persistenceLogic = getIt<PersistenceLogic>();
-
-      // Create entry WITHOUT auto-geolocation so we can test addGeolocationAsync
-      final entry = JournalEntity.journalEntry(
-        entryText: const EntryText(plainText: 'Entry with geolocation'),
-        meta: await persistenceLogic.createMetadata(
-          dateFrom: DateTime(2024, 3, 15, 12, 30),
-        ),
-      );
-      await persistenceLogic.createDbEntity(
-        entry,
-        shouldAddGeolocation: false,
-      );
-
-      // Verify entry has no geolocation initially
-      final beforeEntry = await getIt<JournalDb>().journalEntityById(
-        entry.meta.id,
-      );
-      expect(beforeEntry?.geolocation, isNull);
-
-      // Add geolocation to the entry
-      await persistenceLogic.addGeolocationAsync(entry.meta.id);
-
-      // Retrieve the entry with geolocation
-      final retrievedEntry = await getIt<JournalDb>().journalEntityById(
-        entry.meta.id,
-      );
-      expect(retrievedEntry, isNotNull);
-      expect(retrievedEntry?.geolocation, isNotNull);
-      expect(retrievedEntry?.geolocation?.latitude, 37.7749);
-      expect(retrievedEntry?.geolocation?.longitude, -122.4194);
-      expect(retrievedEntry?.geolocation?.accuracy, 10.0);
-
-      // Verify getCurrentGeoLocation was called
-      verify(mockDeviceLocation.getCurrentGeoLocation).called(1);
-    });
-
     test('purgeDeleted should remove deleted items', () async {
       // Setup test data
       // ... existing setup code ...
@@ -1277,9 +1212,7 @@ void main() {
         scoreDefinitions: {
           'Score1': {'q1', 'q2'},
         },
-        calculatedScores: {
-          'Score1': 10,
-        },
+        calculatedScores: {'Score1': 10},
       );
 
       final result = await getIt<PersistenceLogic>().createSurveyEntry(
@@ -1406,10 +1339,7 @@ void main() {
         );
 
         final measurementEntry = await getIt<PersistenceLogic>()
-            .createMeasurementEntry(
-              data: measurementData,
-              private: false,
-            );
+            .createMeasurementEntry(data: measurementData, private: false);
         expect(measurementEntry, isNotNull);
 
         const newText = EntryText(plainText: 'Measurement notes');
@@ -1567,75 +1497,6 @@ void main() {
       );
       expect(unchanged, isA<JournalEntry>());
     });
-
-    test(
-      'addGeolocationAsync prevents concurrent additions for same entity',
-      () async {
-        final persistenceLogic = getIt<PersistenceLogic>();
-
-        // Create entry without geolocation
-        final entry = JournalEntity.journalEntry(
-          entryText: const EntryText(plainText: 'Entry for concurrent test'),
-          meta: await persistenceLogic.createMetadata(
-            dateFrom: DateTime(2024, 3, 15, 15, 30),
-          ),
-        );
-        await persistenceLogic.createDbEntity(
-          entry,
-          shouldAddGeolocation: false,
-        );
-
-        // Start two concurrent geolocation additions
-        // addGeolocationAsync returns FutureOr, so wrap in Future for await
-        final future1 = Future.value(
-          persistenceLogic.addGeolocationAsync(entry.meta.id),
-        );
-        final future2 = Future.value(
-          persistenceLogic.addGeolocationAsync(entry.meta.id),
-        );
-
-        final results = await Future.wait([future1, future2]);
-
-        // One should succeed and one should return null (prevented by race condition guard)
-        expect(results.where((r) => r != null).length, 1);
-      },
-    );
-
-    test(
-      'addGeolocationAsync returns existing geolocation if one is already present',
-      () async {
-        final persistenceLogic = getIt<PersistenceLogic>();
-
-        // Create entry and add geolocation
-        final entry = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Entry with existing geolocation',
-          ),
-          meta: await persistenceLogic.createMetadata(
-            dateFrom: DateTime(2024, 3, 15, 16),
-          ),
-        );
-        await persistenceLogic.createDbEntity(
-          entry,
-          shouldAddGeolocation: false,
-        );
-
-        // Add geolocation first time
-        final firstResult = await persistenceLogic.addGeolocationAsync(
-          entry.meta.id,
-        );
-        expect(firstResult, isNotNull);
-
-        // Try to add again - should return existing geolocation without overwriting
-        final secondResult = await persistenceLogic.addGeolocationAsync(
-          entry.meta.id,
-        );
-
-        // Should return the existing geolocation
-        expect(secondResult, isNotNull);
-        expect(secondResult?.latitude, firstResult?.latitude);
-      },
-    );
 
     test(
       'createMetadata generates UUID v5 when uuidV5Input is provided',
@@ -1940,10 +1801,7 @@ void main() {
 
     const boom = 'boom';
 
-    JournalEntity buildEntry({
-      String id = 'entry-id',
-      VectorClock? clock,
-    }) {
+    JournalEntity buildEntry({String id = 'entry-id', VectorClock? clock}) {
       final testDate = DateTime(2024, 3, 15, 10, 30);
       return JournalEntity.journalEntry(
         meta: Metadata(
@@ -2724,9 +2582,7 @@ void main() {
     test(
       'setConfigFlag does not notify privateToggleNotification for other flags',
       () async {
-        when(
-          () => journalDb.getConfigFlagByName('enableLogging'),
-        ).thenAnswer(
+        when(() => journalDb.getConfigFlagByName('enableLogging')).thenAnswer(
           (_) async => const ConfigFlag(
             name: 'enableLogging',
             description: 'Enable logging',
@@ -2746,18 +2602,14 @@ void main() {
         await logic.setConfigFlag(flag);
 
         // No notify call expected for non-private flags
-        verifyNever(
-          () => updateNotifications.notify(any<Set<String>>()),
-        );
+        verifyNever(() => updateNotifications.notify(any<Set<String>>()));
       },
     );
 
     test(
       'setConfigFlag enqueues config flag sync when the status changes',
       () async {
-        when(
-          () => journalDb.getConfigFlagByName('enableDailyOs'),
-        ).thenAnswer(
+        when(() => journalDb.getConfigFlagByName('enableDailyOs')).thenAnswer(
           (_) async => const ConfigFlag(
             name: 'enableDailyOs',
             description: 'Enable DailyOS Page?',
@@ -2788,35 +2640,28 @@ void main() {
       },
     );
 
-    test(
-      'setConfigFlag skips sync when the status is unchanged',
-      () async {
-        when(
-          () => journalDb.getConfigFlagByName('enableDailyOs'),
-        ).thenAnswer(
-          (_) async => const ConfigFlag(
-            name: 'enableDailyOs',
-            description: 'Enable DailyOS Page?',
-            status: true,
-          ),
-        );
-        when(
-          () => journalDb.upsertConfigFlag(any<ConfigFlag>()),
-        ).thenAnswer((_) async => 1);
+    test('setConfigFlag skips sync when the status is unchanged', () async {
+      when(() => journalDb.getConfigFlagByName('enableDailyOs')).thenAnswer(
+        (_) async => const ConfigFlag(
+          name: 'enableDailyOs',
+          description: 'Enable DailyOS Page?',
+          status: true,
+        ),
+      );
+      when(
+        () => journalDb.upsertConfigFlag(any<ConfigFlag>()),
+      ).thenAnswer((_) async => 1);
 
-        await logic.setConfigFlag(
-          const ConfigFlag(
-            name: 'enableDailyOs',
-            description: 'Use DailyOS',
-            status: true,
-          ),
-        );
+      await logic.setConfigFlag(
+        const ConfigFlag(
+          name: 'enableDailyOs',
+          description: 'Use DailyOS',
+          status: true,
+        ),
+      );
 
-        verifyNever(
-          () => outboxService.enqueueMessage(any<SyncMessage>()),
-        );
-      },
-    );
+      verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+    });
   });
 
   group('persistence logic update', () {
@@ -2861,10 +2706,7 @@ void main() {
       ).thenAnswer((_) async => result);
     }
 
-    JournalEntity buildEntry({
-      String id = 'entry-id',
-      VectorClock? clock,
-    }) {
+    JournalEntity buildEntry({String id = 'entry-id', VectorClock? clock}) {
       final testDate = DateTime(2024, 3, 15, 10, 30);
       return JournalEntity.journalEntry(
         meta: Metadata(
@@ -2986,10 +2828,7 @@ void main() {
           () => outboxService.enqueueMessage(any<SyncMessage>()),
         ).called(1);
         verify(
-          () => fts5Db.insertText(
-            any<JournalEntity>(),
-            removePrevious: true,
-          ),
+          () => fts5Db.insertText(any<JournalEntity>(), removePrevious: true),
         ).called(1);
         verify(notificationService.updateBadge).called(1);
       },
@@ -3057,29 +2896,24 @@ void main() {
       ).called(1);
     });
 
-    test(
-      'updateDbEntity does not enqueue when enqueueSync is false',
-      () async {
-        stubUpdateResult(JournalUpdateResult.applied());
+    test('updateDbEntity does not enqueue when enqueueSync is false', () async {
+      stubUpdateResult(JournalUpdateResult.applied());
 
-        final result = await logic.updateDbEntity(
-          buildEntry(),
-          enqueueSync: false,
-        );
+      final result = await logic.updateDbEntity(
+        buildEntry(),
+        enqueueSync: false,
+      );
 
-        expect(result, isTrue);
-        verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
-      },
-    );
+      expect(result, isTrue);
+      verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+    });
 
     glados.Glados(
       glados.any.updateDbEntityScenario,
       glados.ExploreConfig(numRuns: 120),
     ).test(
       'updateDbEntity matches generated notification and sync invariants',
-      (
-        scenario,
-      ) async {
+      (scenario) async {
         clearInteractions(updateNotifications);
         clearInteractions(outboxService);
         clearInteractions(fts5Db);
@@ -3112,10 +2946,7 @@ void main() {
         expect(notificationIds, scenario.expectedNotificationIds);
 
         verify(
-          () => fts5Db.insertText(
-            scenario.entity,
-            removePrevious: true,
-          ),
+          () => fts5Db.insertText(scenario.entity, removePrevious: true),
         ).called(1);
         verify(notificationService.updateBadge).called(1);
 
@@ -3124,9 +2955,7 @@ void main() {
             () => outboxService.enqueueMessage(any<SyncMessage>()),
           ).called(1);
         } else {
-          verifyNever(
-            () => outboxService.enqueueMessage(any<SyncMessage>()),
-          );
+          verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
         }
       },
       tags: 'glados',
@@ -3216,9 +3045,7 @@ void main() {
             (scenario.shouldEnqueueSync ? 1 : 0) +
             (scenario.hasLinkedEntity ? 1 : 0);
         if (expectedOutboxMessages == 0) {
-          verifyNever(
-            () => outboxService.enqueueMessage(any<SyncMessage>()),
-          );
+          verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
         } else {
           verify(
             () => outboxService.enqueueMessage(any<SyncMessage>()),
@@ -3340,9 +3167,9 @@ void main() {
             ),
           );
 
-          when(() => journalDb.journalEntityById('task-id')).thenAnswer(
-            (_) async => task,
-          );
+          when(
+            () => journalDb.journalEntityById('task-id'),
+          ).thenAnswer((_) async => task);
           stubUpdateResult(JournalUpdateResult.applied());
           when(
             () => journalDb.updateTaskPriorityColumn(
@@ -3377,51 +3204,48 @@ void main() {
         },
       );
 
-      test(
-        'skips task priority column updates when updateJournalEntity keeps '
-        'priority unchanged',
-        () async {
-          final testDate = DateTime(2024, 3, 15, 10, 30);
-          final task = Task(
-            meta: Metadata(
-              id: 'task-id',
+      test('skips task priority column updates when updateJournalEntity keeps '
+          'priority unchanged', () async {
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        final task = Task(
+          meta: Metadata(
+            id: 'task-id',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            vectorClock: const VectorClock({'host': 1}),
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-id',
               createdAt: testDate,
-              updatedAt: testDate,
-              dateFrom: testDate,
-              dateTo: testDate,
-              vectorClock: const VectorClock({'host': 1}),
+              utcOffset: 60,
             ),
-            data: TaskData(
-              status: TaskStatus.open(
-                id: 'status-id',
-                createdAt: testDate,
-                utcOffset: 60,
-              ),
-              title: 'task',
-              statusHistory: const [],
-              dateTo: testDate,
-              dateFrom: testDate,
-              priority: TaskPriority.p1High,
-            ),
-          );
+            title: 'task',
+            statusHistory: const [],
+            dateTo: testDate,
+            dateFrom: testDate,
+            priority: TaskPriority.p1High,
+          ),
+        );
 
-          when(
-            () => journalDb.journalEntityById('task-id'),
-          ).thenAnswer((_) async => task);
-          stubUpdateResult(JournalUpdateResult.applied());
+        when(
+          () => journalDb.journalEntityById('task-id'),
+        ).thenAnswer((_) async => task);
+        stubUpdateResult(JournalUpdateResult.applied());
 
-          final result = await logic.updateJournalEntity(task, task.meta);
+        final result = await logic.updateJournalEntity(task, task.meta);
 
-          expect(result, isTrue);
-          verifyNever(
-            () => journalDb.updateTaskPriorityColumn(
-              id: any(named: 'id'),
-              priority: any(named: 'priority'),
-              rank: any(named: 'rank'),
-            ),
-          );
-        },
-      );
+        expect(result, isTrue);
+        verifyNever(
+          () => journalDb.updateTaskPriorityColumn(
+            id: any(named: 'id'),
+            priority: any(named: 'priority'),
+            rank: any(named: 'rank'),
+          ),
+        );
+      });
     });
 
     group('agent execution zone routing', () {
@@ -3457,62 +3281,57 @@ void main() {
           verify(
             () => updateNotifications.notifyUiOnly(any<Set<String>>()),
           ).called(1);
-          verifyNever(
-            () => updateNotifications.notify(any<Set<String>>()),
-          );
-        },
-      );
-
-      test(
-        'notifyUiOnly receives the full affectedIds enumeration for a '
-        'HabitCompletionEntry inside the agent zone',
-        () async {
-          stubUpdateResult(JournalUpdateResult.applied());
-          when(
-            () => updateNotifications.notifyUiOnly(any<Set<String>>()),
-          ).thenReturn(null);
-
-          final testDate = DateTime(2024, 3, 15, 10, 30);
-          final completion = JournalEntity.habitCompletion(
-            meta: Metadata(
-              id: 'completion-id',
-              createdAt: testDate,
-              updatedAt: testDate,
-              dateFrom: testDate,
-              dateTo: testDate,
-              vectorClock: const VectorClock({'host': 1}),
-            ),
-            data: HabitCompletionData(
-              habitId: 'habit-id',
-              dateFrom: testDate,
-              dateTo: testDate,
-              completionType: HabitCompletionType.success,
-            ),
-          );
-
-          await runZoned(
-            () => logic.updateDbEntity(completion),
-            zoneValues: {agentExecutionZoneKey: true},
-          );
-
-          // The habit completion enumerates its own id, the habit id, and
-          // the habit completion type notification; updateDbEntity adds the
-          // label usage notification on top.
-          final captured = verify(
-            () => updateNotifications.notifyUiOnly(captureAny<Set<String>>()),
-          ).captured;
-          expect(
-            captured.single,
-            containsAll(<String>{
-              'completion-id',
-              'habit-id',
-              habitCompletionNotification,
-              labelUsageNotification,
-            }),
-          );
           verifyNever(() => updateNotifications.notify(any<Set<String>>()));
         },
       );
+
+      test('notifyUiOnly receives the full affectedIds enumeration for a '
+          'HabitCompletionEntry inside the agent zone', () async {
+        stubUpdateResult(JournalUpdateResult.applied());
+        when(
+          () => updateNotifications.notifyUiOnly(any<Set<String>>()),
+        ).thenReturn(null);
+
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        final completion = JournalEntity.habitCompletion(
+          meta: Metadata(
+            id: 'completion-id',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            vectorClock: const VectorClock({'host': 1}),
+          ),
+          data: HabitCompletionData(
+            habitId: 'habit-id',
+            dateFrom: testDate,
+            dateTo: testDate,
+            completionType: HabitCompletionType.success,
+          ),
+        );
+
+        await runZoned(
+          () => logic.updateDbEntity(completion),
+          zoneValues: {agentExecutionZoneKey: true},
+        );
+
+        // The habit completion enumerates its own id, the habit id, and
+        // the habit completion type notification; updateDbEntity adds the
+        // label usage notification on top.
+        final captured = verify(
+          () => updateNotifications.notifyUiOnly(captureAny<Set<String>>()),
+        ).captured;
+        expect(
+          captured.single,
+          containsAll(<String>{
+            'completion-id',
+            'habit-id',
+            habitCompletionNotification,
+            labelUsageNotification,
+          }),
+        );
+        verifyNever(() => updateNotifications.notify(any<Set<String>>()));
+      });
     });
 
     group('updateJournalEntityText - entity type branches', () {
@@ -3567,57 +3386,54 @@ void main() {
         expect(logic.updateMetadataCalls, 1);
       });
 
-      test(
-        'updates HabitCompletionEntry with new text and metadata',
-        () async {
-          final testDate = DateTime(2024, 3, 15, 10, 30);
-          final habitEntry = JournalEntity.habitCompletion(
-            meta: Metadata(
-              id: 'habit-id',
-              createdAt: testDate,
-              updatedAt: testDate,
-              dateFrom: testDate,
-              dateTo: testDate,
-              vectorClock: const VectorClock({'host': 1}),
-            ),
-            data: HabitCompletionData(
-              dateFrom: testDate,
-              dateTo: testDate,
-              habitId: 'flossing-habit-id',
-            ),
-            entryText: const EntryText(plainText: 'original habit text'),
-          );
+      test('updates HabitCompletionEntry with new text and metadata', () async {
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        final habitEntry = JournalEntity.habitCompletion(
+          meta: Metadata(
+            id: 'habit-id',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            vectorClock: const VectorClock({'host': 1}),
+          ),
+          data: HabitCompletionData(
+            dateFrom: testDate,
+            dateTo: testDate,
+            habitId: 'flossing-habit-id',
+          ),
+          entryText: const EntryText(plainText: 'original habit text'),
+        );
 
-          when(
-            () => journalDb.journalEntityById('habit-id'),
-          ).thenAnswer((_) async => habitEntry);
+        when(
+          () => journalDb.journalEntityById('habit-id'),
+        ).thenAnswer((_) async => habitEntry);
 
-          logic = TestPersistenceLogic(
-            updateDbEntityHandler:
-                (
-                  entity, {
-                  linkedId,
-                  enqueueSync = true,
-                  overrideComparison = false,
-                  beforeNotify,
-                }) async => true,
-          );
+        logic = TestPersistenceLogic(
+          updateDbEntityHandler:
+              (
+                entity, {
+                linkedId,
+                enqueueSync = true,
+                overrideComparison = false,
+                beforeNotify,
+              }) async => true,
+        );
 
-          const newText = EntryText(plainText: 'updated habit notes');
-          final result = await logic.updateJournalEntityText(
-            'habit-id',
-            newText,
-            DateTime(2024, 3, 15, 10, 35),
-          );
+        const newText = EntryText(plainText: 'updated habit notes');
+        final result = await logic.updateJournalEntityText(
+          'habit-id',
+          newText,
+          DateTime(2024, 3, 15, 10, 35),
+        );
 
-          expect(result, isTrue);
-          expect(logic.lastUpdateDbEntity, isA<HabitCompletionEntry>());
-          final updated = logic.lastUpdateDbEntity! as HabitCompletionEntry;
-          expect(updated.entryText?.plainText, 'updated habit notes');
-          expect(updated.data.habitId, 'flossing-habit-id');
-          expect(logic.updateMetadataCalls, 1);
-        },
-      );
+        expect(result, isTrue);
+        expect(logic.lastUpdateDbEntity, isA<HabitCompletionEntry>());
+        final updated = logic.lastUpdateDbEntity! as HabitCompletionEntry;
+        expect(updated.entryText?.plainText, 'updated habit notes');
+        expect(updated.data.habitId, 'flossing-habit-id');
+        expect(logic.updateMetadataCalls, 1);
+      });
 
       test(
         'returns false when an exception is thrown during the update',
@@ -3965,34 +3781,31 @@ void main() {
         },
       );
 
-      test(
-        'updateDbEntity sequence-record failure is swallowed and logged via '
-        'LoggingService; outbox is still enqueued',
-        () async {
-          stubUpdateResult(JournalUpdateResult.applied());
-          when(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-            ),
-          ).thenThrow(StateError('sequence ledger boom'));
+      test('updateDbEntity sequence-record failure is swallowed and logged via '
+          'LoggingService; outbox is still enqueued', () async {
+        stubUpdateResult(JournalUpdateResult.applied());
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence ledger boom'));
 
-          final result = await logic.updateDbEntity(buildEntry());
+        final result = await logic.updateDbEntity(buildEntry());
 
-          expect(result, isTrue);
-          verify(
-            () => loggingService.error(
-              LogDomain.sync,
-              any<Object>(),
-              stackTrace: any<StackTrace?>(named: 'stackTrace'),
-              subDomain: 'updateDbEntity.recordSent',
-            ),
-          ).called(1);
-          verify(
-            () => outboxService.enqueueMessage(any<SyncMessage>()),
-          ).called(1);
-        },
-      );
+        expect(result, isTrue);
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'updateDbEntity.recordSent',
+          ),
+        ).called(1);
+        verify(
+          () => outboxService.enqueueMessage(any<SyncMessage>()),
+        ).called(1);
+      });
 
       test(
         'createDbEntity records the journal entity sequence after saved write',
@@ -4018,38 +3831,35 @@ void main() {
         },
       );
 
-      test(
-        'createDbEntity sequence-record failure is swallowed and logged via '
-        'LoggingService',
-        () async {
-          stubUpdateResult(JournalUpdateResult.applied());
-          when(
-            () => journalDb.parentLinkedEntityIds(any<String>()),
-          ).thenReturn(MockSelectable<String>([]));
-          when(
-            () => sequenceLog.recordSentEntry(
-              entryId: any(named: 'entryId'),
-              vectorClock: any(named: 'vectorClock'),
-            ),
-          ).thenThrow(StateError('sequence ledger boom'));
+      test('createDbEntity sequence-record failure is swallowed and logged via '
+          'LoggingService', () async {
+        stubUpdateResult(JournalUpdateResult.applied());
+        when(
+          () => journalDb.parentLinkedEntityIds(any<String>()),
+        ).thenReturn(MockSelectable<String>([]));
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence ledger boom'));
 
-          final entity = buildEntry(clock: const VectorClock({'host': 8}));
-          final saved = await logic.createDbEntity(
-            entity,
-            shouldAddGeolocation: false,
-          );
+        final entity = buildEntry(clock: const VectorClock({'host': 8}));
+        final saved = await logic.createDbEntity(
+          entity,
+          shouldAddGeolocation: false,
+        );
 
-          expect(saved, isTrue);
-          verify(
-            () => loggingService.error(
-              LogDomain.sync,
-              any<Object>(),
-              stackTrace: any<StackTrace?>(named: 'stackTrace'),
-              subDomain: 'createDbEntity.recordSent',
-            ),
-          ).called(1);
-        },
-      );
+        expect(saved, isTrue);
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'createDbEntity.recordSent',
+          ),
+        ).called(1);
+      });
 
       test(
         'createLink records the entry-link sequence after the upsert returns >0 '
@@ -4074,36 +3884,33 @@ void main() {
         },
       );
 
-      test(
-        'createLink sequence-record failure is swallowed and routed through '
-        'LoggingService.captureException',
-        () async {
-          when(
-            () => journalDb.upsertEntryLink(any<EntryLink>()),
-          ).thenAnswer((_) async => 1);
-          when(
-            () => sequenceLog.recordSentEntryLink(
-              linkId: any(named: 'linkId'),
-              vectorClock: any(named: 'vectorClock'),
-            ),
-          ).thenThrow(StateError('sequence ledger boom'));
+      test('createLink sequence-record failure is swallowed and routed through '
+          'LoggingService.captureException', () async {
+        when(
+          () => journalDb.upsertEntryLink(any<EntryLink>()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => sequenceLog.recordSentEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence ledger boom'));
 
-          final created = await logic.createLink(
-            fromId: 'from-id',
-            toId: 'to-id',
-          );
+        final created = await logic.createLink(
+          fromId: 'from-id',
+          toId: 'to-id',
+        );
 
-          expect(created, isTrue);
-          verify(
-            () => loggingService.error(
-              LogDomain.sync,
-              any<Object>(),
-              stackTrace: any<StackTrace?>(named: 'stackTrace'),
-              subDomain: 'createLink.recordSent',
-            ),
-          ).called(1);
-        },
-      );
+        expect(created, isTrue);
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'createLink.recordSent',
+          ),
+        ).called(1);
+      });
     });
 
     group('updateEvent - orElse path', () {

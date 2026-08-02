@@ -4,21 +4,18 @@ import 'package:lotti/features/sync/models/sync_models.dart';
 void main() {
   group('SyncStep', () {
     test('has expected values in order', () {
-      expect(
-        SyncStep.values,
-        [
-          SyncStep.measurables,
-          SyncStep.labels,
-          SyncStep.categories,
-          SyncStep.dashboards,
-          SyncStep.habits,
-          SyncStep.aiSettings,
-          SyncStep.savedTaskFilters,
-          SyncStep.backfillAgentEntityClocks,
-          SyncStep.backfillAgentLinkClocks,
-          SyncStep.complete,
-        ],
-      );
+      expect(SyncStep.values, [
+        SyncStep.measurables,
+        SyncStep.labels,
+        SyncStep.categories,
+        SyncStep.dashboards,
+        SyncStep.habits,
+        SyncStep.aiSettings,
+        SyncStep.savedTaskFilters,
+        SyncStep.backfillAgentEntityClocks,
+        SyncStep.backfillAgentLinkClocks,
+        SyncStep.complete,
+      ]);
     });
   });
 
@@ -28,30 +25,6 @@ void main() {
 
       expect(progress.processed, 5);
       expect(progress.total, 10);
-    });
-
-    test('copyWith overrides processed', () {
-      const original = StepProgress(processed: 5, total: 10);
-      final updated = original.copyWith(processed: 8);
-
-      expect(updated.processed, 8);
-      expect(updated.total, 10);
-    });
-
-    test('copyWith overrides total', () {
-      const original = StepProgress(processed: 5, total: 10);
-      final updated = original.copyWith(total: 20);
-
-      expect(updated.processed, 5);
-      expect(updated.total, 20);
-    });
-
-    test('copyWith with no args preserves values', () {
-      const original = StepProgress(processed: 5, total: 10);
-      final copied = original.copyWith();
-
-      expect(copied.processed, 5);
-      expect(copied.total, 10);
     });
   });
 
@@ -86,10 +59,7 @@ void main() {
     });
 
     test('copyWith preserves unmodified fields', () {
-      final state = const SyncState().copyWith(
-        isSyncing: true,
-        progress: 75,
-      );
+      final state = const SyncState().copyWith(isSyncing: true, progress: 75);
       final updated = state.copyWith(progress: 80);
 
       expect(updated.isSyncing, isTrue);

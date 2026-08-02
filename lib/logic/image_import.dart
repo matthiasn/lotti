@@ -55,17 +55,10 @@ class ImageImportConstants {
       supportedExtensionsForPlatform();
 
   /// Image file extensions that can be imported without conversion.
-  static const Set<String> standardExtensions = {
-    'jpg',
-    'jpeg',
-    'png',
-  };
+  static const Set<String> standardExtensions = {'jpg', 'jpeg', 'png'};
 
   /// HEIC/HEIF extensions accepted only where conversion support is available.
-  static const Set<String> highEfficiencyExtensions = {
-    'heic',
-    'heif',
-  };
+  static const Set<String> highEfficiencyExtensions = {'heic', 'heif'};
 
   /// Source image extensions that are converted before storage.
   static const Set<String> sourceExtensionsRequiringConversion = {
@@ -105,9 +98,6 @@ class ImageImportConstants {
 
   /// Maximum image file size in bytes (50 MB).
   static const int maxFileSizeBytes = 50 * 1024 * 1024;
-
-  /// Logging domain for image import operations.
-  static const String loggingDomain = 'image_import';
 }
 
 /// Imports images from the device's photo library.
@@ -154,10 +144,7 @@ Future<void> importImageAssets(
           createdAt: asset.createDateTime,
           latitude: latitude,
           longitude: longitude,
-          geohashString: getGeoHash(
-            latitude: latitude,
-            longitude: longitude,
-          ),
+          geohashString: getGeoHash(latitude: latitude, longitude: longitude),
         );
       }
 
@@ -208,10 +195,7 @@ Future<void> importImageAssets(
           imageData,
           linkedId: linkedId,
           categoryId: categoryId,
-          onCreated: createAnalysisCallback(
-            analysisTrigger,
-            linkedId,
-          ),
+          onCreated: createAnalysisCallback(analysisTrigger, linkedId),
         );
       }
     }
@@ -318,10 +302,7 @@ Future<void> importImageXFiles(
         imageData,
         linkedId: linkedId,
         categoryId: categoryId,
-        onCreated: createAnalysisCallback(
-          analysisTrigger,
-          linkedId,
-        ),
+        onCreated: createAnalysisCallback(analysisTrigger, linkedId),
       );
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
@@ -387,10 +368,7 @@ String? _extensionFromMimeType(String? mimeType) {
   };
 }
 
-String _targetImageExtension(
-  String sourceExtension, {
-  Uint8List? sourceBytes,
-}) {
+String _targetImageExtension(String sourceExtension, {Uint8List? sourceBytes}) {
   final normalizedExtension = sourceExtension.toLowerCase();
   return switch (_storageFormatForSource(
     normalizedExtension,
@@ -416,10 +394,9 @@ _ImageStorageFormat _storageFormatForSource(
   return _ImageStorageFormat.jpeg;
 }
 
-bool _requiresConversion(String sourceExtension) =>
-    ImageImportConstants.sourceExtensionsRequiringConversion.contains(
-      sourceExtension.toLowerCase(),
-    );
+bool _requiresConversion(String sourceExtension) => ImageImportConstants
+    .sourceExtensionsRequiringConversion
+    .contains(sourceExtension.toLowerCase());
 
 Future<void> _copyOrConvertImageFile({
   required File sourceFile,
@@ -571,28 +548,6 @@ Future<DateTime> _extractImageTimestamp(
   // Fallback when no EXIF timestamp is available.
   return fallback ?? DateTime.now();
 }
-
-/// Parses a rational number from EXIF format
-///
-/// EXIF rational numbers can be in fraction format (e.g., "123/456")
-/// or decimal format (e.g., "45.67").
-/// Returns the numeric value as a double, or null if parsing fails.
-///
-/// Delegates to [ExifDataExtractor.parseRational].
-@visibleForTesting
-double? parseRational(String value) => ExifDataExtractor.parseRational(value);
-
-/// Parses GPS coordinate from EXIF data to decimal degrees
-///
-/// Converts EXIF GPS format (degrees, minutes, seconds) to decimal degrees.
-/// The coordinate data is typically in the format "[deg/1, min/1, sec/100]".
-/// The reference indicates direction: 'N', 'S' for latitude, 'E', 'W' for longitude.
-/// Returns decimal degrees as a double, or null if parsing fails.
-///
-/// Delegates to [ExifDataExtractor.parseGpsCoordinate].
-@visibleForTesting
-double? parseGpsCoordinate(dynamic coordData, String ref) =>
-    ExifDataExtractor.parseGpsCoordinate(coordData, ref);
 
 /// Extracts GPS coordinates from image EXIF data
 ///

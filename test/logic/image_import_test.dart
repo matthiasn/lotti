@@ -9,6 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/logic/media/exif_data_extractor.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -489,18 +490,11 @@ void main() {
       });
 
       test('defines reasonable file size limit', () {
-        expect(
-          ImageImportConstants.maxFileSizeBytes,
-          equals(50 * 1024 * 1024),
-        );
+        expect(ImageImportConstants.maxFileSizeBytes, equals(50 * 1024 * 1024));
       });
 
       test('defines directory prefix', () {
         expect(ImageImportConstants.directoryPrefix, equals('/images/'));
-      });
-
-      test('defines logging domain', () {
-        expect(ImageImportConstants.loggingDomain, equals('image_import'));
       });
     });
 
@@ -524,15 +518,11 @@ void main() {
     group('importPastedImages', () {
       test('detects HEIF alpha auxiliary image metadata', () {
         expect(
-          heifContainsAlphaAuxiliaryImage(
-            _createHeifBytes(hasAlpha: true),
-          ),
+          heifContainsAlphaAuxiliaryImage(_createHeifBytes(hasAlpha: true)),
           isTrue,
         );
         expect(
-          heifContainsAlphaAuxiliaryImage(
-            _createHeifBytes(hasAlpha: false),
-          ),
+          heifContainsAlphaAuxiliaryImage(_createHeifBytes(hasAlpha: false)),
           isFalse,
         );
       });
@@ -604,10 +594,7 @@ void main() {
       test('creates image entry without linkedId or categoryId', () async {
         final validData = Uint8List.fromList(List<int>.filled(200, 0xAA));
 
-        await importPastedImages(
-          data: validData,
-          fileExtension: 'jpg',
-        );
+        await importPastedImages(data: validData, fileExtension: 'jpg');
 
         verify(
           () => mockPersistenceLogic.createDbEntity(
@@ -622,10 +609,7 @@ void main() {
       test('normalizes pasted image extension before storage', () async {
         final validData = Uint8List.fromList(List<int>.filled(200, 0xBB));
 
-        await importPastedImages(
-          data: validData,
-          fileExtension: 'PNG',
-        );
+        await importPastedImages(data: validData, fileExtension: 'PNG');
 
         final capturedImage =
             verify(
@@ -658,10 +642,7 @@ void main() {
           0x40,
         ]);
 
-        await importPastedImages(
-          data: pngData,
-          fileExtension: 'png',
-        );
+        await importPastedImages(data: pngData, fileExtension: 'png');
 
         final capturedImage =
             verify(
@@ -689,10 +670,7 @@ void main() {
         await withTargetPlatform(
           TargetPlatform.macOS,
           () => withFakeImageCompressPlatform(
-            () => importPastedImages(
-              data: heicData,
-              fileExtension: 'heic',
-            ),
+            () => importPastedImages(data: heicData, fileExtension: 'heic'),
           ),
         );
 
@@ -724,10 +702,7 @@ void main() {
         await withTargetPlatform(
           TargetPlatform.macOS,
           () => withFakeImageCompressPlatform(
-            () => importPastedImages(
-              data: heicData,
-              fileExtension: 'heic',
-            ),
+            () => importPastedImages(data: heicData, fileExtension: 'heic'),
           ),
         );
 
@@ -1061,34 +1036,31 @@ void main() {
     });
 
     group('importImagePickerFiles', () {
-      test(
-        'imports the files returned by the desktop file picker',
-        () async {
-          final testFile = await createTestImageFile('picked.jpg', 1024);
+      test('imports the files returned by the desktop file picker', () async {
+        final testFile = await createTestImageFile('picked.jpg', 1024);
 
-          final original = FileSelectorPlatform.instance;
-          final fakeSelector = FakeFileSelectorPlatform()
-            ..filesToReturn = [XFile(testFile.path)];
-          FileSelectorPlatform.instance = fakeSelector;
-          addTearDown(() => FileSelectorPlatform.instance = original);
+        final original = FileSelectorPlatform.instance;
+        final fakeSelector = FakeFileSelectorPlatform()
+          ..filesToReturn = [XFile(testFile.path)];
+        FileSelectorPlatform.instance = fakeSelector;
+        addTearDown(() => FileSelectorPlatform.instance = original);
 
-          await importImagePickerFiles(
+        await importImagePickerFiles(
+          linkedId: 'parent-123',
+          categoryId: 'cat-456',
+        );
+
+        // A non-empty picker result must flow through importImageXFiles,
+        // creating the linked image entry with the passed ids.
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
             linkedId: 'parent-123',
-            categoryId: 'cat-456',
-          );
-
-          // A non-empty picker result must flow through importImageXFiles,
-          // creating the linked image entry with the passed ids.
-          verify(
-            () => mockPersistenceLogic.createDbEntity(
-              any(that: isA<JournalImage>()),
-              linkedId: 'parent-123',
-              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-              enqueueSync: any(named: 'enqueueSync'),
-            ),
-          ).called(1);
-        },
-      );
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(1);
+      });
 
       test('does nothing when the picker returns no files', () async {
         final original = FileSelectorPlatform.instance;
@@ -1113,10 +1085,7 @@ void main() {
         FileSelectorPlatform.instance = fakeSelector;
         addTearDown(() => FileSelectorPlatform.instance = original);
 
-        await withTargetPlatform(
-          TargetPlatform.macOS,
-          importImagePickerFiles,
-        );
+        await withTargetPlatform(TargetPlatform.macOS, importImagePickerFiles);
 
         expect(
           fakeSelector.lastAcceptedTypeGroups?.single.extensions,
@@ -1130,10 +1099,7 @@ void main() {
         FileSelectorPlatform.instance = fakeSelector;
         addTearDown(() => FileSelectorPlatform.instance = original);
 
-        await withTargetPlatform(
-          TargetPlatform.linux,
-          importImagePickerFiles,
-        );
+        await withTargetPlatform(TargetPlatform.linux, importImagePickerFiles);
 
         expect(
           fakeSelector.lastAcceptedTypeGroups?.single.extensions,
@@ -1225,32 +1191,35 @@ void main() {
 
     group('parseRational', () {
       test('parses fraction format', () {
-        expect(parseRational('37/1'), equals(37.0));
-        expect(parseRational('122/1'), equals(122.0));
+        expect(ExifDataExtractor.parseRational('37/1'), equals(37.0));
+        expect(ExifDataExtractor.parseRational('122/1'), equals(122.0));
       });
 
       test('parses decimal format', () {
-        expect(parseRational('37.7749'), closeTo(37.7749, 0.0001));
+        expect(
+          ExifDataExtractor.parseRational('37.7749'),
+          closeTo(37.7749, 0.0001),
+        );
       });
 
       test('returns null for invalid input', () {
-        expect(parseRational('invalid'), isNull);
-        expect(parseRational(''), isNull);
+        expect(ExifDataExtractor.parseRational('invalid'), isNull);
+        expect(ExifDataExtractor.parseRational(''), isNull);
       });
 
       test('handles division by zero', () {
-        expect(parseRational('37/0'), isNull);
+        expect(ExifDataExtractor.parseRational('37/0'), isNull);
       });
     });
 
     group('parseGpsCoordinate', () {
       test('returns null for null data', () {
-        expect(parseGpsCoordinate(null, 'N'), isNull);
+        expect(ExifDataExtractor.parseGpsCoordinate(null, 'N'), isNull);
       });
 
       test('returns null for invalid coordinate format', () {
         // Only 2 parts instead of 3 (degrees, minutes, seconds)
-        expect(parseGpsCoordinate('[37, 0]', 'N'), isNull);
+        expect(ExifDataExtractor.parseGpsCoordinate('[37, 0]', 'N'), isNull);
       });
     });
 
@@ -1292,18 +1261,12 @@ void main() {
       });
 
       test('returns callback when analysisTrigger is provided', () {
-        final callback = createAnalysisCallback(
-          mockTrigger,
-          'linked',
-        );
+        final callback = createAnalysisCallback(mockTrigger, 'linked');
         expect(callback, isNotNull);
       });
 
       test('callback triggers analysis with correct parameters', () {
-        final callback = createAnalysisCallback(
-          mockTrigger,
-          'linked-456',
-        );
+        final callback = createAnalysisCallback(mockTrigger, 'linked-456');
 
         final testEntity = JournalImage(
           meta: Metadata(
@@ -1398,10 +1361,7 @@ void main() {
           final jpegWithExif = _createJpegWithValidExif();
 
           // This should successfully extract DateTimeOriginal: 2024:01:15 10:20:30
-          await importPastedImages(
-            data: jpegWithExif,
-            fileExtension: 'jpg',
-          );
+          await importPastedImages(data: jpegWithExif, fileExtension: 'jpg');
 
           // Test passes if no exception thrown and import completes
           expect(true, isTrue);
@@ -1413,10 +1373,7 @@ void main() {
         final jpegWithDateTime = _createJpegWithImageDateTime();
 
         // This should extract Image DateTime: 2022:06:10 08:15:22
-        await importPastedImages(
-          data: jpegWithDateTime,
-          fileExtension: 'jpg',
-        );
+        await importPastedImages(data: jpegWithDateTime, fileExtension: 'jpg');
 
         // Test passes if no exception thrown
         expect(true, isTrue);
@@ -1445,10 +1402,7 @@ void main() {
         final jpegWithExif = _createMinimalJpegWithExif();
 
         // This should trigger EXIF parsing code paths
-        await importPastedImages(
-          data: jpegWithExif,
-          fileExtension: 'jpg',
-        );
+        await importPastedImages(data: jpegWithExif, fileExtension: 'jpg');
 
         expect(true, isTrue);
       });
@@ -1475,10 +1429,7 @@ void main() {
         // so we're testing the fallback behavior
         // Should complete without throwing
         expect(
-          importPastedImages(
-            data: jpegWithExif,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: jpegWithExif, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1491,10 +1442,7 @@ void main() {
         ]);
 
         expect(
-          importPastedImages(
-            data: jpegNoExif,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: jpegNoExif, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1510,10 +1458,7 @@ void main() {
         ]);
 
         expect(
-          importPastedImages(
-            data: corruptedData,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: corruptedData, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1522,10 +1467,7 @@ void main() {
         final emptyData = Uint8List.fromList([]);
 
         expect(
-          importPastedImages(
-            data: emptyData,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: emptyData, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1540,10 +1482,7 @@ void main() {
           ]);
 
           expect(
-            importPastedImages(
-              data: pngData,
-              fileExtension: 'png',
-            ),
+            importPastedImages(data: pngData, fileExtension: 'png'),
             completes,
           );
         },
@@ -1581,10 +1520,7 @@ void main() {
         ]);
 
         expect(
-          importPastedImages(
-            data: largerJpeg,
-            fileExtension: 'jpeg',
-          ),
+          importPastedImages(data: largerJpeg, fileExtension: 'jpeg'),
           completes,
         );
       });
@@ -1597,10 +1533,7 @@ void main() {
         // Create oversized image (> 50MB)
         final oversizedData = Uint8List(51 * 1024 * 1024);
 
-        await importPastedImages(
-          data: oversizedData,
-          fileExtension: 'jpg',
-        );
+        await importPastedImages(data: oversizedData, fileExtension: 'jpg');
 
         // Verify logging was called for oversized file
         verify(
@@ -1623,10 +1556,7 @@ void main() {
         boundaryData[boundaryData.length - 1] = 0xD9;
 
         expect(
-          importPastedImages(
-            data: boundaryData,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: boundaryData, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1637,10 +1567,7 @@ void main() {
         final minimalData = Uint8List.fromList([0x00]);
 
         expect(
-          importPastedImages(
-            data: minimalData,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: minimalData, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1650,10 +1577,7 @@ void main() {
 
         for (final ext in ['jpg', 'jpeg', 'JPG', 'JPEG', 'png', 'PNG']) {
           await expectLater(
-            importPastedImages(
-              data: data,
-              fileExtension: ext,
-            ),
+            importPastedImages(data: data, fileExtension: ext),
             completes,
             reason: 'Should handle extension: $ext',
           );
@@ -1668,10 +1592,7 @@ void main() {
         final jpegData = _createMinimalJpegWithExif();
 
         await expectLater(
-          importPastedImages(
-            data: jpegData,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: jpegData, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1703,10 +1624,7 @@ void main() {
         ]);
 
         await expectLater(
-          importPastedImages(
-            data: corruptedExif,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: corruptedExif, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1754,10 +1672,7 @@ void main() {
           0xFF, 0xD9, // EOI
         ]);
 
-        await importPastedImages(
-          data: invalidExif,
-          fileExtension: 'jpg',
-        );
+        await importPastedImages(data: invalidExif, fileExtension: 'jpg');
 
         // Verify logging was called for EXIF parsing error
         // Note: May be called multiple times if both EXIF reading and parsing fail
@@ -1776,10 +1691,7 @@ void main() {
         final jpegData = _createMinimalJpegWithExif();
 
         await expectLater(
-          importPastedImages(
-            data: jpegData,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: jpegData, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1793,10 +1705,7 @@ void main() {
         ]);
 
         await expectLater(
-          importPastedImages(
-            data: corruptData,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: corruptData, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1811,10 +1720,7 @@ void main() {
         // by the native_exif library, but the code should handle it gracefully.
         // The GPS parsing logic itself is tested in detail in the GPS group below.
         await expectLater(
-          importPastedImages(
-            data: jpegWithGps,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: jpegWithGps, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1824,10 +1730,7 @@ void main() {
         final jpegNoGps = _createJpegWithValidExif();
 
         await expectLater(
-          importPastedImages(
-            data: jpegNoGps,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: jpegNoGps, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1837,10 +1740,7 @@ void main() {
         final jpegNoGps = _createMinimalJpegWithExif();
 
         await expectLater(
-          importPastedImages(
-            data: jpegNoGps,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: jpegNoGps, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1857,10 +1757,7 @@ void main() {
         ]);
 
         await expectLater(
-          importPastedImages(
-            data: corruptedData,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: corruptedData, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1870,10 +1767,7 @@ void main() {
         final jpegWithGps = _createJpegWithGpsExifAtZeroZero();
 
         await expectLater(
-          importPastedImages(
-            data: jpegWithGps,
-            fileExtension: 'jpg',
-          ),
+          importPastedImages(data: jpegWithGps, fileExtension: 'jpg'),
           completes,
         );
       });
@@ -1923,62 +1817,62 @@ void main() {
 
     group('parseRational Unit Tests', () {
       test('parses valid fraction with denominator 1', () {
-        final result = parseRational('37/1');
+        final result = ExifDataExtractor.parseRational('37/1');
         expect(result, 37.0);
       });
 
       test('parses valid fraction with larger denominator', () {
-        final result = parseRational('2964/100');
+        final result = ExifDataExtractor.parseRational('2964/100');
         expect(result, 29.64);
       });
 
       test('parses decimal number', () {
-        final result = parseRational('37.7749');
+        final result = ExifDataExtractor.parseRational('37.7749');
         expect(result, 37.7749);
       });
 
       test('handles division by zero', () {
-        final result = parseRational('37/0');
+        final result = ExifDataExtractor.parseRational('37/0');
         expect(result, isNull);
       });
 
       test('handles invalid fraction format with too many parts', () {
-        final result = parseRational('37/1/2');
+        final result = ExifDataExtractor.parseRational('37/1/2');
         expect(result, isNull);
       });
 
       test('handles invalid fraction format with too few parts', () {
-        final result = parseRational('37/');
+        final result = ExifDataExtractor.parseRational('37/');
         expect(result, isNull);
       });
 
       test('handles non-numeric fraction', () {
-        final result = parseRational('abc/def');
+        final result = ExifDataExtractor.parseRational('abc/def');
         expect(result, isNull);
       });
 
       test('handles empty string', () {
-        final result = parseRational('');
+        final result = ExifDataExtractor.parseRational('');
         expect(result, isNull);
       });
 
       test('handles invalid decimal', () {
-        final result = parseRational('not_a_number');
+        final result = ExifDataExtractor.parseRational('not_a_number');
         expect(result, isNull);
       });
 
       test('parses zero fraction', () {
-        final result = parseRational('0/1');
+        final result = ExifDataExtractor.parseRational('0/1');
         expect(result, 0.0);
       });
 
       test('parses negative fraction', () {
-        final result = parseRational('-37/1');
+        final result = ExifDataExtractor.parseRational('-37/1');
         expect(result, -37.0);
       });
 
       test('parses negative decimal', () {
-        final result = parseRational('-122.4194');
+        final result = ExifDataExtractor.parseRational('-122.4194');
         expect(result, -122.4194);
       });
     });
@@ -1986,115 +1880,166 @@ void main() {
     group('parseGpsCoordinate Unit Tests', () {
       test('parses North latitude correctly', () {
         // San Francisco: 37° 46' 29.64" N
-        final result = parseGpsCoordinate('[37/1, 46/1, 2964/100]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 2964/100]',
+          'N',
+        );
         expect(result, closeTo(37.7749, 0.0001));
       });
 
       test('parses South latitude with negative sign', () {
         // Sydney: 33° 52' 0" S
-        final result = parseGpsCoordinate('[33/1, 52/1, 0/1]', 'S');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[33/1, 52/1, 0/1]',
+          'S',
+        );
         expect(result, closeTo(-33.8667, 0.0001));
       });
 
       test('parses East longitude correctly', () {
         // Sydney: 151° 12' 0" E
-        final result = parseGpsCoordinate('[151/1, 12/1, 0/1]', 'E');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[151/1, 12/1, 0/1]',
+          'E',
+        );
         expect(result, closeTo(151.2, 0.0001));
       });
 
       test('parses West longitude with negative sign', () {
         // San Francisco: 122° 25' 9.84" W
-        final result = parseGpsCoordinate('[122/1, 25/1, 984/100]', 'W');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[122/1, 25/1, 984/100]',
+          'W',
+        );
         expect(result, closeTo(-122.4194, 0.0001));
       });
 
       test('handles null coordinate data', () {
-        final result = parseGpsCoordinate(null, 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(null, 'N');
         expect(result, isNull);
       });
 
       test('handles invalid parts count - too few', () {
-        final result = parseGpsCoordinate('[37/1, 46/1]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1]',
+          'N',
+        );
         expect(result, isNull);
       });
 
       test('handles invalid parts count - too many', () {
-        final result = parseGpsCoordinate('[37/1, 46/1, 0/1, 0/1]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 0/1, 0/1]',
+          'N',
+        );
         expect(result, isNull);
       });
 
       test('handles invalid rational in degrees', () {
-        final result = parseGpsCoordinate('[abc/1, 46/1, 0/1]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[abc/1, 46/1, 0/1]',
+          'N',
+        );
         expect(result, isNull);
       });
 
       test('handles invalid rational in minutes', () {
-        final result = parseGpsCoordinate('[37/1, xyz/1, 0/1]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, xyz/1, 0/1]',
+          'N',
+        );
         expect(result, isNull);
       });
 
       test('handles invalid rational in seconds', () {
-        final result = parseGpsCoordinate('[37/1, 46/1, bad/1]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, bad/1]',
+          'N',
+        );
         expect(result, isNull);
       });
 
       test('handles empty string', () {
-        final result = parseGpsCoordinate('', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate('', 'N');
         expect(result, isNull);
       });
 
       test('handles coordinates at equator', () {
         // 0° 0' 0" N
-        final result = parseGpsCoordinate('[0/1, 0/1, 0/1]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[0/1, 0/1, 0/1]',
+          'N',
+        );
         expect(result, 0.0);
       });
 
       test('handles coordinates at prime meridian', () {
         // 0° 0' 0" E
-        final result = parseGpsCoordinate('[0/1, 0/1, 0/1]', 'E');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[0/1, 0/1, 0/1]',
+          'E',
+        );
         expect(result, 0.0);
       });
 
       test('handles maximum latitude North Pole', () {
         // 90° 0' 0" N
-        final result = parseGpsCoordinate('[90/1, 0/1, 0/1]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[90/1, 0/1, 0/1]',
+          'N',
+        );
         expect(result, 90.0);
       });
 
       test('handles maximum latitude South Pole', () {
         // 90° 0' 0" S
-        final result = parseGpsCoordinate('[90/1, 0/1, 0/1]', 'S');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[90/1, 0/1, 0/1]',
+          'S',
+        );
         expect(result, -90.0);
       });
 
       test('handles date line crossing West', () {
         // 180° 0' 0" W
-        final result = parseGpsCoordinate('[180/1, 0/1, 0/1]', 'W');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[180/1, 0/1, 0/1]',
+          'W',
+        );
         expect(result, -180.0);
       });
 
       test('handles date line crossing East', () {
         // 180° 0' 0" E
-        final result = parseGpsCoordinate('[180/1, 0/1, 0/1]', 'E');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[180/1, 0/1, 0/1]',
+          'E',
+        );
         expect(result, 180.0);
       });
 
       test('logs exception on malformed input', () {
         // This test verifies that malformed input returns null gracefully
         // The logging happens internally but we focus on the null return value
-        final result = parseGpsCoordinate('[error', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate('[error', 'N');
         expect(result, isNull);
       });
 
       test('handles fractional seconds', () {
         // 37° 46' 29.64" N (with fractional seconds)
-        final result = parseGpsCoordinate('[37/1, 46/1, 2964/100]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 2964/100]',
+          'N',
+        );
         expect(result, closeTo(37.7749, 0.0001));
       });
 
       test('handles high precision coordinates', () {
         // High precision: 37° 46' 29.999" N
-        final result = parseGpsCoordinate('[37/1, 46/1, 29999/1000]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 29999/1000]',
+          'N',
+        );
         expect(result, closeTo(37.774999, 0.000001));
       });
     });
@@ -2217,27 +2162,39 @@ void main() {
 
     group('GPS Edge Cases', () {
       test('parseGpsCoordinate handles whitespace in coordinates', () {
-        final result = parseGpsCoordinate('[  37/1  ,  46/1  ,  0/1  ]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[  37/1  ,  46/1  ,  0/1  ]',
+          'N',
+        );
         expect(result, closeTo(37.7667, 0.0001));
       });
 
       test('parseGpsCoordinate handles coordinates without brackets', () {
-        final result = parseGpsCoordinate('37/1, 46/1, 0/1', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '37/1, 46/1, 0/1',
+          'N',
+        );
         expect(result, closeTo(37.7667, 0.0001));
       });
 
       test('parseRational handles whitespace', () {
-        final result = parseRational('  37/1  ');
+        final result = ExifDataExtractor.parseRational('  37/1  ');
         expect(result, 37.0);
       });
 
       test('parseGpsCoordinate handles mixed reference cases', () {
         // Test lowercase reference (should still work)
-        final resultN = parseGpsCoordinate('[37/1, 46/1, 0/1]', 'n');
+        final resultN = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 0/1]',
+          'n',
+        );
         // This will not match 'S' or 'W', so it stays positive
         expect(resultN, closeTo(37.7667, 0.0001));
 
-        final resultS = parseGpsCoordinate('[37/1, 46/1, 0/1]', 's');
+        final resultS = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 0/1]',
+          's',
+        );
         // This will not match 'S' or 'W' (case sensitive), so stays positive
         expect(resultS, closeTo(37.7667, 0.0001));
       });
@@ -2282,8 +2239,8 @@ void main() {
         const latData = '[37/1, 46/1, 2964/100]';
         const lonData = '[122/1, 25/1, 984/100]';
 
-        final lat = parseGpsCoordinate(latData, 'N');
-        final lon = parseGpsCoordinate(lonData, 'W');
+        final lat = ExifDataExtractor.parseGpsCoordinate(latData, 'N');
+        final lon = ExifDataExtractor.parseGpsCoordinate(lonData, 'W');
 
         expect(lat, isNotNull);
         expect(lon, isNotNull);
@@ -2296,8 +2253,8 @@ void main() {
         const invalidLat = 'invalid';
         const validLon = '[122/1, 25/1, 984/100]';
 
-        final lat = parseGpsCoordinate(invalidLat, 'N');
-        final lon = parseGpsCoordinate(validLon, 'W');
+        final lat = ExifDataExtractor.parseGpsCoordinate(invalidLat, 'N');
+        final lon = ExifDataExtractor.parseGpsCoordinate(validLon, 'W');
 
         expect(lat, isNull);
         expect(lon, isNotNull);
@@ -2313,8 +2270,8 @@ void main() {
         const validLat = '[37/1, 46/1, 2964/100]';
         const invalidLon = 'invalid';
 
-        final lat = parseGpsCoordinate(validLat, 'N');
-        final lon = parseGpsCoordinate(invalidLon, 'W');
+        final lat = ExifDataExtractor.parseGpsCoordinate(validLat, 'N');
+        final lon = ExifDataExtractor.parseGpsCoordinate(invalidLon, 'W');
 
         expect(lat, isNotNull);
         expect(lon, isNull);
@@ -2328,8 +2285,14 @@ void main() {
       test('covers Geolocation creation with valid coordinates', () async {
         // While we can't easily create real EXIF data in unit tests,
         // we can verify the logic that would create the Geolocation object
-        final lat = parseGpsCoordinate('[37/1, 46/1, 2964/100]', 'N');
-        final lon = parseGpsCoordinate('[122/1, 25/1, 984/100]', 'W');
+        final lat = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 2964/100]',
+          'N',
+        );
+        final lon = ExifDataExtractor.parseGpsCoordinate(
+          '[122/1, 25/1, 984/100]',
+          'W',
+        );
 
         expect(lat, isNotNull);
         expect(lon, isNotNull);
@@ -2363,7 +2326,10 @@ void main() {
         // Trigger exception in parseGpsCoordinate with malformed data
         // The invalid rational format will be caught by parseRational
         // and return null, so parseGpsCoordinate won't throw
-        final result = parseGpsCoordinate('[a/b, c/d, e/f]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[a/b, c/d, e/f]',
+          'N',
+        );
 
         // Returns null because parseRational handles the exceptions
         expect(result, isNull);
@@ -2371,38 +2337,56 @@ void main() {
 
       test('covers all branches in parseRational', () {
         // Fraction path (line 273-284)
-        expect(parseRational('123/456'), closeTo(0.2697, 0.0001));
         expect(
-          parseRational('10/0'),
+          ExifDataExtractor.parseRational('123/456'),
+          closeTo(0.2697, 0.0001),
+        );
+        expect(
+          ExifDataExtractor.parseRational('10/0'),
           isNull,
         ); // Division by zero (line 281-282)
-        expect(parseRational('1/2/3'), isNull); // Invalid format (line 276-277)
+        expect(
+          ExifDataExtractor.parseRational('1/2/3'),
+          isNull,
+        ); // Invalid format (line 276-277)
 
         // Decimal path (line 286-287)
-        expect(parseRational('45.67'), closeTo(45.67, 0.001));
+        expect(ExifDataExtractor.parseRational('45.67'), closeTo(45.67, 0.001));
 
         // Exception path (line 289-290)
-        expect(parseRational('not-a-number'), isNull);
+        expect(ExifDataExtractor.parseRational('not-a-number'), isNull);
       });
 
       test('covers South and West directional logic', () {
         // Test South (line 329-330)
-        final southLat = parseGpsCoordinate('[33/1, 52/1, 0/1]', 'S');
+        final southLat = ExifDataExtractor.parseGpsCoordinate(
+          '[33/1, 52/1, 0/1]',
+          'S',
+        );
         expect(southLat, isNotNull);
         expect(southLat, lessThan(0));
 
         // Test West (line 329-330)
-        final westLon = parseGpsCoordinate('[118/1, 15/1, 0/1]', 'W');
+        final westLon = ExifDataExtractor.parseGpsCoordinate(
+          '[118/1, 15/1, 0/1]',
+          'W',
+        );
         expect(westLon, isNotNull);
         expect(westLon, lessThan(0));
 
         // Test North (positive)
-        final northLat = parseGpsCoordinate('[33/1, 52/1, 0/1]', 'N');
+        final northLat = ExifDataExtractor.parseGpsCoordinate(
+          '[33/1, 52/1, 0/1]',
+          'N',
+        );
         expect(northLat, isNotNull);
         expect(northLat, greaterThan(0));
 
         // Test East (positive)
-        final eastLon = parseGpsCoordinate('[118/1, 15/1, 0/1]', 'E');
+        final eastLon = ExifDataExtractor.parseGpsCoordinate(
+          '[118/1, 15/1, 0/1]',
+          'E',
+        );
         expect(eastLon, isNotNull);
         expect(eastLon, greaterThan(0));
       });
@@ -2410,7 +2394,10 @@ void main() {
       test('covers decimal degree calculation formula', () {
         // Test the math on line 326
         // 37° 46' 29.64" should equal 37.7749°
-        final result = parseGpsCoordinate('[37/1, 46/1, 2964/100]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 2964/100]',
+          'N',
+        );
         expect(result, isNotNull);
 
         // Verify the calculation: degrees + (minutes / 60) + (seconds / 3600)
@@ -2424,30 +2411,45 @@ void main() {
 
       test('covers coordData null check', () {
         // Line 303-304
-        final result = parseGpsCoordinate(null, 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(null, 'N');
         expect(result, isNull);
       });
 
       test('covers invalid parts length checks', () {
         // Too few parts (line 312-313)
-        expect(parseGpsCoordinate('[1/1, 2/1]', 'N'), isNull);
+        expect(ExifDataExtractor.parseGpsCoordinate('[1/1, 2/1]', 'N'), isNull);
 
         // Too many parts (line 312-313)
-        expect(parseGpsCoordinate('[1/1, 2/1, 3/1, 4/1]', 'N'), isNull);
+        expect(
+          ExifDataExtractor.parseGpsCoordinate('[1/1, 2/1, 3/1, 4/1]', 'N'),
+          isNull,
+        );
 
         // Valid parts length
-        expect(parseGpsCoordinate('[1/1, 2/1, 3/1]', 'N'), isNotNull);
+        expect(
+          ExifDataExtractor.parseGpsCoordinate('[1/1, 2/1, 3/1]', 'N'),
+          isNotNull,
+        );
       });
 
       test('covers null checks for parsed components', () {
         // Line 321-322: null degrees
-        expect(parseGpsCoordinate('[bad/1, 2/1, 3/1]', 'N'), isNull);
+        expect(
+          ExifDataExtractor.parseGpsCoordinate('[bad/1, 2/1, 3/1]', 'N'),
+          isNull,
+        );
 
         // Line 321-322: null minutes
-        expect(parseGpsCoordinate('[1/1, bad/1, 3/1]', 'N'), isNull);
+        expect(
+          ExifDataExtractor.parseGpsCoordinate('[1/1, bad/1, 3/1]', 'N'),
+          isNull,
+        );
 
         // Line 321-322: null seconds
-        expect(parseGpsCoordinate('[1/1, 2/1, bad/1]', 'N'), isNull);
+        expect(
+          ExifDataExtractor.parseGpsCoordinate('[1/1, 2/1, bad/1]', 'N'),
+          isNull,
+        );
       });
     });
 
@@ -2466,48 +2468,75 @@ void main() {
 
       test('handles zero coordinates at equator/prime meridian', () {
         // Zero latitude (equator) - line 326
-        final equator = parseGpsCoordinate('[0/1, 0/1, 0/1]', 'N');
+        final equator = ExifDataExtractor.parseGpsCoordinate(
+          '[0/1, 0/1, 0/1]',
+          'N',
+        );
         expect(equator, equals(0.0));
 
         // Zero longitude (prime meridian) - line 326
-        final primeMeridian = parseGpsCoordinate('[0/1, 0/1, 0/1]', 'E');
+        final primeMeridian = ExifDataExtractor.parseGpsCoordinate(
+          '[0/1, 0/1, 0/1]',
+          'E',
+        );
         expect(primeMeridian, equals(0.0));
       });
 
       test('handles high precision GPS coordinates', () {
         // Very precise seconds value
-        final precise = parseGpsCoordinate('[37/1, 46/1, 2964123/100000]', 'N');
+        final precise = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 2964123/100000]',
+          'N',
+        );
         expect(precise, isNotNull);
         expect(precise, closeTo(37.7749, 0.001));
       });
 
       test('handles extreme valid coordinates', () {
         // North Pole
-        final northPole = parseGpsCoordinate('[90/1, 0/1, 0/1]', 'N');
+        final northPole = ExifDataExtractor.parseGpsCoordinate(
+          '[90/1, 0/1, 0/1]',
+          'N',
+        );
         expect(northPole, equals(90.0));
 
         // South Pole
-        final southPole = parseGpsCoordinate('[90/1, 0/1, 0/1]', 'S');
+        final southPole = ExifDataExtractor.parseGpsCoordinate(
+          '[90/1, 0/1, 0/1]',
+          'S',
+        );
         expect(southPole, equals(-90.0));
 
         // International Date Line
-        final dateLine = parseGpsCoordinate('[180/1, 0/1, 0/1]', 'W');
+        final dateLine = ExifDataExtractor.parseGpsCoordinate(
+          '[180/1, 0/1, 0/1]',
+          'W',
+        );
         expect(dateLine, equals(-180.0));
       });
 
       test('covers string operations in coordinate parsing', () {
         // Test bracket removal (line 308-309)
-        final withBrackets = parseGpsCoordinate('[[1/1], [2/1], [3/1]]', 'N');
+        final withBrackets = ExifDataExtractor.parseGpsCoordinate(
+          '[[1/1], [2/1], [3/1]]',
+          'N',
+        );
         expect(withBrackets, isNotNull);
 
         // Test comma splitting (line 310)
-        final result = parseGpsCoordinate('[1/1, 2/1, 3/1]', 'E');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[1/1, 2/1, 3/1]',
+          'E',
+        );
         expect(result, isNotNull);
       });
 
       test('covers trim operation on parts', () {
         // Test trimming (line 317-319)
-        final withSpaces = parseGpsCoordinate('[  1/1  ,  2/1  ,  3/1  ]', 'N');
+        final withSpaces = ExifDataExtractor.parseGpsCoordinate(
+          '[  1/1  ,  2/1  ,  3/1  ]',
+          'N',
+        );
         expect(withSpaces, isNotNull);
       });
     });
@@ -2645,10 +2674,7 @@ void main() {
         // Try to call with unmounted context
         if (savedContext != null) {
           // Should not throw
-          await expectLater(
-            importImageAssets(savedContext!),
-            completes,
-          );
+          await expectLater(importImageAssets(savedContext!), completes);
         }
 
         // Clean up
@@ -2815,10 +2841,8 @@ void main() {
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
-                  onPressed: () => importImageAssets(
-                    context,
-                    linkedId: 'test-linked-id',
-                  ),
+                  onPressed: () =>
+                      importImageAssets(context, linkedId: 'test-linked-id'),
                   child: const Text('Pick'),
                 );
               },
@@ -3282,9 +3306,7 @@ void main() {
       mockLoggingService = MockDomainLogger();
 
       getIt
-        ..registerSingleton<Directory>(
-          await getApplicationDocumentsDirectory(),
-        )
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<JournalDb>(MockJournalDb())
         ..registerSingleton<Fts5Db>(MockFts5Db())
         ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
@@ -3362,30 +3384,21 @@ void main() {
         final context = MockBuildContext();
         when(() => context.mounted).thenReturn(true);
 
-        await expectLater(
-          importImageAssets(context),
-          completes,
-        );
+        await expectLater(importImageAssets(context), completes);
       });
 
       testWidgets('returns early when context is not mounted', (tester) async {
         final context = MockBuildContext();
         when(() => context.mounted).thenReturn(false);
 
-        await expectLater(
-          importImageAssets(context),
-          completes,
-        );
+        await expectLater(importImageAssets(context), completes);
       });
 
       testWidgets('handles null assets list gracefully', (tester) async {
         final context = MockBuildContext();
         when(() => context.mounted).thenReturn(true);
 
-        await expectLater(
-          importImageAssets(context),
-          completes,
-        );
+        await expectLater(importImageAssets(context), completes);
       });
 
       testWidgets('passes linkedId and categoryId parameters', (tester) async {

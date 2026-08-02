@@ -42,11 +42,6 @@ class GeolocationService {
   /// concurrent additions which could cause race conditions.
   final Set<String> _pendingGeolocationAdds = {};
 
-  /// Returns true if a geolocation add operation is pending for the given
-  /// entity ID.
-  bool isPending(String journalEntityId) =>
-      _pendingGeolocationAdds.contains(journalEntityId);
-
   /// Fire-and-forget: add geolocation to entry.
   ///
   /// This is a convenience wrapper around [addGeolocationAsync] that doesn't
@@ -107,10 +102,7 @@ class GeolocationService {
           journalEntity.meta,
         );
         await persister(
-          journalEntity.copyWith(
-            meta: updatedMeta,
-            geolocation: geolocation,
-          ),
+          journalEntity.copyWith(meta: updatedMeta, geolocation: geolocation),
         );
         return geolocation;
       }
@@ -128,9 +120,4 @@ class GeolocationService {
       _pendingGeolocationAdds.remove(journalEntityId);
     }
   }
-
-  /// Gets the count of pending geolocation additions.
-  ///
-  /// Useful for testing and debugging.
-  int get pendingCount => _pendingGeolocationAdds.length;
 }

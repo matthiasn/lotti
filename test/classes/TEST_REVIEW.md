@@ -66,7 +66,7 @@ under `test/classes/`.
   **RESOLVED:** done — added `expect(restored.checkedAt, data.checkedAt)` and `expect(restored.checkedBy, data.checkedBy)` so the decoded object's provenance fields are asserted directly, not only the pre-encode values.
 
 - [x] **[LOW]** `test/classes/day_plan_test.dart` line 424 — `status helper methods work correctly` tests `isAgreed`, `isDraft`, `needsReview` but not `isCommitted` (the `DayPlanStatusCommitted` variant added in the impl at `day_plan.dart:89`). The `isCommitted` getter is only implied by Glados indirectly.
-  **RESOLVED:** (stale) no `isCommitted` getter exists in `day_plan.dart` (only `isDraft`/`isAgreed`/`needsReview` in `DayPlanDataX`). The committed variant is already covered by the parameterized status-getter dispatch table (`day_plan_test.dart:273`) asserting it reports false on all three getters, plus a dedicated `committed can be serialized and deserialized` round-trip test.
+  **RESOLVED:** stale — the status convenience getters and `DayPlanDataX` were removed because they had no production callers. The committed variant remains covered by its serialization round-trip test.
 
 ---
 

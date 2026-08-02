@@ -18,7 +18,6 @@ void main() {
       expect(adjustment.softAfter, greaterThan(0));
       expect(adjustment.hardAfter, greaterThan(0));
       expect(adjustment.softBefore, greaterThan(0));
-      expect(adjustment.hardBefore, greaterThan(0));
       expect(adjustment.softAfter, lessThanOrEqualTo(adjustment.hardAfter));
       expect(adjustment.softAfter, greaterThanOrEqualTo(adjustment.softBefore));
       // When no error occurred, softAfter must reach the target (or the hard
@@ -78,7 +77,6 @@ void main() {
     test('toString surfaces the error when one was captured', () {
       const adjustment = FdLimitAdjustment(
         softBefore: -1,
-        hardBefore: -1,
         softAfter: -1,
         hardAfter: -1,
         target: 10240,
@@ -114,20 +112,17 @@ void main() {
         expect(plan.newSoft, 20000);
       });
 
-      test(
-        'soft reading as RLIM_INFINITY (negative) is treated as satisfied, '
-        'never *lowered* to target',
-        () {
-          // Linux RLIM_INFINITY reads as -1 through a Uint64 struct field.
-          final plan = resolveFdSoftLimitPlan(
-            softBefore: -1,
-            hardBefore: -1,
-            target: 10240,
-          );
-          expect(plan.alreadySatisfied, isTrue);
-          expect(plan.newSoft, -1);
-        },
-      );
+      test('soft reading as RLIM_INFINITY (negative) is treated as satisfied, '
+          'never *lowered* to target', () {
+        // Linux RLIM_INFINITY reads as -1 through a Uint64 struct field.
+        final plan = resolveFdSoftLimitPlan(
+          softBefore: -1,
+          hardBefore: -1,
+          target: 10240,
+        );
+        expect(plan.alreadySatisfied, isTrue);
+        expect(plan.newSoft, -1);
+      });
 
       test('soft below target is raised to target when hard has room', () {
         final plan = resolveFdSoftLimitPlan(
@@ -139,19 +134,16 @@ void main() {
         expect(plan.newSoft, 10240);
       });
 
-      test(
-        'hard reading as RLIM_INFINITY (negative on Linux) is treated '
-        'as no cap, so target wins',
-        () {
-          final plan = resolveFdSoftLimitPlan(
-            softBefore: 256,
-            hardBefore: -1,
-            target: 10240,
-          );
-          expect(plan.alreadySatisfied, isFalse);
-          expect(plan.newSoft, 10240);
-        },
-      );
+      test('hard reading as RLIM_INFINITY (negative on Linux) is treated '
+          'as no cap, so target wins', () {
+        final plan = resolveFdSoftLimitPlan(
+          softBefore: 256,
+          hardBefore: -1,
+          target: 10240,
+        );
+        expect(plan.alreadySatisfied, isFalse);
+        expect(plan.newSoft, 10240);
+      });
 
       test('target above hard is clamped to hard', () {
         final plan = resolveFdSoftLimitPlan(
@@ -227,53 +219,43 @@ void main() {
       glados.Glados(
         glados.any.fdSatisfiedCase,
         glados.ExploreConfig(numRuns: 120),
-      ).test(
-        'soft at or above target is satisfied and left untouched',
-        (c) {
-          final plan = resolveFdSoftLimitPlan(
-            softBefore: c.softBefore,
-            hardBefore: c.hardBefore,
-            target: c.target,
-          );
-          expect(plan.alreadySatisfied, isTrue, reason: '$c');
-          // A satisfied soft limit must be returned verbatim — never lowered.
-          expect(plan.newSoft, c.softBefore, reason: '$c');
-        },
-        tags: 'glados',
-      );
+      ).test('soft at or above target is satisfied and left untouched', (c) {
+        final plan = resolveFdSoftLimitPlan(
+          softBefore: c.softBefore,
+          hardBefore: c.hardBefore,
+          target: c.target,
+        );
+        expect(plan.alreadySatisfied, isTrue, reason: '$c');
+        // A satisfied soft limit must be returned verbatim — never lowered.
+        expect(plan.newSoft, c.softBefore, reason: '$c');
+      }, tags: 'glados');
 
       glados.Glados(
         glados.any.fdUnlimitedSoftCase,
         glados.ExploreConfig(numRuns: 96),
-      ).test(
-        'a negative (RLIM_INFINITY) soft limit is always satisfied, '
-        'never lowered to target',
-        (c) {
-          final plan = resolveFdSoftLimitPlan(
-            softBefore: c.softBefore,
-            hardBefore: c.hardBefore,
-            target: c.target,
-          );
-          expect(plan.alreadySatisfied, isTrue, reason: '$c');
-          // The negative reading is preserved, not clobbered with target.
-          expect(plan.newSoft, c.softBefore, reason: '$c');
-          expect(plan.newSoft, isNegative, reason: '$c');
-        },
-        tags: 'glados',
-      );
+      ).test('a negative (RLIM_INFINITY) soft limit is always satisfied, '
+          'never lowered to target', (c) {
+        final plan = resolveFdSoftLimitPlan(
+          softBefore: c.softBefore,
+          hardBefore: c.hardBefore,
+          target: c.target,
+        );
+        expect(plan.alreadySatisfied, isTrue, reason: '$c');
+        // The negative reading is preserved, not clobbered with target.
+        expect(plan.newSoft, c.softBefore, reason: '$c');
+        expect(plan.newSoft, isNegative, reason: '$c');
+      }, tags: 'glados');
     });
 
-    test('FdLimitAdjustment exposes all fields as provided', () {
+    test('FdLimitAdjustment exposes its reported fields', () {
       const adjustment = FdLimitAdjustment(
         softBefore: 256,
-        hardBefore: 65536,
         softAfter: 10240,
         hardAfter: 65536,
         target: 10240,
         raised: true,
       );
       expect(adjustment.softBefore, 256);
-      expect(adjustment.hardBefore, 65536);
       expect(adjustment.softAfter, 10240);
       expect(adjustment.hardAfter, 65536);
       expect(adjustment.target, 10240);

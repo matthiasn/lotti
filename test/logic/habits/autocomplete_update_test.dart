@@ -4,6 +4,17 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/logic/habits/autocomplete_update.dart';
 import 'autocomplete_update_test_helpers.dart';
 
+AutoCompleteRule? _replaceAt(
+  AutoCompleteRule? rule, {
+  required List<int> replaceAtPath,
+  required AutoCompleteRule? replaceWith,
+}) => replaceAtRecursive(
+  rule: rule,
+  currentPath: const [0],
+  replaceAtPath: replaceAtPath,
+  replaceWith: replaceWith,
+);
+
 void main() {
   group('AutoComplete Rule Manipulation Tests - ', () {
     // Test data
@@ -108,28 +119,23 @@ void main() {
         ];
 
     for (final scenario in containerReplacementCases) {
-      test(
-        'replaceAtRecursive replaces child ${scenario.replaceIndex} inside '
-        '${scenario.description}',
-        () {
-          final result = replaceAtRecursive(
-            rule: scenario.container,
-            replaceWith: measurableRule,
-            currentPath: [0],
-            replaceAtPath: [0, scenario.replaceIndex],
-          );
+      test('replaceAtRecursive replaces child ${scenario.replaceIndex} inside '
+          '${scenario.description}', () {
+        final result = replaceAtRecursive(
+          rule: scenario.container,
+          replaceWith: measurableRule,
+          currentPath: [0],
+          replaceAtPath: [0, scenario.replaceIndex],
+        );
 
-          expect(result, scenario.expected);
-        },
-      );
+        expect(result, scenario.expected);
+      });
     }
 
     test('replaceAtRecursive with nested AND/OR rules', () {
       const nestedRule = AutoCompleteRule.and(
         rules: [
-          AutoCompleteRule.or(
-            rules: [healthRule, workoutRule],
-          ),
+          AutoCompleteRule.or(rules: [healthRule, workoutRule]),
           measurableRule,
         ],
       );
@@ -145,9 +151,7 @@ void main() {
         result,
         const AutoCompleteRule.and(
           rules: [
-            AutoCompleteRule.or(
-              rules: [healthRule, habitRule],
-            ),
+            AutoCompleteRule.or(rules: [healthRule, habitRule]),
             measurableRule,
           ],
         ),
@@ -224,7 +228,7 @@ void main() {
     });
 
     test('replaceAt helper function - simple case', () {
-      final result = replaceAt(
+      final result = _replaceAt(
         healthRule,
         replaceAtPath: [0],
         replaceWith: workoutRule,
@@ -238,7 +242,7 @@ void main() {
         rules: [healthRule, workoutRule, measurableRule],
       );
 
-      final result = replaceAt(
+      final result = _replaceAt(
         nestedRule,
         replaceAtPath: [0, 1],
         replaceWith: habitRule,
@@ -253,10 +257,7 @@ void main() {
     });
 
     test('removeAt helper function - simple case', () {
-      final result = removeAt(
-        healthRule,
-        path: [0],
-      );
+      final result = removeAt(healthRule, path: [0]);
 
       expect(result, null);
     });
@@ -266,16 +267,11 @@ void main() {
         rules: [healthRule, workoutRule, measurableRule],
       );
 
-      final result = removeAt(
-        nestedRule,
-        path: [0, 1],
-      );
+      final result = removeAt(nestedRule, path: [0, 1]);
 
       expect(
         result,
-        const AutoCompleteRule.and(
-          rules: [healthRule, measurableRule],
-        ),
+        const AutoCompleteRule.and(rules: [healthRule, measurableRule]),
       );
     });
 
@@ -293,9 +289,7 @@ void main() {
 
       expect(
         result,
-        const AutoCompleteRule.and(
-          rules: [healthRule, measurableRule],
-        ),
+        const AutoCompleteRule.and(rules: [healthRule, measurableRule]),
       );
     });
 
@@ -312,7 +306,7 @@ void main() {
           healthRule,
         );
         expect(
-          replaceAt(null, replaceAtPath: [0], replaceWith: healthRule),
+          _replaceAt(null, replaceAtPath: [0], replaceWith: healthRule),
           healthRule,
         );
         expect(removeAt(null, path: [0]), null);
@@ -328,7 +322,7 @@ void main() {
       final rule = scenario.rule;
 
       expect(
-        replaceAt(
+        _replaceAt(
           rule,
           replaceAtPath: scenario.targetPath,
           replaceWith: scenario.replacement,
@@ -344,7 +338,7 @@ void main() {
       );
 
       expect(
-        replaceAt(
+        _replaceAt(
           rule,
           replaceAtPath: scenario.missingPath,
           replaceWith: scenario.replacement,
@@ -376,10 +370,7 @@ void main() {
       dataTypeId: 'lunges',
       minimum: 30,
     );
-    const plank = AutoCompleteRule.measurable(
-      dataTypeId: 'plank',
-      minimum: 70,
-    );
+    const plank = AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70);
     const squats = AutoCompleteRule.measurable(
       dataTypeId: 'squats',
       minimum: 10,
@@ -462,7 +453,7 @@ void main() {
       );
 
       expect(
-        replaceAt(
+        _replaceAt(
           testAutoComplete,
           replaceAtPath: [0, 0, 0, 1],
           replaceWith: harderPullUps,

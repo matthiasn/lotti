@@ -47,22 +47,6 @@ class _GeneratedOrderingScenario {
     return [for (final item in indexed) item.event.eventId];
   }
 
-  ({int groupCount, int eventCount}) expectedCollisionStats() {
-    final counts = <int, int>{};
-    for (final event in events) {
-      counts[event.timestampMs] = (counts[event.timestampMs] ?? 0) + 1;
-    }
-    var groupCount = 0;
-    var eventCount = 0;
-    for (final count in counts.values) {
-      if (count > 1) {
-        groupCount++;
-        eventCount += count;
-      }
-    }
-    return (groupCount: groupCount, eventCount: eventCount);
-  }
-
   @override
   String toString() {
     return '_GeneratedOrderingScenario(events: $events)';
@@ -130,13 +114,9 @@ extension _AnyTimelineOrderingScenario on glados.Any {
       );
 
   glados.Generator<_GeneratedOrderingScenario> get orderingScenario =>
-      glados.ListAnys(
-            this,
-          )
+      glados.ListAnys(this)
           .listWithLengthInRange(0, 14, orderingEvent)
-          .map(
-            (events) => _GeneratedOrderingScenario(events: events),
-          );
+          .map((events) => _GeneratedOrderingScenario(events: events));
 
   glados.Generator<_GeneratedIsNewerScenario> get isNewerScenario =>
       glados.CombinableAny(this).combine6(
@@ -194,10 +174,7 @@ void main() {
 
   group('TimelineEventOrdering.timestamp', () {
     test('returns milliseconds since epoch', () {
-      expect(
-        TimelineEventOrdering.timestamp(older),
-        1000,
-      );
+      expect(TimelineEventOrdering.timestamp(older), 1000);
     });
   });
 
@@ -221,16 +198,16 @@ void main() {
       when(() => second.eventId).thenReturn(r'$0001');
       when(() => later.eventId).thenReturn(r'$0003');
 
-      final ordered = TimelineEventOrdering.sortStableByTimestamp(
-        [first, second, later],
-      );
+      final ordered = TimelineEventOrdering.sortStableByTimestamp([
+        first,
+        second,
+        later,
+      ]);
 
       expect(ordered, [first, second, later]);
     });
 
-    glados.Glados(
-      glados.any.orderingScenario,
-    ).test(
+    glados.Glados(glados.any.orderingScenario).test(
       'generated stable ordering preserves input order inside timestamp ties',
       (scenario) {
         final events = [
@@ -242,63 +219,6 @@ void main() {
           ordered.map((event) => event.eventId).toList(),
           scenario.expectedStableSortedIds(),
         );
-      },
-      tags: 'glados',
-    );
-  });
-
-  group('TimelineEventOrdering.timestampCollisionStats', () {
-    test('reports collisions with sample timestamps', () {
-      final a = MockEvent();
-      final b = MockEvent();
-      final c = MockEvent();
-      final d = MockEvent();
-
-      when(
-        () => a.originServerTs,
-      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
-      when(
-        () => b.originServerTs,
-      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
-      when(
-        () => c.originServerTs,
-      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
-      when(
-        () => d.originServerTs,
-      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
-
-      when(() => a.eventId).thenReturn(r'$a');
-      when(() => b.eventId).thenReturn(r'$b');
-      when(() => c.eventId).thenReturn(r'$c');
-      when(() => d.eventId).thenReturn(r'$d');
-
-      final stats = TimelineEventOrdering.timestampCollisionStats(
-        [a, b, c, d],
-        sampleLimit: 5,
-      );
-
-      expect(stats.groupCount, 1);
-      expect(stats.eventCount, 3);
-      expect(stats.sample.length, 1);
-      expect(stats.sample.first.ts, 1000);
-      expect(stats.sample.first.count, 3);
-    });
-
-    glados.Glados(
-      glados.any.orderingScenario,
-    ).test(
-      'generated collision stats count duplicated timestamp groups',
-      (scenario) {
-        final stats = TimelineEventOrdering.timestampCollisionStats(
-          [
-            for (final event in scenario.events) _generatedEvent(event),
-          ],
-        );
-        final expected = scenario.expectedCollisionStats();
-
-        expect(stats.groupCount, expected.groupCount);
-        expect(stats.eventCount, expected.eventCount);
-        expect(stats.sample, hasLength(lessThanOrEqualTo(stats.groupCount)));
       },
       tags: 'glados',
     );
@@ -363,9 +283,7 @@ void main() {
       );
     });
 
-    glados.Glados(
-      glados.any.isNewerScenario,
-    ).test(
+    glados.Glados(glados.any.isNewerScenario).test(
       'generated marker comparisons match timestamp then event-id ordering',
       (scenario) {
         expect(

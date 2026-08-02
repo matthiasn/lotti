@@ -19,9 +19,6 @@ class AudioImportConstants {
 
   /// Maximum audio file size in bytes (500 MB).
   static const int maxFileSizeBytes = 500 * 1024 * 1024;
-
-  /// Logging domain for audio import operations.
-  static const String loggingDomain = 'audio_import';
 }
 
 /// Imports audio [files] (from a media drop) and creates audio journal

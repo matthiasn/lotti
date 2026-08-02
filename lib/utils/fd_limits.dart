@@ -11,7 +11,6 @@ import 'package:meta/meta.dart';
 class FdLimitAdjustment {
   const FdLimitAdjustment({
     required this.softBefore,
-    required this.hardBefore,
     required this.softAfter,
     required this.hardAfter,
     required this.target,
@@ -20,7 +19,6 @@ class FdLimitAdjustment {
   });
 
   final int softBefore;
-  final int hardBefore;
   final int softAfter;
   final int hardAfter;
   final int target;
@@ -159,7 +157,6 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
   if (libc == null) {
     return FdLimitAdjustment(
       softBefore: -1,
-      hardBefore: -1,
       softAfter: -1,
       hardAfter: -1,
       target: target,
@@ -175,7 +172,6 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
     if (ptr.address == 0) {
       return FdLimitAdjustment(
         softBefore: -1,
-        hardBefore: -1,
         softAfter: -1,
         hardAfter: -1,
         target: target,
@@ -190,7 +186,6 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
       if (libc.getrlimit(resource, ptr) != 0) {
         return FdLimitAdjustment(
           softBefore: -1,
-          hardBefore: -1,
           softAfter: -1,
           hardAfter: -1,
           target: target,
@@ -212,7 +207,6 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
       if (plan.alreadySatisfied) {
         return FdLimitAdjustment(
           softBefore: softBefore,
-          hardBefore: hardBefore,
           softAfter: softBefore,
           hardAfter: hardBefore,
           target: target,
@@ -227,7 +221,6 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
       if (libc.setrlimit(resource, ptr) != 0) {
         return FdLimitAdjustment(
           softBefore: softBefore,
-          hardBefore: hardBefore,
           softAfter: softBefore,
           hardAfter: hardBefore,
           target: target,
@@ -241,7 +234,6 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
       if (libc.getrlimit(resource, ptr) != 0) {
         return FdLimitAdjustment(
           softBefore: softBefore,
-          hardBefore: hardBefore,
           softAfter: newSoft,
           hardAfter: hardBefore,
           target: target,
@@ -251,7 +243,6 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
       // coverage:ignore-end
       return FdLimitAdjustment(
         softBefore: softBefore,
-        hardBefore: hardBefore,
         softAfter: ptr.ref.rlimCur,
         hardAfter: ptr.ref.rlimMax,
         target: target,
@@ -264,7 +255,6 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
   } catch (e) {
     return FdLimitAdjustment(
       softBefore: -1,
-      hardBefore: -1,
       softAfter: -1,
       hardAfter: -1,
       target: target,

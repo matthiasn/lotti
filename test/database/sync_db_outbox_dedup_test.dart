@@ -332,81 +332,75 @@ void main() {
       expect(entries.first, (hostId: 'host-1', counter: 5));
     });
 
-    test(
-      'plan uses the actionable subject index rather than scanning every '
-      'pending/sending outbox row — load-bearing for the 2-minute backfill '
-      'tick that used to filter the backfillRequest subject after scanning '
-      'the actionable queue',
-      () async {
-        final database = db!;
+    test('plan uses the actionable subject index rather than scanning every '
+        'pending/sending outbox row — load-bearing for the 2-minute backfill '
+        'tick that used to filter the backfillRequest subject after scanning '
+        'the actionable queue', () async {
+      final database = db!;
 
-        for (var i = 0; i < 50; i++) {
-          await database.addOutboxItem(
-            buildOutboxCompanion(
-              status: OutboxStatus.sent,
-              createdAt: DateTime(2024, 1, 1).add(Duration(seconds: i)),
-              subject: 'irrelevant:$i',
-              message: '{"runtimeType": "noise"}',
-            ),
-          );
-        }
+      for (var i = 0; i < 50; i++) {
         await database.addOutboxItem(
           buildOutboxCompanion(
-            status: OutboxStatus.pending,
-            createdAt: DateTime(2024, 2, 1),
-            subject: backfillSubject,
-            message:
-                '{"runtimeType": "backfillRequest", '
-                '"entries": [{"hostId": "h1", "counter": 1}], '
-                '"requesterId": "req-1"}',
+            status: OutboxStatus.sent,
+            createdAt: DateTime(2024, 1, 1).add(Duration(seconds: i)),
+            subject: 'irrelevant:$i',
+            message: '{"runtimeType": "noise"}',
           ),
         );
+      }
+      await database.addOutboxItem(
+        buildOutboxCompanion(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 2, 1),
+          subject: backfillSubject,
+          message:
+              '{"runtimeType": "backfillRequest", '
+              '"entries": [{"hostId": "h1", "counter": 1}], '
+              '"requesterId": "req-1"}',
+        ),
+      );
 
-        final rows = await database
-            .customSelect(
-              'EXPLAIN QUERY PLAN '
-              'SELECT * FROM outbox '
-              'INDEXED BY idx_outbox_actionable_subject '
-              'WHERE status IN (0, 3) '
-              "AND subject >= 'backfillRequest:' "
-              "AND subject < 'backfillRequest;'",
-            )
-            .get();
-        final plan = rows.map((r) => r.data.toString()).join('\n');
+      final rows = await database
+          .customSelect(
+            'EXPLAIN QUERY PLAN '
+            'SELECT * FROM outbox '
+            'INDEXED BY idx_outbox_actionable_subject '
+            'WHERE status IN (0, 3) '
+            "AND subject >= 'backfillRequest:' "
+            "AND subject < 'backfillRequest;'",
+          )
+          .get();
+      final plan = rows.map((r) => r.data.toString()).join('\n');
 
-        expect(
-          plan,
-          contains('idx_outbox_actionable_subject'),
-          reason:
-              'the backfill-request probe must range-scan the subject '
-              'prefix index instead of walking every actionable row',
-        );
-        expect(
-          plan,
-          isNot(matches(RegExp('SCAN outbox(?! USING)'))),
-          reason:
-              'no base-table scan once the planner can see the subject '
-              'prefix range and actionable status set',
-        );
+      expect(
+        plan,
+        contains('idx_outbox_actionable_subject'),
+        reason:
+            'the backfill-request probe must range-scan the subject '
+            'prefix index instead of walking every actionable row',
+      );
+      expect(
+        plan,
+        isNot(matches(RegExp('SCAN outbox(?! USING)'))),
+        reason:
+            'no base-table scan once the planner can see the subject '
+            'prefix range and actionable status set',
+      );
 
-        final entries = await database.getPendingBackfillEntries();
-        expect(entries, hasLength(1));
-      },
-    );
+      final entries = await database.getPendingBackfillEntries();
+      expect(entries, hasLength(1));
+    });
 
-    test(
-      'status literals (0, 3) baked into the partial-index match stay '
-      'in sync with OutboxStatus.pending.index and the sending status '
-      'used by the outbox state machine — without this guard a future '
-      'enum reorder would silently index the wrong rows',
-      () {
-        expect(OutboxStatus.pending.index, 0);
-        // `_outboxSendingStatus` mirrors OutboxStatus.sending.index (3);
-        // the sync_db.dart guard test asserts the partial-index DDL uses
-        // the same two literals via `idx_outbox_actionable_priority_created_at`.
-        expect(OutboxStatus.sending.index, 3);
-      },
-    );
+    test('status literals (0, 3) baked into the partial-index match stay '
+        'in sync with OutboxStatus.pending.index and the sending status '
+        'used by the outbox state machine — without this guard a future '
+        'enum reorder would silently index the wrong rows', () {
+      expect(OutboxStatus.pending.index, 0);
+      // `_outboxSendingStatus` mirrors OutboxStatus.sending.index (3);
+      // the sync_db.dart guard test asserts the partial-index DDL uses
+      // the same two literals via `idx_outbox_actionable_priority_created_at`.
+      expect(OutboxStatus.sending.index, 3);
+    });
   });
 
   group('Outbox Deduplication Methods', () {
@@ -601,10 +595,7 @@ void main() {
               'literal status = 0 must let SQLite use the pending entry-id '
               'partial index instead of scanning all pending rows',
         );
-        expect(
-          plan,
-          isNot(matches(RegExp('SCAN outbox(?! USING)'))),
-        );
+        expect(plan, isNot(matches(RegExp('SCAN outbox(?! USING)'))));
       },
     );
 
@@ -928,7 +919,7 @@ void main() {
       expect(volumes.first.itemCount, 1);
     });
 
-    test('OutboxDailyVolume totalMegabytes computes correctly', () async {
+    test('getDailyOutboxVolume preserves exact payload bytes', () async {
       final database = db!;
       final day = DateTime.utc(2025, 3, 15, 10);
       final now = DateTime.utc(2025, 3, 16);
@@ -945,7 +936,7 @@ void main() {
       );
 
       final volumes = await database.getDailyOutboxVolume(now: now);
-      expect(volumes.first.totalMegabytes, closeTo(1.0, 0.001));
+      expect(volumes.first.totalBytes, 1048576);
     });
   });
 
@@ -1007,39 +998,36 @@ void main() {
       expect(db.schemaVersion, 28);
     });
 
-    test(
-      'OutboxStatus indices used by the partial-index annotation '
-      'on the Outbox table stay aligned with the enum — `@TableIndex.sql` '
-      'is a const-string annotation that cannot reference the enum at '
-      'compile time, so the literals (0, 3) used in '
-      '`idx_outbox_actionable_priority_created_at` would silently '
-      'index the wrong rows if `OutboxStatus` were ever reordered. '
-      'This guard fails loudly instead.',
-      () {
-        expect(
-          OutboxStatus.pending.index,
-          0,
-          reason:
-              'pending must be index 0 — used as a literal in the '
-              'partial-index WHERE clause.',
-        );
-        expect(
-          OutboxStatus.sending.index,
-          3,
-          reason:
-              'sending must be index 3 — used as a literal in the '
-              'partial-index WHERE clause and as `_outboxSendingStatus` '
-              'in sync_db.dart.',
-        );
-        expect(
-          OutboxStatus.sent.index,
-          1,
-          reason:
-              'sent must be index 1 — used as a literal in the '
-              'sent-ledger updated_at partial-index WHERE clause.',
-        );
-      },
-    );
+    test('OutboxStatus indices used by the partial-index annotation '
+        'on the Outbox table stay aligned with the enum — `@TableIndex.sql` '
+        'is a const-string annotation that cannot reference the enum at '
+        'compile time, so the literals (0, 3) used in '
+        '`idx_outbox_actionable_priority_created_at` would silently '
+        'index the wrong rows if `OutboxStatus` were ever reordered. '
+        'This guard fails loudly instead.', () {
+      expect(
+        OutboxStatus.pending.index,
+        0,
+        reason:
+            'pending must be index 0 — used as a literal in the '
+            'partial-index WHERE clause.',
+      );
+      expect(
+        OutboxStatus.sending.index,
+        3,
+        reason:
+            'sending must be index 3 — used as a literal in the '
+            'partial-index WHERE clause and as `_outboxSendingStatus` '
+            'in sync_db.dart.',
+      );
+      expect(
+        OutboxStatus.sent.index,
+        1,
+        reason:
+            'sent must be index 1 — used as a literal in the '
+            'sent-ledger updated_at partial-index WHERE clause.',
+      );
+    });
   });
 
   group('updateOutboxMessage - priority parameter -', () {
@@ -1142,46 +1130,37 @@ void main() {
       );
     }
 
-    test(
-      'groups sent items by send day with summed bytes and counts, '
-      'skipping empty days and items outside the window',
-      () async {
-        final now = DateTime.utc(2024, 3, 15, 12);
+    test('groups sent items by send day with summed bytes and counts, '
+        'skipping empty days and items outside the window', () async {
+      final now = DateTime.utc(2024, 3, 15, 12);
 
-        await insertSent(
-          sentAt: DateTime.utc(2024, 3, 15, 8),
-          payloadSize: 100,
-        );
-        await insertSent(
-          sentAt: DateTime.utc(2024, 3, 15, 9),
-          payloadSize: 250,
-        );
-        await insertSent(sentAt: DateTime.utc(2024, 3, 13, 9), payloadSize: 40);
-        // Outside the 7-day window — must be excluded.
-        await insertSent(sentAt: DateTime.utc(2024, 3, 1, 9), payloadSize: 999);
-        // Pending row — only `sent` rows count toward volume.
-        await database.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
-            subject: const Value('subject'),
-            message: const Value('{}'),
-            createdAt: Value(DateTime.utc(2024, 3, 15, 8)),
-            updatedAt: Value(DateTime.utc(2024, 3, 15, 8)),
-            payloadSize: const Value(500),
-          ),
-        );
+      await insertSent(sentAt: DateTime.utc(2024, 3, 15, 8), payloadSize: 100);
+      await insertSent(sentAt: DateTime.utc(2024, 3, 15, 9), payloadSize: 250);
+      await insertSent(sentAt: DateTime.utc(2024, 3, 13, 9), payloadSize: 40);
+      // Outside the 7-day window — must be excluded.
+      await insertSent(sentAt: DateTime.utc(2024, 3, 1, 9), payloadSize: 999);
+      // Pending row — only `sent` rows count toward volume.
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('subject'),
+          message: const Value('{}'),
+          createdAt: Value(DateTime.utc(2024, 3, 15, 8)),
+          updatedAt: Value(DateTime.utc(2024, 3, 15, 8)),
+          payloadSize: const Value(500),
+        ),
+      );
 
-        final volume = await database.getDailyOutboxVolume(now: now);
+      final volume = await database.getDailyOutboxVolume(now: now);
 
-        expect(volume, hasLength(2));
-        expect(volume[0].date, DateTime.utc(2024, 3, 13));
-        expect(volume[0].totalBytes, 40);
-        expect(volume[0].itemCount, 1);
-        expect(volume[1].date, DateTime.utc(2024, 3, 15));
-        expect(volume[1].totalBytes, 350);
-        expect(volume[1].itemCount, 2);
-      },
-    );
+      expect(volume, hasLength(2));
+      expect(volume[0].date, DateTime.utc(2024, 3, 13));
+      expect(volume[0].totalBytes, 40);
+      expect(volume[0].itemCount, 1);
+      expect(volume[1].date, DateTime.utc(2024, 3, 15));
+      expect(volume[1].totalBytes, 350);
+      expect(volume[1].itemCount, 2);
+    });
 
     test('treats NULL payload sizes as zero bytes', () async {
       final now = DateTime.utc(2024, 3, 15, 12);

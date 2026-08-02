@@ -1,10 +1,7 @@
-import 'dart:async';
-
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
-import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -324,9 +321,6 @@ class PersistenceLogic implements PersistenceLogicContract {
     data: data,
     entryText: entryText,
   );
-
-  FutureOr<Geolocation?> addGeolocationAsync(String journalEntityId) =>
-      _updates.addGeolocationAsync(journalEntityId);
 
   @override
   void addGeolocation(String journalEntityId) =>

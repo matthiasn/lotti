@@ -33,15 +33,6 @@ typedef AudioMetadataReader = Future<Duration> Function(String filePath);
 class AudioMetadataExtractor {
   const AudioMetadataExtractor._();
 
-  /// Supported audio file extensions for import.
-  static const List<String> supportedExtensions = [
-    'm4a',
-    'aac',
-    'mp3',
-    'wav',
-    'ogg',
-  ];
-
   /// Timeout for MediaKit player initialization.
   static const Duration playerOpenTimeout = Duration(seconds: 3);
 

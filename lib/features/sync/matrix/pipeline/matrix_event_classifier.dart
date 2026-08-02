@@ -10,9 +10,6 @@ import 'package:matrix/matrix.dart';
 class MatrixEventClassifier {
   const MatrixEventClassifier._();
 
-  /// True when the event carries a file attachment (non-empty mimetype).
-  static bool isAttachment(Event e) => e.attachmentMimetype.isNotEmpty;
-
   /// True if the event is a Lotti sync payload, either by msgtype or fallback
   /// base64 JSON payload containing a runtimeType.
   static bool isSyncPayloadEvent(Event e) {

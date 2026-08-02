@@ -13,50 +13,36 @@ class _GeneratedClassifierScenario {
   const _GeneratedClassifierScenario({
     required this.syncMsgType,
     required this.validFallbackText,
-    required this.nonEmptyAttachmentMime,
   });
 
   final bool syncMsgType;
   final bool validFallbackText;
-  final bool nonEmptyAttachmentMime;
-
   bool get expectedSyncPayload => syncMsgType || validFallbackText;
-
-  bool get expectedAttachment => nonEmptyAttachmentMime;
 
   @override
   String toString() {
     return '_GeneratedClassifierScenario('
         'syncMsgType: $syncMsgType, '
-        'validFallbackText: $validFallbackText, '
-        'nonEmptyAttachmentMime: $nonEmptyAttachmentMime'
+        'validFallbackText: $validFallbackText'
         ')';
   }
 }
 
 extension _AnyMatrixEventClassifierScenario on glados.Any {
   glados.Generator<_GeneratedClassifierScenario> get classifierScenario =>
-      glados.CombinableAny(this).combine3(
+      glados.CombinableAny(this).combine2(
         glados.BoolAny(this).bool,
         glados.BoolAny(this).bool,
-        glados.BoolAny(this).bool,
-        (
-          bool syncMsgType,
-          bool validFallbackText,
-          bool nonEmptyAttachmentMime,
-        ) => _GeneratedClassifierScenario(
-          syncMsgType: syncMsgType,
-          validFallbackText: validFallbackText,
-          nonEmptyAttachmentMime: nonEmptyAttachmentMime,
-        ),
+        (bool syncMsgType, bool validFallbackText) =>
+            _GeneratedClassifierScenario(
+              syncMsgType: syncMsgType,
+              validFallbackText: validFallbackText,
+            ),
       );
 }
 
 Event _generatedEvent(_GeneratedClassifierScenario scenario) {
   final event = MockEvent();
-  when(() => event.attachmentMimetype).thenReturn(
-    scenario.nonEmptyAttachmentMime ? 'application/json' : '',
-  );
   when(() => event.content).thenReturn(<String, dynamic>{
     if (scenario.syncMsgType) 'msgtype': syncMessageType,
   });
@@ -70,12 +56,6 @@ Event _generatedEvent(_GeneratedClassifierScenario scenario) {
 
 void main() {
   group('MatrixEventClassifier', () {
-    test('isAttachment returns true when attachmentMimetype is not empty', () {
-      final e = MockEvent();
-      when(() => e.attachmentMimetype).thenReturn('application/json');
-      expect(MatrixEventClassifier.isAttachment(e), isTrue);
-    });
-
     test('isSyncPayloadEvent detects by msgtype == syncMessageType', () {
       final e = MockEvent();
       when(
@@ -109,20 +89,14 @@ void main() {
 
     // Prefetch behavior removed.
 
-    glados.Glados(
-      glados.any.classifierScenario,
-    ).test(
-      'generated classification matches msgtype/text and attachment model',
+    glados.Glados(glados.any.classifierScenario).test(
+      'generated classification matches msgtype and fallback text model',
       (scenario) {
         final event = _generatedEvent(scenario);
 
         expect(
           MatrixEventClassifier.isSyncPayloadEvent(event),
           scenario.expectedSyncPayload,
-        );
-        expect(
-          MatrixEventClassifier.isAttachment(event),
-          scenario.expectedAttachment,
         );
       },
       tags: 'glados',
