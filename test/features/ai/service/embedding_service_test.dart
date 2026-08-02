@@ -777,7 +777,7 @@ void main() {
     );
 
     test(
-      'startup removes a report superseded during its store write',
+      'startup reconciles the successor after a store-time supersession',
       () async {
         const agentId = 'agent-superseded-during-store';
         const taskId = 'task-superseded-during-store';
@@ -788,6 +788,11 @@ void main() {
           createdAt: _agentTestDate.subtract(const Duration(minutes: 1)),
         );
         final reportB = _agentReport(id: 'report-b', agentId: agentId);
+        final reportP = _agentReport(
+          id: 'report-p',
+          agentId: agentId,
+          createdAt: _agentTestDate.subtract(const Duration(minutes: 2)),
+        );
         final storeStarted = Completer<void>();
         final releaseStore = Completer<void>();
         final deletionObserved = Completer<void>();
@@ -817,11 +822,17 @@ void main() {
             type: AgentEntityTypes.agentReport,
             subtype: AgentReportScopes.current,
           ),
-        ).thenAnswer((_) async => [reportA, reportB]);
+        ).thenAnswer((_) async => [reportP, reportA, reportB]);
         when(
           () => mockJournalDb.journalEntityById(taskId),
         ).thenAnswer((_) async => null);
         stubEmbedding();
+        when(
+          () => mockEmbeddingStore.getContentHash(reportB.id),
+        ).thenReturn(EmbeddingContentExtractor.contentHash(reportB.content));
+        when(
+          () => mockEmbeddingStore.hasEmbedding(reportB.id),
+        ).thenReturn(true);
         when(
           () => mockEmbeddingStore.replaceEntityEmbeddings(
             entityId: reportA.id,
@@ -861,7 +872,13 @@ void main() {
         await deletionObserved.future;
         await pumpEventQueue();
 
-        expect(deletedReportIds, [reportA.id]);
+        expect(deletedReportIds, [reportA.id, reportP.id]);
+        verify(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(reportA.id),
+        ).called(1);
+        verify(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(reportP.id),
+        ).called(1);
         verifyNever(
           () => mockEmbeddingStore.deleteEntityEmbeddings(reportB.id),
         );

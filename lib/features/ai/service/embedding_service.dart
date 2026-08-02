@@ -167,71 +167,11 @@ class EmbeddingService {
         if (_stopped) return;
 
         try {
-          final taskLinks = await repository.getLinksFrom(
-            agent.id,
-            type: AgentLinkTypes.agentTask,
-          );
-          if (taskLinks.isEmpty) continue;
-
-          final report = await repository.getLatestReport(
-            agent.id,
-            AgentReportScopes.current,
-          );
-          if (report == null || report.content.isEmpty) continue;
-
-          final taskId = taskLinks.first.toId;
-          final task = await journalDb.journalEntityById(taskId);
-          final didEmbed = await EmbeddingProcessor.processAgentReport(
-            reportId: report.id,
-            reportContent: report.content,
-            taskId: taskId,
-            categoryId: task?.meta.categoryId ?? '',
-            subtype: AgentReportScopes.current,
-            embeddingStore: embeddingStore,
-            embeddingRepository: embeddingRepository,
+          await _recoverAgentReportsForIdentity(
+            repository: repository,
+            agent: agent,
             baseUrl: baseUrl,
-            writeGuard: () async {
-              final latestReport = await repository.getLatestReport(
-                agent.id,
-                AgentReportScopes.current,
-              );
-              return latestReport?.id == report.id;
-            },
           );
-          final latestReport = await repository.getLatestReport(
-            agent.id,
-            AgentReportScopes.current,
-          );
-          if (latestReport?.id != report.id) {
-            // The head advanced while the store swap was in flight. Remove
-            // only the vector this recovery attempt can have introduced;
-            // the new head's normal workflow owns predecessor cleanup.
-            if (didEmbed) {
-              await embeddingStore.deleteEntityEmbeddings(report.id);
-            }
-            continue;
-          }
-          final currentReportIsSearchable =
-              didEmbed || await embeddingStore.hasEmbedding(report.id);
-          if (!currentReportIsSearchable) continue;
-
-          final currentReports = await repository
-              .getEntitiesByAgentIdAndSubtype(
-                agent.id,
-                type: AgentEntityTypes.agentReport,
-                subtype: AgentReportScopes.current,
-              );
-          for (final historicalReport
-              in currentReports.whereType<AgentReportEntity>()) {
-            // A newer report may be persisted after the head recheck but
-            // before this query completes. Never let startup recovery delete
-            // a report at or beyond the still-current snapshot.
-            if (historicalReport.createdAt.isBefore(report.createdAt)) {
-              await embeddingStore.deleteEntityEmbeddings(
-                historicalReport.id,
-              );
-            }
-          }
         } on OllamaEmbeddingAvailabilityException catch (error) {
           if (!_stopped) {
             _agentReportRecoveryPending = true;
@@ -272,6 +212,93 @@ class EmbeddingService {
       );
     } finally {
       _agentReportRecoveryRunning = false;
+    }
+  }
+
+  /// Reconciles one agent until its durable current-report head is stable.
+  ///
+  /// A normal wake can publish a successor while startup recovery awaits
+  /// network or storage work. Following the new head here ensures cleanup is
+  /// based on the eventual searchable successor instead of stopping after the
+  /// superseded attempt.
+  Future<void> _recoverAgentReportsForIdentity({
+    required AgentRepository repository,
+    required AgentIdentityEntity agent,
+    required String baseUrl,
+  }) async {
+    final taskLinks = await repository.getLinksFrom(
+      agent.id,
+      type: AgentLinkTypes.agentTask,
+    );
+    if (taskLinks.isEmpty) return;
+
+    final taskId = taskLinks.first.toId;
+    final task = await journalDb.journalEntityById(taskId);
+    final attemptedReportIds = <String>{};
+    final removedReportIds = <String>{};
+
+    while (!_stopped) {
+      final report = await repository.getLatestReport(
+        agent.id,
+        AgentReportScopes.current,
+      );
+      if (report == null ||
+          report.content.isEmpty ||
+          !attemptedReportIds.add(report.id)) {
+        return;
+      }
+
+      final didEmbed = await EmbeddingProcessor.processAgentReport(
+        reportId: report.id,
+        reportContent: report.content,
+        taskId: taskId,
+        categoryId: task?.meta.categoryId ?? '',
+        subtype: AgentReportScopes.current,
+        embeddingStore: embeddingStore,
+        embeddingRepository: embeddingRepository,
+        baseUrl: baseUrl,
+        writeGuard: () async {
+          final latestReport = await repository.getLatestReport(
+            agent.id,
+            AgentReportScopes.current,
+          );
+          return latestReport?.id == report.id;
+        },
+      );
+      final latestReport = await repository.getLatestReport(
+        agent.id,
+        AgentReportScopes.current,
+      );
+      if (latestReport?.id != report.id) {
+        // The head advanced while the store swap was in flight. Remove only
+        // the vector this attempt introduced, then reconcile the successor so
+        // its last searchable predecessor is not stranded.
+        if (didEmbed && removedReportIds.add(report.id)) {
+          await embeddingStore.deleteEntityEmbeddings(report.id);
+        }
+        continue;
+      }
+
+      final currentReportIsSearchable =
+          didEmbed || await embeddingStore.hasEmbedding(report.id);
+      if (!currentReportIsSearchable) return;
+
+      final currentReports = await repository.getEntitiesByAgentIdAndSubtype(
+        agent.id,
+        type: AgentEntityTypes.agentReport,
+        subtype: AgentReportScopes.current,
+      );
+      for (final historicalReport
+          in currentReports.whereType<AgentReportEntity>()) {
+        // A newer report may be persisted after the head recheck but before
+        // this query completes. Never let startup recovery delete a report at
+        // or beyond the still-current snapshot.
+        if (historicalReport.createdAt.isBefore(report.createdAt) &&
+            removedReportIds.add(historicalReport.id)) {
+          await embeddingStore.deleteEntityEmbeddings(historicalReport.id);
+        }
+      }
+      return;
     }
   }
 

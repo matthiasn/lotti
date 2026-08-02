@@ -104,12 +104,13 @@ flowchart LR
   is confirmed searchable, every older current-scope report embedding for that
   agent is removed. Recovery revalidates the durable head immediately before
   and after vector storage. If the head advances during the store swap, recovery
-  removes only the stale vector it just wrote; historical cleanup is restricted
-  to reports created before the still-current head, so a concurrently published
-  successor cannot be deleted. An availability failure leaves this
-  reconciliation pending on the service's shared retry timer, so exiting during
-  an in-memory workflow retry cannot permanently strand the latest report or
-  its searchable predecessor.
+  removes only the stale vector it just wrote, then follows and reconciles the
+  successor until the head is stable. Historical cleanup is restricted to
+  reports created before that still-current head, so a concurrently published
+  successor cannot be deleted and its older searchable predecessor cannot be
+  stranded. An availability failure leaves this reconciliation pending on the
+  service's shared retry timer, so exiting during an in-memory workflow retry
+  cannot permanently strand the latest report or its searchable predecessor.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
   maps it to the active locale; the suppression count and retry timestamp stay
   in diagnostic logs. A failed optional embedding never rolls back the
