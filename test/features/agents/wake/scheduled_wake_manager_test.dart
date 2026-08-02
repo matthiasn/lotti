@@ -1052,6 +1052,29 @@ void main() {
         });
       });
 
+      test('a wake whose identity has not synced stays pending', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final record = leased();
+            final manager = managerFor(
+              record,
+              checkInterval: const Duration(hours: 1),
+            );
+            // Sync can deliver a wake record before the identity it belongs
+            // to. Consuming is terminal, so treating "missing" as "inactive"
+            // would destroy the wake rather than delay it.
+            when(
+              () => repository.getEntity(record.agentId),
+            ).thenAnswer((_) async => null);
+            async.flushMicrotasks();
+
+            expectNoWake();
+            verifyNever(() => syncService.upsertEntity(any()));
+            manager.stop();
+          });
+        });
+      });
+
       test('a claim confirmed after the settle fires exactly once', () {
         fakeAsync((async) {
           withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {

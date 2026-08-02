@@ -799,6 +799,17 @@ class DayAgentService {
       subDomain: 'restore',
     );
 
+    try {
+      await retirePastDayAgents();
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'failed to retire past day agents',
+        stackTrace: s,
+      );
+    }
+
     final activeAgents = await agentService.listAgents(
       lifecycle: AgentLifecycle.active,
     );
@@ -818,17 +829,6 @@ class DayAgentService {
     final statesByAgentId = dayAgents.isEmpty
         ? const <String, AgentStateEntity>{}
         : await repository.getAgentStatesByAgentIds(agentIds);
-
-    try {
-      await retirePastDayAgents();
-    } catch (e, s) {
-      domainLogger.error(
-        LogDomain.agentRuntime,
-        e,
-        message: 'failed to retire past day agents',
-        stackTrace: s,
-      );
-    }
 
     var count = 0;
     var sawCoordinator = false;

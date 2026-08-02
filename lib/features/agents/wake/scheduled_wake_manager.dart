@@ -198,7 +198,16 @@ class ScheduledWakeManager {
         // A retired per-day agent still holding a `set_next_wake` record would
         // otherwise keep firing — the record path is the one per-day agents
         // actually use for pre-warms, so without this retirement does nothing.
-        if (!await _isActiveAgent(record.agentId)) {
+        final identity = await _repository.getEntity(record.agentId);
+        if (identity == null) {
+          // Not "inactive" — *unknown*. Sync can deliver a wake record before
+          // the identity it belongs to, and consuming is terminal, so a
+          // record that arrived first would be destroyed rather than delayed.
+          // Leave it pending; it fires once the identity lands.
+          continue;
+        }
+        final lifecycle = identity.mapOrNull(agent: (e) => e.lifecycle);
+        if (lifecycle != AgentLifecycle.active) {
           await _consumeStaleWakeRecord(record, now);
           continue;
         }
@@ -376,6 +385,9 @@ class ScheduledWakeManager {
         updatedAt: now,
       ),
     );
+    // The pending-wakes surface refreshes from the shared notification, not
+    // from the sync write, so without this the record lingers on screen.
+    onPersistedStateChanged?.call(record.agentId);
   }
 
   /// Clears an archived agent's stale `scheduledWakeAt` so the due query stops

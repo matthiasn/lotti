@@ -1750,9 +1750,9 @@ void main() {
       () => agentService.listAgents(lifecycle: AgentLifecycle.active),
     ).thenAnswer((_) async {
       calls++;
-      // The restore pass reads the list first; the retirement pass reads it
-      // again and is the one that fails here.
-      if (calls > 1) throw StateError('database connection closed');
+      // Retirement runs first now, so it is the first read that fails; the
+      // restore pass then reads the list again and must still succeed.
+      if (calls == 1) throw StateError('database connection closed');
       return [planner];
     });
     when(
