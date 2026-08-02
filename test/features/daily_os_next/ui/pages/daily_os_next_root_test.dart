@@ -14,6 +14,10 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/utils/device_region.dart';
@@ -528,6 +532,240 @@ void main() {
 
           // The widget stayed on today (same date confirmed).
           expect(find.text('Today'), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets(
+      'the chevrons hold their position across dates of different label width',
+      (tester) async {
+        // May 3 2026 ("Sun, May 3, 2026") vs. September 30 2026
+        // ("Wed, Sep 30, 2026") — different character counts, and the
+        // strip crosses "Today" in between.
+        await withClock(Clock.fixed(DateTime(2026, 5, 3, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          Offset nextChevron() =>
+              tester.getTopLeft(find.byIcon(Icons.chevron_right_rounded));
+          Offset prevChevron() =>
+              tester.getTopLeft(find.byIcon(Icons.chevron_left_rounded));
+
+          final anchorNext = nextChevron();
+          final anchorPrev = prevChevron();
+          final seenLabels = <String>{};
+
+          for (var step = 0; step < 5; step++) {
+            await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+            await tester.pump();
+            await tester.pump();
+            await tester.pump();
+
+            seenLabels.add(
+              tester
+                  .widgetList<Text>(find.byType(Text))
+                  .map((text) => text.data ?? '')
+                  .firstWhere(
+                    (data) => data.contains('2026'),
+                    orElse: () => '',
+                  ),
+            );
+            expect(
+              nextChevron(),
+              anchorNext,
+              reason: 'next chevron must not move between dates',
+            );
+            expect(prevChevron(), anchorPrev);
+          }
+
+          // The dates really did differ in rendered width, so the
+          // assertion above is not vacuous.
+          expect(seenLabels.length, 5);
+        });
+      },
+    );
+
+    testWidgets(
+      'the reserved date width grows with the text scale instead of clipping',
+      (tester) async {
+        Future<double> labelWidthAt(double scale) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              // A fresh scope per scale: without it the second pump reuses
+              // the first scope's container and its already-shifted date.
+              key: ValueKey(scale),
+              overrides: [
+                dailyOsActualTimeBlocksProvider.overrideWith(
+                  (ref, _) async => const [],
+                ),
+                dayActivityProvider.overrideWith((ref, _) async => const []),
+                firstDayOfWeekIndexProvider.overrideWith((ref) async => 1),
+                dailyOsSetupStatusProvider.overrideWith(
+                  (ref) async => const DailyOsSetupStatus(
+                    hasInferenceRoute: true,
+                    hasPreferredName: true,
+                  ),
+                ),
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+              child: makeTestableWidget2(
+                const DailyOsNextRoot(),
+                mediaQueryData: MediaQueryData(
+                  size: const Size(1280, 900),
+                  textScaler: TextScaler.linear(scale),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+          // Step off today so a real date string is rendered.
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          final label = find.text('Wed, Sep 30, 2026');
+          expect(label, findsOneWidget);
+          final labelWidth = tester.getSize(label).width;
+          final reserved = tester
+              .widget<ConstrainedBox>(
+                find
+                    .ancestor(
+                      of: label,
+                      matching: find.byType(ConstrainedBox),
+                    )
+                    .first,
+              )
+              .constraints
+              .minWidth;
+          // Nothing is clipped: the reserved box is wide enough for the
+          // string it holds at this scale.
+          expect(reserved, greaterThanOrEqualTo(labelWidth));
+          return reserved;
+        }
+
+        await withClock(Clock.fixed(DateTime(2026, 9, 29, 9)), () async {
+          final normal = await labelWidthAt(1);
+          final large = await labelWidthAt(1.8);
+          expect(
+            large,
+            greaterThan(normal),
+            reason: 'the reservation must follow the user font size',
+          );
+        });
+      },
+    );
+
+    testWidgets(
+      'the Today button appears off-today and returns the selection',
+      (tester) async {
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          final todayButton = find.byKey(
+            const Key('daily_os_date_strip_today'),
+          );
+          // On today the control has nothing to do and is not rendered.
+          expect(todayButton, findsNothing);
+
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+          expect(find.text('Wed, May 27, 2026'), findsOneWidget);
+          expect(todayButton, findsOneWidget);
+
+          await tester.tap(todayButton);
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.text('Today'), findsOneWidget);
+          expect(find.text('Wed, May 27, 2026'), findsNothing);
+          expect(todayButton, findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
+      'the selected plan view survives day navigation and jump-to-today',
+      (tester) async {
+        final plan = _draftPlan();
+
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                capturesForDateProvider.overrideWith(
+                  (ref, _) async => const [],
+                ),
+                currentDraftPlanProvider.overrideWith(
+                  (ref, date) async => plan.copyWith(dayDate: date),
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // Default projection for a day with a plan.
+          expect(find.byType(AgendaView), findsOneWidget);
+
+          tester
+              .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+              .onChanged(PlanView.day);
+          await tester.pump();
+          expect(find.byType(DayTimeline), findsOneWidget);
+          expect(find.byType(AgendaView), findsNothing);
+
+          // Chevron navigation must not bounce the user back to Activity.
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+          expect(find.text('Wed, May 27, 2026'), findsOneWidget);
+          expect(find.byType(DayTimeline), findsOneWidget);
+          expect(find.byType(DayActivityView), findsNothing);
+
+          // Neither does the jump-to-today control.
+          await tester.tap(find.byKey(const Key('daily_os_date_strip_today')));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+          expect(find.text('Today'), findsOneWidget);
+          expect(find.byType(DayTimeline), findsOneWidget);
+          expect(find.byType(DayActivityView), findsNothing);
         });
       },
     );

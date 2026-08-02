@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
@@ -150,13 +152,15 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
 }
 
 /// Compact date strip — prev arrow, tappable date label that opens a
-/// date picker, next arrow.
+/// date picker, next arrow, and a "Today" button once the selection has
+/// left today.
 ///
-/// Layout is intentionally stable across dates: the same three
-/// components render regardless of which day is selected, so chevrons
-/// and the label never shift horizontally as the user navigates. The
-/// picker is the way back to "today" (or any other day) — no separate
-/// reset chip.
+/// Layout is stable across dates: the label reserves the width of the
+/// *widest* date this locale, style and text scale can produce (see
+/// [_stableDateLabelWidth]), so neither chevron moves as the user steps
+/// through days and the next chevron can be clicked repeatedly. The Today
+/// button sits after the chevrons, so its appearance cannot push them
+/// either.
 class _DateStrip extends StatelessWidget {
   const _DateStrip({
     required this.selected,
@@ -179,6 +183,12 @@ class _DateStrip extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final material = MaterialLocalizations.of(context);
+    // Tabular figures keep the day and year digits from re-flowing the
+    // label between dates of equal character count.
+    final labelStyle = tokens.typography.styles.subtitle.subtitle1.copyWith(
+      color: tokens.colors.text.highEmphasis,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -197,17 +207,28 @@ class _DateStrip extends StatelessWidget {
                 horizontal: tokens.spacing.step3,
                 vertical: tokens.spacing.step2,
               ),
-              child: Text(
-                _formatDate(
-                  context,
-                  selected,
-                  isToday: isToday,
-                  todayLabel: messages.dailyOsTodayButton,
+              child: ConstrainedBox(
+                // Reserved, measured width — not a hardcoded pixel value —
+                // so the chevrons hold still for every date and grow with
+                // the user's font-size setting.
+                constraints: BoxConstraints(
+                  minWidth: _stableDateLabelWidth(
+                    context,
+                    style: labelStyle,
+                    todayLabel: messages.dailyOsTodayButton,
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                  color: tokens.colors.text.highEmphasis,
+                child: Text(
+                  _formatDate(
+                    context,
+                    selected,
+                    isToday: isToday,
+                    todayLabel: messages.dailyOsTodayButton,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: labelStyle,
                 ),
               ),
             ),
@@ -218,6 +239,20 @@ class _DateStrip extends StatelessWidget {
           tooltip: material.nextPageTooltip,
           onPressed: onNext,
         ),
+        // Only shown off-today: with nothing to jump back to it would be
+        // dead chrome, and sitting after the chevrons it can appear and
+        // disappear without moving them.
+        if (!isToday) ...[
+          SizedBox(width: tokens.spacing.step2),
+          DesignSystemButton(
+            key: const Key('daily_os_date_strip_today'),
+            label: messages.dailyOsTodayButton,
+            leadingIcon: Icons.today_rounded,
+            variant: DesignSystemButtonVariant.outlined,
+            size: DesignSystemButtonSize.dense,
+            onPressed: onToday,
+          ),
+        ],
       ],
     );
   }
@@ -233,6 +268,61 @@ class _DateStrip extends StatelessWidget {
     // Weekday included on every concrete date in the Daily OS.
     return DateFormat.yMMMEd(locale).format(date);
   }
+}
+
+/// Cache of measured label widths, keyed by everything that can change one:
+/// locale, the resolved text style, and the ambient text scale.
+final Map<String, double> _dateLabelWidthCache = <String, double>{};
+
+/// The width the widest label this strip can ever show needs, measured with
+/// the real style and text scaler rather than assumed.
+///
+/// Date strings differ in width by weekday and month name ("Sun, May 3" vs.
+/// "Wednesday, September 11"), which is what makes an unreserved label push
+/// the next chevron around as the user navigates. Laying out every
+/// weekday × month combination the locale's `yMMMEd` pattern can produce (plus
+/// the "Today" label) yields an exact upper bound that follows the font, the
+/// locale and the user's font-size setting — where a hardcoded pixel width
+/// would clip or wobble the moment any of those changed.
+double _stableDateLabelWidth(
+  BuildContext context, {
+  required TextStyle style,
+  required String todayLabel,
+}) {
+  final locale = Localizations.localeOf(context).toString();
+  final textScaler = MediaQuery.textScalerOf(context);
+  final key = '$locale|$todayLabel|${style.hashCode}|${textScaler.scale(100)}';
+  final cached = _dateLabelWidthCache[key];
+  if (cached != null) return cached;
+
+  final format = DateFormat.yMMMEd(locale);
+  final candidates = <String>[todayLabel];
+  for (var month = 1; month <= 12; month++) {
+    // Seven consecutive two-digit days cover all seven weekday names, and
+    // the loop covers all twelve month names.
+    for (var day = 20; day <= 26; day++) {
+      candidates.add(format.format(DateTime(2027, month, day)));
+    }
+  }
+
+  final painter = TextPainter(
+    textDirection: Directionality.of(context),
+    textScaler: textScaler,
+    maxLines: 1,
+  );
+  var widest = 0.0;
+  for (final candidate in candidates) {
+    painter
+      ..text = TextSpan(text: candidate, style: style)
+      ..layout();
+    widest = math.max(widest, painter.width);
+  }
+  painter.dispose();
+  // Sub-pixel rounding on a fractional width can still nudge neighbours by a
+  // physical pixel; ceil once here so the reserved box is integral.
+  final width = widest.ceilToDouble();
+  _dateLabelWidthCache[key] = width;
+  return width;
 }
 
 class _LoadingShell extends StatelessWidget {
