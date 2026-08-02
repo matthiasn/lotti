@@ -5,7 +5,7 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-02T20:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-02T20:30:00Z }
 stale_after: 2026-11-01
 sources:
   - id: agents
@@ -217,9 +217,23 @@ re-check: the periodic tick is hourly, so a lease expiring at 06:34 would
 otherwise wait until 07:00. Those re-checks are timers that fire once, so
 `_checkAndEnqueue` **coalesces** a trigger arriving during an in-flight pass and
 re-runs once when that pass finishes, rather than dropping it on the
-already-running guard — which would lose the trigger outright, not delay it. A
-`stop()` mid-pass cancels the queued re-run: the generation it was queued under
-is gone.
+already-running guard — which would lose the trigger outright, not delay it.
+
+The re-run re-reads everything and skips only the rows this invocation already
+acted on. Both halves are load-bearing. It must re-read, because a state that
+became due *during* a long pass is exactly what the re-run is for. And it must
+skip what it handled, because neither write is guaranteed to have landed — the
+wake clears `scheduledWakeAt` asynchronously, and a record's consume-write can
+fail outright and leave it pending. `enqueueManualWake` supersedes only work
+still *queued*, so firing a row twice bills twice. Rows are marked handled
+before the work, not after: a partial failure waits for the next invocation
+rather than being retried microseconds later.
+
+Generations bound the loop at both ends. A `stop()` mid-pass cancels the queued
+re-run, since the schedule it belonged to is gone. A trigger raised by a
+*restart* — `start()`'s immediate check landing while the old pass winds down —
+is handed to a fresh invocation instead of being dropped, or the restarted
+manager would wait a full interval for its first scan.
 
 The lease recovers the **claim**, not the run. A crash after the `consumed` flip
 but before the job finishes still loses that day's briefing, because

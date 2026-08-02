@@ -2055,6 +2055,135 @@ void main() {
         });
       });
 
+      test('the re-run picks up a state that became due during the pass', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        var secondQuery = false;
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final gate = Completer<void>();
+            gatedDueQuery(gate, [0]);
+            // Nothing due when the pass starts; an agent becomes due while it
+            // is stalled on the repository.
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => secondQuery
+                  ? [makeTestState(scheduledWakeAt: DateTime(2024, 3, 15, 10))]
+                  : <AgentStateEntity>[],
+            );
+
+            final manager = createAndStart();
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(minutes: 1))
+              ..flushMicrotasks();
+
+            secondQuery = true;
+            gate.complete();
+            async.flushMicrotasks();
+
+            // Suppressing the whole state path on a re-run would leave this
+            // agent undiscovered until the next hourly tick.
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+              ),
+            ).called(1);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('a record whose consume-write failed is not fired twice', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final record =
+            AgentDomainEntity.scheduledWake(
+                  id: 'wake-rec-1',
+                  agentId: kTestAgentId,
+                  scheduledAt: DateTime(2024, 3, 15, 10),
+                  status: ScheduledWakeStatus.pending,
+                  reason: WakeReason.scheduled.name,
+                  updatedAt: DateTime(2024, 3, 15, 10),
+                  vectorClock: null,
+                  triggerTokens: const ['token'],
+                )
+                as ScheduledWakeEntity;
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final gate = Completer<void>();
+            var calls = 0;
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => <AgentStateEntity>[]);
+            // Still pending on the re-read: the consume-write below failed.
+            when(() => repository.getDueScheduledWakeRecords(any())).thenAnswer(
+              (_) async {
+                calls++;
+                if (calls == 1) await gate.future;
+                return [record];
+              },
+            );
+            when(() => syncService.upsertEntity(any())).thenThrow(
+              Exception('consume write failed'),
+            );
+
+            final manager = createAndStart();
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(minutes: 1))
+              ..flushMicrotasks();
+
+            gate.complete();
+            async.flushMicrotasks();
+
+            // A transient write error must not become a second billed wake.
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+                triggerTokens: any(named: 'triggerTokens'),
+                workspaceKey: any(named: 'workspaceKey'),
+                supersede: any(named: 'supersede'),
+                initiator: any(named: 'initiator'),
+              ),
+            ).called(1);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('a restart during the pass still gets its immediate check', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final gate = Completer<void>();
+            final passes = gatedDueQuery(gate, [0]);
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            // Stopped and restarted while the first pass is still stalled.
+            manager
+              ..stop()
+              ..start();
+            async.flushMicrotasks();
+
+            gate.complete();
+            async.flushMicrotasks();
+
+            // The restart's own immediate check must survive the old pass;
+            // otherwise it waits a full interval for its first scan.
+            expect(passes(), 2);
+
+            manager.stop();
+          });
+        });
+      });
+
       test('a stop during the pass cancels the queued re-run', () {
         final now = DateTime(2024, 3, 15, 10, 30);
 
