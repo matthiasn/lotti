@@ -16,6 +16,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import 'sync_event_processor_test_helpers.dart';
@@ -25,6 +26,37 @@ void main() {
   setUp(setUpProcessorMocks);
 
   group('SyncEventProcessor - Embedded Entry Links', () {
+    test('emits a task-keyed recovery token for synced tasks', () async {
+      const taskId = 'task-with-targeted-embedding-recovery';
+      final task = TestTaskFactory.create(
+        id: taskId,
+        title: 'Targeted report recovery',
+      );
+      const message = SyncMessage.journalEntity(
+        id: taskId,
+        jsonPath: '/task.json',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+      );
+      when(
+        () => journalEntityLoader.load(jsonPath: '/task.json'),
+      ).thenAnswer((_) async => task);
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => updateNotifications.notify(
+          {
+            ...task.affectedIds,
+            labelUsageNotification,
+            '$taskNotificationPrefix$taskId',
+          },
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
     test(
       'processes embedded links after successful journal entity update',
       () async {

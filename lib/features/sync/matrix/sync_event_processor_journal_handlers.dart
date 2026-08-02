@@ -415,7 +415,11 @@ extension _JournalHandlers on SyncEventProcessor {
       vcB ?? syncMessage.vectorClock,
     );
     _updateNotifications.notify(
-      {...journalEntity.affectedIds, labelUsageNotification},
+      {
+        ...journalEntity.affectedIds,
+        labelUsageNotification,
+        if (journalEntity is Task) '$taskNotificationPrefix${journalEntity.id}',
+      },
       fromSync: true,
     );
 

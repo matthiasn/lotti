@@ -53,12 +53,22 @@ class ObjectBoxEmbeddingStore implements EmbeddingStore {
   }
 
   @override
-  void moveEntityToShard(String entityId, String newCategoryId) {
+  String? getTaskId(String entityId) {
+    return _ops.findFirstByEntityId(entityId)?.taskId;
+  }
+
+  @override
+  void moveEntityToShard(
+    String entityId,
+    String newCategoryId, {
+    String? taskId,
+  }) {
     final chunks = _ops.findEntitiesByEntityId(entityId);
     if (chunks.isEmpty) return;
 
     for (final chunk in chunks) {
       chunk.categoryId = newCategoryId;
+      if (taskId != null) chunk.taskId = taskId;
     }
     _ops.runInWriteTransaction(() => _ops.putMany(chunks));
   }

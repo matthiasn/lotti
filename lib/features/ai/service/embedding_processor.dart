@@ -178,9 +178,17 @@ class EmbeddingProcessor {
     final existingHash = await embeddingStore.getContentHash(reportId);
     if (existingHash == hash) {
       final existingCategoryId = await embeddingStore.getCategoryId(reportId);
-      if (existingCategoryId != null && existingCategoryId != categoryId) {
+      final existingTaskId = await embeddingStore.getTaskId(reportId);
+      final categoryChanged =
+          existingCategoryId != null && existingCategoryId != categoryId;
+      final taskChanged = existingTaskId != null && existingTaskId != taskId;
+      if (categoryChanged || taskChanged) {
         if (writeGuard != null && !await writeGuard()) return false;
-        await embeddingStore.moveEntityToShard(reportId, categoryId);
+        await embeddingStore.moveEntityToShard(
+          reportId,
+          categoryId,
+          taskId: taskId,
+        );
         return true;
       }
       return false;

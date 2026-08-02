@@ -1957,6 +1957,66 @@ void main() {
       });
     });
 
+    test('provider change during a failed request reruns on the new URL', () {
+      final providerConfigs = StreamController<List<AiConfig>>.broadcast(
+        sync: true,
+      );
+      addTearDown(providerConfigs.close);
+      late Completer<Float32List> firstRequest;
+      var currentBaseUrl = 'http://old-ollama:11434';
+      final attemptedBaseUrls = <String>[];
+      when(
+        () => mockAiConfigRepo.watchConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) => providerConfigs.stream);
+      when(
+        mockAiConfigRepo.resolveOllamaBaseUrl,
+      ).thenAnswer((_) async => currentBaseUrl);
+      stubEntity(
+        JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        ),
+      );
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenAnswer((invocation) {
+        final baseUrl = invocation.namedArguments[#baseUrl]! as String;
+        attemptedBaseUrls.add(baseUrl);
+        if (attemptedBaseUrls.length == 1) return firstRequest.future;
+        return Future.value(_fakeEmbedding());
+      });
+
+      fakeAsync((async) {
+        firstRequest = Completer<Float32List>();
+        service.start();
+        providerConfigs.add(const []);
+        sendAndProcess(async, {_entityId, textEntryNotification});
+        expect(attemptedBaseUrls, ['http://old-ollama:11434']);
+
+        currentBaseUrl = 'http://new-ollama:11434';
+        providerConfigs.add(const []);
+        firstRequest.completeError(
+          OllamaEmbeddingCooldownException(
+            retryAt: clock.now().add(const Duration(hours: 1)),
+            suppressedRequestCount: 1,
+          ),
+        );
+        async.flushMicrotasks();
+        stopInZone(async);
+
+        expect(attemptedBaseUrls, [
+          'http://old-ollama:11434',
+          'http://new-ollama:11434',
+        ]);
+      });
+    });
+
     test('a journal notification rechecks recovery after enabling it', () {
       fakeAsync((async) {
         final agentRepository = MockAgentRepository();
@@ -2069,6 +2129,55 @@ void main() {
           () => mockEmbeddingStore.deleteEntityEmbeddings(reportId),
         ).called(1);
         stopInZone(async);
+      });
+    });
+
+    test('local hard-delete signal removes report vectors', () {
+      fakeAsync((async) {
+        const taskId = 'task-whose-agent-was-hard-deleted-locally';
+        const reportId = 'report-left-by-local-hard-delete';
+        final agentRepository = MockAgentRepository();
+        var scanCount = 0;
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async {
+          scanCount++;
+          return [];
+        });
+        when(
+          () => agentRepository.getLinksTo(
+            taskId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockEmbeddingStore.getEntityIdsForTask(taskId),
+        ).thenReturn({reportId});
+        when(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(reportId),
+        ).thenReturn(null);
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+        expect(scanCount, 1);
+
+        updateNotifications.notify({
+          '$agentTaskLinkNotificationPrefix$taskId',
+        });
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+        stopInZone(async);
+
+        verify(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(reportId),
+        ).called(1);
+        expect(scanCount, 1);
       });
     });
 
@@ -2355,9 +2464,14 @@ void main() {
         );
         final storedCategories = <String>[];
         var categoryChanged = false;
+        var scanCount = 0;
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async {
+          scanCount++;
+          return [_agentIdentity(agentId)];
+        });
         when(
-          agentRepository.getAllAgentIdentities,
-        ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+          () => agentRepository.getEntity(agentId),
+        ).thenAnswer((_) async => _agentIdentity(agentId));
         when(
           () => agentRepository.getLinksFrom(
             agentId,
@@ -2414,18 +2528,24 @@ void main() {
         )..start();
         async.flushMicrotasks();
         expect(storedCategories, [oldCategoryId]);
+        expect(scanCount, 1);
 
         categoryChanged = true;
         updateNotifications.notify(
-          {taskId, taskNotification},
+          {
+            taskId,
+            taskNotification,
+            '$taskNotificationPrefix$taskId',
+          },
           fromSync: true,
         );
         async
           ..elapse(const Duration(seconds: 1))
           ..flushMicrotasks();
+        stopInZone(async);
 
         expect(storedCategories, [oldCategoryId, newCategoryId]);
-        stopInZone(async);
+        expect(scanCount, 1);
       });
     });
 

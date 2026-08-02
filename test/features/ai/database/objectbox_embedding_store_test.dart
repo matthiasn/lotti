@@ -454,6 +454,22 @@ void main() {
       });
     });
 
+    group('getTaskId', () {
+      test('returns taskId from stored entity', () {
+        when(
+          () => mockOps.findFirstByEntityId('report-1'),
+        ).thenReturn(makeEntity(entityId: 'report-1', taskId: 'task-1'));
+
+        expect(store.getTaskId('report-1'), 'task-1');
+      });
+
+      test('returns null for missing entity', () {
+        when(() => mockOps.findFirstByEntityId('missing')).thenReturn(null);
+
+        expect(store.getTaskId('missing'), isNull);
+      });
+    });
+
     group('moveEntityToShard', () {
       test('updates categoryId on all chunks', () {
         final chunks = [
@@ -470,6 +486,34 @@ void main() {
 
         expect(chunks[0].categoryId, 'new-cat');
         expect(chunks[1].categoryId, 'new-cat');
+        verify(() => mockOps.putMany(chunks)).called(1);
+      });
+
+      test('updates task ownership on all chunks', () {
+        final chunks = [
+          makeEntity(entityId: 'report-1', taskId: 'task-before'),
+          makeEntity(
+            entityId: 'report-1',
+            chunkIndex: 1,
+            taskId: 'task-before',
+          ),
+        ];
+        when(
+          () => mockOps.findEntitiesByEntityId('report-1'),
+        ).thenReturn(chunks);
+        stubWriteTransaction();
+        when(() => mockOps.putMany(any())).thenReturn(null);
+
+        store.moveEntityToShard(
+          'report-1',
+          '',
+          taskId: 'task-after',
+        );
+
+        expect(chunks.map((chunk) => chunk.taskId), [
+          'task-after',
+          'task-after',
+        ]);
         verify(() => mockOps.putMany(chunks)).called(1);
       });
 

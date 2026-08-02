@@ -385,6 +385,11 @@ AgentService agentService(Ref ref) {
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+    onTaskLinksHardDeleted: (taskIds) {
+      notifications.notify({
+        for (final taskId in taskIds) '$agentTaskLinkNotificationPrefix$taskId',
+      });
+    },
   );
 }
 

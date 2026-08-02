@@ -104,6 +104,12 @@ class UpdateNotifications {
 const habitCompletionNotification = 'HABIT_COMPLETION';
 const textEntryNotification = 'TEXT_ENTRY';
 const taskNotification = 'TASK';
+
+/// Prefix for a task-specific [taskNotification] token.
+///
+/// Sync includes the task ID so derived stores can reconcile only the changed
+/// task instead of rescanning every task-agent relationship.
+const taskNotificationPrefix = '$taskNotification:';
 const surveyNotification = 'SURVEY';
 const eventNotification = 'EVENT';
 const audioNotification = 'AUDIO';

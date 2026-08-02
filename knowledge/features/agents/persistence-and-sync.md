@@ -44,6 +44,10 @@ sources:
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
     last_modified: 2026-08-02
+  - id: agent-service
+    resource: ../../../lib/features/agents/service/agent_service.dart
+    title: AgentService
+    last_modified: 2026-08-02
   - id: queue-adapter
     resource: ../../../lib/features/sync/queue/queue_apply_adapter.dart
     title: QueueApplyAdapter
@@ -281,7 +285,12 @@ when task ownership changes without subscribing to every agent link mutation.
 They also emit a task-keyed form of that token. The keyed task ID survives a
 last-link deletion, when an active-link scan can no longer discover the task,
 so embedding recovery can remove derived report vectors only after confirming
-that the task still has no agent link.
+that the task still has no agent link. Local hard deletion follows the same
+rule: `AgentService.deleteAgent` reads the agent's task-link targets before the
+repository removes them, then emits local task-keyed cleanup tokens after the
+hard delete. Derived report vectors therefore remain discoverable by task long
+enough for cleanup even though the hard delete itself is intentionally not
+synced.
 
 Legacy `WeekRollupEntity` JSON can omit `weekStart`. The shared
 `AgentDomainEntity.fromJson` read boundary repairs it only when the entity id is

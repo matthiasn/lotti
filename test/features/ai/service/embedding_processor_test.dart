@@ -1335,9 +1335,13 @@ void main() {
         () => mockEmbeddingStore.getCategoryId(reportId),
       ).thenReturn('category-before-restart');
       when(
+        () => mockEmbeddingStore.getTaskId(reportId),
+      ).thenReturn('task-moved-after-restart');
+      when(
         () => mockEmbeddingStore.moveEntityToShard(
           reportId,
           'category-after-restart',
+          taskId: 'task-moved-after-restart',
         ),
       ).thenReturn(null);
       var guardCalls = 0;
@@ -1363,6 +1367,56 @@ void main() {
         () => mockEmbeddingStore.moveEntityToShard(
           reportId,
           'category-after-restart',
+          taskId: 'task-moved-after-restart',
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      );
+    });
+
+    test('rebinds an unchanged report to its current task', () async {
+      const reportId = 'report-moved-between-tasks';
+      const reportContent =
+          'This unchanged report has enough content for embedding.';
+      when(
+        () => mockEmbeddingStore.getContentHash(reportId),
+      ).thenReturn(_hashOf(reportContent));
+      when(
+        () => mockEmbeddingStore.getCategoryId(reportId),
+      ).thenReturn('shared-category');
+      when(
+        () => mockEmbeddingStore.getTaskId(reportId),
+      ).thenReturn('task-before-relink');
+      when(
+        () => mockEmbeddingStore.moveEntityToShard(
+          reportId,
+          'shared-category',
+          taskId: 'task-after-relink',
+        ),
+      ).thenReturn(null);
+
+      final result = await EmbeddingProcessor.processAgentReport(
+        reportId: reportId,
+        reportContent: reportContent,
+        taskId: 'task-after-relink',
+        categoryId: 'shared-category',
+        subtype: 'current',
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        baseUrl: _baseUrl,
+      );
+
+      expect(result, isTrue);
+      verify(
+        () => mockEmbeddingStore.moveEntityToShard(
+          reportId,
+          'shared-category',
+          taskId: 'task-after-relink',
         ),
       ).called(1);
       verifyNever(
@@ -1384,6 +1438,9 @@ void main() {
       when(
         () => mockEmbeddingStore.getCategoryId(reportId),
       ).thenReturn('category-before-ownership-change');
+      when(
+        () => mockEmbeddingStore.getTaskId(reportId),
+      ).thenReturn('task-with-stale-category-work');
 
       final result = await EmbeddingProcessor.processAgentReport(
         reportId: reportId,
@@ -1402,6 +1459,7 @@ void main() {
         () => mockEmbeddingStore.moveEntityToShard(
           reportId,
           'category-after-ownership-change',
+          taskId: 'task-with-stale-category-work',
         ),
       );
     });

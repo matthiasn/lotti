@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
@@ -237,22 +238,31 @@ void main() {
   late MockAgentSyncService mockSyncService;
   late AgentService service;
   late List<String> notifiedAgentIds;
+  late List<Set<String>> hardDeletedTaskIds;
 
   setUp(() {
     mockRepository = MockAgentRepository();
     mockOrchestrator = MockWakeOrchestrator();
     mockSyncService = MockAgentSyncService();
     notifiedAgentIds = [];
+    hardDeletedTaskIds = [];
 
     // Stub syncService write methods
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
+    when(
+      () => mockRepository.getLinksFrom(
+        any(),
+        type: AgentLinkTypes.agentTask,
+      ),
+    ).thenAnswer((_) async => []);
 
     service = AgentService(
       repository: mockRepository,
       orchestrator: mockOrchestrator,
       syncService: mockSyncService,
       onPersistedStateChanged: notifiedAgentIds.add,
+      onTaskLinksHardDeleted: hardDeletedTaskIds.add,
     );
   });
 
@@ -709,6 +719,12 @@ void main() {
         ).thenAnswer(
           (_) async => (entityIds: <String>[], linkIds: <String>[]),
         );
+        when(
+          () => generatedRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => []);
 
         final result = await withClock(Clock.fixed(testDate), () {
           return scenario.run(generatedService, agentId);
@@ -955,6 +971,31 @@ void main() {
         ).thenAnswer(
           (_) async => (entityIds: <String>[], linkIds: <String>[]),
         );
+        when(
+          () => mockRepository.getLinksFrom(
+            'agent-2',
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentLink.agentTask(
+              id: 'agent-2-task-link-1',
+              fromId: 'agent-2',
+              toId: 'task-1',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+            AgentLink.agentTask(
+              id: 'agent-2-task-link-2',
+              fromId: 'agent-2',
+              toId: 'task-2',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+          ],
+        );
 
         await service.deleteAgent('agent-2');
 
@@ -966,6 +1007,9 @@ void main() {
 
         // hard-delete still called
         verify(() => mockRepository.hardDeleteAgent('agent-2')).called(1);
+        expect(hardDeletedTaskIds, [
+          {'task-1', 'task-2'},
+        ]);
       });
 
       test('handles non-existent agent gracefully', () async {

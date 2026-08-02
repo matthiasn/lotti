@@ -41,12 +41,20 @@ abstract class EmbeddingStore {
   /// is not in the store.
   FutureOr<String?> getCategoryId(String entityId);
 
+  /// Returns the task ID stored for [entityId], or `null` if the entity is not
+  /// in the store. Non-task-derived embeddings normally store an empty task ID.
+  FutureOr<String?> getTaskId(String entityId);
+
   /// Moves all embedding chunks for [entityId] to the shard for
   /// [newCategoryId].
   ///
   /// Implementations that do not use sharding may simply update the stored
   /// `categoryId` field (or no-op).
-  FutureOr<void> moveEntityToShard(String entityId, String newCategoryId);
+  FutureOr<void> moveEntityToShard(
+    String entityId,
+    String newCategoryId, {
+    String? taskId,
+  });
 
   /// Moves embeddings for all agent reports linked to [taskId] to the shard
   /// for [newCategoryId].

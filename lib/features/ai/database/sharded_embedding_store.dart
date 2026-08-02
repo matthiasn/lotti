@@ -218,10 +218,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
       _removeFromIndexes(entityId);
     } else {
       _primaryIndex[entityId] = shardKey;
-      if (taskId.isNotEmpty) {
-        _entityTaskIndex[entityId] = taskId;
-        (_reverseTaskIndex[taskId] ??= {}).add(entityId);
-      }
+      _setTaskIndex(entityId, taskId);
     }
   });
 
@@ -248,6 +245,22 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     }
   }
 
+  void _setTaskIndex(String entityId, String taskId) {
+    final previousTaskId = _entityTaskIndex.remove(entityId);
+    if (previousTaskId != null) {
+      final previousEntityIds = _reverseTaskIndex[previousTaskId];
+      if (previousEntityIds != null) {
+        previousEntityIds.remove(entityId);
+        if (previousEntityIds.isEmpty) {
+          _reverseTaskIndex.remove(previousTaskId);
+        }
+      }
+    }
+    if (taskId.isEmpty) return;
+    _entityTaskIndex[entityId] = taskId;
+    (_reverseTaskIndex[taskId] ??= {}).add(entityId);
+  }
+
   @override
   Future<String?> getContentHash(String entityId) async {
     final shardKey = _primaryIndex[entityId];
@@ -264,15 +277,27 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   }
 
   @override
+  Future<String?> getTaskId(String entityId) async {
+    if (!_primaryIndex.containsKey(entityId)) return null;
+    return _entityTaskIndex[entityId] ?? '';
+  }
+
+  @override
   Future<void> moveEntityToShard(
     String entityId,
-    String newCategoryId,
-  ) => _serializeEntityMutation(entityId, () async {
+    String newCategoryId, {
+    String? taskId,
+  }) => _serializeEntityMutation(entityId, () async {
     final newShardKey = sanitizeShardKey(newCategoryId);
     final oldShardKey = _primaryIndex[entityId];
+    final taskChanged =
+        taskId != null && (_entityTaskIndex[entityId] ?? '') != taskId;
 
-    // Nothing to do if entity is unknown or already in the right shard.
-    if (oldShardKey == null || oldShardKey == newShardKey) return;
+    // Nothing to do if entity is unknown or all requested metadata already
+    // matches. A task-only rebind still has to rewrite the current shard.
+    if (oldShardKey == null || (oldShardKey == newShardKey && !taskChanged)) {
+      return;
+    }
 
     final oldShard = _shards[oldShardKey];
     if (oldShard == null) return;
@@ -281,20 +306,26 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     final chunks = oldShard.ops.findEntitiesByEntityId(entityId);
     if (chunks.isEmpty) return;
 
-    // Prepare chunks for the new shard: update categoryId and reset IDs.
+    // Prepare chunks for the destination metadata. IDs are reset only when
+    // crossing stores; an in-place task rebind updates the existing rows.
     for (final chunk in chunks) {
-      chunk
-        ..categoryId = newCategoryId
-        ..id = 0;
+      chunk.categoryId = newCategoryId;
+      if (taskId != null) chunk.taskId = taskId;
+      if (oldShardKey != newShardKey) chunk.id = 0;
     }
 
-    // Write-first strategy: insert into new shard, then delete from old.
-    final newShard = await _getOrCreateShard(newShardKey);
-    newShard.ops.putMany(chunks);
-    oldShard.store.deleteEntityEmbeddings(entityId);
+    if (oldShardKey == newShardKey) {
+      oldShard.ops.putMany(chunks);
+    } else {
+      // Write-first strategy: insert into new shard, then delete from old.
+      final newShard = await _getOrCreateShard(newShardKey);
+      newShard.ops.putMany(chunks);
+      oldShard.store.deleteEntityEmbeddings(entityId);
 
-    // Update primary index.
-    _primaryIndex[entityId] = newShardKey;
+      // Update primary index.
+      _primaryIndex[entityId] = newShardKey;
+    }
+    if (taskId != null) _setTaskIndex(entityId, taskId);
   });
 
   @override

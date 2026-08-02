@@ -1046,6 +1046,43 @@ void main() {
         verifyNever(() => ops.findEntitiesByEntityId(any()));
       });
 
+      test('rebinds task ownership without changing shards', () async {
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(
+                entityId: 'report-1',
+                taskId: 'task-before',
+              ),
+            ],
+          },
+        );
+        final chunks = [
+          makeEntity(
+            entityId: 'report-1',
+            categoryId: 'cat-a',
+            taskId: 'task-before',
+          ),
+        ];
+        final ops = getShardOps('cat-a');
+        when(
+          () => ops.findEntitiesByEntityId('report-1'),
+        ).thenReturn(chunks);
+
+        await store.moveEntityToShard(
+          'report-1',
+          'cat-a',
+          taskId: 'task-after',
+        );
+
+        expect(chunks.single.taskId, 'task-after');
+        verify(() => ops.putMany(chunks)).called(1);
+        expect(store.getEntityIdsForTask('task-before'), isEmpty);
+        expect(store.getEntityIdsForTask('task-after'), {'report-1'});
+        expect(await store.getTaskId('report-1'), 'task-after');
+      });
+
       test('is no-op for unknown entity', () async {
         await openStore();
 

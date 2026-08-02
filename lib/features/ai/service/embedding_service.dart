@@ -64,11 +64,14 @@ class EmbeddingService {
   StreamSubscription<bool>? _embeddingFlagSubscription;
   final _pendingEntityIds = <String>{};
   final _pendingUnlinkedTaskIds = <String>{};
+  final _pendingChangedTaskIds = <String>{};
   bool _isProcessing = false;
+  bool _entityBatchRerunRequested = false;
   bool _stopped = false;
   Future<void>? _inFlightProcessing;
   Future<void>? _inFlightAgentReportRecovery;
   bool _agentReportRecoveryPending = false;
+  bool _fullAgentReportRecoveryPending = false;
   bool _agentReportRecoveryRunning = false;
   bool _agentReportRecoveryRerunRequested = false;
   Timer? _availabilityRetryTimer;
@@ -129,7 +132,10 @@ class EmbeddingService {
     _embeddingFlagSubscription = null;
     _pendingEntityIds.clear();
     _pendingUnlinkedTaskIds.clear();
+    _pendingChangedTaskIds.clear();
+    _entityBatchRerunRequested = false;
     _agentReportRecoveryPending = false;
+    _fullAgentReportRecoveryPending = false;
     _agentReportRecoveryRerunRequested = false;
     final inFlight = _inFlightProcessing;
     _inFlightProcessing = null;
@@ -147,7 +153,13 @@ class EmbeddingService {
   void _onBatch(Set<String> tokens) {
     final hasAgentChange = tokens.contains(agentNotification);
     final hasRelevantEntityType = tokens.any(_relevantTokens.contains);
-    if (!hasAgentChange && !hasRelevantEntityType) return;
+    final unlinkedTaskIds = _idsWithPrefix(
+      tokens,
+      agentTaskLinkNotificationPrefix,
+    );
+    if (!hasAgentChange && !hasRelevantEntityType && unlinkedTaskIds.isEmpty) {
+      return;
+    }
 
     if (_availabilityRetryTimer?.isActive ?? false) {
       // A fresh notification may reflect endpoint recovery, changed Ollama
@@ -155,8 +167,11 @@ class EmbeddingService {
       _availabilityRetryTimer?.cancel();
       _availabilityRetryTimer = null;
     }
-    if (hasAgentChange) {
-      _requestAgentReportRecovery();
+    if (unlinkedTaskIds.isNotEmpty) {
+      _pendingUnlinkedTaskIds.addAll(unlinkedTaskIds);
+    }
+    if (hasAgentChange || unlinkedTaskIds.isNotEmpty) {
+      _requestAgentReportRecovery(fullScan: hasAgentChange);
     }
     if (!hasRelevantEntityType) return;
 
@@ -177,34 +192,34 @@ class EmbeddingService {
 
   /// Reconciles derived vectors when sync advances a current report head.
   void _onSyncBatch(Set<String> tokens) {
-    final hasTaskSpecificChange = tokens.any(
-      (token) => token.startsWith(agentTaskLinkNotificationPrefix),
+    final unlinkedTaskIds = _idsWithPrefix(
+      tokens,
+      agentTaskLinkNotificationPrefix,
     );
-    final affectedTaskIds = tokens
-        .where((token) => token.startsWith(agentTaskLinkNotificationPrefix))
-        .map(
-          (token) => token.substring(agentTaskLinkNotificationPrefix.length),
-        )
-        .where((taskId) => taskId.isNotEmpty);
-    _pendingUnlinkedTaskIds.addAll(affectedTaskIds);
-    if (!tokens.contains(agentReportHeadNotification) &&
-        !tokens.contains(agentReportNotification) &&
-        !tokens.contains(agentTaskLinkNotification) &&
-        !tokens.contains(taskNotification) &&
-        !hasTaskSpecificChange) {
+    final changedTaskIds = _idsWithPrefix(tokens, taskNotificationPrefix);
+    final requiresFullScan =
+        tokens.contains(agentReportHeadNotification) ||
+        tokens.contains(agentReportNotification) ||
+        tokens.contains(agentTaskLinkNotification);
+    if (!requiresFullScan &&
+        unlinkedTaskIds.isEmpty &&
+        changedTaskIds.isEmpty) {
       return;
     }
+    _pendingUnlinkedTaskIds.addAll(unlinkedTaskIds);
+    _pendingChangedTaskIds.addAll(changedTaskIds);
     if (_availabilityRetryTimer?.isActive ?? false) {
       _availabilityRetryTimer?.cancel();
       _availabilityRetryTimer = null;
     }
-    _requestAgentReportRecovery();
+    _requestAgentReportRecovery(fullScan: requiresFullScan);
   }
 
   /// Rechecks pending report recovery when provider configuration changes.
   void _onProviderConfigsChanged() {
     _availabilityRetryTimer?.cancel();
     _availabilityRetryTimer = null;
+    if (_isProcessing) _entityBatchRerunRequested = true;
     _requestAgentReportRecovery();
     _resumePendingEntityBatch();
   }
@@ -213,6 +228,7 @@ class EmbeddingService {
     if (!enabled) return;
     _availabilityRetryTimer?.cancel();
     _availabilityRetryTimer = null;
+    if (_isProcessing) _entityBatchRerunRequested = true;
     _requestAgentReportRecovery();
     _resumePendingEntityBatch();
   }
@@ -224,9 +240,10 @@ class EmbeddingService {
   }
 
   /// Requests one recovery pass, coalescing a request that arrives mid-pass.
-  void _requestAgentReportRecovery() {
+  void _requestAgentReportRecovery({bool fullScan = true}) {
     if (_stopped || agentRepository == null) return;
     _agentReportRecoveryPending = true;
+    if (fullScan) _fullAgentReportRecoveryPending = true;
     if (_agentReportRecoveryRunning) {
       _agentReportRecoveryRerunRequested = true;
       return;
@@ -264,6 +281,11 @@ class EmbeddingService {
         return;
       }
 
+      final fullScanRequested = _fullAgentReportRecoveryPending;
+      _fullAgentReportRecoveryPending = false;
+      final changedTaskIds = Set<String>.of(_pendingChangedTaskIds);
+      _pendingChangedTaskIds.removeAll(changedTaskIds);
+
       var failureCount = 0;
       Object? firstError;
       StackTrace? firstStackTrace;
@@ -290,8 +312,61 @@ class EmbeddingService {
           }
         } catch (error, stackTrace) {
           _pendingUnlinkedTaskIds.add(taskId);
+          _agentReportRecoveryPending = true;
           recordFailure(error, stackTrace);
         }
+      }
+
+      if (!fullScanRequested) {
+        for (final taskId in changedTaskIds) {
+          if (_stopped) return;
+          try {
+            final currentLinks = await repository.getLinksTo(
+              taskId,
+              type: AgentLinkTypes.agentTask,
+            );
+            if (currentLinks.isEmpty) continue;
+            final primaryLink = currentLinks.selectPrimary();
+            final agentEntity = await repository.getEntity(primaryLink.fromId);
+            if (agentEntity is! AgentIdentityEntity) continue;
+            await _recoverAgentReportsForTask(
+              repository: repository,
+              agent: agentEntity,
+              taskId: taskId,
+              baseUrl: baseUrl,
+            );
+          } on OllamaEmbeddingAvailabilityException catch (error) {
+            if (!_stopped) {
+              _pendingChangedTaskIds.add(taskId);
+              _agentReportRecoveryPending = true;
+              _scheduleAvailabilityRetry(error.retryAt);
+            }
+            if (error is! OllamaEmbeddingCooldownException ||
+                error.shouldLogSummary) {
+              developer.log(
+                'Agent report embedding recovery paused because Ollama is '
+                'unavailable: $error',
+                name: 'EmbeddingService',
+              );
+            }
+            return;
+          } catch (error, stackTrace) {
+            _pendingChangedTaskIds.add(taskId);
+            _agentReportRecoveryPending = true;
+            recordFailure(error, stackTrace);
+          }
+        }
+
+        if (failureCount > 0) {
+          developer.log(
+            'Agent report embedding recovery skipped $failureCount '
+            'operation(s)',
+            error: firstError,
+            stackTrace: firstStackTrace,
+            name: 'EmbeddingService',
+          );
+        }
+        return;
       }
 
       // This service owns a dedicated long-lived repository wrapper. Agent
@@ -322,6 +397,7 @@ class EmbeddingService {
 
       if (topologyIncomplete) {
         _agentReportRecoveryPending = true;
+        _fullAgentReportRecoveryPending = true;
         developer.log(
           'Agent report embedding recovery skipped $failureCount operation(s) '
           'because the task topology snapshot was incomplete',
@@ -348,6 +424,7 @@ class EmbeddingService {
         } on OllamaEmbeddingAvailabilityException catch (error) {
           if (!_stopped) {
             _agentReportRecoveryPending = true;
+            _fullAgentReportRecoveryPending = true;
             _scheduleAvailabilityRetry(error.retryAt);
           }
           if (error is! OllamaEmbeddingCooldownException ||
@@ -541,13 +618,13 @@ class EmbeddingService {
       // redundant DB queries for each entity.
       final enabled = await journalDb.getConfigFlag(enableEmbeddingsFlag);
       if (!enabled) {
-        _pendingEntityIds.clear();
+        if (!_entityBatchRerunRequested) _pendingEntityIds.clear();
         return;
       }
 
       final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
       if (baseUrl == null) {
-        _pendingEntityIds.clear();
+        if (!_entityBatchRerunRequested) _pendingEntityIds.clear();
         return;
       }
 
@@ -597,6 +674,7 @@ class EmbeddingService {
           );
           // Swallow error — don't block other entities.
         }
+        if (_entityBatchRerunRequested) break;
       }
     } on Object catch (e, stackTrace) {
       developer.log(
@@ -605,9 +683,15 @@ class EmbeddingService {
         stackTrace: stackTrace,
         name: 'EmbeddingService',
       );
-      _pendingEntityIds.clear();
+      if (!_entityBatchRerunRequested) _pendingEntityIds.clear();
     } finally {
       _isProcessing = false;
+      if (_entityBatchRerunRequested) {
+        _entityBatchRerunRequested = false;
+        _availabilityRetryTimer?.cancel();
+        _availabilityRetryTimer = null;
+        _resumePendingEntityBatch();
+      }
     }
   }
 
@@ -625,6 +709,12 @@ class EmbeddingService {
       }
     });
   }
+
+  static Set<String> _idsWithPrefix(Set<String> tokens, String prefix) => tokens
+      .where((token) => token.startsWith(prefix))
+      .map((token) => token.substring(prefix.length))
+      .where((id) => id.isNotEmpty)
+      .toSet();
 
   /// Matches UUID format (8-4-4-4-12 hex digits) used for entity IDs.
   ///

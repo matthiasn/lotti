@@ -15,7 +15,7 @@ sources:
   - id: store
     resource: ../../../lib/features/ai/database/objectbox_embedding_store.dart
     title: ObjectBox-backed embedding store
-    last_modified: 2026-03-08
+    last_modified: 2026-08-02
   - id: sharded-store
     resource: ../../../lib/features/ai/database/sharded_embedding_store.dart
     title: Per-category embedding store
@@ -31,6 +31,18 @@ sources:
   - id: task-agent-report-embedding
     resource: ../../../lib/features/agents/workflow/task_agent_persistence_helpers.dart
     title: Optional task-agent report embedding
+    last_modified: 2026-08-02
+  - id: embedding-processor
+    resource: ../../../lib/features/ai/service/embedding_processor.dart
+    title: EmbeddingProcessor
+    last_modified: 2026-08-02
+  - id: agent-service
+    resource: ../../../lib/features/agents/service/agent_service.dart
+    title: AgentService hard-delete cleanup signal
+    last_modified: 2026-08-02
+  - id: sync-processor
+    resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
+    title: SyncEventProcessor task-keyed notifications
     last_modified: 2026-08-02
   - id: embedding-backfill-controller
     resource: ../../../lib/features/ai/state/embedding_backfill_controller.dart
@@ -81,6 +93,10 @@ flowchart LR
   directory twice. Replacements, moves, and deletions are serialized per report
   ID, preventing a paused shard move from resurrecting a vector deleted by a
   newer recovery decision while unrelated reports still proceed concurrently.
+  An unchanged report that moves between tasks rewrites its task metadata and
+  reverse-index ownership in place, even when its category shard does not
+  change, so no provider call is needed and cleanup for the old task cannot
+  delete the current task's vector.
 - The production `OllamaEmbeddingRepository` is shared. The first request for
   an unobserved base URL exclusively reserves the initial availability probe;
   concurrent callers join that probe instead of starting their own retry loops.
@@ -105,19 +121,27 @@ flowchart LR
   endpoint's `retryAt`. A fresh relevant notification joins the pending set and
   immediately re-runs preflight so endpoint recovery or a changed Ollama URL is
   used without waiting for an obsolete timer; an unchanged cooling endpoint
-  still fast-fails before network I/O. Manual backfill loops stop when the
+  still fast-fails before network I/O. If provider configuration changes while
+  an entity request is still using the old endpoint, the service latches a
+  rerun; completion or failure of that request then cancels any obsolete
+  cooldown timer and resolves the new URL before continuing queued work. Manual
+  backfill loops stop when the
   initial transport budget is exhausted or a known cooldown suppresses the
   call, instead of emitting one stack trace per remaining item.
 - `EmbeddingService` scans durable current task-agent report heads at startup
   and re-runs reconciliation when sync emits a dedicated current-report body,
-  head, task change, or task-agent-link token, or when embedding/provider
-  configuration changes;
+  head, task-keyed change, or task-agent-link token, or when
+  embedding/provider configuration changes;
   generic agent messages, state, and usage changes do not trigger a global
   scan. Report-body sync closes the sequence-gap case where a head arrives
-  before its referenced report, while task sync relocates the current vector
-  after a remote category change. Task-link sync includes a task-keyed token,
-  allowing recovery to delete orphaned report vectors after the final link is
-  removed even though no active link remains in the topology scan. Provider
+  before its referenced report, while task sync uses the keyed task ID to
+  relocate only that task's current vector after a remote category change;
+  generic task notifications do not launch a full agent-topology scan.
+  Task-link sync includes a task-keyed token, allowing recovery to delete
+  orphaned report vectors after the final link is removed even though no active
+  link remains in the topology scan. Local agent hard deletion emits the same
+  keyed cleanup signal after capturing its task links and before those source
+  rows become undiscoverable. Provider
   and flag streams skip their initial snapshots because startup already
   requests one pass; later changes resume both pending report recovery and any
   availability-paused entity batch. Its long-lived read-only repository
@@ -125,8 +149,9 @@ flowchart LR
   through other repository wrappers. When multiple agents are linked to one
   task, the same canonical primary-link ordering used by task report reads
   selects the only report that recovery may keep searchable. Content hashes
-  keep unchanged reports cheap; if only the task category changed, the stored
-  chunks move to the current shard without another provider call. Recovery
+  keep unchanged reports cheap; if only the task category or task ownership
+  changed, the stored chunks and reverse indexes move to the current metadata
+  without another provider call. Recovery
   revalidates the durable head, current
   primary link, and task category before and after vector storage, then reads
   cleanup candidates from the embedding store's reverse task index and checks

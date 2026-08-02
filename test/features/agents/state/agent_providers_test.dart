@@ -2138,6 +2138,15 @@ void main() {
       verify(
         () => mockNotifications.notifyUiOnly({'agent-1', agentNotification}),
       ).called(1);
+
+      service.onTaskLinksHardDeleted?.call({'task-1', 'task-2'});
+
+      verify(
+        () => mockNotifications.notify({
+          '${agentTaskLinkNotificationPrefix}task-1',
+          '${agentTaskLinkNotificationPrefix}task-2',
+        }),
+      ).called(1);
     });
   });
 
