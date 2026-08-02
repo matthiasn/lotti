@@ -108,21 +108,12 @@ class DayAgentService {
     final dayId = dayAgentIdForDate(date);
     final agentId = perDayAgentId(dayId);
     final existing = await agentService.getAgent(agentId);
-    if (existing != null) {
-      // Reaching here is someone acting on that day — opening it, refining a
-      // plan, retrying a job. A retired agent is reactivated for that, which
-      // is not the spend retirement exists to stop: nothing on a timer comes
-      // through this seam, only work that was asked for.
-      if (existing.lifecycle == AgentLifecycle.dormant) {
-        final revived = existing.copyWith(
-          lifecycle: AgentLifecycle.active,
-          updatedAt: clock.now(),
-        );
-        await syncService.upsertEntity(revived);
-        return revived;
-      }
-      return existing;
-    }
+    // Deliberately returned as-is, whatever its lifecycle. Reactivating a
+    // dormant one here looks helpful but cannot tell retirement apart from a
+    // deliberate pause — `AgentService.pauseAgent` writes the same `dormant`
+    // — so it would silently resume an agent the user switched off. A retired
+    // day is readable; it just does not think again on its own.
+    if (existing != null) return existing;
 
     // Ensures the coordinator (and its learning substrate) exists and gives
     // the cutover check + category inheritance a resolved identity.
@@ -821,6 +812,17 @@ class DayAgentService {
         ? const <String, AgentStateEntity>{}
         : await repository.getAgentStatesByAgentIds(agentIds);
 
+    try {
+      await retirePastDayAgents();
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'failed to retire past day agents',
+        stackTrace: s,
+      );
+    }
+
     var count = 0;
     var sawCoordinator = false;
     for (final agent in dayAgents) {
@@ -842,17 +844,6 @@ class DayAgentService {
           stackTrace: s,
         );
       }
-    }
-
-    try {
-      await retirePastDayAgents();
-    } catch (e, s) {
-      domainLogger.error(
-        LogDomain.agentRuntime,
-        e,
-        message: 'failed to retire past day agents',
-        stackTrace: s,
-      );
     }
 
     if (sawCoordinator) {

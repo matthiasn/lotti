@@ -193,6 +193,15 @@ class ScheduledWakeManager {
     var enqueued = 0;
     for (final record in dueRecords) {
       try {
+        // Same guard as the due-*states* loop above, and for the same reason:
+        // `getDueScheduledWakeRecords` filters on the deadline, not lifecycle.
+        // A retired per-day agent still holding a `set_next_wake` record would
+        // otherwise keep firing — the record path is the one per-day agents
+        // actually use for pre-warms, so without this retirement does nothing.
+        if (!await _isActiveAgent(record.agentId)) {
+          await _consumeStaleWakeRecord(record, now);
+          continue;
+        }
         final approved = await _leaseApprovedRecord(record, generation);
         if (approved == null) continue;
         // `stop()` can land while the lease check is awaiting the host lookup.
@@ -352,6 +361,21 @@ class ScheduledWakeManager {
     final identity = await _repository.getEntity(agentId);
     return identity?.mapOrNull(agent: (e) => e.lifecycle) ==
         AgentLifecycle.active;
+  }
+
+  /// Marks a due record for a non-active agent consumed, so it stops
+  /// surfacing. Mirrors the stale-wake clearing on the state path.
+  Future<void> _consumeStaleWakeRecord(
+    ScheduledWakeEntity record,
+    DateTime now,
+  ) async {
+    await _syncService.upsertEntity(
+      record.copyWith(
+        status: ScheduledWakeStatus.consumed,
+        consumedAt: now,
+        updatedAt: now,
+      ),
+    );
   }
 
   /// Clears an archived agent's stale `scheduledWakeAt` so the due query stops

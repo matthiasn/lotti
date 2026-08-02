@@ -25,8 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of them left holding a scheduled time could wake and think again — spending
   model calls on days that were long finished. A day's assistant now stays
   active for that day and the morning after, so it can pass anything unfinished
-  to the planner, and then retires. Nothing you can see changes: those days stay
-  readable, and opening or editing one wakes its assistant again.
+  to the planner, and then retires. Those days stay readable; their assistant
+  simply does not think again on its own.
 - **Deleting an agent now deletes its files too.** Everything an assistant syncs
   is also written to a file on disk so other devices can fetch it. Nothing ever
   removed those: deleting an assistant cleared its data from the database and

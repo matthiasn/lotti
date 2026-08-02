@@ -1747,8 +1747,11 @@ void main() {
     ).called(greaterThanOrEqualTo(1));
   });
 
-  group('getOrCreateDayAgentForDate revival', () {
-    test('reactivates a retired agent when the day is acted on', () async {
+  group('getOrCreateDayAgentForDate and lifecycle', () {
+    test('returns a retired agent as-is rather than resuming it', () async {
+      // Reactivating here cannot tell retirement apart from a deliberate
+      // pause — AgentService.pauseAgent writes the same `dormant` — so it
+      // would silently resume an agent the user switched off.
       final retired = identity(
         id: perDayAgentId(dayAgentIdForDate(now)),
       ).copyWith(lifecycle: AgentLifecycle.dormant);
@@ -1761,25 +1764,7 @@ void main() {
         () => service.getOrCreateDayAgentForDate(now),
       );
 
-      // Reaching this seam is someone opening, refining or retrying that day —
-      // work that was asked for, not the timer spend retirement stops.
-      expect(resolved.lifecycle, AgentLifecycle.active);
-      verify(() => syncService.upsertEntity(any())).called(1);
-    });
-
-    test('leaves an already-active agent untouched', () async {
-      final active = identity(id: perDayAgentId(dayAgentIdForDate(now)));
-      when(
-        () => agentService.getAgent(active.agentId),
-      ).thenAnswer((_) async => active);
-
-      expect(
-        (await withClock(
-          Clock.fixed(now),
-          () => service.getOrCreateDayAgentForDate(now),
-        )).lifecycle,
-        AgentLifecycle.active,
-      );
+      expect(resolved.lifecycle, AgentLifecycle.dormant);
       verifyNever(() => syncService.upsertEntity(any()));
     });
   });

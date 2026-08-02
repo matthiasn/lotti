@@ -165,7 +165,8 @@ that disagreed with the writer would silently drop rows out of their day.
 
 # Not yet implemented
 
-The `DayDirectiveEntity`/`DayStatusEvent` protocol is live (see
-[coordination protocol](coordination-protocol.md)), but **dormancy for closed
-days** is not — no day-close lifecycle exists yet. ADR 0032's Amendments section
-carries the full list of where implementation diverged from the original text.
+The `DayDirectiveEntity`/`DayStatusEvent` protocol is live, and so is
+**dormancy for closed days**: a per-day agent is retired one day after its own,
+described in [coordination protocol](coordination-protocol.md). ADR 0032's
+Amendments section carries the full list of where implementation diverged from
+the original text.

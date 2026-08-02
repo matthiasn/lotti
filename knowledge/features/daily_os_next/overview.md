@@ -179,5 +179,5 @@ categories instead.
 
 - **Shutdown is still mock-backed.** `ShutdownController` and its surfaces do not
   read real data.
-- **No day-close lifecycle exists**, so dormancy for closed days (ADR 0032 phase
-  3) is unimplemented.
+- Day-close dormancy (ADR 0032 phase 3) **is** implemented — see
+  [coordination protocol](coordination-protocol.md#a-per-day-agent-is-retired-when-its-day-is-done).
