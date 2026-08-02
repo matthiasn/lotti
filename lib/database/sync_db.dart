@@ -561,8 +561,8 @@ class SyncDatabase extends _$SyncDatabase
           }
         }
         if (from < 26) {
-          // `pruneSentOutboxItemsChunked`, `getSentCountSince`, and daily
-          // outbox volume all filter sent rows by updated_at. The older
+          // `pruneSentOutboxItemsChunked` and daily outbox volume both filter
+          // sent rows by updated_at. The older
           // status/priority/created index keeps them status-bounded but still
           // walks large sent ledgers to apply the updated_at range.
           final outboxExists = await customSelect(
