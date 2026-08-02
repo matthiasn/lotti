@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -278,50 +277,5 @@ void main() {
 
       expect(blocks, isEmpty);
     });
-  });
-
-  group('debugProjectCategory (pure color/category normalizer)', () {
-    glados.Glados2(
-      glados.AnyUtils(glados.any).choose(const [null, '', 'cat-1']),
-      glados.AnyUtils(glados.any).choose(const [
-        '5ED4B7',
-        '#5ED4B7',
-        '#AABBCCDD',
-        'AABBCCDD',
-        '#ABC',
-        'ABC',
-        '',
-        '#',
-      ]),
-      glados.ExploreConfig(numRuns: 120),
-    ).test('always yields a 6-char colorHex without a # prefix', (
-      categoryId,
-      rawColor,
-    ) {
-      final result = debugProjectCategory(
-        categoryId,
-        (id) => hCategory(id: id, name: 'Named', color: rawColor),
-      );
-      final reason = 'categoryId=$categoryId rawColor="$rawColor"';
-
-      expect(result.colorHex.length, 6, reason: reason);
-      expect(result.colorHex.contains('#'), isFalse, reason: reason);
-
-      if (categoryId == null || categoryId.isEmpty) {
-        // Fallback category, untouched by the raw color.
-        expect(result, debugFallbackActualCategory, reason: reason);
-      } else {
-        expect(result.id, categoryId, reason: reason);
-        expect(result.name, 'Named', reason: reason);
-        final stripped = rawColor.replaceFirst('#', '');
-        expect(
-          result.colorHex,
-          stripped.length >= 6
-              ? stripped.substring(0, 6)
-              : debugFallbackActualCategory.colorHex,
-          reason: reason,
-        );
-      }
-    }, tags: 'glados');
   });
 }

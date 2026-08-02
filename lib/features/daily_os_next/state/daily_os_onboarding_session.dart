@@ -67,9 +67,6 @@ class DailyOsOnboardingSession {
   final Set<OnboardingEventName> _recordedStages = {};
   bool _skipRecorded = false;
 
-  /// Whether the session-level skip has been recorded.
-  bool get skipRecorded => _skipRecorded;
-
   /// Records a stage event at most once per session. Repeat calls for an event
   /// already recorded are no-ops, so a rebuilt page cannot double-count.
   ///

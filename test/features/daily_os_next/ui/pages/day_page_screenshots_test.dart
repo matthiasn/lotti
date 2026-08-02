@@ -602,7 +602,6 @@ class _ManualDailyOsAgent extends MockDayAgent {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => _now,
       );
 
   @override
@@ -622,7 +621,6 @@ class _ManualDailyOsAgent extends MockDayAgent {
     ];
     return PlanDiff(
       id: 'diff-project-waddle-launch-buffer',
-      transcript: voiceTranscript,
       changes: [
         PlanDiffChange(
           id: 'change-protect-launch-review',
@@ -637,7 +635,6 @@ class _ManualDailyOsAgent extends MockDayAgent {
             'Die Startprüfung schützen und der Missionskontrolle einen Puffer '
                 'geben.',
           ),
-          affectedBlockId: 'blk-followup',
           fromStart: _at(13),
           fromEnd: _at(14, 30),
           toStart: _at(13, 30),
@@ -655,7 +652,6 @@ class _ManualDailyOsAgent extends MockDayAgent {
             'Keep the zero-gravity demo clear of the sardine negotiation.',
             'Die Schwerelos-Demo von der Sardinenverhandlung freihalten.',
           ),
-          affectedBlockId: 'blk-slides',
           fromStart: _at(14, 30),
           fromEnd: _at(16),
           toStart: _at(15),
@@ -677,7 +673,6 @@ class _ManualDailyOsAgent extends MockDayAgent {
   surfaceShutdownData({required DateTime forDate}) async => (
     completed: [
       CompletedItem(
-        taskId: manualOrbitalHabitatTaskId,
         title: _t(
           'Inspect orbital penguin habitat',
           'Pinguin-Habitat im Orbit inspizieren',
@@ -690,7 +685,6 @@ class _ManualDailyOsAgent extends MockDayAgent {
         ),
       ),
       CompletedItem(
-        taskId: manualLaunchReviewTaskId,
         title: _t(
           'Project Waddle launch review',
           'Startprüfung für Project Waddle',
@@ -703,7 +697,6 @@ class _ManualDailyOsAgent extends MockDayAgent {
         ),
       ),
       CompletedItem(
-        taskId: manualSardineFuturesTaskId,
         title: _t('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
         category: _client,
         durationMinutes: 110,
@@ -758,7 +751,6 @@ class _ManualDailyOsAgent extends MockDayAgent {
       'Beginne um 09:00 Uhr mit der Live-Demo des Futterautomaten und kläre '
           'danach die Pinguin-Passagierfrage, bevor sich das Startfenster öffnet.',
     ),
-    maturity: 3,
   );
 }
 

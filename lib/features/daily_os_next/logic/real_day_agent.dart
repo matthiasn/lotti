@@ -181,11 +181,7 @@ class RealDayAgent implements DayAgentInterface {
       action: action.name,
       deferTo: deferTo,
     );
-    return TriageResult(
-      taskId: taskId,
-      action: action,
-      deferredTo: action == TriageAction.defer ? deferTo : null,
-    );
+    return TriageResult(action: action);
   }
 
   /// Not part of [DayAgentInterface] but exposed for the Reconcile
@@ -321,7 +317,6 @@ class RealDayAgent implements DayAgentInterface {
       return _projectPlanDiff(
         changeSet: diff,
         currentPlan: currentPlan,
-        transcript: voiceTranscript,
       );
     }
 

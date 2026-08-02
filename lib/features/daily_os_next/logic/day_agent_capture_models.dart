@@ -172,13 +172,7 @@ class PendingItem {
 /// the confirmation pill that replaces the action row.
 @immutable
 class TriageResult {
-  const TriageResult({
-    required this.taskId,
-    required this.action,
-    this.deferredTo,
-  });
+  const TriageResult({required this.action});
 
-  final String taskId;
   final TriageAction action;
-  final DateTime? deferredTo;
 }

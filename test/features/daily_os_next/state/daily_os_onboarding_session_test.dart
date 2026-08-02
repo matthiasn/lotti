@@ -41,16 +41,6 @@ void main() {
       expect(session.targetDate, targetDate);
     });
 
-    test('defaults to no recorded skip', () {
-      final session = DailyOsOnboardingSession(
-        sessionId: 's-1',
-        origin: DailyOsOnboardingOrigin.auto,
-        targetDate: targetDate,
-      );
-
-      expect(session.skipRecorded, isFalse);
-    });
-
     test('records each stage event at most once', () {
       final sink = _EventSink();
       DailyOsOnboardingSession(
@@ -119,18 +109,16 @@ void main() {
 
     test('records the skip event at most once', () {
       final sink = _EventSink();
-      final session =
-          DailyOsOnboardingSession(
-              sessionId: 's-1',
-              origin: DailyOsOnboardingOrigin.auto,
-              targetDate: targetDate,
-              onEvent: sink.add,
-            )
-            ..recordSkippedOnce()
-            ..recordSkippedOnce();
+      DailyOsOnboardingSession(
+          sessionId: 's-1',
+          origin: DailyOsOnboardingOrigin.auto,
+          targetDate: targetDate,
+          onEvent: sink.add,
+        )
+        ..recordSkippedOnce()
+        ..recordSkippedOnce();
 
       expect(sink.events, [OnboardingEventName.dailyOsWalkthroughSkipped]);
-      expect(session.skipRecorded, isTrue);
     });
 
     test('skip and stage events are independent once-flags', () {
@@ -151,16 +139,18 @@ void main() {
     });
 
     test('tolerates a null onEvent sink', () {
-      final session =
-          DailyOsOnboardingSession(
-              sessionId: 's-1',
-              origin: DailyOsOnboardingOrigin.auto,
-              targetDate: targetDate,
-            )
-            ..recordStageOnce(OnboardingEventName.dailyOsReconcileReached)
-            ..recordSkippedOnce();
+      final session = DailyOsOnboardingSession(
+        sessionId: 's-1',
+        origin: DailyOsOnboardingOrigin.auto,
+        targetDate: targetDate,
+      );
 
-      expect(session.skipRecorded, isTrue);
+      expect(
+        () => session
+          ..recordStageOnce(OnboardingEventName.dailyOsReconcileReached)
+          ..recordSkippedOnce(),
+        returnsNormally,
+      );
     });
   });
 }

@@ -7,7 +7,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import '../../../../widget_test_utils.dart';
 
 LearningCard _standard({
-  String id = 'card_std',
   String overline = 'YESTERDAY',
   String summary = 'You finished focus work.',
   List<LearningBullet> bullets = const [
@@ -25,18 +24,15 @@ LearningCard _standard({
     ),
   ],
 }) => LearningCard(
-  id: id,
   overline: overline,
   summary: summary,
   bullets: bullets,
 );
 
 LearningCard _nudge({
-  String id = 'card_nudge',
   String overline = 'GENTLE NUDGE',
   String summary = 'Protect mornings for deep work.',
 }) => LearningCard(
-  id: id,
   overline: overline,
   summary: summary,
   bullets: const [],
@@ -59,7 +55,6 @@ void main() {
             cards: [
               _standard(),
               _standard(
-                id: 'b',
                 overline: 'THIS WEEK',
                 summary: 'You shipped 3 things.',
               ),

@@ -215,7 +215,6 @@ class _ReviewAgent extends MockDayAgent {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => _now,
       );
 
   @override

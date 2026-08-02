@@ -13,7 +13,6 @@ class MockDayAgentCapture {
     required this.pendingLatency,
     required this.triageLatency,
     required this.draftLatency,
-    required this._clock,
   });
 
   /// Latency applied to parse-shaped calls.
@@ -27,8 +26,6 @@ class MockDayAgentCapture {
 
   /// Latency applied to plan-drafting calls.
   final Duration draftLatency;
-
-  final DateTime Function() _clock;
 
   int _captureSeq = 0;
 
@@ -176,13 +173,7 @@ class MockDayAgentCapture {
     DateTime? deferTo,
   }) async {
     await Future<void>.delayed(triageLatency);
-    return TriageResult(
-      taskId: taskId,
-      action: action,
-      deferredTo: action == TriageAction.defer
-          ? (deferTo ?? _clock().add(const Duration(days: 1)))
-          : null,
-    );
+    return TriageResult(action: action);
   }
 
   /// Tool: `draft_day_plan`.

@@ -67,53 +67,39 @@ double? scriptedProgress(String taskId) {
 /// Scripted task corpus surfaced by `surfaceTaskCorpus`.
 const scriptedTaskCorpus = <TaskCorpusItem>[
   TaskCorpusItem(
-    id: 't_deck_review',
     title: 'Deck review — Q2 leadership update',
     category: mockWorkCategory,
     state: TaskCorpusState.inProgress,
-    updatedLabel: 'today',
   ),
   TaskCorpusItem(
-    id: 't_onboarding_doc',
     title: 'Finish the Onboarding doc',
     category: mockWorkCategory,
     state: TaskCorpusState.inProgress,
-    updatedLabel: 'yesterday',
   ),
   TaskCorpusItem(
-    id: 't_dentist',
     title: 'Reschedule dentist',
     category: mockHealthCategory,
     state: TaskCorpusState.overdue,
-    updatedLabel: '3 days ago',
   ),
   TaskCorpusItem(
-    id: 't_invoices',
     title: 'Review outstanding invoices',
     category: mockWorkCategory,
     state: TaskCorpusState.scheduled,
-    updatedLabel: 'today',
   ),
   TaskCorpusItem(
-    id: 't_dnd_book',
     title: 'Read 30 pages',
     category: mockStudyCategory,
     state: TaskCorpusState.recurring,
-    updatedLabel: 'May 18',
   ),
   TaskCorpusItem(
-    id: 't_sunday_call',
     title: 'Call mom re: Sunday',
     category: mockMealsCategory,
     state: TaskCorpusState.backlog,
-    updatedLabel: '2 weeks ago',
   ),
   TaskCorpusItem(
-    id: 't_morning_run_done',
     title: 'Morning run · 5km',
     category: mockHealthCategory,
     state: TaskCorpusState.done,
-    updatedLabel: 'today',
   ),
 ];
 

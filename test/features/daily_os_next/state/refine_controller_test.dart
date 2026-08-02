@@ -20,7 +20,6 @@ void main() {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
       // Use a real draft so propose_plan_diff has blocks to reshape.
       draft = await agent.draftDayPlan(
@@ -50,7 +49,7 @@ void main() {
       final container = makeContainer();
       container
           .read(refineControllerProvider(draft).notifier)
-          .toggleListening();
+          .beginListening(resetTranscript: true);
 
       final state = container.read(refineControllerProvider(draft));
       expect(state.phase, RefinePhase.listening);
@@ -67,10 +66,9 @@ void main() {
         addTearDown(() => FlutterError.onError = previousOnError);
 
         final container = makeContainer(overrideAgent: _ThrowingRefineAgent());
-        final notifier =
-            container.read(refineControllerProvider(draft).notifier)
-              ..beginListening(resetTranscript: true)
-              ..updateActiveTranscript('make the writing block longer');
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
 
         await notifier.finishWithTranscript('make the writing block longer');
 
@@ -79,7 +77,6 @@ void main() {
         expect(state.transcript, 'make the writing block longer');
         expect(state.diff, isNull);
         expect(state.problem, RefineProblem.proposalFailed);
-        expect(state.problemDetail, contains('refine rejected'));
         expect(state.currentPlan, draft);
         expect(reportedError?.exception, isA<StateError>());
         expect(
@@ -92,8 +89,7 @@ void main() {
     test('empty diff keeps review open with no-changes feedback', () async {
       final container = makeContainer(overrideAgent: _EmptyDiffRefineAgent());
       final notifier = container.read(refineControllerProvider(draft).notifier)
-        ..beginListening(resetTranscript: true)
-        ..updateActiveTranscript('make the day easier');
+        ..beginListening(resetTranscript: true);
 
       await notifier.finishWithTranscript('make the day easier');
 
@@ -108,19 +104,13 @@ void main() {
     test('captured transcript drives the diff proposal', () async {
       final container = makeContainer();
       final notifier = container.read(refineControllerProvider(draft).notifier)
-        ..beginListening(resetTranscript: true)
-        ..updateActiveTranscript('move client review later');
-      expect(
-        container.read(refineControllerProvider(draft)).transcript,
-        'move client review later',
-      );
+        ..beginListening(resetTranscript: true);
 
       await notifier.finishWithTranscript('move client review later');
 
       final state = container.read(refineControllerProvider(draft));
       expect(state.phase, RefinePhase.diffReady);
       expect(state.diff, isNotNull);
-      expect(state.diff!.transcript, 'move client review later');
       expect(state.diff!.changes, isNotEmpty);
       // The current plan reflects the diff so the timeline shows
       // the reshape "in place".
@@ -131,7 +121,6 @@ void main() {
       final container = makeContainer();
       final notifier = container.read(refineControllerProvider(draft).notifier)
         ..beginListening(resetTranscript: true)
-        ..updateActiveTranscript('move client review later')
         ..reviewTranscript('move client review later');
 
       var state = container.read(refineControllerProvider(draft));
@@ -147,7 +136,6 @@ void main() {
 
       state = container.read(refineControllerProvider(draft));
       expect(state.phase, RefinePhase.diffReady);
-      expect(state.diff!.transcript, 'move client review to tomorrow');
     });
 
     test('blank transcript returns to idle without producing a diff', () async {
@@ -273,7 +261,7 @@ void main() {
     );
 
     test(
-      'toggleListening and keepTalking are no-ops while an accept is in '
+      'listening entry points are no-ops while an accept is in '
       'flight (a new listening flow would race acceptDiff completion)',
       () async {
         final gate = Completer<void>();
@@ -297,7 +285,7 @@ void main() {
         // diffReady each would otherwise call beginListening and flip the
         // phase to listening mid-accept.
         notifier
-          ..toggleListening()
+          ..beginListening(resetTranscript: false)
           ..keepTalking();
         expect(
           container.read(refineControllerProvider(draft)).phase,
@@ -417,136 +405,6 @@ void main() {
       expect(state.diff, isNull);
       expect(state.currentPlan, draft);
     });
-
-    // -----------------------------------------------------------------------
-    // toggleListening branch coverage
-    // -----------------------------------------------------------------------
-
-    test(
-      'toggleListening from diffReady re-enters listening without reset',
-      () async {
-        final container = makeContainer();
-        final notifier = container.read(
-          refineControllerProvider(draft).notifier,
-        )..beginListening(resetTranscript: true);
-        await notifier.finishWithTranscript('move client review later');
-        expect(
-          container.read(refineControllerProvider(draft)).phase,
-          RefinePhase.diffReady,
-        );
-
-        // toggleListening from diffReady should call beginListening with
-        // resetTranscript: false, so the transcript is preserved.
-        final transcriptBefore = container
-            .read(refineControllerProvider(draft))
-            .transcript;
-        notifier.toggleListening();
-
-        final state = container.read(refineControllerProvider(draft));
-        expect(state.phase, RefinePhase.listening);
-        // resetTranscript: false means the prefix equals the prior transcript
-        expect(state.transcript, transcriptBefore);
-      },
-    );
-
-    test(
-      'toggleListening while listening is a no-op (phase stays listening)',
-      () {
-        final container = makeContainer();
-        final notifier = container.read(
-          refineControllerProvider(draft).notifier,
-        )..beginListening(resetTranscript: true);
-        expect(
-          container.read(refineControllerProvider(draft)).phase,
-          RefinePhase.listening,
-        );
-
-        // A second toggle while already listening should be a no-op.
-        notifier.toggleListening();
-        expect(
-          container.read(refineControllerProvider(draft)).phase,
-          RefinePhase.listening,
-        );
-      },
-    );
-
-    test(
-      'toggleListening from reviewing resets transcript and enters listening',
-      () {
-        final container = makeContainer();
-        // Put the controller into reviewing state.
-        final notifier =
-            container.read(refineControllerProvider(draft).notifier)
-              ..beginListening(resetTranscript: true)
-              ..reviewTranscript('some transcript');
-        expect(
-          container.read(refineControllerProvider(draft)).phase,
-          RefinePhase.reviewing,
-        );
-
-        notifier.toggleListening();
-
-        final state = container.read(refineControllerProvider(draft));
-        expect(state.phase, RefinePhase.listening);
-        // resetTranscript: true clears the transcript.
-        expect(state.transcript, isEmpty);
-      },
-    );
-
-    test(
-      'toggleListening during thinking and accepted phases is a no-op',
-      () async {
-        // ---- thinking phase: controller is awaiting proposePlanDiff ----
-        // We use a completer-based agent to freeze the controller in thinking.
-        final thinkingAgent = _HoldingRefineAgent();
-        final thinkingContainer = makeContainer(overrideAgent: thinkingAgent)
-          ..read(
-            refineControllerProvider(draft).notifier,
-          ).beginListening(resetTranscript: true);
-        // Fire finishWithTranscript but do not await — the agent holds.
-        unawaited(
-          thinkingContainer
-              .read(refineControllerProvider(draft).notifier)
-              .finishWithTranscript('do something'),
-        );
-        // Yield one microtask so the async body starts and sets phase=thinking.
-        // Drain the event queue (not a single microtask) so the thinking
-        // phase is observed without relying on microtask-ordering details.
-        await pumpEventQueue();
-        expect(
-          thinkingContainer.read(refineControllerProvider(draft)).phase,
-          RefinePhase.thinking,
-        );
-
-        thinkingContainer
-            .read(refineControllerProvider(draft).notifier)
-            .toggleListening();
-        expect(
-          thinkingContainer.read(refineControllerProvider(draft)).phase,
-          RefinePhase.thinking,
-        );
-        // Release the agent so the container can be disposed cleanly.
-        thinkingAgent.complete();
-
-        // ---- accepted phase ----
-        final container = makeContainer();
-        final notifier = container.read(
-          refineControllerProvider(draft).notifier,
-        )..beginListening(resetTranscript: true);
-        await notifier.finishWithTranscript('move client review later');
-        await notifier.accept();
-        expect(
-          container.read(refineControllerProvider(draft)).phase,
-          RefinePhase.accepted,
-        );
-
-        notifier.toggleListening();
-        expect(
-          container.read(refineControllerProvider(draft)).phase,
-          RefinePhase.accepted,
-        );
-      },
-    );
 
     // -----------------------------------------------------------------------
     // _resolveChange: pending decision is a no-op (line 349)
@@ -711,7 +569,7 @@ void main() {
     // -----------------------------------------------------------------------
 
     test(
-      'keepTalking then updateActiveTranscript deduplicates overlapping text',
+      'keepTalking then finishWithTranscript deduplicates overlapping text',
       () async {
         // Exercises _joinTranscript where prefix ends with the new transcript.
         final container = makeContainer();
@@ -723,9 +581,8 @@ void main() {
         // keepTalking preserves 'move client review later' as prefix.
         // The STT system re-sends the whole utterance. _joinTranscript must
         // not duplicate it: prefix ends with transcript → return prefix.
-        notifier
-          ..keepTalking()
-          ..updateActiveTranscript('move client review later');
+        notifier.keepTalking();
+        await notifier.finishWithTranscript('move client review later');
 
         final state = container.read(refineControllerProvider(draft));
         expect(state.transcript, 'move client review later');
@@ -733,7 +590,7 @@ void main() {
     );
 
     test(
-      'updateActiveTranscript appends new text to an existing prefix',
+      'finishWithTranscript appends new text to an existing prefix',
       () async {
         // Exercises the _joinTranscript '$prefix $transcript' branch.
         final container = makeContainer();
@@ -743,9 +600,8 @@ void main() {
         await notifier.finishWithTranscript('first part');
 
         // The incoming transcript is fresh new words.
-        notifier
-          ..keepTalking()
-          ..updateActiveTranscript('second part');
+        notifier.keepTalking();
+        await notifier.finishWithTranscript('second part');
 
         final state = container.read(refineControllerProvider(draft));
         expect(state.transcript, 'first part second part');
@@ -780,7 +636,6 @@ class _ZeroLatencyAgent extends MockDayAgent {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 }
 
@@ -804,7 +659,6 @@ class _RecordingRefineAgent extends _ZeroLatencyAgent {
     final block = currentPlan.blocks.first;
     return PlanDiff(
       id: 'diff-recording',
-      transcript: voiceTranscript,
       updatedPlan: updatedPlan,
       changes: [
         PlanDiffChange(
@@ -813,7 +667,6 @@ class _RecordingRefineAgent extends _ZeroLatencyAgent {
           title: block.title,
           category: block.category,
           reason: 'Move it later.',
-          affectedBlockId: block.id,
           fromStart: block.start,
           fromEnd: block.end,
           toStart: block.start.add(const Duration(hours: 1)),
@@ -825,7 +678,6 @@ class _RecordingRefineAgent extends _ZeroLatencyAgent {
           title: 'Gym session',
           category: block.category,
           reason: 'Add the requested evening workout.',
-          affectedBlockId: block.id,
           toStart: DateTime(2026, 5, 25, 20),
           toEnd: DateTime(2026, 5, 25, 21, 45),
         ),
@@ -873,44 +725,9 @@ class _EmptyDiffRefineAgent extends _ZeroLatencyAgent {
   }) async {
     return PlanDiff(
       id: 'diff-empty',
-      transcript: voiceTranscript,
       changes: const [],
       updatedPlan: currentPlan,
     );
-  }
-}
-
-/// Holds `proposePlanDiff` until [complete] is called, so tests can assert
-/// behaviour in the `thinking` phase before the future resolves.
-class _HoldingRefineAgent extends _ZeroLatencyAgent {
-  final _completer = Completer<PlanDiff>();
-
-  // Captured on the first proposePlanDiff call so complete() can echo
-  // back a structurally valid (but empty) diff.
-  DraftPlan? _capturedPlan;
-
-  void complete() {
-    final plan = _capturedPlan;
-    if (!_completer.isCompleted && plan != null) {
-      _completer.complete(
-        PlanDiff(
-          id: 'diff-hold',
-          transcript: '',
-          changes: const [],
-          updatedPlan: plan,
-        ),
-      );
-    }
-  }
-
-  @override
-  Future<PlanDiff> proposePlanDiff({
-    required DraftPlan currentPlan,
-    required String voiceTranscript,
-    bool Function()? isCancelled,
-  }) {
-    _capturedPlan = currentPlan;
-    return _completer.future;
   }
 }
 
@@ -950,7 +767,6 @@ class _GatedAcceptAgent extends MockDayAgent {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   final Completer<void> gate;

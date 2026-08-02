@@ -37,18 +37,16 @@ DraftPlan _readyPlan() => DraftPlan(
   ],
 );
 
-LearningCard _card({String id = 'lc', String overline = 'YESTERDAY'}) =>
-    LearningCard(
-      id: id,
-      overline: overline,
-      summary: 'You shipped 3 things.',
-      bullets: const [
-        LearningBullet(
-          text: 'Carry forward: design polish',
-          tone: LearningBulletTone.info,
-        ),
-      ],
-    );
+LearningCard _card({String overline = 'YESTERDAY'}) => LearningCard(
+  overline: overline,
+  summary: 'You shipped 3 things.',
+  bullets: const [
+    LearningBullet(
+      text: 'Carry forward: design polish',
+      tone: LearningBulletTone.info,
+    ),
+  ],
+);
 
 class _FakeAgent implements DayAgentInterface {
   _FakeAgent({
@@ -118,7 +116,7 @@ class _FakeAgent implements DayAgentInterface {
     required String taskId,
     required TriageAction action,
     DateTime? deferTo,
-  }) async => TriageResult(taskId: taskId, action: action);
+  }) async => TriageResult(action: action);
 
   @override
   Future<PlanDiff> proposePlanDiff({
@@ -127,7 +125,6 @@ class _FakeAgent implements DayAgentInterface {
     bool Function()? isCancelled,
   }) async => PlanDiff(
     id: 'd',
-    transcript: voiceTranscript,
     changes: const [],
     updatedPlan: currentPlan,
   );
@@ -224,7 +221,7 @@ class _FakeAgent implements DayAgentInterface {
   @override
   Future<TomorrowNote> generateTomorrowNote({
     required DateTime forDate,
-  }) async => const TomorrowNote(body: '', maturity: 1);
+  }) async => const TomorrowNote(body: '');
 
   @override
   Future<List<TaskCorpusItem>> surfaceTaskCorpus({

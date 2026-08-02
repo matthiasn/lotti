@@ -148,7 +148,6 @@ class RecordingDayAgent implements DayAgentInterface {
     return diff ??
         PlanDiff(
           id: 'd',
-          transcript: voiceTranscript,
           changes: const [],
           updatedPlan: currentPlan,
         );
@@ -264,7 +263,7 @@ class RecordingDayAgent implements DayAgentInterface {
     required String taskId,
     required TriageAction action,
     DateTime? deferTo,
-  }) async => TriageResult(taskId: taskId, action: action);
+  }) async => TriageResult(action: action);
 
   @override
   Future<DraftPlan> draftDayPlan({
@@ -328,7 +327,7 @@ class RecordingDayAgent implements DayAgentInterface {
   @override
   Future<TomorrowNote> generateTomorrowNote({
     required DateTime forDate,
-  }) async => const TomorrowNote(body: '', maturity: 1);
+  }) async => const TomorrowNote(body: '');
 
   @override
   Future<List<TaskCorpusItem>> surfaceTaskCorpus({

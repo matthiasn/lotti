@@ -116,7 +116,6 @@ void main() {
       triageLatency: Duration.zero,
       draftLatency: Duration.zero,
       summarizeLatency: Duration.zero,
-      clock: () => DateTime(2026, 5, 25, 9),
     );
 
     ProviderContainer makeContainer(DayAgentInterface agent) {
@@ -697,7 +696,6 @@ class _PlanProvidingAgent extends MockDayAgent {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
 
   final List<DateTime> requestedDates = [];

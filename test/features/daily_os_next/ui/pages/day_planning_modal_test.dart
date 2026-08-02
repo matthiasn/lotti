@@ -150,7 +150,6 @@ MockDayAgent _fastAgent() => MockDayAgent(
   triageLatency: Duration.zero,
   draftLatency: Duration.zero,
   summarizeLatency: Duration.zero,
-  clock: () => DateTime(2024, 3, 15, 9),
 );
 
 const _captured = CaptureState(

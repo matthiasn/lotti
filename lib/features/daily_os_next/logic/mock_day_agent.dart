@@ -25,13 +25,11 @@ class MockDayAgent implements DayAgentInterface {
     Duration triageLatency = const Duration(milliseconds: 120),
     Duration draftLatency = const Duration(milliseconds: 400),
     Duration summarizeLatency = const Duration(milliseconds: 120),
-    DateTime Function()? clock,
   }) : _capture = MockDayAgentCapture(
          parseLatency: parseLatency,
          pendingLatency: pendingLatency,
          triageLatency: triageLatency,
          draftLatency: draftLatency,
-         clock: clock ?? DateTime.now,
        ),
        _planning = MockDayAgentPlanning(
          draftLatency: draftLatency,

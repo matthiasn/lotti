@@ -62,7 +62,7 @@ void main() {
   });
 
   group('DayAgentLearningCard', () {
-    test('roundtrips through JSON with bullets', () {
+    test('serializes cards with bullets', () {
       final card = DayAgentLearningCard(
         id: 'week_so_far',
         overline: 'Week so far',
@@ -79,16 +79,14 @@ void main() {
         ],
       );
 
-      final decoded = DayAgentLearningCard.fromJson(
-        jsonDecode(jsonEncode(card.toJson())) as Map<String, dynamic>,
-      );
-
-      expect(decoded, card);
-      expect(decoded.kind, 'standard');
-      expect(decoded.hashCode, card.hashCode);
+      final json =
+          jsonDecode(jsonEncode(card.toJson())) as Map<String, dynamic>;
+      expect(json['id'], 'week_so_far');
+      expect(json['kind'], 'standard');
+      expect(json['bullets'], hasLength(2));
     });
 
-    test('roundtrips the non-default kind and an empty bullet list', () {
+    test('serializes the non-default kind and an empty bullet list', () {
       final card = DayAgentLearningCard(
         id: 'nudge_card',
         overline: 'Heads up',
@@ -100,15 +98,6 @@ void main() {
       final json = card.toJson();
       expect(json['kind'], 'nudge');
       expect(json['bullets'], isEmpty);
-
-      final decoded = DayAgentLearningCard.fromJson(
-        jsonDecode(jsonEncode(json)) as Map<String, dynamic>,
-      );
-
-      expect(decoded, card);
-      expect(decoded.kind, 'nudge');
-      expect(decoded.bullets, isEmpty);
-      expect(decoded.hashCode, card.hashCode);
     });
 
     test('distinct kinds with identical content are not equal', () {
@@ -193,31 +182,6 @@ void main() {
         reason: 'text="${bullet.text}" tone=${bullet.tone}',
       );
     }, tags: 'glados');
-
-    glados.Glados<DayAgentLearningCard>(
-      glados.any.learningCard,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'roundtrips generated cards (incl. bullet list) through JSON',
-      (card) {
-        final decoded = DayAgentLearningCard.fromJson(
-          jsonDecode(jsonEncode(card.toJson())) as Map<String, dynamic>,
-        );
-        expect(
-          decoded,
-          card,
-          reason:
-              'id=${card.id} kind=${card.kind} '
-              'bullets=${card.bullets.length}',
-        );
-        expect(
-          decoded.hashCode,
-          card.hashCode,
-          reason: 'id=${card.id} kind=${card.kind}',
-        );
-      },
-      tags: 'glados',
-    );
   });
 }
 
@@ -286,27 +250,5 @@ extension _AnyDayAgentPlanModels on glados.Any {
         bulletTone,
         (String text, DayAgentLearningBulletTone tone) =>
             DayAgentLearningBullet(text: text, tone: tone),
-      );
-
-  glados.Generator<DayAgentLearningCard> get learningCard =>
-      glados.CombinableAny(this).combine5(
-        glados.any.letterOrDigits,
-        glados.any.letterOrDigits,
-        glados.any.letterOrDigits,
-        glados.ListAnys(this).listWithLengthInRange(0, 4, learningBullet),
-        glados.AnyUtils(this).choose(const ['standard', 'nudge']),
-        (
-          String id,
-          String overline,
-          String summary,
-          List<DayAgentLearningBullet> bullets,
-          String kind,
-        ) => DayAgentLearningCard(
-          id: id,
-          overline: overline,
-          summary: summary,
-          bullets: bullets,
-          kind: kind,
-        ),
       );
 }

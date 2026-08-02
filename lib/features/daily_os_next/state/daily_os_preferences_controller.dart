@@ -280,21 +280,6 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
     }
   }
 
-  void setCategoryEnabled(String categoryId, {required bool enabled}) {
-    _categoriesEdited = true;
-    final next = {...state.excludedCategoryIds};
-    if (enabled) {
-      next.remove(categoryId);
-    } else {
-      next.add(categoryId);
-    }
-    state = state.copyWith(excludedCategoryIds: next);
-    _save(
-      dailyOsExcludedCategoryIdsSettingsKey,
-      jsonEncode(next.toList()..sort()),
-    );
-  }
-
   void setIncludedCategoryIds({
     required Set<String> includedCategoryIds,
     required Iterable<String> allCategoryIds,
@@ -307,12 +292,6 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
       dailyOsExcludedCategoryIdsSettingsKey,
       jsonEncode(next.toList()..sort()),
     );
-  }
-
-  void includeAllCategories() {
-    _categoriesEdited = true;
-    state = state.copyWith(excludedCategoryIds: const <String>{});
-    _save(dailyOsExcludedCategoryIdsSettingsKey, jsonEncode(const <String>[]));
   }
 
   void _save(String key, String value) {

@@ -20,7 +20,6 @@ void main() {
         // wall-clock per call — zero it out to keep the group deterministic
         // and fast (see test/README.md's no-real-delay policy).
         draftLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
     });
 
@@ -123,31 +122,19 @@ void main() {
     });
 
     test(
-      'applyTriage carries the action through and populates deferredTo only '
-      'for defer',
+      'applyTriage carries the action through',
       () async {
         final today = await agent.applyTriage(
           taskId: 't_1',
           action: TriageAction.today,
         );
         expect(today.action, TriageAction.today);
-        expect(today.deferredTo, isNull);
 
         final deferred = await agent.applyTriage(
           taskId: 't_2',
           action: TriageAction.defer,
         );
         expect(deferred.action, TriageAction.defer);
-        expect(deferred.deferredTo, isNotNull);
-        // Defaults to the next day at the injected clock.
-        expect(deferred.deferredTo, DateTime(2026, 5, 26, 9));
-
-        final explicit = await agent.applyTriage(
-          taskId: 't_3',
-          action: TriageAction.defer,
-          deferTo: DateTime(2026, 6),
-        );
-        expect(explicit.deferredTo, DateTime(2026, 6));
       },
     );
 
@@ -248,7 +235,6 @@ void main() {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
       );
     });
 
@@ -742,7 +728,6 @@ void main() {
         forDate: DateTime(2026, 5, 25),
       );
       expect(note.body, isNotEmpty);
-      expect(note.maturity, greaterThanOrEqualTo(1));
     });
 
     test(
@@ -834,7 +819,6 @@ void main() {
           );
 
           expect(diff.changes, isEmpty);
-          expect(diff.transcript, 'skip onboarding');
           // The unchanged plan flows straight back so the Refine
           // controller treats it as immediately resolved.
           expect(diff.updatedPlan, same(empty));
@@ -923,7 +907,7 @@ void main() {
           final moved = diff.changes.firstWhere(
             (c) => c.kind == PlanDiffChangeKind.moved,
           );
-          expect(moved.affectedBlockId, 'b_alpha');
+          expect(moved.title, 'Morning run · 5km');
           expect(
             moved.toStart,
             start.subtract(const Duration(minutes: 30)),
@@ -933,7 +917,7 @@ void main() {
           final dropped = diff.changes.firstWhere(
             (c) => c.kind == PlanDiffChangeKind.dropped,
           );
-          expect(dropped.affectedBlockId, 'b_omega');
+          expect(dropped.title, 'Wrap up');
 
           // A buffer was added.
           expect(
@@ -972,12 +956,12 @@ void main() {
           final moved = diff.changes.firstWhere(
             (c) => c.kind == PlanDiffChangeKind.moved,
           );
-          expect(moved.affectedBlockId, 'b_deep_work');
+          expect(moved.title, 'Send the leadership deck to Sarah');
 
           final dropped = diff.changes.firstWhere(
             (c) => c.kind == PlanDiffChangeKind.dropped,
           );
-          expect(dropped.affectedBlockId, 'b_run_review');
+          expect(dropped.title, 'Onboarding doc — second wind');
 
           // The dropped onboarding block is gone from the updated plan.
           expect(
@@ -1060,7 +1044,6 @@ void main() {
     const queries = [null, '', '  ', 'deck', 'DECK', 'zzz'];
 
     TaskCorpusItem item(int seed) => TaskCorpusItem(
-      id: 'task-$seed',
       title: seed.isEven ? 'Paint the deck $seed' : 'Inbox triage $seed',
       category: DayAgentCategory(
         id: categories[seed % categories.length],
@@ -1069,7 +1052,6 @@ void main() {
       ),
       state: TaskCorpusState
           .values[1 + seed % (TaskCorpusState.values.length - 1)],
-      updatedLabel: 'today',
     );
 
     glados.Glados3(

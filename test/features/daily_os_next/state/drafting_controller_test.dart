@@ -16,7 +16,6 @@ class _CancelProbeAgent extends MockDayAgent {
   _CancelProbeAgent({required this.gate})
     : super(
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 7),
       );
 
   /// When this completes, [draftDayPlan] is allowed to finish. Lets the
@@ -57,7 +56,6 @@ class _DraftErrorAgent extends MockDayAgent {
   _DraftErrorAgent({required this.learningsGate})
     : super(
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 7),
       );
 
   /// Held until the test has let the draft error land.
@@ -99,7 +97,6 @@ void main() {
         triageLatency: Duration.zero,
         draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 7),
       );
     });
 
@@ -202,7 +199,6 @@ void main() {
 
   group('DraftingState.copyWith', () {
     const card = LearningCard(
-      id: 'l1',
       overline: 'YESTERDAY',
       summary: 'A solid morning.',
       bullets: [],

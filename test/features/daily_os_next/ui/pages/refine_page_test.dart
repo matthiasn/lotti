@@ -60,7 +60,6 @@ DraftPlan _planWithAfternoonBlock() => DraftPlan(
 
 PlanDiff _diffWithTwoChanges(DraftPlan plan) => PlanDiff(
   id: 'diff_1',
-  transcript: 'move focus later and add review',
   changes: const [
     PlanDiffChange(
       id: 'chg_move',
@@ -68,7 +67,6 @@ PlanDiff _diffWithTwoChanges(DraftPlan plan) => PlanDiff(
       title: 'Move focus block',
       category: _category,
       reason: 'pushes deep work past the standup',
-      affectedBlockId: 'blk_1',
     ),
     PlanDiffChange(
       id: 'chg_add',
@@ -76,7 +74,6 @@ PlanDiff _diffWithTwoChanges(DraftPlan plan) => PlanDiff(
       title: 'Add review slot',
       category: _category,
       reason: 'adds a 30-minute wrap-up',
-      affectedBlockId: 'blk_2',
     ),
   ],
   updatedPlan: plan,
@@ -223,22 +220,18 @@ void main() {
       expect(find.byType(DiffRow), findsNothing);
     });
 
-    testWidgets('listening phase renders waveform and transcript card', (
+    testWidgets('listening phase renders waveform and status', (
       tester,
     ) async {
       final draft = _emptyPlan();
       await tester.pumpWidget(_wrap(RefinePage(draft: draft)));
       await tester.pump();
 
-      final notifier = _readNotifier(tester, draft);
-      notifier
-        ..beginListening(resetTranscript: true)
-        ..updateActiveTranscript('move things later');
+      _readNotifier(tester, draft).beginListening(resetTranscript: true);
       await tester.pump();
 
       final messages = tester.element(find.byType(RefinePage)).messages;
       expect(find.byType(LiveWaveform), findsOneWidget);
-      expect(find.text('move things later'), findsOneWidget);
       expect(
         find.text(messages.dailyOsNextRefineStatusListening),
         findsOneWidget,
@@ -290,7 +283,6 @@ void main() {
       final agent = RecordingDayAgent(
         diff: PlanDiff(
           id: 'diff_empty',
-          transcript: 'make it lighter',
           changes: const [],
           updatedPlan: draft,
         ),
@@ -528,7 +520,6 @@ void main() {
       // would touch a disposed autoDispose provider).
       final singleChangeDiff = PlanDiff(
         id: 'diff_single',
-        transcript: 't',
         changes: const [
           PlanDiffChange(
             id: 'chg_only',
@@ -536,7 +527,6 @@ void main() {
             title: 'Only change',
             category: _category,
             reason: 'just one',
-            affectedBlockId: 'blk_1',
           ),
         ],
         updatedPlan: acceptedPlan,
@@ -801,7 +791,6 @@ void main() {
       final agent = RecordingDayAgent(
         diff: PlanDiff(
           id: 'seeded_diff',
-          transcript: 'make it lighter',
           changes: const [],
           updatedPlan: draft,
         ),
@@ -832,7 +821,6 @@ void main() {
       final acceptedPlan = draft.copyWith(scheduledMinutes: 42);
       final diff = PlanDiff(
         id: 'diff_modal',
-        transcript: 'move one thing',
         changes: const [
           PlanDiffChange(
             id: 'chg_modal',
@@ -840,7 +828,6 @@ void main() {
             title: 'Move one thing',
             category: _category,
             reason: 'one change resolves the modal',
-            affectedBlockId: 'blk_1',
           ),
         ],
         updatedPlan: acceptedPlan,
@@ -898,33 +885,7 @@ void main() {
     });
   });
 
-  // Renders the active-transcript panel once the refine controller
-  // holds a partial transcript. The full capture → refine forwarding
-  // (`ref.listen` on `captureControllerProvider`) is exercised in the
-  // capture-page tests; here we only verify the surface that displays
-  // whatever the refine controller already holds.
-  group('RefinePage active-transcript panel', () {
-    testWidgets(
-      'partial transcripts pushed into the refine controller surface in panel',
-      (
-        tester,
-      ) async {
-        final draft = _emptyPlan();
-        await tester.pumpWidget(_wrap(RefinePage(draft: draft)));
-        await tester.pump();
-
-        final element = tester.element(find.byType(RefinePage));
-        final container = ProviderScope.containerOf(element);
-        final refine = container.read(refineControllerProvider(draft).notifier)
-          ..beginListening(resetTranscript: true);
-        await tester.pump();
-        refine.updateActiveTranscript('hello world');
-        await tester.pump();
-
-        expect(find.text('hello world'), findsOneWidget);
-      },
-    );
-
+  group('RefinePage voice capture', () {
     testWidgets(
       'tapping the voice button on idle phase begins listening then handles capture error',
       (tester) async {

@@ -6,14 +6,12 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart
 @immutable
 class CompletedItem {
   const CompletedItem({
-    required this.taskId,
     required this.title,
     required this.category,
     required this.durationMinutes,
     this.note,
   });
 
-  final String taskId;
   final String title;
   final DayAgentCategory category;
   final int durationMinutes;
@@ -87,14 +85,9 @@ class ShutdownMetrics {
 /// One paragraph the agent puts together for the start of tomorrow.
 @immutable
 class TomorrowNote {
-  const TomorrowNote({required this.body, required this.maturity});
+  const TomorrowNote({required this.body});
 
   final String body;
-
-  /// 1–3 maturity buckets the prototype copy scales across (day 1 /
-  /// month 3 / year 1). The Shutdown card uses this to vary
-  /// references to past dates + confirmed preferences.
-  final int maturity;
 }
 
 /// Source of the Shutdown reflection — typed in or spoken.
@@ -115,20 +108,12 @@ enum TaskCorpusState {
 @immutable
 class TaskCorpusItem {
   const TaskCorpusItem({
-    required this.id,
     required this.title,
     required this.category,
     required this.state,
-    required this.updatedLabel,
   });
 
-  final String id;
   final String title;
   final DayAgentCategory category;
   final TaskCorpusState state;
-
-  /// Human-readable "updated …" string, e.g. "today", "yesterday",
-  /// "May 18", "2 weeks ago". The mock returns these directly so the
-  /// UI does not have to compute relative dates.
-  final String updatedLabel;
 }

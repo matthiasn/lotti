@@ -15,7 +15,6 @@ void main() {
       pendingLatency: Duration.zero,
       triageLatency: Duration.zero,
       summarizeLatency: Duration.zero,
-      clock: () => DateTime(2026, 5, 25, 18),
     );
 
     ProviderContainer makeContainer(DayAgentInterface agent) {
@@ -37,12 +36,11 @@ void main() {
         );
 
         expect(data.completed, hasLength(2));
-        expect(data.completed.first.taskId, 't_deck_review');
+        expect(data.completed.first.title, contains('Deck review'));
         expect(data.carryover, hasLength(2));
         expect(data.carryover.first.taskId, 't_onboarding_doc');
         expect(data.metrics.focusMinutes, 215);
         expect(data.metrics.flowSessions, 3);
-        expect(data.tomorrowNote.maturity, 1);
         expect(data.tomorrowNote.body, contains('Onboarding doc'));
         expect(data.decisions, isEmpty);
       },
@@ -142,7 +140,6 @@ class _RecordingAgent extends MockDayAgent {
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
         summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 18),
       );
 
   final List<(String, CarryoverAction)> carryoverCalls = [];

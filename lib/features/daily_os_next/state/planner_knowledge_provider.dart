@@ -13,10 +13,6 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
 class PlannerKnowledgeView {
   const PlannerKnowledgeView({required this.confirmed, required this.proposed});
 
-  const PlannerKnowledgeView.empty()
-    : confirmed = const [],
-      proposed = const [];
-
   /// The active Head set — most recent confirmed per key.
   final List<PlannerKnowledgeEntity> confirmed;
 

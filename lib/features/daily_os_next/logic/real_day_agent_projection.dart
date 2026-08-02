@@ -86,7 +86,6 @@ extension RealDayAgentProjection on RealDayAgent {
 
   LearningCard _projectLearningCard(DayAgentLearningCard card) {
     return LearningCard(
-      id: card.id,
       overline: card.overline,
       summary: card.summary,
       bullets: [for (final bullet in card.bullets) _projectBullet(bullet)],
@@ -290,7 +289,6 @@ extension RealDayAgentProjection on RealDayAgent {
   Future<PlanDiff> _projectPlanDiff({
     required ChangeSetEntity changeSet,
     required DraftPlan currentPlan,
-    required String transcript,
   }) async {
     final blocksById = {for (final b in currentPlan.blocks) b.id: b};
     final changes = <PlanDiffChange>[];
@@ -305,7 +303,6 @@ extension RealDayAgentProjection on RealDayAgent {
     }
     return PlanDiff(
       id: changeSet.id,
-      transcript: transcript,
       changes: changes,
       updatedPlan: currentPlan,
     );
@@ -348,7 +345,6 @@ extension RealDayAgentProjection on RealDayAgent {
       title: title,
       category: category,
       reason: reason,
-      affectedBlockId: blockId ?? '',
       fromStart: existing?.start,
       fromEnd: existing?.end,
       toStart: toStart,

@@ -19,7 +19,6 @@ final _change = PlanDiffChange(
   title: 'Gym session',
   category: _category,
   reason: 'User requested a gym session.',
-  affectedBlockId: 'block-1',
   toStart: DateTime(2026, 5, 25, 20),
   toEnd: DateTime(2026, 5, 25, 21, 45),
 );
@@ -48,7 +47,6 @@ Future<BuildContext> _pumpKind(
     title: 'Task title',
     category: _category,
     reason: 'Some reason.',
-    affectedBlockId: 'block-1',
     fromStart: fromStart,
     fromEnd: fromEnd,
     toStart: toStart,
@@ -135,7 +133,6 @@ void main() {
           colorHex: '3366CC',
         ),
         reason: 'Some reason.',
-        affectedBlockId: 'block-1',
       );
 
       await tester.pumpWidget(

@@ -79,7 +79,6 @@ ChangeSetEntity buildChangeSet({
 
 PlanDiff buildDiff({String id = 'diff-001'}) => PlanDiff(
   id: id,
-  transcript: 'move the gym',
   changes: const <PlanDiffChange>[],
   updatedPlan: DraftPlan(
     dayDate: _asOf,
@@ -361,7 +360,6 @@ void main() {
       final cards = await bench.adapter.summarizeRecentPatterns(asOf: _asOf);
 
       expect(cards, hasLength(2));
-      expect(cards[0].id, 'yesterday');
       expect(cards[0].overline, 'Yesterday');
       expect(cards[0].summary, 'You drafted four blocks.');
       expect(cards[0].kind, LearningCardKind.standard);
@@ -372,7 +370,6 @@ void main() {
       );
       expect(cards[0].bullets.single.tone, LearningBulletTone.positive);
 
-      expect(cards[1].id, 'gentle_nudge');
       expect(cards[1].kind, LearningCardKind.nudge);
       expect(cards[1].bullets.single.tone, LearningBulletTone.warning);
     });
@@ -1869,7 +1866,6 @@ void main() {
             taskId: 't-1',
             action: TriageAction.today,
           );
-          expect(immediate.deferredTo, isNull);
           expect(immediate.action, TriageAction.today);
           verify(
             () => bench.captureService.applyTriage(
@@ -1884,7 +1880,6 @@ void main() {
             action: TriageAction.defer,
             deferTo: _asOf,
           );
-          expect(deferred.deferredTo, _asOf);
           expect(deferred.action, TriageAction.defer);
           verify(
             () => bench.captureService.applyTriage(
@@ -2129,7 +2124,6 @@ void main() {
         final diff = await future;
 
         expect(diff.id, newDiff.id);
-        expect(diff.transcript, 'reshape the morning');
         // unknown_tool was skipped; three valid changes survive.
         expect(diff.changes, hasLength(3));
         final move = diff.changes.firstWhere(
@@ -2146,7 +2140,7 @@ void main() {
         final dropped = diff.changes.firstWhere(
           (c) => c.kind == PlanDiffChangeKind.dropped,
         );
-        expect(dropped.affectedBlockId, 'block-existing');
+        expect(dropped.title, 'Existing');
       },
     );
 
@@ -2652,7 +2646,6 @@ void main() {
           triageLatency: Duration.zero,
           draftLatency: Duration.zero,
           summarizeLatency: Duration.zero,
-          clock: () => _asOf,
         ),
       ),
     );
@@ -2671,8 +2664,11 @@ void main() {
         );
 
         expect(
-          shutdown.completed.map((c) => c.taskId),
-          ['t_deck_review', 't_morning_run'],
+          shutdown.completed.map((c) => c.title),
+          containsAll([
+            'Deck review — Q2 leadership update',
+            'Morning run · 5km',
+          ]),
         );
         expect(shutdown.completed.first.durationMinutes, 95);
         expect(
@@ -2695,7 +2691,6 @@ void main() {
       () async {
         final note = await bench.adapter.generateTomorrowNote(forDate: _asOf);
 
-        expect(note.maturity, 1);
         expect(note.body, contains('Onboarding doc'));
         expect(note.body, startsWith('You started the Onboarding doc'));
       },
@@ -2714,7 +2709,7 @@ void main() {
         final overdue = await bench.adapter.surfaceTaskCorpus(
           stateFilter: TaskCorpusState.overdue,
         );
-        expect(overdue.map((i) => i.id), ['t_dentist']);
+        expect(overdue.single.title, 'Reschedule dentist');
         expect(
           overdue.every((i) => i.state == TaskCorpusState.overdue),
           isTrue,
