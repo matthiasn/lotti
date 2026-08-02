@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -669,7 +671,7 @@ void main() {
         // Tests about an armed timer must not be rescued by the periodic tick,
         // or they pass with no timer at all.
         Duration checkInterval = const Duration(minutes: 1),
-        Duration hostLookupDelay = Duration.zero,
+        Completer<void>? hostLookupGate,
       }) {
         when(
           () => repository.getDueScheduledAgentStates(any()),
@@ -690,9 +692,10 @@ void main() {
           checkInterval: checkInterval,
           requiresLease: (r) => r.workspaceKey == digestWorkspace,
           localHostId: () async {
-            if (hostLookupDelay > Duration.zero) {
-              await Future<void>.delayed(hostLookupDelay);
-            }
+            // Gated on a Completer the test releases, rather than a delay:
+            // the suite forbids real waits, and this gives the test exact
+            // control over when the lookup resolves.
+            if (hostLookupGate != null) await hostLookupGate.future;
             return hostId;
           },
         )..start();
@@ -992,6 +995,7 @@ void main() {
           // Clock advances with fake time; the lease has one minute left when
           // the pass starts, and the host lookup takes two.
           final start = now.add(const Duration(minutes: 29));
+          final gate = Completer<void>();
           withClock(Clock(() => start.add(async.elapsed)), () {
             final manager = managerFor(
               leased(
@@ -999,12 +1003,16 @@ void main() {
                 leaseUntil: now.toUtc().add(const Duration(minutes: 30)),
                 updatedAt: now,
               ),
-              hostLookupDelay: const Duration(minutes: 2),
+              hostLookupGate: gate,
               checkInterval: const Duration(hours: 1),
             );
+            // Two minutes pass with the lookup outstanding, so the lease
+            // lapses before it resolves.
             async
-              ..elapse(const Duration(minutes: 3))
+              ..elapse(const Duration(minutes: 2))
               ..flushMicrotasks();
+            gate.complete();
+            async.flushMicrotasks();
 
             // Comparing against the time captured before the lookup would
             // approve a claim that expired while it was outstanding.
