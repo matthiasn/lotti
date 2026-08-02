@@ -285,34 +285,37 @@ void main() {
   });
 
   group('get_it fallbacks', () {
-    test('exposes the repository and resolves sequence log + notifications '
-        'from get_it when not injected', () async {
-      getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
-      final bare = ConsumptionSyncService(
-        repository: repo,
-        outboxService: outbox,
-        vectorClockService: vcService,
-      );
-      await bare.recordEvent(makeConsumptionEvent(id: 'e6'));
+    test(
+      'resolves sequence log + notifications from get_it when not injected',
+      () async {
+        getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
+        final bare = ConsumptionSyncService(
+          repository: repo,
+          outboxService: outbox,
+          vectorClockService: vcService,
+        );
 
-      verify(
-        () => sequenceLog.recordSentEntry(
-          entryId: 'e6',
-          vectorClock: stamped,
-          payloadType: SyncSequencePayloadType.consumptionEvent,
-        ),
-      ).called(1);
-      // The get_it-registered UpdateNotifications received the UI-only ping.
-      final getItNotifications =
-          getIt<UpdateNotifications>() as MockUpdateNotifications;
-      verify(
-        () => getItNotifications.notifyUiOnly({
-          'task-1',
-          'cat-1',
-          aiConsumptionNotification,
-        }),
-      ).called(1);
-    });
+        await bare.recordEvent(makeConsumptionEvent(id: 'e6'));
+
+        verify(
+          () => sequenceLog.recordSentEntry(
+            entryId: 'e6',
+            vectorClock: stamped,
+            payloadType: SyncSequencePayloadType.consumptionEvent,
+          ),
+        ).called(1);
+        // The get_it-registered UpdateNotifications received the UI-only ping.
+        final getItNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => getItNotifications.notifyUiOnly({
+            'task-1',
+            'cat-1',
+            aiConsumptionNotification,
+          }),
+        ).called(1);
+      },
+    );
   });
 
   group('post-write failure handling', () {

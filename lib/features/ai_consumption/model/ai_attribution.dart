@@ -153,7 +153,4 @@ abstract class AiAttributionSession with _$AiAttributionSession {
     String? taskId,
     String? categoryId,
   }) = _AiAttributionSession;
-
-  factory AiAttributionSession.fromJson(Map<String, dynamic> json) =>
-      _$AiAttributionSessionFromJson(json);
 }

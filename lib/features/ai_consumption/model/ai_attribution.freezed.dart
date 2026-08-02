@@ -912,7 +912,7 @@ as int,
 @override
 @pragma('vm:prefer-inline')
 $AiActorSnapshotCopyWith<$Res> get initiator {
-  
+
   return $AiActorSnapshotCopyWith<$Res>(_self.initiator, (value) {
     return _then(_self.copyWith(initiator: value));
   });
@@ -1198,7 +1198,6 @@ $AiArtifactReferenceCopyWith<$Res>? get primaryOutput {
 }
 }
 
-
 /// @nodoc
 mixin _$AiAttributionSession {
 
@@ -1209,8 +1208,6 @@ mixin _$AiAttributionSession {
 @pragma('vm:prefer-inline')
 $AiAttributionSessionCopyWith<AiAttributionSession> get copyWith => _$AiAttributionSessionCopyWithImpl<AiAttributionSession>(this as AiAttributionSession, _$identity);
 
-  /// Serializes this AiAttributionSession to a JSON map.
-  Map<String, dynamic> toJson();
 
 
 @override
@@ -1218,7 +1215,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is AiAttributionSession&&(identical(other.id, id) || other.id == id)&&(identical(other.workType, workType) || other.workType == workType)&&(identical(other.initiator, initiator) || other.initiator == initiator)&&(identical(other.trigger, trigger) || other.trigger == trigger)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&const DeepCollectionEquality().equals(other.intendedOutputs, intendedOutputs)&&(identical(other.parentAttributionId, parentAttributionId) || other.parentAttributionId == parentAttributionId)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,id,workType,initiator,trigger,startedAt,const DeepCollectionEquality().hash(intendedOutputs),parentAttributionId,taskId,categoryId);
 
@@ -1419,11 +1416,11 @@ return $default(_that.id,_that.workType,_that.initiator,_that.trigger,_that.star
 }
 
 /// @nodoc
-@JsonSerializable()
+
 
 class _AiAttributionSession implements AiAttributionSession {
   const _AiAttributionSession({required this.id, required this.workType, required this.initiator, required this.trigger, required this.startedAt, final  List<AiArtifactReference> intendedOutputs = const <AiArtifactReference>[], this.parentAttributionId, this.taskId, this.categoryId}): _intendedOutputs = intendedOutputs;
-  factory _AiAttributionSession.fromJson(Map<String, dynamic> json) => _$AiAttributionSessionFromJson(json);
+
 
 @override final  String id;
 @override final  AiWorkType workType;
@@ -1447,17 +1444,14 @@ class _AiAttributionSession implements AiAttributionSession {
 @pragma('vm:prefer-inline')
 _$AiAttributionSessionCopyWith<_AiAttributionSession> get copyWith => __$AiAttributionSessionCopyWithImpl<_AiAttributionSession>(this, _$identity);
 
-@override
-Map<String, dynamic> toJson() {
-  return _$AiAttributionSessionToJson(this, );
-}
+
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiAttributionSession&&(identical(other.id, id) || other.id == id)&&(identical(other.workType, workType) || other.workType == workType)&&(identical(other.initiator, initiator) || other.initiator == initiator)&&(identical(other.trigger, trigger) || other.trigger == trigger)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&const DeepCollectionEquality().equals(other._intendedOutputs, _intendedOutputs)&&(identical(other.parentAttributionId, parentAttributionId) || other.parentAttributionId == parentAttributionId)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,id,workType,initiator,trigger,startedAt,const DeepCollectionEquality().hash(_intendedOutputs),parentAttributionId,taskId,categoryId);
 
