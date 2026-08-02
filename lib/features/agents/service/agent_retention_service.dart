@@ -190,7 +190,6 @@ class AgentRetentionService {
       // this the database shrinks while the documents directory does not.
       await sidecarReclaimer?.reclaim(entityIds: pruned);
       result = AgentRetentionResult(dayStatusEvents: pruned.length);
-      result = result.copyWith(observations: await _sweepObservations(now));
     } catch (e, s) {
       domainLogger.error(
         LogDomain.agentRuntime,
@@ -198,7 +197,19 @@ class AgentRetentionService {
         message: 'agent retention sweep failed after $result',
         stackTrace: s,
       );
-      return result;
+      // Deliberately falls through rather than returning: the sources are
+      // independent, and a repeatable status-event failure must not stop
+      // observations from ever being collected.
+    }
+    try {
+      result = result.copyWith(observations: await _sweepObservations(now));
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'observation retention failed after $result',
+        stackTrace: s,
+      );
     }
     if (result.total > 0) {
       domainLogger.log(

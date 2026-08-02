@@ -209,6 +209,38 @@ void main() {
       expect(result.observations, policy.batchSize);
     });
 
+    test('a status-event failure does not stop observation sweeping', () async {
+      // The two sources are independent. Sharing one catch meant a repeatable
+      // failure in the status-event pass — its watermark read, its delete, or
+      // its sidecar reclamation — stopped observations from ever running.
+      when(
+        () => repository.pruneDayStatusEventsBefore(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          maxBatches: any(named: 'maxBatches'),
+        ),
+      ).thenThrow(Exception('status events are broken'));
+      seedAgents(['agent-1']);
+      when(
+        () => repository.pruneAgentObservations(
+          agentId: any(named: 'agentId'),
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenAnswer(
+        (_) async => const ObservationSweepResult(
+          messageIds: ['m1'],
+          linkIds: [],
+        ),
+      );
+
+      final result = await withClock(Clock.fixed(now), service.sweep);
+
+      expect(result.dayStatusEvents, 0);
+      expect(result.observations, 1);
+    });
+
     test('one failing agent does not stop the others', () async {
       seedAgents(['boom', 'fine']);
       when(
