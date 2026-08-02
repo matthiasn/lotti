@@ -199,6 +199,17 @@ class ScheduledWakeManager {
         // the provider has already rebuilt one, both instances would fire the
         // same record — the duplicate the lease exists to prevent.
         if (generation != _generation) continue;
+        // Re-read before firing. `_holdsLease` awaits the host lookup, and
+        // sync can apply a `consumed` version in that window — on a
+        // cold-start reconnect especially. The concurrent resolver already
+        // ran when that version landed, so the in-memory `record` is simply
+        // stale, and firing from it bills a second digest for a window the
+        // database already says is finished.
+        final current = await _repository.getEntity(record.id);
+        if (current is ScheduledWakeEntity &&
+            current.status != ScheduledWakeStatus.pending) {
+          continue;
+        }
         _orchestrator.enqueueManualWake(
           agentId: record.agentId,
           reason: record.reason,

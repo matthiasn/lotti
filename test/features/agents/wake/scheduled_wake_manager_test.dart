@@ -677,6 +677,11 @@ void main() {
           () => repository.getDueScheduledWakeRecords(any()),
         ).thenAnswer((_) async => [record]);
         when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+        // The fire path re-reads the record so a `consumed` version applied
+        // during the host lookup cannot be fired from a stale copy.
+        when(
+          () => repository.getEntity(record.id),
+        ).thenAnswer((_) async => record);
         return ScheduledWakeManager(
           repository: repository,
           orchestrator: orchestrator,
@@ -879,6 +884,32 @@ void main() {
         });
       });
 
+      test('a consumed version applied during the lookup stops the fire', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {
+            final record = leased(
+              leaseHostId: 'host-a',
+              leaseUntil: now.toUtc().add(const Duration(minutes: 30)),
+              updatedAt: now,
+            );
+            final manager = managerFor(record);
+            // Sync applies the peer's completion while _holdsLease is awaiting
+            // the host lookup, so the in-memory record is stale by the time
+            // the fire path is reached.
+            when(() => repository.getEntity(record.id)).thenAnswer(
+              (_) async => record.copyWith(
+                status: ScheduledWakeStatus.consumed,
+                consumedAt: now,
+              ),
+            );
+            async.flushMicrotasks();
+
+            expectNoWake();
+            manager.stop();
+          });
+        });
+      });
+
       test('a claim confirmed after the settle fires exactly once', () {
         fakeAsync((async) {
           withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {
@@ -993,6 +1024,9 @@ void main() {
                   ? [shared]
                   : <ScheduledWakeEntity>[],
             );
+            // The fire path re-reads the register, so a `consumed` version
+            // another device wrote during this one's host lookup is seen.
+            when(() => repo.getEntity(any())).thenAnswer((_) async => shared);
             when(() => sync.upsertEntity(any())).thenAnswer((invocation) async {
               final incoming =
                   invocation.positionalArguments.single as ScheduledWakeEntity;
