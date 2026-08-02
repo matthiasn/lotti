@@ -1994,9 +1994,8 @@ void main() {
               final passes = gatedDueQuery(gate, [0]);
 
               final manager = createAndStart();
-              async.flushMicrotasks();
-
               async
+                ..flushMicrotasks()
                 ..elapse(const Duration(minutes: 3))
                 ..flushMicrotasks();
 
@@ -2022,9 +2021,8 @@ void main() {
             final passes = gatedDueQuery(gate, [0]);
 
             final manager = createAndStart();
-            async.flushMicrotasks();
-
             async
+              ..flushMicrotasks()
               ..elapse(const Duration(minutes: 1))
               ..flushMicrotasks();
 
