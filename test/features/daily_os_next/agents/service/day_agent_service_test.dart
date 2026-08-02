@@ -1714,6 +1714,39 @@ void main() {
     });
   });
 
+  test('a failing retirement pass does not fail start-up', () async {
+    // Retirement is housekeeping on the once-per-start repair pass; it must
+    // never keep the app from restoring its agents.
+    final planner = identity(id: dailyOsPlannerAgentId);
+    var calls = 0;
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async {
+      calls++;
+      // The restore pass reads the list first; the retirement pass reads it
+      // again and is the one that fails here.
+      if (calls > 1) throw StateError('database connection closed');
+      return [planner];
+    });
+    when(
+      () => repository.getAgentStatesByAgentIds([dailyOsPlannerAgentId]),
+    ).thenAnswer((_) async => {});
+
+    await expectLater(
+      withClock(Clock.fixed(now), service.restoreSubscriptions),
+      completes,
+    );
+    verify(
+      () => domainLogger.error(
+        any(),
+        any(),
+        message: any(named: 'message'),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).called(greaterThanOrEqualTo(1));
+  });
+
   group('getOrCreateDayAgentForDate revival', () {
     test('reactivates a retired agent when the day is acted on', () async {
       final retired = identity(
