@@ -155,6 +155,31 @@ void main() {
     expect(victim.existsSync(), isTrue);
   });
 
+  test('the containment check is not vacuous under p.join', () async {
+    // p.join discards everything before an absolute segment, and these
+    // relative paths start with '/'. Joining them dropped the root on BOTH
+    // sides, so the comparison matched two escaped paths and passed without
+    // checking containment at all.
+    expect(
+      AgentSidecarReclaimer.isReclaimable(
+        root: root,
+        id: 'ordinary-id',
+        toPath: relativeAgentEntityPath,
+      ),
+      isTrue,
+    );
+    expect(
+      AgentSidecarReclaimer.isReclaimable(
+        root: root,
+        // A link id checked against the entity directory must not pass.
+        id: 'ordinary-id',
+        toPath: relativeAgentLinkPath,
+      ),
+      isTrue,
+      reason: 'Each kind is checked against its own directory.',
+    );
+  });
+
   test('a large batch yields the isolate instead of blocking it', () async {
     // The deletes are synchronous, so a full sweep of ten thousand ids would
     // monopolise the isolate and show up as a startup freeze. Crossing the

@@ -153,12 +153,17 @@ class AgentSidecarReclaimer {
     required String relativePath,
     required String Function(String id) toPath,
   }) {
-    // The directory this kind of sidecar always lives in, derived from the
-    // same builder so the two cannot drift apart.
-    final directory = p.normalize(
-      p.join(root.path, p.dirname(toPath('probe'))),
+    // `p.join` DISCARDS everything before an absolute segment, and these
+    // relative paths carry a leading '/', so joining them would drop the root
+    // and compare two paths that both escaped it — a check that passes
+    // without checking anything. Concatenate exactly as the delete does.
+    String under(String relative) => p.normalize(
+      '${root.path}${relative.startsWith('/') ? '' : '/'}$relative',
     );
-    final resolved = p.normalize(p.join(root.path, relativePath));
-    return p.equals(p.dirname(resolved), directory);
+
+    final directory = p.dirname(under(toPath('probe')));
+    final resolved = under(relativePath);
+    return p.equals(p.dirname(resolved), directory) &&
+        p.isWithin(root.path, resolved);
   }
 }
