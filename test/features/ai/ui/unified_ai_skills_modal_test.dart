@@ -73,11 +73,7 @@ void main() {
       ),
       data: TaskData(
         title: 'Test Task',
-        status: TaskStatus.open(
-          id: 'status-1',
-          createdAt: now,
-          utcOffset: 0,
-        ),
+        status: TaskStatus.open(id: 'status-1', createdAt: now, utcOffset: 0),
         dateFrom: now,
         dateTo: now.add(const Duration(hours: 1)),
         statusHistory: [],
@@ -166,18 +162,18 @@ void main() {
 
     defaultOverrides = [
       // Override entry controllers for all test entities
-      entryControllerProvider('task-1').overrideWith(
-        () => FakeEntryController(testTaskEntity),
-      ),
-      entryControllerProvider('entry-1').overrideWith(
-        () => FakeEntryController(testJournalEntry),
-      ),
-      entryControllerProvider('image-1').overrideWith(
-        () => FakeEntryController(testImageEntity),
-      ),
-      entryControllerProvider('audio-1').overrideWith(
-        () => FakeEntryController(testAudioEntity),
-      ),
+      entryControllerProvider(
+        'task-1',
+      ).overrideWith(() => FakeEntryController(testTaskEntity)),
+      entryControllerProvider(
+        'entry-1',
+      ).overrideWith(() => FakeEntryController(testJournalEntry)),
+      entryControllerProvider(
+        'image-1',
+      ).overrideWith(() => FakeEntryController(testImageEntity)),
+      entryControllerProvider(
+        'audio-1',
+      ).overrideWith(() => FakeEntryController(testAudioEntity)),
     ];
   });
 
@@ -187,16 +183,10 @@ void main() {
   /// Thin wrapper over the central [makeTestableWidgetNoScroll] (DS theme,
   /// localizations, phone media query) that adds the shared default
   /// overrides and a host Scaffold.
-  Widget buildTestWidget(
-    Widget child, {
-    List<Override> overrides = const [],
-  }) {
+  Widget buildTestWidget(Widget child, {List<Override> overrides = const []}) {
     return makeTestableWidgetNoScroll(
       Scaffold(body: child),
-      overrides: [
-        ...defaultOverrides,
-        ...overrides,
-      ],
+      overrides: [...defaultOverrides, ...overrides],
     );
   }
 
@@ -232,9 +222,7 @@ void main() {
       expect(find.byType(DesignSystemListItem), findsNWidgets(2));
     });
 
-    testWidgets('shows section header when skills are present', (
-      tester,
-    ) async {
+    testWidgets('shows section header when skills are present', (tester) async {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
@@ -307,9 +295,7 @@ void main() {
             availableSkillsForEntityProvider((
               entityId: testAudioEntity.id,
               linkedFromId: null,
-            )).overrideWith(
-              (ref) => Future.value([testSkills.first]),
-            ),
+            )).overrideWith((ref) => Future.value([testSkills.first])),
           ],
         ),
       );
@@ -353,9 +339,7 @@ void main() {
             availableSkillsForEntityProvider((
               entityId: testAudioEntity.id,
               linkedFromId: null,
-            )).overrideWith(
-              (ref) => Future.value([skillWithoutDescription]),
-            ),
+            )).overrideWith((ref) => Future.value([skillWithoutDescription])),
           ],
         ),
       );
@@ -461,9 +445,7 @@ void main() {
         );
         addTearDown(gesture.removePointer);
         await gesture.addPointer(location: Offset.zero);
-        await gesture.moveTo(
-          tester.getCenter(find.text(testSkills[1].name)),
-        );
+        await gesture.moveTo(tester.getCenter(find.text(testSkills[1].name)));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -603,9 +585,7 @@ void main() {
         );
         addTearDown(gesture.removePointer);
         await gesture.addPointer(location: Offset.zero);
-        await gesture.moveTo(
-          tester.getCenter(find.text(testSkills[2].name)),
-        );
+        await gesture.moveTo(tester.getCenter(find.text(testSkills[2].name)));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text(testSkills[2].name));
@@ -640,9 +620,7 @@ void main() {
             availableSkillsForEntityProvider((
               entityId: testTaskEntity.id,
               linkedFromId: null,
-            )).overrideWith(
-              (ref) => Future.value(testSkills.take(2).toList()),
-            ),
+            )).overrideWith((ref) => Future.value(testSkills.take(2).toList())),
           ],
         ),
       );
@@ -687,9 +665,7 @@ void main() {
             availableSkillsForEntityProvider((
               entityId: testTaskEntity.id,
               linkedFromId: null,
-            )).overrideWith(
-              (ref) => skillsCompleter.future,
-            ),
+            )).overrideWith((ref) => skillsCompleter.future),
           ],
         ),
       );
@@ -780,10 +756,7 @@ void main() {
       TriggerSkillParams? capturedParams;
       await tester.pumpWidget(
         buildTestWidget(
-          UnifiedAiPopUpMenu(
-            journalEntity: testTaskEntity,
-            linkedFromId: null,
-          ),
+          UnifiedAiPopUpMenu(journalEntity: testTaskEntity, linkedFromId: null),
           overrides: [
             ..._baseOverrides(
               entity: testTaskEntity,
@@ -1012,14 +985,11 @@ void main() {
 
         await tester.pumpWidget(
           buildTestWidget(
-            UnifiedAiPopUpMenu(
-              journalEntity: entity,
-              linkedFromId: null,
-            ),
+            UnifiedAiPopUpMenu(journalEntity: entity, linkedFromId: null),
             overrides: [
-              entryControllerProvider(entity.id).overrideWith(
-                () => FakeEntryController(entity),
-              ),
+              entryControllerProvider(
+                entity.id,
+              ).overrideWith(() => FakeEntryController(entity)),
               ..._baseOverrides(
                 entity: entity,
                 skill: testSkills.last,
@@ -1087,9 +1057,7 @@ void main() {
               availableSkillsForEntityProvider((
                 entityId: testAudioEntity.id,
                 linkedFromId: null,
-              )).overrideWith(
-                (ref) => Future.value([imageGenSkill]),
-              ),
+              )).overrideWith((ref) => Future.value([imageGenSkill])),
               aiConfigRepositoryProvider.overrideWithValue(
                 _StubAiConfigRepository(const <AiConfig>[]),
               ),
@@ -1176,9 +1144,7 @@ void main() {
               availableSkillsForEntityProvider((
                 entityId: testAudioEntity.id,
                 linkedFromId: null,
-              )).overrideWith(
-                (ref) => Future.value([imageGenSkill]),
-              ),
+              )).overrideWith((ref) => Future.value([imageGenSkill])),
               aiConfigRepositoryProvider.overrideWithValue(
                 _StubAiConfigRepository(const <AiConfig>[]),
               ),
@@ -1377,210 +1343,190 @@ void main() {
   group('Per-invocation model override — picker flow', () {
     for (final variant in _overrideVariants) {
       group(variant.label, () {
-        testWidgets(
-          'tapping the skill with two slot-capable models opens the '
-          'model picker — proves the popup inserts the '
-          'picker step before firing the trigger, and proves the '
-          'picker is fed the slot-capable list (the decoy model whose '
-          'inputModalities do NOT match the slot modality is filtered '
-          'out before the picker sees it)',
-          (tester) async {
-            final fx = _OverrideFixture.twoModelsPlusDecoy(variant);
-            await tester.pumpWidget(
-              buildTestWidget(
-                UnifiedAiPopUpMenu(
-                  journalEntity: fx.entity,
-                  linkedFromId: null,
-                ),
-                overrides: _baseOverrides(
+        testWidgets('tapping the skill with two slot-capable models opens the '
+            'model picker — proves the popup inserts the '
+            'picker step before firing the trigger, and proves the '
+            'picker is fed the slot-capable list (the decoy model whose '
+            'inputModalities do NOT match the slot modality is filtered '
+            'out before the picker sees it)', (tester) async {
+          final fx = _OverrideFixture.twoModelsPlusDecoy(variant);
+          await tester.pumpWidget(
+            buildTestWidget(
+              UnifiedAiPopUpMenu(journalEntity: fx.entity, linkedFromId: null),
+              overrides: _baseOverrides(
+                entity: fx.entity,
+                skill: fx.skill,
+                models: fx.allModels,
+                resolver: _NullProfileResolver(),
+                configs: [...fx.allModels, ...fx.providers],
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.text(variant.skillName));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          // Picker is mounted and lists both slot-capable models;
+          // the wrong-modality decoy is absent because the popup
+          // filters by `inputModalities.contains(variant.modality)`
+          // before calling the picker.
+          expect(find.text(fx.modelA.name), findsOneWidget);
+          expect(find.text(fx.modelB.name), findsOneWidget);
+          expect(find.text(fx.decoy.name), findsNothing);
+        });
+
+        testWidgets('when only one slot-capable model is configured the picker '
+            'short-circuits and the popup fires the trigger immediately '
+            '— preserving the one-tap flow. Asserts both that the modal '
+            'never mounts AND that triggerSkillProvider runs once with '
+            'the lone model id as overrideModelId; the latter catches a '
+            'regression where the short-circuit path silently skips '
+            'dispatch (which the picker-absence check alone would miss)', (
+          tester,
+        ) async {
+          final fx = _OverrideFixture.singleModel(variant);
+          TriggerSkillParams? capturedParams;
+          await tester.pumpWidget(
+            buildTestWidget(
+              UnifiedAiPopUpMenu(journalEntity: fx.entity, linkedFromId: null),
+              overrides: [
+                ..._baseOverrides(
                   entity: fx.entity,
                   skill: fx.skill,
                   models: fx.allModels,
                   resolver: _NullProfileResolver(),
                   configs: [...fx.allModels, ...fx.providers],
                 ),
-              ),
-            );
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+                triggerSkillProvider.overrideWith((ref, params) async {
+                  capturedParams = params;
+                }),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
-            await tester.tap(find.byIcon(Icons.assistant_outlined));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-            await tester.tap(find.text(variant.skillName));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.text(variant.skillName));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
-            // Picker is mounted and lists both slot-capable models;
-            // the wrong-modality decoy is absent because the popup
-            // filters by `inputModalities.contains(variant.modality)`
-            // before calling the picker.
-            expect(find.text(fx.modelA.name), findsOneWidget);
-            expect(find.text(fx.modelB.name), findsOneWidget);
-            expect(find.text(fx.decoy.name), findsNothing);
-          },
-        );
+          // No picker — short-circuit took the single-model path.
+          // Skills list closed as part of the tap handler.
+          expect(find.text(fx.modelA.name), findsNothing);
+          expect(find.byType(UnifiedAiSkillsList), findsNothing);
+          // Trigger fired with the lone model id forwarded as the
+          // override — the short-circuit isn't a silent no-op.
+          expect(capturedParams, isNotNull);
+          expect(capturedParams!.entityId, fx.entity.id);
+          expect(capturedParams!.skillId, fx.skill.id);
+          expect(capturedParams!.overrideModelId, fx.modelA.id);
+        });
 
-        testWidgets(
-          'when only one slot-capable model is configured the picker '
-          'short-circuits and the popup fires the trigger immediately '
-          '— preserving the one-tap flow. Asserts both that the modal '
-          'never mounts AND that triggerSkillProvider runs once with '
-          'the lone model id as overrideModelId; the latter catches a '
-          'regression where the short-circuit path silently skips '
-          'dispatch (which the picker-absence check alone would miss)',
-          (tester) async {
-            final fx = _OverrideFixture.singleModel(variant);
-            TriggerSkillParams? capturedParams;
-            await tester.pumpWidget(
-              buildTestWidget(
-                UnifiedAiPopUpMenu(
-                  journalEntity: fx.entity,
-                  linkedFromId: null,
+        testWidgets('tapping the default-badged row forwards overrideModelId: '
+            'null to triggerSkillProvider — the override is collapsed '
+            'to null when the user picks the same model the profile '
+            'already points at, so the runner reads the profile slot '
+            'and a model deleted between picker and run still falls '
+            'back gracefully', (tester) async {
+          final fx = _OverrideFixture.twoModelsWithDefault(variant);
+          TriggerSkillParams? capturedParams;
+          await tester.pumpWidget(
+            buildTestWidget(
+              UnifiedAiPopUpMenu(journalEntity: fx.entity, linkedFromId: null),
+              overrides: [
+                entryControllerProvider(
+                  fx.entity.id,
+                ).overrideWith(() => FakeEntryController(fx.entity)),
+                ..._baseOverrides(
+                  entity: fx.entity,
+                  skill: fx.skill,
+                  models: fx.allModels,
+                  resolver: _FixedProfileResolver(fx.profile!),
+                  configs: [...fx.allModels, ...fx.providers],
                 ),
-                overrides: [
-                  ..._baseOverrides(
-                    entity: fx.entity,
-                    skill: fx.skill,
-                    models: fx.allModels,
-                    resolver: _NullProfileResolver(),
-                    configs: [...fx.allModels, ...fx.providers],
-                  ),
-                  triggerSkillProvider.overrideWith((ref, params) async {
-                    capturedParams = params;
-                  }),
-                ],
-              ),
-            );
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+                triggerSkillProvider.overrideWith((ref, params) async {
+                  capturedParams = params;
+                }),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
-            await tester.tap(find.byIcon(Icons.assistant_outlined));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-            await tester.tap(find.text(variant.skillName));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.text(variant.skillName));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
-            // No picker — short-circuit took the single-model path.
-            // Skills list closed as part of the tap handler.
-            expect(find.text(fx.modelA.name), findsNothing);
-            expect(find.byType(UnifiedAiSkillsList), findsNothing);
-            // Trigger fired with the lone model id forwarded as the
-            // override — the short-circuit isn't a silent no-op.
-            expect(capturedParams, isNotNull);
-            expect(capturedParams!.entityId, fx.entity.id);
-            expect(capturedParams!.skillId, fx.skill.id);
-            expect(capturedParams!.overrideModelId, fx.modelA.id);
-          },
-        );
+          // Tap the default-badged row (modelA) — the popup should
+          // fire the trigger with overrideModelId: null because the
+          // picked id matches the computed defaultModelId.
+          expect(find.text(fx.modelA.name), findsOneWidget);
+          await tester.tap(find.text(fx.modelA.name));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
-        testWidgets(
-          'tapping the default-badged row forwards overrideModelId: '
-          'null to triggerSkillProvider — the override is collapsed '
-          'to null when the user picks the same model the profile '
-          'already points at, so the runner reads the profile slot '
-          'and a model deleted between picker and run still falls '
-          'back gracefully',
-          (tester) async {
-            final fx = _OverrideFixture.twoModelsWithDefault(variant);
-            TriggerSkillParams? capturedParams;
-            await tester.pumpWidget(
-              buildTestWidget(
-                UnifiedAiPopUpMenu(
-                  journalEntity: fx.entity,
-                  linkedFromId: null,
+          expect(capturedParams, isNotNull);
+          expect(capturedParams!.entityId, fx.entity.id);
+          expect(capturedParams!.skillId, fx.skill.id);
+          expect(capturedParams!.overrideModelId, isNull);
+        });
+
+        testWidgets("tapping a non-default row forwards that row's "
+            'AiConfigModel.id to triggerSkillProvider as overrideModelId '
+            '— proves the override seam threads through the popup to '
+            'the trigger when the user picks a non-profile model', (
+          tester,
+        ) async {
+          final fx = _OverrideFixture.twoModelsWithDefault(variant);
+          TriggerSkillParams? capturedParams;
+          await tester.pumpWidget(
+            buildTestWidget(
+              UnifiedAiPopUpMenu(journalEntity: fx.entity, linkedFromId: null),
+              overrides: [
+                entryControllerProvider(
+                  fx.entity.id,
+                ).overrideWith(() => FakeEntryController(fx.entity)),
+                ..._baseOverrides(
+                  entity: fx.entity,
+                  skill: fx.skill,
+                  models: fx.allModels,
+                  resolver: _FixedProfileResolver(fx.profile!),
+                  configs: [...fx.allModels, ...fx.providers],
                 ),
-                overrides: [
-                  entryControllerProvider(fx.entity.id).overrideWith(
-                    () => FakeEntryController(fx.entity),
-                  ),
-                  ..._baseOverrides(
-                    entity: fx.entity,
-                    skill: fx.skill,
-                    models: fx.allModels,
-                    resolver: _FixedProfileResolver(fx.profile!),
-                    configs: [...fx.allModels, ...fx.providers],
-                  ),
-                  triggerSkillProvider.overrideWith((ref, params) async {
-                    capturedParams = params;
-                  }),
-                ],
-              ),
-            );
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+                triggerSkillProvider.overrideWith((ref, params) async {
+                  capturedParams = params;
+                }),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
-            await tester.tap(find.byIcon(Icons.assistant_outlined));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-            await tester.tap(find.text(variant.skillName));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.text(variant.skillName));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.text(fx.modelB.name));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
-            // Tap the default-badged row (modelA) — the popup should
-            // fire the trigger with overrideModelId: null because the
-            // picked id matches the computed defaultModelId.
-            expect(find.text(fx.modelA.name), findsOneWidget);
-            await tester.tap(find.text(fx.modelA.name));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-
-            expect(capturedParams, isNotNull);
-            expect(capturedParams!.entityId, fx.entity.id);
-            expect(capturedParams!.skillId, fx.skill.id);
-            expect(capturedParams!.overrideModelId, isNull);
-          },
-        );
-
-        testWidgets(
-          "tapping a non-default row forwards that row's "
-          'AiConfigModel.id to triggerSkillProvider as overrideModelId '
-          '— proves the override seam threads through the popup to '
-          'the trigger when the user picks a non-profile model',
-          (tester) async {
-            final fx = _OverrideFixture.twoModelsWithDefault(variant);
-            TriggerSkillParams? capturedParams;
-            await tester.pumpWidget(
-              buildTestWidget(
-                UnifiedAiPopUpMenu(
-                  journalEntity: fx.entity,
-                  linkedFromId: null,
-                ),
-                overrides: [
-                  entryControllerProvider(fx.entity.id).overrideWith(
-                    () => FakeEntryController(fx.entity),
-                  ),
-                  ..._baseOverrides(
-                    entity: fx.entity,
-                    skill: fx.skill,
-                    models: fx.allModels,
-                    resolver: _FixedProfileResolver(fx.profile!),
-                    configs: [...fx.allModels, ...fx.providers],
-                  ),
-                  triggerSkillProvider.overrideWith((ref, params) async {
-                    capturedParams = params;
-                  }),
-                ],
-              ),
-            );
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-
-            await tester.tap(find.byIcon(Icons.assistant_outlined));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-            await tester.tap(find.text(variant.skillName));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-            await tester.tap(find.text(fx.modelB.name));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-
-            expect(capturedParams, isNotNull);
-            expect(capturedParams!.overrideModelId, fx.modelB.id);
-          },
-        );
+          expect(capturedParams, isNotNull);
+          expect(capturedParams!.overrideModelId, fx.modelB.id);
+        });
       });
     }
 
@@ -1748,279 +1694,103 @@ void main() {
     // (journalEntity.id) so the override handler resolves the profile via
     // resolveForTask rather than resolveForCategory. This drives the
     // task-profile branch and proves the resolved default is honoured.
-    testWidgets(
-      'Task entity resolves its profile via resolveForTask (not '
-      'resolveForCategory) and the picker highlights that default row',
-      (tester) async {
-        final t = DateTime(2024, 3, 15, 10);
-        final providerA = _buildProvider(id: 'p-a', name: 'Provider A', t: t);
-        final providerB = _buildProvider(id: 'p-b', name: 'Provider B', t: t);
-        final modelA = _buildModel(
-          id: 'm-a',
-          name: 'Voxtral Local',
-          providerModelId: 'wire-a',
-          providerId: 'p-a',
-          modality: Modality.audio,
-          t: t,
-        );
-        final modelB = _buildModel(
-          id: 'm-b',
-          name: 'Mistral Cloud',
-          providerModelId: 'wire-b',
-          providerId: 'p-a',
-          modality: Modality.audio,
-          t: t,
-        );
-        final skill = _buildSkill(_transcriptionOverrideVariant, t);
-        // Profile slot points at modelA (wire-a via providerA) so the
-        // popup computes modelA as the default row.
-        final profile = _fillTranscriptionSlot(
-          thinkingProvider: providerA,
-          slotProvider: providerA,
-          slotProviderModelId: 'wire-a',
-        );
-        final taskEntity = Task(
-          meta: Metadata(
-            id: 'task-override',
-            createdAt: t,
-            updatedAt: t,
-            dateFrom: t,
-            dateTo: t,
-            categoryId: 'cat-should-not-be-used',
-          ),
-          data: TaskData(
-            title: 'Override Task',
-            status: TaskStatus.open(id: 'st', createdAt: t, utcOffset: 0),
-            statusHistory: [],
-            dateFrom: t,
-            dateTo: t,
-          ),
-        );
-        final resolver = _RecordingProfileResolver(profile);
-        TriggerSkillParams? capturedParams;
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            UnifiedAiPopUpMenu(
-              journalEntity: taskEntity,
-              linkedFromId: null,
-            ),
-            overrides: [
-              entryControllerProvider(taskEntity.id).overrideWith(
-                () => FakeEntryController(taskEntity),
-              ),
-              ..._baseOverrides(
-                entity: taskEntity,
-                skill: skill,
-                models: [modelA, modelB],
-                resolver: resolver,
-                configs: [modelA, modelB, providerA, providerB],
-              ),
-              triggerSkillProvider.overrideWith((ref, params) async {
-                capturedParams = params;
-              }),
-            ],
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.byIcon(Icons.assistant_outlined));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // The Task's profile was resolved via resolveForTask, keyed by the
-        // task id — never via resolveForCategory.
-        expect(resolver.resolveForTaskCalls, ['task-override']);
-        expect(resolver.resolveForCategoryCalls, isEmpty);
-
-        // Picker is open; tapping the default-badged row (modelA) collapses
-        // the override to null because it matches the resolved default.
-        expect(find.text(modelA.name), findsOneWidget);
-        await tester.tap(find.text(modelA.name));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(capturedParams, isNotNull);
-        expect(capturedParams!.entityId, taskEntity.id);
-        expect(capturedParams!.linkedTaskId, taskEntity.id);
-        expect(capturedParams!.overrideModelId, isNull);
-      },
-    );
-  });
-
-  group('resolveLinkedTask', () {
-    late MockJournalRepository mockJournalRepository;
-    final now = DateTime(2024, 3, 15, 10);
-
-    setUp(() {
-      mockJournalRepository = MockJournalRepository();
-    });
-
-    test('returns entity directly when it is a Task', () async {
+    testWidgets('Task entity resolves its profile via resolveForTask (not '
+        'resolveForCategory) and the picker highlights that default row', (
+      tester,
+    ) async {
+      final t = DateTime(2024, 3, 15, 10);
+      final providerA = _buildProvider(id: 'p-a', name: 'Provider A', t: t);
+      final providerB = _buildProvider(id: 'p-b', name: 'Provider B', t: t);
+      final modelA = _buildModel(
+        id: 'm-a',
+        name: 'Voxtral Local',
+        providerModelId: 'wire-a',
+        providerId: 'p-a',
+        modality: Modality.audio,
+        t: t,
+      );
+      final modelB = _buildModel(
+        id: 'm-b',
+        name: 'Mistral Cloud',
+        providerModelId: 'wire-b',
+        providerId: 'p-a',
+        modality: Modality.audio,
+        t: t,
+      );
+      final skill = _buildSkill(_transcriptionOverrideVariant, t);
+      // Profile slot points at modelA (wire-a via providerA) so the
+      // popup computes modelA as the default row.
+      final profile = _fillTranscriptionSlot(
+        thinkingProvider: providerA,
+        slotProvider: providerA,
+        slotProviderModelId: 'wire-a',
+      );
       final taskEntity = Task(
         meta: Metadata(
-          id: 'task-direct',
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now,
+          id: 'task-override',
+          createdAt: t,
+          updatedAt: t,
+          dateFrom: t,
+          dateTo: t,
+          categoryId: 'cat-should-not-be-used',
         ),
         data: TaskData(
-          title: 'Direct Task',
-          status: TaskStatus.open(
-            id: 'st-1',
-            createdAt: now,
-            utcOffset: 0,
-          ),
+          title: 'Override Task',
+          status: TaskStatus.open(id: 'st', createdAt: t, utcOffset: 0),
           statusHistory: [],
-          dateFrom: now,
-          dateTo: now,
+          dateFrom: t,
+          dateTo: t,
         ),
       );
+      final resolver = _RecordingProfileResolver(profile);
+      TriggerSkillParams? capturedParams;
 
-      final result = await UnifiedAiModal.resolveLinkedTask(
-        journalEntity: taskEntity,
-        journalRepo: mockJournalRepository,
-      );
-
-      expect(result, same(taskEntity));
-      verifyZeroInteractions(mockJournalRepository);
-    });
-
-    test('returns preferred task when preferredTaskId is provided', () async {
-      final preferredTask = Task(
-        meta: Metadata(
-          id: 'preferred-task',
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now,
-        ),
-        data: TaskData(
-          title: 'Preferred',
-          status: TaskStatus.open(
-            id: 'st-2',
-            createdAt: now,
-            utcOffset: 0,
-          ),
-          statusHistory: [],
-          dateFrom: now,
-          dateTo: now,
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiPopUpMenu(journalEntity: taskEntity, linkedFromId: null),
+          overrides: [
+            entryControllerProvider(
+              taskEntity.id,
+            ).overrideWith(() => FakeEntryController(taskEntity)),
+            ..._baseOverrides(
+              entity: taskEntity,
+              skill: skill,
+              models: [modelA, modelB],
+              resolver: resolver,
+              configs: [modelA, modelB, providerA, providerB],
+            ),
+            triggerSkillProvider.overrideWith((ref, params) async {
+              capturedParams = params;
+            }),
+          ],
         ),
       );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-      when(
-        () => mockJournalRepository.getJournalEntityById('preferred-task'),
-      ).thenAnswer((_) async => preferredTask);
+      await tester.tap(find.byIcon(Icons.assistant_outlined));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-      final result = await UnifiedAiModal.resolveLinkedTask(
-        journalEntity: testAudioEntity,
-        journalRepo: mockJournalRepository,
-        preferredTaskId: 'preferred-task',
-      );
+      // The Task's profile was resolved via resolveForTask, keyed by the
+      // task id — never via resolveForCategory.
+      expect(resolver.resolveForTaskCalls, ['task-override']);
+      expect(resolver.resolveForCategoryCalls, isEmpty);
 
-      expect(result, same(preferredTask));
-    });
+      // Picker is open; tapping the default-badged row (modelA) collapses
+      // the override to null because it matches the resolved default.
+      expect(find.text(modelA.name), findsOneWidget);
+      await tester.tap(find.text(modelA.name));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-    test('falls back to outgoing links when no preferred task', () async {
-      final linkedTask = Task(
-        meta: Metadata(
-          id: 'linked-out',
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now,
-        ),
-        data: TaskData(
-          title: 'Linked Out',
-          status: TaskStatus.open(
-            id: 'st-3',
-            createdAt: now,
-            utcOffset: 0,
-          ),
-          statusHistory: [],
-          dateFrom: now,
-          dateTo: now,
-        ),
-      );
-
-      when(
-        () => mockJournalRepository.getLinkedEntities(
-          linkedTo: testAudioEntity.id,
-        ),
-      ).thenAnswer((_) async => [linkedTask]);
-
-      final result = await UnifiedAiModal.resolveLinkedTask(
-        journalEntity: testAudioEntity,
-        journalRepo: mockJournalRepository,
-      );
-
-      expect(result, same(linkedTask));
-    });
-
-    test('falls back to incoming links when no outgoing task', () async {
-      final incomingTask = Task(
-        meta: Metadata(
-          id: 'linked-in',
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now,
-        ),
-        data: TaskData(
-          title: 'Linked In',
-          status: TaskStatus.open(
-            id: 'st-4',
-            createdAt: now,
-            utcOffset: 0,
-          ),
-          statusHistory: [],
-          dateFrom: now,
-          dateTo: now,
-        ),
-      );
-
-      when(
-        () => mockJournalRepository.getLinkedEntities(
-          linkedTo: testAudioEntity.id,
-        ),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockJournalRepository.getLinkedToEntities(
-          linkedTo: testAudioEntity.id,
-        ),
-      ).thenAnswer((_) async => [incomingTask]);
-
-      final result = await UnifiedAiModal.resolveLinkedTask(
-        journalEntity: testAudioEntity,
-        journalRepo: mockJournalRepository,
-      );
-
-      expect(result, same(incomingTask));
-    });
-
-    test('returns null when no linked task found', () async {
-      when(
-        () => mockJournalRepository.getLinkedEntities(
-          linkedTo: testAudioEntity.id,
-        ),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockJournalRepository.getLinkedToEntities(
-          linkedTo: testAudioEntity.id,
-        ),
-      ).thenAnswer((_) async => []);
-
-      final result = await UnifiedAiModal.resolveLinkedTask(
-        journalEntity: testAudioEntity,
-        journalRepo: mockJournalRepository,
-      );
-
-      expect(result, isNull);
+      expect(capturedParams, isNotNull);
+      expect(capturedParams!.entityId, taskEntity.id);
+      expect(capturedParams!.linkedTaskId, taskEntity.id);
+      expect(capturedParams!.overrideModelId, isNull);
     });
   });
 }

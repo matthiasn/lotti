@@ -15,18 +15,6 @@ import 'ftue_test_harness.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 
-  group('MeliousFtueResult', () {
-    test('totalModels returns sum of created and verified rows', () {
-      const result = MeliousFtueResult(
-        modelsCreated: 3,
-        modelsVerified: 1,
-        categoryCreated: true,
-      );
-
-      expect(result.totalModels, 4);
-    });
-  });
-
   group('Melious FTUE Setup - performMeliousFtueSetup', () {
     late ProviderPromptSetupService setupService;
     late MockAiConfigRepository mockRepository;
@@ -133,9 +121,7 @@ void main() {
       expect(result!.modelsVerified, 0);
       expect(result!.categoryCreated, isTrue);
       expect(
-        saved.whereType<AiConfigModel>().map(
-          (model) => model.providerModelId,
-        ),
+        saved.whereType<AiConfigModel>().map((model) => model.providerModelId),
         containsAll([
           meliousQwen35122BA10BModelId,
           meliousMistralSmall4119BInstructModelId,
@@ -207,9 +193,7 @@ void main() {
         () => mockRepository.getConfigsByType(AiConfigType.model),
       ).thenAnswer((_) async => existingModels);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(
-        () => mockCategoryRepository.getAllCategories(),
-      ).thenAnswer(
+      when(() => mockCategoryRepository.getAllCategories()).thenAnswer(
         (_) async => [
           CategoryDefinition(
             id: 'existing-category-id',
@@ -246,7 +230,6 @@ void main() {
       expect(result!.modelsCreated, 0);
       expect(result!.modelsVerified, 7);
       expect(result!.categoryCreated, isFalse);
-      expect(result!.categoryReused, isTrue);
       verifyNever(() => mockRepository.saveConfig(any()));
     });
   });

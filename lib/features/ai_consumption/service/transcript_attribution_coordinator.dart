@@ -82,26 +82,6 @@ class TranscriptAttributionCoordinator {
     );
   }
 
-  Future<PreparedTranscriptAttribution> complete({
-    required TranscriptAttributionSession session,
-    required String audioEntryId,
-    required String transcript,
-    Map<String, dynamic>? usage,
-    bool usedTranscriptFallback = false,
-  }) async {
-    await recordInteraction(
-      session: session,
-      audioEntryId: audioEntryId,
-      transcript: transcript,
-      usage: usage,
-      interactionStatus: usedTranscriptFallback
-          ? AiInteractionStatus.partial
-          : AiInteractionStatus.succeeded,
-      errorCode: usedTranscriptFallback ? 'realtime_completion_fallback' : null,
-    );
-    return prepareOutput(session: session, audioEntryId: audioEntryId);
-  }
-
   /// Records the provider transcript independently from whichever transcript
   /// a later verification pass selects for the output carrier.
   Future<void> recordInteraction({

@@ -150,10 +150,7 @@ class PendingCorrection {
 ///
 /// Follows the pattern established by SpeechDictionaryService.
 class CorrectionCaptureService {
-  CorrectionCaptureService({
-    required this.categoryRepository,
-    this.notifier,
-  });
+  CorrectionCaptureService({required this.categoryRepository, this.notifier});
 
   final CategoryRepository categoryRepository;
   final CorrectionCaptureNotifier? notifier;
@@ -299,12 +296,6 @@ class CorrectionCaptureService {
     }
   }
 
-  /// Test-only access to the meaningfulness rule so its boundary algebra
-  /// can be property-tested without driving the full capture flow.
-  @visibleForTesting
-  bool debugIsMeaningfulCorrection(String before, String after) =>
-      _isMeaningfulCorrection(before, after);
-
   /// Determines if a correction is meaningful enough to capture.
   bool _isMeaningfulCorrection(String before, String after) {
     // Skip if only case changes for very short texts (< 3 chars)
@@ -320,9 +311,7 @@ class CorrectionCaptureService {
     String before,
     String after,
   ) {
-    return existing.any(
-      (e) => e.before == before && e.after == after,
-    );
+    return existing.any((e) => e.before == before && e.after == after);
   }
 }
 

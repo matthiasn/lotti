@@ -14,39 +14,14 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   group('OpenAiFtueResult', () {
-    test(
-      'totalModels should return sum of modelsCreated and modelsVerified',
-      () {
-        const result = OpenAiFtueResult(
-          modelsCreated: 3,
-          modelsVerified: 1,
-          categoryCreated: true,
-        );
-
-        expect(result.totalModels, equals(4));
-      },
-    );
-
-    test('should handle zero values correctly', () {
-      const result = OpenAiFtueResult(
-        modelsCreated: 0,
-        modelsVerified: 0,
-        categoryCreated: false,
-      );
-
-      expect(result.totalModels, equals(0));
-    });
-
-    test('should include optional categoryReused and categoryName', () {
+    test('should include optional categoryName', () {
       const result = OpenAiFtueResult(
         modelsCreated: 4,
         modelsVerified: 0,
         categoryCreated: false,
-        categoryReused: true,
         categoryName: 'Test Category OpenAI',
       );
 
-      expect(result.categoryReused, isTrue);
       expect(result.categoryName, equals('Test Category OpenAI'));
     });
 
@@ -301,7 +276,6 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.categoryCreated, isFalse);
-      expect(result!.categoryReused, isTrue);
       expect(result!.categoryName, equals('Test Category OpenAI Enabled'));
 
       verifyNever(() => mockCategoryRepository.updateCategory(any()));

@@ -6,9 +6,6 @@ part 'task_functions.g.dart';
 /// Function definitions for task-related AI operations
 class TaskFunctions {
   static const String setTaskLanguage = 'set_task_language';
-  static const String updateTaskEstimate = 'update_task_estimate';
-  static const String updateTaskDueDate = 'update_task_due_date';
-  static const String updateTaskPriority = 'update_task_priority';
 }
 
 /// Response from the set task language function

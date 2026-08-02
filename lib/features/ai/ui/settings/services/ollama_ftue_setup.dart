@@ -14,7 +14,6 @@ part of 'provider_prompt_setup_service.dart';
 class OllamaFtueResult extends AiFtueResult {
   const OllamaFtueResult({
     required super.categoryCreated,
-    super.categoryReused,
     super.categoryName,
     super.errors,
   }) : super(modelsCreated: 0, modelsVerified: 0);
@@ -59,7 +58,6 @@ extension OllamaFtueSetup on ProviderPromptSetupService {
 
     return OllamaFtueResult(
       categoryCreated: categoryWasCreated,
-      categoryReused: !categoryWasCreated && category != null,
       categoryName: category?.name,
     );
   }

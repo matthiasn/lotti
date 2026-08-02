@@ -10,7 +10,6 @@ class MistralFtueResult extends AiFtueResult {
     required super.modelsCreated,
     required super.modelsVerified,
     required super.categoryCreated,
-    super.categoryReused,
     super.categoryName,
     super.errors,
   });
@@ -85,7 +84,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       modelsCreated: modelResult.created.length,
       modelsVerified: modelResult.verified.length,
       categoryCreated: categoryWasCreated,
-      categoryReused: !categoryWasCreated && category != null,
       categoryName: category?.name,
     );
   }

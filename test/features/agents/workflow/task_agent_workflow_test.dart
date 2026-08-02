@@ -285,12 +285,6 @@ void main() {
       () => mockAiInputRepository.buildProjectContextJsonForTask(any()),
     ).thenAnswer((_) async => '{}');
     when(
-      () => mockAiInputRepository.buildRelatedProjectTasksJson(
-        taskId: any(named: 'taskId'),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => '{}');
-    when(
       () => mockJournalDb.getLinkedEntities(any()),
     ).thenAnswer((_) async => <JournalEntity>[]);
 

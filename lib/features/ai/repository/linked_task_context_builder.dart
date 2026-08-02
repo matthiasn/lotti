@@ -105,9 +105,7 @@ Future<Duration> calculateTimeSpentWithRepo(
   String taskId,
   TaskProgressRepository progressRepository,
 ) async {
-  final progressData = await progressRepository.getTaskProgressData(
-    id: taskId,
-  );
+  final progressData = await progressRepository.getTaskProgressData(id: taskId);
   final timeRanges = progressData?.$2 ?? {};
   return progressRepository
       .getTaskProgress(timeRanges: timeRanges, estimate: progressData?.$1)
@@ -122,25 +120,4 @@ Future<Duration> calculateTimeSpentWithRepo(
 /// the canonical implementation of time-spent calculation logic.
 Duration calculateTimeSpentFromEntities(List<JournalEntity> entities) {
   return TaskProgressRepository.sumTimeSpentFromEntities(entities);
-}
-
-/// Orders related project tasks most-recently-touched first, with stable
-/// id-based tie-breaking.
-int compareRelatedProjectTasks(Task left, Task right) {
-  final byUpdatedAt = right.meta.updatedAt.compareTo(left.meta.updatedAt);
-  if (byUpdatedAt != 0) {
-    return byUpdatedAt;
-  }
-
-  final byDateFrom = right.meta.dateFrom.compareTo(left.meta.dateFrom);
-  if (byDateFrom != 0) {
-    return byDateFrom;
-  }
-
-  final byCreatedAt = right.meta.createdAt.compareTo(left.meta.createdAt);
-  if (byCreatedAt != 0) {
-    return byCreatedAt;
-  }
-
-  return right.id.compareTo(left.id);
 }
