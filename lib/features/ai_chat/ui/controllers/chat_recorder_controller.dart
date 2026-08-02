@@ -98,10 +98,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         await File(filePath).delete();
       }
     } catch (_) {}
+    await _deleteDirectoryQuietly(tempDir);
+  }
+
+  Future<void> _deleteDirectoryQuietly(Directory? directory) async {
     try {
-      if (tempDir != null) {
-        await tempDir.delete(recursive: true);
-      }
+      await directory?.delete(recursive: true);
     } catch (_) {}
   }
 
@@ -145,13 +147,15 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         await recorder.dispose();
         return;
       }
-      _tempDir = await Directory(
+      final tempDir = await Directory(
         '${baseTemp.path}/lotti_chat_rec',
       ).create(recursive: true);
       if (!ref.mounted) {
         await recorder.dispose();
+        await _deleteDirectoryQuietly(tempDir);
         return;
       }
+      _tempDir = tempDir;
       final fileName = 'chat_${_nowMillisProvider()}.m4a';
       _filePath = '${_tempDir!.path}/$fileName';
 

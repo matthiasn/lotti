@@ -1938,7 +1938,7 @@ void main() {
   });
 
   // ─────────────────────────────────────────────────────────────────────────
-  // start() disposal between awaits (lines 194, 209, 216, 230-231)
+  // start() disposal between awaits
   // ─────────────────────────────────────────────────────────────────────────
   //
   // Each of these branches fires when the provider is disposed mid-`await`,
@@ -1947,7 +1947,7 @@ void main() {
   // (recorder.dispose / stop are called, then start() returns early).
   group('start() disposal between awaits', () {
     test(
-      'disposes recorder after hasPermission when unmounted (line 194)',
+      'disposes recorder after hasPermission when unmounted',
       () async {
         final mockRecorder = MockAudioRecorder();
         late ProviderContainer container;
@@ -1981,8 +1981,8 @@ void main() {
 
         await controller.start();
 
-        // Guard at line 193 was true → recorder.dispose() ran (line 194) and
-        // start() returned without ever calling recorder.start().
+        // The mounted guard fails after permission resolves, so start returns
+        // without ever calling recorder.start().
         expect(disposeCalls, 1);
         verifyNever(
           () => mockRecorder.start(
@@ -1995,7 +1995,7 @@ void main() {
     );
 
     test(
-      'disposes recorder after tempDirectoryProvider when unmounted (line 209)',
+      'disposes recorder after tempDirectoryProvider when unmounted',
       () async {
         final mockRecorder = MockAudioRecorder();
         late ProviderContainer container;
@@ -2010,8 +2010,8 @@ void main() {
             chatRecorderControllerProvider.overrideWith(
               () => ChatRecorderController(
                 recorderFactory: () => mockRecorder,
-                // Dispose during the temp-dir lookup so the line 208 guard
-                // sees an unmounted ref → line 209.
+                // Dispose during the temp-dir lookup so the mounted guard
+                // fails before the recording directory is created.
                 tempDirectoryProvider: () async {
                   container.dispose();
                   return Directory.systemTemp;
@@ -2030,9 +2030,8 @@ void main() {
 
         await controller.start();
 
-        // hasPermission guard passed (mounted), then tempDirectoryProvider
-        // disposed → line 208 guard true → recorder.dispose() (line 209),
-        // start() never started recording.
+        // Permission passed, then tempDirectoryProvider disposed the provider;
+        // start() cleans up the recorder without starting it.
         expect(disposeCalls, 1);
         verifyNever(
           () => mockRecorder.start(
@@ -2045,7 +2044,7 @@ void main() {
     );
 
     test(
-      'disposes recorder after temp dir create when unmounted (line 216)',
+      'removes a temp directory created after disposal starts',
       () async {
         final baseTemp = await Directory.systemTemp.createTemp('rec_216_');
         addTearDown(() async {
@@ -2065,12 +2064,12 @@ void main() {
               () => ChatRecorderController(
                 recorderFactory: () => mockRecorder,
                 // Defer disposal by two microtask hops. The first hop lets the
-                // post-tempDirectoryProvider guard (line 208) run while still
+                // post-tempDirectoryProvider guard run while still
                 // mounted; the second queues the actual disposal, which then
                 // runs *before* the real Directory.create() I/O completes
                 // (I/O completion is an event-loop task that runs after all
-                // pending microtasks). So the post-create guard (line 215) sees
-                // an unmounted ref → line 216.
+                // pending microtasks). The post-create guard therefore sees an
+                // unmounted ref.
                 tempDirectoryProvider: () async {
                   scheduleMicrotask(
                     () => scheduleMicrotask(container.dispose),
@@ -2091,15 +2090,12 @@ void main() {
 
         await controller.start();
 
-        // The post-tempDir guard (line 208) passed while mounted, so the
-        // controller created `${baseTemp}/lotti_chat_rec` (line 212) — proving
-        // we reached the post-create guard at line 215 rather than line 208.
+        // The directory creation completed after dispose had already taken its
+        // resource snapshot, so start itself must remove the late resource.
         expect(
           await Directory('${baseTemp.path}/lotti_chat_rec').exists(),
-          isTrue,
+          isFalse,
         );
-        // The post-create guard then saw an unmounted ref → recorder.dispose()
-        // (line 216) and start() never recorded.
         expect(disposeCalls, 1);
         verifyNever(
           () => mockRecorder.start(
@@ -2112,7 +2108,7 @@ void main() {
     );
 
     test(
-      'stops and disposes recorder when unmounted after start (lines 230-231)',
+      'stops and disposes recorder when unmounted after start',
       () async {
         final mockRecorder = MockAudioRecorder();
         late ProviderContainer container;
@@ -2132,8 +2128,8 @@ void main() {
             path: any(named: 'path'),
           ),
         ).thenAnswer((_) async {
-          // Dispose during recorder.start() so the post-start guard (line 229)
-          // sees an unmounted ref → lines 230-231 (stop + dispose).
+          // Dispose during recorder.start() so the post-start mounted guard
+          // stops and disposes the recorder.
           container.dispose();
         });
 
@@ -2157,8 +2153,8 @@ void main() {
 
         await controller.start();
 
-        // Recorder was started, then the unmounted guard ran stop() (line 230)
-        // and dispose() (line 231).
+        // Recorder was started, then the unmounted guard stopped and disposed
+        // it.
         expect(stopCalls, 1);
         expect(disposeCalls, 1);
         sub.close();

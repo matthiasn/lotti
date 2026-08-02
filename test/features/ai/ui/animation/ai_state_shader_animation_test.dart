@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -45,6 +46,32 @@ void main() {
 
       expect(voiceProgram, isA<ui.FragmentProgram>());
       expect(thinkingProgram, isA<ui.FragmentProgram>());
+    });
+
+    testWidgets('cache is reused within a zone but isolated between zones', (
+      tester,
+    ) async {
+      late Future<ui.FragmentProgram> firstZoneVoice;
+      late Future<ui.FragmentProgram> secondZoneVoice;
+
+      runZoned(() {
+        firstZoneVoice = AiStateShaderProgramCache.loadVoiceInput();
+        expect(
+          AiStateShaderProgramCache.loadVoiceInput(),
+          same(firstZoneVoice),
+        );
+      });
+      runZoned(() {
+        secondZoneVoice = AiStateShaderProgramCache.loadVoiceInput();
+        expect(
+          AiStateShaderProgramCache.loadVoiceInput(),
+          same(secondZoneVoice),
+        );
+      });
+
+      expect(secondZoneVoice, isNot(same(firstZoneVoice)));
+      final programs = await Future.wait([firstZoneVoice, secondZoneVoice]);
+      expect(programs, everyElement(isA<ui.FragmentProgram>()));
     });
   });
 

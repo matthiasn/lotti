@@ -769,8 +769,7 @@ void main() {
       () async {
         // A lone, non-force info event neither hits the line threshold nor
         // force-flushes, so the only thing that drains it is the buffered
-        // flush timer scheduled in `_appendToNamedFile` (lines 94-100 of
-        // logging_service.dart). We deliberately do NOT call
+        // flush timer scheduled in `_appendToNamedFile`. We deliberately do NOT call
         // `flush()` to trigger the buffering — only the timer
         // firing performs the drain. The `timerFactory` seam lets us drive
         // that 500 ms timer deterministically under `fakeAsync` instead of

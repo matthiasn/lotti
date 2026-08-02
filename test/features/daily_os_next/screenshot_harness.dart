@@ -260,9 +260,9 @@ Future<void> settleFrames(WidgetTester tester, [int frames = 14]) async {
 /// `addTearDown(tester.view.reset*)` (done here for convenience).
 void applyScreenshotDevice(WidgetTester tester, ScreenshotDevice device) {
   // A FragmentProgram belongs to the active flutter_tester render context.
-  // Manual suites run several testWidgets cases in one process, each with a
-  // fresh context, so carrying the memoized program across cases can hang the
-  // next rasterization. Reload it lazily after every context reset.
+  // The production cache is scoped to the current testWidgets zone, so manual
+  // suites can run several cases in one process without carrying a program
+  // into the next render context.
   tester.view
     ..physicalSize = device.size * device.devicePixelRatio
     ..devicePixelRatio = device.devicePixelRatio;

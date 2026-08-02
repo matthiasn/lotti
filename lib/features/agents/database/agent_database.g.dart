@@ -4392,10 +4392,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_agent_entities_agent_type_sub',
     'CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities (agent_id, type, subtype, created_at DESC)',
   );
-  late final Index idxAgentEntitiesThread = Index(
-    'idx_agent_entities_thread',
-    'CREATE INDEX idx_agent_entities_thread ON agent_entities (agent_id, thread_id, created_at DESC)',
-  );
   late final Index idxAgentEntitiesActiveAgentTypeCreatedId = Index(
     'idx_agent_entities_active_agent_type_created_id',
     'CREATE INDEX idx_agent_entities_active_agent_type_created_id ON agent_entities (agent_id, type, created_at DESC, id DESC) WHERE deleted_at IS NULL',
@@ -4503,22 +4499,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_wake_run_log_agent_thread',
     'CREATE INDEX idx_wake_run_log_agent_thread ON wake_run_log (agent_id, thread_id, created_at DESC)',
   );
-  late final Index idxWakeRunLogCreatedAt = Index(
-    'idx_wake_run_log_created_at',
-    'CREATE INDEX idx_wake_run_log_created_at ON wake_run_log (created_at DESC)',
-  );
   late final SagaLog sagaLog = SagaLog(this);
   late final Index idxSagaLogAgent = Index(
     'idx_saga_log_agent',
     'CREATE INDEX idx_saga_log_agent ON saga_log (agent_id)',
-  );
-  late final Index idxSagaLogStatus = Index(
-    'idx_saga_log_status',
-    'CREATE INDEX idx_saga_log_status ON saga_log (status, updated_at)',
-  );
-  late final Index idxSagaLogStatusCreatedAt = Index(
-    'idx_saga_log_status_created_at',
-    'CREATE INDEX idx_saga_log_status_created_at ON saga_log (status, created_at ASC)',
   );
   Selectable<AgentEntity> getAgentEntitiesByAgentId(String agentId, int limit) {
     return customSelect(
@@ -5040,7 +5024,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentEntitiesAgentId,
     idxAgentEntitiesType,
     idxAgentEntitiesAgentTypeSub,
-    idxAgentEntitiesThread,
     idxAgentEntitiesActiveAgentTypeCreatedId,
     idxAgentEntitiesActiveAgentTypeSubCreatedId,
     idxAgentEntitiesActiveTypeCreated,
@@ -5070,11 +5053,8 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxWakeRunLogTemplate,
     idxWakeRunLogStatus,
     idxWakeRunLogAgentThread,
-    idxWakeRunLogCreatedAt,
     sagaLog,
     idxSagaLogAgent,
-    idxSagaLogStatus,
-    idxSagaLogStatusCreatedAt,
   ];
 }
 
