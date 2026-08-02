@@ -2520,7 +2520,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get apiKeyShowTooltip => 'Mostrar chave de API';
 
   @override
-  String get audioRecordingCancel => 'CANCELAR';
+  String get audioRecordingCancel => 'Cancelar';
 
   @override
   String get audioRecordingDiscardDialogBody =>
@@ -2536,10 +2536,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Descartar gravação?';
 
   @override
-  String get audioRecordingPause => 'PAUSA';
+  String get audioRecordingPause => 'Pausar';
 
   @override
-  String get audioRecordingResume => 'RETOMAR';
+  String get audioRecordingResume => 'Retomar';
 
   @override
   String get audioRecordings => 'Gravações de áudio';
@@ -2843,7 +2843,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get categoryDefaultTemplateLabel => 'Modelo de agente padrão';
 
   @override
-  String get categoryDeleteConfirm => 'SIM, EXCLUIR ESTA CATEGORIA';
+  String get categoryDeleteConfirm => 'Sim, excluir esta categoria';
 
   @override
   String get categoryDeleteConfirmation =>
@@ -3530,7 +3530,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get copyAsText => 'Copiar como texto';
 
   @override
-  String get correctionExampleCancel => 'CANCELAR';
+  String get correctionExampleCancel => 'Cancelar';
 
   @override
   String correctionExamplePending(int seconds) {
@@ -4831,7 +4831,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dashboardCurrentChartsTitle => 'Gráficos neste painel';
 
   @override
-  String get dashboardDeleteConfirm => 'SIM, EXCLUIR ESTE PAINEL';
+  String get dashboardDeleteConfirm => 'Sim, excluir este painel';
 
   @override
   String get dashboardDeleteHint => 'Excluir painel';
@@ -5768,7 +5768,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get habitDeleteConfirm => 'SIM, EXCLUA ESTE HÁBITO';
+  String get habitDeleteConfirm => 'Sim, excluir este hábito';
 
   @override
   String get habitDeleteQuestion => 'Quer eliminar esse hábito?';
@@ -6372,7 +6372,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get journalDateToLabel => 'Data para:';
 
   @override
-  String get journalDeleteConfirm => 'SIM, EXCLUIR ESTA ENTRADA';
+  String get journalDeleteConfirm => 'Sim, excluir esta entrada';
 
   @override
   String get journalDeleteHint => 'Excluir entrada';
@@ -6511,7 +6511,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get journalToggleStarredTitle => 'Favorito';
 
   @override
-  String get journalUnlinkConfirm => 'SIM, DESVINCULAR ENTRADA';
+  String get journalUnlinkConfirm => 'Sim, desvincular entrada';
 
   @override
   String get journalUnlinkHint => 'Desvincular';
@@ -7103,7 +7103,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Exclua o banco de dados de agentes e reinicie o aplicativo';
 
   @override
-  String get maintenanceDeleteDatabaseConfirm => 'SIM, EXCLUIR BANCO DE DADOS';
+  String get maintenanceDeleteDatabaseConfirm => 'Sim, excluir banco de dados';
 
   @override
   String maintenanceDeleteDatabaseQuestion(String databaseName) {
@@ -7129,7 +7129,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Gerar incorporações';
 
   @override
-  String get maintenanceGenerateEmbeddingsConfirm => 'SIM, GERAR';
+  String get maintenanceGenerateEmbeddingsConfirm => 'Sim, gerar';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
@@ -7179,7 +7179,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get maintenancePopulateSequenceLogConfirm => 'SIM, POPULAR';
+  String get maintenancePopulateSequenceLogConfirm => 'Sim, preencher';
 
   @override
   String get maintenancePopulateSequenceLogDescription =>
@@ -7208,7 +7208,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Limpar itens antigos enviados da caixa de saída';
 
   @override
-  String get maintenancePurgeSentOutboxConfirm => 'SIM, PURGA';
+  String get maintenancePurgeSentOutboxConfirm => 'Sim, purgar';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>
@@ -7222,7 +7222,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get maintenanceRecreateFts5 => 'Recrie o índice de texto completo';
 
   @override
-  String get maintenanceRecreateFts5Confirm => 'SIM, RECRIAR ÍNDICE';
+  String get maintenanceRecreateFts5Confirm => 'Sim, recriar índice';
 
   @override
   String get maintenanceRecreateFts5Description =>
@@ -7374,7 +7374,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get matrixStatsTopKpis => 'Principais KPIs';
 
   @override
-  String get measurableDeleteConfirm => 'SIM, EXCLUIR ESTE MENSURÁVEL';
+  String get measurableDeleteConfirm => 'Sim, excluir este mensurável';
 
   @override
   String get measurableDeleteQuestion =>

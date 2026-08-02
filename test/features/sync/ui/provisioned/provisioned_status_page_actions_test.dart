@@ -262,7 +262,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.tap(
-        find.text(messages.syncDeleteConfigConfirm.toUpperCase()),
+        find.text(messages.syncDeleteConfigConfirm),
       );
       await tester.pumpAndSettle();
 

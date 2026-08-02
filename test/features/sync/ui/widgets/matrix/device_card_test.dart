@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
@@ -96,8 +97,14 @@ void main() {
     await tester.tap(find.byKey(const Key('matrix_delete_device')));
     await tester.pumpAndSettle();
 
-    // The confirm button renders the upper-cased delete label.
-    await tester.tap(find.text('REMOVE FROM SYNC'));
+    // The modal title and confirm button share the delete label — scope the
+    // tap to the modal's action bar.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(DesignSystemModalActionBar),
+        matching: find.text('Remove from sync'),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -128,7 +135,12 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('REMOVE FROM SYNC'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(DesignSystemModalActionBar),
+          matching: find.text('Remove from sync'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       verify(() => mockMatrixService.deleteDeviceById('DEVICE1')).called(1);
@@ -151,7 +163,12 @@ void main() {
 
       await tester.tap(find.byKey(const Key('matrix_delete_device')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('REMOVE FROM SYNC'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(DesignSystemModalActionBar),
+          matching: find.text('Remove from sync'),
+        ),
+      );
       await tester.pump();
       await tester.pump();
 
@@ -608,7 +625,12 @@ void main() {
       // The labeled button still runs through the confirmation modal.
       await tester.tap(find.byKey(const Key('matrix_remove_device_primary')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('REMOVE FROM SYNC'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(DesignSystemModalActionBar),
+          matching: find.text('Remove from sync'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       verify(() => mockMatrixService.deleteDeviceById('DEVICE1')).called(1);
@@ -919,7 +941,7 @@ void main() {
         await tapVerify(tester);
 
         // The confirmation modal upper-cases its confirming label.
-        await tester.tap(find.text('VERIFY ANYWAY'));
+        await tester.tap(find.text('Verify anyway'));
         await tester.pumpAndSettle();
 
         expect(find.byType(VerificationModal), findsOneWidget);

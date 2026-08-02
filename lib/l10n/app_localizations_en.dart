@@ -2487,14 +2487,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get apiKeyShowTooltip => 'Show API Key';
 
   @override
-  String get audioRecordingCancel => 'CANCEL';
+  String get audioRecordingCancel => 'Cancel';
 
   @override
   String get audioRecordingDiscardDialogBody =>
       'This recording will be deleted. No audio entry, transcript, or task summary will be created.';
 
   @override
-  String get audioRecordingDiscardDialogCancel => 'Keep Recording';
+  String get audioRecordingDiscardDialogCancel => 'Keep recording';
 
   @override
   String get audioRecordingDiscardDialogConfirm => 'Discard';
@@ -2503,10 +2503,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Discard recording?';
 
   @override
-  String get audioRecordingPause => 'PAUSE';
+  String get audioRecordingPause => 'Pause';
 
   @override
-  String get audioRecordingResume => 'RESUME';
+  String get audioRecordingResume => 'Resume';
 
   @override
   String get audioRecordings => 'Audio Recordings';
@@ -2805,7 +2805,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryDefaultTemplateLabel => 'Default agent template';
 
   @override
-  String get categoryDeleteConfirm => 'YES, DELETE THIS CATEGORY';
+  String get categoryDeleteConfirm => 'Yes, delete this category';
 
   @override
   String get categoryDeleteConfirmation =>
@@ -3483,7 +3483,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copyAsText => 'Copy as text';
 
   @override
-  String get correctionExampleCancel => 'CANCEL';
+  String get correctionExampleCancel => 'Cancel';
 
   @override
   String correctionExamplePending(int seconds) {
@@ -4763,7 +4763,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardCurrentChartsTitle => 'Charts on this dashboard';
 
   @override
-  String get dashboardDeleteConfirm => 'YES, DELETE THIS DASHBOARD';
+  String get dashboardDeleteConfirm => 'Yes, delete this dashboard';
 
   @override
   String get dashboardDeleteHint => 'Delete dashboard';
@@ -5688,7 +5688,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get habitDeleteConfirm => 'YES, DELETE THIS HABIT';
+  String get habitDeleteConfirm => 'Yes, delete this habit';
 
   @override
   String get habitDeleteQuestion => 'Do you want to delete this habit?';
@@ -6286,7 +6286,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalDateToLabel => 'Date to:';
 
   @override
-  String get journalDeleteConfirm => 'YES, DELETE THIS ENTRY';
+  String get journalDeleteConfirm => 'Yes, delete this entry';
 
   @override
   String get journalDeleteHint => 'Delete entry';
@@ -6422,7 +6422,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalToggleStarredTitle => 'Favorite';
 
   @override
-  String get journalUnlinkConfirm => 'YES, UNLINK ENTRY';
+  String get journalUnlinkConfirm => 'Yes, unlink entry';
 
   @override
   String get journalUnlinkHint => 'Unlink';
@@ -7005,7 +7005,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Delete agents database and restart app';
 
   @override
-  String get maintenanceDeleteDatabaseConfirm => 'YES, DELETE DATABASE';
+  String get maintenanceDeleteDatabaseConfirm => 'Yes, delete database';
 
   @override
   String maintenanceDeleteDatabaseQuestion(String databaseName) {
@@ -7029,7 +7029,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Generate Embeddings';
 
   @override
-  String get maintenanceGenerateEmbeddingsConfirm => 'YES, GENERATE';
+  String get maintenanceGenerateEmbeddingsConfirm => 'Yes, generate';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
@@ -7076,7 +7076,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get maintenancePopulateSequenceLogConfirm => 'YES, POPULATE';
+  String get maintenancePopulateSequenceLogConfirm => 'Yes, populate';
 
   @override
   String get maintenancePopulateSequenceLogDescription =>
@@ -7104,7 +7104,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenancePurgeSentOutbox => 'Purge old sent outbox items';
 
   @override
-  String get maintenancePurgeSentOutboxConfirm => 'YES, PURGE';
+  String get maintenancePurgeSentOutboxConfirm => 'Yes, purge';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>
@@ -7118,7 +7118,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenanceRecreateFts5 => 'Recreate full-text index';
 
   @override
-  String get maintenanceRecreateFts5Confirm => 'YES, RECREATE INDEX';
+  String get maintenanceRecreateFts5Confirm => 'Yes, recreate index';
 
   @override
   String get maintenanceRecreateFts5Description =>
@@ -7267,7 +7267,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matrixStatsTopKpis => 'Top KPIs';
 
   @override
-  String get measurableDeleteConfirm => 'YES, DELETE THIS MEASURABLE';
+  String get measurableDeleteConfirm => 'Yes, delete this measurable';
 
   @override
   String get measurableDeleteQuestion =>
@@ -11502,9 +11502,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get dashboardCopyHint => 'Save & Copy dashboard config';
 
   @override
-  String get dashboardDeleteConfirm => 'YES, DELETE THIS DASHBOARD';
-
-  @override
   String get dashboardDeleteHint => 'Delete dashboard';
 
   @override
@@ -11581,9 +11578,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get habitDashboardLabel => 'Dashboard (optional)';
 
   @override
-  String get habitDeleteConfirm => 'YES, DELETE THIS HABIT';
-
-  @override
   String get habitDeleteQuestion => 'Do you want to delete this habit?';
 
   @override
@@ -11635,9 +11629,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get journalDateToLabel => 'Date to:';
 
   @override
-  String get journalDeleteConfirm => 'YES, DELETE THIS ENTRY';
-
-  @override
   String get journalDeleteHint => 'Delete entry';
 
   @override
@@ -11676,9 +11667,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get journalToggleStarredTitle => 'Favourite';
-
-  @override
-  String get journalUnlinkConfirm => 'YES, UNLINK ENTRY';
 
   @override
   String get journalUnlinkHint => 'Unlink';
@@ -11721,9 +11709,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get maintenanceSyncDefinitionsDescription =>
       'Sync measurables, dashboards, habits, categories, and AI settings';
-
-  @override
-  String get measurableDeleteConfirm => 'YES, DELETE THIS MEASURABLE';
 
   @override
   String get measurableDeleteQuestion =>

@@ -162,9 +162,9 @@ void main() {
       find.textContaining('Existing Daily OS plans remain'),
       findsOneWidget,
     );
-    expect(find.text('RESET'), findsOneWidget);
+    expect(find.text('Reset'), findsOneWidget);
 
-    await tester.tap(find.text('RESET'));
+    await tester.tap(find.text('Reset'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -189,7 +189,7 @@ void main() {
     await tester.tap(find.text('Reset onboarding test state'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.text('CANCEL'));
+    await tester.tap(find.text('Cancel'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 

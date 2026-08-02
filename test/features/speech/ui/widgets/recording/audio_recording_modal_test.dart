@@ -993,7 +993,7 @@ void main() {
         expect(stopCalled, isFalse);
 
         await tester.tap(
-          find.widgetWithText(DesignSystemButton, 'DISCARD'),
+          find.widgetWithText(DesignSystemButton, 'Discard'),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1041,7 +1041,7 @@ void main() {
         expect(find.text('Discard recording?'), findsOneWidget);
 
         await tester.tap(
-          find.widgetWithText(DesignSystemButton, 'Keep Recording'),
+          find.widgetWithText(DesignSystemButton, 'Keep recording'),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));

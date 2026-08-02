@@ -252,7 +252,7 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.tap(find.text('YES, DELETE THIS HABIT'));
+        await tester.tap(find.text('Yes, delete this habit'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
 

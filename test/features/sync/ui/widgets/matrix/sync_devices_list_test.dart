@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
@@ -310,7 +311,12 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('REMOVE FROM SYNC'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(DesignSystemModalActionBar),
+          matching: find.text('Remove from sync'),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
@@ -392,7 +398,12 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.text('REMOVE FROM SYNC'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(DesignSystemModalActionBar),
+        matching: find.text('Remove from sync'),
+      ),
+    );
     await tester.pump();
 
     // The sheet closes while the deletion is still in flight.

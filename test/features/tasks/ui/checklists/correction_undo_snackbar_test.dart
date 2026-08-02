@@ -35,7 +35,7 @@ void main() {
       expect(find.textContaining('TestFlight'), findsOneWidget);
 
       // Should have a cancel button
-      expect(find.text('CANCEL'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
 
       // The pending was created in the past, so remainingTime is zero and
       // DesignSystemToast intentionally skips the countdown bar. Animated
@@ -67,7 +67,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('CANCEL'));
+      await tester.tap(find.text('Cancel'));
       await tester.pump();
 
       expect(undoCalled, isTrue);

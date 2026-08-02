@@ -51,6 +51,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   day's default view every time you stepped to another date, which made reading
   the same view across a run of days impossible. The view now changes only when
   you change it. Starting the app still opens on the usual view for the day.
+- **Confirmation buttons stop shouting.** Every destructive confirmation —
+  delete a database, remove a device from sync, unlink a task, discard a
+  recording — rendered its confirm action in all-capitals, unlike anything
+  else in the app, and the fallback labels were hardcoded English no matter
+  the app language. Confirm actions now read in normal sentence case in every
+  language, and a dialog that does not name its own Cancel gets the platform's
+  localized one. Rewriting those labels also repaired a set of broken
+  translations that had been hiding in the shouting — the Dutch purge
+  confirmation read "Ja, schat." ("Yes, darling."), Italian's pause/resume
+  recording labels said "countries" and "resources", and Swedish and Danish
+  both offered a "CV".
 - **Assistants for past days stop waking up.** Daily OS gives each day its own
   assistant. Those were never stood down, so every day you had ever used still
   counted as live: they were all reloaded each time the app started, and any one

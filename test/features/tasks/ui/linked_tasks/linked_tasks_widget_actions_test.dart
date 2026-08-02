@@ -894,8 +894,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Shared confirmation modal (it uppercases its confirm label).
-      expect(find.text('UNLINK'), findsOneWidget);
-      await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
+      expect(find.text('Unlink'), findsOneWidget);
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Unlink'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -921,7 +921,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Unlink'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

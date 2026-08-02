@@ -299,7 +299,7 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.tap(find.text('YES, DELETE THIS MEASURABLE'));
+        await tester.tap(find.text('Yes, delete this measurable'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
 

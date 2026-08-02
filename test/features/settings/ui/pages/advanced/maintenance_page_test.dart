@@ -84,7 +84,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.text('CONFIRM'));
+      await tester.tap(find.text('Confirm'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
     }
@@ -302,8 +302,8 @@ void main() {
         find.text('Are you sure you want to delete Editor Database?'),
         findsOneWidget,
       );
-      expect(find.text('YES, DELETE DATABASE'), findsOneWidget);
-      expect(find.text('CANCEL'), findsOneWidget);
+      expect(find.text('Yes, delete database'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
     });
 
     testWidgets(
@@ -319,7 +319,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('YES, DELETE DATABASE'));
+        await tester.tap(find.text('Yes, delete database'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -344,8 +344,8 @@ void main() {
         find.text('Are you sure you want to delete Agents Database?'),
         findsOneWidget,
       );
-      expect(find.text('YES, DELETE DATABASE'), findsOneWidget);
-      expect(find.text('CANCEL'), findsOneWidget);
+      expect(find.text('Yes, delete database'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
     });
 
     testWidgets(
@@ -370,7 +370,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('YES, DELETE DATABASE'));
+        await tester.tap(find.text('Yes, delete database'));
         // One pump drives the modal dismiss and starts the async
         // callback up to the suspended deleteAgentDb await.
         await tester.pump();
@@ -415,7 +415,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('YES, RECREATE INDEX'), findsAtLeastNWidgets(1));
+      expect(find.text('Yes, recreate index'), findsAtLeastNWidgets(1));
     });
 
     testWidgets(
@@ -773,7 +773,7 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('CANCEL'));
+      await tester.tap(find.text('Cancel'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -808,7 +808,7 @@ void main() {
       );
 
       // The confirm label for Gemini reset is "RESET" (uppercased from "Reset").
-      await tester.tap(find.text('RESET'));
+      await tester.tap(find.text('Reset'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

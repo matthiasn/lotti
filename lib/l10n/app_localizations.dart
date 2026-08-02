@@ -4293,7 +4293,7 @@ abstract class AppLocalizations {
   /// No description provided for @audioRecordingCancel.
   ///
   /// In en, this message translates to:
-  /// **'CANCEL'**
+  /// **'Cancel'**
   String get audioRecordingCancel;
 
   /// No description provided for @audioRecordingDiscardDialogBody.
@@ -4305,7 +4305,7 @@ abstract class AppLocalizations {
   /// No description provided for @audioRecordingDiscardDialogCancel.
   ///
   /// In en, this message translates to:
-  /// **'Keep Recording'**
+  /// **'Keep recording'**
   String get audioRecordingDiscardDialogCancel;
 
   /// No description provided for @audioRecordingDiscardDialogConfirm.
@@ -4323,13 +4323,13 @@ abstract class AppLocalizations {
   /// No description provided for @audioRecordingPause.
   ///
   /// In en, this message translates to:
-  /// **'PAUSE'**
+  /// **'Pause'**
   String get audioRecordingPause;
 
   /// No description provided for @audioRecordingResume.
   ///
   /// In en, this message translates to:
-  /// **'RESUME'**
+  /// **'Resume'**
   String get audioRecordingResume;
 
   /// No description provided for @audioRecordings.
@@ -4785,7 +4785,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryDeleteConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, DELETE THIS CATEGORY'**
+  /// **'Yes, delete this category'**
   String get categoryDeleteConfirm;
 
   /// No description provided for @categoryDeleteConfirmation.
@@ -5894,7 +5894,7 @@ abstract class AppLocalizations {
   /// No description provided for @correctionExampleCancel.
   ///
   /// In en, this message translates to:
-  /// **'CANCEL'**
+  /// **'Cancel'**
   String get correctionExampleCancel;
 
   /// No description provided for @correctionExamplePending.
@@ -8120,7 +8120,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardDeleteConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, DELETE THIS DASHBOARD'**
+  /// **'Yes, delete this dashboard'**
   String get dashboardDeleteConfirm;
 
   /// No description provided for @dashboardDeleteHint.
@@ -9848,7 +9848,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitDeleteConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, DELETE THIS HABIT'**
+  /// **'Yes, delete this habit'**
   String get habitDeleteConfirm;
 
   /// No description provided for @habitDeleteQuestion.
@@ -10904,7 +10904,7 @@ abstract class AppLocalizations {
   /// No description provided for @journalDeleteConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, DELETE THIS ENTRY'**
+  /// **'Yes, delete this entry'**
   String get journalDeleteConfirm;
 
   /// No description provided for @journalDeleteHint.
@@ -11168,7 +11168,7 @@ abstract class AppLocalizations {
   /// No description provided for @journalUnlinkConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, UNLINK ENTRY'**
+  /// **'Yes, unlink entry'**
   String get journalUnlinkConfirm;
 
   /// No description provided for @journalUnlinkHint.
@@ -12164,7 +12164,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceDeleteDatabaseConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, DELETE DATABASE'**
+  /// **'Yes, delete database'**
   String get maintenanceDeleteDatabaseConfirm;
 
   /// No description provided for @maintenanceDeleteDatabaseQuestion.
@@ -12206,7 +12206,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceGenerateEmbeddingsConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, GENERATE'**
+  /// **'Yes, generate'**
   String get maintenanceGenerateEmbeddingsConfirm;
 
   /// No description provided for @maintenanceGenerateEmbeddingsDescription.
@@ -12270,7 +12270,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenancePopulateSequenceLogConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, POPULATE'**
+  /// **'Yes, populate'**
   String get maintenancePopulateSequenceLogConfirm;
 
   /// No description provided for @maintenancePopulateSequenceLogDescription.
@@ -12318,7 +12318,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenancePurgeSentOutboxConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, PURGE'**
+  /// **'Yes, purge'**
   String get maintenancePurgeSentOutboxConfirm;
 
   /// No description provided for @maintenancePurgeSentOutboxDescription.
@@ -12342,7 +12342,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceRecreateFts5Confirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, RECREATE INDEX'**
+  /// **'Yes, recreate index'**
   String get maintenanceRecreateFts5Confirm;
 
   /// No description provided for @maintenanceRecreateFts5Description.
@@ -12612,7 +12612,7 @@ abstract class AppLocalizations {
   /// No description provided for @measurableDeleteConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, DELETE THIS MEASURABLE'**
+  /// **'Yes, delete this measurable'**
   String get measurableDeleteConfirm;
 
   /// No description provided for @measurableDeleteQuestion.

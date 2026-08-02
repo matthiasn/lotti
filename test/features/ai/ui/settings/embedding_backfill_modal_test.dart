@@ -74,7 +74,7 @@ Future<void> _openModalSelectAndConfirm(WidgetTester tester) async {
   await tester.pump();
 
   // Tap confirm
-  await tester.tap(find.text('YES, GENERATE'));
+  await tester.tap(find.text('Yes, generate'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
 }
@@ -114,7 +114,7 @@ void main() {
       );
 
       // Verify the confirm button label is displayed (uppercased)
-      expect(find.text('YES, GENERATE'), findsOneWidget);
+      expect(find.text('Yes, generate'), findsOneWidget);
 
       // Verify cancel button is present
       expect(find.text('Cancel'), findsOneWidget);
@@ -140,7 +140,7 @@ void main() {
 
       final confirmFinder = find.widgetWithText(
         DesignSystemButton,
-        'YES, GENERATE',
+        'Yes, generate',
       );
 
       // Before selecting a category, confirm button should be disabled
@@ -166,7 +166,7 @@ void main() {
       // Initially disabled
       final confirmFinder = find.widgetWithText(
         DesignSystemButton,
-        'YES, GENERATE',
+        'Yes, generate',
       );
       var confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
       expect(confirmButton.onPressed, isNull);

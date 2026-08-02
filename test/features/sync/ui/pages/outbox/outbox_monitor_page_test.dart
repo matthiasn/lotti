@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
@@ -190,8 +191,14 @@ void main() {
       // The safer confirmation spells out the data-loss risk.
       expect(find.text(_l10n.outboxRemoveConfirmMessage), findsOneWidget);
 
-      // The modal confirm is upper-cased, so it doesn't collide with the card.
-      await tester.tap(find.text(_l10n.outboxActionRemove.toUpperCase()));
+      // The card action and the modal confirm share the same label — scope
+      // the tap to the modal's action bar.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(DesignSystemModalActionBar),
+          matching: find.text(_l10n.outboxActionRemove),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -259,7 +266,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.text(_l10n.outboxActionRemove.toUpperCase()));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(DesignSystemModalActionBar),
+          matching: find.text(_l10n.outboxActionRemove),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
