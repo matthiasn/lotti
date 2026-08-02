@@ -4,7 +4,7 @@ import 'package:lotti/features/agents/database/agent_repo_retention.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/service/observation_prune_plan.dart';
 
-/// One thread's worth of pruning, and what it removed.
+/// One agent's worth of pruning, and what it removed.
 class ObservationSweepResult {
   const ObservationSweepResult({
     required this.messageIds,
@@ -29,7 +29,7 @@ class ObservationSweepResult {
 ///
 /// The decision of *what* may go is [planObservationPrune]'s, and lives apart
 /// from the SQL so its invariants are testable without a database. This class
-/// only supplies the thread's shape and executes the plan.
+/// only supplies the log's shape and executes the plan.
 ///
 /// **Why the links go too.** `fork_healer` gates healing on
 /// `danglingParentIds.isEmpty`. If a surviving message kept a `messagePrev`

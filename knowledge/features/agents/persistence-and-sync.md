@@ -351,7 +351,7 @@ inside the agent's causal message DAG, which is where a naive sweep does damage:
 | `agentMessagePayload` | Payloads written by `AgentInputCaptureService` are **user content**, content-addressed under `sharedContentAgentId` and referenced by `messagePayload` **links** — not by any message's `contentEntryId`. An ownership check based on `contentEntryId` reads them as orphans and deletes them | Payload rows are never deleted. Only the pruned message's own edge to one goes |
 | Replayed links | A peer can re-sync a `message_prev` edge for an observation this device pruned, so the link table repopulates from outside | A re-sent edge without its node is a transient dangling parent — exactly the partially-synced view `planJoin` already defers on — and it clears once that peer runs its own sweep |
 
-`planObservationPrune` is a pure function of the thread's shape, so those
+`planObservationPrune` is a pure function of the log's shape, so those
 invariants are testable without a database; `AgentRepoObservationRetention`
 only supplies the rows and executes the plan.
 

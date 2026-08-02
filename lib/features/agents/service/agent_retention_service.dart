@@ -105,11 +105,11 @@ class AgentRetentionService {
     }
   }
 
-  /// Prunes aged observations thread by thread.
+  /// Prunes aged observations agent by agent.
   ///
-  /// Each thread is its own transaction, so a sweep cut short leaves a
+  /// Each agent is its own transaction, so a sweep cut short leaves a
   /// consistent DAG behind and the next start resumes where this one stopped.
-  /// A thread that fails is logged and skipped rather than aborting the pass —
+  /// An agent that fails is logged and skipped rather than aborting the pass —
   /// one malformed log must not stop every other agent from being collected.
   Future<int> _sweepObservations(DateTime now) async {
     final cutoff = now.subtract(policy.observations);
