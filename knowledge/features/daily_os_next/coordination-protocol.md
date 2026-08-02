@@ -30,6 +30,32 @@ The coordinator and per-day agents coordinate through **two durable, synced
 entities — no RPC** (ADR 0016/0018/0019). Everything is an append-only or
 last-write-wins register that converges on its own.
 
+## A per-day agent is retired when its day is done
+
+A `day_agent:<dayId>` is created for the day it plans and stays active for
+that day plus a **one-day handover**, so it can wake the morning after and give
+the coordinator anything its day left unreported. Then
+`DayAgentService.retirePastDayAgents` sets it dormant and clears its
+`scheduledWakeAt`.
+
+Both halves are load-bearing. The lifecycle flip is what `ScheduledWakeManager`
+keys on — its `_isActiveAgent` guard already skips a non-active agent and
+clears the stale wake. Clearing the deadline stops the row surfacing at all,
+because `getDueScheduledAgentStates` filters on `scheduledWakeAt` **only, not
+lifecycle**: a finished day still holding a deadline is otherwise due on every
+tick, forever.
+
+Without this the active set grew by one per day of use and
+`restoreSubscriptions` re-hydrated every one of them on each launch — model
+spend on days that are over, and the pressure behind much of the bounding work
+in `lotti3-hkb`.
+
+**Retired is not deleted.** The day's artifacts stay where they are and the day
+stays readable. Nothing revives an agent on a timer; only an explicit
+resolution through `getOrCreateDayAgentForDate` reactivates one, because that
+is someone opening, refining or retrying that day rather than work that happens
+on its own.
+
 ```mermaid
 sequenceDiagram
   participant SWM as ScheduledWakeManager
