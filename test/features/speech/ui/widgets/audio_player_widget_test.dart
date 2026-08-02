@@ -125,7 +125,6 @@ void main() {
     required Duration progress,
     required Duration pausedAt,
     required double speed,
-    required bool showTranscriptsList,
     Duration buffered = Duration.zero,
     JournalAudio? audioNote,
   }) {
@@ -135,7 +134,6 @@ void main() {
       progress: progress,
       pausedAt: pausedAt,
       speed: speed,
-      showTranscriptsList: showTranscriptsList,
       buffered: buffered,
       audioNote: audioNote,
     );
@@ -192,7 +190,6 @@ void main() {
       progress: const Duration(seconds: 45),
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
       buffered: const Duration(minutes: 1),
       audioNote: journalAudio,
     );
@@ -216,14 +213,9 @@ void main() {
       progress: Duration.zero,
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
     );
 
-    await pumpPlayer(
-      tester,
-      journalAudio: journalAudio,
-      state: state,
-    );
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
 
     expect(find.bySemanticsLabel('Play audio'), findsOneWidget);
   });
@@ -238,7 +230,6 @@ void main() {
       progress: const Duration(seconds: 10),
       pausedAt: const Duration(seconds: 10),
       speed: 1.25,
-      showTranscriptsList: false,
       buffered: const Duration(seconds: 30),
       audioNote: journalAudio,
     );
@@ -268,7 +259,6 @@ void main() {
       progress: const Duration(seconds: 5),
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
       buffered: const Duration(seconds: 6),
       audioNote: journalAudio,
     );
@@ -279,8 +269,6 @@ void main() {
       state: state,
       waveformData: AudioWaveformData(
         amplitudes: const <double>[0.3, 0.6, 0.9],
-        bucketDuration: const Duration(milliseconds: 20),
-        audioDuration: journalAudio.data.duration,
       ),
     );
 
@@ -299,7 +287,6 @@ void main() {
       progress: const Duration(seconds: 10),
       pausedAt: const Duration(seconds: 10),
       speed: 1,
-      showTranscriptsList: false,
       buffered: const Duration(seconds: 30),
       audioNote: journalAudio,
     );
@@ -326,14 +313,9 @@ void main() {
       progress: Duration.zero,
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
     );
 
-    await pumpPlayer(
-      tester,
-      journalAudio: journalAudio,
-      state: state,
-    );
+    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
 
     await tester.tap(find.bySemanticsLabel('Play audio'));
     await tester.pump();
@@ -352,7 +334,6 @@ void main() {
       progress: const Duration(seconds: 30),
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
       audioNote: journalAudio,
     );
 
@@ -374,7 +355,6 @@ void main() {
       progress: const Duration(seconds: 30),
       pausedAt: const Duration(seconds: 30),
       speed: 1,
-      showTranscriptsList: false,
       audioNote: journalAudio,
     );
 
@@ -396,7 +376,6 @@ void main() {
       progress: Duration.zero,
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
       audioNote: journalAudio,
     );
 
@@ -415,7 +394,6 @@ void main() {
       progress: Duration.zero,
       pausedAt: Duration.zero,
       speed: 1.5,
-      showTranscriptsList: false,
     );
 
     await pumpPlayer(tester, journalAudio: journalAudio, state: state);
@@ -451,28 +429,26 @@ void main() {
   ];
 
   for (final transition in speedTransitions) {
-    testWidgets(
-      'tapping ${transition.label} cycles to ${transition.next}x',
-      (WidgetTester tester) async {
-        final journalAudio = buildJournalAudio();
-        final state = buildState(
-          status: AudioPlayerStatus.playing,
-          totalDuration: journalAudio.data.duration,
-          progress: const Duration(seconds: 5),
-          pausedAt: Duration.zero,
-          speed: transition.current,
-          showTranscriptsList: false,
-          audioNote: journalAudio,
-        );
+    testWidgets('tapping ${transition.label} cycles to ${transition.next}x', (
+      WidgetTester tester,
+    ) async {
+      final journalAudio = buildJournalAudio();
+      final state = buildState(
+        status: AudioPlayerStatus.playing,
+        totalDuration: journalAudio.data.duration,
+        progress: const Duration(seconds: 5),
+        pausedAt: Duration.zero,
+        speed: transition.current,
+        audioNote: journalAudio,
+      );
 
-        await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+      await pumpPlayer(tester, journalAudio: journalAudio, state: state);
 
-        await tester.tap(find.text(transition.label));
-        await tester.pump();
+      await tester.tap(find.text(transition.label));
+      await tester.pump();
 
-        expect(controller.lastSpeedSet, transition.next);
-      },
-    );
+      expect(controller.lastSpeedSet, transition.next);
+    });
   }
 
   testWidgets('displays all speed values correctly', (
@@ -488,7 +464,6 @@ void main() {
         progress: const Duration(seconds: 5),
         pausedAt: Duration.zero,
         speed: speed,
-        showTranscriptsList: false,
         audioNote: journalAudio,
       );
 
@@ -512,7 +487,6 @@ void main() {
       progress: Duration.zero,
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
     );
 
     await pumpPlayer(tester, journalAudio: journalAudio, state: state);
@@ -532,7 +506,6 @@ void main() {
       progress: const Duration(seconds: 30),
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
       audioNote: journalAudio,
     );
 
@@ -554,7 +527,6 @@ void main() {
       progress: const Duration(seconds: 120),
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
       audioNote: journalAudio,
     );
 
@@ -575,7 +547,6 @@ void main() {
       progress: const Duration(seconds: 5),
       pausedAt: Duration.zero,
       speed: speed,
-      showTranscriptsList: false,
       audioNote: journalAudio,
     );
 
@@ -586,9 +557,7 @@ void main() {
       state: stateForSpeed(1.5),
     );
     final fastFinder = find.text('1.5x');
-    final errorColor = Theme.of(
-      tester.element(fastFinder),
-    ).colorScheme.error;
+    final errorColor = Theme.of(tester.element(fastFinder)).colorScheme.error;
     expect(tester.widget<Text>(fastFinder).style?.color, errorColor);
 
     // 1x speed: label text is NOT painted with the error color.
@@ -599,10 +568,7 @@ void main() {
       state: stateForSpeed(1),
     );
     final normalFinder = find.text('1x');
-    expect(
-      tester.widget<Text>(normalFinder).style?.color,
-      isNot(errorColor),
-    );
+    expect(tester.widget<Text>(normalFinder).style?.color, isNot(errorColor));
   });
 
   testWidgets('shows correct buffered progress', (WidgetTester tester) async {
@@ -613,7 +579,6 @@ void main() {
       progress: const Duration(seconds: 30),
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
       buffered: const Duration(minutes: 2),
       audioNote: journalAudio,
     );
@@ -637,7 +602,6 @@ void main() {
       progress: const Duration(seconds: 30),
       pausedAt: Duration.zero,
       speed: 1,
-      showTranscriptsList: false,
       buffered: const Duration(minutes: 1),
     );
 
@@ -702,7 +666,6 @@ void main() {
               ? activeProgress
               : Duration.zero,
           speed: 1,
-          showTranscriptsList: false,
           audioNote: c.active ? journalAudio : null,
         );
 
@@ -753,7 +716,6 @@ void main() {
           progress: const Duration(seconds: 5),
           pausedAt: const Duration(seconds: 5),
           speed: 1,
-          showTranscriptsList: false,
           audioNote: journalAudio,
         );
 
@@ -767,39 +729,37 @@ void main() {
       },
     );
 
-    testWidgets(
-      'play button surface adapts to dark token in dark theme',
-      (WidgetTester tester) async {
-        final journalAudio = buildJournalAudio();
-        final state = buildState(
-          status: AudioPlayerStatus.paused,
-          totalDuration: journalAudio.data.duration,
-          progress: const Duration(seconds: 5),
-          pausedAt: const Duration(seconds: 5),
-          speed: 1,
-          showTranscriptsList: false,
-          audioNote: journalAudio,
-        );
+    testWidgets('play button surface adapts to dark token in dark theme', (
+      WidgetTester tester,
+    ) async {
+      final journalAudio = buildJournalAudio();
+      final state = buildState(
+        status: AudioPlayerStatus.paused,
+        totalDuration: journalAudio.data.duration,
+        progress: const Duration(seconds: 5),
+        pausedAt: const Duration(seconds: 5),
+        speed: 1,
+        audioNote: journalAudio,
+      );
 
-        await pumpPlayer(
-          tester,
-          journalAudio: journalAudio,
-          state: state,
-          brightness: Brightness.dark,
-        );
+      await pumpPlayer(
+        tester,
+        journalAudio: journalAudio,
+        state: state,
+        brightness: Brightness.dark,
+      );
 
-        final material = tester.widget<Material>(
-          find.byKey(playButtonSurfaceKey),
-        );
-        expect(material.color, dsTokensDark.colors.surface.enabled);
-      },
-    );
+      final material = tester.widget<Material>(
+        find.byKey(playButtonSurfaceKey),
+      );
+      expect(material.color, dsTokensDark.colors.surface.enabled);
+    });
 
     test('progress color resolves to interactive token in light theme', () {
       final colors = resolveAudioProgressColors(
-        ThemeData(useMaterial3: true).copyWith(
-          extensions: const [dsTokensLight],
-        ),
+        ThemeData(
+          useMaterial3: true,
+        ).copyWith(extensions: const [dsTokensLight]),
       );
 
       expect(colors.progress, dsTokensLight.colors.interactive.enabled);
@@ -807,9 +767,9 @@ void main() {
 
     test('progress track uses a perceivable (>=3:1) token, not a hairline', () {
       final colors = resolveAudioProgressColors(
-        ThemeData(useMaterial3: true).copyWith(
-          extensions: const [dsTokensDark],
-        ),
+        ThemeData(
+          useMaterial3: true,
+        ).copyWith(extensions: const [dsTokensDark]),
       );
 
       // lowEmphasis reads as a control boundary (WCAG 1.4.11); the old
@@ -837,7 +797,6 @@ void main() {
         progress: const Duration(seconds: 90),
         pausedAt: Duration.zero,
         speed: 1,
-        showTranscriptsList: false,
         audioNote: journalAudio,
       );
 

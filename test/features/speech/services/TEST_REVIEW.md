@@ -57,8 +57,8 @@ normalization invariants (clamp + length + no-downsampling) via `debugNormalizeW
 
 ## Coverage / missing-behavior gaps
 
-- [x] **[MED]** `test/…/services/audio_waveform_service_test.dart:220–238` — Test "extracts waveform for long audio (no gating)" verifies only `isNotNull` and a `verifyNever`. No amplitude values are asserted. After extraction, assert `result.amplitudes.isNotEmpty` and `result.audioDuration > Duration.zero` for a 5-minute audio to confirm the core path returns sensible data.
-  **RESOLVED:** done — the long-audio test now asserts `amplitudes` is non-empty with every value in [0, 1] and `audioDuration > Duration.zero`, instead of `isNotNull` + verifyNever alone.
+- [x] **[MED]** `test/…/services/audio_waveform_service_test.dart:220–238` — Test "extracts waveform for long audio (no gating)" verifies only `isNotNull` and a `verifyNever`. No amplitude values are asserted.
+  **RESOLVED:** done — the long-audio test now asserts `amplitudes` is non-empty and every value is in [0, 1], instead of `isNotNull` + `verifyNever` alone.
 
 - [x] **[MED]** `test/…/services/speech_dictionary_service_test.dart` — The service's handling of a `linkedId` that resolves to a non-`Task` entity type (e.g., a `JournalAudio`) is not tested. The `getForEntry` method likely returns an empty/null dictionary in that case; verify the contract.
   **RESOLVED:** stale — the non-Task contract is fully covered: text entry → `noCategory`, audio with no linked task → `noCategory`, and linked task without category → `noCategory` (method is `addTermForEntry`).

@@ -130,7 +130,6 @@ Future<CategoryMultiResult?> showCategoryMultiPicker({
       builder: (modalContext) => CategoryPickerSheet(
         mode: CategoryPickerMode.multi,
         options: resolvedOptions,
-        initialSelectedIds: initialSelectedIds,
         stagedNotifier: staged,
         showUnassignedRow: showUnassignedRow,
         allowCreate: allowCreate,
@@ -196,7 +195,6 @@ class CategoryPickerSheet extends ConsumerStatefulWidget {
     required this.mode,
     required this.options,
     this.currentCategoryId,
-    this.initialSelectedIds = const {},
     this.stagedNotifier,
     this.showUnassignedRow = false,
     this.allowCreate = true,
@@ -214,10 +212,6 @@ class CategoryPickerSheet extends ConsumerStatefulWidget {
 
   /// Single mode: the currently assigned category id (pinned + clearable).
   final String? currentCategoryId;
-
-  /// Multi mode: the seed selection (used for the empty-staged display only;
-  /// the live selection lives in [stagedNotifier]).
-  final Set<String> initialSelectedIds;
 
   /// Multi mode: externally-owned staged selection. Toggling a row mutates it.
   final ValueNotifier<Set<String>>? stagedNotifier;

@@ -64,12 +64,11 @@ enum OnboardingStructuringFailure {
 }
 
 /// Raised when a transcript could not be structured. The [failure] reason is
-/// safe to record as a funnel dimension; [cause] (if any) is for logs only.
+/// safe to record as a funnel dimension.
 class OnboardingStructuringException implements Exception {
-  const OnboardingStructuringException(this.failure, {this.cause});
+  const OnboardingStructuringException(this.failure);
 
   final OnboardingStructuringFailure failure;
-  final Object? cause;
 
   @override
   String toString() => 'OnboardingStructuringException(${failure.name})';
@@ -198,9 +197,8 @@ Rules:
         stackTrace: stackTrace,
         subDomain: 'structure',
       );
-      throw OnboardingStructuringException(
+      throw const OnboardingStructuringException(
         OnboardingStructuringFailure.requestFailed,
-        cause: error,
       );
     }
 

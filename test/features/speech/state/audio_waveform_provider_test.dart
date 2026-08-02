@@ -66,14 +66,9 @@ void main() {
   }
 
   AudioWaveformData createWaveformData({
-    Duration duration = const Duration(seconds: 30),
     List<double> amplitudes = const <double>[0.1, 0.5, 0.9],
   }) {
-    return AudioWaveformData(
-      amplitudes: amplitudes,
-      bucketDuration: const Duration(milliseconds: 20),
-      audioDuration: duration,
-    );
+    return AudioWaveformData(amplitudes: amplitudes);
   }
 
   test('provider returns waveform data for valid request', () async {
@@ -122,10 +117,7 @@ void main() {
       late ProviderContainer container;
       async.run((_) async {
         container = ProviderContainer();
-        final sub = container.listen(
-          audioWaveformProvider(request),
-          (_, _) {},
-        );
+        final sub = container.listen(audioWaveformProvider(request), (_, _) {});
         await container.read(audioWaveformProvider(request).future);
         sub.close();
       });

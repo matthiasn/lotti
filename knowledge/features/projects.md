@@ -38,7 +38,6 @@ flowchart TD
   Filters --> Tab["Projects tab UI"]
 
   Agent["Project agent"] --> Health["projectHealthMetricsProvider"]
-  Agent --> Summary["projectAgentSummaryProvider"]
 ```
 
 # The data model
@@ -109,14 +108,13 @@ categories and rollups in each widget.
 flowchart LR
   Report["Latest project-agent report"] --> Metrics["projectHealthMetricsFromReport"]
   Metrics --> HealthProv["projectHealthMetricsProvider"]
-  Summary["projectAgentSummaryProvider"] --> UI
   Recos["projectRecommendationsProvider"] --> UI
   HealthProv --> UI["Health chip / header, panel, detail sections"]
 ```
 
 The detail pages pull project entity data, linked tasks, the latest project-agent
-report, parsed health metrics from it, summary freshness and scheduled wake
-state, active recommendations, derived presentation data, and the wake controls.
+report, parsed health metrics from it, scheduled wake state, active
+recommendations, derived presentation data, and the wake controls.
 
 **There is no aggregator object** — each surface watches the providers it needs.
 

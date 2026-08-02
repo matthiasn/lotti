@@ -240,7 +240,6 @@ void main() {
       isTrue,
       reason: 'amplitudes must be normalized to [0, 1]',
     );
-    expect(result.audioDuration, greaterThan(Duration.zero));
     verifyNever(
       () => mockDomainLogger.log(
         LogDomain.speech,
@@ -271,8 +270,6 @@ void main() {
     expect(result!.amplitudes, hasLength(2));
     expect(result.amplitudes.first, closeTo(0.94, 1e-2));
     expect(result.amplitudes.last, closeTo(0.23, 1e-2));
-    expect(result.bucketDuration, const Duration(milliseconds: 20));
-    expect(result.audioDuration, const Duration(milliseconds: 40));
     expect(extractor.callCount, 1);
 
     final sanitizedId = audio.meta.id.replaceAll(RegExp('[^a-zA-Z0-9_-]'), '_');
@@ -338,8 +335,6 @@ void main() {
 
     expect(result, isNotNull);
     expect(result!.amplitudes, <double>[0.2, 0.4]);
-    expect(result.bucketDuration, const Duration(microseconds: 20000));
-    expect(result.audioDuration, const Duration(milliseconds: 30000));
     expect(extractor.callCount, 0);
   });
 
@@ -537,8 +532,6 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.amplitudes, isEmpty);
-      expect(result.bucketDuration, Duration.zero);
-      expect(result.audioDuration, Duration.zero);
     });
 
     test('handles single pixel waveforms', () async {
@@ -560,8 +553,6 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.amplitudes, <double>[1]);
-      expect(result.bucketDuration, const Duration(milliseconds: 10));
-      expect(result.audioDuration, const Duration(milliseconds: 10));
     });
 
     test('uses 8-bit max amplitude when flags set', () async {

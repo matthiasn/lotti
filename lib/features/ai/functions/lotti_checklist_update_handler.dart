@@ -85,9 +85,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
     if (success) {
       _updatedItems.add(
         UpdatedItemDetail(
-          id: id,
           title: partialData.title,
-          isChecked: currentIsChecked,
           changes: [
             if (titleChanged) 'title',
             if (isArchivedChanged) 'isArchived',
@@ -115,10 +113,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       success: false,
       functionName: functionName,
       arguments: call.function.arguments,
-      data: {
-        'toolCallId': call.id,
-        if (includeTaskId) 'taskId': task.id,
-      },
+      data: {'toolCallId': call.id, if (includeTaskId) 'taskId': task.id},
       error: error,
     );
   }
@@ -445,12 +440,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
           if (isArchivedChanged) 'isArchived',
         ];
         _updatedItems.add(
-          UpdatedItemDetail(
-            id: id,
-            title: updatedData.title,
-            isChecked: updatedData.isChecked,
-            changes: changes,
-          ),
+          UpdatedItemDetail(title: updatedData.title, changes: changes),
         );
 
         developer.log(
@@ -559,25 +549,15 @@ Please retry with the correct format.''';
 
 /// Details of a successfully updated item.
 class UpdatedItemDetail {
-  const UpdatedItemDetail({
-    required this.id,
-    required this.title,
-    required this.isChecked,
-    required this.changes,
-  });
+  const UpdatedItemDetail({required this.title, required this.changes});
 
-  final String id;
   final String title;
-  final bool isChecked;
   final List<String> changes;
 }
 
 /// Details of a skipped item.
 class SkippedItemDetail {
-  const SkippedItemDetail({
-    required this.id,
-    required this.reason,
-  });
+  const SkippedItemDetail({required this.id, required this.reason});
 
   final String id;
   final String reason;

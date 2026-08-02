@@ -9,16 +9,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-VoiceStyle _voiceStyle() => VoiceStyle(
-  MockOrtValue(),
-  MockOrtValue(),
-  const [1, 50, 256],
-  const [
-    1,
-    1,
-    256,
-  ],
-);
+VoiceStyle _voiceStyle() => VoiceStyle(MockOrtValue(), MockOrtValue());
 
 void main() {
   setUpAll(() => registerFallbackValue(_voiceStyle()));

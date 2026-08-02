@@ -76,9 +76,7 @@ class ProjectAgentReportCard extends ConsumerWidget {
         profileId: result.profileId,
       );
 
-      ref
-        ..invalidate(projectAgentProvider(projectId))
-        ..invalidate(projectAgentSummaryProvider(projectId));
+      ref.invalidate(projectAgentProvider(projectId));
     } catch (e, s) {
       developer.log(
         'Failed to create project agent',
@@ -252,9 +250,9 @@ class ProjectAgentReportCard extends ConsumerWidget {
               const Divider(height: 24),
               Text(
                 context.messages.projectRecommendationsTitle,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
               for (final recommendation in recommendations)
@@ -311,9 +309,7 @@ class _ProjectRecommendationTile extends ConsumerWidget {
           alpha: 0.45,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: context.colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: context.colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

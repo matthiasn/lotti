@@ -41,7 +41,6 @@ class AudioRecorderConstants {
   static const String directoryDateFormat = 'yyyy-MM-dd';
 
   // Domain names for logging
-  static const String domainName = 'audio_recorder_repository';
   static const String hasPermissionSubdomain = 'hasPermission';
   static const String isPausedSubdomain = 'isPaused';
   static const String isRecordingSubdomain = 'isRecording';
@@ -173,10 +172,7 @@ class AudioRecorderRepository {
       );
 
       await _audioRecorder.start(
-        const RecordConfig(
-          sampleRate: sampleRate,
-          autoGain: autoGain,
-        ),
+        const RecordConfig(sampleRate: sampleRate, autoGain: autoGain),
         path: filePath,
       );
 

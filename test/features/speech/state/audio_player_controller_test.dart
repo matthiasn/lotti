@@ -62,15 +62,15 @@ void main() {
 
     // Setup mock player streams
     when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
-    when(() => mockPlayerStream.position).thenAnswer(
-      (_) => positionController.stream,
-    );
-    when(() => mockPlayerStream.buffer).thenAnswer(
-      (_) => bufferController.stream,
-    );
-    when(() => mockPlayerStream.completed).thenAnswer(
-      (_) => completedController.stream,
-    );
+    when(
+      () => mockPlayerStream.position,
+    ).thenAnswer((_) => positionController.stream);
+    when(
+      () => mockPlayerStream.buffer,
+    ).thenAnswer((_) => bufferController.stream);
+    when(
+      () => mockPlayerStream.completed,
+    ).thenAnswer((_) => completedController.stream);
 
     // Setup mock player methods
     when(() => mockPlayer.dispose()).thenAnswer((_) async {});
@@ -84,9 +84,7 @@ void main() {
 
     // Create container with mocked player factory
     container = ProviderContainer(
-      overrides: [
-        playerFactoryProvider.overrideWithValue(() => mockPlayer),
-      ],
+      overrides: [playerFactoryProvider.overrideWithValue(() => mockPlayer)],
     );
   });
 
@@ -106,7 +104,6 @@ void main() {
       expect(state.totalDuration, equals(Duration.zero));
       expect(state.progress, equals(Duration.zero));
       expect(state.pausedAt, equals(Duration.zero));
-      expect(state.showTranscriptsList, equals(false));
       expect(state.speed, equals(1.0));
       expect(state.audioNote, isNull);
       expect(state.buffered, equals(Duration.zero));
@@ -127,7 +124,6 @@ void main() {
       expect(updated.speed, equals(1.5));
       // Unchanged values
       expect(updated.pausedAt, equals(Duration.zero));
-      expect(updated.showTranscriptsList, equals(false));
     });
 
     test('copyWith preserves values when not provided', () {
@@ -207,7 +203,6 @@ void main() {
       expect(state.totalDuration, equals(Duration.zero));
       expect(state.progress, equals(Duration.zero));
       expect(state.pausedAt, equals(Duration.zero));
-      expect(state.showTranscriptsList, equals(false));
       expect(state.speed, equals(1.0));
       expect(state.audioNote, isNull);
       expect(state.buffered, equals(Duration.zero));
@@ -232,9 +227,7 @@ void main() {
     });
 
     test('ensurePlayerForTest is idempotent', () {
-      final controller = container.read(
-        audioPlayerControllerProvider.notifier,
-      );
+      final controller = container.read(audioPlayerControllerProvider.notifier);
       controller
         ..ensurePlayerForTest()
         ..ensurePlayerForTest()
@@ -245,39 +238,36 @@ void main() {
       verify(() => mockPlayerStream.completed).called(1);
     });
 
-    test(
-      'disposes the player and does not cache it when subscription wiring '
-      'throws',
-      () async {
-        final brokenStream = MockPlayerStream();
-        final brokenPlayer = MockPlayer();
-        when(() => brokenPlayer.stream).thenReturn(brokenStream);
-        when(brokenPlayer.dispose).thenAnswer((_) async {});
-        // First stream access during _setupSubscriptions throws — simulating
-        // a wiring failure midway through construction.
-        when(() => brokenStream.position).thenThrow(
-          Exception('stream wiring failure'),
-        );
+    test('disposes the player and does not cache it when subscription wiring '
+        'throws', () async {
+      final brokenStream = MockPlayerStream();
+      final brokenPlayer = MockPlayer();
+      when(() => brokenPlayer.stream).thenReturn(brokenStream);
+      when(brokenPlayer.dispose).thenAnswer((_) async {});
+      // First stream access during _setupSubscriptions throws — simulating
+      // a wiring failure midway through construction.
+      when(
+        () => brokenStream.position,
+      ).thenThrow(Exception('stream wiring failure'));
 
-        final brokenContainer = ProviderContainer(
-          overrides: [
-            playerFactoryProvider.overrideWithValue(() => brokenPlayer),
-          ],
-        );
-        addTearDown(brokenContainer.dispose);
+      final brokenContainer = ProviderContainer(
+        overrides: [
+          playerFactoryProvider.overrideWithValue(() => brokenPlayer),
+        ],
+      );
+      addTearDown(brokenContainer.dispose);
 
-        final controller = brokenContainer.read(
-          audioPlayerControllerProvider.notifier,
-        )..ensurePlayerForTest();
+      final controller = brokenContainer.read(
+        audioPlayerControllerProvider.notifier,
+      )..ensurePlayerForTest();
 
-        // The partially-constructed player must be disposed so no native mpv
-        // core thread is leaked, and a follow-up call must NOT see the
-        // half-initialized instance — it should retry the factory.
-        verify(brokenPlayer.dispose).called(1);
-        controller.ensurePlayerForTest();
-        verify(() => brokenStream.position).called(2);
-      },
-    );
+      // The partially-constructed player must be disposed so no native mpv
+      // core thread is leaked, and a follow-up call must NOT see the
+      // half-initialized instance — it should retry the factory.
+      verify(brokenPlayer.dispose).called(1);
+      controller.ensurePlayerForTest();
+      verify(() => brokenStream.position).called(2);
+    });
   });
 
   group('AudioPlayerController - Stream Updates', () {
@@ -512,9 +502,7 @@ void main() {
 
       // Reopen happens, total duration is synced from the (mocked) file, and
       // the recorded progress is restored before playback resumes.
-      verify(
-        () => mockPlayer.open(any(), play: false),
-      ).called(1);
+      verify(() => mockPlayer.open(any(), play: false)).called(1);
       verify(() => mockPlayer.seek(const Duration(seconds: 90))).called(1);
       verify(() => mockPlayer.play()).called(1);
     });
@@ -669,9 +657,7 @@ void main() {
     test('preserves buffered when seeking backward', () {
       fakeAsync((async) {
         final controller =
-            container.read(
-                audioPlayerControllerProvider.notifier,
-              )
+            container.read(audioPlayerControllerProvider.notifier)
               ..ensurePlayerForTest()
               ..hasOpenAudioForTest = true;
 
@@ -759,28 +745,16 @@ void main() {
       final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.setSpeed(0.5);
-      expect(
-        container.read(audioPlayerControllerProvider).speed,
-        equals(0.5),
-      );
+      expect(container.read(audioPlayerControllerProvider).speed, equals(0.5));
 
       await controller.setSpeed(1);
-      expect(
-        container.read(audioPlayerControllerProvider).speed,
-        equals(1),
-      );
+      expect(container.read(audioPlayerControllerProvider).speed, equals(1));
 
       await controller.setSpeed(1.5);
-      expect(
-        container.read(audioPlayerControllerProvider).speed,
-        equals(1.5),
-      );
+      expect(container.read(audioPlayerControllerProvider).speed, equals(1.5));
 
       await controller.setSpeed(2);
-      expect(
-        container.read(audioPlayerControllerProvider).speed,
-        equals(2),
-      );
+      expect(container.read(audioPlayerControllerProvider).speed, equals(2));
     });
   });
 
@@ -1404,9 +1378,7 @@ void main() {
   group('AudioPlayerController - Riverpod Integration', () {
     test('provider is properly managed by container', () {
       final testContainer = ProviderContainer(
-        overrides: [
-          playerFactoryProvider.overrideWithValue(() => mockPlayer),
-        ],
+        overrides: [playerFactoryProvider.overrideWithValue(() => mockPlayer)],
       );
 
       final state = testContainer.read(audioPlayerControllerProvider);
@@ -1438,9 +1410,7 @@ void main() {
 
     test('disposes player on container disposal', () async {
       final testContainer = ProviderContainer(
-        overrides: [
-          playerFactoryProvider.overrideWithValue(() => mockPlayer),
-        ],
+        overrides: [playerFactoryProvider.overrideWithValue(() => mockPlayer)],
       );
 
       // Initialize the controller and force lazy player construction.

@@ -3,7 +3,6 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
@@ -62,18 +61,15 @@ class BmiChartInfoWidget extends ConsumerWidget {
 /// "Weight vs. Body Mass Index" chart card. Despite the name and the
 /// `BODY_MASS_INDEX` config key, it plots the **weight** series (a tall line
 /// chart), not BMI: it always watches `HealthDataType.WEIGHT` observations and
-/// surfaces the in-range min/max weight in its header. `chartConfig` carries the
-/// item identity but does not change which series is read.
+/// surfaces the in-range min/max weight in its header.
 class DashboardHealthBmiChart extends ConsumerWidget {
   const DashboardHealthBmiChart({
-    required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
     this.embedded = false,
     super.key,
   });
 
-  final DashboardHealthItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool embedded;
