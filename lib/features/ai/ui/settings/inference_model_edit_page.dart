@@ -109,7 +109,6 @@ class _InferenceModelEditPageState
     }
 
     return AppCommandScope(
-      debugLabel: 'inference-model-editor',
       handlers: {
         AppCommandId.save: AppCommandHandler(
           isEnabled: () => isFormValid && !_isSaving,

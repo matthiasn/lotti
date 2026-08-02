@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
@@ -115,7 +114,6 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
               categoryDef.color,
               substitute: Theme.of(context).colorScheme.primary,
             ),
-            icon: categoryDef.icon?.iconData,
           );
 
     final due = task.data.due;
@@ -150,7 +148,6 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
           ? null
           : DesktopTaskHeaderProject(
               label: project.data.title,
-              icon: Icons.folder_outlined,
             ),
       category: category,
       dueDate: dueDate,
@@ -546,7 +543,6 @@ class _TaskBlockedByChip extends ConsumerWidget {
         children: [
           for (final blocker in blockers)
             LinkedTaskRow(
-              taskId: taskId,
               data: LinkedTaskRowData(task: blocker),
               manageMode: false,
               onOpen: () {

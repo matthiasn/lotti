@@ -12,12 +12,10 @@ typedef AppCommandCallback =
 @immutable
 class AppCommandInvocation {
   const AppCommandInvocation({
-    required this.id,
     required this.context,
     required this.snapshot,
   });
 
-  final AppCommandId id;
   final BuildContext context;
   final AppCommandContextSnapshot snapshot;
 }

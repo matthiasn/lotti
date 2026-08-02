@@ -37,7 +37,6 @@ void main() {
         await tester.pumpWidget(
           WidgetTestBench(
             child: LinkedTaskRow(
-              taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: false,
             ),
@@ -57,7 +56,6 @@ void main() {
         await tester.pumpWidget(
           WidgetTestBench(
             child: LinkedTaskRow(
-              taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: true,
             ),
@@ -76,7 +74,6 @@ void main() {
         await tester.pumpWidget(
           WidgetTestBench(
             child: LinkedTaskRow(
-              taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: true,
               onUnlink: () async {
@@ -112,7 +109,6 @@ void main() {
         await tester.pumpWidget(
           WidgetTestBench(
             child: LinkedTaskRow(
-              taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: true,
               onEdit: () async => editCalled = true,
@@ -138,7 +134,6 @@ void main() {
         await tester.pumpWidget(
           WidgetTestBench(
             child: LinkedTaskRow(
-              taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: true,
               onEdit: () async {},
@@ -159,7 +154,6 @@ void main() {
       await tester.pumpWidget(
         WidgetTestBench(
           child: LinkedTaskRow(
-            taskId: 'anchor-task',
             data: buildRowData(),
             manageMode: true,
             onUnlink: () async {
@@ -188,7 +182,6 @@ void main() {
         await tester.pumpWidget(
           WidgetTestBench(
             child: LinkedTaskRow(
-              taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: true,
               onUnlink: () async => 0,
@@ -213,7 +206,6 @@ void main() {
         await tester.pumpWidget(
           WidgetTestBench(
             child: LinkedTaskRow(
-              taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: true,
               onUnlink: () async => throw Exception('delete failed'),
@@ -241,7 +233,6 @@ void main() {
           // pushing TaskDetailsPage onto the navigator.
           mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
           child: LinkedTaskRow(
-            taskId: 'anchor-task',
             data: buildRowData(),
             manageMode: false,
           ),
@@ -265,7 +256,6 @@ void main() {
           WidgetTestBench(
             mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
             child: LinkedTaskRow(
-              taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: true,
             ),
@@ -299,7 +289,6 @@ void main() {
             child: SizedBox(
               width: 390,
               child: LinkedTaskRow(
-                taskId: 'anchor-task',
                 data: LinkedTaskRowData(
                   task: TestTaskFactory.create(
                     id: 'other-task',
@@ -353,7 +342,6 @@ void main() {
             child: SizedBox(
               width: 900,
               child: LinkedTaskRow(
-                taskId: 'anchor-task',
                 data: buildRowData(),
                 manageMode: manageMode,
                 onEdit: () async {},
@@ -391,7 +379,6 @@ void main() {
               child: SizedBox(
                 width: 900,
                 child: LinkedTaskRow(
-                  taskId: 'anchor-task',
                   data: buildRowData(),
                   manageMode: true,
                   onEdit: () async {},
@@ -433,7 +420,6 @@ void main() {
                 child: SizedBox(
                   width: 900,
                   child: LinkedTaskRow(
-                    taskId: 'anchor-task',
                     data: buildRowData(),
                     manageMode: manageMode,
                     onEdit: () async {},
@@ -474,7 +460,6 @@ void main() {
             child: SizedBox(
               width: width,
               child: LinkedTaskRow(
-                taskId: 'anchor-task',
                 data: buildRowData(),
                 manageMode: false,
               ),

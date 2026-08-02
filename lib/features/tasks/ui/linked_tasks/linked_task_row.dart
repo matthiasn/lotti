@@ -67,7 +67,6 @@ class LinkedTaskRowData {
 /// every row on the card.
 class LinkedTaskRow extends StatelessWidget {
   const LinkedTaskRow({
-    required this.taskId,
     required this.data,
     required this.manageMode,
     this.onEdit,
@@ -76,7 +75,6 @@ class LinkedTaskRow extends StatelessWidget {
     super.key,
   });
 
-  final String taskId;
   final LinkedTaskRowData data;
   final bool manageMode;
 

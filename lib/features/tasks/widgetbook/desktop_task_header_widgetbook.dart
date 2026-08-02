@@ -132,14 +132,12 @@ DesktopTaskHeaderData _fixtureData({
     project: showProject
         ? const DesktopTaskHeaderProject(
             label: 'Device Sync - Lotti Mobile App Implementation',
-            icon: Icons.folder_outlined,
           )
         : null,
     category: showCategory
         ? const DesktopTaskHeaderCategory(
             label: 'Work',
             color: Color(0xFF1CA3E3),
-            icon: Icons.work_outline_rounded,
           )
         : null,
     dueDate: showDueDate

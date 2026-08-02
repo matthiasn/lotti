@@ -83,7 +83,6 @@ class SettingsMobileTreePage extends StatelessWidget {
               SettingsTreeRow(
                 key: ValueKey(node.id),
                 node: node,
-                depth: 0,
                 onActivePath: false,
                 isExpanded: false,
                 trailing: node.action == SettingsNodeAction.openManual

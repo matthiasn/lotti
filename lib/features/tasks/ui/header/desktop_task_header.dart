@@ -13,10 +13,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// attach one.
 @immutable
 class DesktopTaskHeaderProject {
-  const DesktopTaskHeaderProject({required this.label, this.icon});
+  const DesktopTaskHeaderProject({required this.label});
 
   final String label;
-  final IconData? icon;
 }
 
 /// Work category surfaced as the colored dot at the start of the breadcrumb
@@ -26,12 +25,10 @@ class DesktopTaskHeaderCategory {
   const DesktopTaskHeaderCategory({
     required this.label,
     required this.color,
-    this.icon,
   });
 
   final String label;
   final Color color;
-  final IconData? icon;
 }
 
 /// Urgency levels for the due-date pill. `today` paints orange; `overdue`

@@ -254,7 +254,6 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
     }
 
     return AppCommandScope(
-      debugLabel: 'habits',
       handlers: {
         AppCommandId.focusSearch: AppCommandHandler(
           invoke: (_) => _focusSearch(),

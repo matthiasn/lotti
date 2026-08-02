@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/design_system/components/motion
     title: SizeFadeCollapse and SizeFadeEntrance
     last_modified: 2026-07-25
+  - id: sorting-state
+    resource: ../../../lib/features/tasks/state/checklists_sorting_controller.dart
+    title: Checklist sorting controller
+    last_modified: 2026-08-02
 ---
 
 Checklists are one of the main reasons the tasks feature exists as a feature
@@ -58,7 +62,6 @@ stateDiagram-v2
   [*] --> Normal
   Normal --> Sorting: enterSortingMode(preExpansionStates)
   Sorting --> Normal: exitSortingMode()
-  Normal --> Normal: clearPreExpansionStates()
 ```
 
 In sorting mode checklist cards collapse, large drag handles appear, pre-sort

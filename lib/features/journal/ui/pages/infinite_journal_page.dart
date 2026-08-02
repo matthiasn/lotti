@@ -63,7 +63,6 @@ class InfiniteJournalPage extends ConsumerWidget {
         journalPageScopeProvider.overrideWithValue(false),
       ],
       child: AppCommandScope(
-        debugLabel: 'journal-list',
         handlers: {
           AppCommandId.refresh: AppCommandHandler(
             invoke: (_) => ref
@@ -221,7 +220,6 @@ class _InfiniteJournalPageBodyState
     final tokens = context.designTokens;
 
     return AppCommandScope(
-      debugLabel: 'journal-search',
       handlers: {
         AppCommandId.focusSearch: AppCommandHandler(
           invoke: (_) => _searchFocusNode.requestFocus(),

@@ -169,7 +169,6 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
               ),
             Flexible(
               child: AppCommandScope(
-                debugLabel: 'entry-editor',
                 handlers: {
                   AppCommandId.save: AppCommandHandler(
                     isEnabled: () => shouldShowEditorToolBar,

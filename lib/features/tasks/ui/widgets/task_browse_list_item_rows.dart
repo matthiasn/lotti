@@ -122,7 +122,6 @@ class TaskBrowseRowShell extends StatelessWidget {
     if (detailFocusController == null) return row;
 
     return AppCommandScope(
-      debugLabel: 'task-row:${entry.task.meta.id}',
       handlers: {
         AppCommandId.expand: AppCommandHandler(
           invoke: (_) {

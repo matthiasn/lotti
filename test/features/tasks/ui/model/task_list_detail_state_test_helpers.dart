@@ -316,7 +316,6 @@ TaskRecord hRecord({
     sectionTitle: 'Section ${sectionDate.toIso8601String()}',
     sectionDate: sectionDate,
     projectTitle: 'Project',
-    timeRange: '',
     labels: const [],
     aiSummary: '',
     description: '',
@@ -331,9 +330,7 @@ TaskStatus hOpen(DateTime createdAt) =>
     TaskStatus.open(id: 'open-$createdAt', createdAt: createdAt, utcOffset: 0);
 
 TaskListData hDataWith(List<TaskRecord> tasks) => TaskListData(
-  categories: const [],
   tasks: tasks,
-  currentTime: DateTime(2026, 4),
 );
 
 TaskListDetailState hStateWith(

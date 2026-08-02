@@ -77,7 +77,6 @@ TaskRecord mockTaskRecord({
     sectionTitle: sectionTitle,
     sectionDate: sectionDate,
     projectTitle: projectTitle,
-    timeRange: timeRange,
     labels: labels,
     aiSummary: aiSummary,
     description: description,

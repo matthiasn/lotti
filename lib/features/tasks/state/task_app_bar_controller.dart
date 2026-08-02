@@ -11,9 +11,7 @@ taskAppBarControllerProvider = AsyncNotifierProvider.autoDispose
     );
 
 class TaskAppBarController extends AsyncNotifier<double> {
-  TaskAppBarController([this.id = '']);
-
-  final String id;
+  TaskAppBarController([String _ = '']);
 
   @override
   Future<double> build() async {

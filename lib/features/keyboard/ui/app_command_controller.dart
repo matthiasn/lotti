@@ -101,7 +101,6 @@ class AppCommandController extends ChangeNotifier {
       await Future<void>.sync(
         () => handler.invoke(
           AppCommandInvocation(
-            id: id,
             context: ownerContext,
             snapshot: snapshot,
           ),
