@@ -61,6 +61,11 @@ class AgentRetentionService {
   /// documents directory simply skip reclamation.
   final AgentSidecarReclaimer? sidecarReclaimer;
 
+  /// Where the last observation sweep stopped, so the next one resumes after
+  /// it instead of re-reading the same ordered prefix and starving whatever
+  /// sits behind an agent it cannot prune.
+  String? _observationCursor;
+
   /// The digest's unconsumed backlog is never eligible: returns the earlier of
   /// [cutoff] and the coordinator's watermark, so a stalled digest holds
   /// retention back rather than losing the events it has yet to read.
@@ -113,22 +118,28 @@ class AgentRetentionService {
   /// one malformed log must not stop every other agent from being collected.
   Future<int> _sweepObservations(DateTime now) async {
     final cutoff = now.subtract(policy.observations);
-    final threads = await repository.threadsWithAgedObservations(
+    final agents = await repository.agentsWithAgedObservations(
       cutoff,
-      limit: policy.threadsPerSweep,
+      limit: policy.agentsPerSweep,
+      afterAgentId: _observationCursor,
     );
+    // Wrap when the tail is reached, so the next start resumes at the front
+    // rather than stopping once the last page is exhausted.
+    _observationCursor = agents.length < policy.agentsPerSweep
+        ? null
+        : agents.last;
+
     var pruned = 0;
-    for (final thread in threads) {
+    for (final agentId in agents) {
       try {
-        final swept = await repository.pruneThreadObservations(
-          agentId: thread.agentId,
-          threadId: thread.threadId,
+        final swept = await repository.pruneAgentObservations(
+          agentId: agentId,
           cutoff: cutoff,
           limit: policy.batchSize,
-          maxMessages: policy.maxThreadMessages,
+          maxMessages: policy.maxAgentMessages,
         );
         if (swept.isEmpty) continue;
-        sidecarReclaimer?.reclaim(
+        await sidecarReclaimer?.reclaim(
           entityIds: swept.messageIds,
           linkIds: swept.linkIds,
         );
@@ -138,8 +149,8 @@ class AgentRetentionService {
           LogDomain.agentRuntime,
           e,
           message:
-              'observation retention failed for thread ${thread.threadId}; '
-              'skipping it',
+              'observation retention failed for agent '
+              '${DomainLogger.sanitizeId(agentId)}; skipping it',
           stackTrace: s,
         );
       }

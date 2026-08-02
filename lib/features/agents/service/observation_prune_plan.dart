@@ -71,9 +71,14 @@ class ObservationPrunePlan {
 /// topological order, and a prefix of a topological order is always
 /// ancestor-closed. Truncating a set sorted by age would not be.
 ///
-/// A message whose parent is absent from [messages] — a partially-synced view,
-/// or a parent an earlier sweep already took — is treated as having no such
-/// parent: the missing row cannot be un-deleted, so it constrains nothing.
+/// **A message with an absent parent is never pruned.** Absence is not
+/// evidence that the parent is gone: a `messagePrev` link can sync before the
+/// entity it points at, so a parent still in flight looks identical to one an
+/// earlier sweep took. Pruning on that guess deletes the child, drops the
+/// edge, and forks the moment the parent lands. A parent an earlier sweep
+/// really did take leaves no edge behind at all — the sweep deletes the edges
+/// into whatever it deletes — so the honest reading of a dangling edge is
+/// "not yet", and the row is simply collected on a later pass.
 ///
 /// Pure: no clocks, no I/O. [cutoff] is supplied by the caller.
 ObservationPrunePlan planObservationPrune({
@@ -122,11 +127,17 @@ ObservationPrunePlan planObservationPrune({
         continue;
       }
 
+      // An edge pointing at a row we cannot see: refuse rather than guess.
+      if (message.parentIds.any((parentId) => !byId.containsKey(parentId))) {
+        prunable[id] = false;
+        stack.removeLast();
+        onStack.remove(id);
+        continue;
+      }
+
       final unresolved = [
         for (final parentId in message.parentIds)
-          if (byId.containsKey(parentId) &&
-              !prunable.containsKey(parentId) &&
-              !onStack.contains(parentId))
+          if (!prunable.containsKey(parentId) && !onStack.contains(parentId))
             parentId,
       ];
       if (unresolved.isNotEmpty) {
@@ -141,10 +152,7 @@ ObservationPrunePlan planObservationPrune({
       final cyclic = message.parentIds.any(onStack.contains);
       prunable[id] =
           !cyclic &&
-          message.parentIds.every(
-            (parentId) =>
-                !byId.containsKey(parentId) || (prunable[parentId] ?? false),
-          );
+          message.parentIds.every((parentId) => prunable[parentId] ?? false);
       stack.removeLast();
       onStack.remove(id);
     }
@@ -161,12 +169,7 @@ ObservationPrunePlan planObservationPrune({
       if (planned.length >= limit) break;
       if (emitted.contains(message.id)) continue;
       if (!(prunable[message.id] ?? false)) continue;
-      final parentsReady = message.parentIds.every(
-        (parentId) =>
-            !byId.containsKey(parentId) ||
-            !(prunable[parentId] ?? false) ||
-            emitted.contains(parentId),
-      );
+      final parentsReady = message.parentIds.every(emitted.contains);
       if (!parentsReady) continue;
       planned.add(message.id);
       emitted.add(message.id);

@@ -38,8 +38,8 @@ class AgentRetentionPolicy {
   const AgentRetentionPolicy({
     this.dayStatusEvents = const Duration(days: 90),
     this.observations = const Duration(days: 180),
-    this.threadsPerSweep = 25,
-    this.maxThreadMessages = 5000,
+    this.agentsPerSweep = 25,
+    this.maxAgentMessages = 20000,
     this.batchSize = 500,
     this.maxBatchesPerSweep = 20,
   });
@@ -58,13 +58,14 @@ class AgentRetentionPolicy {
   /// is one row, whereas deleting one early loses context permanently.
   final Duration observations;
 
-  /// Threads visited per sweep, so one start-up pass stays bounded.
-  final int threadsPerSweep;
+  /// Agents visited per sweep, so one start-up pass stays bounded. The sweep
+  /// resumes after the last one it saw rather than restarting at the front.
+  final int agentsPerSweep;
 
-  /// A thread longer than this is skipped rather than partially pruned —
-  /// ancestor-closure needs the chain from its root, and a truncated view
-  /// would hide the parents that block a delete.
-  final int maxThreadMessages;
+  /// An agent whose message log is longer than this is skipped rather than
+  /// partially pruned — ancestor-closure needs the chain from its root, and a
+  /// truncated view would hide the parents that block a delete.
+  final int maxAgentMessages;
 
   /// Rows deleted per statement. Each batch commits on its own.
   final int batchSize;

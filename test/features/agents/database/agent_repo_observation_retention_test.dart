@@ -111,15 +111,14 @@ void main() {
   }
 
   Future<ObservationSweepResult> sweep({int limit = 100}) =>
-      retention.pruneThread(
+      retention.pruneAgent(
         agentId: agentId,
-        threadId: threadId,
         cutoff: cutoff,
         limit: limit,
         maxMessages: 1000,
       );
 
-  group('pruneThread', () {
+  group('pruneAgent', () {
     test('removes the aged prefix and the edge into it', () async {
       await seedChain();
 
@@ -222,12 +221,11 @@ void main() {
       );
     });
 
-    test('skips a thread longer than the read bound', () async {
+    test('skips an agent whose log exceeds the read bound', () async {
       await seedChain();
 
-      final result = await retention.pruneThread(
+      final result = await retention.pruneAgent(
         agentId: agentId,
-        threadId: threadId,
         cutoff: cutoff,
         limit: 100,
         maxMessages: 2,
@@ -238,19 +236,92 @@ void main() {
         isTrue,
         reason:
             'A truncated view would hide the parents that block a delete, so '
-            'the thread is left for a sweep that can read all of it.',
+            'the agent is left for a sweep that can read all of it.',
       );
       expect(await messageIds(), ['a', 'b', 'c', 'tip']);
     });
   });
 
-  group('threadsWithAgedObservations', () {
-    test('finds only threads with an aged observation', () async {
+  group('the chain crosses threads', () {
+    Future<void> seedInThread(
+      String id,
+      DateTime at,
+      String thread, {
+      String? parentId,
+      AgentMessageKind kind = AgentMessageKind.observation,
+    }) async {
+      await core.upsertEntity(
+        makeTestMessage(
+          id: id,
+          agentId: agentId,
+          threadId: thread,
+          kind: kind,
+          createdAt: at,
+        ),
+      );
+      if (parentId != null) {
+        await links.upsertLink(
+          AgentLink.messagePrev(
+            id: 'link-$id',
+            fromId: id,
+            toId: parentId,
+            createdAt: at,
+            updatedAt: at,
+            vectorClock: null,
+          ),
+        );
+      }
+    }
+
+    test('prunes across the wake boundary, not just within a thread', () async {
+      // recentHeadMessageId is per AGENT and each wake's first message chains
+      // off the previous wake's tip, so one chain spans thread ids. Planning
+      // per thread sees `b`'s parent as absent and — under the rule that an
+      // absent parent blocks — refuses to prune it, so retention would stall
+      // at the first wake boundary and collect almost nothing.
+      await seedInThread('a', oldest, 'wake-1');
+      await seedInThread('b', older, 'wake-2', parentId: 'a');
+      await seedInThread('tip', young, 'wake-3', parentId: 'b');
+
+      final result = await sweep();
+
+      expect(result.messageIds, ['a', 'b']);
+      final projection = await survivingProjection();
+      expect(projection.headIds, ['tip']);
+      expect(projection.danglingParentIds, isEmpty);
+    });
+
+    test('a cross-thread summary still blocks its descendants', () async {
+      await seedInThread('a', oldest, 'wake-1');
+      await seedInThread(
+        'sum',
+        older,
+        'wake-1',
+        parentId: 'a',
+        kind: AgentMessageKind.summary,
+      );
+      await seedInThread('c', old, 'wake-2', parentId: 'sum');
+
+      final result = await sweep();
+
+      expect(
+        result.messageIds,
+        ['a'],
+        reason: 'Pruning `c` would strand the summary as a second head.',
+      );
+      final projection = await survivingProjection();
+      expect(projection.headIds, ['c']);
+      expect(projection.danglingParentIds, isEmpty);
+    });
+  });
+
+  group('agentsWithAgedObservations', () {
+    test('finds only agents with an aged observation', () async {
       await seedMessage('a', oldest);
       await core.upsertEntity(
         makeTestMessage(
           id: 'young-obs',
-          agentId: agentId,
+          agentId: 'agent-young',
           threadId: 'thread-young',
           kind: AgentMessageKind.observation,
           createdAt: young,
@@ -259,41 +330,49 @@ void main() {
       await core.upsertEntity(
         makeTestMessage(
           id: 'old-thought',
-          agentId: agentId,
+          agentId: 'agent-thought',
           threadId: 'thread-thought',
           createdAt: oldest,
         ),
       );
 
-      final threads = await retention.threadsWithAgedObservations(
-        cutoff,
-        limit: 10,
-      );
-
       expect(
-        [for (final thread in threads) thread.threadId],
-        [threadId],
+        await retention.agentsWithAgedObservations(cutoff, limit: 10),
+        [agentId],
         reason:
-            'A young observation and an old non-observation are both ineligible.',
+            'A young observation and an old non-observation are both '
+            'ineligible.',
       );
     });
 
-    test('respects the thread cap', () async {
-      for (var i = 0; i < 5; i++) {
+    test('resumes after the cursor rather than repeating the prefix', () async {
+      for (final id in ['agent-a', 'agent-b', 'agent-c']) {
         await core.upsertEntity(
           makeTestMessage(
-            id: 'obs-$i',
-            agentId: agentId,
-            threadId: 'thread-$i',
+            id: 'obs-$id',
+            agentId: id,
+            threadId: 'thread-1',
             kind: AgentMessageKind.observation,
             createdAt: oldest,
           ),
         );
       }
 
+      final first = await retention.agentsWithAgedObservations(
+        cutoff,
+        limit: 2,
+      );
+      expect(first, ['agent-a', 'agent-b']);
+
+      // Without the cursor this returns the same prefix every start, so an
+      // agent that cannot be pruned hides everything behind it forever.
       expect(
-        (await retention.threadsWithAgedObservations(cutoff, limit: 3)).length,
-        3,
+        await retention.agentsWithAgedObservations(
+          cutoff,
+          limit: 2,
+          afterAgentId: first.last,
+        ),
+        ['agent-c'],
       );
     });
   });

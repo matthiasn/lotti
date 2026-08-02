@@ -56,47 +56,53 @@ class AgentRepoObservationRetention {
   /// Host-parameter budget per statement; SQLite's default cap is 999.
   static const _maxVariablesPerStatement = 400;
 
-  /// Threads carrying at least one observation older than [cutoff], oldest
-  /// first, capped at [limit].
-  Future<List<({String agentId, String threadId})>> threadsWithAgedObservations(
+  /// Agents holding at least one observation older than [cutoff], in id
+  /// order, starting after [afterAgentId] and capped at [limit].
+  ///
+  /// The cursor is what stops a sweep starving: without it the same ordered
+  /// prefix comes back every start, so one agent that cannot be pruned — its
+  /// log too long to read, or its aged observations blocked — would hide every
+  /// agent behind it forever.
+  Future<List<String>> agentsWithAgedObservations(
     DateTime cutoff, {
     required int limit,
+    String? afterAgentId,
   }) async {
     final rows = await _db
         .customSelect(
-          'SELECT DISTINCT agent_id, thread_id FROM agent_entities '
+          'SELECT DISTINCT agent_id FROM agent_entities '
           'WHERE type = ?1 AND subtype = ?2 AND created_at < ?3 '
-          'AND deleted_at IS NULL AND thread_id IS NOT NULL '
-          'ORDER BY agent_id, thread_id LIMIT ?4',
+          'AND deleted_at IS NULL '
+          '${afterAgentId == null ? '' : 'AND agent_id > ?5 '}'
+          'ORDER BY agent_id LIMIT ?4',
           variables: [
             const Variable<String>(AgentEntityTypes.agentMessage),
             const Variable<String>(_observationSubtype),
             Variable<DateTime>(cutoff),
             Variable<int>(limit),
+            if (afterAgentId != null) Variable<String>(afterAgentId),
           ],
           readsFrom: {_db.agentEntities},
         )
         .get();
-    return [
-      for (final row in rows)
-        (
-          agentId: row.read<String>('agent_id'),
-          threadId: row.read<String>('thread_id'),
-        ),
-    ];
+    return [for (final row in rows) row.read<String>('agent_id')];
   }
 
-  /// Prunes one thread, returning what it deleted.
+  /// Prunes one **agent's whole message log**, returning what it deleted.
   ///
-  /// The whole thread's message list is loaded because ancestor-closure is a
-  /// property of the chain from its root, not of any one row — a query that
-  /// selected only aged rows could not tell a prunable prefix from a prunable
-  /// middle. [maxMessages] bounds that read; a thread longer than it is left
-  /// for a later sweep rather than partially reasoned about, since a truncated
-  /// view would hide the parents that block a delete.
-  Future<ObservationSweepResult> pruneThread({
+  /// Deliberately not per thread. `recentHeadMessageId` is per agent and
+  /// `AgentSyncService._appendMessage` chains each wake's first message off
+  /// the previous wake's tip — the sync service goes out of its way to stop a
+  /// stale head forking the DAG "at the wake boundary" — so a `messagePrev`
+  /// chain crosses thread ids. A per-thread slice would read a cross-thread
+  /// parent as absent and prune its child, manufacturing exactly the fork
+  /// ancestor-closure exists to prevent.
+  ///
+  /// [maxMessages] bounds the read; a log longer than it is left for a later
+  /// sweep rather than partially reasoned about, since a truncated view hides
+  /// the parents that block a delete.
+  Future<ObservationSweepResult> pruneAgent({
     required String agentId,
-    required String threadId,
     required DateTime cutoff,
     required int limit,
     required int maxMessages,
@@ -104,11 +110,10 @@ class AgentRepoObservationRetention {
     final rows = await _db
         .customSelect(
           'SELECT id, subtype, created_at FROM agent_entities '
-          'WHERE agent_id = ?1 AND thread_id = ?2 AND type = ?3 '
-          'AND deleted_at IS NULL ORDER BY created_at, id LIMIT ?4',
+          'WHERE agent_id = ?1 AND type = ?2 '
+          'AND deleted_at IS NULL ORDER BY created_at, id LIMIT ?3',
           variables: [
             Variable<String>(agentId),
-            Variable<String>(threadId),
             const Variable<String>(AgentEntityTypes.agentMessage),
             Variable<int>(maxMessages + 1),
           ],

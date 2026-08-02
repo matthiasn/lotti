@@ -701,23 +701,27 @@ class AgentRepository {
     maxBatches: maxBatches,
   );
 
-  /// Threads holding at least one observation older than [cutoff].
-  Future<List<({String agentId, String threadId})>> threadsWithAgedObservations(
+  /// Agents holding at least one observation older than [cutoff], after
+  /// [afterAgentId] in id order.
+  Future<List<String>> agentsWithAgedObservations(
     DateTime cutoff, {
     required int limit,
-  }) => _observationRetention.threadsWithAgedObservations(cutoff, limit: limit);
+    String? afterAgentId,
+  }) => _observationRetention.agentsWithAgedObservations(
+    cutoff,
+    limit: limit,
+    afterAgentId: afterAgentId,
+  );
 
-  /// Prunes one thread's aged observations and the `messagePrev` edges into
+  /// Prunes one agent's aged observations and the `messagePrev` edges into
   /// them. Returns the removed ids so their sidecars can be reclaimed.
-  Future<ObservationSweepResult> pruneThreadObservations({
+  Future<ObservationSweepResult> pruneAgentObservations({
     required String agentId,
-    required String threadId,
     required DateTime cutoff,
     required int limit,
     required int maxMessages,
-  }) => _observationRetention.pruneThread(
+  }) => _observationRetention.pruneAgent(
     agentId: agentId,
-    threadId: threadId,
     cutoff: cutoff,
     limit: limit,
     maxMessages: maxMessages,

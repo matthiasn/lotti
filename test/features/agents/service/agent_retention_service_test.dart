@@ -62,15 +62,15 @@ void main() {
       ),
     ).thenAnswer((_) async => <String>[]);
     when(
-      () => repository.threadsWithAgedObservations(
+      () => repository.agentsWithAgedObservations(
         any(),
         limit: any(named: 'limit'),
+        afterAgentId: any(named: 'afterAgentId'),
       ),
     ).thenAnswer((_) async => []);
     when(
-      () => repository.pruneThreadObservations(
+      () => repository.pruneAgentObservations(
         agentId: any(named: 'agentId'),
-        threadId: any(named: 'threadId'),
         cutoff: any(named: 'cutoff'),
         limit: any(named: 'limit'),
         maxMessages: any(named: 'maxMessages'),
@@ -96,24 +96,21 @@ void main() {
   });
 
   group('observations', () {
-    void seedThreads(List<({String agentId, String threadId})> threads) {
+    void seedAgents(List<String> agents) {
       when(
-        () => repository.threadsWithAgedObservations(
+        () => repository.agentsWithAgedObservations(
           any(),
           limit: any(named: 'limit'),
+          afterAgentId: any(named: 'afterAgentId'),
         ),
-      ).thenAnswer((_) async => threads);
+      ).thenAnswer((_) async => agents);
     }
 
-    test('sweeps each aged thread on the observation horizon', () async {
-      seedThreads([
-        (agentId: 'agent-1', threadId: 'thread-1'),
-        (agentId: 'agent-2', threadId: 'thread-2'),
-      ]);
+    test('sweeps each aged agent on the observation horizon', () async {
+      seedAgents(['agent-1', 'agent-2']);
       when(
-        () => repository.pruneThreadObservations(
+        () => repository.pruneAgentObservations(
           agentId: any(named: 'agentId'),
-          threadId: any(named: 'threadId'),
           cutoff: any(named: 'cutoff'),
           limit: any(named: 'limit'),
           maxMessages: any(named: 'maxMessages'),
@@ -130,48 +127,82 @@ void main() {
       const policy = AgentRetentionPolicy();
       expect(result.observations, 4);
       verify(
-        () => repository.pruneThreadObservations(
+        () => repository.pruneAgentObservations(
           agentId: 'agent-1',
-          threadId: 'thread-1',
           cutoff: now.subtract(policy.observations),
           limit: policy.batchSize,
-          maxMessages: policy.maxThreadMessages,
+          maxMessages: policy.maxAgentMessages,
         ),
       ).called(1);
     });
 
     test('the observation horizon is not the status-event one', () async {
-      seedThreads([]);
+      seedAgents([]);
 
       await withClock(Clock.fixed(now), service.sweep);
 
       const policy = AgentRetentionPolicy();
       verify(
-        () => repository.threadsWithAgedObservations(
+        () => repository.agentsWithAgedObservations(
           now.subtract(policy.observations),
-          limit: policy.threadsPerSweep,
+          limit: policy.agentsPerSweep,
+          afterAgentId: any(named: 'afterAgentId'),
         ),
       ).called(1);
     });
 
-    test('one failing thread does not stop the others', () async {
-      seedThreads([
-        (agentId: 'agent-1', threadId: 'boom'),
-        (agentId: 'agent-2', threadId: 'fine'),
+    test('the next sweep resumes after the last agent seen', () async {
+      const policy = AgentRetentionPolicy();
+      seedAgents([
+        for (var i = 0; i < policy.agentsPerSweep; i++) 'agent-$i',
       ]);
+
+      await withClock(Clock.fixed(now), service.sweep);
+      await withClock(Clock.fixed(now), service.sweep);
+
+      // A full page means there is more behind it; without the cursor the
+      // second sweep re-reads the same prefix and anything further back is
+      // never reached.
+      verify(
+        () => repository.agentsWithAgedObservations(
+          any(),
+          limit: policy.agentsPerSweep,
+          afterAgentId: 'agent-${policy.agentsPerSweep - 1}',
+        ),
+      ).called(1);
+    });
+
+    test('a short page wraps the cursor back to the front', () async {
+      seedAgents(['only-one']);
+
+      await withClock(Clock.fixed(now), service.sweep);
+      await withClock(Clock.fixed(now), service.sweep);
+
+      // Otherwise the sweep walks off the end and never returns to agents
+      // whose observations aged after it passed them.
+      verify(
+        () => repository.agentsWithAgedObservations(
+          any(),
+          limit: any(named: 'limit'),
+          // ignore: avoid_redundant_argument_values
+          afterAgentId: null,
+        ),
+      ).called(2);
+    });
+
+    test('one failing agent does not stop the others', () async {
+      seedAgents(['boom', 'fine']);
       when(
-        () => repository.pruneThreadObservations(
-          agentId: any(named: 'agentId'),
-          threadId: 'boom',
+        () => repository.pruneAgentObservations(
+          agentId: 'boom',
           cutoff: any(named: 'cutoff'),
           limit: any(named: 'limit'),
           maxMessages: any(named: 'maxMessages'),
         ),
       ).thenThrow(Exception('malformed log'));
       when(
-        () => repository.pruneThreadObservations(
-          agentId: any(named: 'agentId'),
-          threadId: 'fine',
+        () => repository.pruneAgentObservations(
+          agentId: 'fine',
           cutoff: any(named: 'cutoff'),
           limit: any(named: 'limit'),
           maxMessages: any(named: 'maxMessages'),
@@ -204,11 +235,10 @@ void main() {
     });
 
     test('reclaims the sidecars of pruned messages and links', () async {
-      seedThreads([(agentId: 'agent-1', threadId: 'thread-1')]);
+      seedAgents(['agent-1']);
       when(
-        () => repository.pruneThreadObservations(
+        () => repository.pruneAgentObservations(
           agentId: any(named: 'agentId'),
-          threadId: any(named: 'threadId'),
           cutoff: any(named: 'cutoff'),
           limit: any(named: 'limit'),
           maxMessages: any(named: 'maxMessages'),
@@ -225,7 +255,7 @@ void main() {
           entityIds: any(named: 'entityIds'),
           linkIds: any(named: 'linkIds'),
         ),
-      ).thenReturn(1);
+      ).thenAnswer((_) async => 1);
       service = AgentRetentionService(
         repository: repository,
         domainLogger: domainLogger,

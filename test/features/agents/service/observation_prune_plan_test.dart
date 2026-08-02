@@ -224,10 +224,25 @@ void main() {
       );
     });
 
-    test('an absent parent constrains nothing', () {
-      // Left behind by an earlier sweep: the row is gone and cannot come back.
+    test('an absent parent blocks the prune rather than licensing it', () {
+      // A messagePrev link can sync before the entity it points at, so a
+      // parent still in flight looks exactly like one an earlier sweep took.
+      // Guessing "gone" deletes `b`, drops the edge, and forks the moment the
+      // real parent lands.
       final messages = [
-        msg('b', older, parents: ['already-pruned']),
+        msg('b', older, parents: ['still-in-flight']),
+        msg('c', young, parents: ['b']),
+      ];
+
+      expect(plan(messages).messageIds, isEmpty);
+    });
+
+    test('a genuinely pruned parent leaves no edge, so the child is free', () {
+      // The sweep deletes the edges into whatever it deletes, so a row an
+      // earlier pass really did take is a parentless root here — not a
+      // dangling reference.
+      final messages = [
+        msg('b', older),
         msg('c', young, parents: ['b']),
       ];
 

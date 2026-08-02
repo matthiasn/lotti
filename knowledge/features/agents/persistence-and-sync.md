@@ -344,6 +344,8 @@ inside the agent's causal message DAG, which is where a naive sweep does damage:
 | Entanglement | What a plain delete breaks | How the sweep answers it |
 |---|---|---|
 | `message_prev` edges | Deleting a *mid-chain* observation cuts the chain in two. `project()` calls every unreferenced event a head, so the deleted row's parent becomes a second head and the next wake mistakes a retention cut for a real multi-device fork | Only **ancestor-closed** sets are pruned: if a message goes, so does every one of its parents, so no survivor can lose a child |
+| Chains that cross threads | `recentHeadMessageId` is per **agent**, and `AgentSyncService._appendMessage` chains each wake's first message off the previous wake's tip — the sync service exists partly to stop a stale head forking the DAG "at the wake boundary". Planning per thread would read a cross-thread parent as absent | The sweep plans over an agent's **whole** message log, never a thread slice |
+| A parent that has not synced yet | A `messagePrev` link can arrive before the entity it points at, and an in-flight parent looks identical to one an earlier sweep took. Treating absence as "already gone" prunes the child and forks when the parent lands | A message with **any** absent parent is not prunable. A genuinely pruned parent leaves no edge at all — the sweep deletes the edges into whatever it deletes — so a dangling edge always means "not yet" |
 | `viewComplete` | A survivor still pointing at a pruned parent leaves a permanent dangling parent, and `planJoin` is gated on `danglingParentIds.isEmpty` — fork healing would switch off for good, unbounding the very context retention exists to bound | Every `message_prev` edge **into** the pruned set is deleted with it, leaving the oldest survivor a parentless root |
 | `AgentStateEntity.recentHeadMessageId` | A head pointing at a deleted message is trusted on the next append, creating a permanent dangling parent | `recentHeadMessageId` and `latestSummaryMessageId` are protected, and nothing downstream of them is prunable either |
 | `agentMessagePayload` | Payloads written by `AgentInputCaptureService` are **user content**, content-addressed under `sharedContentAgentId` and referenced by `messagePayload` **links** — not by any message's `contentEntryId`. An ownership check based on `contentEntryId` reads them as orphans and deletes them | Payload rows are never deleted. Only the pruned message's own edge to one goes |
@@ -356,9 +358,28 @@ only supplies the rows and executes the plan.
 **Age alone never decides.** Causal and wall-clock order diverge across devices,
 so the cutoff only marks *candidates* — a message is prunable when it is an old
 observation **and every parent of it is prunable**, which stops dead at the first
-summary or still-young message. A thread longer than `maxThreadMessages` is
+summary or still-young message. An agent whose log exceeds `maxAgentMessages` is
 skipped rather than partially pruned: ancestor-closure is a property of the chain
 from its root, and a truncated read would hide the parents that block a delete.
+
+**What this deliberately does not collect.** Ancestor-closure is *sufficient* to
+avoid manufacturing a head, not *necessary*, and the sweep is built on the
+sufficient condition. So a retained summary blocks everything causally after it:
+in a linear chain the summary has exactly one child, and deleting that child
+would strand the summary as a second head. Observations written after the first
+durable summary are therefore collected by **compaction**, which folds them into
+a summary and rewrites the chain, rather than by this sweep. Retention is the
+backstop for what compaction has not reached, not the primary mechanism.
+
+Payload rows are never deleted here either. `contentEntryId` carries journal
+entry ids and change-set references as well as agent-owned payload ids, so
+deleting by it is the shape of an earlier incident that destroyed user content.
+Reclaiming agent-owned payloads needs a positive ownership signal that field
+does not carry on its own.
+
+Agents are visited with a **cursor** rather than a fixed ordered prefix: one
+agent that cannot be pruned would otherwise hide every agent behind it on every
+start, and the sweep would converge on doing nothing.
 
 ## Hard delete, no tombstone — and no inbound guard
 
