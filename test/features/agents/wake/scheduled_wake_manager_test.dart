@@ -853,6 +853,31 @@ void main() {
         });
       });
 
+      test('a settled claim does not fire through a stopped manager', () {
+        fakeAsync((async) {
+          // Already past the settle, so the very next check would fire — but
+          // stop() lands while the host lookup is still awaiting.
+          withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {
+            final manager = managerFor(
+              leased(
+                leaseHostId: 'host-a',
+                leaseUntil: now.toUtc().add(const Duration(minutes: 30)),
+                updatedAt: now,
+              ),
+              checkInterval: const Duration(hours: 1),
+            );
+
+            manager.stop();
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(minutes: 5))
+              ..flushMicrotasks();
+
+            expectNoWake();
+          });
+        });
+      });
+
       test('a claim confirmed after the settle fires exactly once', () {
         fakeAsync((async) {
           withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {

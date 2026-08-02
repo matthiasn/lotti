@@ -194,6 +194,11 @@ class ScheduledWakeManager {
     for (final record in dueRecords) {
       try {
         if (!await _holdsLease(record, now, generation)) continue;
+        // `stop()` can land while the lease check is awaiting the host lookup.
+        // Firing afterwards would enqueue through a disposed manager, and if
+        // the provider has already rebuilt one, both instances would fire the
+        // same record — the duplicate the lease exists to prevent.
+        if (generation != _generation) continue;
         _orchestrator.enqueueManualWake(
           agentId: record.agentId,
           reason: record.reason,
