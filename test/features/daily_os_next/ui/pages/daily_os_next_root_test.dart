@@ -111,16 +111,6 @@ void _expectLabelNotTruncated(WidgetTester tester, Finder label) {
   );
 }
 
-/// Sizes the test view so a "phone" test really lays out at phone width —
-/// a MediaQuery override alone leaves the render tree on the 800x600
-/// default surface, where a squeezed header would still have room.
-void _setSurfaceSize(WidgetTester tester, Size size) {
-  tester.view
-    ..physicalSize = size * tester.view.devicePixelRatio
-    ..devicePixelRatio = tester.view.devicePixelRatio;
-  addTearDown(tester.view.resetPhysicalSize);
-}
-
 MockAudioRecorderRepository _permissionlessRecorder() {
   final recorder = MockAudioRecorderRepository();
   when(recorder.hasPermission).thenAnswer((_) async => false);
@@ -536,7 +526,7 @@ void main() {
     testWidgets(
       "the picker's own Today action is the phone's way back to today",
       (tester) async {
-        _setSurfaceSize(tester, const Size(390, 844));
+        setTestSurfaceSize(tester, const Size(390, 844));
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
@@ -588,7 +578,7 @@ void main() {
     testWidgets(
       "a selection far from today still gets the picker's Today action",
       (tester) async {
-        _setSurfaceSize(tester, const Size(390, 844));
+        setTestSurfaceSize(tester, const Size(390, 844));
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
@@ -639,7 +629,7 @@ void main() {
     testWidgets(
       'the phone header gives day navigation a row of its own, unsqueezed',
       (tester) async {
-        _setSurfaceSize(tester, const Size(390, 844));
+        setTestSurfaceSize(tester, const Size(390, 844));
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(

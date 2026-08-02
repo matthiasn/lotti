@@ -192,15 +192,8 @@ Widget _dateStripLike(String label) {
   );
 }
 
-void _setSurfaceSize(WidgetTester tester, Size size) {
-  tester.view
-    ..physicalSize = size
-    ..devicePixelRatio = 1.0;
-  addTearDown(tester.view.reset);
-}
-
 void _setSurface(WidgetTester tester) {
-  _setSurfaceSize(tester, const Size(1400, 1200));
+  setTestSurfaceSize(tester, const Size(1400, 1200));
 }
 
 /// Sets the standard surface, pumps a [DayPage] for [draft] with [agent]
@@ -1132,7 +1125,7 @@ void main() {
     testWidgets('header stacks the three-view toggle when it needs room', (
       tester,
     ) async {
-      _setSurfaceSize(tester, const Size(640, 844));
+      setTestSurfaceSize(tester, const Size(640, 844));
       const label = 'May 31, 2026';
       await tester.pumpWidget(
         _wrap(
@@ -1157,7 +1150,7 @@ void main() {
     testWidgets('header moves the plan toggle below only when it cannot fit', (
       tester,
     ) async {
-      _setSurfaceSize(tester, phoneMediaQueryData.size);
+      setTestSurfaceSize(tester, phoneMediaQueryData.size);
       const label = 'May 31, 2026';
       await tester.pumpWidget(
         _wrap(
@@ -1185,7 +1178,7 @@ void main() {
         // side by side. Pinning them to opposite edges without a fit check
         // overlapped them, hiding toggle segments behind the filter/menu
         // cluster.
-        _setSurfaceSize(tester, const Size(390, 900));
+        setTestSurfaceSize(tester, const Size(390, 900));
         const label = 'May 31, 2026';
         await tester.pumpWidget(
           _wrap(
@@ -1232,7 +1225,7 @@ void main() {
     testWidgets('header relayouts when design-system spacing changes', (
       tester,
     ) async {
-      _setSurfaceSize(tester, const Size(640, 844));
+      setTestSurfaceSize(tester, const Size(640, 844));
       const label = 'May 31, 2026';
       final mediaQueryData = phoneMediaQueryData.copyWith(
         size: const Size(640, 844),
@@ -1334,7 +1327,7 @@ void main() {
       tester,
     ) async {
       const size = Size(320, 568);
-      _setSurfaceSize(tester, size);
+      setTestSurfaceSize(tester, size);
       await tester.pumpWidget(
         _wrap(
           DayPage(draft: _draftedWithReasons()),
@@ -1357,7 +1350,7 @@ void main() {
         size: size,
         textScaler: const TextScaler.linear(2),
       );
-      _setSurfaceSize(tester, size);
+      setTestSurfaceSize(tester, size);
       await tester.pumpWidget(
         _wrap(
           DayPage(draft: _draftedWithReasons()),
@@ -1691,7 +1684,7 @@ void main() {
       final mediaQueryData = phoneMediaQueryData.copyWith(
         textScaler: const TextScaler.linear(2),
       );
-      _setSurfaceSize(tester, mediaQueryData.size);
+      setTestSurfaceSize(tester, mediaQueryData.size);
       await tester.pumpWidget(
         _wrap(
           DayPage(draft: _draftedWithReasons()),

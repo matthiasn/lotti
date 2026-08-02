@@ -404,3 +404,17 @@ void expectTextStyle(TextStyle actual, TextStyle expected, Color color) {
   expect(actual.height, expected.height);
   expect(actual.color, color);
 }
+
+/// Lays the test view out at [size] in logical pixels, restoring the default
+/// surface afterwards.
+///
+/// A `MediaQuery` override alone leaves the render tree on the 800x600 default
+/// surface, so a layout that only breaks at phone width still has room and the
+/// test passes for the wrong reason. Pass the same size to both this and the
+/// widget's `MediaQueryData` when a test is about narrow-screen layout.
+void setTestSurfaceSize(WidgetTester tester, Size size) {
+  tester.view
+    ..physicalSize = size
+    ..devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+}
