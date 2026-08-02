@@ -11,7 +11,7 @@ sources:
   - id: embedding-service
     resource: ../../../lib/features/ai/service/embedding_service.dart
     title: EmbeddingService
-    last_modified: 2026-08-01
+    last_modified: 2026-08-02
   - id: store
     resource: ../../../lib/features/ai/database/objectbox_embedding_store.dart
     title: ObjectBox-backed embedding store
@@ -23,11 +23,11 @@ sources:
   - id: ollama-embedding-repository
     resource: ../../../lib/features/ai/repository/ollama_embedding_repository.dart
     title: OllamaEmbeddingRepository
-    last_modified: 2026-08-01
+    last_modified: 2026-08-02
   - id: task-agent-report-embedding
     resource: ../../../lib/features/agents/workflow/task_agent_persistence_helpers.dart
     title: Optional task-agent report embedding
-    last_modified: 2026-08-01
+    last_modified: 2026-08-02
   - id: embedding-backfill-controller
     resource: ../../../lib/features/ai/state/embedding_backfill_controller.dart
     title: EmbeddingBackfillController
@@ -80,23 +80,28 @@ flowchart LR
   where requests may run concurrently. Every allowed request captures the
   endpoint generation at its start. An HTTP response advances that generation,
   and an exhausted transport budget opens a cooldown only while its captured
-  generation is still current. A failure completing after a newer successful
-  response therefore cannot hide recovery by reopening the circuit or carry the
-  availability marker that pauses batch callers.
+  generation is still current. Concurrent failures share an already-opened
+  cooldown and its retry timestamp, while a failure completing after a newer
+  successful response cannot hide recovery by reopening the circuit or carry
+  the availability marker that pauses batch callers.
 - The first call after the cooldown exclusively reserves the recovery probe;
   concurrent callers join it until reachability is known. Availability is
   reserved before the invocation wrapper begins AI attribution, so a
   cooldown-suppressed embedding creates neither a provider consumption event nor
   a failed attribution projection. The notification loop requeues its current
   entity and retains the rest of the batch, then schedules one retry for the
-  endpoint's `retryAt`; notifications arriving during that pause join the same
-  pending set. Manual backfill loops stop when the initial transport budget is
-  exhausted or a known cooldown suppresses the call, instead of emitting one
-  stack trace per remaining item.
+  endpoint's `retryAt`. A fresh relevant notification joins the pending set and
+  immediately re-runs preflight so endpoint recovery or a changed Ollama URL is
+  used without waiting for an obsolete timer; an unchanged cooling endpoint
+  still fast-fails before network I/O. Manual backfill loops stop when the
+  initial transport budget is exhausted or a known cooldown suppresses the
+  call, instead of emitting one stack trace per remaining item.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
   maps it to the active locale; the suppression count and retry timestamp stay
   in diagnostic logs. A failed optional embedding never rolls back the
-  already-persisted agent report or deletes its previous embedding.
+  already-persisted agent report or deletes its previous embedding. Availability
+  failures defer the latest report per task until `retryAt`; a newer report
+  supersedes the queued one so recovery does not index stale report revisions.
 
 ```mermaid
 stateDiagram-v2

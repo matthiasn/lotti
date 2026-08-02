@@ -89,7 +89,13 @@ class EmbeddingService {
     if (entityIds.isEmpty) return;
 
     _pendingEntityIds.addAll(entityIds);
-    if (_availabilityRetryTimer?.isActive ?? false) return;
+    if (_availabilityRetryTimer?.isActive ?? false) {
+      // A fresh notification may reflect endpoint recovery or a changed
+      // Ollama configuration. Re-probe immediately; the repository still
+      // fast-fails without network I/O if the same endpoint is cooling down.
+      _availabilityRetryTimer?.cancel();
+      _availabilityRetryTimer = null;
+    }
     // Only start a new processing future if one isn't already running.
     // Overwriting _inFlightProcessing while _isProcessing is true would
     // cause stop() to await a completed no-op instead of the real work.

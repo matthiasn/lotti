@@ -4088,11 +4088,15 @@ not describe task configuration or tool activity as progress.
       );
 
       test(
-        'persists report and emits counted cooldown summary without stack',
+        'retries unavailable and counted cooldown report embeddings',
         () async {
           final mockEmbeddingStore = MockEmbeddingStore();
           final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
           final mockDomainLogger = MockDomainLogger();
+          final retryScheduled = [Completer<void>(), Completer<void>()];
+          final releaseRetry = [Completer<void>(), Completer<void>()];
+          final retryDelays = <Duration>[];
+          var retryDelayCallCount = 0;
           final workflowWithEmbeddings = TaskAgentWorkflow(
             agentRepository: mockAgentRepository,
             conversationRepository: mockConversationRepository,
@@ -4108,6 +4112,12 @@ not describe task configuration or tool activity as progress.
             domainLogger: mockDomainLogger,
             embeddingStore: mockEmbeddingStore,
             embeddingRepository: mockEmbeddingRepository,
+            reportEmbeddingDelay: (duration) {
+              final index = retryDelayCallCount++;
+              retryDelays.add(duration);
+              retryScheduled[index].complete();
+              return releaseRetry[index].future;
+            },
           );
 
           when(
@@ -4131,21 +4141,47 @@ not describe task configuration or tool activity as progress.
           );
 
           final embeddingAttempted = Completer<void>();
+          final secondEmbeddingAttempted = Completer<void>();
+          final embeddingStored = Completer<void>();
+          var embeddingCallCount = 0;
           when(
             () => mockEmbeddingRepository.embed(
               input: any(named: 'input'),
               baseUrl: any(named: 'baseUrl'),
             ),
           ).thenAnswer((_) async {
+            embeddingCallCount++;
             if (!embeddingAttempted.isCompleted) {
               embeddingAttempted.complete();
             }
-            throw OllamaEmbeddingCooldownException(
-              retryAt: testDate.add(
-                OllamaEmbeddingRepository.availabilityCooldown,
-              ),
-              suppressedRequestCount: 8,
-            );
+            if (embeddingCallCount == 1) {
+              throw OllamaEmbeddingUnavailableException(
+                'Ollama transport retries exhausted',
+                retryAt: clock.now(),
+              );
+            }
+            if (embeddingCallCount == 2) {
+              secondEmbeddingAttempted.complete();
+              throw OllamaEmbeddingCooldownException(
+                retryAt: clock.now(),
+                suppressedRequestCount: 8,
+              );
+            }
+            return Float32List(kEmbeddingDimensions);
+          });
+          when(
+            () => mockEmbeddingStore.replaceEntityEmbeddings(
+              entityId: any(named: 'entityId'),
+              entityType: any(named: 'entityType'),
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: any(named: 'categoryId'),
+              taskId: any(named: 'taskId'),
+              subtype: any(named: 'subtype'),
+            ),
+          ).thenAnswer((_) {
+            embeddingStored.complete();
           });
 
           mockConversationRepository.sendMessageDelegate =
@@ -4193,7 +4229,32 @@ not describe task configuration or tool activity as progress.
           ).captured;
           expect(persisted.whereType<AgentReportEntity>(), hasLength(1));
           await embeddingAttempted.future;
-          await pumpEventQueue();
+          await retryScheduled[0].future;
+
+          expect(retryDelays, [Duration.zero]);
+          expect(embeddingCallCount, 1);
+
+          releaseRetry[0].complete();
+          await secondEmbeddingAttempted.future;
+          await retryScheduled[1].future;
+
+          expect(retryDelays, [Duration.zero, Duration.zero]);
+          expect(embeddingCallCount, 2);
+
+          releaseRetry[1].complete();
+          await embeddingStored.future;
+
+          expect(embeddingCallCount, 3);
+
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.agentWorkflow,
+              any(that: isA<OllamaEmbeddingUnavailableException>()),
+              message:
+                  'optional agent report embedding paused; retry scheduled',
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
 
           verify(
             () => mockDomainLogger.error(

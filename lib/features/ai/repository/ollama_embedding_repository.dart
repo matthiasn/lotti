@@ -49,7 +49,9 @@ class OllamaEmbeddingRepository {
   /// Returns a [Float32List] with exactly [kEmbeddingDimensions] elements.
   ///
   /// Throws [ModelNotInstalledException] if the model is not pulled locally.
-  /// Throws [Exception] on timeout, network errors, or malformed responses.
+  /// Throws [OllamaEmbeddingAvailabilityException] when a confirmed transport
+  /// outage should pause optional work. Other response and parsing failures
+  /// surface as [Exception].
   Future<Float32List> embed({
     required String input,
     required String baseUrl,
@@ -209,8 +211,14 @@ class OllamaEmbeddingRepository {
 
   DateTime? _openAvailabilityCooldown(_OllamaAvailabilityAttempt attempt) {
     final current = _availabilityBackoff[attempt.baseUrl];
-    if (current == null || current.generation != attempt.generation) {
+    if (current == null) {
       return null;
+    }
+    if (current.generation != attempt.generation) {
+      return current.phase == _OllamaAvailabilityPhase.coolingDown &&
+              current.outageConfirmed
+          ? current.retryAt
+          : null;
     }
 
     final retryAt = clock.now().add(availabilityCooldown);

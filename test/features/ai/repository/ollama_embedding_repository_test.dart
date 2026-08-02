@@ -886,6 +886,69 @@ void main() {
         expect(callCount, 6);
       });
 
+      test('concurrent failures share the active outage marker', () async {
+        var slowFailureCallCount = 0;
+        final slowFailureStarted = Completer<void>();
+        final releaseSlowFailure = Completer<void>();
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((invocation) async {
+          final body =
+              jsonDecode(invocation.namedArguments[#body] as String)
+                  as Map<String, dynamic>;
+          final input = body['input'] as String;
+          if (input == 'establish availability') {
+            return http.Response(
+              makeEmbeddingResponse(kEmbeddingDimensions),
+              200,
+            );
+          }
+          if (input == 'slow failure') {
+            slowFailureCallCount++;
+            if (slowFailureCallCount == 1) {
+              slowFailureStarted.complete();
+              await releaseSlowFailure.future;
+            }
+          }
+          throw const SocketException('Connection refused');
+        });
+
+        await repository.embed(
+          input: 'establish availability',
+          baseUrl: baseUrl,
+        );
+        final slowFailure = repository.embed(
+          input: 'slow failure',
+          baseUrl: baseUrl,
+        );
+        await slowFailureStarted.future;
+
+        late final OllamaEmbeddingUnavailableException firstFailure;
+        try {
+          await repository.embed(input: 'first failure', baseUrl: baseUrl);
+          fail('the first concurrent outage must exhaust its retry budget');
+        } on OllamaEmbeddingUnavailableException catch (error) {
+          firstFailure = error;
+        }
+
+        releaseSlowFailure.complete();
+        await expectLater(
+          slowFailure,
+          throwsA(
+            isA<OllamaEmbeddingUnavailableException>().having(
+              (error) => error.retryAt,
+              'shared retry time',
+              firstFailure.retryAt,
+            ),
+          ),
+        );
+        expect(slowFailureCallCount, 3);
+      });
+
       test('a concurrent caller joins a healthy recovery probe', () async {
         var now = DateTime.utc(2026, 8, 1, 12);
         var callCount = 0;

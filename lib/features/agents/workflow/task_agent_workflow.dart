@@ -111,9 +111,10 @@ class TaskAgentWorkflow {
     this.changeSetNotificationService,
     this.inputCaptureService,
     this.logSummarizer,
+    Future<void> Function(Duration)? reportEmbeddingDelay,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
-  });
+  }) : _reportEmbeddingDelay = reportEmbeddingDelay ?? Future<void>.delayed;
 
   final AgentRepository agentRepository;
 
@@ -139,6 +140,9 @@ class TaskAgentWorkflow {
   /// non-essential — if unavailable, reports are still persisted normally.
   final EmbeddingStore? embeddingStore;
   final OllamaEmbeddingRepository? embeddingRepository;
+  final Future<void> Function(Duration) _reportEmbeddingDelay;
+  final _pendingReportEmbeddings = <String, _PendingReportEmbedding>{};
+  final _latestReportEmbeddingIds = <String, String>{};
 
   /// Optional task agent service for auto-assigning agents to follow-up tasks.
   final TaskAgentService? taskAgentService;

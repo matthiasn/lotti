@@ -949,6 +949,70 @@ void main() {
       });
     });
 
+    test('a new notification resumes a deferred batch after recovery', () {
+      fakeAsync((async) {
+        const entityId2 = 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee';
+        final entry1 = JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        );
+        final entry2 = JournalEntry(
+          meta: _meta(id: entityId2),
+          entryText: const EntryText(
+            plainText: 'Another long enough text for embedding generation.',
+          ),
+        );
+        stubEntity(entry1);
+        when(
+          () => mockJournalDb.journalEntityById(entityId2),
+        ).thenAnswer((_) async => entry2);
+        var embedCallCount = 0;
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((_) async {
+          embedCallCount++;
+          if (embedCallCount == 1) {
+            throw OllamaEmbeddingUnavailableException(
+              'Ollama transport retries exhausted',
+              retryAt: clock.now().add(
+                OllamaEmbeddingRepository.availabilityCooldown,
+              ),
+            );
+          }
+          return _fakeEmbedding();
+        });
+
+        service.start();
+        sendAndProcess(
+          async,
+          {_entityId, entityId2, textEntryNotification},
+        );
+        expect(embedCallCount, 1);
+
+        sendAndProcess(async, {entityId2, textEntryNotification});
+
+        expect(embedCallCount, 3);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: any(named: 'entityId'),
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        ).called(2);
+
+        stopInZone(async);
+      });
+    });
+
     test('generates embedding for a task', () {
       fakeAsync((async) {
         final task = Task(
