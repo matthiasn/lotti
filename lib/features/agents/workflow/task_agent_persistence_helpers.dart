@@ -54,6 +54,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     required String reportId,
     required String reportContent,
     required String taskId,
+    required String agentId,
     String? previousReportId,
     bool isRetry = false,
   }) async {
@@ -86,6 +87,14 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
       final taskEntity = await journalDb.journalEntityById(taskId);
       if (_latestReportEmbeddingIds[taskId] != reportId) return;
       final categoryId = taskEntity?.meta.categoryId ?? '';
+      if (!await _isCurrentAgentReport(
+        agentId: agentId,
+        taskId: taskId,
+        reportId: reportId,
+      )) {
+        _completeAgentReportEmbedding(taskId, reportId);
+        return;
+      }
 
       final didEmbed = await EmbeddingProcessor.processAgentReport(
         reportId: reportId,
@@ -96,13 +105,29 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
         embeddingStore: store,
         embeddingRepository: repo,
         baseUrl: baseUrl,
-        writeGuard: () => _latestReportEmbeddingIds[taskId] == reportId,
+        writeGuard: () => _isCurrentAgentReport(
+          agentId: agentId,
+          taskId: taskId,
+          reportId: reportId,
+        ),
       );
 
       // Delete the old report's embedding only after the new one succeeds,
       // so we don't lose search coverage if the embedding call fails or
       // the content is too short.
-      if (didEmbed && _latestReportEmbeddingIds[taskId] == reportId) {
+      if (didEmbed) {
+        if (!await _isCurrentAgentReport(
+          agentId: agentId,
+          taskId: taskId,
+          reportId: reportId,
+        )) {
+          // A successor was published while the atomic store replacement was
+          // awaiting. This report was never promoted to the searchable
+          // predecessor, so remove only the stale vector just written.
+          await store.deleteEntityEmbeddings(reportId);
+          _completeAgentReportEmbedding(taskId, reportId);
+          return;
+        }
         // Once storage succeeds, a report arriving while predecessor cleanup
         // is still in flight must supersede this newly stored report, not the
         // older report that this operation is already deleting.
@@ -119,6 +144,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
           reportId: reportId,
           reportContent: reportContent,
           taskId: taskId,
+          agentId: agentId,
           previousReportId: embeddingPredecessorId,
           retryAt: e.retryAt,
         ),
@@ -143,6 +169,20 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
       _completeAgentReportEmbedding(taskId, reportId);
       _logError('failed to embed agent report', error: e, stackTrace: s);
     }
+  }
+
+  /// Confirms both the workflow-local claim and the durable report head.
+  Future<bool> _isCurrentAgentReport({
+    required String agentId,
+    required String taskId,
+    required String reportId,
+  }) async {
+    if (_latestReportEmbeddingIds[taskId] != reportId) return false;
+    final durableHead = await agentRepository.getLatestReport(
+      agentId,
+      AgentReportScopes.current,
+    );
+    return durableHead?.id == reportId;
   }
 
   void _completeAgentReportEmbedding(String taskId, String reportId) {
@@ -174,6 +214,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
       reportId: pending.reportId,
       reportContent: pending.reportContent,
       taskId: pending.taskId,
+      agentId: pending.agentId,
       previousReportId: pending.previousReportId,
       isRetry: true,
     );
@@ -185,6 +226,7 @@ class _PendingReportEmbedding {
     required this.reportId,
     required this.reportContent,
     required this.taskId,
+    required this.agentId,
     required this.previousReportId,
     required this.retryAt,
   });
@@ -192,6 +234,7 @@ class _PendingReportEmbedding {
   final String reportId;
   final String reportContent;
   final String taskId;
+  final String agentId;
   final String? previousReportId;
   final DateTime retryAt;
 }

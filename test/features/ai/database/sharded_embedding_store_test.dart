@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -436,6 +437,47 @@ void main() {
     });
 
     group('replaceEntityEmbeddings', () {
+      test('coalesces concurrent opens for the same new shard', () async {
+        final factoryStarted = Completer<void>();
+        final releaseFactory = Completer<void>();
+        var factoryCallCount = 0;
+        store = await ShardedEmbeddingStore.open(
+          basePath: tempDir.path,
+          opsFactory: (directory) async {
+            factoryCallCount++;
+            if (!factoryStarted.isCompleted) factoryStarted.complete();
+            await releaseFactory.future;
+            return createMockOps(directory);
+          },
+        );
+
+        final firstWrite = store.replaceEntityEmbeddings(
+          entityId: 'entity-1',
+          entityType: 'journalEntry',
+          modelId: 'nomic-embed-text',
+          contentHash: 'hash-1',
+          embeddings: [validVector()],
+          categoryId: 'cat-a',
+        );
+        await factoryStarted.future;
+        final secondWrite = store.replaceEntityEmbeddings(
+          entityId: 'entity-2',
+          entityType: 'journalEntry',
+          modelId: 'nomic-embed-text',
+          contentHash: 'hash-2',
+          embeddings: [validVector()],
+          categoryId: 'cat-a',
+        );
+
+        releaseFactory.complete();
+        await Future.wait([firstWrite, secondWrite]);
+
+        expect(factoryCallCount, 1);
+        verify(
+          () => getShardOps('cat-a').putMany(any()),
+        ).called(2);
+      });
+
       test('routes to correct shard based on categoryId', () async {
         await openStore();
 
@@ -1022,6 +1064,35 @@ void main() {
     });
 
     group('moveRelatedReportEmbeddings', () {
+      test('exposes only entity IDs linked to the requested task', () async {
+        await openStoreWithShards(
+          ['cat-a', 'cat-b'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(
+                entityId: 'report-1',
+                taskId: 'task-1',
+              ),
+              const EntityMetadataRow(
+                entityId: 'report-2',
+                taskId: 'task-2',
+              ),
+            ],
+            'cat-b': [
+              const EntityMetadataRow(
+                entityId: 'report-3',
+                taskId: 'task-1',
+              ),
+            ],
+          },
+        );
+
+        expect(
+          store.getEntityIdsForTask('task-1'),
+          {'report-1', 'report-3'},
+        );
+      });
+
       test('cascades to all reports for a task', () async {
         await openStoreWithShards(
           ['cat-a'],

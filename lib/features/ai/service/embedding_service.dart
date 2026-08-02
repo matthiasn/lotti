@@ -15,8 +15,9 @@ import 'package:lotti/utils/consts.dart';
 
 /// Background embedding generation service.
 ///
-/// Listens to [UpdateNotifications.localUpdateStream] for entity changes
-/// and generates embeddings for text-rich entries using Ollama's `/api/embed`.
+/// Listens to [UpdateNotifications.localUpdateStream] for entity changes and
+/// [UpdateNotifications.syncUpdateStream] for durable agent-head changes, then
+/// generates embeddings for text-rich entries using Ollama's `/api/embed`.
 /// When [agentRepository] is available, startup also reconciles durable current
 /// task-agent reports so an interrupted in-memory retry is recovered.
 ///
@@ -48,6 +49,7 @@ class EmbeddingService {
   final AgentRepository? agentRepository;
 
   StreamSubscription<Set<String>>? _subscription;
+  StreamSubscription<Set<String>>? _syncSubscription;
   final _pendingEntityIds = <String>{};
   bool _isProcessing = false;
   bool _stopped = false;
@@ -55,6 +57,7 @@ class EmbeddingService {
   Future<void>? _inFlightAgentReportRecovery;
   bool _agentReportRecoveryPending = false;
   bool _agentReportRecoveryRunning = false;
+  bool _agentReportRecoveryRerunRequested = false;
   Timer? _availabilityRetryTimer;
 
   /// The notification tokens that indicate an embeddable entity was changed.
@@ -65,16 +68,18 @@ class EmbeddingService {
     aiResponseNotification,
   };
 
-  /// Starts listening to local update notifications.
+  /// Starts listening to local entity and synced agent-head notifications.
   ///
   /// Idempotent — calling while already started is a no-op.
   void start() {
     if (_subscription != null) return;
     _stopped = false;
     _subscription = updateNotifications.localUpdateStream.listen(_onBatch);
+    _syncSubscription = updateNotifications.syncUpdateStream.listen(
+      _onSyncBatch,
+    );
     if (agentRepository != null) {
-      _agentReportRecoveryPending = true;
-      _startAgentReportRecovery();
+      _requestAgentReportRecovery();
     }
   }
 
@@ -88,8 +93,11 @@ class EmbeddingService {
     _availabilityRetryTimer = null;
     await _subscription?.cancel();
     _subscription = null;
+    await _syncSubscription?.cancel();
+    _syncSubscription = null;
     _pendingEntityIds.clear();
     _agentReportRecoveryPending = false;
+    _agentReportRecoveryRerunRequested = false;
     final inFlight = _inFlightProcessing;
     _inFlightProcessing = null;
     final reportRecovery = _inFlightAgentReportRecovery;
@@ -104,28 +112,53 @@ class EmbeddingService {
   }
 
   void _onBatch(Set<String> tokens) {
-    // Only process if the batch contains at least one relevant type token.
-    final hasRelevantType = tokens.any(_relevantTokens.contains);
-    if (!hasRelevantType) return;
+    final hasAgentChange = tokens.contains(agentNotification);
+    final hasRelevantEntityType = tokens.any(_relevantTokens.contains);
+    if (!hasAgentChange && !hasRelevantEntityType) return;
+
+    if (_availabilityRetryTimer?.isActive ?? false) {
+      // A fresh notification may reflect endpoint recovery, changed Ollama
+      // configuration, or a newer durable report head.
+      _availabilityRetryTimer?.cancel();
+      _availabilityRetryTimer = null;
+    }
+    if (hasAgentChange) {
+      _requestAgentReportRecovery();
+    }
+    if (!hasRelevantEntityType) return;
 
     // Extract entity UUIDs from the batch (filter out type tokens).
     final entityIds = tokens.where(_isEntityId).toSet();
     if (entityIds.isEmpty) return;
 
     _pendingEntityIds.addAll(entityIds);
-    if (_availabilityRetryTimer?.isActive ?? false) {
-      // A fresh notification may reflect endpoint recovery or a changed
-      // Ollama configuration. Re-probe immediately; the repository still
-      // fast-fails without network I/O if the same endpoint is cooling down.
-      _availabilityRetryTimer?.cancel();
-      _availabilityRetryTimer = null;
-    }
     // Only start a new processing future if one isn't already running.
     // Overwriting _inFlightProcessing while _isProcessing is true would
     // cause stop() to await a completed no-op instead of the real work.
     if (!_isProcessing) {
       _inFlightProcessing = _processNext();
       unawaited(_inFlightProcessing);
+    }
+    _startAgentReportRecovery();
+  }
+
+  /// Reconciles derived report vectors when sync advances an agent head.
+  void _onSyncBatch(Set<String> tokens) {
+    if (!tokens.contains(agentNotification)) return;
+    if (_availabilityRetryTimer?.isActive ?? false) {
+      _availabilityRetryTimer?.cancel();
+      _availabilityRetryTimer = null;
+    }
+    _requestAgentReportRecovery();
+  }
+
+  /// Requests one recovery pass, coalescing a request that arrives mid-pass.
+  void _requestAgentReportRecovery() {
+    if (_stopped || agentRepository == null) return;
+    _agentReportRecoveryPending = true;
+    if (_agentReportRecoveryRunning) {
+      _agentReportRecoveryRerunRequested = true;
+      return;
     }
     _startAgentReportRecovery();
   }
@@ -144,17 +177,19 @@ class EmbeddingService {
     final repository = agentRepository;
     if (repository == null || _agentReportRecoveryRunning) return;
     _agentReportRecoveryRunning = true;
+    _agentReportRecoveryPending = false;
+    _agentReportRecoveryRerunRequested = false;
 
     try {
       final enabled = await journalDb.getConfigFlag(enableEmbeddingsFlag);
       if (!enabled || _stopped) {
-        _agentReportRecoveryPending = false;
+        if (!_stopped) _agentReportRecoveryPending = true;
         return;
       }
 
       final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
       if (baseUrl == null || _stopped) {
-        _agentReportRecoveryPending = false;
+        if (!_stopped) _agentReportRecoveryPending = true;
         return;
       }
 
@@ -193,7 +228,6 @@ class EmbeddingService {
         }
       }
 
-      _agentReportRecoveryPending = false;
       if (failureCount > 0) {
         developer.log(
           'Agent report embedding recovery skipped $failureCount report(s)',
@@ -203,7 +237,6 @@ class EmbeddingService {
         );
       }
     } on Object catch (error, stackTrace) {
-      _agentReportRecoveryPending = false;
       developer.log(
         'Agent report embedding recovery failed: $error',
         error: error,
@@ -211,7 +244,14 @@ class EmbeddingService {
         name: 'EmbeddingService',
       );
     } finally {
+      final rerunRequested = _agentReportRecoveryRerunRequested;
+      _agentReportRecoveryRerunRequested = false;
       _agentReportRecoveryRunning = false;
+      if (rerunRequested &&
+          _agentReportRecoveryPending &&
+          !(_availabilityRetryTimer?.isActive ?? false)) {
+        _startAgentReportRecovery();
+      }
     }
   }
 
@@ -283,19 +323,25 @@ class EmbeddingService {
           didEmbed || await embeddingStore.hasEmbedding(report.id);
       if (!currentReportIsSearchable) return;
 
-      final currentReports = await repository.getEntitiesByAgentIdAndSubtype(
-        agent.id,
-        type: AgentEntityTypes.agentReport,
-        subtype: AgentReportScopes.current,
+      final cleanupCandidateIds = await embeddingStore.getEntityIdsForTask(
+        taskId,
       );
-      for (final historicalReport
-          in currentReports.whereType<AgentReportEntity>()) {
-        // A newer report may be persisted after the head recheck but before
-        // this query completes. Never let startup recovery delete a report at
-        // or beyond the still-current snapshot.
-        if (historicalReport.createdAt.isBefore(report.createdAt) &&
-            removedReportIds.add(historicalReport.id)) {
-          await embeddingStore.deleteEntityEmbeddings(historicalReport.id);
+      final headAfterCandidateRead = await repository.getLatestReport(
+        agent.id,
+        AgentReportScopes.current,
+      );
+      if (headAfterCandidateRead?.id != report.id) {
+        // The candidate snapshot cannot contain a successor published after
+        // it was read. Reconcile that successor before deleting anything from
+        // the snapshot, and remove this attempt only if recovery wrote it.
+        if (didEmbed && removedReportIds.add(report.id)) {
+          await embeddingStore.deleteEntityEmbeddings(report.id);
+        }
+        continue;
+      }
+      for (final candidateId in cleanupCandidateIds) {
+        if (candidateId != report.id && removedReportIds.add(candidateId)) {
+          await embeddingStore.deleteEntityEmbeddings(candidateId);
         }
       }
       return;

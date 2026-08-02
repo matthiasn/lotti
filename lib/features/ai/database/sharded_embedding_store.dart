@@ -65,6 +65,11 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   /// Open shards keyed by shard key (typically categoryId).
   final Map<String, _Shard> _shards = {};
 
+  /// Shards currently being opened, keyed identically to [_shards].
+  /// Concurrent writers join the same future so ObjectBox is never opened
+  /// twice for one directory.
+  final Map<String, Future<_Shard>> _openingShards = {};
+
   /// entityId → shardKey for fast lookup.
   final Map<String, String> _primaryIndex = {};
 
@@ -73,6 +78,10 @@ class ShardedEmbeddingStore implements EmbeddingStore {
 
   /// entityId → taskId for efficient reverse-index cleanup.
   final Map<String, String> _entityTaskIndex = {};
+
+  @override
+  Set<String> getEntityIdsForTask(String taskId) =>
+      Set<String>.unmodifiable(_reverseTaskIndex[taskId] ?? const {});
 
   /// Opens a [ShardedEmbeddingStore] and rebuilds in-memory indexes.
   static Future<ShardedEmbeddingStore> open({
@@ -323,6 +332,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
       shard.store.close();
     }
     _shards.clear();
+    _openingShards.clear();
     _primaryIndex.clear();
     _reverseTaskIndex.clear();
     _entityTaskIndex.clear();
@@ -337,9 +347,11 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     final existing = _shards[shardKey];
     if (existing != null) return existing;
 
-    final dir = p.join(_basePath, shardKey);
-    await Directory(dir).create(recursive: true);
-    return _openShardFromDirectory(shardKey, dir);
+    return _openShardSingleFlight(shardKey, () async {
+      final dir = p.join(_basePath, shardKey);
+      await Directory(dir).create(recursive: true);
+      return _openShardFromDirectory(shardKey, dir);
+    });
   }
 
   /// Opens an existing shard directory (read path). Returns null if the
@@ -348,10 +360,34 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     final existing = _shards[shardKey];
     if (existing != null) return existing;
 
+    final opening = _openingShards[shardKey];
+    if (opening != null) return opening;
+
     final dir = p.join(_basePath, shardKey);
     if (!Directory(dir).existsSync()) return null;
 
-    return _openShardFromDirectory(shardKey, dir);
+    return _openShardSingleFlight(
+      shardKey,
+      () => _openShardFromDirectory(shardKey, dir),
+    );
+  }
+
+  /// Opens [shardKey] once and lets concurrent readers or writers join it.
+  Future<_Shard> _openShardSingleFlight(
+    String shardKey,
+    Future<_Shard> Function() open,
+  ) {
+    final inFlight = _openingShards[shardKey];
+    if (inFlight != null) return inFlight;
+
+    late final Future<_Shard> tracked;
+    tracked = open().whenComplete(() {
+      if (identical(_openingShards[shardKey], tracked)) {
+        _openingShards.remove(shardKey);
+      }
+    });
+    _openingShards[shardKey] = tracked;
+    return tracked;
   }
 
   /// Opens a shard from a directory path, registers it in [_shards].

@@ -3858,6 +3858,7 @@ not describe task configuration or tool activity as progress.
                   as AgentReportHeadEntity;
           final mockEmbeddingStore = MockEmbeddingStore();
           final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+          final persistedReports = <AgentReportEntity>[];
           final workflowWithEmbeddings = TaskAgentWorkflow(
             agentRepository: mockAgentRepository,
             conversationRepository: mockConversationRepository,
@@ -3879,6 +3880,21 @@ not describe task configuration or tool activity as progress.
           when(
             () => mockAgentRepository.getReportHead(agentId, 'current'),
           ).thenAnswer((_) async => existingHead);
+          when(
+            () => mockAgentRepository.getLatestReport(
+              agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer(
+            (_) async =>
+                persistedReports.isEmpty ? null : persistedReports.last,
+          );
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            call,
+          ) async {
+            final entity = call.positionalArguments.first;
+            if (entity is AgentReportEntity) persistedReports.add(entity);
+          });
           when(
             () => mockAiConfigRepository.resolveOllamaBaseUrl(),
           ).thenAnswer((_) async => 'http://localhost:11434');
@@ -4094,6 +4110,7 @@ not describe task configuration or tool activity as progress.
           final mockEmbeddingStore = MockEmbeddingStore();
           final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
           final mockDomainLogger = MockDomainLogger();
+          final persistedReports = <AgentReportEntity>[];
           final retryScheduled = [Completer<void>(), Completer<void>()];
           final releaseRetry = [Completer<void>(), Completer<void>()];
           final retryDelays = <Duration>[];
@@ -4124,6 +4141,21 @@ not describe task configuration or tool activity as progress.
           when(
             () => mockAgentRepository.getReportHead(agentId, 'current'),
           ).thenAnswer((_) async => null);
+          when(
+            () => mockAgentRepository.getLatestReport(
+              agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer(
+            (_) async =>
+                persistedReports.isEmpty ? null : persistedReports.last,
+          );
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            call,
+          ) async {
+            final entity = call.positionalArguments.first;
+            if (entity is AgentReportEntity) persistedReports.add(entity);
+          });
           when(
             () => mockAiConfigRepository.resolveOllamaBaseUrl(),
           ).thenAnswer((_) async => 'http://localhost:11434');
@@ -4276,6 +4308,377 @@ not describe task configuration or tool activity as progress.
       );
 
       test(
+        'removes a report superseded while its store write is in flight',
+        () async {
+          const baseUrl = 'http://localhost:11434';
+          const embeddedPredecessorId = 'embedded-predecessor';
+          final mockEmbeddingStore = MockEmbeddingStore();
+          final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+          final persistedReports = <AgentReportEntity>[];
+          final storedReportIds = <String>[];
+          final deletedReportIds = <String>[];
+          final firstStoreStarted = Completer<void>();
+          final releaseFirstStore = Completer<void>();
+          var reportCallCount = 0;
+          mockConversationRepository.maxDelegateCalls = 2;
+          final workflowWithEmbeddings = TaskAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            domainLogger: DomainLogger(loggingService: LoggingService())
+              ..enabledDomains.add(LogDomain.agentWorkflow),
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepository,
+          );
+
+          when(
+            () => mockAgentRepository.getReportHead(
+              agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer((_) async {
+            final previousReportId = persistedReports.length == 1
+                ? embeddedPredecessorId
+                : persistedReports[persistedReports.length - 2].id;
+            return AgentDomainEntity.agentReportHead(
+                  id: 'current-report-head',
+                  agentId: agentId,
+                  scope: AgentReportScopes.current,
+                  reportId: previousReportId,
+                  updatedAt: testDate,
+                  vectorClock: null,
+                )
+                as AgentReportHeadEntity;
+          });
+          when(
+            () => mockAgentRepository.getLatestReport(
+              agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer(
+            (_) async =>
+                persistedReports.isEmpty ? null : persistedReports.last,
+          );
+          when(
+            () => mockAiConfigRepository.resolveOllamaBaseUrl(),
+          ).thenAnswer((_) async => baseUrl);
+          when(
+            () => mockJournalDb.getAllLabelDefinitions(),
+          ).thenAnswer((_) async => []);
+          when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer(
+            (_) async => TestTaskFactory.create(
+              id: taskId,
+              title: 'Serialize report embedding writes',
+              categoryId: 'cat-001',
+            ),
+          );
+          when(
+            () => mockEmbeddingRepository.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+            ),
+          ).thenAnswer((_) async => Float32List(kEmbeddingDimensions));
+          when(
+            () => mockEmbeddingStore.replaceEntityEmbeddings(
+              entityId: any(named: 'entityId'),
+              entityType: any(named: 'entityType'),
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: any(named: 'categoryId'),
+              taskId: any(named: 'taskId'),
+              subtype: any(named: 'subtype'),
+            ),
+          ).thenAnswer((invocation) async {
+            final reportId = invocation.namedArguments[#entityId] as String;
+            storedReportIds.add(reportId);
+            if (reportId == persistedReports.first.id) {
+              firstStoreStarted.complete();
+              await releaseFirstStore.future;
+            }
+          });
+          when(
+            () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+          ).thenAnswer((invocation) {
+            deletedReportIds.add(
+              invocation.positionalArguments.single as String,
+            );
+          });
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            call,
+          ) async {
+            final entity = call.positionalArguments.first;
+            if (entity is AgentReportEntity) persistedReports.add(entity);
+          });
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  reportCallCount++;
+                  final ordinal = reportCallCount == 1 ? 'First' : 'Second';
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      ChatCompletionMessageToolCall(
+                        id: 'rpt-call-$reportCallCount',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'update_report',
+                          arguments: jsonEncode({
+                            'content':
+                                '# $ordinal report\nThis $ordinal report has '
+                                'enough content for embedding generation.',
+                            'oneLiner': '$ordinal report persisted',
+                            'tldr': '$ordinal report persisted for testing.',
+                          }),
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+          when(() => mockConversationManager.messages).thenReturn([]);
+
+          final firstResult = await workflowWithEmbeddings.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: '$runKey-first',
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+          expect(firstResult.success, isTrue);
+          await firstStoreStarted.future;
+
+          final secondResult = await workflowWithEmbeddings.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: '$runKey-second',
+            triggerTokens: {'entity-b'},
+            threadId: threadId,
+          );
+          expect(secondResult.success, isTrue, reason: secondResult.error);
+          await pumpEventQueue();
+          expect(persistedReports, hasLength(2));
+          expect(deletedReportIds, [embeddedPredecessorId]);
+
+          releaseFirstStore.complete();
+          await pumpEventQueue();
+
+          expect(storedReportIds, [
+            persistedReports.first.id,
+            persistedReports.last.id,
+          ]);
+          expect(deletedReportIds, [
+            embeddedPredecessorId,
+            persistedReports.first.id,
+          ]);
+        },
+      );
+
+      test(
+        'abandons a deferred report when the durable head advances',
+        () async {
+          const embeddedPredecessorId = 'embedded-predecessor';
+          final mockEmbeddingStore = MockEmbeddingStore();
+          final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+          final persistedReports = <AgentReportEntity>[];
+          final storedReportIds = <String>[];
+          final deletedReportIds = <String>[];
+          final retryScheduled = Completer<void>();
+          final releaseRetry = Completer<void>();
+          AgentReportEntity? durableHeadOverride;
+          var embeddingCallCount = 0;
+          final workflowWithEmbeddings = TaskAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            domainLogger: DomainLogger(loggingService: LoggingService())
+              ..enabledDomains.add(LogDomain.agentWorkflow),
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepository,
+            reportEmbeddingDelay: (_) {
+              retryScheduled.complete();
+              return releaseRetry.future;
+            },
+          );
+
+          when(
+            () => mockAgentRepository.getReportHead(
+              agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer(
+            (_) async =>
+                AgentDomainEntity.agentReportHead(
+                      id: 'current-report-head',
+                      agentId: agentId,
+                      scope: AgentReportScopes.current,
+                      reportId: embeddedPredecessorId,
+                      updatedAt: testDate,
+                      vectorClock: null,
+                    )
+                    as AgentReportHeadEntity,
+          );
+          when(
+            () => mockAgentRepository.getLatestReport(
+              agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer(
+            (_) async =>
+                durableHeadOverride ??
+                (persistedReports.isEmpty ? null : persistedReports.last),
+          );
+          when(
+            () => mockAiConfigRepository.resolveOllamaBaseUrl(),
+          ).thenAnswer((_) async => 'http://localhost:11434');
+          when(
+            () => mockJournalDb.getAllLabelDefinitions(),
+          ).thenAnswer((_) async => []);
+          when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer(
+            (_) async => TestTaskFactory.create(
+              id: taskId,
+              title: 'Reject stale deferred reports',
+              categoryId: 'cat-001',
+            ),
+          );
+          when(
+            () => mockEmbeddingRepository.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+            ),
+          ).thenAnswer((_) async {
+            embeddingCallCount++;
+            if (embeddingCallCount == 1) {
+              throw OllamaEmbeddingUnavailableException(
+                'Ollama transport retries exhausted',
+                retryAt: clock.now(),
+              );
+            }
+            return Float32List(kEmbeddingDimensions);
+          });
+          when(
+            () => mockEmbeddingStore.replaceEntityEmbeddings(
+              entityId: any(named: 'entityId'),
+              entityType: any(named: 'entityType'),
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: any(named: 'categoryId'),
+              taskId: any(named: 'taskId'),
+              subtype: any(named: 'subtype'),
+            ),
+          ).thenAnswer((invocation) {
+            storedReportIds.add(
+              invocation.namedArguments[#entityId] as String,
+            );
+          });
+          when(
+            () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+          ).thenAnswer((invocation) {
+            deletedReportIds.add(
+              invocation.positionalArguments.single as String,
+            );
+          });
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            call,
+          ) async {
+            final entity = call.positionalArguments.first;
+            if (entity is AgentReportEntity) persistedReports.add(entity);
+          });
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      const ChatCompletionMessageToolCall(
+                        id: 'rpt-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'update_report',
+                          arguments:
+                              r'{"content":"# Deferred report\nThis report has enough content for embedding generation.","oneLiner":"Deferred report","tldr":"Deferred report for testing."}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+          when(() => mockConversationManager.messages).thenReturn([]);
+
+          final result = await workflowWithEmbeddings.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+          expect(result.success, isTrue);
+          await retryScheduled.future;
+          expect(embeddingCallCount, 1);
+          expect(persistedReports, hasLength(1));
+
+          durableHeadOverride =
+              AgentDomainEntity.agentReport(
+                    id: 'synced-successor',
+                    agentId: agentId,
+                    scope: AgentReportScopes.current,
+                    createdAt: testDate.add(const Duration(minutes: 1)),
+                    vectorClock: null,
+                    content: 'A synced successor report.',
+                  )
+                  as AgentReportEntity;
+          releaseRetry.complete();
+          await pumpEventQueue();
+
+          expect(embeddingCallCount, 1);
+          expect(storedReportIds, isEmpty);
+          expect(deletedReportIds, isEmpty);
+        },
+      );
+
+      test(
         'keeps the newer report and supersedes the last embedded predecessor '
         'when URL resolutions finish out of order',
         () async {
@@ -4336,6 +4739,15 @@ not describe task configuration or tool activity as progress.
                 )
                 as AgentReportHeadEntity;
           });
+          when(
+            () => mockAgentRepository.getLatestReport(
+              agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer(
+            (_) async =>
+                persistedReports.isEmpty ? null : persistedReports.last,
+          );
           when(
             () => mockAiConfigRepository.resolveOllamaBaseUrl(),
           ).thenAnswer((_) {

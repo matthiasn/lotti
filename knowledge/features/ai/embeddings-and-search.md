@@ -71,7 +71,10 @@ flowchart LR
 - Tasks can be embedded with **label-enriched** text, not just raw title and
   body.
 - Agent reports are stored with `taskId` metadata, so a search hit can resolve
-  back to the owning task.
+  back to the owning task. The sharded store maintains a reverse task index for
+  report-ID cleanup and coalesces concurrent opens of the same category shard,
+  so startup recovery and notification writes cannot open one ObjectBox
+  directory twice.
 - The production `OllamaEmbeddingRepository` is shared. The first request for
   an unobserved base URL exclusively reserves the initial availability probe;
   concurrent callers join that probe instead of starting their own retry loops.
@@ -99,30 +102,30 @@ flowchart LR
   still fast-fails before network I/O. Manual backfill loops stop when the
   initial transport budget is exhausted or a known cooldown suppresses the
   call, instead of emitting one stack trace per remaining item.
-- `EmbeddingService` also scans durable current task-agent report heads at
-  startup. Content hashes keep unchanged reports cheap. Once the current report
-  is confirmed searchable, every older current-scope report embedding for that
-  agent is removed. Recovery revalidates the durable head immediately before
-  and after vector storage. If the head advances during the store swap, recovery
-  removes only the stale vector it just wrote, then follows and reconciles the
-  successor until the head is stable. Historical cleanup is restricted to
-  reports created before that still-current head, so a concurrently published
-  successor cannot be deleted and its older searchable predecessor cannot be
-  stranded. An availability failure leaves this reconciliation pending on the
-  service's shared retry timer, so exiting during an in-memory workflow retry
-  cannot permanently strand the latest report or its searchable predecessor.
+- `EmbeddingService` scans durable current task-agent report heads at startup
+  and re-runs reconciliation when sync emits an agent change. Content hashes
+  keep unchanged reports cheap. Recovery revalidates the durable head before
+  and after vector storage, then reads cleanup candidates from the embedding
+  store's reverse task index and revalidates the head again. It never loads the
+  agent's historical report bodies or treats wall-clock timestamps as ordering
+  authority. If the head advances during any of those awaits, recovery removes
+  only a stale vector it just wrote, follows the successor until the head is
+  stable, and then deletes every indexed non-head report ID. An availability
+  failure leaves reconciliation pending on the shared retry timer, while a
+  later journal or agent notification rechecks disabled/provider gates without
+  requiring an app restart.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
   maps it to the active locale; the suppression count and retry timestamp stay
   in diagnostic logs. A failed optional embedding never rolls back the
   already-persisted agent report or deletes its previous embedding. Availability
   failures defer the latest report per task until `retryAt`; a newer report
-  synchronously supersedes the queued one, and freshness is checked again after
-  asynchronous URL/task resolution and immediately before vector storage. Work
-  overtaken during generation is finalized as superseded without recreating a
-  stale report vector or deleting the newer report's predecessor. Coalesced
-  reports carry forward the last predecessor that was actually searchable; a
-  deferred intermediate report is never mistaken for the vector that the final
-  report must supersede.
+  synchronously supersedes the queued one. The workflow checks both its local
+  claim and the durable report head after asynchronous URL/task resolution,
+  immediately before vector storage, and after the atomic store replacement. A
+  report superseded during the write has only its newly written vector removed;
+  it never deletes the searchable predecessor. Coalesced reports carry forward
+  the last predecessor that was actually searchable, and a deferred retry whose
+  head advanced through sync is abandoned before provider or storage work.
 
 ```mermaid
 stateDiagram-v2

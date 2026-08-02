@@ -800,6 +800,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             reportId: embed.reportId,
             reportContent: embed.reportContent,
             taskId: embed.taskId,
+            agentId: agentId,
             previousReportId: embed.previousReportId,
           ),
         );

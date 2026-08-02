@@ -57,6 +57,12 @@ abstract class EmbeddingStore {
     String newCategoryId,
   );
 
+  /// Returns the entity IDs whose stored embeddings are linked to [taskId].
+  ///
+  /// This is a derived-index lookup: callers can clean stale report vectors
+  /// without loading every historical report body from the agent database.
+  FutureOr<Set<String>> getEntityIdsForTask(String taskId);
+
   /// Whether any embedding chunk exists for [entityId].
   FutureOr<bool> hasEmbedding(String entityId);
 

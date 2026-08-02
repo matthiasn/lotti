@@ -522,6 +522,22 @@ void main() {
       });
     });
 
+    group('getEntityIdsForTask', () {
+      test('returns only unique entity IDs linked to the task', () {
+        when(mockOps.queryAllEntityMetadata).thenReturn([
+          const EntityMetadataRow(entityId: 'report-1', taskId: 'task-1'),
+          const EntityMetadataRow(entityId: 'report-1', taskId: 'task-1'),
+          const EntityMetadataRow(entityId: 'report-2', taskId: 'task-1'),
+          const EntityMetadataRow(entityId: 'report-3', taskId: 'task-2'),
+        ]);
+
+        expect(
+          store.getEntityIdsForTask('task-1'),
+          {'report-1', 'report-2'},
+        );
+      });
+    });
+
     group('getContentHash uses embedding key format', () {
       test('looks up entityId:0 for the content hash', () {
         when(
