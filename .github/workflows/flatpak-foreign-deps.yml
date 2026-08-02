@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - ".fvmrc"
       - ".github/workflows/flatpak-foreign-deps.yml"
       - "flatpak/**"
       - "pubspec.lock"
@@ -23,6 +24,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      # Ahead of the Flutter toolchain setup: a drifted pin is a two-second
+      # answer, and there is no reason to install an SDK to find it out.
+      - name: Validate Flutter pin guard
+        run: python3 -m unittest check_flutter_pin_test
+        working-directory: flatpak
+      - name: Check Flathub manifest Flutter tag matches .fvmrc
+        run: python3 flatpak/check_flutter_pin.py
       - name: Cache Pub Packages
         uses: actions/cache@v4
         with:

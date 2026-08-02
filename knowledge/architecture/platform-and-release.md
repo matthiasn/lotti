@@ -58,19 +58,27 @@ written down. Most consumers follow it automatically; one does not:
 | GitHub Actions lanes | Yes — `kuhnroyal/flutter-fvm-config-action` reads it |
 | Codemagic Windows release | Yes — `environment.flutter: fvm` reads it |
 | [`.vscode/settings.json`](../../.vscode/settings.json) | Yes — points at the `.fvm/flutter_sdk` symlink, which `fvm use` repoints |
-| [`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`](../../flatpak/com.matthiasn.lotti.flatpak-flutter.yml) | **No — hand-edit the Flutter `tag:`** |
+| [`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`](../../flatpak/com.matthiasn.lotti.flatpak-flutter.yml) | **No — hand-edit the Flutter `tag:`**, but CI fails if you forget |
 
 So a Flutter bump is `.fvmrc` **plus** the Flatpak manifest's Flutter `tag:`.
-Both currently read 3.44.8. Drift there is easy to miss because a stale tag
-still resolves as long as it clears the `>=3.44.0` constraint floor — the
-manifest sat at 3.44.0 through several pin bumps before anyone noticed, meaning
-Flathub users ran an engine nobody else was building against.
+Both currently read 3.44.8.
 
-A stale pin does not announce itself. It surfaces one layer down, as
-`pub get` failing version solving — "the current Dart SDK version is X, because
-lotti requires SDK version >=3.12.0 <4.0.0, version solving failed" — which
-reads like a dependency problem rather than a toolchain one. The Windows lane
-sat broken this way across a dozen consecutive release tags.
+The manifest keeps a literal tag on purpose. Flathub builds from the committed
+file and reviewers read it, so deriving the tag at build time would make the
+committed pin stale and *invisible* rather than stale and wrong.
+[`flatpak/check_flutter_pin.py`](../../flatpak/check_flutter_pin.py) closes the
+gap instead: `flatpak-foreign-deps.yml` runs it on every push, and on any PR
+touching `.fvmrc` or `flatpak/`.
+
+The guard exists because drift here is silent by construction. A stale tag
+still resolves as long as it clears the `>=3.44.0` constraint floor, so the
+manifest sat at 3.44.0 through several pin bumps before anyone noticed, meaning
+Flathub users ran an engine nobody else was building against. When it does
+break, it surfaces one layer down as `pub get` failing version solving — "the
+current Dart SDK version is X, because lotti requires SDK version >=3.12.0
+<4.0.0, version solving failed" — which reads like a dependency problem rather
+than a toolchain one. The Windows lane sat broken this way across a dozen
+consecutive release tags.
 
 # Continuous integration
 
