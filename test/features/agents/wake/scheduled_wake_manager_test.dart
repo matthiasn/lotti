@@ -858,10 +858,12 @@ void main() {
               ..elapse(const Duration(minutes: 10))
               ..flushMicrotasks();
 
-            // The in-flight pass writes its claim; nothing after it should.
-            // Otherwise a disposed manager keeps re-claiming on a timer stop()
-            // never saw, racing a restarted one for the same digest.
-            verify(() => syncService.upsertEntity(any())).called(1);
+            // Not one claim written, not merely no wake fired: the pass
+            // re-checks its generation before touching each record, so a
+            // manager stopped mid-flight claims nothing at all. A disposed
+            // manager that kept claiming would race its replacement for the
+            // same digest, on a timer the stop never saw.
+            verifyNever(() => syncService.upsertEntity(any()));
             expectNoWake();
           });
         });
@@ -2076,6 +2078,49 @@ void main() {
             expect(calls, 1);
 
             manager.stop();
+          });
+        });
+      });
+
+      test('a stop during the pre-check abandons the pass', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            // Created inside the zone: a Completer from the root zone
+            // resolves outside it, and `flushMicrotasks` would never run the
+            // continuation — the pass would stall before the due query and the
+            // test would pass without proving anything.
+            final gate = Completer<void>();
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [
+                makeTestState(scheduledWakeAt: DateTime(2024, 3, 15, 9)),
+              ],
+            );
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () => gate.future,
+            )..start();
+            async.flushMicrotasks();
+
+            // The stop lands while the repair is still awaiting.
+            manager.stop();
+            gate.complete();
+            async.flushMicrotasks();
+
+            // A disposed pass that carried on would enqueue against the
+            // manager that replaced it.
+            verifyNever(() => repository.getDueScheduledAgentStates(any()));
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+              ),
+            );
           });
         });
       });

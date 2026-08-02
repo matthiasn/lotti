@@ -150,16 +150,24 @@ class ScheduledWakeManager {
           await _runPreCheck(before);
         }
       }
+      // A `stop()` that landed while the pre-check was awaiting ends this
+      // pass here. Its replacement manager owns the schedule now, and a
+      // disposed pass that kept going would enqueue against it.
+      if (generation != _generation) return;
       // Read after the pre-check: it can await sync writes, and a `now`
       // captured before them would age across the pass it is meant to time.
       final now = clock.now();
       final dueStates = await _repository.getDueScheduledAgentStates(now);
+      if (generation != _generation) return;
 
       var enqueued = 0;
       var fastForwarded = 0;
       var skippedArchived = 0;
 
       for (final state in dueStates) {
+        // Re-checked per item: each iteration awaits the identity lookup and
+        // its own writes, so a `stop()` can land mid-loop.
+        if (generation != _generation) return;
         try {
           // Defense-in-depth (ADR 0022): the due query filters on
           // `scheduledWakeAt` only — not lifecycle — so an archived or missing
@@ -239,6 +247,9 @@ class ScheduledWakeManager {
     final dueRecords = await _repository.getDueScheduledWakeRecords(now);
     var enqueued = 0;
     for (final record in dueRecords) {
+      // As in the due-states loop: a `stop()` can land while this loop awaits
+      // the identity lookup, the host lookup or the claim write.
+      if (generation != _generation) return enqueued;
       try {
         // Same guard as the due-*states* loop above, and for the same reason:
         // `getDueScheduledWakeRecords` filters on the deadline, not lifecycle.
