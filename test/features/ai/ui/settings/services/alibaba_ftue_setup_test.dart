@@ -15,39 +15,14 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   group('AlibabaFtueResult', () {
-    test(
-      'totalModels should return sum of modelsCreated and modelsVerified',
-      () {
-        const result = AlibabaFtueResult(
-          modelsCreated: 3,
-          modelsVerified: 2,
-          categoryCreated: true,
-        );
-
-        expect(result.totalModels, equals(5));
-      },
-    );
-
-    test('should handle zero values correctly', () {
-      const result = AlibabaFtueResult(
-        modelsCreated: 0,
-        modelsVerified: 0,
-        categoryCreated: false,
-      );
-
-      expect(result.totalModels, equals(0));
-    });
-
-    test('should include optional categoryReused and categoryName', () {
+    test('should include optional categoryName', () {
       const result = AlibabaFtueResult(
         modelsCreated: 5,
         modelsVerified: 0,
         categoryCreated: false,
-        categoryReused: true,
         categoryName: 'Test Category Alibaba',
       );
 
-      expect(result.categoryReused, isTrue);
       expect(result.categoryName, equals('Test Category Alibaba'));
     });
 
@@ -308,7 +283,6 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.categoryCreated, isFalse);
-      expect(result!.categoryReused, isTrue);
       expect(result!.categoryName, equals(ftueAlibabaCategoryName));
 
       verifyNever(() => mockCategoryRepository.updateCategory(any()));

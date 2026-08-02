@@ -473,25 +473,6 @@ class UnifiedAiModal {
     return null;
   }
 
-  /// Resolves the linked task for an entity.
-  ///
-  /// Priority:
-  /// 1. If the entity itself is a Task, return it directly.
-  /// 2. If [preferredTaskId] is provided (from the caller's context), look it
-  ///    up and return it if it's a Task.
-  /// 3. Fallback: search outgoing links (entity → task) then incoming links
-  ///    (task → entity) via the link graph.
-  @visibleForTesting
-  static Future<Task?> resolveLinkedTask({
-    required JournalEntity journalEntity,
-    required JournalRepository journalRepo,
-    String? preferredTaskId,
-  }) => _resolveLinkedTask(
-    journalEntity: journalEntity,
-    preferredTaskId: preferredTaskId,
-    journalRepo: journalRepo,
-  );
-
   static Future<Task?> _resolveLinkedTask({
     required JournalEntity journalEntity,
     required JournalRepository journalRepo,
@@ -502,9 +483,7 @@ class UnifiedAiModal {
 
     // If the caller already knows the target task, prefer it.
     if (preferredTaskId != null) {
-      final preferred = await journalRepo.getJournalEntityById(
-        preferredTaskId,
-      );
+      final preferred = await journalRepo.getJournalEntityById(preferredTaskId);
       if (preferred is Task) return preferred;
     }
 

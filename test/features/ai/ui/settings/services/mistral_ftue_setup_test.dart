@@ -14,39 +14,14 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   group('MistralFtueResult', () {
-    test(
-      'totalModels should return sum of modelsCreated and modelsVerified',
-      () {
-        const result = MistralFtueResult(
-          modelsCreated: 2,
-          modelsVerified: 1,
-          categoryCreated: true,
-        );
-
-        expect(result.totalModels, equals(3));
-      },
-    );
-
-    test('should handle zero values correctly', () {
-      const result = MistralFtueResult(
-        modelsCreated: 0,
-        modelsVerified: 0,
-        categoryCreated: false,
-      );
-
-      expect(result.totalModels, equals(0));
-    });
-
-    test('should include optional categoryReused and categoryName', () {
+    test('should include optional categoryName', () {
       const result = MistralFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
         categoryCreated: false,
-        categoryReused: true,
         categoryName: 'Test Category Mistral',
       );
 
-      expect(result.categoryReused, isTrue);
       expect(result.categoryName, equals('Test Category Mistral'));
     });
 
@@ -295,7 +270,6 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.categoryCreated, isFalse);
-      expect(result!.categoryReused, isTrue);
       expect(result!.categoryName, equals('Test Category Mistral Enabled'));
 
       verifyNever(() => mockCategoryRepository.updateCategory(any()));

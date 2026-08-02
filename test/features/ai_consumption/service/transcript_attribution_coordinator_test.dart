@@ -81,11 +81,15 @@ void main() {
     () async {
       final running = runningSession();
 
-      final prepared = await coordinator.complete(
+      await coordinator.recordInteraction(
         session: running,
         audioEntryId: 'audio-1',
         transcript: 'hello world',
         usage: const {'total_tokens': 12},
+      );
+      final prepared = await coordinator.prepareOutput(
+        session: running,
+        audioEntryId: 'audio-1',
       );
 
       expect(prepared.transcriptId, 'transcript-1');
@@ -113,12 +117,13 @@ void main() {
     },
   );
 
-  test('complete marks realtime fallback interactions as partial', () async {
-    await coordinator.complete(
+  test('records realtime fallback interactions as partial', () async {
+    await coordinator.recordInteraction(
       session: runningSession(),
       audioEntryId: 'audio-1',
       transcript: 'verified fallback',
-      usedTranscriptFallback: true,
+      interactionStatus: AiInteractionStatus.partial,
+      errorCode: 'realtime_completion_fallback',
     );
 
     final event =

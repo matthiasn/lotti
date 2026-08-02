@@ -19,17 +19,14 @@ void main() {
       const result = OllamaFtueResult(categoryCreated: true);
       expect(result.modelsCreated, equals(0));
       expect(result.modelsVerified, equals(0));
-      expect(result.totalModels, equals(0));
     });
 
     test('carries category metadata and errors through', () {
       const result = OllamaFtueResult(
         categoryCreated: false,
-        categoryReused: true,
         categoryName: ftueOllamaCategoryName,
         errors: ['could not reach localhost:11434'],
       );
-      expect(result.categoryReused, isTrue);
       expect(result.categoryName, equals(ftueOllamaCategoryName));
       expect(result.errors, isNotEmpty);
     });
@@ -146,9 +143,7 @@ void main() {
     testWidgets('reuses an existing Ollama category instead of recreating it', (
       tester,
     ) async {
-      when(
-        () => mockCategoryRepository.getAllCategories(),
-      ).thenAnswer(
+      when(() => mockCategoryRepository.getAllCategories()).thenAnswer(
         (_) async => [
           CategoryDefinition(
             id: 'cat-ollama',
@@ -181,7 +176,6 @@ void main() {
       await tester.pump();
 
       expect(result!.categoryCreated, isFalse);
-      expect(result!.categoryReused, isTrue);
       verifyNever(
         () => mockCategoryRepository.createCategory(
           name: any(named: 'name'),

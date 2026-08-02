@@ -15,34 +15,14 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   group('AnthropicFtueResult', () {
-    test('totalModels sums modelsCreated and modelsVerified', () {
-      const result = AnthropicFtueResult(
-        modelsCreated: 1,
-        modelsVerified: 1,
-        categoryCreated: true,
-      );
-      expect(result.totalModels, equals(2));
-    });
-
-    test('zero values yield zero totalModels', () {
-      const result = AnthropicFtueResult(
-        modelsCreated: 0,
-        modelsVerified: 0,
-        categoryCreated: false,
-      );
-      expect(result.totalModels, equals(0));
-    });
-
-    test('optional categoryReused / categoryName / errors carry through', () {
+    test('optional categoryName / errors carry through', () {
       const result = AnthropicFtueResult(
         modelsCreated: 0,
         modelsVerified: 2,
         categoryCreated: false,
-        categoryReused: true,
         categoryName: 'Test Category Anthropic Enabled',
         errors: ['boom'],
       );
-      expect(result.categoryReused, isTrue);
       expect(result.categoryName, equals('Test Category Anthropic Enabled'));
       expect(result.errors, equals(['boom']));
     });
@@ -174,9 +154,7 @@ void main() {
         when(
           () => mockRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => existingModels);
-        when(
-          () => mockCategoryRepository.getAllCategories(),
-        ).thenAnswer(
+        when(() => mockCategoryRepository.getAllCategories()).thenAnswer(
           (_) async => [
             CategoryDefinition(
               id: 'cat-anthropic',
@@ -211,7 +189,6 @@ void main() {
         expect(result!.modelsCreated, equals(0));
         expect(result!.modelsVerified, equals(2));
         expect(result!.categoryCreated, isFalse);
-        expect(result!.categoryReused, isTrue);
         verifyNever(() => mockRepository.saveConfig(any()));
         verifyNever(
           () => mockCategoryRepository.createCategory(

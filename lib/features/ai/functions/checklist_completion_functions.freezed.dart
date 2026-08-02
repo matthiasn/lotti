@@ -11,7 +11,6 @@ part of 'checklist_completion_functions.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-
 /// @nodoc
 mixin _$ChecklistCompletionSuggestion {
 
@@ -22,8 +21,6 @@ mixin _$ChecklistCompletionSuggestion {
 @pragma('vm:prefer-inline')
 $ChecklistCompletionSuggestionCopyWith<ChecklistCompletionSuggestion> get copyWith => _$ChecklistCompletionSuggestionCopyWithImpl<ChecklistCompletionSuggestion>(this as ChecklistCompletionSuggestion, _$identity);
 
-  /// Serializes this ChecklistCompletionSuggestion to a JSON map.
-  Map<String, dynamic> toJson();
 
 
 @override
@@ -31,7 +28,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is ChecklistCompletionSuggestion&&(identical(other.checklistItemId, checklistItemId) || other.checklistItemId == checklistItemId)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.confidence, confidence) || other.confidence == confidence));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,checklistItemId,reason,confidence);
 
@@ -208,11 +205,11 @@ return $default(_that.checklistItemId,_that.reason,_that.confidence);case _:
 }
 
 /// @nodoc
-@JsonSerializable()
+
 
 class _ChecklistCompletionSuggestion implements ChecklistCompletionSuggestion {
   const _ChecklistCompletionSuggestion({required this.checklistItemId, required this.reason, @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low) required this.confidence});
-  factory _ChecklistCompletionSuggestion.fromJson(Map<String, dynamic> json) => _$ChecklistCompletionSuggestionFromJson(json);
+
 
 @override final  String checklistItemId;
 @override final  String reason;
@@ -224,17 +221,14 @@ class _ChecklistCompletionSuggestion implements ChecklistCompletionSuggestion {
 @pragma('vm:prefer-inline')
 _$ChecklistCompletionSuggestionCopyWith<_ChecklistCompletionSuggestion> get copyWith => __$ChecklistCompletionSuggestionCopyWithImpl<_ChecklistCompletionSuggestion>(this, _$identity);
 
-@override
-Map<String, dynamic> toJson() {
-  return _$ChecklistCompletionSuggestionToJson(this, );
-}
+
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChecklistCompletionSuggestion&&(identical(other.checklistItemId, checklistItemId) || other.checklistItemId == checklistItemId)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.confidence, confidence) || other.confidence == confidence));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,checklistItemId,reason,confidence);
 

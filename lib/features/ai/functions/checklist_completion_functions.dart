@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'checklist_completion_functions.freezed.dart';
-part 'checklist_completion_functions.g.dart';
 
 /// Function definition for suggesting checklist item completion
 class ChecklistCompletionFunctions {
@@ -22,9 +21,6 @@ abstract class ChecklistCompletionSuggestion
     @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low)
     required ChecklistCompletionConfidence confidence,
   }) = _ChecklistCompletionSuggestion;
-
-  factory ChecklistCompletionSuggestion.fromJson(Map<String, dynamic> json) =>
-      _$ChecklistCompletionSuggestionFromJson(json);
 }
 
 enum ChecklistCompletionConfidence {

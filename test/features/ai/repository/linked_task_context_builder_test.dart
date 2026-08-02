@@ -31,11 +31,7 @@ Task _task({
     ),
     data: TaskData(
       title: title,
-      status: TaskStatus.open(
-        id: 'status-$id',
-        createdAt: base,
-        utcOffset: 0,
-      ),
+      status: TaskStatus.open(id: 'status-$id', createdAt: base, utcOffset: 0),
       statusHistory: const [],
       dateFrom: base,
       dateTo: base,
@@ -100,10 +96,10 @@ void main() {
         () => db.getBulkLinkedEntities({'task-a', 'task-b'}),
       ).thenAnswer((_) async => linked);
       when(
-        () => resolver.resolveMany(
-          {'task-a', 'task-b'},
-          linkedEntitiesByTaskId: linked,
-        ),
+        () => resolver.resolveMany({
+          'task-a',
+          'task-b',
+        }, linkedEntitiesByTaskId: linked),
       ).thenAnswer((_) async => {'task-a': 'Summary for A'});
       when(() => cache.getLabelById('label-1')).thenReturn(
         LabelDefinition(
@@ -198,21 +194,6 @@ void main() {
       final spent = await calculateTimeSpentWithRepo('task-a', repo);
 
       expect(spent, const Duration(minutes: 20));
-    });
-  });
-
-  group('compareRelatedProjectTasks', () {
-    test('orders by updatedAt desc, then dateFrom, createdAt, and id', () {
-      final older = _task(id: 'a', updatedAt: DateTime(2026, 2));
-      final newer = _task(id: 'b', updatedAt: DateTime(2026, 2, 5));
-      expect(compareRelatedProjectTasks(older, newer), greaterThan(0));
-      expect(compareRelatedProjectTasks(newer, older), lessThan(0));
-
-      // Full tie falls back to id descending for stability.
-      final t1 = _task(id: 'x');
-      final t2 = _task(id: 'y');
-      expect(compareRelatedProjectTasks(t1, t2), greaterThan(0));
-      expect(compareRelatedProjectTasks(t1, t1), 0);
     });
   });
 }

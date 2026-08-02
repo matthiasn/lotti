@@ -59,7 +59,6 @@ sealed class AiFtueResult {
     required this.modelsCreated,
     required this.modelsVerified,
     required this.categoryCreated,
-    this.categoryReused = false,
     this.categoryName,
     this.errors = const [],
   });
@@ -67,11 +66,8 @@ sealed class AiFtueResult {
   final int modelsCreated;
   final int modelsVerified;
   final bool categoryCreated;
-  final bool categoryReused;
   final String? categoryName;
   final List<String> errors;
-
-  int get totalModels => modelsCreated + modelsVerified;
 }
 
 /// Internal model-creation tally used by every per-provider setup helper.

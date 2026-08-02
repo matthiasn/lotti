@@ -16,39 +16,14 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   group('GeminiFtueResult', () {
-    test(
-      'totalModels should return sum of modelsCreated and modelsVerified',
-      () {
-        const result = GeminiFtueResult(
-          modelsCreated: 2,
-          modelsVerified: 1,
-          categoryCreated: true,
-        );
-
-        expect(result.totalModels, equals(3));
-      },
-    );
-
-    test('should handle zero values correctly', () {
-      const result = GeminiFtueResult(
-        modelsCreated: 0,
-        modelsVerified: 0,
-        categoryCreated: false,
-      );
-
-      expect(result.totalModels, equals(0));
-    });
-
-    test('should include optional categoryReused and categoryName', () {
+    test('should include optional categoryName', () {
       const result = GeminiFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
         categoryCreated: false,
-        categoryReused: true,
         categoryName: 'Test Category',
       );
 
-      expect(result.categoryReused, isTrue);
       expect(result.categoryName, equals('Test Category'));
     });
 
@@ -95,151 +70,145 @@ void main() {
       ).thenAnswer((_) async => [geminiProvider]);
     });
 
-    testWidgets(
-      'creates the sample category bound to the seeded Gemini Flash '
-      'profile AND the Laura task agent template — both bindings are '
-      'what make new tasks in the category route to AI handlers and '
-      'auto-spawn an agent without any extra setup',
-      (tester) async {
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => <AiConfig>[]);
-        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-        when(
-          () => mockCategoryRepository.getAllCategories(),
-        ).thenAnswer((_) async => <CategoryDefinition>[]);
-        when(
-          () => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-            defaultProfileId: any(named: 'defaultProfileId'),
-            defaultTemplateId: any(named: 'defaultTemplateId'),
-          ),
-        ).thenAnswer(
-          (_) async => CategoryDefinition(
-            id: 'test-category-id',
-            name: ftueGeminiCategoryName,
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            private: false,
-            active: true,
-          ),
-        );
+    testWidgets('creates the sample category bound to the seeded Gemini Flash '
+        'profile AND the Laura task agent template — both bindings are '
+        'what make new tasks in the category route to AI handlers and '
+        'auto-spawn an agent without any extra setup', (tester) async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'test-category-id',
+          name: ftueGeminiCategoryName,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
 
-        await tester.pumpWidget(
-          buildFtueHarness(
-            repository: mockRepository,
-            categoryRepository: mockCategoryRepository,
-            onPressed: (context, ref) async {
-              return setupService.performGeminiFtueSetup(
-                context: context,
-                ref: ref,
-                provider: geminiProvider,
-              );
-            },
-          ),
-        );
+      await tester.pumpWidget(
+        buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
+          onPressed: (context, ref) async {
+            return setupService.performGeminiFtueSetup(
+              context: context,
+              ref: ref,
+              provider: geminiProvider,
+            );
+          },
+        ),
+      );
 
-        await tester.tap(find.text('Test'));
-        await tester.pump();
+      await tester.tap(find.text('Test'));
+      await tester.pump();
 
-        verify(
-          () => mockCategoryRepository.createCategory(
-            name: ftueGeminiCategoryName,
-            color: ftueGeminiCategoryColor,
-            defaultProfileId: profileGeminiFlashId,
-            defaultTemplateId: lauraTemplateId,
-          ),
-        ).called(1);
-      },
-    );
+      verify(
+        () => mockCategoryRepository.createCategory(
+          name: ftueGeminiCategoryName,
+          color: ftueGeminiCategoryColor,
+          defaultProfileId: profileGeminiFlashId,
+          defaultTemplateId: lauraTemplateId,
+        ),
+      ).called(1);
+    });
 
-    testWidgets(
-      'verifies globally existing Gemini providerModelIds instead of '
-      'seeding duplicate rows under a second provider',
-      (tester) async {
-        final existingModels = [
-          AiTestDataFactory.createTestModel(
-            id: 'other-gemini-flash',
-            name: 'Gemini Flash',
-            providerModelId: ftueFlashModelId,
-            inferenceProviderId: 'other-gemini-provider',
-          ),
-          AiTestDataFactory.createTestModel(
-            id: 'other-gemini-pro',
-            name: 'Gemini Pro',
-            providerModelId: ftueProModelId,
-            inferenceProviderId: 'other-gemini-provider',
-          ),
-          AiTestDataFactory.createTestModel(
-            id: 'other-gemini-image',
-            name: 'Gemini Image',
-            providerModelId: ftueImageModelId,
-            inferenceProviderId: 'other-gemini-provider',
-          ),
-        ];
-        final otherGeminiProvider = AiTestDataFactory.createTestProvider(
-          id: 'other-gemini-provider',
-          name: 'Other Gemini',
-          type: InferenceProviderType.gemini,
-          apiKey: 'other-gemini-key',
-          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-        );
+    testWidgets('verifies globally existing Gemini providerModelIds instead of '
+        'seeding duplicate rows under a second provider', (tester) async {
+      final existingModels = [
+        AiTestDataFactory.createTestModel(
+          id: 'other-gemini-flash',
+          name: 'Gemini Flash',
+          providerModelId: ftueFlashModelId,
+          inferenceProviderId: 'other-gemini-provider',
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'other-gemini-pro',
+          name: 'Gemini Pro',
+          providerModelId: ftueProModelId,
+          inferenceProviderId: 'other-gemini-provider',
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'other-gemini-image',
+          name: 'Gemini Image',
+          providerModelId: ftueImageModelId,
+          inferenceProviderId: 'other-gemini-provider',
+        ),
+      ];
+      final otherGeminiProvider = AiTestDataFactory.createTestProvider(
+        id: 'other-gemini-provider',
+        name: 'Other Gemini',
+        type: InferenceProviderType.gemini,
+        apiKey: 'other-gemini-key',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      );
 
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => existingModels);
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
-        ).thenAnswer((_) async => [geminiProvider, otherGeminiProvider]);
-        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-        when(
-          () => mockCategoryRepository.getAllCategories(),
-        ).thenAnswer((_) async => <CategoryDefinition>[]);
-        when(
-          () => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-            defaultProfileId: any(named: 'defaultProfileId'),
-            defaultTemplateId: any(named: 'defaultTemplateId'),
-          ),
-        ).thenAnswer(
-          (_) async => CategoryDefinition(
-            id: 'test-category-id',
-            name: ftueGeminiCategoryName,
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            private: false,
-            active: true,
-          ),
-        );
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => existingModels);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [geminiProvider, otherGeminiProvider]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'test-category-id',
+          name: ftueGeminiCategoryName,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
 
-        GeminiFtueResult? result;
-        await tester.pumpWidget(
-          buildFtueHarness(
-            repository: mockRepository,
-            categoryRepository: mockCategoryRepository,
-            onPressed: (context, ref) async {
-              return result = await setupService.performGeminiFtueSetup(
-                context: context,
-                ref: ref,
-                provider: geminiProvider,
-              );
-            },
-          ),
-        );
+      GeminiFtueResult? result;
+      await tester.pumpWidget(
+        buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
+          onPressed: (context, ref) async {
+            return result = await setupService.performGeminiFtueSetup(
+              context: context,
+              ref: ref,
+              provider: geminiProvider,
+            );
+          },
+        ),
+      );
 
-        await tester.tap(find.text('Test'));
-        await tester.pump();
+      await tester.tap(find.text('Test'));
+      await tester.pump();
 
-        expect(result, isNotNull);
-        expect(result!.modelsCreated, equals(0));
-        expect(result!.modelsVerified, equals(3));
-        verifyNever(() => mockRepository.saveConfig(any()));
-      },
-    );
+      expect(result, isNotNull);
+      expect(result!.modelsCreated, equals(0));
+      expect(result!.modelsVerified, equals(3));
+      verifyNever(() => mockRepository.saveConfig(any()));
+    });
 
     testWidgets(
       'creates fresh Gemini rows when matching providerModelIds only point at '

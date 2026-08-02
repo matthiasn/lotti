@@ -487,70 +487,62 @@ void main() {
               )
               as ProjectEntry;
 
-      test(
-        'returns project metadata plus compact report summary '
-        '(oneLiner/tldr, not full body)',
-        () async {
-          final report =
-              AgentDomainEntity.agentReport(
-                    id: 'project-report-1',
-                    agentId: 'project-agent-1',
-                    scope: 'current',
-                    createdAt: projectDate,
-                    vectorClock: null,
-                    oneLiner: 'Improving wake-cycle context quality.',
-                    tldr: 'Project is focused on wake-cycle context quality.',
-                    content:
-                        '## Project Report\nFull project context goes here.',
-                  )
-                  as AgentReportEntity;
-          when(
-            () => mockProjectRepository.getProjectForTask(taskId),
-          ).thenAnswer((_) async => project);
-          when(
-            () => mockAgentRepository.getLatestProjectReportForProjectId(
-              'project-123',
-            ),
-          ).thenAnswer((_) async => report);
+      test('returns project metadata plus compact report summary '
+          '(oneLiner/tldr, not full body)', () async {
+        final report =
+            AgentDomainEntity.agentReport(
+                  id: 'project-report-1',
+                  agentId: 'project-agent-1',
+                  scope: 'current',
+                  createdAt: projectDate,
+                  vectorClock: null,
+                  oneLiner: 'Improving wake-cycle context quality.',
+                  tldr: 'Project is focused on wake-cycle context quality.',
+                  content: '## Project Report\nFull project context goes here.',
+                )
+                as AgentReportEntity;
+        when(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).thenAnswer((_) async => project);
+        when(
+          () => mockAgentRepository.getLatestProjectReportForProjectId(
+            'project-123',
+          ),
+        ).thenAnswer((_) async => report);
 
-          final result = await repository.buildProjectContextJsonForTask(
-            taskId,
-          );
-          final decoded = jsonDecode(result) as Map<String, dynamic>;
+        final result = await repository.buildProjectContextJsonForTask(taskId);
+        final decoded = jsonDecode(result) as Map<String, dynamic>;
 
-          expect(decoded['project'], isA<Map<String, dynamic>>());
-          expect(
-            decoded['project'],
-            containsPair('title', 'Agentic Architecture'),
-          );
-          expect(decoded['project'], containsPair('status', 'ACTIVE'));
-          expect(decoded['project'], containsPair('categoryId', 'cat-123'));
+        expect(decoded['project'], isA<Map<String, dynamic>>());
+        expect(
+          decoded['project'],
+          containsPair('title', 'Agentic Architecture'),
+        );
+        expect(decoded['project'], containsPair('status', 'ACTIVE'));
+        expect(decoded['project'], containsPair('categoryId', 'cat-123'));
 
-          final reportJson =
-              decoded['latestProjectAgentReport'] as Map<String, dynamic>;
-          expect(
-            reportJson,
-            containsPair('oneLiner', 'Improving wake-cycle context quality.'),
-          );
-          expect(
-            reportJson,
-            containsPair(
-              'tldr',
-              'Project is focused on wake-cycle context quality.',
-            ),
-          );
-          // Full body is intentionally omitted to keep wake prefill small.
-          expect(reportJson.containsKey('content'), isFalse);
-        },
-      );
+        final reportJson =
+            decoded['latestProjectAgentReport'] as Map<String, dynamic>;
+        expect(
+          reportJson,
+          containsPair('oneLiner', 'Improving wake-cycle context quality.'),
+        );
+        expect(
+          reportJson,
+          containsPair(
+            'tldr',
+            'Project is focused on wake-cycle context quality.',
+          ),
+        );
+        // Full body is intentionally omitted to keep wake prefill small.
+        expect(reportJson.containsKey('content'), isFalse);
+      });
 
       test('returns empty object when task has no parent project', () async {
         final result = await repository.buildProjectContextJsonForTask(taskId);
 
         expect(result, '{}');
-        verify(
-          () => mockProjectRepository.getProjectForTask(taskId),
-        ).called(1);
+        verify(() => mockProjectRepository.getProjectForTask(taskId)).called(1);
         verifyNever(
           () => mockAgentRepository.getLatestProjectReportForProjectId(any()),
         );
@@ -597,656 +589,6 @@ void main() {
         );
 
         expect(result, '{}');
-      });
-    });
-
-    group('buildRelatedProjectTasksJson', () {
-      final projectDate = DateTime(2024, 3, 15, 10, 30);
-      final project =
-          JournalEntity.project(
-                meta: Metadata(
-                  id: 'project-123',
-                  createdAt: projectDate,
-                  updatedAt: projectDate,
-                  dateFrom: projectDate,
-                  dateTo: projectDate,
-                ),
-                data: ProjectData(
-                  title: 'Agentic Architecture',
-                  status: ProjectStatus.active(
-                    id: 'project-status-1',
-                    createdAt: projectDate,
-                    utcOffset: 60,
-                  ),
-                  dateFrom: projectDate,
-                  dateTo: projectDate,
-                ),
-              )
-              as ProjectEntry;
-
-      Task makeTask({
-        required String id,
-        required String title,
-        required DateTime updatedAt,
-      }) {
-        return JournalEntity.task(
-              meta: Metadata(
-                id: id,
-                createdAt: projectDate,
-                updatedAt: updatedAt,
-                dateFrom: projectDate,
-                dateTo: projectDate,
-              ),
-              data: TaskData(
-                title: title,
-                status: TaskStatus.inProgress(
-                  id: 'status-$id',
-                  createdAt: updatedAt,
-                  utcOffset: 0,
-                ),
-                statusHistory: const [],
-                dateFrom: projectDate,
-                dateTo: projectDate,
-              ),
-            )
-            as Task;
-      }
-
-      test(
-        'returns bounded sibling rows with stored tldrs and derived time spent',
-        () async {
-          final currentTask = makeTask(
-            id: taskId,
-            title: 'Current Task',
-            updatedAt: DateTime(2024, 3, 16, 8),
-          );
-          final siblingOlder = makeTask(
-            id: 'task-older',
-            title: 'Older Sibling',
-            updatedAt: DateTime(2024, 3, 16, 9),
-          );
-          final siblingNewer = makeTask(
-            id: 'task-newer',
-            title: 'Newer Sibling',
-            updatedAt: DateTime(2024, 3, 16, 10),
-          );
-          final siblingWithoutTldr = makeTask(
-            id: 'task-no-tldr',
-            title: 'No TLDR',
-            updatedAt: DateTime(2024, 3, 16, 11),
-          );
-
-          when(
-            () => mockProjectRepository.getProjectForTask(taskId),
-          ).thenAnswer((_) async => project);
-          when(
-            () => mockProjectRepository.getTasksForProject('project-123'),
-          ).thenAnswer(
-            (_) async => [
-              currentTask,
-              siblingOlder,
-              siblingNewer,
-              siblingWithoutTldr,
-            ],
-          );
-          when(
-            () => mockDb.getBulkLinkedEntities(any()),
-          ).thenAnswer(
-            (_) async => <String, List<JournalEntity>>{
-              'task-older': [
-                JournalEntity.journalEntry(
-                  meta: Metadata(
-                    id: 'entry-older',
-                    createdAt: projectDate,
-                    updatedAt: projectDate,
-                    dateFrom: projectDate,
-                    dateTo: projectDate.add(const Duration(minutes: 15)),
-                  ),
-                  entryText: const EntryText(plainText: 'Older work'),
-                ),
-              ],
-              'task-newer': [
-                JournalEntity.journalEntry(
-                  meta: Metadata(
-                    id: 'entry-newer',
-                    createdAt: projectDate,
-                    updatedAt: projectDate,
-                    dateFrom: projectDate,
-                    dateTo: projectDate.add(const Duration(minutes: 30)),
-                  ),
-                  entryText: const EntryText(plainText: 'Newer work'),
-                ),
-              ],
-            },
-          );
-          when(
-            () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
-          ).thenAnswer(
-            (_) async => <String, AgentReportEntity>{
-              'task-older':
-                  AgentDomainEntity.agentReport(
-                        id: 'report-older',
-                        agentId: 'agent-older',
-                        scope: 'current',
-                        createdAt: projectDate,
-                        vectorClock: null,
-                        tldr: 'Older sibling TLDR',
-                        content: 'Older sibling report',
-                      )
-                      as AgentReportEntity,
-              'task-newer':
-                  AgentDomainEntity.agentReport(
-                        id: 'report-newer',
-                        agentId: 'agent-newer',
-                        scope: 'current',
-                        createdAt: projectDate,
-                        vectorClock: null,
-                        tldr: 'Newer sibling TLDR',
-                        content: 'Newer sibling report',
-                      )
-                      as AgentReportEntity,
-              'task-no-tldr':
-                  AgentDomainEntity.agentReport(
-                        id: 'report-no-tldr',
-                        agentId: 'agent-no-tldr',
-                        scope: 'current',
-                        createdAt: projectDate,
-                        vectorClock: null,
-                        content: 'Missing TLDR should be omitted',
-                      )
-                      as AgentReportEntity,
-            },
-          );
-
-          final result = await repository.buildRelatedProjectTasksJson(
-            taskId: taskId,
-            limit: 2,
-          );
-          final decoded = jsonDecode(result) as Map<String, dynamic>;
-          final tasks = decoded['tasks'] as List<dynamic>;
-
-          expect(decoded['projectId'], 'project-123');
-          expect(tasks, hasLength(2));
-          expect(tasks[0], containsPair('id', 'task-newer'));
-          expect(tasks[0], containsPair('timeSpent', '00:30'));
-          expect(tasks[0], containsPair('tldr', 'Newer sibling TLDR'));
-          expect(tasks[1], containsPair('id', 'task-older'));
-          expect(tasks[1], containsPair('timeSpent', '00:15'));
-          expect(
-            tasks.where((row) => (row as Map<String, dynamic>)['id'] == taskId),
-            isEmpty,
-          );
-        },
-      );
-
-      test('returns empty object when no sibling has a stored tldr', () async {
-        when(
-          () => mockProjectRepository.getProjectForTask(taskId),
-        ).thenAnswer((_) async => project);
-        when(
-          () => mockProjectRepository.getTasksForProject('project-123'),
-        ).thenAnswer(
-          (_) async => [
-            makeTask(
-              id: taskId,
-              title: 'Current Task',
-              updatedAt: DateTime(2024, 3, 16, 8),
-            ),
-            makeTask(
-              id: 'task-sibling',
-              title: 'Sibling',
-              updatedAt: DateTime(2024, 3, 16, 9),
-            ),
-          ],
-        );
-        when(
-          () => mockDb.getBulkLinkedEntities(any()),
-        ).thenAnswer((_) async => <String, List<JournalEntity>>{});
-        when(
-          () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
-        ).thenAnswer(
-          (_) async => <String, AgentReportEntity>{
-            'task-sibling':
-                AgentDomainEntity.agentReport(
-                      id: 'report-sibling',
-                      agentId: 'agent-sibling',
-                      scope: 'current',
-                      createdAt: projectDate,
-                      vectorClock: null,
-                      content: 'No tldr field',
-                    )
-                    as AgentReportEntity,
-          },
-        );
-
-        final result = await repository.buildRelatedProjectTasksJson(
-          taskId: taskId,
-        );
-
-        expect(result, '{}');
-      });
-
-      test('returns empty object when sibling-task lookup throws', () async {
-        when(
-          () => mockProjectRepository.getProjectForTask(taskId),
-        ).thenThrow(Exception('boom'));
-
-        final result = await repository.buildRelatedProjectTasksJson(
-          taskId: taskId,
-        );
-
-        expect(result, '{}');
-      });
-
-      test('orders siblings by dateFrom when updatedAt ties', () async {
-        Task makeTask({
-          required String id,
-          required String title,
-          required DateTime updatedAt,
-          required DateTime dateFrom,
-        }) {
-          return JournalEntity.task(
-                meta: Metadata(
-                  id: id,
-                  createdAt: DateTime(2024, 3, 15, 8),
-                  updatedAt: updatedAt,
-                  dateFrom: dateFrom,
-                  dateTo: dateFrom,
-                ),
-                data: TaskData(
-                  title: title,
-                  status: TaskStatus.open(
-                    id: 'status-$id',
-                    createdAt: updatedAt,
-                    utcOffset: 0,
-                  ),
-                  statusHistory: const [],
-                  dateFrom: dateFrom,
-                  dateTo: dateFrom,
-                ),
-              )
-              as Task;
-        }
-
-        final project =
-            JournalEntity.project(
-                  meta: Metadata(
-                    id: 'project-123',
-                    createdAt: DateTime(2024, 3, 15),
-                    updatedAt: DateTime(2024, 3, 15),
-                    dateFrom: DateTime(2024, 3, 15),
-                    dateTo: DateTime(2024, 3, 15),
-                  ),
-                  data: ProjectData(
-                    title: 'Project',
-                    status: ProjectStatus.active(
-                      id: 'project-status',
-                      createdAt: DateTime(2024, 3, 15),
-                      utcOffset: 60,
-                    ),
-                    dateFrom: DateTime(2024, 3, 15),
-                    dateTo: DateTime(2024, 3, 15),
-                  ),
-                )
-                as ProjectEntry;
-
-        when(
-          () => mockProjectRepository.getProjectForTask(taskId),
-        ).thenAnswer((_) async => project);
-        when(
-          () => mockProjectRepository.getTasksForProject('project-123'),
-        ).thenAnswer(
-          (_) async => [
-            makeTask(
-              id: taskId,
-              title: 'Current',
-              updatedAt: DateTime(2024, 3, 16, 9),
-              dateFrom: DateTime(2024, 3, 16, 9),
-            ),
-            makeTask(
-              id: 'task-late-date',
-              title: 'Late Date',
-              updatedAt: DateTime(2024, 3, 16, 12),
-              dateFrom: DateTime(2024, 3, 16, 12),
-            ),
-            makeTask(
-              id: 'task-early-date',
-              title: 'Early Date',
-              updatedAt: DateTime(2024, 3, 16, 12),
-              dateFrom: DateTime(2024, 3, 16, 10),
-            ),
-          ],
-        );
-        when(
-          () => mockDb.getBulkLinkedEntities(any()),
-        ).thenAnswer((_) async => <String, List<JournalEntity>>{});
-        when(
-          () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
-        ).thenAnswer(
-          (_) async => <String, AgentReportEntity>{
-            'task-late-date':
-                AgentDomainEntity.agentReport(
-                      id: 'report-late-date',
-                      agentId: 'agent-late-date',
-                      scope: 'current',
-                      createdAt: DateTime(2024, 3, 16, 12),
-                      vectorClock: null,
-                      tldr: 'Late Date TLDR',
-                      content: 'Late Date report',
-                    )
-                    as AgentReportEntity,
-            'task-early-date':
-                AgentDomainEntity.agentReport(
-                      id: 'report-early-date',
-                      agentId: 'agent-early-date',
-                      scope: 'current',
-                      createdAt: DateTime(2024, 3, 16, 12),
-                      vectorClock: null,
-                      tldr: 'Early Date TLDR',
-                      content: 'Early Date report',
-                    )
-                    as AgentReportEntity,
-          },
-        );
-
-        final result = await repository.buildRelatedProjectTasksJson(
-          taskId: taskId,
-        );
-        final tasks =
-            (jsonDecode(result) as Map<String, dynamic>)['tasks'] as List;
-
-        expect((tasks[0] as Map<String, dynamic>)['id'], 'task-late-date');
-        expect((tasks[1] as Map<String, dynamic>)['id'], 'task-early-date');
-      });
-
-      test(
-        'orders siblings by createdAt then id when updatedAt/dateFrom tie',
-        () async {
-          Task makeTask({
-            required String id,
-            required String title,
-            required DateTime createdAt,
-          }) {
-            final sharedUpdatedAt = DateTime(2024, 3, 16, 12);
-            final sharedDateFrom = DateTime(2024, 3, 16, 10);
-            return JournalEntity.task(
-                  meta: Metadata(
-                    id: id,
-                    createdAt: createdAt,
-                    updatedAt: sharedUpdatedAt,
-                    dateFrom: sharedDateFrom,
-                    dateTo: sharedDateFrom,
-                  ),
-                  data: TaskData(
-                    title: title,
-                    status: TaskStatus.open(
-                      id: 'status-$id',
-                      createdAt: sharedUpdatedAt,
-                      utcOffset: 0,
-                    ),
-                    statusHistory: const [],
-                    dateFrom: sharedDateFrom,
-                    dateTo: sharedDateFrom,
-                  ),
-                )
-                as Task;
-          }
-
-          final project =
-              JournalEntity.project(
-                    meta: Metadata(
-                      id: 'project-123',
-                      createdAt: DateTime(2024, 3, 15),
-                      updatedAt: DateTime(2024, 3, 15),
-                      dateFrom: DateTime(2024, 3, 15),
-                      dateTo: DateTime(2024, 3, 15),
-                    ),
-                    data: ProjectData(
-                      title: 'Project',
-                      status: ProjectStatus.active(
-                        id: 'project-status',
-                        createdAt: DateTime(2024, 3, 15),
-                        utcOffset: 60,
-                      ),
-                      dateFrom: DateTime(2024, 3, 15),
-                      dateTo: DateTime(2024, 3, 15),
-                    ),
-                  )
-                  as ProjectEntry;
-
-          when(
-            () => mockProjectRepository.getProjectForTask(taskId),
-          ).thenAnswer((_) async => project);
-          when(
-            () => mockProjectRepository.getTasksForProject('project-123'),
-          ).thenAnswer(
-            (_) async => [
-              makeTask(
-                id: taskId,
-                title: 'Current',
-                createdAt: DateTime(2024, 3, 15, 8),
-              ),
-              makeTask(
-                id: 'task-new-created',
-                title: 'New Created',
-                createdAt: DateTime(2024, 3, 15, 11),
-              ),
-              makeTask(
-                id: 'task-old-created',
-                title: 'Old Created',
-                createdAt: DateTime(2024, 3, 15, 9),
-              ),
-              makeTask(
-                id: 'task-id-b',
-                title: 'ID B',
-                createdAt: DateTime(2024, 3, 15, 7),
-              ),
-              makeTask(
-                id: 'task-id-a',
-                title: 'ID A',
-                createdAt: DateTime(2024, 3, 15, 7),
-              ),
-            ],
-          );
-          when(
-            () => mockDb.getBulkLinkedEntities(any()),
-          ).thenAnswer((_) async => <String, List<JournalEntity>>{});
-          when(
-            () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
-          ).thenAnswer(
-            (_) async => <String, AgentReportEntity>{
-              for (final id in [
-                'task-new-created',
-                'task-old-created',
-                'task-id-b',
-                'task-id-a',
-              ])
-                id:
-                    AgentDomainEntity.agentReport(
-                          id: 'report-$id',
-                          agentId: 'agent-$id',
-                          scope: 'current',
-                          createdAt: DateTime(2024, 3, 16, 12),
-                          vectorClock: null,
-                          tldr: '$id TLDR',
-                          content: '$id report',
-                        )
-                        as AgentReportEntity,
-            },
-          );
-
-          final result = await repository.buildRelatedProjectTasksJson(
-            taskId: taskId,
-          );
-          final tasks =
-              (jsonDecode(result) as Map<String, dynamic>)['tasks'] as List;
-          final ids = tasks
-              .map((task) => (task as Map<String, dynamic>)['id'] as String)
-              .toList();
-
-          expect(
-            ids,
-            containsAllInOrder([
-              'task-new-created',
-              'task-old-created',
-              'task-id-b',
-              'task-id-a',
-            ]),
-          );
-        },
-      );
-    });
-
-    group('buildRelatedTaskDetailsJson', () {
-      final projectDate = DateTime(2024, 3, 15, 10, 30);
-      final sharedProject =
-          JournalEntity.project(
-                meta: Metadata(
-                  id: 'project-123',
-                  createdAt: projectDate,
-                  updatedAt: projectDate,
-                  dateFrom: projectDate,
-                  dateTo: projectDate,
-                ),
-                data: ProjectData(
-                  title: 'Agentic Architecture',
-                  status: ProjectStatus.active(
-                    id: 'project-status-1',
-                    createdAt: projectDate,
-                    utcOffset: 60,
-                  ),
-                  dateFrom: projectDate,
-                  dateTo: projectDate,
-                ),
-              )
-              as ProjectEntry;
-      final otherProject =
-          JournalEntity.project(
-                meta: Metadata(
-                  id: 'project-999',
-                  createdAt: projectDate,
-                  updatedAt: projectDate,
-                  dateFrom: projectDate,
-                  dateTo: projectDate,
-                ),
-                data: ProjectData(
-                  title: 'Other Project',
-                  status: ProjectStatus.active(
-                    id: 'project-status-2',
-                    createdAt: projectDate,
-                    utcOffset: 60,
-                  ),
-                  dateFrom: projectDate,
-                  dateTo: projectDate,
-                ),
-              )
-              as ProjectEntry;
-
-      test(
-        'returns task payload, latest report, and project context',
-        () async {
-          final siblingTask =
-              JournalEntity.task(
-                    meta: Metadata(
-                      id: 'task-sibling',
-                      createdAt: projectDate,
-                      updatedAt: projectDate,
-                      dateFrom: projectDate,
-                      dateTo: projectDate,
-                    ),
-                    data: TaskData(
-                      title: 'Sibling Task',
-                      status: TaskStatus.open(
-                        id: 'status-sibling',
-                        createdAt: projectDate,
-                        utcOffset: 0,
-                      ),
-                      statusHistory: const [],
-                      dateFrom: projectDate,
-                      dateTo: projectDate,
-                    ),
-                  )
-                  as Task;
-
-          when(
-            () => mockProjectRepository.getProjectForTask(taskId),
-          ).thenAnswer((_) async => sharedProject);
-          when(
-            () => mockProjectRepository.getProjectForTask('task-sibling'),
-          ).thenAnswer((_) async => sharedProject);
-          when(
-            () => mockDb.journalEntityById('task-sibling'),
-          ).thenAnswer((_) async => siblingTask);
-          when(
-            () => mockDb.getLinkedEntities('task-sibling'),
-          ).thenAnswer((_) async => <JournalEntity>[]);
-          when(
-            () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
-          ).thenAnswer(
-            (_) async => <String, AgentReportEntity>{
-              'task-sibling':
-                  AgentDomainEntity.agentReport(
-                        id: 'report-sibling',
-                        agentId: 'agent-sibling',
-                        scope: 'current',
-                        createdAt: projectDate,
-                        vectorClock: null,
-                        tldr: 'Sibling TLDR',
-                        content: '## Sibling Report\nFull details.',
-                      )
-                      as AgentReportEntity,
-            },
-          );
-
-          final result = await repository.buildRelatedTaskDetailsJson(
-            currentTaskId: taskId,
-            requestedTaskId: 'task-sibling',
-          );
-          final decoded = jsonDecode(result!) as Map<String, dynamic>;
-
-          expect(decoded['task'], containsPair('title', 'Sibling Task'));
-          expect(
-            decoded['latestTaskAgentReport'],
-            containsPair('tldr', 'Sibling TLDR'),
-          );
-          expect(
-            decoded['latestTaskAgentReport'],
-            containsPair('content', '## Sibling Report\nFull details.'),
-          );
-          expect(
-            decoded['projectContext'],
-            containsPair('projectTitle', 'Agentic Architecture'),
-          );
-        },
-      );
-
-      test('returns null when requested task is outside the project', () async {
-        when(
-          () => mockProjectRepository.getProjectForTask(taskId),
-        ).thenAnswer((_) async => sharedProject);
-        when(
-          () => mockProjectRepository.getProjectForTask('task-sibling'),
-        ).thenAnswer((_) async => otherProject);
-
-        final result = await repository.buildRelatedTaskDetailsJson(
-          currentTaskId: taskId,
-          requestedTaskId: 'task-sibling',
-        );
-
-        expect(result, isNull);
-      });
-
-      test('returns null when related-task resolution throws', () async {
-        when(
-          () => mockProjectRepository.getProjectForTask(taskId),
-        ).thenThrow(Exception('boom'));
-
-        final result = await repository.buildRelatedTaskDetailsJson(
-          currentTaskId: taskId,
-          requestedTaskId: 'task-sibling',
-        );
-
-        expect(result, isNull);
       });
     });
 
@@ -1750,10 +1092,8 @@ void main() {
 
           expect(result, isTrue);
           verify(
-            () => mockPersistenceLogic.createLink(
-              fromId: 'from-1',
-              toId: 'to-1',
-            ),
+            () =>
+                mockPersistenceLogic.createLink(fromId: 'from-1', toId: 'to-1'),
           ).called(1);
         },
       );
@@ -2205,162 +1545,150 @@ void main() {
         expect(jsonData['logEntries'][0]['loggedDuration'], equals('00:30'));
       });
 
-      test(
-        'nests every image AI analysis (summary + OCR) with model, date and '
-        'text so the agent can extract dates from image content',
-        () async {
-          final task = JournalEntity.task(
-            meta: Metadata(
-              id: taskId,
-              dateFrom: creationDate,
-              dateTo: creationDate,
+      test('nests every image AI analysis (summary + OCR) with model, date and '
+          'text so the agent can extract dates from image content', () async {
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: 'Augenarzt Kontrolltermin',
+            status: TaskStatus.open(
+              id: 'status-1',
               createdAt: creationDate,
-              updatedAt: creationDate,
+              utcOffset: 0,
             ),
-            data: TaskData(
-              title: 'Augenarzt Kontrolltermin',
-              status: TaskStatus.open(
-                id: 'status-1',
-                createdAt: creationDate,
-                utcOffset: 0,
-              ),
-              statusHistory: [],
-              dateFrom: creationDate,
-              dateTo: creationDate,
-            ),
-          );
-          final image = TestImageFactory.create(
-            id: 'img-1',
-            dateFrom: DateTime(2026, 7, 23, 17, 5),
-          );
-          final textEntry = JournalEntity.journalEntry(
-            meta: Metadata(
-              id: 'text-1',
-              dateFrom: creationDate,
-              dateTo: creationDate,
+            statusHistory: [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+          ),
+        );
+        final image = TestImageFactory.create(
+          id: 'img-1',
+          dateFrom: DateTime(2026, 7, 23, 17, 5),
+        );
+        final textEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'text-1',
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          entryText: const EntryText(plainText: 'a note'),
+        );
+        final summary = TestAiResponseFactory.create(
+          id: 'resp-summary',
+          model: 'mistral-small-4-119b-instruct',
+          response: 'Termin am 05.10.2026 um 14:30 beim Augenzentrum.',
+          dateFrom: DateTime(2026, 7, 23, 17, 9),
+        );
+        final ocr = TestAiResponseFactory.create(
+          id: 'resp-ocr',
+          model: 'mistral-ocr-latest',
+          response: 'Datum: 05.10.26 Uhrzeit: 14:30',
+          dateFrom: DateTime(2026, 7, 23, 17, 10),
+        );
+        final deleted = TestAiResponseFactory.create(
+          id: 'resp-deleted',
+          deletedAt: DateTime(2026, 7, 24),
+        );
+
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [image, textEntry]);
+        when(() => mockDb.getBulkLinkedEntities({'img-1'})).thenAnswer(
+          (_) async => {
+            'img-1': [ocr, summary, deleted],
+          },
+        );
+
+        final result = await repository.buildTaskDetailsJson(id: taskId);
+        final jsonData = jsonDecode(result!) as Map<String, dynamic>;
+
+        final logEntries = jsonData['logEntries'] as List<dynamic>;
+        expect(logEntries, hasLength(2));
+
+        final imageEntry =
+            logEntries.firstWhere((dynamic e) => e['entryType'] == 'image')
+                as Map<String, dynamic>;
+        final aiResponses = imageEntry['aiResponses'] as List<dynamic>;
+        // Both analyses nested, chronological, deleted one dropped.
+        expect(aiResponses, hasLength(2));
+        expect(aiResponses[0]['model'], 'mistral-small-4-119b-instruct');
+        expect(
+          aiResponses[0]['generatedAt'],
+          DateTime(2026, 7, 23, 17, 9).toIso8601String(),
+        );
+        expect(
+          aiResponses[0]['text'],
+          'Termin am 05.10.2026 um 14:30 beim Augenzentrum.',
+        );
+        expect(aiResponses[1]['model'], 'mistral-ocr-latest');
+        expect(aiResponses[1]['text'], 'Datum: 05.10.26 Uhrzeit: 14:30');
+
+        // The date evidence the agent needs for title/due-date extraction
+        // is present verbatim in the rendered task context.
+        expect(result, contains('05.10.2026'));
+        expect(result, contains('14:30'));
+
+        // Non-image entries don't carry the key at all (kept out of the
+        // JSON entirely, not rendered as null).
+        final textLogEntry =
+            logEntries.firstWhere((dynamic e) => e['entryType'] == 'text')
+                as Map<String, dynamic>;
+        expect(textLogEntry.containsKey('aiResponses'), isFalse);
+      });
+
+      test('omits aiResponses for an image without analyses', () async {
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: 'Task',
+            status: TaskStatus.open(
+              id: 'status-1',
               createdAt: creationDate,
-              updatedAt: creationDate,
+              utcOffset: 0,
             ),
-            entryText: const EntryText(plainText: 'a note'),
-          );
-          final summary = TestAiResponseFactory.create(
-            id: 'resp-summary',
-            model: 'mistral-small-4-119b-instruct',
-            response: 'Termin am 05.10.2026 um 14:30 beim Augenzentrum.',
-            dateFrom: DateTime(2026, 7, 23, 17, 9),
-          );
-          final ocr = TestAiResponseFactory.create(
-            id: 'resp-ocr',
-            model: 'mistral-ocr-latest',
-            response: 'Datum: 05.10.26 Uhrzeit: 14:30',
-            dateFrom: DateTime(2026, 7, 23, 17, 10),
-          );
-          final deleted = TestAiResponseFactory.create(
-            id: 'resp-deleted',
-            deletedAt: DateTime(2026, 7, 24),
-          );
+            statusHistory: [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+          ),
+        );
+        final image = TestImageFactory.create(id: 'img-1');
 
-          when(
-            () => mockDb.journalEntityById(taskId),
-          ).thenAnswer((_) async => task);
-          when(
-            () => mockDb.getLinkedEntities(taskId),
-          ).thenAnswer((_) async => [image, textEntry]);
-          when(
-            () => mockDb.getBulkLinkedEntities({'img-1'}),
-          ).thenAnswer(
-            (_) async => {
-              'img-1': [ocr, summary, deleted],
-            },
-          );
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [image]);
+        when(
+          () => mockDb.getBulkLinkedEntities({'img-1'}),
+        ).thenAnswer((_) async => {'img-1': <JournalEntity>[]});
 
-          final result = await repository.buildTaskDetailsJson(id: taskId);
-          final jsonData = jsonDecode(result!) as Map<String, dynamic>;
+        final result = await repository.buildTaskDetailsJson(id: taskId);
+        final jsonData = jsonDecode(result!) as Map<String, dynamic>;
 
-          final logEntries = jsonData['logEntries'] as List<dynamic>;
-          expect(logEntries, hasLength(2));
-
-          final imageEntry =
-              logEntries.firstWhere(
-                    (dynamic e) => e['entryType'] == 'image',
-                  )
-                  as Map<String, dynamic>;
-          final aiResponses = imageEntry['aiResponses'] as List<dynamic>;
-          // Both analyses nested, chronological, deleted one dropped.
-          expect(aiResponses, hasLength(2));
-          expect(aiResponses[0]['model'], 'mistral-small-4-119b-instruct');
-          expect(
-            aiResponses[0]['generatedAt'],
-            DateTime(2026, 7, 23, 17, 9).toIso8601String(),
-          );
-          expect(
-            aiResponses[0]['text'],
-            'Termin am 05.10.2026 um 14:30 beim Augenzentrum.',
-          );
-          expect(aiResponses[1]['model'], 'mistral-ocr-latest');
-          expect(aiResponses[1]['text'], 'Datum: 05.10.26 Uhrzeit: 14:30');
-
-          // The date evidence the agent needs for title/due-date extraction
-          // is present verbatim in the rendered task context.
-          expect(result, contains('05.10.2026'));
-          expect(result, contains('14:30'));
-
-          // Non-image entries don't carry the key at all (kept out of the
-          // JSON entirely, not rendered as null).
-          final textLogEntry =
-              logEntries.firstWhere(
-                    (dynamic e) => e['entryType'] == 'text',
-                  )
-                  as Map<String, dynamic>;
-          expect(textLogEntry.containsKey('aiResponses'), isFalse);
-        },
-      );
-
-      test(
-        'omits aiResponses for an image without analyses',
-        () async {
-          final task = JournalEntity.task(
-            meta: Metadata(
-              id: taskId,
-              dateFrom: creationDate,
-              dateTo: creationDate,
-              createdAt: creationDate,
-              updatedAt: creationDate,
-            ),
-            data: TaskData(
-              title: 'Task',
-              status: TaskStatus.open(
-                id: 'status-1',
-                createdAt: creationDate,
-                utcOffset: 0,
-              ),
-              statusHistory: [],
-              dateFrom: creationDate,
-              dateTo: creationDate,
-            ),
-          );
-          final image = TestImageFactory.create(id: 'img-1');
-
-          when(
-            () => mockDb.journalEntityById(taskId),
-          ).thenAnswer((_) async => task);
-          when(
-            () => mockDb.getLinkedEntities(taskId),
-          ).thenAnswer((_) async => [image]);
-          when(
-            () => mockDb.getBulkLinkedEntities({'img-1'}),
-          ).thenAnswer((_) async => {'img-1': <JournalEntity>[]});
-
-          final result = await repository.buildTaskDetailsJson(id: taskId);
-          final jsonData = jsonDecode(result!) as Map<String, dynamic>;
-
-          final imageEntry =
-              (jsonData['logEntries'] as List<dynamic>).single
-                  as Map<String, dynamic>;
-          expect(imageEntry['entryType'], 'image');
-          expect(imageEntry.containsKey('aiResponses'), isFalse);
-        },
-      );
+        final imageEntry =
+            (jsonData['logEntries'] as List<dynamic>).single
+                as Map<String, dynamic>;
+        expect(imageEntry['entryType'], 'image');
+        expect(imageEntry.containsKey('aiResponses'), isFalse);
+      });
 
       test('includes assigned labels with names in task JSON', () async {
         // Arrange
@@ -2621,27 +1949,24 @@ void main() {
       return container;
     }
 
-    test(
-      'wires an AgentRepository backed by the registered AgentDatabase '
-      'when AgentDatabase is registered',
-      () async {
-        // AgentDatabase IS registered -> provider must construct a real
-        // AgentRepository. The optimized link path now goes through a custom
-        // indexed query, which touches the registered database's agent_links
-        // table instead of the older generated getAgentLinksByToIdAndType
-        // method.
-        final mockAgentDb = MockAgentDatabase();
-        getIt.registerSingleton<AgentDatabase>(mockAgentDb);
+    test('wires an AgentRepository backed by the registered AgentDatabase '
+        'when AgentDatabase is registered', () async {
+      // AgentDatabase IS registered -> provider must construct a real
+      // AgentRepository. The optimized link path now goes through a custom
+      // indexed query, which touches the registered database's agent_links
+      // table instead of the older generated getAgentLinksByToIdAndType
+      // method.
+      final mockAgentDb = MockAgentDatabase();
+      getIt.registerSingleton<AgentDatabase>(mockAgentDb);
 
-        final repository = buildContainer().read(aiInputRepositoryProvider);
-        final result = await repository.buildProjectContextJsonForTask('t-1');
+      final repository = buildContainer().read(aiInputRepositoryProvider);
+      final result = await repository.buildProjectContextJsonForTask('t-1');
 
-        // No links -> no current report -> compact empty context.
-        expect(result, equals('{}'));
-        // The wired AgentRepository delegated down to the registered DB.
-        verify(() => mockAgentDb.agentLinks).called(1);
-      },
-    );
+      // No links -> no current report -> compact empty context.
+      expect(result, equals('{}'));
+      // The wired AgentRepository delegated down to the registered DB.
+      verify(() => mockAgentDb.agentLinks).called(1);
+    });
 
     test(
       'leaves the agent repository unset when no AgentDatabase is registered',
@@ -2953,9 +2278,7 @@ void main() {
               ),
             ],
           ),
-          entryText: const EntryText(
-            plainText: 'Corrected transcript by user',
-          ),
+          entryText: const EntryText(plainText: 'Corrected transcript by user'),
         );
 
         when(
@@ -3215,11 +2538,7 @@ void main() {
           labelIds: const ['a'],
         ),
         data: TaskData(
-          status: TaskStatus.open(
-            id: 's',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
+          status: TaskStatus.open(id: 's', createdAt: testDate, utcOffset: 0),
           dateFrom: testDate,
           dateTo: testDate,
           statusHistory: const [],
@@ -3543,11 +2862,7 @@ void main() {
           jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
         );
 
-        expect(
-          roundTripped.id,
-          equals(original.id),
-          reason: 'id — $scenario',
-        );
+        expect(roundTripped.id, equals(original.id), reason: 'id — $scenario');
         expect(
           roundTripped.title,
           equals(original.title),
@@ -3956,10 +3271,7 @@ void main() {
             (linkedFrom.single as Map<String, dynamic>)['id'],
             childTaskId,
           );
-          expect(
-            (linkedTo.single as Map<String, dynamic>)['id'],
-            parentTaskId,
-          );
+          expect((linkedTo.single as Map<String, dynamic>)['id'], parentTaskId);
         },
       );
 
@@ -4018,10 +3330,7 @@ void main() {
       });
 
       test('does not include note (note is added by prompt builder)', () async {
-        final childTask = createTestTask(
-          id: childTaskId,
-          title: 'Child Task',
-        );
+        final childTask = createTestTask(id: childTaskId, title: 'Child Task');
         final childDbEntity = createDbEntityFromTask(childTask);
 
         when(
@@ -4101,10 +3410,7 @@ void main() {
 
     group('_getLatestTaskSummary', () {
       test('returns null when task has no AI summaries', () async {
-        final childTask = createTestTask(
-          id: childTaskId,
-          title: 'Child Task',
-        );
+        final childTask = createTestTask(id: childTaskId, title: 'Child Task');
         final childDbEntity = createDbEntityFromTask(childTask);
 
         when(
@@ -4126,10 +3432,7 @@ void main() {
       });
 
       test('returns latest summary when AI response exists', () async {
-        final childTask = createTestTask(
-          id: childTaskId,
-          title: 'Child Task',
-        );
+        final childTask = createTestTask(id: childTaskId, title: 'Child Task');
         final childDbEntity = createDbEntityFromTask(childTask);
 
         final summaryEntry = AiResponseEntry(
@@ -4173,10 +3476,7 @@ void main() {
       });
 
       test('returns most recent summary when multiple exist', () async {
-        final childTask = createTestTask(
-          id: childTaskId,
-          title: 'Child Task',
-        );
+        final childTask = createTestTask(id: childTaskId, title: 'Child Task');
         final childDbEntity = createDbEntityFromTask(childTask);
 
         final olderSummary = AiResponseEntry(
@@ -4239,10 +3539,7 @@ void main() {
       });
 
       test('ignores non-taskSummary AI responses', () async {
-        final childTask = createTestTask(
-          id: childTaskId,
-          title: 'Child Task',
-        );
+        final childTask = createTestTask(id: childTaskId, title: 'Child Task');
         final childDbEntity = createDbEntityFromTask(childTask);
 
         final imageAnalysis = AiResponseEntry(
@@ -4337,10 +3634,7 @@ void main() {
       });
 
       test('returns empty labels list when task has no labels', () async {
-        final childTask = createTestTask(
-          id: childTaskId,
-          title: 'Child Task',
-        );
+        final childTask = createTestTask(id: childTaskId, title: 'Child Task');
         final childDbEntity = createDbEntityFromTask(childTask);
 
         when(
