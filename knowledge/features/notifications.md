@@ -55,16 +55,16 @@ stateDiagram-v2
   [*] --> Pending: created — all three timestamps null
 
   Pending --> Seen: markSeen sets seenAt
-  Pending --> ActedOn: markActedOn sets actedOnAt
+  Pending --> ActedOn: suggestion action sets actedOnAt
   Pending --> Retracted: retract sets deletedAt
 
-  Seen --> ActedOn: markActedOn
+  Seen --> ActedOn: suggestion action
   ActedOn --> Seen: markSeen
   Seen --> Retracted: retract
   ActedOn --> Retracted: retract
 
   Seen --> Seen: markSeen again — no-op, returns null
-  ActedOn --> ActedOn: markActedOn again — no-op
+  ActedOn --> ActedOn: repeated suggestion action — no-op
   Retracted --> Retracted: retract again — no-op
 
   note right of Pending

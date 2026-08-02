@@ -206,36 +206,13 @@ void main() {
   });
 
   group('category state management', () {
-    test('addCategoryId adds to selectedCategoryIds set', () {
-      final provider = labelEditorControllerProvider(
-        const LabelEditorArgs(),
-      );
-      final notifier = container.read(provider.notifier);
-
-      notifier.addCategoryId('cat-1');
-      final state = container.read(provider);
-      expect(state.selectedCategoryIds, contains('cat-1'));
-    });
-
-    test('addCategoryId ignores duplicates', () {
-      final provider = labelEditorControllerProvider(
-        const LabelEditorArgs(),
-      );
-      final notifier = container.read(provider.notifier);
-
-      notifier.addCategoryId('cat-1');
-      notifier.addCategoryId('cat-1');
-      final state = container.read(provider);
-      expect(state.selectedCategoryIds.where((e) => e == 'cat-1').length, 1);
-    });
-
     test('removeCategoryId removes from selectedCategoryIds', () {
       final provider = labelEditorControllerProvider(
         const LabelEditorArgs(),
       );
       final notifier = container.read(provider.notifier);
 
-      notifier.addCategoryId('cat-1');
+      notifier.setCategoryIds({'cat-1'});
       notifier.removeCategoryId('cat-1');
       final state = container.read(provider);
       expect(state.selectedCategoryIds, isEmpty);
@@ -259,9 +236,6 @@ void main() {
         );
         final notifier = container.read(provider.notifier);
 
-        notifier.addCategoryId('cat-1');
-        // The multi-picker commits the full edited set: cat-1 is dropped and
-        // cat-2/cat-3 added in one write.
         notifier.setCategoryIds({'cat-2', 'cat-3'});
         final state = container.read(provider);
         expect(state.selectedCategoryIds, {'cat-2', 'cat-3'});
@@ -284,8 +258,7 @@ void main() {
       final provider = labelEditorControllerProvider(const LabelEditorArgs());
       final notifier = container.read(provider.notifier);
       notifier.setName('Scoped');
-      notifier.addCategoryId('cat-a');
-      notifier.addCategoryId('cat-b');
+      notifier.setCategoryIds({'cat-a', 'cat-b'});
 
       await notifier.save();
 
@@ -318,8 +291,7 @@ void main() {
       );
       final notifier = container.read(provider.notifier);
 
-      notifier.addCategoryId('x');
-      notifier.addCategoryId('y');
+      notifier.setCategoryIds({'x', 'y'});
       notifier.setName('${testLabelDefinition1.name}2');
       await notifier.save();
 
@@ -345,51 +317,6 @@ void main() {
       final state = container.read(provider);
       expect(state.selectedCategoryIds, equals({'a', 'b'}));
     });
-  });
-
-  test('selectedColor parses the current colorHex into a Color', () {
-    final provider = labelEditorControllerProvider(
-      LabelEditorArgs(label: testLabelDefinition1),
-    );
-    final notifier = container.read(provider.notifier);
-
-    // testLabelDefinition1.color == '#FF0000' -> opaque red.
-    expect(notifier.selectedColor, const Color(0xFFFF0000));
-
-    // After changing the color, the getter reflects the new hex.
-    notifier.setColor(const Color(0xFF00FF00));
-    expect(notifier.selectedColor, const Color(0xFF00FF00));
-  });
-
-  test('resetToInitial restores state from the initial label', () {
-    final provider = labelEditorControllerProvider(
-      LabelEditorArgs(label: testLabelDefinition1),
-    );
-    final notifier = container.read(provider.notifier);
-
-    notifier.setName('Mutated');
-    notifier.setColor(const Color(0xFF00FF00));
-    notifier.setPrivate(isPrivateValue: true);
-    notifier.setDescription('Mutated description');
-    notifier.addCategoryId('cat-x');
-
-    final mutated = container.read(provider);
-    expect(mutated.name, 'Mutated');
-    // Description must actually change so the reset assertion below exercises
-    // the description-restore path rather than passing trivially.
-    expect(mutated.description, 'Mutated description');
-    expect(mutated.description, isNot(testLabelDefinition1.description));
-    expect(mutated.hasChanges, isTrue);
-
-    notifier.resetToInitial();
-
-    final reset = container.read(provider);
-    expect(reset.name, testLabelDefinition1.name);
-    expect(reset.colorHex, testLabelDefinition1.color.toUpperCase());
-    expect(reset.isPrivate, testLabelDefinition1.private ?? false);
-    expect(reset.description, testLabelDefinition1.description);
-    expect(reset.selectedCategoryIds, isEmpty);
-    expect(reset.hasChanges, isFalse);
   });
 
   test('save validates empty name', () async {

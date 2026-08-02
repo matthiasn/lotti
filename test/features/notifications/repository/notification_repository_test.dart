@@ -351,29 +351,6 @@ void main() {
       },
     );
 
-    test(
-      'createTaskOverdue produces a TaskOverdueNotification with stable id',
-      () async {
-        final saved = await repository.createTaskOverdue(
-          linkedTaskId: 'task-2',
-          title: 'Task overdue',
-          body: 'Past the deadline',
-        );
-
-        expect(saved, isA<TaskOverdueNotification>());
-        final overdue = saved! as TaskOverdueNotification;
-        expect(overdue.linkedTaskId, 'task-2');
-        expect(overdue.title, 'Task overdue');
-        expect(
-          overdue.meta.id,
-          repository.notificationIdForTaskOverdue('task-2'),
-        );
-
-        verify(() => outboxService.enqueueNotification(overdue)).called(1);
-        verify(() => scheduler.schedule(overdue, now: fixedNow)).called(1);
-      },
-    );
-
     test('returns null when vector clock service has no host yet', () async {
       when(() => vectorClockService.getHost()).thenAnswer((_) async => null);
 
@@ -525,22 +502,6 @@ void main() {
         );
       },
     );
-
-    test('markActedOn forwards actedOnAt only', () async {
-      await seed();
-      await repository.markActedOn('state-test');
-
-      verify(
-        () => outboxService.enqueueNotificationStateUpdate(
-          id: 'state-test',
-          seenAt: null,
-          actedOnAt: fixedNow,
-          deletedAt: null,
-          vectorClock: any(named: 'vectorClock'),
-          originatingHostId: 'host-a',
-        ),
-      ).called(1);
-    });
 
     test('retract forwards deletedAt only', () async {
       await seed();
@@ -714,42 +675,7 @@ void main() {
     });
   });
 
-  group('NotificationRepository pass-throughs', () {
-    test('notificationById delegates to NotificationsDb', () async {
-      final stored = _entityForCreate(
-        id: 'lookup-id',
-        linkedTaskId: 'task-lookup',
-        createdAt: fixedNow,
-        updatedAt: fixedNow,
-        scheduledFor: fixedNow,
-        vectorClock: const VectorClock({'host-a': 1}),
-        originatingHostId: 'host-a',
-      );
-      await notificationsDb.upsertNotification(stored);
-
-      expect(
-        await repository.notificationById('lookup-id'),
-        stored,
-      );
-      expect(await repository.notificationById('missing'), isNull);
-    });
-
-    test('unseenCount delegates to NotificationsDb', () async {
-      await notificationsDb.upsertNotification(
-        _entityForCreate(
-          id: 'unseen',
-          linkedTaskId: 'task-unseen',
-          createdAt: fixedNow.subtract(const Duration(hours: 2)),
-          updatedAt: fixedNow.subtract(const Duration(hours: 1)),
-          scheduledFor: fixedNow.subtract(const Duration(minutes: 1)),
-          vectorClock: const VectorClock({'host-a': 1}),
-          originatingHostId: 'host-a',
-        ),
-      );
-
-      expect(await repository.unseenCount(fixedNow), 1);
-    });
-
+  group('NotificationRepository notification IDs', () {
     test(
       'notification id helpers are deterministic and version 5 UUIDs',
       () {
@@ -758,12 +684,8 @@ void main() {
           repository.notificationIdForTaskSuggestion('task-1'),
         );
         expect(
-          repository.notificationIdForTaskOverdue('task-1'),
-          repository.notificationIdForTaskOverdue('task-1'),
-        );
-        expect(
           repository.notificationIdForTaskSuggestion('task-1'),
-          isNot(repository.notificationIdForTaskOverdue('task-1')),
+          '78bbe9c1-bf78-5350-a95e-dfa887718e20',
         );
         expect(
           repository.notificationIdForTaskSuggestion('task-1'),

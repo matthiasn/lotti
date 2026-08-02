@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -67,7 +69,7 @@ void main() {
     });
 
     test(
-      'removeLabel adds to aiSuppressedLabelIds; addLabels unsuppresses',
+      'setLabels suppresses removals and unsuppresses additions',
       () async {
         // Arrange: a task with one assigned label 'a'
         final task = Task(
@@ -118,16 +120,26 @@ void main() {
           current = inv.positionalArguments.first as JournalEntity;
           return true;
         });
+        when(() => mockCache.getLabelById('a')).thenReturn(
+          LabelDefinition(
+            id: 'a',
+            name: 'Alpha',
+            color: '#000000',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
+            vectorClock: const VectorClock(<String, int>{}),
+          ),
+        );
 
         // Act: remove 'a'
-        await repo.removeLabel(journalEntityId: 't1', labelId: 'a');
+        await repo.setLabels(journalEntityId: 't1', labelIds: const []);
         final afterRemove = current as Task;
 
         // Assert: suppression contains 'a'
         expect(afterRemove.data.aiSuppressedLabelIds, contains('a'));
 
         // Act: add 'a' back manually
-        await repo.addLabels(journalEntityId: 't1', addedLabelIds: ['a']);
+        await repo.setLabels(journalEntityId: 't1', labelIds: const ['a']);
         final afterAdd = current as Task;
 
         // Assert: suppression no longer contains 'a'

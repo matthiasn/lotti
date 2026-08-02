@@ -10,7 +10,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/get_it.dart';
@@ -401,9 +400,6 @@ void main() {
       mockDb = MockJournalDb();
       mockRepo = MockLabelsRepository();
       mockLogging = MockDomainLogger();
-      getIt.registerSingleton<LabelAssignmentEventService>(
-        LabelAssignmentEventService(),
-      );
       when(
         () => mockRepo.addLabels(
           journalEntityId: any(named: 'journalEntityId'),
@@ -415,10 +411,6 @@ void main() {
         repository: mockRepo,
         logging: mockLogging,
       );
-    });
-
-    tearDown(() {
-      getIt.reset();
     });
 
     final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -525,19 +517,11 @@ void main() {
       mockDbEdge = MockJournalDb();
       mockRepoEdge = MockLabelsRepository();
       mockLoggingEdge = MockDomainLogger();
-      getIt.allowReassignment = true;
-      getIt.registerSingleton<LabelAssignmentEventService>(
-        LabelAssignmentEventService(),
-      );
       processorEdge = LabelAssignmentProcessor(
         db: mockDbEdge,
         repository: mockRepoEdge,
         logging: mockLoggingEdge,
       );
-    });
-
-    tearDown(() async {
-      await getIt.reset();
     });
 
     LabelDefinition makeLabelEdge(String id) => LabelDefinition(
@@ -609,22 +593,20 @@ void main() {
           ),
         ).thenAnswer((_) async => false); // simulate deleted task
 
-        final events = getIt<LabelAssignmentEventService>();
-        final received = <LabelAssignmentEvent>[];
-        final sub = events.stream.listen(received.add);
-
         final result = await processorEdge.processAssignment(
           taskId: 't1',
           proposedIds: const ['a'],
           existingIds: const [],
         );
-        // Allow asynchronous stream delivery
-        await Future<void>.delayed(Duration.zero);
-        await sub.cancel();
-
-        // Even if persistence fails, current behavior still publishes an event
+        // The processor reports the validated assignment even if persistence
+        // loses a race with task deletion.
         expect(result.assigned, ['a']);
-        expect(received.length, 1);
+        verify(
+          () => mockRepoEdge.addLabels(
+            journalEntityId: 't1',
+            addedLabelIds: ['a'],
+          ),
+        ).called(1);
       },
     );
 
@@ -660,105 +642,6 @@ void main() {
   // ---------------------------------------------------------------------------
   // Category scope tests (originally in services/label_assignment_processor_category_test.dart)
   // ---------------------------------------------------------------------------
-
-  group('publish_skipped', () {
-    late MockJournalDb mockDb;
-    late MockLabelsRepository mockRepo;
-    late MockDomainLogger mockLogging;
-    late LabelAssignmentProcessor processor;
-
-    setUp(() {
-      mockDb = MockJournalDb();
-      mockRepo = MockLabelsRepository();
-      mockLogging = MockDomainLogger();
-      when(
-        () => mockRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        ),
-      ).thenAnswer((_) async => true);
-      processor = LabelAssignmentProcessor(
-        db: mockDb,
-        repository: mockRepo,
-        logging: mockLogging,
-      );
-    });
-
-    tearDown(() async {
-      await getIt.reset();
-    });
-
-    LabelDefinition makeLabel(String id) => LabelDefinition(
-      id: id,
-      name: id,
-      color: '#000',
-      description: null,
-      sortOrder: null,
-      createdAt: DateTime(2024, 3, 15, 10, 30),
-      updatedAt: DateTime(2024, 3, 15, 10, 30),
-      vectorClock: null,
-      private: false,
-    );
-
-    test(
-      'assignment succeeds when no event service is registered '
-      '(isRegistered guard)',
-      () async {
-        // No LabelAssignmentEventService in getIt at all.
-        when(
-          () => mockDb.getLabelDefinitionById('a'),
-        ).thenAnswer((_) async => makeLabel('a'));
-
-        final result = await processor.processAssignment(
-          taskId: 't1',
-          proposedIds: const ['a'],
-          existingIds: const [],
-        );
-
-        expect(result.assigned, ['a']);
-        verify(
-          () => mockRepo.addLabels(
-            journalEntityId: 't1',
-            addedLabelIds: ['a'],
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'assignment succeeds and publish is silently dropped when the event '
-      'service is already disposed (isClosed guard)',
-      () async {
-        final events = LabelAssignmentEventService();
-        final received = <LabelAssignmentEvent>[];
-        final sub = events.stream.listen(received.add);
-        getIt.registerSingleton<LabelAssignmentEventService>(events);
-        await events.dispose();
-
-        when(
-          () => mockDb.getLabelDefinitionById('a'),
-        ).thenAnswer((_) async => makeLabel('a'));
-
-        final result = await processor.processAssignment(
-          taskId: 't1',
-          proposedIds: const ['a'],
-          existingIds: const [],
-        );
-        await pumpEventQueue();
-        await sub.cancel();
-
-        // Persistence happened; the closed event bus swallowed the publish.
-        expect(result.assigned, ['a']);
-        verify(
-          () => mockRepo.addLabels(
-            journalEntityId: 't1',
-            addedLabelIds: ['a'],
-          ),
-        ).called(1);
-        expect(received, isEmpty);
-      },
-    );
-  });
 
   group('category_scope', () {
     setUp(() {
@@ -1039,18 +922,12 @@ void main() {
       mockRepoPhase2 = MockLabelsRepository();
       mockLoggingPhase2 = MockDomainLogger();
       mockDbPhase2 = MockJournalDb();
-      getIt.allowReassignment = true;
-      getIt.registerSingleton<LabelAssignmentEventService>(
-        LabelAssignmentEventService(),
-      );
       processorPhase2 = LabelAssignmentProcessor(
         db: mockDbPhase2,
         repository: mockRepoPhase2,
         logging: mockLoggingPhase2,
       );
     });
-
-    tearDown(getIt.reset);
 
     test('assigns suggestions even when task already has >=3 labels', () async {
       when(

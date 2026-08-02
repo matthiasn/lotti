@@ -196,35 +196,6 @@ void main() {
     ).called(1);
   });
 
-  test('removeLabel clears metadata when last label removed', () async {
-    final entry = buildEntry(labelIds: const ['label-1']);
-    when(
-      () => journalDb.journalEntityById(entry.meta.id),
-    ).thenAnswer((_) async => entry);
-    when(() => persistenceLogic.updateMetadata(any())).thenAnswer(
-      (invocation) async => invocation.positionalArguments.first as Metadata,
-    );
-    when(
-      () => persistenceLogic.updateDbEntity(any()),
-    ).thenAnswer((_) async => true);
-
-    final result = await repository.removeLabel(
-      journalEntityId: entry.meta.id,
-      labelId: 'label-1',
-    );
-
-    expect(result, isTrue);
-    verify(
-      () => persistenceLogic.updateDbEntity(
-        any(
-          that: predicate<JournalEntity>(
-            (entity) => entity.meta.labelIds == null,
-          ),
-        ),
-      ),
-    ).called(1);
-  });
-
   test('createLabel preserves provided color even if malformed', () async {
     when(
       () => persistenceLogic.upsertEntityDefinition(any()),

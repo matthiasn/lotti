@@ -64,8 +64,7 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
     // Capture the bell's own context so a row tap can navigate even after
     // the popover overlay (and therefore the row's own context) is torn down
     // by `_menu.close`. Without this, the row's `_handleTap` would close the
-    // menu, await markActedOn, then find `context.mounted == false` and
-    // silently skip the navigation.
+    // menu and its own context would no longer be safe for navigation.
     final bellContext = context;
     return MenuAnchor(
       controller: _menu,
@@ -96,7 +95,6 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
             ),
           ),
           child: _InboxPanel(
-            onDismiss: _menu.close,
             onSelectTask: (linkedTaskId, {required focusSuggestions}) {
               _menu.close();
               if (!bellContext.mounted) return;
@@ -201,13 +199,8 @@ class _UnseenBadge extends StatelessWidget {
 /// so incremental stream updates preserve widget state across reorders.
 class _InboxPanel extends ConsumerWidget {
   const _InboxPanel({
-    required this.onDismiss,
     required this.onSelectTask,
   });
-
-  /// Closes the popover. Passed down so a row can dismiss the menu after its
-  /// own action completes.
-  final VoidCallback onDismiss;
 
   /// Called when the user taps a row whose `linkedEntityId` is non-null.
   /// The callback owns both popover dismissal and the navigation so it can
@@ -262,7 +255,6 @@ class _InboxPanel extends ConsumerWidget {
                         _InboxRow(
                           key: ValueKey(entry.id),
                           entity: entry,
-                          onDismiss: onDismiss,
                           onSelectTask: onSelectTask,
                         ),
                     ],
@@ -326,13 +318,11 @@ class _InboxEmptyState extends StatelessWidget {
 class _InboxRow extends StatelessWidget {
   const _InboxRow({
     required this.entity,
-    required this.onDismiss,
     required this.onSelectTask,
     super.key,
   });
 
   final NotificationEntity entity;
-  final VoidCallback onDismiss;
   final void Function(
     String linkedTaskId, {
     required bool focusSuggestions,

@@ -42,7 +42,6 @@ void main() {
       },
     );
     when(() => repository.markSeen(any())).thenAnswer((_) async => null);
-    when(() => repository.markActedOn(any())).thenAnswer((_) async => null);
     when(
       () => repository.markTaskSuggestionsActedOn(any()),
     ).thenAnswer((_) async => const []);
@@ -361,7 +360,6 @@ void main() {
       await tester.pump();
 
       verify(() => repository.markSeen('act-on-me')).called(1);
-      verifyNever(() => repository.markActedOn(any()));
       verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
       verify(
         () => navService.pushDesktopTaskDetail('task-act-on-me'),
@@ -408,7 +406,6 @@ void main() {
       await tester.pump();
 
       verify(() => repository.markSeen('overdue-act-on-me')).called(1);
-      verifyNever(() => repository.markActedOn(any()));
       verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
       verify(
         () => navService.pushDesktopTaskDetail('task-overdue-act-on-me'),
@@ -458,7 +455,6 @@ void main() {
       verify(
         () => repository.markSeen('mark-failure'),
       ).called(1);
-      verifyNever(() => repository.markActedOn(any()));
       verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
       // Navigation runs even when markSeen throws.
       verify(

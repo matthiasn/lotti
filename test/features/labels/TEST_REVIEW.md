@@ -11,32 +11,29 @@
 
 | File | Lines | Has test? | Top issue |
 |---|---|---|---|
-| `lib/features/labels/repository/labels_repository.dart` | 490 | Yes (split across 4 files, 1150+440+305+141 = 2036 lines) | **[HIGH]** One-test-file-per-source-file violated: 4 separate test files for one impl |
-| `lib/features/labels/services/label_assignment_processor.dart` | 277 | Yes (split across 6 files, ~1000 lines total) | **[HIGH]** One-test-file-per-source-file massively violated: 6 test files |
-| `lib/features/labels/services/label_validator.dart` | 117 | Yes (482) | **[MED]** Good Glados coverage already; 482-line test is borderline |
-| `lib/features/labels/services/label_assignment_event_service.dart` | 31 | Indirect only | **[MED]** No dedicated test file; `publish`/`dispose`/`isClosed` guard untested |
-| `lib/features/labels/state/label_editor_controller.dart` | 295 | Yes (447) | **[MED]** Inline `_MockLabelsRepository` should use central `MockLabelsRepository` |
-| `lib/features/labels/state/labels_list_controller.dart` | 61 | Yes (294) | OK |
-| `lib/features/labels/ui/pages/label_details_page.dart` | 457 | Yes (802) | **[HIGH]** 802-line test, 21 `pumpAndSettle`, repeated `ProviderContainer` + `makeTestableWidget2` boilerplate |
-| `lib/features/labels/ui/pages/labels_list_page.dart` | 327 | **Two** test files (296 + 392) | **[HIGH]** One-test-file-per-source-file violated |
-| `lib/features/labels/ui/widgets/label_editor_sheet.dart` | 338 | **Two** test files (216 + 307) | **[HIGH]** One-test-file-per-source-file violated |
+| `lib/features/labels/repository/labels_repository.dart` | 450 | Yes (split across 4 files, 1858 lines total) | **[HIGH]** One-test-file-per-source-file violated: 4 separate test files for one impl |
+| `lib/features/labels/services/label_assignment_processor.dart` | 278 | Yes (1292) | Consolidated into its canonical mirror; large but cohesive coverage |
+| `lib/features/labels/services/label_validator.dart` | 66 | Yes | Good Glados coverage |
+| `lib/features/labels/state/label_editor_controller.dart` | 324 | Yes (391) | Uses central `MockLabelsRepository` |
+| `lib/features/labels/state/labels_list_controller.dart` | 83 | Yes (294) | OK |
+| `lib/features/labels/ui/pages/label_details_page.dart` | 372 | Yes (937) | Shared pump helper and bounded pumps are in place |
+| `lib/features/labels/ui/pages/labels_list_page.dart` | 134 | Yes (751 + 20-line helper) | Canonical mirror plus a test helper part |
+| `lib/features/labels/ui/widgets/label_editor_sheet.dart` | 321 | Yes (389) | Duplicate test removed; canonical mirror remains |
 | `lib/features/labels/ui/widgets/entry_labels_display.dart` | 160 | Yes (23 `pumpAndSettle`) | **[MED]** Heavy `pumpAndSettle` usage |
-| `lib/features/labels/ui/widgets/label_chip.dart` | 91 | Yes (330) | OK |
-| `lib/features/labels/ui/widgets/label_selection_modal_utils.dart` | 152 | Yes (15 `pumpAndSettle`) | **[MED]** |
-| `lib/features/labels/utils/label_tool_parsing.dart` | 158 | Yes (503) with Glados | Good |
-| `lib/features/labels/utils/assigned_labels_util.dart` | 21 | No | **[MED]** Missing test file |
-| `lib/features/labels/constants/label_color_presets.dart` | 28 | No | **[LOW]** Constant data; trivial |
-| `lib/features/labels/constants/label_assignment_constants.dart` | 21 | No | **[LOW]** Constant data; trivial |
+| `lib/features/labels/ui/widgets/label_chip.dart` | 96 | Yes (330) | OK |
+| `lib/features/labels/ui/widgets/label_selection_modal_utils.dart` | 208 | Yes (149) | Four `pumpAndSettle` calls remain |
+| `lib/features/labels/utils/label_tool_parsing.dart` | 172 | Yes (616 across test + helper) with Glados | Good |
+| `lib/features/labels/utils/assigned_labels_util.dart` | 21 | Yes | Empty, lookup, and fallback paths covered |
+| `lib/features/labels/constants/label_color_presets.dart` | 33 | Yes | Structural palette contract covered |
+| `lib/features/labels/constants/label_assignment_constants.dart` | 15 | No | Constant data; trivial |
 
 ### Test Files with No Direct Impl Mirror
 
 | Test File | Lines | Issue |
 |---|---|---|
-| `test/features/labels/label_assignment_processor_test.dart` | 129 | Stray (should be under `services/`) |
-| `test/features/labels/label_assignment_processor_edge_cases_test.dart` | 145 | Stray (should be under `services/`) |
-| `test/features/labels/race_condition_labels_persistence_test.dart` | ~130 | 4 inline mock classes that duplicate central mocks |
+| `test/features/labels/race_condition_labels_persistence_test.dart` | 176 | Uses the shared harness and central mocks |
 | `test/features/labels/integration/label_workflow_test.dart` | 261 | OK as integration |
-| `test/features/labels/ui/label_editor_categories_test.dart` | 313 | Inline `_MockLabelsRepository` |
+| `test/features/labels/ui/label_editor_categories_test.dart` | 290 | Uses central `MockLabelsRepository` and bounded pump helpers |
 | `test/features/labels/ui/accessibility_test.dart` | 34 | Good focused test |
 | `test/features/labels/ui/color_contrast_test.dart` | 45 | Good focused test |
 
@@ -67,8 +64,8 @@
 
 - [x] **[HIGH]** `test/features/labels/ui/label_details_page_test.dart` is 802 lines with 15 test cases each repeating a ~15-line setup block (`ProviderContainer`, `addTearDown(container.dispose)`, `tester.pumpWidget(UncontrolledProviderScope(container: container, child: makeTestableWidget2(...)))`). Extract a file-level `_pumpPage(tester, {ProviderContainer? container, LabelEditorState? state})` helper to eliminate the boilerplate. **RESOLVED:** shared `pumpPage(tester, {overrides, child})` helper builds the kept-alive container, pumps, and drains the first frames; all 15 setup blocks now route through it.
 
-- [x] **[MED]** `lib/features/labels/repository/labels_repository.dart` is 490 lines. The file mixes four distinct concerns: stream-watching (`watchLabels`, `watchLabel`), CRUD operations (`createLabel`, `updateLabel`, `deleteLabel`, `setLabels`), utility methods (`buildLabelTuples`, `getLabelUsageCounts`, `addLabels`), and normalization helpers (`_normalizeCategoryIds`). The normalization logic at lines 370–420 is pure and could move to a `labels_normalization.dart` util, making it independently testable.
-  **RESOLVED (adapted):** the pure normalization logic moved to `lib/features/labels/utils/labels_normalization.dart` as `normalizeLabelCategoryIds(ids, {lookupCategory})` (the repository method is now a thin delegator injecting the cache lookup), making it independently testable. The full four-way split was not pursued — at 490 lines the file is under the split threshold and the stream/CRUD/util methods all share the same five injected collaborators.
+- [x] **[MED]** `lib/features/labels/repository/labels_repository.dart` mixed stream-watching, definition CRUD, assignment writes, and normalization helpers. The normalization logic was pure and could move to a `labels_normalization.dart` util, making it independently testable.
+  **RESOLVED (adapted):** the pure normalization logic moved to `lib/features/labels/utils/labels_normalization.dart` as `normalizeLabelCategoryIds(ids, {lookupCategory})` (the repository method is now a thin delegator injecting the cache lookup), making it independently testable. The full four-way split was not pursued — at 450 lines the file is under the split threshold and the stream/CRUD/util methods all share the same five injected collaborators.
 
 ---
 
@@ -100,9 +97,6 @@
 - [x] **[MED]** `lib/features/labels/repository/labels_repository.dart` — `_normalizeCategoryIds` (lines ~370–420, internal helper). This function validates, deduplicates, and sorts category IDs by name. It is a pure mapping function called by both `createLabel` and `updateLabel`. A Glados property can assert: (1) output is always a sorted subset of valid inputs; (2) duplicates are always removed; (3) IDs that return null from the cache are always filtered; (4) result length ≤ input length; (5) the function is idempotent (applying it twice gives the same result). Use a custom `_AnyCategoryIdScenario` generator that mixes known-valid IDs, unknown IDs, and duplicates.
   **RESOLVED:** the extracted `normalizeLabelCategoryIds` has a Glados property over a token pool mixing valid IDs, unknown IDs, empties/whitespace, and padded variants: output must equal an independent trim/dedup/validate/sort-by-name oracle, plus the length-bound, no-duplicate, valid-only, and idempotence invariants from this item, and a deterministic sorts-by-name-not-id example.
 
-- [x] **[MED]** `lib/features/labels/services/label_assignment_event_service.dart` — `publish` / stream contract. The service has a `isClosed` guard. A simple Glados property: generate sequences of `publish` / `dispose` calls in random order and assert that no unhandled exception is thrown and that calling `publish` after `dispose` is silently ignored (no events added). This is a small pure state machine — ideal Glados target.
-  **RESOLVED:** added a Glados property generating random publish/dispose interleavings (1–12 ops): no operation may throw, and exactly the pre-dispose publishes are delivered — post-dispose publishes are silently dropped.
-
 - [x] **[LOW]** `lib/features/labels/utils/label_tool_parsing.dart` already has two Glados tests in `label_tool_parsing_phase2_test.dart`. The `_confidenceToRank` / `_normalizeConfidence` functions are small pure functions not directly tested by Glados (only through the higher-level parser). A Glados test that generates arbitrary confidence strings and asserts: (a) output rank is 0–3; (b) normalized confidence is always one of the four valid strings; (c) unknown inputs map to rank 1 / confidence 'medium' — would make the contract explicit. Tag with `tags: 'glados'`.
   **RESOLVED:** added a `confidence normalization / rank contract` group to `label_tool_parsing_phase2_test.dart`. Since both functions are private, the contract is probed through `parseLabelCallArgs` with a single-candidate payload. A `confidenceProbe` generator mixes the four canonical strings with junk (`'unexpected'`, `'VERY_HIGH'`, `'High'`, `''`, `'highish'`, `'low '`, `'1'`, `'none'`). Property 1 asserts the breakdown has exactly the four canonical keys and the single candidate lands in exactly one bucket (normalized confidence is always one of four; non-canonical → 'medium'). Property 2 asserts effective rank is in 0..3 and that rank-0 ('low') is dropped (`droppedLow == 1`, `selectedIds` empty) while rank > 0 is selected. A deterministic example pins the full very_high > high > medium ordering with low dropped. All tagged `tags: 'glados'` (numRuns 120).
 
@@ -110,18 +104,10 @@
 
 ## Coverage / Missing-Behavior Gaps
 
-- [x] **[HIGH]** `lib/features/labels/services/label_assignment_event_service.dart` (31 lines) — no dedicated test file. The `isClosed` guard in `publish()` (line 24) is never directly exercised by any test. The `dispose()` method and post-dispose behavior are also untested. While the service is instantiated in processor tests, its own contract (broadcast stream, lifecycle, closed-guard) has no unit test. **RESOLVED (already covered):** `services/label_assignment_event_service_test.dart` exists with broadcast, closed-guard, post-dispose, source-default, and a Glados delivery property.
-
 - [x] **[HIGH]** `lib/features/labels/utils/assigned_labels_util.dart` (21 lines) — no test file exists. The `buildAssignedLabelTuples` function looks up label names from the DB and falls back to the ID when the definition is missing. The fallback path (`def?.name ?? lid`) and the empty-list short-circuit are untested. **RESOLVED:** new `utils/assigned_labels_util_test.dart` covers the empty-ids short-circuit (verifyNever on the DB), name resolution, and the missing-definition id fallback.
-
-- [x] **[MED]** `labels_repository_test.dart` (main file at 1150 lines) — the `buildLabelTuples` method behavior when given IDs not present in `getAllLabelDefinitions` (fallback to the ID string) is not tested. This mirrors the same gap in `assigned_labels_util.dart`.
-  **RESOLVED (stale):** 'uses ID as fallback name for unknown labels' already covers exactly this (known + unknown ID → name falls back to the ID string).
 
 - [x] **[MED]** `labels_repository_test.dart` — `watchLabel` / `watchLabels` error-propagation path (when `_journalDb.getLabelDefinitionById` throws) is not tested. The stream implementation wraps a DB call; if the DB throws, the stream behavior (does it emit an error? close?) is unspecified by tests.
   **RESOLVED:** two new fakeAsync tests — `watchLabels` surfaces a throwing fetch as a stream error (listener's onError, no crash) and stays open (the next notification refetch emits data); `watchLabel` likewise surfaces the error with no emission.
-
-- [x] **[MED]** Across the 6 `label_assignment_processor` test files, the telemetry/logging behavior (what exactly the `DomainLogger` is called with on each path) is only tested in `label_assignment_telemetry_test.dart`. The `label_assignment_processor_db_error_test.dart` is only 57 lines and covers only DB-level errors; the case where `repository.addLabels` succeeds but the event service `publish` call is skipped (because `isClosed`) is not exercised.
-  **RESOLVED:** new `publish_skipped` group covers both skip variants — no `LabelAssignmentEventService` registered (the `isRegistered` guard) and a registered-but-disposed service (the `isClosed` guard): assignment persists via `addLabels` in both, and the disposed bus delivers nothing.
 
 - [x] **[LOW]** `label_color_presets.dart` — the `labelColorPresets` list has no structural test: no assertion that all hex strings are valid 7-character `#RRGGBB` strings or that all names are non-empty. The `color_contrast_test.dart` does test WCAG ratios, which provides partial coverage.
   **RESOLVED:** added `test/features/labels/constants/label_color_presets_test.dart` asserting the list is non-empty, every name is non-empty and trimmed, every hex matches `^#[0-9A-F]{6}$` (exactly 7 chars, uppercase), and both names and hex values are unique across the palette.
@@ -132,7 +118,7 @@
 
 - [x] **[HIGH]** `test/features/labels/ui/label_details_page_test.dart` — 21 `pumpAndSettle` calls in 15 tests (~1.4 per test). Several of these (e.g., the `pumpAndSettle` immediately after `tester.pumpWidget(...)` when the controller state is synchronously set via `overrideWithBuild`) could be replaced with `tester.pump()`. After a synchronous state override, there is no animation; a single frame pump suffices. **Estimated saving: 0.5–2s per shard.** **RESOLVED:** all 21 settles are gone — post-pumpWidget settles are bounded pumps inside `pumpPage`, and the dialog/interaction settles are pump + 300ms.
 
-- [x] **[HIGH]** 6 test files covering `label_assignment_processor.dart` run as separate test files in the `very_good test` suite. Each file instantiates its own `LabelAssignmentEventService`, does `getIt.reset()`, and runs its setUp/tearDown independently. Consolidating into one file eliminates 5 redundant `getIt` warm-up/reset cycles and allows `setUpAll` to register constants once. **Estimated saving: 0.3–1s per shard.**
+- [x] **[HIGH]** 6 test files covering `label_assignment_processor.dart` ran as separate test files in the `very_good test` suite. Consolidating them removed redundant setup and warm-up cycles.
 
 - [x] **[MED]** `test/features/labels/ui/labels_list_page_test.dart` (stray copy) has 14 `pumpAndSettle` calls across 14 tests and uses a custom `_buildPage` that constructs a fresh `ProviderScope` per test. The canonical `test/features/labels/ui/pages/labels_list_page_test.dart` has 5 `pumpAndSettle` calls and uses a shared `pumpLabelsListPage` helper. After consolidation the per-test pump overhead is halved.
   **RESOLVED (stale):** the stray `test/features/labels/ui/labels_list_page_test.dart` no longer exists; only the canonical `ui/pages/` mirror remains.
@@ -147,10 +133,10 @@
 
 ## Summary
 
-- **1 oversized impl file**: `labels_repository.dart` (490 lines — normalization logic extractable).
-- **4 oversized / fragmented test groupings**: `label_assignment_processor` spread across 6 files (total ~1000 lines); `label_details_page_test.dart` (802 lines); duplicate `labels_list_page_test` pair (688 lines combined); duplicate `label_editor_sheet_test` pair (523 lines combined).
-- **6 one-test-file-per-source-file violations**: processor (×6 files), `labels_list_page` (×2 files), `label_editor_sheet` (×2 files). Additionally the two stray processor tests sit outside the `services/` subdirectory.
-- **4 inline `_MockLabelsRepository` definitions** that should import from `test/mocks/mocks.dart`; additionally 4 inline mocks in `race_condition_labels_persistence_test.dart`.
-- **2 genuine Glados candidates**: `_normalizeCategoryIds` in the repository (dedup/sort/filter on arbitrary ID sets) and `LabelAssignmentEventService` publish/dispose state machine; `label_tool_parsing` already has good Glados coverage.
-- **3 speed wins**: Consolidate 6 processor test files (eliminates 5 redundant getIt cycles); replace 21 `pumpAndSettle` in `label_details_page_test` with targeted `pump()`; merge duplicate `labels_list_page` test files (eliminates 14 redundant pumpAndSettle calls).
-- **Biggest opportunity**: Consolidating the 6 `label_assignment_processor` test files into one canonical `test/features/labels/services/label_assignment_processor_test.dart`, cleaning up the 4 inline mock duplications, and extracting a `_pumpPage` helper in `label_details_page_test` — together these would reduce the labels test footprint by ~500 lines of boilerplate and measurably improve shard run time.
+- **0 oversized impl files**: `labels_repository.dart` is 450 lines, with normalization already extracted.
+- **1 fragmented test grouping remains**: `labels_repository.dart` still has four repository test files (1858 lines total).
+- **1 one-test-file-per-source-file violation remains**: those four repository test files should eventually be consolidated into the canonical mirror.
+- **0 inline mock definitions remain** in the labels tests; the reviewed cases use the central mocks.
+- **0 unresolved Glados candidates**: normalization and confidence parsing now have dedicated property coverage.
+- **3 remaining speed opportunities**: replace the 23 `pumpAndSettle` calls in `entry_labels_display_test.dart`, review the 19 remaining calls in `labels_list_page_test.dart`, and bound the smaller groups in `label_editor_sheet_test.dart` and `label_selection_modal_utils_test.dart`.
+- **Biggest opportunity**: consolidate the four `labels_repository` test files into `test/features/labels/repository/labels_repository_test.dart`, preserving focused groups while removing repeated repository setup.

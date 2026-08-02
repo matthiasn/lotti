@@ -27,9 +27,8 @@ final labelsRepositoryProvider = Provider<LabelsRepository>((ref) {
 /// Write boundary for the labels feature.
 ///
 /// Owns label-definition CRUD (with category-scope normalization and
-/// soft-delete), visibility-aware definition streams, usage counts from the
-/// `labeled` lookup table, and assignment writes on entry metadata
-/// ([addLabels] / [removeLabel] / [setLabels]). For tasks, assignment writes
+/// soft-delete), visibility-aware definition streams, and assignment writes on
+/// entry metadata ([addLabels] / [setLabels]). For tasks, assignment writes
 /// also maintain the per-task AI suppression set (`aiSuppressedLabelIds`) so
 /// rejected suggestions are not re-proposed. See the feature README for the
 /// suppression coupling rules.
@@ -74,22 +73,6 @@ class LabelsRepository {
   /// and tuple resolution).
   Future<List<LabelDefinition>> getAllLabels() {
     return _journalDb.getAllLabelDefinitions();
-  }
-
-  /// Build label tuples [{id, name}] for the given label IDs
-  Future<List<Map<String, String>>> buildLabelTuples(List<String> ids) async {
-    if (ids.isEmpty) return <Map<String, String>>[];
-    final all = await getAllLabels();
-    final byId = {for (final def in all) def.id: def};
-    return ids.map((id) {
-      final def = byId[id];
-      return {'id': id, 'name': def?.name ?? id};
-    }).toList();
-  }
-
-  /// Get label usage counts for all labels
-  Future<Map<String, int>> getLabelUsageCounts() {
-    return _journalDb.getLabelUsageCounts();
   }
 
   /// Creates and persists a new label with a generated UUID.
@@ -332,57 +315,6 @@ class LabelsRepository {
     }
   }
 
-  /// Removes a single [labelId] from an entry's metadata.
-  ///
-  /// For tasks, removal is treated as a rejection: [labelId] is added to
-  /// `aiSuppressedLabelIds` so the agent will not re-propose it. Returns
-  /// `true` on success, `false` if the entry is missing or on error (logged).
-  Future<bool?> removeLabel({
-    required String journalEntityId,
-    required String labelId,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      final updatedMetadata = await _persistenceLogic.updateMetadata(
-        removeLabelFromMeta(journalEntity.meta, labelId),
-      );
-
-      // Removing a label adds it to the task's suppression set
-      if (journalEntity is Task) {
-        final currentSuppressed =
-            journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
-        final nextSuppressed = _mergeSuppressed(
-          current: currentSuppressed,
-          add: {labelId},
-        );
-        final updatedEntity = journalEntity.copyWith(
-          meta: updatedMetadata,
-          data: journalEntity.data.copyWith(
-            aiSuppressedLabelIds: nextSuppressed,
-          ),
-        );
-        return _persistenceLogic.updateDbEntity(updatedEntity);
-      }
-
-      return _persistenceLogic.updateDbEntity(
-        journalEntity.copyWith(meta: updatedMetadata),
-      );
-    } catch (error, stackTrace) {
-      _domainLogger.error(
-        LogDomain.labels,
-        error,
-        stackTrace: stackTrace,
-        subDomain: 'removeLabel',
-      );
-      return false;
-    }
-  }
-
   /// Replaces an entry's full label set with [labelIds] (the manual editor's
   /// commit path).
   ///
@@ -512,21 +444,6 @@ Metadata addLabelsToMeta(
     if (!next.contains(labelId)) {
       next.add(labelId);
     }
-  }
-
-  return metadata.copyWith(labelIds: next);
-}
-
-/// Returns a copy of [metadata] without [labelId], collapsing an empty result
-/// to `null` so entries with no labels carry no `labelIds` field.
-Metadata removeLabelFromMeta(
-  Metadata metadata,
-  String labelId,
-) {
-  final next = metadata.labelIds?.where((id) => id != labelId).toList();
-
-  if (next == null || next.isEmpty) {
-    return metadata.copyWith(labelIds: null);
   }
 
   return metadata.copyWith(labelIds: next);

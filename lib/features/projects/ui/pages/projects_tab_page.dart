@@ -225,7 +225,9 @@ class _ProjectsListScaffold extends ConsumerWidget {
                   },
                   onFilterPressed: () => showProjectsFilterModal(
                     context: context,
-                    initialFilter: filter,
+                    initialFilter: ref
+                        .read(projectsFilterControllerProvider.notifier)
+                        .filter,
                     categories: categories,
                     onApplied: (nextFilter) {
                       ref

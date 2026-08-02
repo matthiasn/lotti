@@ -419,6 +419,50 @@ void main() {
     expect(find.text('Category'), findsOneWidget);
   });
 
+  testWidgets(
+    'filter modal reads the latest controller state when it opens',
+    (tester) async {
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup(), buildStudyGroup()],
+      );
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ProjectsTabPage)),
+      );
+      container
+          .read(projectsFilterControllerProvider.notifier)
+          .filter = const ProjectsFilter(
+        selectedStatusIds: {ProjectStatusFilterIds.active},
+        selectedCategoryIds: {'work'},
+        textQuery: 'invocation-time query',
+        searchMode: ProjectsSearchMode.localText,
+      );
+
+      // Deliberately open the modal before another page frame is pumped. This
+      // proves the callback reads the notifier at invocation time instead of
+      // using the filter captured by the previous build.
+      await tester.tap(find.byIcon(Icons.filter_list_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('Status, Active'), findsOneWidget);
+      expect(find.bySemanticsLabel('Category, Work'), findsOneWidget);
+
+      final applyButton = find.byKey(
+        const ValueKey('design-system-task-filter-apply'),
+      );
+      await tester.ensureVisible(applyButton);
+      await tester.tap(applyButton);
+      await tester.pumpAndSettle();
+
+      final applied = container.read(projectsFilterControllerProvider);
+      expect(applied.selectedStatusIds, {ProjectStatusFilterIds.active});
+      expect(applied.selectedCategoryIds, {'work'});
+      expect(applied.textQuery, 'invocation-time query');
+      expect(applied.searchMode, ProjectsSearchMode.localText);
+    },
+  );
+
   testWidgets('opens the shared DS status picker from the filter sheet', (
     tester,
   ) async {
@@ -865,7 +909,8 @@ void main() {
         // the query itself.
         await tester.enterText(find.byType(TextField), 'migration');
         await tester.pump();
-        container.read(projectsFilterControllerProvider.notifier).clear();
+        container.read(projectsFilterControllerProvider.notifier).filter =
+            const ProjectsFilter();
         expect(
           container.read(projectsFilterControllerProvider).textQuery,
           isEmpty,

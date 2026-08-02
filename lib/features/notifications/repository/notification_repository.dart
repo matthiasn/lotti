@@ -69,31 +69,6 @@ class NotificationRepository {
     return create(placeholder);
   }
 
-  Future<NotificationEntity?> createTaskOverdue({
-    required String linkedTaskId,
-    required String title,
-    required String body,
-    DateTime? scheduledFor,
-    String? category,
-  }) {
-    final now = _now();
-    final placeholder = NotificationEntity.taskOverdue(
-      meta: NotificationMeta(
-        id: notificationIdForTaskOverdue(linkedTaskId),
-        createdAt: now,
-        updatedAt: now,
-        scheduledFor: scheduledFor ?? now,
-        vectorClock: const VectorClock({}),
-        originatingHostId: '',
-        category: category,
-      ),
-      linkedTaskId: linkedTaskId,
-      title: title,
-      body: body,
-    );
-    return create(placeholder);
-  }
-
   Future<NotificationEntity?> create(NotificationEntity entity) {
     if (entity is TaskSuggestionNotification) {
       return _withTaskSuggestionMutation(
@@ -155,10 +130,6 @@ class NotificationRepository {
     return _applyLocalState(id: id, seenAt: _now());
   }
 
-  Future<NotificationEntity?> markActedOn(String id) {
-    return _applyLocalState(id: id, actedOnAt: _now());
-  }
-
   Future<List<NotificationEntity>> markTaskSuggestionsActedOn(
     String linkedTaskId,
   ) {
@@ -187,25 +158,10 @@ class NotificationRepository {
     );
   }
 
-  Future<NotificationEntity?> notificationById(String id) {
-    return _notificationsDb.notificationById(id);
-  }
-
-  Future<int> unseenCount(DateTime now) {
-    return _notificationsDb.unseenCount(now);
-  }
-
   String notificationIdForTaskSuggestion(String linkedTaskId) {
     return _uuid.v5(
       Namespace.nil.value,
       jsonEncode(['taskSuggestion', linkedTaskId]),
-    );
-  }
-
-  String notificationIdForTaskOverdue(String linkedTaskId) {
-    return _uuid.v5(
-      Namespace.nil.value,
-      jsonEncode(['taskOverdue', linkedTaskId]),
     );
   }
 

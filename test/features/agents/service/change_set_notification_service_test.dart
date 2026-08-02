@@ -30,9 +30,6 @@ void main() {
       return 'notification-$seed';
     });
     when(
-      () => notificationRepository.markActedOn(any()),
-    ).thenAnswer((_) async => null);
-    when(
       () => notificationRepository.markTaskSuggestionsActedOn(any()),
     ).thenAnswer((_) async => const []);
     when(
@@ -170,7 +167,6 @@ void main() {
       ).captured;
       expect(captured.single, isA<String>());
       expect(captured.single as String, isNotEmpty);
-      verifyNever(() => notificationRepository.markActedOn(any()));
       verifyNever(() => notificationRepository.retract(any()));
     },
   );

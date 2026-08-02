@@ -225,11 +225,6 @@ class ProjectsOverviewSnapshot {
   });
 
   final List<ProjectCategoryGroup> groups;
-
-  int get totalProjectCount => groups.fold<int>(
-    0,
-    (sum, group) => sum + group.projectCount,
-  );
 }
 
 /// Applies [filter] to a loaded [overview], returning only the matching groups.

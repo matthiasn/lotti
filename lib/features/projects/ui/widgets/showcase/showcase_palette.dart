@@ -14,9 +14,6 @@ class ShowcasePalette {
   static Color surface(BuildContext context) =>
       context.designTokens.colors.background.level02;
 
-  static Color expandedSurface(BuildContext context) =>
-      context.designTokens.colors.background.level03;
-
   static Color groupedCardSurface(BuildContext context) =>
       context.designTokens.colors.background.level02;
 
@@ -46,9 +43,6 @@ class ShowcasePalette {
 
   static Color teal(BuildContext context) =>
       context.designTokens.colors.interactive.enabled;
-
-  static Color activeNav(BuildContext context) =>
-      context.designTokens.colors.surface.active;
 
   static Color hoverFill(BuildContext context) =>
       context.designTokens.colors.surface.hover;

@@ -8,12 +8,6 @@
 class LabelAssignmentConfig {
   /// Max number of labels the AI can assign per tool call.
   static const int maxLabelsPerAssignment = 5;
-
-  /// Number of labels to include in prompts by usage descending.
-  static const int labelsPromptTopUsageCount = 50;
-
-  /// Number of additional labels to include alphabetically after top-usage.
-  static const int labelsPromptNextAlphaCount = 50;
 }
 
 /// Max number of labels the AI can assign per tool call.

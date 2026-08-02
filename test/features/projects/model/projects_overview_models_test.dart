@@ -405,56 +405,6 @@ void main() {
     });
   });
 
-  group('ProjectsOverviewSnapshot', () {
-    final category = CategoryTestUtils.createTestCategory(
-      id: 'cat-1',
-      name: 'Design',
-    );
-
-    group('totalProjectCount', () {
-      test('sums project counts across all groups', () {
-        final snapshot = ProjectsOverviewSnapshot(
-          groups: [
-            ProjectCategoryGroup(
-              categoryId: 'cat-1',
-              category: category,
-              projects: [
-                makeTestProjectListItemData(category: category),
-                makeTestProjectListItemData(category: category),
-              ],
-            ),
-            ProjectCategoryGroup(
-              categoryId: 'cat-2',
-              category: null,
-              projects: [
-                makeTestProjectListItemData(),
-              ],
-            ),
-          ],
-        );
-        expect(snapshot.totalProjectCount, 3);
-      });
-
-      test('returns 0 when there are no groups', () {
-        const snapshot = ProjectsOverviewSnapshot(groups: []);
-        expect(snapshot.totalProjectCount, 0);
-      });
-
-      test('returns 0 when all groups are empty', () {
-        final snapshot = ProjectsOverviewSnapshot(
-          groups: [
-            ProjectCategoryGroup(
-              categoryId: 'cat-1',
-              category: category,
-              projects: const [],
-            ),
-          ],
-        );
-        expect(snapshot.totalProjectCount, 0);
-      });
-    });
-  });
-
   group('projectStatusFilterId', () {
     test('maps ProjectOpen to open', () {
       final status = ProjectStatus.open(
