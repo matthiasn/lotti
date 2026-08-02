@@ -90,26 +90,6 @@ class AgentRepoQueries {
         .toList();
   }
 
-  /// Fetch messages for [agentId] in a specific [threadId], optionally capped
-  /// at [limit] rows (most-recent first).
-  Future<List<AgentMessageEntity>> getMessagesForThread(
-    String agentId,
-    String threadId, {
-    int? limit,
-  }) async {
-    final rows = await _db
-        .getAgentMessagesByThread(
-          agentId,
-          threadId,
-          limit ?? -1,
-        )
-        .get();
-    return rows
-        .map(AgentDbConversions.fromEntityRow)
-        .whereType<AgentMessageEntity>()
-        .toList();
-  }
-
   /// Fetch the latest [AgentReportEntity] for [agentId] in [scope], or `null`
   /// if none exists.
   ///

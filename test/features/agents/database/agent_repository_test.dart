@@ -1,8 +1,9 @@
-import 'package:drift/drift.dart' show Variable;
+import 'package:drift/drift.dart' show Value, Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart' show dayAgentIdForDate;
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repo_internals.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -33,6 +34,41 @@ void main() {
   final testDate = DateTime(2026, 2, 20);
   const testAgentId = 'agent-001';
   const otherAgentId = 'agent-002';
+
+  Future<WakeRunLogData?> getWakeRun(
+    AgentDatabase database,
+    String runKey,
+  ) async {
+    final rows = await database.getWakeRunByKey(runKey).get();
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<void> updateWakeRunRating(
+    AgentDatabase database,
+    String runKey, {
+    required double rating,
+    required DateTime ratedAt,
+  }) async {
+    await (database.update(
+      database.wakeRunLog,
+    )..where((row) => row.runKey.equals(runKey))).write(
+      WakeRunLogCompanion(
+        userRating: Value(rating),
+        ratedAt: Value(ratedAt),
+      ),
+    );
+  }
+
+  Future<void> insertSagaOp(
+    AgentDatabase database, {
+    required SagaLogData entry,
+  }) => database.into(database.sagaLog).insert(entry.toCompanion(true));
+
+  Future<List<WakeRunLogData>> getWakeRunsInWindow(
+    AgentDatabase database, {
+    required DateTime since,
+    required DateTime until,
+  }) => database.getWakeRunsInWindow(since, until).get();
 
   // ── Thin local wrappers ────────────────────────────────────────────────────
   // These delegate to the shared test_utils factories but pin the defaults
@@ -563,7 +599,7 @@ void main() {
           final ids = [for (var i = 0; i < 2000; i++) 'id-$i'];
 
           for (final reserve in [0, 1, 300, 899]) {
-            final chunks = AgentRepository.debugSqliteInClauseChunks(
+            final chunks = sqliteInClauseChunks(
               ids,
               reserve: reserve,
             ).toList();
@@ -589,7 +625,7 @@ void main() {
         () {
           // Guards the clamp: without it a reserve >= the chunk size would
           // produce zero-length chunks and loop forever.
-          final chunks = AgentRepository.debugSqliteInClauseChunks(
+          final chunks = sqliteInClauseChunks(
             ['a', 'b', 'c'],
             reserve: 5000,
           ).toList();
@@ -620,7 +656,7 @@ void main() {
           ];
           final deduped = input.toSet();
 
-          final chunks = AgentRepository.debugSqliteInClauseChunks(
+          final chunks = sqliteInClauseChunks(
             input,
           ).toList();
           final flattened = chunks.expand((chunk) => chunk).toList();
@@ -629,7 +665,7 @@ void main() {
           for (final chunk in chunks) {
             expect(
               chunk.length,
-              lessThanOrEqualTo(AgentRepository.debugInClauseChunkSize),
+              lessThanOrEqualTo(sqliteInClauseChunkSize),
               reason: 'count=$count',
             );
           }
@@ -1151,147 +1187,6 @@ void main() {
       );
     });
 
-    group('getActiveAgentByKindAndActiveDayId', () {
-      AgentIdentityEntity identityForLookup({
-        required String agentId,
-        String kind = AgentKinds.dayAgent,
-        AgentLifecycle lifecycle = AgentLifecycle.active,
-        DateTime? createdAt,
-      }) {
-        final timestamp = createdAt ?? testDate;
-        return makeTestIdentity(
-          id: 'identity-$agentId',
-          agentId: agentId,
-          kind: kind,
-          displayName: agentId,
-          lifecycle: lifecycle,
-          currentStateId: 'state-$agentId',
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        );
-      }
-
-      AgentStateEntity stateForLookup({
-        required String agentId,
-        required String activeDayId,
-        DateTime? updatedAt,
-      }) {
-        return makeTestState(
-          id: 'state-$agentId-${updatedAt?.microsecondsSinceEpoch ?? 0}',
-          agentId: agentId,
-          slots: AgentSlots(activeDayId: activeDayId),
-          updatedAt: updatedAt ?? testDate,
-        );
-      }
-
-      test(
-        'returns the newest active agent whose latest state matches',
-        () async {
-          const dayId = 'dayplan-2026-05-25';
-          await repo.upsertEntity(
-            identityForLookup(
-              agentId: 'older-day-agent',
-              createdAt: DateTime(2026, 5, 24),
-            ),
-          );
-          await repo.upsertEntity(
-            stateForLookup(agentId: 'older-day-agent', activeDayId: dayId),
-          );
-          await repo.upsertEntity(
-            identityForLookup(
-              agentId: 'newer-day-agent',
-              createdAt: DateTime(2026, 5, 25),
-            ),
-          );
-          await repo.upsertEntity(
-            stateForLookup(agentId: 'newer-day-agent', activeDayId: dayId),
-          );
-          await repo.upsertEntity(
-            identityForLookup(
-              agentId: 'task-agent',
-              kind: AgentKinds.taskAgent,
-              createdAt: DateTime(2026, 5, 26),
-            ),
-          );
-          await repo.upsertEntity(
-            stateForLookup(agentId: 'task-agent', activeDayId: dayId),
-          );
-          await repo.upsertEntity(
-            identityForLookup(
-              agentId: 'dormant-day-agent',
-              lifecycle: AgentLifecycle.dormant,
-              createdAt: DateTime(2026, 5, 27),
-            ),
-          );
-          await repo.upsertEntity(
-            stateForLookup(agentId: 'dormant-day-agent', activeDayId: dayId),
-          );
-
-          final result = await repo.getActiveAgentByKindAndActiveDayId(
-            kind: AgentKinds.dayAgent,
-            activeDayId: dayId,
-          );
-
-          expect(result?.agentId, 'newer-day-agent');
-        },
-      );
-
-      test(
-        'breaks created_at ties by agent_id DESC',
-        () async {
-          const dayId = 'dayplan-2026-05-25';
-          final sharedCreatedAt = DateTime(2026, 5, 25);
-          for (final agentId in ['tie-agent-a', 'tie-agent-b']) {
-            await repo.upsertEntity(
-              identityForLookup(agentId: agentId, createdAt: sharedCreatedAt),
-            );
-            await repo.upsertEntity(
-              stateForLookup(agentId: agentId, activeDayId: dayId),
-            );
-          }
-
-          final result = await repo.getActiveAgentByKindAndActiveDayId(
-            kind: AgentKinds.dayAgent,
-            activeDayId: dayId,
-          );
-
-          // Equal created_at -> the lexicographically larger agent_id wins.
-          expect(result?.agentId, 'tie-agent-b');
-        },
-      );
-
-      test(
-        'ignores an older matching state when the latest state moved days',
-        () async {
-          const dayId = 'dayplan-2026-05-25';
-          await repo.upsertEntity(
-            identityForLookup(agentId: 'moved-day-agent'),
-          );
-          await repo.upsertEntity(
-            stateForLookup(
-              agentId: 'moved-day-agent',
-              activeDayId: dayId,
-              updatedAt: DateTime(2026, 5, 24),
-            ),
-          );
-          await repo.upsertEntity(
-            stateForLookup(
-              agentId: 'moved-day-agent',
-              activeDayId: 'dayplan-2026-05-26',
-              updatedAt: DateTime(2026, 5, 25),
-            ),
-          );
-
-          final result = await repo.getActiveAgentByKindAndActiveDayId(
-            kind: AgentKinds.dayAgent,
-            activeDayId: dayId,
-          );
-
-          expect(result, isNull);
-        },
-      );
-    });
-
     group('getMessagesByKind', () {
       test('filters messages by kind correctly', () async {
         await repo.upsertEntity(
@@ -1384,72 +1279,6 @@ void main() {
           [for (final event in events) event.id],
           ['day_status:dayplan-2026-07-23:after'],
         );
-      });
-    });
-
-    group('getMessagesForThread', () {
-      test('filters messages by threadId', () async {
-        await repo.upsertEntity(
-          makeMessage(
-            id: 'msg-t1-1',
-            threadId: 'thread-A',
-          ),
-        );
-        await repo.upsertEntity(
-          makeMessage(
-            id: 'msg-t2-1',
-            threadId: 'thread-B',
-          ),
-        );
-        await repo.upsertEntity(
-          makeMessage(
-            id: 'msg-t1-2',
-            threadId: 'thread-A',
-          ),
-        );
-
-        final threadA = await repo.getMessagesForThread(
-          testAgentId,
-          'thread-A',
-        );
-        final threadB = await repo.getMessagesForThread(
-          testAgentId,
-          'thread-B',
-        );
-
-        expect(threadA.length, 2);
-        expect(threadA.map((m) => m.id), containsAll(['msg-t1-1', 'msg-t1-2']));
-        expect(threadB.length, 1);
-        expect(threadB.first.id, 'msg-t2-1');
-      });
-
-      test('respects the limit parameter', () async {
-        for (var i = 0; i < 4; i++) {
-          await repo.upsertEntity(
-            makeMessage(
-              id: 'msg-thread-$i',
-              threadId: 'thread-X',
-            ),
-          );
-        }
-
-        final results = await repo.getMessagesForThread(
-          testAgentId,
-          'thread-X',
-          limit: 2,
-        );
-
-        expect(results.length, 2);
-      });
-
-      test('returns empty list when thread has no messages', () async {
-        await repo.upsertEntity(makeMessage(threadId: 'thread-A'));
-
-        final results = await repo.getMessagesForThread(
-          testAgentId,
-          'thread-Z',
-        );
-        expect(results, isEmpty);
       });
     });
 
@@ -2532,41 +2361,6 @@ void main() {
         expect(detail, contains('idx_attention_claims_active_target'));
       },
     );
-
-    test(
-      'rebuilds the local projection from source entities for repair',
-      () async {
-        final claim = makeAttentionClaim(
-          id: 'attention-claim-rebuild',
-          rangeStart: DateTime(2026, 5, 26),
-          rangeEnd: DateTime(2026, 5, 28),
-        );
-        await repo.upsertEntity(claim);
-        await repo.upsertEntity(
-          makeAttentionDisposition(
-            id: 'attention-disposition-rebuild',
-            requestId: claim.id,
-            nextReviewAt: DateTime(2026, 5, 27, 8),
-            createdAt: testDate.add(const Duration(minutes: 1)),
-          ),
-        );
-        await db.customStatement('DELETE FROM attention_claim_index');
-
-        final missingClaims = await repo.getAttentionClaimsForWindow(
-          start: DateTime(2026, 5, 27),
-          end: DateTime(2026, 5, 28),
-        );
-        expect(missingClaims, isEmpty);
-
-        await repo.rebuildAttentionClaimProjection();
-
-        final rebuiltClaims = await repo.getAttentionClaimsForWindow(
-          start: DateTime(2026, 5, 27),
-          end: DateTime(2026, 5, 28),
-        );
-        expect(rebuiltClaims.map((item) => item.id), [claim.id]);
-      },
-    );
   });
 
   group('getAttentionPlanningInputsForWindow', () {
@@ -2598,253 +2392,6 @@ void main() {
         expect(inputs.standingAgreements.map((item) => item.id), [
           agreement.id,
         ]);
-      },
-    );
-  });
-
-  group('getStandingAgreementsForWindow', () {
-    test(
-      'returns active agreements whose windows overlap the planner window',
-      () async {
-        final lowerPriority = makeStandingAgreement(
-          id: 'standing-agreement-lower',
-          title: 'Keep admin bounded',
-          scope: StandingAgreementScope.paperwork,
-          minMinutes: null,
-          maxMinutes: 180,
-          activeFrom: DateTime(2026, 5),
-          activeUntil: DateTime(2026, 6),
-        );
-        final higherPriority = makeStandingAgreement(
-          id: 'standing-agreement-higher',
-          title: 'Exercise three times',
-          priority: 90,
-          canPreempt: true,
-          activeFrom: DateTime(2026, 5, 15),
-          activeUntil: DateTime(2026, 5, 29),
-          updatedAt: testDate.add(const Duration(minutes: 1)),
-        );
-        final future = makeStandingAgreement(
-          id: 'standing-agreement-future',
-          activeFrom: DateTime(2026, 6),
-          activeUntil: DateTime(2026, 7),
-          priority: 100,
-        );
-
-        await repo.upsertEntity(lowerPriority);
-        await repo.upsertEntity(higherPriority);
-        await repo.upsertEntity(future);
-
-        final agreements = await repo.getStandingAgreementsForWindow(
-          start: DateTime(2026, 5, 27),
-          end: DateTime(2026, 5, 28),
-        );
-
-        expect(
-          agreements.map((agreement) => agreement.id),
-          ['standing-agreement-higher', 'standing-agreement-lower'],
-        );
-        expect(agreements.first.canPreempt, isTrue);
-        expect(agreements.first.minCount, 3);
-        expect(agreements.last.maxMinutes, 180);
-      },
-    );
-
-    test('filters by status, scope, active window, and deletion', () async {
-      final activeFitness = makeStandingAgreement(
-        id: 'standing-agreement-active-fitness',
-        activeFrom: DateTime(2026, 5),
-      );
-      final pausedSleep = makeStandingAgreement(
-        id: 'standing-agreement-paused-sleep',
-        title: 'Protect sleep',
-        scope: StandingAgreementScope.sleep,
-        cadence: StandingAgreementCadence.daily,
-        status: StandingAgreementStatus.paused,
-        activeFrom: DateTime(2026, 5),
-      );
-      final expiredFitness = makeStandingAgreement(
-        id: 'standing-agreement-expired-fitness',
-        activeFrom: DateTime(2026, 4),
-        activeUntil: DateTime(2026, 5),
-      );
-      final deletedFitness = makeStandingAgreement(
-        id: 'standing-agreement-deleted-fitness',
-        activeFrom: DateTime(2026, 5),
-        deletedAt: testDate.add(const Duration(minutes: 1)),
-      );
-
-      await repo.upsertEntity(activeFitness);
-      await repo.upsertEntity(pausedSleep);
-      await repo.upsertEntity(expiredFitness);
-      await repo.upsertEntity(deletedFitness);
-
-      final activeFitnessAgreements = await repo.getStandingAgreementsForWindow(
-        start: DateTime(2026, 5, 27),
-        end: DateTime(2026, 5, 28),
-        scopes: const {StandingAgreementScope.fitness},
-      );
-      expect(
-        activeFitnessAgreements.map((agreement) => agreement.id),
-        ['standing-agreement-active-fitness'],
-      );
-
-      final pausedSleepAgreements = await repo.getStandingAgreementsForWindow(
-        start: DateTime(2026, 5, 27),
-        end: DateTime(2026, 5, 28),
-        statuses: const {StandingAgreementStatus.paused},
-        scopes: const {StandingAgreementScope.sleep},
-      );
-      expect(
-        pausedSleepAgreements.map((agreement) => agreement.id),
-        ['standing-agreement-paused-sleep'],
-      );
-
-      final noScopes = await repo.getStandingAgreementsForWindow(
-        start: DateTime(2026, 5, 27),
-        end: DateTime(2026, 5, 28),
-        scopes: const {},
-      );
-      expect(noScopes, isEmpty);
-    });
-
-    test(
-      'updates the projection when an agreement lifecycle changes',
-      () async {
-        final active = makeStandingAgreement(
-          id: 'standing-agreement-lifecycle',
-          activeFrom: DateTime(2026, 5),
-        );
-        await repo.upsertEntity(active);
-
-        final beforePause = await repo.getStandingAgreementsForWindow(
-          start: DateTime(2026, 5, 27),
-          end: DateTime(2026, 5, 28),
-        );
-        expect(beforePause.map((agreement) => agreement.id), [active.id]);
-
-        await repo.upsertEntity(
-          makeStandingAgreement(
-            id: active.id,
-            status: StandingAgreementStatus.paused,
-            activeFrom: DateTime(2026, 5),
-            updatedAt: testDate.add(const Duration(minutes: 1)),
-          ),
-        );
-
-        final defaultAgreements = await repo.getStandingAgreementsForWindow(
-          start: DateTime(2026, 5, 27),
-          end: DateTime(2026, 5, 28),
-        );
-        expect(defaultAgreements, isEmpty);
-
-        final pausedAgreements = await repo.getStandingAgreementsForWindow(
-          start: DateTime(2026, 5, 27),
-          end: DateTime(2026, 5, 28),
-          statuses: const {StandingAgreementStatus.paused},
-        );
-        expect(pausedAgreements.map((agreement) => agreement.id), [active.id]);
-      },
-    );
-
-    test(
-      'normalizes invalid active windows to a one-minute projection',
-      () async {
-        final agreement = makeStandingAgreement(
-          id: 'standing-agreement-normalized',
-          activeFrom: DateTime(2026, 5, 27, 9),
-          activeUntil: DateTime(2026, 5, 27, 9),
-        );
-        await repo.upsertEntity(agreement);
-
-        final agreements = await repo.getStandingAgreementsForWindow(
-          start: DateTime(2026, 5, 27, 9),
-          end: DateTime(2026, 5, 27, 9, 1),
-        );
-        expect(agreements.map((item) => item.id), [agreement.id]);
-      },
-    );
-
-    test(
-      'reads from the projection and rebuilds it only on explicit repair',
-      () async {
-        final agreement = makeStandingAgreement(
-          id: 'standing-agreement-rebuild',
-          activeFrom: DateTime(2026, 5),
-          activeUntil: DateTime(2026, 6),
-        );
-        await repo.upsertEntity(agreement);
-        await db.customStatement('DELETE FROM standing_agreement_index');
-
-        final missingAgreements = await repo.getStandingAgreementsForWindow(
-          start: DateTime(2026, 5, 27),
-          end: DateTime(2026, 5, 28),
-        );
-        expect(missingAgreements, isEmpty);
-
-        await repo.rebuildStandingAgreementProjection();
-
-        final rebuiltAgreements = await repo.getStandingAgreementsForWindow(
-          start: DateTime(2026, 5, 27),
-          end: DateTime(2026, 5, 28),
-        );
-        expect(rebuiltAgreements.map((agreement) => agreement.id), [
-          'standing-agreement-rebuild',
-        ]);
-      },
-    );
-
-    test(
-      'skips malformed standing-agreement source rows during repair',
-      () async {
-        const malformedId = 'standing-agreement-malformed';
-        const malformedCreatedAtIso = '2026-02-20T00:00:00.000';
-        const serializedUnknown =
-            '''
-{"runtimeType":"futureVariantNotYetKnown","id":"$malformedId","agentId":"$testAgentId","createdAt":"$malformedCreatedAtIso","vectorClock":null,"deletedAt":null}
-''';
-
-        await db.customInsert(
-          '''
-          INSERT INTO agent_entities (
-            id,
-            agent_id,
-            type,
-            subtype,
-            thread_id,
-            created_at,
-            updated_at,
-            deleted_at,
-            serialized,
-            schema_version
-          )
-          VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, ?, 1)
-        ''',
-          variables: [
-            Variable.withString(malformedId),
-            Variable.withString(testAgentId),
-            Variable.withString(AgentEntityTypes.standingAgreement),
-            Variable.withDateTime(testDate),
-            Variable.withDateTime(testDate),
-            Variable.withString(serializedUnknown.trim()),
-          ],
-          updates: {db.agentEntities},
-        );
-
-        await repo.rebuildStandingAgreementProjection();
-
-        final projectedRows = await db
-            .customSelect(
-              '''
-              SELECT agreement_id
-              FROM standing_agreement_index
-              WHERE agreement_id = ?
-            ''',
-              variables: [Variable.withString(malformedId)],
-              readsFrom: {db.standingAgreementIndex},
-            )
-            .get();
-        expect(projectedRows, isEmpty);
       },
     );
   });
@@ -3778,7 +3325,7 @@ void main() {
       final entry = makeWakeRun();
       await repo.insertWakeRun(entry: entry);
 
-      final result = await repo.getWakeRun(entry.runKey);
+      final result = await getWakeRun(db, entry.runKey);
 
       expect(result, isNotNull);
       expect(result!.runKey, entry.runKey);
@@ -3811,7 +3358,7 @@ void main() {
     });
 
     test('getWakeRun returns null for unknown runKey', () async {
-      final result = await repo.getWakeRun('no-such-key');
+      final result = await getWakeRun(db, 'no-such-key');
       expect(result, isNull);
     });
 
@@ -3825,7 +3372,7 @@ void main() {
             repo.updateWakeRunStatus('no-such-run-key', 'completed'),
             completes,
           );
-          expect(await repo.getWakeRun('no-such-run-key'), isNull);
+          expect(await getWakeRun(db, 'no-such-run-key'), isNull);
         },
       );
 
@@ -3834,7 +3381,7 @@ void main() {
 
         await repo.updateWakeRunStatus('run-key-001', 'running');
 
-        final result = await repo.getWakeRun('run-key-001');
+        final result = await getWakeRun(db, 'run-key-001');
         expect(result!.status, 'running');
       });
 
@@ -3848,7 +3395,7 @@ void main() {
           startedAt: startedAt,
         );
 
-        final result = await repo.getWakeRun('run-key-001');
+        final result = await getWakeRun(db, 'run-key-001');
         expect(result!.status, 'running');
         expect(result.startedAt, startedAt);
       });
@@ -3864,7 +3411,7 @@ void main() {
           errorMessage: 'Tool execution timed out',
         );
 
-        final result = await repo.getWakeRun('run-key-001');
+        final result = await getWakeRun(db, 'run-key-001');
         expect(result!.status, 'failed');
         expect(result.completedAt, completedAt);
         expect(result.errorMessage, 'Tool execution timed out');
@@ -3885,7 +3432,7 @@ void main() {
 
         await repo.updateWakeRunStatus('run-key-002', 'done');
 
-        final result = await repo.getWakeRun('run-key-002');
+        final result = await getWakeRun(db, 'run-key-002');
         expect(result!.status, 'done');
         // errorMessage was not overwritten.
         expect(result.errorMessage, 'pre-existing');
@@ -3940,14 +3487,15 @@ void main() {
             );
 
             if (spec.hasRating) {
-              await localRepo.updateWakeRunRating(
+              await updateWakeRunRating(
+                localDb,
                 spec.runKeyAt(index),
                 rating: spec.rating,
                 ratedAt: spec.ratedAt(index),
               );
             }
 
-            final restored = await localRepo.getWakeRun(spec.runKeyAt(index));
+            final restored = await getWakeRun(localDb, spec.runKeyAt(index));
             expect(restored, isNotNull, reason: '$scenario');
             expect(restored!.agentId, spec.agentId, reason: '$scenario');
             expect(restored.reason, spec.reason, reason: '$scenario');
@@ -4053,7 +3601,8 @@ void main() {
             reason: '$scenario',
           );
 
-          final globalWindowRuns = await localRepo.getWakeRunsInWindow(
+          final globalWindowRuns = await getWakeRunsInWindow(
+            localDb,
             since: generatedWakeWindowStart,
             until: generatedWakeWindowEnd,
           );
@@ -4101,7 +3650,7 @@ void main() {
 
           for (var index = 0; index < scenario.specs.length; index++) {
             final spec = scenario.specs[index];
-            final restored = await localRepo.getWakeRun(spec.runKeyAt(index));
+            final restored = await getWakeRun(localDb, spec.runKeyAt(index));
             expect(restored, isNotNull, reason: '$scenario');
             if (spec.status == WakeRunStatus.running) {
               expect(
@@ -4127,118 +3676,6 @@ void main() {
   });
 
   // ── Saga log ────────────────────────────────────────────────────────────────
-
-  group('Saga log', () {
-    test('insertSagaOp + getPendingSagaOps roundtrip', () async {
-      final op = makeSagaOp();
-      await repo.insertSagaOp(entry: op);
-
-      final pending = await repo.getPendingSagaOps();
-
-      expect(pending.length, 1);
-      expect(pending.first.operationId, op.operationId);
-      expect(pending.first.runKey, op.runKey);
-      expect(pending.first.phase, 'execution');
-      expect(pending.first.status, 'pending');
-      expect(pending.first.toolName, 'create_entry');
-    });
-
-    test('insertSagaOp throws on duplicate operationId', () async {
-      await repo.insertSagaOp(entry: makeSagaOp());
-
-      await expectLater(
-        repo.insertSagaOp(entry: makeSagaOp()),
-        throwsA(
-          isA<DuplicateInsertException>()
-              .having((e) => e.table, 'table', 'saga_log')
-              .having((e) => e.key, 'key', 'op-001'),
-        ),
-      );
-    });
-
-    test('getPendingSagaOps returns only pending entries', () async {
-      await repo.insertSagaOp(entry: makeSagaOp(operationId: 'op-pending'));
-      await repo.insertSagaOp(
-        entry: makeSagaOp(operationId: 'op-done', status: 'done'),
-      );
-      await repo.insertSagaOp(
-        entry: makeSagaOp(operationId: 'op-failed', status: 'failed'),
-      );
-
-      final pending = await repo.getPendingSagaOps();
-
-      expect(pending.length, 1);
-      expect(pending.first.operationId, 'op-pending');
-    });
-
-    test(
-      'updateSagaStatus transitions status so pending list shrinks',
-      () async {
-        await repo.insertSagaOp(entry: makeSagaOp(operationId: 'op-A'));
-        await repo.insertSagaOp(entry: makeSagaOp(operationId: 'op-B'));
-
-        expect((await repo.getPendingSagaOps()).length, 2);
-
-        await repo.updateSagaStatus('op-A', 'done');
-
-        final pending = await repo.getPendingSagaOps();
-        expect(pending.length, 1);
-        expect(pending.first.operationId, 'op-B');
-      },
-    );
-
-    test('updateSagaStatus sets lastError when provided', () async {
-      await repo.insertSagaOp(entry: makeSagaOp());
-
-      await repo.updateSagaStatus(
-        'op-001',
-        'failed',
-        lastError: 'Network timeout',
-      );
-
-      // A failed op is no longer pending — verify via direct DB query.
-      final allOps = await db.select(db.sagaLog).get();
-      final op = allOps.firstWhere((o) => o.operationId == 'op-001');
-      expect(op.status, 'failed');
-      expect(op.lastError, 'Network timeout');
-    });
-
-    test(
-      'getPendingSagaOps returns ops ordered by createdAt ascending',
-      () async {
-        await repo.insertSagaOp(
-          entry: SagaLogData(
-            operationId: 'op-late',
-            agentId: testAgentId,
-            runKey: 'run-key-001',
-            phase: 'execution',
-            status: 'pending',
-            toolName: 'tool_b',
-            createdAt: DateTime(2026, 2, 20, 10),
-            updatedAt: testDate,
-          ),
-        );
-        await repo.insertSagaOp(
-          entry: SagaLogData(
-            operationId: 'op-early',
-            agentId: testAgentId,
-            runKey: 'run-key-001',
-            phase: 'execution',
-            status: 'pending',
-            toolName: 'tool_a',
-            createdAt: DateTime(2026, 2, 20, 8),
-            updatedAt: testDate,
-          ),
-        );
-
-        final pending = await repo.getPendingSagaOps();
-
-        expect(pending.length, 2);
-        expect(pending.first.operationId, 'op-early');
-        expect(pending.last.operationId, 'op-late');
-      },
-    );
-  });
 
   // ── hardDeleteAgent ─────────────────────────────────────────────────────────
 
@@ -4418,10 +3855,12 @@ void main() {
 
     test('deletes saga ops even when wake run rows are missing', () async {
       // Saga ops exist but no corresponding wake_run_log rows.
-      await repo.insertSagaOp(
+      await insertSagaOp(
+        db,
         entry: makeSagaOp(operationId: 'orphan-op-1'),
       );
-      await repo.insertSagaOp(
+      await insertSagaOp(
+        db,
         entry: makeSagaOp(operationId: 'orphan-op-2', status: 'done'),
       );
 
@@ -4436,10 +3875,12 @@ void main() {
 
     test('deletes saga ops associated with target agent wake runs', () async {
       await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-saga'));
-      await repo.insertSagaOp(
+      await insertSagaOp(
+        db,
         entry: makeSagaOp(operationId: 'saga-op-1', runKey: 'run-saga'),
       );
-      await repo.insertSagaOp(
+      await insertSagaOp(
+        db,
         entry: makeSagaOp(
           operationId: 'saga-op-2',
           runKey: 'run-saga',
@@ -4521,10 +3962,12 @@ void main() {
       await repo.insertWakeRun(
         entry: makeWakeRun(runKey: 'run-other', agentId: otherAgentId),
       );
-      await repo.insertSagaOp(
+      await insertSagaOp(
+        db,
         entry: makeSagaOp(operationId: 'op-target', runKey: 'run-target'),
       );
-      await repo.insertSagaOp(
+      await insertSagaOp(
+        db,
         entry: makeSagaOp(
           operationId: 'op-other',
           agentId: otherAgentId,
@@ -4558,7 +4001,8 @@ void main() {
       await repo.upsertEntity(makeAgentState());
       await repo.upsertLink(makeBasicLink());
       await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-full'));
-      await repo.insertSagaOp(
+      await insertSagaOp(
+        db,
         entry: makeSagaOp(operationId: 'op-full', runKey: 'run-full'),
       );
 
@@ -4583,7 +4027,8 @@ void main() {
           createdAt: deleteDate,
         ),
       );
-      await repo.insertSagaOp(
+      await insertSagaOp(
+        db,
         entry: SagaLogData(
           operationId: 'op-other',
           agentId: otherAgentId,
@@ -4927,7 +4372,7 @@ void main() {
 
         await repo.updateWakeRunTemplate('run-tpl', 'tpl-001', 'ver-001');
 
-        final run = await repo.getWakeRun('run-tpl');
+        final run = await getWakeRun(db, 'run-tpl');
         expect(run, isNotNull);
         expect(run!.templateId, 'tpl-001');
         expect(run.templateVersionId, 'ver-001');
@@ -4944,7 +4389,7 @@ void main() {
           soulVersionId: 'sv-001',
         );
 
-        final run = await repo.getWakeRun('run-soul');
+        final run = await getWakeRun(db, 'run-soul');
         expect(run, isNotNull);
         expect(run!.templateId, 'tpl-001');
         expect(run.soulId, 'soul-001');
@@ -4959,7 +4404,7 @@ void main() {
 
           // First update without optional args: columns stay NULL.
           await repo.updateWakeRunTemplate('run-absent', 'tpl-001', 'ver-001');
-          var run = await repo.getWakeRun('run-absent');
+          var run = await getWakeRun(db, 'run-absent');
           expect(run!.resolvedModelId, isNull);
           expect(run.soulId, isNull);
           expect(run.soulVersionId, isNull);
@@ -4976,7 +4421,7 @@ void main() {
 
           // A later update without optional args must NOT null them out.
           await repo.updateWakeRunTemplate('run-absent', 'tpl-002', 'ver-002');
-          run = await repo.getWakeRun('run-absent');
+          run = await getWakeRun(db, 'run-absent');
           expect(run!.templateId, 'tpl-002');
           expect(run.resolvedModelId, 'model-1');
           expect(run.soulId, 'soul-001');
@@ -5055,50 +4500,6 @@ void main() {
       });
     });
 
-    group('getWakeRunsInWindow', () {
-      test('returns runs within the time window across all agents', () async {
-        final base = DateTime(2026, 4, 4, 10);
-        await repo.insertWakeRun(
-          entry: makeTestWakeRun(
-            runKey: 'r-in-1',
-            agentId: 'agent-a',
-            createdAt: base,
-          ),
-        );
-        await repo.insertWakeRun(
-          entry: makeTestWakeRun(
-            runKey: 'r-in-2',
-            agentId: 'agent-b',
-            createdAt: base.add(const Duration(hours: 1)),
-          ),
-        );
-        await repo.insertWakeRun(
-          entry: makeTestWakeRun(
-            runKey: 'r-outside',
-            agentId: 'agent-a',
-            createdAt: base.subtract(const Duration(days: 2)),
-          ),
-        );
-
-        final runs = await repo.getWakeRunsInWindow(
-          since: base.subtract(const Duration(hours: 1)),
-          until: base.add(const Duration(hours: 2)),
-        );
-
-        expect(runs.map((r) => r.runKey), containsAll(['r-in-1', 'r-in-2']));
-        expect(runs.map((r) => r.runKey), isNot(contains('r-outside')));
-      });
-
-      test('returns empty list when no runs fall in window', () async {
-        final runs = await repo.getWakeRunsInWindow(
-          since: DateTime(2026),
-          until: DateTime(2026, 1, 2),
-        );
-
-        expect(runs, isEmpty);
-      });
-    });
-
     group('templateAssignment link CRUD', () {
       test('templateAssignment link persists and restores correctly', () async {
         final link = model.AgentLink.templateAssignment(
@@ -5146,24 +4547,24 @@ void main() {
       expect(abandoned, 2);
 
       // Verify running runs are now abandoned.
-      final run1 = await repo.getWakeRun('run-running-1');
+      final run1 = await getWakeRun(db, 'run-running-1');
       expect(run1!.status, 'abandoned');
       expect(
         run1.errorMessage,
         contains('abandoned on startup'),
       );
 
-      final run2 = await repo.getWakeRun('run-running-2');
+      final run2 = await getWakeRun(db, 'run-running-2');
       expect(run2!.status, 'abandoned');
 
       // Verify non-running runs are untouched (terminal states and
       // pending alike).
       for (final status in ['completed', 'failed', 'aborted', 'abandoned']) {
-        final run = await repo.getWakeRun('run-$status');
+        final run = await getWakeRun(db, 'run-$status');
         expect(run!.status, status, reason: 'status $status must not change');
       }
 
-      final pending = await repo.getWakeRun('run-pending');
+      final pending = await getWakeRun(db, 'run-pending');
       expect(pending!.status, 'pending');
     });
 
@@ -5181,73 +4582,6 @@ void main() {
       final abandoned = await repo.abandonOrphanedWakeRuns();
 
       expect(abandoned, 0);
-    });
-  });
-
-  group('getAllEntities', () {
-    test('returns all entity types', () async {
-      await repo.upsertEntity(makeAgent(id: 'agent-a', agentId: 'a-001'));
-      await repo.upsertEntity(makeAgentState());
-      await repo.upsertEntity(makeMessage());
-
-      final entities = await repo.getAllEntities();
-
-      expect(entities.length, 3);
-      expect(
-        entities.map((e) => e.id),
-        containsAll(['agent-a', 'entity-state-001', 'entity-msg-001']),
-      );
-    });
-
-    test('returns empty list when no entities exist', () async {
-      final entities = await repo.getAllEntities();
-
-      expect(entities, isEmpty);
-    });
-
-    test('returns stable bounded pages for maintenance scans', () async {
-      await repo.upsertEntity(makeAgent(id: 'agent-c', agentId: 'c-001'));
-      await repo.upsertEntity(makeAgent(id: 'agent-a', agentId: 'a-001'));
-      await repo.upsertEntity(makeAgent(id: 'agent-b', agentId: 'b-001'));
-
-      final first = await repo.getEntitiesPage(limit: 2);
-      final second = await repo.getEntitiesPage(
-        limit: 2,
-        afterId: first.last.id,
-      );
-
-      expect(first.map((entity) => entity.id), ['agent-a', 'agent-b']);
-      expect(second.map((entity) => entity.id), ['agent-c']);
-    });
-  });
-
-  group('getAllLinks', () {
-    test('returns all link types', () async {
-      await repo.upsertLink(makeBasicLink());
-      await repo.upsertLink(
-        model.AgentLink.agentTask(
-          id: 'link-task-001',
-          fromId: testAgentId,
-          toId: 'task-001',
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
-      );
-
-      final links = await repo.getAllLinks();
-
-      expect(links.length, 2);
-      expect(
-        links.map((l) => l.id),
-        containsAll(['link-001', 'link-task-001']),
-      );
-    });
-
-    test('returns empty list when no links exist', () async {
-      final links = await repo.getAllLinks();
-
-      expect(links, isEmpty);
     });
   });
 
@@ -6595,44 +5929,6 @@ void main() {
 
   // ── countEntitiesByAgentAndType (facade delegation) ───────────────────────
 
-  group('countEntitiesByAgentAndType', () {
-    const plannerAgentId = 'daily_os_planner';
-
-    test('delegates and counts active + soft-deleted rows for the '
-        'agent/type', () async {
-      await repo.upsertEntity(
-        makeTestDayPlan(
-          id: 'day_agent_plan:active',
-          agentId: plannerAgentId,
-          dayId: 'active',
-        ),
-      );
-      await repo.upsertEntity(
-        makeTestDayPlan(
-          id: 'day_agent_plan:tombstone',
-          agentId: plannerAgentId,
-          dayId: 'tombstone',
-        ).copyWith(deletedAt: DateTime(2026, 3, 16)),
-      );
-
-      final count = await repo.countEntitiesByAgentAndType(
-        agentId: plannerAgentId,
-        type: AgentEntityTypes.dayPlan,
-      );
-
-      expect(count, 2);
-    });
-
-    test('returns 0 when the agent has no rows of the type', () async {
-      final count = await repo.countEntitiesByAgentAndType(
-        agentId: plannerAgentId,
-        type: AgentEntityTypes.dayPlan,
-      );
-
-      expect(count, 0);
-    });
-  });
-
   // ── countEntitiesByType (facade delegation) ───────────────────────────────
 
   group('countEntitiesByType', () {
@@ -6726,32 +6022,6 @@ void main() {
       final recaps = await repo.getEvolutionSessionRecaps(templateId, limit: 3);
 
       expect(recaps.length, 3);
-    });
-  });
-
-  group('getEvolutionSessionRecap', () {
-    test('returns the recap entity for the given sessionId', () async {
-      const sessionId = 'session-recap-fetch';
-      await repo.upsertEntity(
-        makeTestEvolutionSessionRecap(
-          id: evolutionSessionRecapId(sessionId),
-          agentId: 'tpl-recap-fetch',
-          sessionId: sessionId,
-          tldr: 'Found it',
-        ),
-      );
-
-      final recap = await repo.getEvolutionSessionRecap(sessionId);
-
-      expect(recap, isNotNull);
-      expect(recap!.sessionId, sessionId);
-      expect(recap.tldr, 'Found it');
-    });
-
-    test('returns null when no recap exists for sessionId', () async {
-      final recap = await repo.getEvolutionSessionRecap('session-missing');
-
-      expect(recap, isNull);
     });
   });
 
@@ -6918,82 +6188,6 @@ void main() {
 
   // ── getGlobalTokenUsageSince ──────────────────────────────────────────────
 
-  group('getGlobalTokenUsageSince', () {
-    test(
-      'returns token usage records on or after since across all agents',
-      () async {
-        final cutoff = DateTime(2026, 4, 10);
-
-        await repo.upsertEntity(
-          makeTestWakeTokenUsage(
-            id: 'gtu-before',
-            agentId: 'agent-global-A',
-            runKey: 'run-gb',
-            inputTokens: 500,
-            createdAt: DateTime(2026, 4, 9),
-          ),
-        );
-        await repo.upsertEntity(
-          makeTestWakeTokenUsage(
-            id: 'gtu-on',
-            agentId: 'agent-global-B',
-            runKey: 'run-go',
-            createdAt: cutoff,
-          ),
-        );
-        await repo.upsertEntity(
-          makeTestWakeTokenUsage(
-            id: 'gtu-after',
-            agentId: 'agent-global-C',
-            runKey: 'run-ga',
-            inputTokens: 200,
-            createdAt: DateTime(2026, 4, 11),
-          ),
-        );
-
-        final result = await repo.getGlobalTokenUsageSince(since: cutoff);
-
-        expect(result.map((r) => r.id), containsAll(['gtu-on', 'gtu-after']));
-        expect(result.map((r) => r.id), isNot(contains('gtu-before')));
-      },
-    );
-
-    test('returns empty list when no records are on or after since', () async {
-      await repo.upsertEntity(
-        makeTestWakeTokenUsage(
-          id: 'gtu-old',
-          agentId: 'agent-old',
-          runKey: 'run-old',
-          createdAt: DateTime(2026),
-        ),
-      );
-
-      final result = await repo.getGlobalTokenUsageSince(
-        since: DateTime(2026, 6),
-      );
-
-      expect(result, isEmpty);
-    });
-
-    test('aggregates across agents without template filter', () async {
-      final since = DateTime(2026, 5);
-      for (var i = 0; i < 3; i++) {
-        await repo.upsertEntity(
-          makeTestWakeTokenUsage(
-            id: 'gtu-multi-$i',
-            agentId: 'agent-multi-$i',
-            runKey: 'run-multi-$i',
-            createdAt: since.add(Duration(hours: i)),
-          ),
-        );
-      }
-
-      final result = await repo.getGlobalTokenUsageSince(since: since);
-
-      expect(result.length, 3);
-    });
-  });
-
   // ── getActiveSoulDocumentVersionsBySoulIds empty branch ───────────────────
 
   group('getActiveSoulDocumentVersionsBySoulIds', () {
@@ -7088,25 +6282,6 @@ void main() {
           message: any(named: 'message', that: contains('wake_run_log')),
           stackTrace: any(named: 'stackTrace', that: isNotNull),
           subDomain: 'AgentRepository.insertWakeRun',
-        ),
-      ).called(1);
-    });
-
-    test('insertSagaOp logs SqliteException before throwing', () async {
-      await loggedRepo.insertSagaOp(entry: makeSagaOp());
-
-      await expectLater(
-        loggedRepo.insertSagaOp(entry: makeSagaOp()),
-        throwsA(isA<DuplicateInsertException>()),
-      );
-
-      verify(
-        () => mockLogger.error(
-          LogDomain.agentRuntime,
-          any(that: isA<SqliteException>()),
-          message: any(named: 'message', that: contains('saga_log')),
-          stackTrace: any(named: 'stackTrace', that: isNotNull),
-          subDomain: 'AgentRepository.insertSagaOp',
         ),
       ).called(1);
     });

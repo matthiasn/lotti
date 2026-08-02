@@ -278,15 +278,6 @@ class AgentRepoLinks {
     return _db.countAgentLinksWithNullVectorClock().getSingle();
   }
 
-  /// Fetch all non-deleted agent links, ordered by `created_at` ascending.
-  ///
-  /// Used by the maintenance sync step to enqueue all agent links for
-  /// cross-device synchronization.
-  Future<List<model.AgentLink>> getAllLinks() async {
-    final rows = await _db.getAllAgentLinks().get();
-    return rows.map(AgentDbConversions.fromLinkRow).toList();
-  }
-
   /// Fetches agent links (including soft-deleted) updated in the
   /// half-open interval [start, end), paginated.
   Future<List<model.AgentLink>> getLinksInInterval({
@@ -416,21 +407,6 @@ class AgentRepoLinks {
     return _db.getWakeRunsByTemplateInWindow(templateId, since, until).get();
   }
 
-  /// Fetch all wake runs across all agents within the inclusive window.
-  Future<List<WakeRunLogData>> getWakeRunsInWindow({
-    required DateTime since,
-    required DateTime until,
-  }) {
-    return _db.getWakeRunsInWindow(since, until).get();
-  }
-
-  /// Fetch a single wake-run entry by [runKey], or `null` if not found.
-  Future<WakeRunLogData?> getWakeRun(String runKey) async {
-    final rows = await _db.getWakeRunByKey(runKey).get();
-    if (rows.isEmpty) return null;
-    return rows.first;
-  }
-
   /// Fetch the most recent wake-run entry for [agentId] and [threadId],
   /// or `null`.
   Future<WakeRunLogData?> getWakeRunByThreadId(
@@ -487,21 +463,6 @@ class AgentRepoLinks {
         .toList();
   }
 
-  /// Fetch all token usage records across all agents created on or after
-  /// [since].
-  ///
-  /// Used by the global token stats view to compute daily aggregates without
-  /// filtering by template or agent.
-  Future<List<WakeTokenUsageEntity>> getGlobalTokenUsageSince({
-    required DateTime since,
-  }) async {
-    final rows = await _db.getGlobalTokenUsageSince(since).get();
-    return rows
-        .map(AgentDbConversions.fromEntityRow)
-        .whereType<WakeTokenUsageEntity>()
-        .toList();
-  }
-
   /// Mark any wake runs still in `running` status as `abandoned`.
   ///
   /// Called on startup to clean up runs left behind by a hot restart or crash.
@@ -518,54 +479,6 @@ class AgentRepoLinks {
             ),
           ),
         );
-  }
-
-  // ── Saga log ───────────────────────────────────────────────────────────────
-
-  /// Insert a new [SagaLogData] entry.
-  ///
-  /// Throws [DuplicateInsertException] if the operation ID already exists.
-  Future<void> insertSagaOp({required SagaLogData entry}) async {
-    try {
-      await _db.into(_db.sagaLog).insert(entry.toCompanion(true));
-    } on SqliteException catch (e, st) {
-      if (e.resultCode == 19) {
-        _domainLogger?.error(
-          LogDomain.agentRuntime,
-          e,
-          message:
-              'saga_log unique constraint violated for '
-              'operationId=${DomainLogger.sanitizeId(entry.operationId)}',
-          stackTrace: st,
-          subDomain: 'AgentRepository.insertSagaOp',
-        );
-        throw DuplicateInsertException('saga_log', entry.operationId);
-      }
-      rethrow;
-    }
-  }
-
-  /// Update the [status], and optionally [lastError], for the saga operation
-  /// identified by [operationId].
-  Future<void> updateSagaStatus(
-    String operationId,
-    String status, {
-    String? lastError,
-  }) async {
-    await (_db.update(
-      _db.sagaLog,
-    )..where((t) => t.operationId.equals(operationId))).write(
-      SagaLogCompanion(
-        status: Value(status),
-        lastError: lastError != null ? Value(lastError) : const Value.absent(),
-      ),
-    );
-  }
-
-  /// Fetch all saga operations whose status is `'pending'`, ordered by
-  /// [SagaLogData.createdAt] ascending.
-  Future<List<SagaLogData>> getPendingSagaOps() async {
-    return _db.getPendingSagaOps().get();
   }
 
   // ── Hard delete ─────────────────────────────────────────────────────────

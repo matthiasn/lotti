@@ -4,7 +4,6 @@ import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/database/agent_repo_links.dart';
 import 'package:lotti/features/agents/database/agent_repo_queries.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../test_data/entity_factories.dart';
 import '../test_data/link_factories.dart';
@@ -364,35 +363,6 @@ void main() {
         () => queries.updateWakeRunTemplate('missing', 'tpl', 'ver'),
         throwsA(isA<StateError>()),
       );
-    });
-  });
-
-  group('getMessagesForThread', () {
-    test('returns only messages in the requested thread', () async {
-      await core.upsertEntity(
-        makeTestMessage(
-          id: 'm1',
-          agentId: 'agent-1',
-          threadId: 'thread-a',
-          createdAt: testDate,
-          vectorClock: const VectorClock({'node-1': 1}),
-        ),
-      );
-      await core.upsertEntity(
-        makeTestMessage(
-          id: 'm2',
-          agentId: 'agent-1',
-          threadId: 'thread-b',
-          createdAt: testDate,
-          vectorClock: const VectorClock({'node-1': 2}),
-        ),
-      );
-
-      final inThread = await queries.getMessagesForThread(
-        'agent-1',
-        'thread-a',
-      );
-      expect(inThread.map((m) => m.id), ['m1']);
     });
   });
 }

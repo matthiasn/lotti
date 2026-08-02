@@ -941,45 +941,4 @@ void main() {
   });
 
   // ── Wake run rating ────────────────────────────────────────────────────────
-
-  group('Wake run rating', () {
-    test('updateWakeRunRating sets rating and ratedAt', () async {
-      await repo.insertWakeRun(
-        entry: makeTestWakeRun(runKey: 'run-rated'),
-      );
-      final ratedAt = DateTime(2026, 2, 20, 15, 30);
-
-      await repo.updateWakeRunRating(
-        'run-rated',
-        rating: 0.85,
-        ratedAt: ratedAt,
-      );
-
-      final run = await repo.getWakeRun('run-rated');
-      expect(run, isNotNull);
-      expect(run!.userRating, 0.85);
-      expect(run.ratedAt, ratedAt);
-    });
-
-    test('updateWakeRunRating throws StateError for unknown runKey', () async {
-      expect(
-        () => repo.updateWakeRunRating(
-          'nonexistent-run',
-          rating: 0.5,
-          ratedAt: DateTime(2026, 2, 20),
-        ),
-        throwsStateError,
-      );
-    });
-
-    test('wake run without rating has null fields', () async {
-      await repo.insertWakeRun(
-        entry: makeTestWakeRun(runKey: 'run-unrated'),
-      );
-
-      final run = await repo.getWakeRun('run-unrated');
-      expect(run!.userRating, isNull);
-      expect(run.ratedAt, isNull);
-    });
-  });
 }

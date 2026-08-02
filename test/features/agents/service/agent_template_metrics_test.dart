@@ -2,7 +2,6 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -16,7 +15,6 @@ import '../test_data/constants.dart';
 import '../test_data/entity_factories.dart';
 import '../test_data/evolution_factories.dart';
 import '../test_data/link_factories.dart';
-import '../test_data/template_factories.dart';
 
 /// Mirror test for the [AgentTemplateMetrics] collaborator. Confirms that the
 /// metrics class composes its own SQL-aggregation reads with the shared
@@ -218,72 +216,5 @@ void main() {
       verifyNever(() => mockRepo.getEntity('payload-a'));
       verifyNever(() => mockRepo.getEntity('payload-b'));
     });
-  });
-
-  group('profileInUse', () {
-    test(
-      'returns true when a template directly references the profile',
-      () async {
-        when(() => mockRepo.getAllTemplates()).thenAnswer(
-          (_) async => [makeTestTemplate(profileId: 'target-profile')],
-        );
-
-        expect(await metrics.profileInUse('target-profile'), isTrue);
-        // Short-circuits before checking versions/agents.
-        verifyNever(() => mockRepo.getAllAgentIdentities());
-      },
-    );
-
-    test(
-      'returns true when a template version references the profile',
-      () async {
-        when(() => mockRepo.getAllTemplates()).thenAnswer(
-          (_) async => [makeTestTemplate()],
-        );
-        when(
-          () => mockRepo.getEntitiesByAgentId(
-            kTestTemplateId,
-            type: AgentEntityTypes.agentTemplateVersion,
-            limit: any(named: 'limit'),
-          ),
-        ).thenAnswer(
-          (_) async => <AgentDomainEntity>[
-            makeTestTemplateVersion(profileId: 'target-profile'),
-          ],
-        );
-
-        expect(await metrics.profileInUse('target-profile'), isTrue);
-        verifyNever(() => mockRepo.getAllAgentIdentities());
-      },
-    );
-
-    test(
-      'returns false when no template, version, or agent references it',
-      () async {
-        when(() => mockRepo.getAllTemplates()).thenAnswer(
-          (_) async => [makeTestTemplate()],
-        );
-        when(
-          () => mockRepo.getEntitiesByAgentId(
-            kTestTemplateId,
-            type: AgentEntityTypes.agentTemplateVersion,
-            limit: any(named: 'limit'),
-          ),
-        ).thenAnswer(
-          (_) async => <AgentDomainEntity>[makeTestTemplateVersion()],
-        );
-        when(() => mockRepo.getAllAgentIdentities()).thenAnswer(
-          (_) async => [
-            makeTestIdentity(
-              id: 'a1',
-              agentId: 'a1',
-              config: const AgentConfig(profileId: 'other-profile'),
-            ),
-          ],
-        );
-
-        expect(await metrics.profileInUse('target-profile'), isFalse);
-      },
-    );
   });
 }

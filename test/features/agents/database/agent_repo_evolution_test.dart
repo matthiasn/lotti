@@ -60,27 +60,6 @@ void main() {
     });
   });
 
-  group('getEvolutionSessionRecap', () {
-    test('hydrates the recap by deterministic id (core hop)', () async {
-      await core.upsertEntity(
-        makeTestEvolutionSessionRecap(
-          id: evolutionSessionRecapId('sess-1'),
-          sessionId: 'sess-1',
-          agentId: 'tpl-1',
-          createdAt: testDate,
-        ),
-      );
-
-      final recap = await evolution.getEvolutionSessionRecap('sess-1');
-      expect(recap, isNotNull);
-      expect(recap!.sessionId, 'sess-1');
-    });
-
-    test('returns null when no recap exists', () async {
-      expect(await evolution.getEvolutionSessionRecap('none'), isNull);
-    });
-  });
-
   group('getPendingChangeSets', () {
     test('filters by taskId in Dart and caps at the limit', () async {
       await core.upsertEntity(
@@ -159,111 +138,6 @@ void main() {
         expect(count, 1);
       },
     );
-  });
-
-  group('countEntitiesByAgentAndType', () {
-    const plannerAgentId = 'daily_os_planner';
-
-    test('returns 0 when the agent has never produced the type', () async {
-      final count = await evolution.countEntitiesByAgentAndType(
-        agentId: plannerAgentId,
-        type: AgentEntityTypes.dayPlan,
-      );
-
-      expect(count, 0);
-    });
-
-    test('counts active (non-deleted) entities of the type', () async {
-      await core.upsertEntity(
-        makeTestDayPlan(
-          id: 'day_agent_plan:day-1',
-          agentId: plannerAgentId,
-          dayId: 'day-1',
-        ),
-      );
-      await core.upsertEntity(
-        makeTestDayPlan(
-          id: 'day_agent_plan:day-2',
-          agentId: plannerAgentId,
-          dayId: 'day-2',
-        ),
-      );
-
-      final count = await evolution.countEntitiesByAgentAndType(
-        agentId: plannerAgentId,
-        type: AgentEntityTypes.dayPlan,
-      );
-
-      expect(count, 2);
-    });
-
-    test('includes soft-deleted tombstones in the count', () async {
-      // The whole point of this query over `getEntitiesByIds` (which filters
-      // `deleted_at IS NULL`): a user whose only plan was later deleted must
-      // still count as "has ever had a plan".
-      await core.upsertEntity(
-        makeTestDayPlan(
-          id: 'day_agent_plan:deleted-day',
-          agentId: plannerAgentId,
-          dayId: 'deleted-day',
-        ).copyWith(deletedAt: DateTime(2026, 3, 16)),
-      );
-
-      final count = await evolution.countEntitiesByAgentAndType(
-        agentId: plannerAgentId,
-        type: AgentEntityTypes.dayPlan,
-      );
-
-      expect(count, 1);
-    });
-
-    test('scopes strictly to the requested agent', () async {
-      await core.upsertEntity(
-        makeTestDayPlan(
-          id: 'day_agent_plan:mine',
-          agentId: plannerAgentId,
-          dayId: 'mine',
-        ),
-      );
-      await core.upsertEntity(
-        makeTestDayPlan(
-          id: 'day_agent_plan:other',
-          agentId: 'some_other_agent',
-          dayId: 'other',
-        ),
-      );
-
-      final count = await evolution.countEntitiesByAgentAndType(
-        agentId: plannerAgentId,
-        type: AgentEntityTypes.dayPlan,
-      );
-
-      expect(count, 1);
-    });
-
-    test('scopes strictly to the requested type', () async {
-      await core.upsertEntity(
-        makeTestDayPlan(
-          id: 'day_agent_plan:planned',
-          agentId: plannerAgentId,
-          dayId: 'planned',
-        ),
-      );
-      await core.upsertEntity(
-        makeTestEvolutionSession(
-          id: 'evo-session',
-          templateId: plannerAgentId,
-          agentId: plannerAgentId,
-        ),
-      );
-
-      final count = await evolution.countEntitiesByAgentAndType(
-        agentId: plannerAgentId,
-        type: AgentEntityTypes.dayPlan,
-      );
-
-      expect(count, 1);
-    });
   });
 
   group('countEntitiesByType', () {
