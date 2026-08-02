@@ -41,6 +41,12 @@ enum RetryReason {
   retriable,
   decryptionPending,
 
+  /// A protocol barrier is waiting for an older row in the same room to
+  /// leave the active queue. Unlike generic retries, this is not capped by an
+  /// attempt count: the older row owns its own retry/abandon lifecycle, and
+  /// the barrier must remain ordered behind it until that lifecycle settles.
+  pendingBarrier,
+
   /// Waiting for an attachment JSON (descriptor or agent entity
   /// payload) to land on disk. Retried with a longer backoff ladder
   /// and a wall-clock timeout instead of the generic attempt cap —

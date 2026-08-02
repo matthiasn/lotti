@@ -217,9 +217,15 @@ also caps an inbound terminal event at 250 counters before touching the
 database.
 
 After all journal and agent rows are staged, `onboardingSnapshotEnd` is queued
-at low priority. Existing high, normal and earlier low rows therefore drain
-before this durable barrier. Receiving it ends suppression and nudges repair
-immediately. If the sender crashes before staging the end, the one-hour lease
+at low priority. Existing high, normal and earlier low outbox rows therefore
+send first. The receiver treats End as a second, durable inbound barrier: if an
+older row in the same room is still enqueued, leased or retrying — including an
+attachment wait whose next due time is in the future — End remains retrying
+without the generic attempt cap. It can release suppression only after those
+older rows commit or become abandoned. A completed End then calls
+`nudgeAfterDrain`, bypassing the normal ten-minute missing-row debounce while
+still respecting prior-request cooldowns. If the sender crashes before staging
+the end, the one-hour lease
 releases repair instead. An explicit abort also waits out that original lease;
 it does not turn a staging failure into an immediate request storm. This
 intentionally risks delaying a genuinely missing counter for up to an hour;

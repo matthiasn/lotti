@@ -679,7 +679,7 @@ Future<void> registerSingletons() async {
   // this hook is how the service learns the walk finished.
   queuePipelineCoordinator.onBridgeCompleted = backfillRequestService.nudge;
   onboardingSyncService.onInboundSuppressionEnded =
-      backfillRequestService.nudge;
+      backfillRequestService.nudgeAfterDrain;
 
   // Set-once assignment of the late-final `backfillResponseHandler`. Must
   // run before MatrixService consumes any inbound timeline events.

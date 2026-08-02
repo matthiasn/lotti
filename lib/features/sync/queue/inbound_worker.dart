@@ -16,6 +16,9 @@ enum ApplyOutcome {
   missingBase,
   decryptionPending,
 
+  /// An ordered protocol barrier is waiting for older active queue rows.
+  pendingBarrier,
+
   /// The entry's attachment JSON (descriptor or agent-entity payload)
   /// has not arrived on disk yet. Distinct from [retriable] because
   /// attachment deliveries can lag the sync event by many seconds /
@@ -279,6 +282,8 @@ class InboundWorker {
               await _maybeRetry(pair.entry, RetryReason.missingBase);
             case ApplyOutcome.decryptionPending:
               await _maybeRetry(pair.entry, RetryReason.decryptionPending);
+            case ApplyOutcome.pendingBarrier:
+              await _maybeRetry(pair.entry, RetryReason.pendingBarrier);
             case ApplyOutcome.pendingAttachment:
               await _maybeRetry(pair.entry, RetryReason.pendingAttachment);
             case ApplyOutcome.permanentSkip:
@@ -312,6 +317,14 @@ class InboundWorker {
     RetryReason reason,
   ) async {
     final nextAttempts = entry.attempts + 1;
+    if (reason == RetryReason.pendingBarrier) {
+      await _queue.scheduleRetry(
+        entry,
+        _pendingBarrierRetryInterval,
+        reason: reason,
+      );
+      return;
+    }
     if (reason == RetryReason.pendingAttachment) {
       final elapsed = Duration(
         milliseconds: clock.now().millisecondsSinceEpoch - entry.enqueuedAt,
@@ -375,6 +388,8 @@ class InboundWorker {
             _maxPendingAttachmentBackoff.inMilliseconds,
           ),
         );
+      case RetryReason.pendingBarrier:
+        return _pendingBarrierRetryInterval;
       case RetryReason.retriable:
       case RetryReason.missingBase:
         final base = _initialBackoff.inMilliseconds;
@@ -393,6 +408,7 @@ class InboundWorker {
   static const Duration _pendingAttachmentInitialBackoff = Duration(
     seconds: 30,
   );
+  static const Duration _pendingBarrierRetryInterval = Duration(seconds: 5);
   static const Duration _maxPendingAttachmentWait = Duration(minutes: 10);
   // Bounded by the wait deadline: a single backoff at the cap exhausts
   // the entire grace window, so capping the backoff above the deadline

@@ -136,7 +136,7 @@ stateDiagram-v2
     Joined --> PollFailed: 3 consecutive roster fetch failures
     PollFailed --> ShowingCode: Retry
     PollFailed --> Joined: Retry after the device joined
-    Joined --> Ready: the same device is emoji-verified
+    Joined --> Ready: exact Matrix verification ceremony succeeds
     Ready --> SendingSettings: Send settings (opens SyncModal)
     Ready --> SendingMessages: Send message history (opens ReSyncModal)
   }
@@ -200,10 +200,15 @@ Four properties are deliberate:
   retroactively protect a leaked bundle. Reducing what the code carries is
   tracked separately in lotti3-ujm.
 - **The inviting sheet follows one exact device through the security
-  boundary.** `_observeRoster` records the first `(userId, deviceId)` absent
-  when the sheet opened, reports that it joined, and keeps polling until that
-  same roster row is verified. An older peer cannot unlock the new target's
-  transfer actions. *Send settings* and *Send message history* remain disabled
+  boundary.** The roster reports that at least one new session joined, but it
+  never chooses the transfer target: multiple devices can appear between two
+  polls. The successful outgoing or incoming Matrix verification ceremony
+  supplies the exact `(userId, deviceId)`, and a ceremony for a session that
+  was already present when the sheet opened is ignored. Runner objects already
+  retained by `MatrixService` when the sheet opens are ignored too, including
+  the incoming stream's on-listen replay. An older peer, stale success or a
+  different concurrent join cannot unlock the new target's transfer actions.
+  *Send settings* and *Send message history* remain disabled
   until the state reaches `ready`, because
   `ShareKeysWith.directlyVerifiedOnly` means an unverified target receives the
   ciphertext but not the keys needed to read it. The inviting sheet therefore

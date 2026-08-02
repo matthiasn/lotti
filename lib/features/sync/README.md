@@ -42,7 +42,8 @@ merge of two users' work.
   fallback, and finishes on a screen naming what is still outstanding: the
   emoji ceremony, plus the settings and message-history pushes that only the
   other device can send. Both transfers stay beside the pairing code and remain
-  disabled until that exact new device is emoji-verified: message history
+  disabled until that exact new device's Matrix verification ceremony succeeds
+  (roster order never chooses the target): message history
   defaults to everything, with 30-day and custom ranges available, and shows
   progress until the messages are queued. During that full initial transfer,
   the new device holds off asking for history that is already on its way; a

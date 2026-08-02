@@ -101,6 +101,9 @@ class _ExpectedWorkerLifecycle {
           attempts++;
         }
         return 0;
+      case ApplyOutcome.pendingBarrier:
+        attempts++;
+        return 0;
       case ApplyOutcome.permanentSkip:
         active = false;
         abandoned = true;
@@ -332,6 +335,42 @@ void main() {
       });
     },
   );
+
+  test('pendingBarrier stays active beyond the generic attempt cap', () async {
+    var virtualNow = DateTime(2024);
+    await withClock(Clock(() => virtualNow), () async {
+      await queue.enqueueLive(
+        _buildSyncEvent(
+          eventId: r'$pending-barrier',
+          roomId: roomId,
+          originTsMs: 1,
+        ),
+      );
+      var attempts = 0;
+      final worker = buildWorker(
+        apply: (entry) async {
+          attempts++;
+          return attempts <= 5
+              ? ApplyOutcome.pendingBarrier
+              : ApplyOutcome.applied;
+        },
+      );
+
+      for (var i = 0; i < 5; i++) {
+        expect(await worker.drainToCompletion(), 0);
+        final stats = await queue.stats();
+        expect(stats.total, 1);
+        expect(stats.abandoned, 0);
+        virtualNow = virtualNow.add(const Duration(seconds: 6));
+      }
+
+      expect(await worker.drainToCompletion(), 1);
+      expect(attempts, 6);
+      final stats = await queue.stats();
+      expect(stats.total, 0);
+      expect(stats.abandoned, 0);
+    });
+  });
 
   test(
     'decryptionPending outcome reschedules with shorter backoff',

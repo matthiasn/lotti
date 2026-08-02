@@ -43,6 +43,7 @@ void main() {
     processor: processor,
     journalDb: journalDb,
     logging: logging,
+    hasOlderActiveEntry: (_) async => false,
   );
 
   glados.Glados(
@@ -106,6 +107,7 @@ void main() {
           processor: localProcessor,
           journalDb: localJournalDb,
           logging: localLogging,
+          hasOlderActiveEntry: (_) async => false,
         );
         if (scenario.usePrepareBatch) {
           await adapter.bindPrepareBatch()([entry], localRoom);
@@ -212,6 +214,45 @@ void main() {
         journalDb: journalDb,
       ),
     ).called(1);
+  });
+
+  test('onboarding End waits behind older active queue rows', () async {
+    final entry = hBuildEntry(
+      eventId: r'$onboarding-end',
+      roomId: '!r:x',
+      originTsMs: 20,
+    );
+    final prepared = AdapterMockPreparedSyncEvent();
+    const end = SyncMessage.onboardingSnapshotEnd(
+      protocolVersion: 1,
+      roundId: 'round-1',
+      senderHostId: 'sender-host',
+      recipientUserId: 'recipient-user',
+      recipientDeviceId: 'recipient-device',
+      reason: OnboardingSyncEndReason.complete,
+    );
+    when(
+      () => processor.prepare(event: any(named: 'event')),
+    ).thenAnswer((_) async => prepared);
+    when(() => prepared.syncMessage).thenReturn(end);
+
+    final adapter = QueueApplyAdapter(
+      processor: processor,
+      journalDb: journalDb,
+      logging: logging,
+      hasOlderActiveEntry: (candidate) async {
+        expect(candidate.eventId, entry.eventId);
+        return true;
+      },
+    );
+
+    expect(await adapter.bind()(entry, room), ApplyOutcome.pendingBarrier);
+    verifyNever(
+      () => processor.apply(
+        prepared: any(named: 'prepared'),
+        journalDb: journalDb,
+      ),
+    );
   });
 
   test('FileSystemException during apply maps to retriable', () async {
