@@ -314,10 +314,17 @@ class EmbeddingService {
         firstStackTrace ??= stackTrace;
       }
 
-      final unlinkedTaskIds = Set<String>.of(_pendingUnlinkedTaskIds);
+      final unlinkedTaskIds = List<String>.of(_pendingUnlinkedTaskIds);
       _pendingUnlinkedTaskIds.removeAll(unlinkedTaskIds);
-      for (final taskId in unlinkedTaskIds) {
-        if (_stopped || !_embeddingsEnabled) return;
+      for (var index = 0; index < unlinkedTaskIds.length; index++) {
+        if (_stopped || !_embeddingsEnabled) {
+          if (!_stopped) {
+            _pendingUnlinkedTaskIds.addAll(unlinkedTaskIds.skip(index));
+            _agentReportRecoveryPending = true;
+          }
+          return;
+        }
+        final taskId = unlinkedTaskIds[index];
         try {
           final currentLinks = await repository.getLinksTo(
             taskId,
@@ -487,9 +494,12 @@ class EmbeddingService {
       final rerunRequested = _agentReportRecoveryRerunRequested;
       _agentReportRecoveryRerunRequested = false;
       _agentReportRecoveryRunning = false;
-      if (rerunRequested &&
-          _agentReportRecoveryPending &&
-          !(_availabilityRetryTimer?.isActive ?? false)) {
+      if (rerunRequested && _agentReportRecoveryPending) {
+        // The signal requesting this rerun arrived while the previous request
+        // was in flight. Any cooldown installed by that old request is stale:
+        // provider, flag, or durable report state may already have changed.
+        _availabilityRetryTimer?.cancel();
+        _availabilityRetryTimer = null;
         _startAgentReportRecovery();
       }
     }

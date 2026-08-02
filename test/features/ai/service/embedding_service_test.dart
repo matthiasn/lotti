@@ -855,6 +855,87 @@ void main() {
       );
     });
 
+    test('re-enabling resumes every interrupted unlink cleanup', () {
+      fakeAsync((async) {
+        const firstTaskId = 'task-unlinked-before-disable';
+        const secondTaskId = 'task-unlinked-after-disable';
+        const firstReportId = 'report-unlinked-before-disable';
+        const secondReportId = 'report-unlinked-after-disable';
+        final agentRepository = MockAgentRepository();
+        final flagChanges = StreamController<bool>.broadcast(sync: true);
+        final firstLinkRead = Completer<List<AgentLink>>();
+        final deletedReportIds = <String>[];
+        var linkReadCount = 0;
+        addTearDown(flagChanges.close);
+
+        when(
+          () => mockJournalDb.watchConfigFlag(enableEmbeddingsFlag),
+        ).thenAnswer((_) => flagChanges.stream);
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => []);
+        when(
+          () => agentRepository.getLinksTo(
+            any(),
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) {
+          linkReadCount++;
+          if (linkReadCount == 1) return firstLinkRead.future;
+          return Future.value([]);
+        });
+        when(
+          () => mockEmbeddingStore.getEntityIdsForTask(firstTaskId),
+        ).thenReturn({firstReportId});
+        when(
+          () => mockEmbeddingStore.getEntityIdsForTask(secondTaskId),
+        ).thenReturn({secondReportId});
+        when(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+        ).thenAnswer((invocation) {
+          deletedReportIds.add(invocation.positionalArguments.single as String);
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        flagChanges.add(true);
+        async.flushMicrotasks();
+
+        updateNotifications.notify(
+          {
+            '$agentTaskLinkNotificationPrefix$firstTaskId',
+            '$agentTaskLinkNotificationPrefix$secondTaskId',
+          },
+          fromSync: true,
+        );
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+        expect(linkReadCount, 1);
+
+        flagChanges.add(false);
+        firstLinkRead.complete([]);
+        async.flushMicrotasks();
+        expect(deletedReportIds, hasLength(1));
+
+        flagChanges.add(true);
+        async.flushMicrotasks();
+
+        expect(linkReadCount, 2);
+        expect(
+          deletedReportIds,
+          unorderedEquals([firstReportId, secondReportId]),
+        );
+        stopInZone(async);
+      });
+    });
+
     test(
       'startup reconciles only the primary agent for a shared task',
       () async {
@@ -2148,6 +2229,110 @@ void main() {
         ]);
       });
     });
+
+    test(
+      'provider change during failed report recovery uses the new URL now',
+      () {
+        const agentId = 'agent-provider-rerun';
+        const taskId = 'task-provider-rerun';
+        final agentRepository = MockAgentRepository();
+        final providerConfigs = StreamController<List<AiConfig>>.broadcast(
+          sync: true,
+        );
+        late Completer<Float32List> firstRequest;
+        var currentBaseUrl = 'http://old-ollama:11434';
+        final attemptedBaseUrls = <String>[];
+        final report = _agentReport(
+          id: 'report-provider-rerun',
+          agentId: agentId,
+        );
+        addTearDown(providerConfigs.close);
+
+        when(
+          () => mockAiConfigRepo.watchConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) => providerConfigs.stream);
+        when(
+          mockAiConfigRepo.resolveOllamaBaseUrl,
+        ).thenAnswer((_) async => currentBaseUrl);
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => report);
+        when(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
+            agentId,
+            type: AgentEntityTypes.agentReport,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => [report]);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((invocation) {
+          final baseUrl = invocation.namedArguments[#baseUrl]! as String;
+          attemptedBaseUrls.add(baseUrl);
+          if (attemptedBaseUrls.length == 1) return firstRequest.future;
+          return Future.value(_fakeEmbedding());
+        });
+
+        fakeAsync((async) {
+          firstRequest = Completer<Float32List>();
+          service = EmbeddingService(
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepo,
+            journalDb: mockJournalDb,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: mockAiConfigRepo,
+            agentRepository: agentRepository,
+          )..start();
+          async.flushMicrotasks();
+          expect(attemptedBaseUrls, ['http://old-ollama:11434']);
+
+          providerConfigs.add(const []);
+          currentBaseUrl = 'http://new-ollama:11434';
+          providerConfigs.add(const []);
+          firstRequest.completeError(
+            OllamaEmbeddingCooldownException(
+              retryAt: clock.now().add(const Duration(hours: 1)),
+              suppressedRequestCount: 1,
+            ),
+          );
+          async.flushMicrotasks();
+
+          expect(attemptedBaseUrls, [
+            'http://old-ollama:11434',
+            'http://new-ollama:11434',
+          ]);
+          stopInZone(async);
+        });
+      },
+    );
 
     test('a journal notification rechecks recovery after enabling it', () {
       fakeAsync((async) {
