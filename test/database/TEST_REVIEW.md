@@ -159,8 +159,6 @@ under `lib/database/`.
 
 - [x] **[LOW]** `lib/database/notifications_db.dart` — `notificationsForLinkedEntity` returns ordered results (`scheduledFor DESC`). The existing test at line ~53 asserts the order `['upcoming', 'due']` (correct), but there is no test for an empty `linkedTaskId` result set or a task with 0 notifications. Add a "returns empty list for unknown linkedTaskId" test.
 
-- [x] **[LOW]** `test/database/column_exists_test.dart` — uses a real file-based DB (line 49) to test `columnExistsForTesting`. An in-memory DB with the current schema would work equally well and be faster. The file-based path is only necessary if testing migration scenarios, which this test does not.
-  **RESOLVED:** now uses `JournalDb(inMemoryDatabase: true)`; the in-memory DB is created at the current schema, which is exactly what `columnExistsForTesting` inspects. Dead path_provider/getIt-Directory boilerplate removed.
 
 ---
 

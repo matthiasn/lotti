@@ -4392,10 +4392,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_agent_entities_agent_type_sub',
     'CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities (agent_id, type, subtype, created_at DESC)',
   );
-  late final Index idxAgentEntitiesThread = Index(
-    'idx_agent_entities_thread',
-    'CREATE INDEX idx_agent_entities_thread ON agent_entities (agent_id, thread_id, created_at DESC)',
-  );
   late final Index idxAgentEntitiesActiveAgentTypeCreatedId = Index(
     'idx_agent_entities_active_agent_type_created_id',
     'CREATE INDEX idx_agent_entities_active_agent_type_created_id ON agent_entities (agent_id, type, created_at DESC, id DESC) WHERE deleted_at IS NULL',
@@ -4503,22 +4499,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_wake_run_log_agent_thread',
     'CREATE INDEX idx_wake_run_log_agent_thread ON wake_run_log (agent_id, thread_id, created_at DESC)',
   );
-  late final Index idxWakeRunLogCreatedAt = Index(
-    'idx_wake_run_log_created_at',
-    'CREATE INDEX idx_wake_run_log_created_at ON wake_run_log (created_at DESC)',
-  );
   late final SagaLog sagaLog = SagaLog(this);
   late final Index idxSagaLogAgent = Index(
     'idx_saga_log_agent',
     'CREATE INDEX idx_saga_log_agent ON saga_log (agent_id)',
-  );
-  late final Index idxSagaLogStatus = Index(
-    'idx_saga_log_status',
-    'CREATE INDEX idx_saga_log_status ON saga_log (status, updated_at)',
-  );
-  late final Index idxSagaLogStatusCreatedAt = Index(
-    'idx_saga_log_status_created_at',
-    'CREATE INDEX idx_saga_log_status_created_at ON saga_log (status, created_at ASC)',
   );
   Selectable<AgentEntity> getAgentEntitiesByAgentId(String agentId, int limit) {
     return customSelect(
@@ -4586,22 +4570,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).map((QueryRow row) => row.readNullable<String>('vector_clock'));
   }
 
-  Selectable<AgentEntity> getAgentMessagesByThread(
-    String agentId,
-    String? threadId,
-    int limit,
-  ) {
-    return customSelect(
-      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'agentMessage\' AND thread_id = ?2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?3',
-      variables: [
-        Variable<String>(agentId),
-        Variable<String>(threadId),
-        Variable<int>(limit),
-      ],
-      readsFrom: {agentEntities},
-    ).asyncMap(agentEntities.mapFromRow);
-  }
-
   Selectable<AgentLink> getAgentLinkById(String id) {
     return customSelect(
       'SELECT * FROM agent_links WHERE id = ?1 AND deleted_at IS NULL',
@@ -4661,14 +4629,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(wakeRunLog.mapFromRow);
   }
 
-  Selectable<WakeRunLogData> getWakeRunByKey(String runKey) {
-    return customSelect(
-      'SELECT * FROM wake_run_log WHERE run_key = ?1',
-      variables: [Variable<String>(runKey)],
-      readsFrom: {wakeRunLog},
-    ).asyncMap(wakeRunLog.mapFromRow);
-  }
-
   Selectable<WakeRunLogData> getWakeRunByThreadId(
     String agentId,
     String threadId,
@@ -4686,14 +4646,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
       variables: [],
       readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
-  }
-
-  Selectable<SagaLogData> getPendingSagaOps() {
-    return customSelect(
-      'SELECT * FROM saga_log WHERE status = \'pending\' ORDER BY created_at ASC',
-      variables: [],
-      readsFrom: {sagaLog},
-    ).asyncMap(sagaLog.mapFromRow);
   }
 
   Future<int> deleteAgentEntities(String agentId) {
@@ -4748,14 +4700,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(agentEntities.mapFromRow);
   }
 
-  Selectable<AgentEntity> getAllAgentEntities() {
-    return customSelect(
-      'SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC',
-      variables: [],
-      readsFrom: {agentEntities},
-    ).asyncMap(agentEntities.mapFromRow);
-  }
-
   Selectable<AgentEntity> getAgentEntitiesInInterval(
     DateTime start,
     DateTime end,
@@ -4782,31 +4726,12 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
-  Selectable<int> countAgentEntitiesByAgentAndType(
-    String agentId,
-    String type,
-  ) {
-    return customSelect(
-      'SELECT COUNT(*) AS cnt FROM agent_entities WHERE agent_id = ?1 AND type = ?2',
-      variables: [Variable<String>(agentId), Variable<String>(type)],
-      readsFrom: {agentEntities},
-    ).map((QueryRow row) => row.read<int>('cnt'));
-  }
-
   Selectable<int> countAgentEntitiesByType(String type) {
     return customSelect(
       'SELECT COUNT(*) AS cnt FROM agent_entities WHERE type = ?1',
       variables: [Variable<String>(type)],
       readsFrom: {agentEntities},
     ).map((QueryRow row) => row.read<int>('cnt'));
-  }
-
-  Selectable<AgentLink> getAllAgentLinks() {
-    return customSelect(
-      'SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC',
-      variables: [],
-      readsFrom: {agentLinks},
-    ).asyncMap(agentLinks.mapFromRow);
   }
 
   Selectable<AgentLink> getAgentLinksInInterval(
@@ -4884,17 +4809,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         Variable<DateTime>(since),
         Variable<DateTime>(until),
       ],
-      readsFrom: {wakeRunLog},
-    ).asyncMap(wakeRunLog.mapFromRow);
-  }
-
-  Selectable<WakeRunLogData> getWakeRunsInWindow(
-    DateTime since,
-    DateTime until,
-  ) {
-    return customSelect(
-      'SELECT * FROM wake_run_log WHERE created_at >= ?1 AND created_at <= ?2 ORDER BY created_at DESC',
-      variables: [Variable<DateTime>(since), Variable<DateTime>(until)],
       readsFrom: {wakeRunLog},
     ).asyncMap(wakeRunLog.mapFromRow);
   }
@@ -4985,17 +4899,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(agentEntities.mapFromRow);
   }
 
-  Selectable<AgentEntity> getRecentDecisionsForAgent(
-    String agentId,
-    int limit,
-  ) {
-    return customSelect(
-      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeDecision\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
-      variables: [Variable<String>(agentId), Variable<int>(limit)],
-      readsFrom: {agentEntities},
-    ).asyncMap(agentEntities.mapFromRow);
-  }
-
   Selectable<AgentEntity> getRecentDecisionsByTemplate(
     String templateId,
     DateTime since,
@@ -5031,17 +4934,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(agentEntities.mapFromRow);
   }
 
-  Selectable<AgentEntity> getTokenUsageByTemplateSince(
-    String templateId,
-    DateTime since,
-  ) {
-    return customSelect(
-      'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'wakeTokenUsage\' AND ae.created_at >= ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC',
-      variables: [Variable<String>(templateId), Variable<DateTime>(since)],
-      readsFrom: {agentEntities, agentLinks},
-    ).asyncMap(agentEntities.mapFromRow);
-  }
-
   Selectable<SumTokenUsageByTemplateResult> sumTokenUsageByTemplate(
     String templateId,
   ) {
@@ -5073,14 +4965,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         totalThoughts: row.read<int>('total_thoughts'),
       ),
     );
-  }
-
-  Selectable<AgentEntity> getGlobalTokenUsageSince(DateTime since) {
-    return customSelect(
-      'SELECT * FROM agent_entities WHERE type = \'wakeTokenUsage\' AND created_at >= ?1 AND deleted_at IS NULL ORDER BY created_at DESC',
-      variables: [Variable<DateTime>(since)],
-      readsFrom: {agentEntities},
-    ).asyncMap(agentEntities.mapFromRow);
   }
 
   Selectable<AgentEntity> getDueScheduledAgentStates(String nowIso) {
@@ -5140,7 +5024,6 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentEntitiesAgentId,
     idxAgentEntitiesType,
     idxAgentEntitiesAgentTypeSub,
-    idxAgentEntitiesThread,
     idxAgentEntitiesActiveAgentTypeCreatedId,
     idxAgentEntitiesActiveAgentTypeSubCreatedId,
     idxAgentEntitiesActiveTypeCreated,
@@ -5170,11 +5053,8 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxWakeRunLogTemplate,
     idxWakeRunLogStatus,
     idxWakeRunLogAgentThread,
-    idxWakeRunLogCreatedAt,
     sagaLog,
     idxSagaLogAgent,
-    idxSagaLogStatus,
-    idxSagaLogStatusCreatedAt,
   ];
 }
 

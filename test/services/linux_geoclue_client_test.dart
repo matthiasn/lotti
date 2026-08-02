@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/services/linux_geoclue_client.dart';
 import 'package:lotti/services/linux_location_portal.dart'
-    show PortalAccuracy, PortalLocationException;
+    show PortalLocationException;
 
 @immutable
 class _Call {
@@ -190,13 +190,11 @@ void main() {
       expect(loc.latitude, 48.8566);
       expect(loc.longitude, 2.3522);
       expect(loc.altitude, 35);
-      expect(loc.timestampMicros, 1700000000 * 1000000 + 500000);
     });
 
     test('sets DesktopId and RequestedAccuracyLevel before Start', () async {
       final future = client.getLocation(
         timeout: const Duration(seconds: 5),
-        accuracy: PortalAccuracy.city,
       );
       await Future<void>.delayed(Duration.zero);
       fake.emitLocationUpdated();
@@ -219,7 +217,7 @@ void main() {
         'com.matthiasn.lotti',
       );
       expect(sets[1].values[1].asString(), 'RequestedAccuracyLevel');
-      expect(sets[1].values[2].asVariant().asUint32(), 2);
+      expect(sets[1].values[2].asVariant().asUint32(), 5);
 
       final startIdx = fake.calls.indexWhere((c) => c.name == 'Start');
       expect(startIdx, greaterThan(fake.calls.indexOf(sets[1])));

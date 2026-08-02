@@ -67,7 +67,7 @@ sources:
 
 # One database, two shapes
 
-Agent persistence lives in `agent.sqlite` (schema version 18). Syncable domain
+Agent persistence lives in `agent.sqlite` (schema version 19). Syncable domain
 objects are modelled as **`AgentDomainEntity` variants** and **`AgentLink`
 variants**; wake-run history lives in a dedicated `wake_run_log` table outside
 that model.

@@ -22,8 +22,7 @@ AgentEventKind agentEventKindFromMessageKind(AgentMessageKind kind) =>
 ///
 /// This is the bridge from storage (`AgentMessageEntity` + `AgentLink`) to the
 /// pure projection kernel — the first production consumer of the kernel (PR 3).
-/// It does not read the projection back into any production path; callers use
-/// it to compute a shadow projection alongside the live mutable rows.
+/// Callers use it to compute the derived projection from the event log.
 ///
 /// Causal parents come from the **`messagePrev` edge graph** (the canonical
 /// causal graph per ADR 0016), restricted to active (non-deleted) links;

@@ -7,6 +7,7 @@ import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 
+import 'slow_query_logging_test_utils.dart';
 import 'sync_db_test_utils.dart';
 
 class _OutboxClaimRowSpec {
@@ -152,7 +153,7 @@ void main() {
         );
 
         expect(
-          await db?.watchOutboxItems().first,
+          await db?.getOutboxItems(),
           <OutboxItem>[],
         );
 
@@ -193,7 +194,7 @@ void main() {
         );
 
         expect(
-          await db?.watchOutboxItems(statuses: [OutboxStatus.pending]).first,
+          await db?.getOutboxItems(statuses: [OutboxStatus.pending]),
           <OutboxItem>[
             OutboxItem(
               id: 2,
@@ -246,7 +247,7 @@ void main() {
         );
 
         expect(
-          await db?.watchOutboxItems(statuses: [OutboxStatus.pending]).first,
+          await db?.getOutboxItems(statuses: [OutboxStatus.pending]),
           <OutboxItem>[
             OutboxItem(
               id: 1,
@@ -318,46 +319,6 @@ void main() {
         );
       },
     );
-
-    test('watchOutboxItems filters by provided statuses', () async {
-      final database = db!;
-      await database.addOutboxItem(
-        buildOutboxCompanion(
-          status: OutboxStatus.pending,
-          createdAt: DateTime(2024, 1, 1),
-          subject: 'pending',
-        ),
-      );
-      await database.addOutboxItem(
-        buildOutboxCompanion(
-          status: OutboxStatus.error,
-          createdAt: DateTime(2024, 1, 2),
-          subject: 'error',
-        ),
-      );
-      await database.addOutboxItem(
-        buildOutboxCompanion(
-          status: OutboxStatus.sent,
-          createdAt: DateTime(2024, 1, 3),
-          subject: 'sent',
-        ),
-      );
-
-      final results = await database
-          .watchOutboxItems(
-            statuses: [
-              OutboxStatus.pending,
-              OutboxStatus.error,
-            ],
-          )
-          .first;
-
-      expect(results, hasLength(2));
-      expect(
-        results.map((item) => item.status).toSet(),
-        {OutboxStatus.pending.index, OutboxStatus.error.index},
-      );
-    });
 
     test(
       'oldestOutboxItems returns pending items in ascending order',
@@ -587,7 +548,7 @@ void main() {
       () async {
         final loggedEntries = <SlowQueryLogEntry>[];
         SlowQueryLoggingGate.isEnabled = true;
-        addTearDown(SlowQueryLoggingGate.resetForTest);
+        addTearDown(resetSlowQueryLoggingGate);
 
         final loggedDb = SyncDatabase.connect(
           DatabaseConnection(
@@ -1104,9 +1065,9 @@ void main() {
         ),
       );
 
-      final errorItems = await database
-          .watchOutboxItems(statuses: [OutboxStatus.error])
-          .first;
+      final errorItems = await database.getOutboxItems(
+        statuses: [OutboxStatus.error],
+      );
       expect(errorItems.single.status, OutboxStatus.error.index);
       expect(await database.watchOutboxCount().first, 0);
     });
@@ -1182,30 +1143,6 @@ void main() {
       },
     );
 
-    test('getPendingOutboxCount returns count of pending items', () async {
-      final database = db!;
-      await database.addOutboxItem(
-        buildOutboxCompanion(
-          status: OutboxStatus.error,
-          createdAt: DateTime(2024, 5, 2),
-        ),
-      );
-      await database.addOutboxItem(
-        buildOutboxCompanion(
-          status: OutboxStatus.pending,
-          createdAt: DateTime(2024, 5, 3),
-        ),
-      );
-      await database.addOutboxItem(
-        buildOutboxCompanion(
-          status: OutboxStatus.pending,
-          createdAt: DateTime(2024, 5, 4),
-        ),
-      );
-
-      expect(await database.getPendingOutboxCount(), 2);
-    });
-
     test('updateOutboxItem increments retry count', () async {
       final database = db!;
       await database.addOutboxItem(
@@ -1261,31 +1198,6 @@ void main() {
         ),
       );
       expect(result, 0);
-    });
-
-    test('watchOutboxItems emits when new item is added', () async {
-      final database = db!;
-      final updates = database.watchOutboxItems(
-        statuses: [OutboxStatus.pending],
-      );
-      final expectation = expectLater(
-        updates,
-        emitsThrough(
-          isA<List<OutboxItem>>()
-              .having((items) => items.length, 'length', 1)
-              .having((items) => items.single.subject, 'subject', 'new-item'),
-        ),
-      );
-
-      await database.addOutboxItem(
-        buildOutboxCompanion(
-          status: OutboxStatus.pending,
-          createdAt: DateTime(2024, 8, 10),
-          subject: 'new-item',
-        ),
-      );
-
-      await expectation;
     });
 
     test('addOutboxItem persists optional fields', () async {
@@ -1561,7 +1473,7 @@ void main() {
     });
 
     test(
-      'watchOutboxItems sorts by priority then newest within priority',
+      'getOutboxItems sorts by priority then newest within priority',
       () async {
         // Add items in mixed order
         await database.addOutboxItem(
@@ -1595,7 +1507,7 @@ void main() {
           ),
         );
 
-        final items = await database.watchOutboxItems().first;
+        final items = await database.getOutboxItems();
         expect(items, hasLength(3));
         // High priority first, newest within priority (DESC)
         expect(items[0].subject, 'high-2');
@@ -1603,71 +1515,6 @@ void main() {
         expect(items[2].subject, 'low-1');
       },
     );
-
-    test('health query helpers return correct counts', () async {
-      // Add sequence log entries with various statuses
-      final now = DateTime(2024, 1, 1, 12);
-      await database.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: const Value('host-a'),
-          counter: const Value(1),
-          status: Value(SyncSequenceStatus.missing.index),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
-      await database.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: const Value('host-a'),
-          counter: const Value(2),
-          status: Value(SyncSequenceStatus.missing.index),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
-      await database.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: const Value('host-a'),
-          counter: const Value(3),
-          status: Value(SyncSequenceStatus.requested.index),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
-      await database.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: const Value('host-a'),
-          counter: const Value(4),
-          status: Value(SyncSequenceStatus.received.index),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
-
-      expect(await database.getMissingSequenceCount(), 2);
-      expect(await database.getRequestedSequenceCount(), 1);
-
-      // Add sent outbox item
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.sent.index),
-          subject: const Value('sent-item'),
-          message: const Value('{}'),
-          createdAt: Value(DateTime(2024, 1, 1, 11)),
-          updatedAt: Value(DateTime(2024, 1, 1, 11, 30)),
-        ),
-      );
-
-      final sentCount = await database.getSentCountSince(
-        DateTime(2024, 1, 1, 11),
-      );
-      expect(sentCount, 1);
-
-      final sentCountNone = await database.getSentCountSince(
-        DateTime(2024, 1, 1, 12),
-      );
-      expect(sentCountNone, 0);
-    });
   });
 
   group('getOutboxItems -', () {
@@ -1770,35 +1617,5 @@ void main() {
       final limited = await database.getOutboxItems(limit: 3);
       expect(limited, hasLength(3));
     });
-
-    test(
-      'returns same rows as watchOutboxItems for the same statuses',
-      () async {
-        final base = DateTime(2024, 3, 15, 10);
-        await database.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
-            subject: const Value('p'),
-            message: const Value('{}'),
-            createdAt: Value(base),
-            updatedAt: Value(base),
-          ),
-        );
-        await database.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.error.index),
-            subject: const Value('e'),
-            message: const Value('{}'),
-            createdAt: Value(base.add(const Duration(hours: 1))),
-            updatedAt: Value(base.add(const Duration(hours: 1))),
-          ),
-        );
-
-        final fromGet = await database.getOutboxItems();
-        final fromWatch = await database.watchOutboxItems().first;
-
-        expect(fromGet.map((i) => i.id), equals(fromWatch.map((i) => i.id)));
-      },
-    );
   });
 }

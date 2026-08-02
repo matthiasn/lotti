@@ -957,7 +957,6 @@ void main() {
           indexes.map((row) => row.read<String>('name')).toList(),
           [
             'idx_agent_links_active_from_type_to',
-            'idx_saga_log_status_created_at',
             'idx_wake_run_log_agent_thread',
           ],
         );
@@ -2233,6 +2232,90 @@ void main() {
         );
       },
     );
+
+    test('v18 to v19 drops indexes stranded by removed reads', () async {
+      final dbFile = path.join(testDirectory.path, agentDbFileName);
+      final rawDb = sqlite3.open(dbFile);
+
+      rawDb
+        ..execute('''
+          CREATE TABLE agent_entities (
+            id TEXT NOT NULL PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            thread_id TEXT,
+            created_at DATETIME NOT NULL
+          )
+        ''')
+        ..execute('''
+          CREATE INDEX idx_agent_entities_thread
+          ON agent_entities(agent_id, thread_id, created_at DESC)
+        ''')
+        ..execute('''
+          CREATE TABLE wake_run_log (
+            run_key TEXT NOT NULL PRIMARY KEY,
+            created_at DATETIME NOT NULL
+          )
+        ''')
+        ..execute('''
+          CREATE INDEX idx_wake_run_log_created_at
+          ON wake_run_log(created_at DESC)
+        ''')
+        ..execute('''
+          CREATE TABLE saga_log (
+            operation_id TEXT NOT NULL PRIMARY KEY,
+            status TEXT NOT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL
+          )
+        ''')
+        ..execute('''
+          CREATE INDEX idx_saga_log_status
+          ON saga_log(status, updated_at)
+        ''')
+        ..execute('''
+          CREATE INDEX idx_saga_log_status_created_at
+          ON saga_log(status, created_at ASC)
+        ''')
+        ..execute(
+          "INSERT INTO agent_entities VALUES ('entity-1', 'agent-1', "
+          "'thread-1', 1)",
+        )
+        ..execute("INSERT INTO wake_run_log VALUES ('run-1', 1)")
+        ..execute("INSERT INTO saga_log VALUES ('op-1', 'pending', 1, 1)")
+        ..execute('PRAGMA user_version = 18')
+        ..dispose();
+
+      final db = AgentDatabase(
+        background: false,
+        documentsDirectoryProvider: () async => testDirectory,
+        tempDirectoryProvider: () async => testDirectory,
+      );
+      addTearDown(db.close);
+
+      final version = await db.customSelect('PRAGMA user_version').getSingle();
+      expect(version.read<int>('user_version'), 19);
+
+      final obsoleteIndexes = await db.customSelect('''
+        SELECT name FROM sqlite_master
+        WHERE type = 'index' AND name IN (
+          'idx_agent_entities_thread',
+          'idx_wake_run_log_created_at',
+          'idx_saga_log_status',
+          'idx_saga_log_status_created_at'
+        )
+      ''').get();
+      expect(obsoleteIndexes, isEmpty);
+
+      final retainedRows = await Future.wait([
+        db.customSelect('SELECT id FROM agent_entities').getSingle(),
+        db.customSelect('SELECT run_key FROM wake_run_log').getSingle(),
+        db.customSelect('SELECT operation_id FROM saga_log').getSingle(),
+      ]);
+      expect(
+        retainedRows.map((row) => row.data.values.single),
+        ['entity-1', 'run-1', 'op-1'],
+      );
+    });
   });
 
   group('AgentDatabase fresh install', () {
@@ -2280,87 +2363,6 @@ void main() {
         );
 
         await db.close();
-      },
-    );
-
-    test(
-      'idx_wake_run_log_created_at exists so getWakeRunsInWindow can '
-      'walk the range in `created_at` order instead of `SCAN '
-      'wake_run_log` + temp B-tree (2026-05-10 desktop super_slow log: '
-      '11 hits/day at 305-408 ms before the index was added)',
-      () async {
-        final db = AgentDatabase(
-          inMemoryDatabase: true,
-          background: false,
-        );
-        addTearDown(db.close);
-
-        final indexes = await db
-            .customSelect(
-              "SELECT name FROM sqlite_master WHERE type = 'index' "
-              "AND name = 'idx_wake_run_log_created_at'",
-            )
-            .get();
-        expect(indexes, hasLength(1));
-
-        // Seed enough rows that the planner can choose between
-        // SCAN and the new index — ANALYZE so the choice is
-        // cost-based on real stats.
-        for (var i = 0; i < 60; i++) {
-          // Use raw seconds-since-epoch — drift stores `DateTime`
-          // columns as INTEGER, so the planner's range filter works
-          // on integer comparisons. Passing a Dart `DateTime` to
-          // `customStatement` won't bind; pass the same int value
-          // that drift would have written.
-          final ts =
-              DateTime(
-                2026,
-                1,
-                2,
-              ).add(Duration(minutes: i)).millisecondsSinceEpoch ~/
-              1000;
-          await db.customStatement(
-            'INSERT INTO wake_run_log '
-            '(run_key, agent_id, reason, thread_id, status, created_at) '
-            "VALUES ('run-$i', 'agent-A', 'test', 'thread-$i', 'ok', ?)",
-            [ts],
-          );
-        }
-        await db.customStatement('ANALYZE');
-
-        final plan = await db
-            .customSelect(
-              'EXPLAIN QUERY PLAN '
-              'SELECT * FROM wake_run_log '
-              'WHERE created_at >= ?1 AND created_at <= ?2 '
-              'ORDER BY created_at DESC',
-              variables: [
-                Variable<DateTime>(DateTime(2026, 1, 2)),
-                Variable<DateTime>(DateTime(2026, 1, 3)),
-              ],
-            )
-            .get();
-        final details = plan.map((r) => r.data.toString()).join('\n');
-
-        expect(
-          details,
-          contains('idx_wake_run_log_created_at'),
-          reason:
-              'created_at window query must use the dedicated index '
-              'instead of falling back to a base-table scan',
-        );
-        expect(
-          details,
-          isNot(matches(RegExp('SCAN wake_run_log(?! USING)'))),
-          reason: 'must not regress to a full base-table scan',
-        );
-        expect(
-          details,
-          isNot(contains('USE TEMP B-TREE FOR ORDER BY')),
-          reason:
-              'the (created_at DESC) index already provides the sort '
-              'order — no temp B-tree should appear',
-        );
       },
     );
 

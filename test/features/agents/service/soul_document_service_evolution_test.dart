@@ -317,63 +317,6 @@ void main() {
     });
   });
 
-  group('updateSoul', () {
-    test('updates display name', () async {
-      final soul = makeTestSoulDocument(
-        id: 'soul-upd',
-        displayName: 'Old Name',
-      );
-      when(
-        () => mockRepo.getSoulDocument('soul-upd'),
-      ).thenAnswer((_) async => soul);
-
-      final updated = await service.updateSoul(
-        soulId: 'soul-upd',
-        displayName: 'New Name',
-      );
-
-      expect(updated.displayName, 'New Name');
-      verify(() => mockSync.upsertEntity(any())).called(1);
-    });
-
-    test('throws when soul not found', () async {
-      when(
-        () => mockRepo.getSoulDocument('ghost'),
-      ).thenAnswer((_) async => null);
-
-      expect(
-        () => service.updateSoul(soulId: 'ghost', displayName: 'X'),
-        throwsA(isA<StateError>()),
-      );
-    });
-
-    test('preserves display name when not provided', () async {
-      final soul = makeTestSoulDocument(
-        id: 'soul-upd',
-        displayName: 'Keep This',
-      );
-      when(
-        () => mockRepo.getSoulDocument('soul-upd'),
-      ).thenAnswer((_) async => soul);
-
-      final updated = await service.updateSoul(soulId: 'soul-upd');
-
-      expect(updated.displayName, 'Keep This');
-    });
-
-    test('rejects whitespace-only display name before touching repo', () async {
-      await expectLater(
-        () => service.updateSoul(soulId: 'soul-upd', displayName: '   '),
-        throwsA(isA<ArgumentError>()),
-      );
-
-      // The blank guard runs before the transaction, so nothing is read or
-      // written.
-      verifyNever(() => mockRepo.getSoulDocument(any()));
-      verifyNever(() => mockSync.upsertEntity(any()));
-    });
-  });
-
   group('updateSoulAndCreateVersion', () {
     test('updates name and creates version in one transaction', () async {
       final soul = makeTestSoulDocument(

@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/services/dev_logger.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 typedef SlowQueryReporter = void Function(SlowQueryLogEntry entry);
@@ -33,8 +32,7 @@ abstract final class SlowQueryLoggingGate {
   /// microseconds per first call.
   static bool captureFirstCallStack = false;
 
-  /// Internal set of statements already traced. Cleared by
-  /// [resetForTest] so each test starts with an empty seen-set.
+  /// Internal set of statements already traced for this process.
   static final Set<String> _seenStatements = <String>{};
 
   /// Returns true the first time [statement] is observed during this
@@ -42,13 +40,6 @@ abstract final class SlowQueryLoggingGate {
   /// to gate one-shot stack capture.
   static bool markStatementSeenAndIsFirst(String statement) {
     return _seenStatements.add(statement);
-  }
-
-  @visibleForTesting
-  static void resetForTest() {
-    isEnabled = false;
-    captureFirstCallStack = false;
-    _seenStatements.clear();
   }
 }
 
@@ -200,18 +191,13 @@ class SlowQueryInterceptor extends QueryInterceptor {
     };
   }
 
-  @visibleForTesting
-  static Future<void> flushFileSinkForTest() {
+  /// Waits for all queued slow-query file writes to reach disk.
+  ///
+  /// The app shutdown path calls this alongside the general logging flush so
+  /// slow-query diagnostics are not lost when the process exits immediately.
+  static Future<void> flushPendingFileWrites() {
     return _SlowQueryFileSink.instance.flushAll();
   }
-
-  /// Number of paths with an in-flight (or not-yet-cleaned-up) chained write.
-  ///
-  /// Exposed only so tests can assert that completed writes are removed from
-  /// the per-path tracking map instead of leaking forever.
-  @visibleForTesting
-  static int get pendingWriteCountForTest =>
-      _SlowQueryFileSink.instance.pendingWriteCount;
 
   Future<T> _measure<T>({
     required String operation,
@@ -418,8 +404,6 @@ class _SlowQueryFileSink {
     });
     _pendingWritesByPath[path] = tracked;
   }
-
-  int get pendingWriteCount => _pendingWritesByPath.length;
 
   Future<void> flushAll() async {
     await Future.wait(_pendingWritesByPath.values.toList(growable: false));

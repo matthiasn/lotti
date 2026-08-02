@@ -343,23 +343,4 @@ mixin _SyncDbBackfill on _$SyncDatabase {
 
     return entries.skip(offset).take(limit).toList();
   }
-
-  // ============ Sync Health Query Helpers ============
-
-  /// Count of sequence log entries matching the given [status].
-  Future<int> _countSequenceByStatus(SyncSequenceStatus status) async {
-    final query = selectOnly(syncSequenceLog)
-      ..addColumns([syncSequenceLog.hostId.count()])
-      ..where(syncSequenceLog.status.equals(status.index));
-    final result = await query.getSingle();
-    return result.read(syncSequenceLog.hostId.count()) ?? 0;
-  }
-
-  /// Count of sequence log entries with status = missing.
-  Future<int> getMissingSequenceCount() =>
-      _countSequenceByStatus(SyncSequenceStatus.missing);
-
-  /// Count of sequence log entries with status = requested.
-  Future<int> getRequestedSequenceCount() =>
-      _countSequenceByStatus(SyncSequenceStatus.requested);
 }

@@ -25,6 +25,11 @@ import 'in_memory_agent_repository.dart';
 
 const _agentId = 'agent-1';
 
+extension on AgentLogCompactor {
+  Future<String> assembleContext(String agentId) async =>
+      (await assembleContextDetailed(agentId)).text;
+}
+
 void main() {
   setUpAll(registerAllFallbackValues);
 

@@ -9,8 +9,8 @@ part of 'sync_db.dart';
 // `claimNextOutboxItem` focused on actionable rows even when the
 // `sent` ledger has accumulated tens of thousands of entries (the
 // 7-day retention window settles at ~30 k on heavy desktops). The
-// non-partial index above stays for the full-status `watchOutboxItems`
-// stream that the diagnostics UI reads.
+// non-partial index above stays for the full-status `getOutboxItems`
+// query that the diagnostics UI reads.
 //
 // Status literals (0 and 3) intentionally mirror the current
 // `OutboxStatus` enum order in

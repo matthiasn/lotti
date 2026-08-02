@@ -54,8 +54,7 @@ class LoggingService {
     // is binary, but stacks are only useful as a one-shot diagnostic;
     // they're tracked per unique statement so an enabled gate produces
     // exactly one stack per query shape per process. Disabling the
-    // gate clears the seen-set via [SlowQueryLoggingGate.resetForTest]
-    // is for tests only — a real toggle keeps the seen-set so callers
+    // gate keeps the seen-set for the life of the process so callers
     // re-enabling mid-session don't get a second flood of stacks.
     SlowQueryLoggingGate.captureFirstCallStack =
         _enableLogging && _enableSlowQueryLogging;
@@ -241,12 +240,8 @@ class LoggingService {
     // A timer callback may already have moved its lines into an active drain.
     // Wait for those writes as well so shutdown cannot return before disk IO.
     await Future.wait(List<Future<void>>.of(_fileDrains.values));
+    await SlowQueryInterceptor.flushPendingFileWrites();
   }
-
-  /// Test-only alias for [flush]. Kept for backwards compatibility with
-  /// existing tests that called this directly.
-  @visibleForTesting
-  Future<void> flushAllForTest() => flush();
 
   String? _domainFileStem(String domain) {
     if (syncFileDomains.contains(domain)) {

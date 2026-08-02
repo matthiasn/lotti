@@ -626,9 +626,10 @@ shared `test/features/daily_os_next/screenshot_harness.dart` helper:
   render context before rasterization. Capturing the first `FutureBuilder`
   frame records the CPU fallback instead of the production voice-orb or
   thinking-line imagery.
-- Reset `AiStateShaderProgramCache` when applying each screenshot device. A
-  `FragmentProgram` belongs to one `flutter_tester` render context; reusing its
-  memoized program in the next test case can hang `RenderRepaintBoundary.toImage`.
+- `AiStateShaderProgramCache` scopes memoized programs to the active
+  `testWidgets` zone. A `FragmentProgram` belongs to one `flutter_tester`
+  render context; sharing one across test cases can hang
+  `RenderRepaintBoundary.toImage`.
 
 `captureScreenshot` rejects any tree that still contains an
 `AiVoiceInputFallbackPainter` or `AiThinkingLineFallbackPainter`. Manual media

@@ -35,6 +35,7 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
+import 'sync_db_test_utils.dart';
 import 'test_utils.dart' show clearAllTables;
 
 JournalEntry _buildJournalEntry({

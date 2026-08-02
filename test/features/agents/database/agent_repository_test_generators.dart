@@ -933,12 +933,6 @@ class GeneratedTemplateInstanceQueryScenario {
         .toList();
   }
 
-  List<String> expectedTokenUsageIdsSince(DateTime since) {
-    return _matchingTokenIndexes(
-      since: since,
-    ).map((index) => tokenUsages[index].idAt(index)).toList();
-  }
-
   List<String> expectedReportIds({required int limit}) {
     return _matchingReportIndexes
         .take(limit)
@@ -1129,14 +1123,6 @@ class GeneratedWakeLifecycleScenario {
   ) {
     return _sortedIndexes(
       _targetTemplateIndexes.where(
-        (index) => specs[index].isInWindow(index, since, until),
-      ),
-    ).map((index) => specs[index].runKeyAt(index)).toList();
-  }
-
-  List<String> expectedGlobalWindowRunKeys(DateTime since, DateTime until) {
-    return _sortedIndexes(
-      Iterable<int>.generate(specs.length).where(
         (index) => specs[index].isInWindow(index, since, until),
       ),
     ).map((index) => specs[index].runKeyAt(index)).toList();

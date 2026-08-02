@@ -39,21 +39,13 @@ class AppConstants {
   static const Size minimumWindowSize = Size(360, 640);
 }
 
-/// Held for the lifetime of the process so the listener stays subscribed and
-/// `onExitRequested` is invoked when macOS / desktop OS asks the app to quit.
-// ignore: unused_element
-late final AppLifecycleListener _appLifecycleListener;
-
 /// Runs the same ordered teardown and platform-aware close path used by
 /// window-manager close events. On macOS this reaches the immediate-exit path
 /// only after all SQLite handles have been released.
-Future<AppExitResponse> _handleAppExitRequested() async {
+Future<AppExitResponse> handleAppExitRequested() async {
   await getIt<WindowService>().closeWindow();
   return AppExitResponse.exit;
 }
-
-/// Test seam for the desktop exit callback.
-Future<AppExitResponse> handleAppExitRequested() => _handleAppExitRequested();
 
 /// Emits any counted framework-error summaries that are still waiting for
 /// their timer when orderly shutdown begins.
@@ -133,6 +125,7 @@ Future<void> main() async {
       }
 
       final docDir = await findDocumentsDirectory();
+      AppLifecycleListener? appLifecycleListener;
 
       getIt
         ..registerSingleton<SecureStorage>(SecureStorage())
@@ -141,6 +134,8 @@ Future<void> main() async {
         ..registerSingleton<WindowService>(
           WindowService(
             beforeLogFlush: () async {
+              appLifecycleListener?.dispose();
+              appLifecycleListener = null;
               flushPendingFrameworkErrorSummaries();
             },
           ),
@@ -158,10 +153,11 @@ Future<void> main() async {
 
       await registerSingletons();
 
-      _appLifecycleListener = AppLifecycleListener(
-        onExitRequested: _handleAppExitRequested,
+      appLifecycleListener = AppLifecycleListener(
+        onExitRequested: handleAppExitRequested,
       );
 
+      configureFrameworkErrorSuppression(scheduleIntervalSummaries: true);
       FlutterError.onError = handleFlutterFrameworkError;
 
       runApp(
@@ -263,12 +259,11 @@ const _frameworkErrorFingerprintCapacity = 256;
 
 var _frameworkErrorLimiter = _FrameworkErrorLimiter();
 
-/// Resets process-global framework error sampling with deterministic thresholds.
+/// Configures process-global framework error sampling thresholds.
 ///
-/// Production never calls this; tests use it to isolate cases, keep timers off
-/// by default, and opt into virtual-time scheduling for the interval drain.
-@visibleForTesting
-void resetFrameworkErrorSuppressionForTesting({
+/// Startup enables interval summaries. Tests keep timers off by default and
+/// can opt into virtual-time scheduling for the interval drain.
+void configureFrameworkErrorSuppression({
   int summaryEvery = _defaultFrameworkErrorSummaryEvery,
   Duration summaryInterval = _defaultFrameworkErrorSummaryInterval,
   bool scheduleIntervalSummaries = false,

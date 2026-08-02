@@ -17,7 +17,6 @@ CREATE TABLE agent_entities (
 CREATE INDEX idx_agent_entities_agent_id ON agent_entities(agent_id);
 CREATE INDEX idx_agent_entities_type ON agent_entities(type, agent_id, created_at DESC);
 CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities(agent_id, type, subtype, created_at DESC);
-CREATE INDEX idx_agent_entities_thread ON agent_entities(agent_id, thread_id, created_at DESC);
 -- Supports `_latestEntitiesByAgentIds`, which ranks each active
 -- agent/type partition by `(created_at DESC, id DESC)`. Without the
 -- `id` tie-breaker in the index, SQLite logs this hot batch path as
@@ -171,15 +170,6 @@ CREATE INDEX idx_wake_run_log_agent ON wake_run_log(agent_id, created_at DESC);
 CREATE INDEX idx_wake_run_log_template ON wake_run_log(template_id, created_at DESC);
 CREATE INDEX idx_wake_run_log_status ON wake_run_log(status);
 CREATE INDEX idx_wake_run_log_agent_thread ON wake_run_log(agent_id, thread_id, created_at DESC);
--- `getWakeRunsInWindow` filters on `created_at >= ? AND created_at <= ?`
--- and orders by `created_at DESC`. The existing indices above are all
--- leaded by `agent_id`, `template_id`, or `status` — none lets the
--- planner walk by `created_at`. The 2026-05-10 desktop super_slow log
--- captured this as `SCAN wake_run_log` + `USE TEMP B-TREE FOR ORDER BY`
--- at 305 ms / 408 ms (11 hits). A `created_at`-only index turns the
--- range query into an in-order index walk and lets the LIMIT walk
--- stop without a sort step.
-CREATE INDEX idx_wake_run_log_created_at ON wake_run_log(created_at DESC);
 
 CREATE TABLE saga_log (
   operation_id TEXT NOT NULL PRIMARY KEY,
@@ -194,8 +184,6 @@ CREATE TABLE saga_log (
 );
 
 CREATE INDEX idx_saga_log_agent ON saga_log(agent_id);
-CREATE INDEX idx_saga_log_status ON saga_log(status, updated_at);
-CREATE INDEX idx_saga_log_status_created_at ON saga_log(status, created_at ASC);
 
 -- Named queries
 
@@ -225,8 +213,6 @@ getAgentEntityVectorClockById:
   FROM agent_entities
   WHERE id = :id AND deleted_at IS NULL;
 
-getAgentMessagesByThread: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'agentMessage' AND thread_id = :threadId AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
-
 getAgentLinkById: SELECT * FROM agent_links WHERE id = :id AND deleted_at IS NULL;
 
 -- Companion narrow projection for agent_links. See
@@ -246,13 +232,9 @@ getAgentLinksByToIdAndType: SELECT * FROM agent_links WHERE to_id = :toId AND ty
 
 getWakeRunsByAgentId: SELECT * FROM wake_run_log WHERE agent_id = :agentId ORDER BY created_at DESC LIMIT :limit;
 
-getWakeRunByKey: SELECT * FROM wake_run_log WHERE run_key = :runKey;
-
 getWakeRunByThreadId: SELECT * FROM wake_run_log WHERE agent_id = :agentId AND thread_id = :threadId ORDER BY created_at DESC LIMIT 1;
 
 getAllAgentIdentities: SELECT * FROM agent_entities WHERE type = 'agent' AND deleted_at IS NULL ORDER BY created_at DESC;
-
-getPendingSagaOps: SELECT * FROM saga_log WHERE status = 'pending' ORDER BY created_at ASC;
 
 deleteAgentEntities: DELETE FROM agent_entities WHERE agent_id = :agentId;
 
@@ -266,25 +248,18 @@ getAllAgentTemplates: SELECT * FROM agent_entities WHERE type = 'agentTemplate' 
 
 getAgentEntitiesByTypeGlobal: SELECT * FROM agent_entities WHERE type = :type AND deleted_at IS NULL ORDER BY updated_at DESC;
 
-getAllAgentEntities: SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC;
-
 getAgentEntitiesInInterval: SELECT * FROM agent_entities WHERE updated_at >= :start AND updated_at < :end ORDER BY updated_at ASC, id ASC LIMIT :limit OFFSET :offset;
 
 countAgentEntitiesInInterval: SELECT COUNT(*) AS cnt FROM agent_entities WHERE updated_at >= :start AND updated_at < :end;
 
 -- Deliberately omits `deleted_at IS NULL`: callers that need to know whether
--- an agent has EVER produced an entity of a given type (e.g. the Daily OS
+-- any agent has EVER produced an entity of a given type (e.g. the Daily OS
 -- onboarding eligibility gate, which must not re-offer the walkthrough to a
 -- user whose only plan was later deleted) need tombstones counted too.
-countAgentEntitiesByAgentAndType: SELECT COUNT(*) AS cnt FROM agent_entities WHERE agent_id = :agentId AND type = :type;
-
--- Same tombstone-inclusive semantics as above, without the agent filter:
 -- under ADR 0032 day plans are written by whichever identity owns the day
 -- (coordinator pre-cutover, per-day agent after), so "has EVER planned"
 -- gates must count across all agents.
 countAgentEntitiesByType: SELECT COUNT(*) AS cnt FROM agent_entities WHERE type = :type;
-
-getAllAgentLinks: SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC;
 
 getAgentLinksInInterval: SELECT * FROM agent_links WHERE updated_at >= :start AND updated_at < :end ORDER BY updated_at ASC, id ASC LIMIT :limit OFFSET :offset;
 
@@ -305,8 +280,6 @@ aggregateWakeRunMetricsByTemplateId: SELECT
 
 getWakeRunsByTemplateInWindow: SELECT * FROM wake_run_log WHERE template_id = :templateId AND created_at >= :since AND created_at <= :until ORDER BY created_at DESC;
 
-getWakeRunsInWindow: SELECT * FROM wake_run_log WHERE created_at >= :since AND created_at <= :until ORDER BY created_at DESC;
-
 getRecentReportsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'agentReport' AND ae.subtype = 'current' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
 
 getRecentObservationsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'agentMessage' AND ae.subtype = 'observation' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
@@ -325,15 +298,11 @@ getChangeSetsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AN
 
 getPendingChangeSetsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'changeSet' AND subtype IN ('pending', 'partiallyResolved') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
-getRecentDecisionsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'changeDecision' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
-
 getRecentDecisionsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'changeDecision' AND ae.created_at >= :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
 
 getTokenUsageByAgentId: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'wakeTokenUsage' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
 getTokenUsageByTemplateId: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
-
-getTokenUsageByTemplateSince: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.created_at >= :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC;
 
 sumTokenUsageByTemplate: SELECT
   CAST(COALESCE(SUM(json_extract(ae.serialized, '$.inputTokens')), 0) AS INT) AS total_input,
@@ -346,8 +315,6 @@ sumTokenUsageByTemplateSince: SELECT
   CAST(COALESCE(SUM(json_extract(ae.serialized, '$.outputTokens')), 0) AS INT) AS total_output,
   CAST(COALESCE(SUM(json_extract(ae.serialized, '$.thoughtsTokens')), 0) AS INT) AS total_thoughts
   FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.created_at >= :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL;
-
-getGlobalTokenUsageSince: SELECT * FROM agent_entities WHERE type = 'wakeTokenUsage' AND created_at >= :since AND deleted_at IS NULL ORDER BY created_at DESC;
 
 getDueScheduledAgentStates: SELECT * FROM agent_entities WHERE type = 'agentState' AND deleted_at IS NULL AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL AND json_extract(serialized, '$.scheduledWakeAt') <= :nowIso;
 

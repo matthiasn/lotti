@@ -46,8 +46,9 @@ Future<WakeRunLogData?> getWakeRun(
   AgentDatabase database,
   String runKey,
 ) async {
-  final rows = await database.getWakeRunByKey(runKey).get();
-  return rows.isEmpty ? null : rows.first;
+  return (database.select(
+    database.wakeRunLog,
+  )..where((row) => row.runKey.equals(runKey))).getSingleOrNull();
 }
 
 WakeTokenUsageEntity makeTestWakeTokenUsage({

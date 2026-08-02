@@ -8,11 +8,6 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 /// mixins; they now live in one place so every collaborator class can reuse
 /// them without re-declaring or duplicating logic.
 
-/// Over-fetch factor applied when a query must filter in Dart after the SQL
-/// `LIMIT` (e.g. taskId filtering on the serialized JSON column), so the post
-/// filter still has enough rows to satisfy the requested limit.
-const int overFetchMultiplier = 5;
-
 bool affectsAttentionClaimProjection(AgentDomainEntity entity) {
   return entity is AttentionRequestEntity ||
       entity is AttentionClaimDispositionEntity;

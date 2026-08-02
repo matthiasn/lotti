@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../database/slow_query_logging_test_utils.dart';
 import '../../../mocks/mocks.dart';
 import 'test_utils.dart';
 
@@ -1178,7 +1179,7 @@ void main() {
       () async {
         final loggedEntries = <SlowQueryLogEntry>[];
         SlowQueryLoggingGate.isEnabled = true;
-        addTearDown(SlowQueryLoggingGate.resetForTest);
+        addTearDown(resetSlowQueryLoggingGate);
 
         final loggedDb = SyncDatabase.connect(
           DatabaseConnection(

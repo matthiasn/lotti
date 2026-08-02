@@ -557,11 +557,6 @@ class AgentRepository {
     int limit = 10000,
   }) => _links.getTokenUsageForTemplate(templateId, limit: limit);
 
-  Future<List<WakeTokenUsageEntity>> getTokenUsageForTemplateSince(
-    String templateId, {
-    required DateTime since,
-  }) => _links.getTokenUsageForTemplateSince(templateId, since: since);
-
   Future<int> abandonOrphanedWakeRuns() => _links.abandonOrphanedWakeRuns();
 
   /// Permanently deletes every row for [agentId].

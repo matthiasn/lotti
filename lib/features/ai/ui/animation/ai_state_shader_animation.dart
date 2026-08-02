@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -45,25 +46,32 @@ abstract final class AiStateShaderAssets {
   static const thinkingLine = 'shaders/ai_thinking_line.frag';
 }
 
+/// Reuses compiled programs within one application or widget-test zone.
+///
+/// Flutter gives each `testWidgets` body its own zone and render context.
+/// Scoping the cache the same way prevents a program compiled by one test
+/// context from leaking into the next while production still compiles each
+/// bundled shader only once.
 abstract final class AiStateShaderProgramCache {
-  static Future<ui.FragmentProgram>? _voiceInputProgram;
-  static Future<ui.FragmentProgram>? _thinkingLineProgram;
+  static final _programsByZone = Expando<_AiStateShaderPrograms>();
+
+  static _AiStateShaderPrograms get _programs =>
+      _programsByZone[Zone.current] ??= _AiStateShaderPrograms();
 
   static Future<ui.FragmentProgram> loadVoiceInput() {
-    return _voiceInputProgram ??= ui.FragmentProgram.fromAsset(
+    return _programs.voiceInput ??= ui.FragmentProgram.fromAsset(
       AiStateShaderAssets.voiceInput,
     );
   }
 
   static Future<ui.FragmentProgram> loadThinkingLine() {
-    return _thinkingLineProgram ??= ui.FragmentProgram.fromAsset(
+    return _programs.thinkingLine ??= ui.FragmentProgram.fromAsset(
       AiStateShaderAssets.thinkingLine,
     );
   }
+}
 
-  @visibleForTesting
-  static void reset() {
-    _voiceInputProgram = null;
-    _thinkingLineProgram = null;
-  }
+final class _AiStateShaderPrograms {
+  Future<ui.FragmentProgram>? voiceInput;
+  Future<ui.FragmentProgram>? thinkingLine;
 }

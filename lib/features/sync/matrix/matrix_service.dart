@@ -231,8 +231,6 @@ class MatrixService {
 
   Client get client => _sessionManager.client;
 
-  MatrixConfig? get matrixConfig => _sessionManager.matrixConfig;
-
   String? get syncRoomId => _roomManager.currentRoomId;
 
   /// The sync room id on every change, null when cleared — for UI that gates
@@ -578,9 +576,6 @@ class MatrixService {
   /// catch-up rescan to pick up pending encrypted events immediately.
   Future<void> onVerificationCompleted({required String source}) =>
       _ops.onVerificationCompleted(source: source);
-
-  Future<void> deleteDevice(DeviceKeys deviceKeys) =>
-      _ops.deleteDevice(deviceKeys);
 
   /// Removes the session [deviceId] from the sync account.
   ///

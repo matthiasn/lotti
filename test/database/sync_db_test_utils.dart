@@ -11,6 +11,16 @@ import 'package:glados/glados.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 
+extension SyncDatabaseTestQueries on SyncDatabase {
+  Future<List<OutboxItem>> get allOutboxItems => select(outbox).get();
+
+  Future<OutboxItem?> getOutboxItemById(int id) {
+    return (select(
+      outbox,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+  }
+}
+
 OutboxCompanion buildOutboxCompanion({
   required OutboxStatus status,
   required DateTime createdAt,
@@ -52,8 +62,8 @@ extension AnyGeneratedOutboxStatus on Any {
 /// Deletes every row from every table in [db] **without** recreating the
 /// schema, so a single `setUpAll`-opened in-memory [SyncDatabase] can be reused
 /// across all tests in a group/file while each test still starts from an empty
-/// database. The 24-step migration ladder then runs once per file instead of
-/// once per test. (Unlike `JournalDb`, `SyncDatabase` keeps no in-memory cache,
+/// database. The migration ladder then runs once per file instead of once per
+/// test. (Unlike `JournalDb`, `SyncDatabase` keeps no in-memory cache,
 /// so a table wipe fully resets its state.)
 ///
 /// Foreign-key enforcement is toggled off for the sweep so delete order is

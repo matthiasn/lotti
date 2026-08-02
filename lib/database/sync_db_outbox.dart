@@ -18,15 +18,6 @@ mixin _SyncDbOutbox on _$SyncDatabase {
     return into(outbox).insert(entry);
   }
 
-  Future<List<OutboxItem>> get allOutboxItems => select(outbox).get();
-
-  /// Get a single outbox item by its ID.
-  /// Used to re-read an item before sending to ensure we have the latest
-  /// message after potential merges.
-  Future<OutboxItem?> getOutboxItemById(int id) {
-    return (select(outbox)..where((t) => t.id.equals(id))).getSingleOrNull();
-  }
-
   Future<List<OutboxItem>> oldestOutboxItems(int limit) {
     return (select(outbox)
           ..where((t) => const CustomExpression<bool>('status = 0'))
@@ -224,19 +215,7 @@ mixin _SyncDbOutbox on _$SyncDatabase {
       ..limit(limit);
   }
 
-  Stream<List<OutboxItem>> watchOutboxItems({
-    int limit = 1000,
-    List<OutboxStatus> statuses = const [
-      OutboxStatus.pending,
-      OutboxStatus.sending,
-      OutboxStatus.error,
-      OutboxStatus.sent,
-    ],
-  }) {
-    return _outboxItemsQuery(limit: limit, statuses: statuses).watch();
-  }
-
-  /// One-shot fetch with the same shape and ordering as [watchOutboxItems].
+  /// One-shot fetch of outbox rows using the monitor ordering.
   /// Used by surfaces that explicitly opt out of the live watcher (e.g.
   /// the outbox monitor page, which would otherwise re-run a temp-B-tree
   /// sort on every sync write).

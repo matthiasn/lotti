@@ -7,8 +7,6 @@ import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'ai_state_shader_animation_test_helpers.dart';
 
 void main() {
-  tearDown(AiStateShaderProgramCache.reset);
-
   group('AI state shader painters', () {
     // One shared load per program instead of per-test asset reads.
     late ui.FragmentProgram voiceProgram;

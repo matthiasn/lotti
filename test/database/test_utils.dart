@@ -30,6 +30,13 @@ import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
 
+extension JournalDbTestQueries on JournalDb {
+  Future<bool> columnExistsForTesting(String table, String column) async {
+    final result = await customSelect('PRAGMA table_info($table)').get();
+    return result.any((row) => row.read<String>('name') == column);
+  }
+}
+
 /// Creates a temp directory used as the documents directory for a test.
 Directory setupTestDirectory() {
   final directory = Directory.systemTemp.createTempSync('lotti_test_');

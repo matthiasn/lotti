@@ -250,14 +250,12 @@ void main() {
       expect(loc.accuracy, 20);
       expect(loc.speed, 0);
       expect(loc.heading, 180);
-      expect(loc.timestampMicros, 1700000000 * 1000000 + 500000);
       expect(fake.wasCalled('org.freedesktop.portal.Session', 'Close'), isTrue);
     });
 
     test('passes accuracy and threshold options to CreateSession', () async {
       final future = portal.getLocation(
         timeout: const Duration(seconds: 5),
-        accuracy: PortalAccuracy.city,
         distanceThreshold: 25,
         timeThreshold: 30,
       );
@@ -275,7 +273,7 @@ void main() {
       final native = dict.children.map(
         (k, v) => MapEntry(k.asString(), v.asVariant()),
       );
-      expect(native['accuracy'], const DBusUint32(2));
+      expect(native['accuracy'], const DBusUint32(5));
       expect(native['distance-threshold'], const DBusUint32(25));
       expect(native['time-threshold'], const DBusUint32(30));
       expect(native['session_handle_token'], const DBusString('tok1'));

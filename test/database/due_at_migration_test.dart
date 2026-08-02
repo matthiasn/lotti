@@ -9,6 +9,8 @@ import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
+import 'test_utils.dart';
+
 /// Migration tests for v41 — denormalized `due_at` column.
 ///
 /// The migration replaces the v39 expression-keyed

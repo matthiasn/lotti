@@ -21,6 +21,10 @@ import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 import 'wake_orchestrator_test_helpers.dart';
 
+extension on WakeQueue {
+  WakeJob? dequeue() => dequeueFirstWhere((_) => true);
+}
+
 enum _GeneratedWakeReplacementSlot {
   none,
   tokenB,
