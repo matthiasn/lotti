@@ -47,12 +47,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for one result, every morning, forever. Devices signed in to sync now agree
   among themselves which one prepares it, using the record they already share
   rather than anything new. If the chosen device goes away before it starts,
-  another takes the window over shortly after. A device that is not signed in
-  to sync has no one to coordinate with and still prepares its own.
-- **The agent store stops growing without limit.** Day-status events — the
-  running record of how each day was going, raised several times a day — were
-  kept indefinitely, so the database grew every month with nothing ever
-  released. The full record is now kept for ninety days, and older days keep
+  another takes the window over about half an hour later. A device that is not
+  signed in to sync has no one to coordinate with and still prepares its own.
+- **Old day-status records stop piling up.** These are the running record of
+  how each day was going, raised several times a day and kept indefinitely, so
+  the database grew every month with nothing ever released. The full record is
+  now kept for about ninety days — longer if the morning briefing has not read
+  it yet, since nothing is cleared before then — and older days keep
   only their final status, which is what the app shows when you scroll back to
   them. Space already taken on disk is reused for new data rather than handed
   back, so the file stops growing rather than shrinking. **Nothing you wrote is

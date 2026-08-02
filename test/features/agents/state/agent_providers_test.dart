@@ -2185,12 +2185,23 @@ void main() {
       final mockSyncService = MockAgentSyncService();
       final notifications = UpdateNotifications();
       final vectorClockService = MockVectorClockService();
-      when(vectorClockService.getHost).thenAnswer((_) async => 'host-a');
+      // getHost throws until initialized completes, exactly as the real
+      // service does — it reads a `late` field assigned in init(). A stub that
+      // returned 'host-a' regardless would pass with the await removed.
+      var initialized = false;
+      when(vectorClockService.getHost).thenAnswer((_) async {
+        if (!initialized) {
+          throw StateError('LateInitializationError: _host');
+        }
+        return 'host-a';
+      });
       // The provider awaits initialization first: getHost() reads a `late`
       // field the service assigns in init(), so a cold start that skipped the
       // await threw LateInitializationError and left a due digest neither
       // claimed nor fired until the next hourly tick.
-      when(() => vectorClockService.initialized).thenAnswer((_) async {});
+      when(() => vectorClockService.initialized).thenAnswer((_) async {
+        initialized = true;
+      });
       if (getIt.isRegistered<VectorClockService>()) {
         getIt.unregister<VectorClockService>();
       }
