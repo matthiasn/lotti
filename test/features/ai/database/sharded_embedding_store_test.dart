@@ -881,6 +881,30 @@ void main() {
         expect(await store.getCategoryId('entity-1'), 'cat-b');
       });
 
+      test('keeps only the surviving task ownership for duplicates', () async {
+        await openStoreWithShards(
+          ['cat-a', 'cat-b'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(
+                entityId: 'report-1',
+                taskId: 'task-before',
+              ),
+            ],
+            'cat-b': [
+              const EntityMetadataRow(
+                entityId: 'report-1',
+                taskId: 'task-after',
+              ),
+            ],
+          },
+        );
+
+        expect(store.getEntityIdsForTask('task-before'), isEmpty);
+        expect(store.getEntityIdsForTask('task-after'), {'report-1'});
+        expect(await store.getTaskId('report-1'), 'task-after');
+      });
+
       test('builds reverseTaskIndex from metadata', () async {
         await openStoreWithShards(
           ['cat-a'],

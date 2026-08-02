@@ -44,6 +44,9 @@ class EmbeddingProcessor {
   /// When [labelNameResolver] is provided, task entities are embedded using
   /// the enriched "tiny template" (title + labels + body) instead of plain
   /// title + body. This produces higher-quality embeddings for tasks.
+  /// When [writeGuard] is provided, it is checked immediately before a shard
+  /// move or generated-vector replacement so stale asynchronous work cannot
+  /// write after its caller disabled or superseded it.
   ///
   /// Does NOT catch exceptions from the embedding repository — callers
   /// are responsible for error handling.
@@ -54,6 +57,7 @@ class EmbeddingProcessor {
     required OllamaEmbeddingRepository embeddingRepository,
     required String baseUrl,
     LabelNameResolver? labelNameResolver,
+    EmbeddingWriteGuard? writeGuard,
   }) async {
     final entity = await journalDb.journalEntityById(entityId);
     if (entity == null) return false;
@@ -75,6 +79,7 @@ class EmbeddingProcessor {
     final existingHash = await embeddingStore.getContentHash(entityId);
     if (existingHash == hash) {
       if (categoryChanged) {
+        if (writeGuard != null && !await writeGuard()) return false;
         await embeddingStore.moveEntityToShard(entityId, categoryId);
         if (entity is Task) {
           await embeddingStore.moveRelatedReportEmbeddings(
@@ -87,7 +92,7 @@ class EmbeddingProcessor {
       return false;
     }
 
-    await _embedChunks(
+    final didEmbed = await _embedChunks(
       text: text,
       entityId: entityId,
       entityType: type,
@@ -96,7 +101,9 @@ class EmbeddingProcessor {
       embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
+      writeGuard: writeGuard,
     );
+    if (!didEmbed) return false;
 
     // When both content and category changed, the task embedding is already
     // written to the correct shard by _embedChunks. But related report

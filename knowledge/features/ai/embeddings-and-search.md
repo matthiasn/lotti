@@ -96,7 +96,10 @@ flowchart LR
   An unchanged report that moves between tasks rewrites its task metadata and
   reverse-index ownership in place, even when its category shard does not
   change, so no provider call is needed and cleanup for the old task cannot
-  delete the current task's vector.
+  delete the current task's vector. If an interrupted cross-shard move leaves
+  duplicate rows at startup, the later shard remains authoritative and index
+  rebuild removes the earlier row's obsolete task ownership before exposing
+  reverse lookups.
 - The production `OllamaEmbeddingRepository` is shared. The first request for
   an unobserved base URL exclusively reserves the initial availability probe;
   concurrent callers join that probe instead of starting their own retry loops.
@@ -146,8 +149,12 @@ flowchart LR
   reconciles the promoted canonical report and removes the deleted primary's
   stale vectors without launching a global scan. Provider
   and flag streams skip their initial snapshots because startup already
-  requests one pass; later changes resume both pending report recovery and any
-  availability-paused entity batch. Its long-lived read-only repository
+  requests one pass; later enablement resumes both pending report recovery and
+  any availability-paused entity batch. Disabling embeddings cancels the retry
+  timer and drops queued journal entities. Final write guards also reject
+  entity or report vectors whose provider request was already in flight, while
+  report recovery keeps a full pass pending for the next enablement. Its
+  long-lived read-only repository
   invalidates its own identity snapshot before each pass because writes happen
   through other repository wrappers. When multiple agents are linked to one
   task, the same canonical primary-link ordering used by task report reads
@@ -166,7 +173,9 @@ flowchart LR
   cleanup. If any agent-to-task topology read fails, the pass stays pending but
   stops before selecting from the partial snapshot; it waits for a later
   external signal instead of immediately regenerating and deleting vectors in
-  an unbounded retry loop. An availability failure leaves reconciliation
+  an unbounded retry loop. A failure inside one task continues the other tasks
+  but likewise retains the full-scan latch for the next external signal. An
+  availability failure leaves reconciliation
   pending on the shared retry timer, while a later journal, report-head, or
   task-link notification rechecks disabled/provider gates without requiring an
   app restart.
@@ -186,7 +195,9 @@ flowchart LR
   its newly written vector removed; it never deletes the searchable predecessor.
   Coalesced reports carry forward the last predecessor that was actually
   searchable, and a deferred retry whose head advanced through sync is
-  abandoned before provider or storage work.
+  abandoned before provider or storage work. Deferred workflow retries also
+  re-read `enableEmbeddingsFlag` after their wait and stop before provider work
+  when embeddings were disabled during the cooldown.
 
 ```mermaid
 stateDiagram-v2

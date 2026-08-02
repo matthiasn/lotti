@@ -32,7 +32,8 @@ enum _ReportRecoveryTargetStatus {
 /// task-agent reports so an interrupted in-memory retry is recovered.
 ///
 /// Respects the [enableEmbeddingsFlag] config flag — when disabled, the
-/// service silently drops all notifications.
+/// service drops queued entity work, rejects in-flight writes, and retains
+/// durable report reconciliation for the next enablement.
 ///
 /// Uses content hashing (SHA-256) to skip re-embedding unchanged content.
 /// Processing is single-flight: only one embedding request runs at a time,
@@ -67,6 +68,8 @@ class EmbeddingService {
   final _pendingChangedTaskIds = <String>{};
   bool _isProcessing = false;
   bool _entityBatchRerunRequested = false;
+  bool _embeddingsEnabled = true;
+  int _embeddingFlagRevision = 0;
   bool _stopped = false;
   Future<void>? _inFlightProcessing;
   Future<void>? _inFlightAgentReportRecovery;
@@ -98,11 +101,11 @@ class EmbeddingService {
         .watchConfigsByType(AiConfigType.inferenceProvider)
         .skip(1)
         .listen((_) => _onProviderConfigsChanged());
+    _embeddingFlagSubscription = journalDb
+        .watchConfigFlag(enableEmbeddingsFlag)
+        .skip(1)
+        .listen(_onEmbeddingFlagChanged);
     if (agentRepository != null) {
-      _embeddingFlagSubscription = journalDb
-          .watchConfigFlag(enableEmbeddingsFlag)
-          .skip(1)
-          .listen(_onEmbeddingFlagChanged);
       _requestAgentReportRecovery();
     }
   }
@@ -226,9 +229,19 @@ class EmbeddingService {
   }
 
   void _onEmbeddingFlagChanged(bool enabled) {
-    if (!enabled) return;
+    _embeddingFlagRevision++;
+    _embeddingsEnabled = enabled;
     _availabilityRetryTimer?.cancel();
     _availabilityRetryTimer = null;
+    if (!enabled) {
+      _pendingEntityIds.clear();
+      _entityBatchRerunRequested = false;
+      if (agentRepository != null) {
+        _agentReportRecoveryPending = true;
+        _fullAgentReportRecoveryPending = true;
+      }
+      return;
+    }
     if (_isProcessing) _entityBatchRerunRequested = true;
     _requestAgentReportRecovery();
     _resumePendingEntityBatch();
@@ -270,14 +283,18 @@ class EmbeddingService {
     _agentReportRecoveryRerunRequested = false;
 
     try {
+      final flagRevision = _embeddingFlagRevision;
       final enabled = await journalDb.getConfigFlag(enableEmbeddingsFlag);
-      if (!enabled || _stopped) {
+      if (flagRevision == _embeddingFlagRevision) {
+        _embeddingsEnabled = enabled;
+      }
+      if (!enabled || !_embeddingsEnabled || _stopped) {
         if (!_stopped) _agentReportRecoveryPending = true;
         return;
       }
 
       final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
-      if (baseUrl == null || _stopped) {
+      if (baseUrl == null || !_embeddingsEnabled || _stopped) {
         if (!_stopped) _agentReportRecoveryPending = true;
         return;
       }
@@ -300,7 +317,7 @@ class EmbeddingService {
       final unlinkedTaskIds = Set<String>.of(_pendingUnlinkedTaskIds);
       _pendingUnlinkedTaskIds.removeAll(unlinkedTaskIds);
       for (final taskId in unlinkedTaskIds) {
-        if (_stopped) return;
+        if (_stopped || !_embeddingsEnabled) return;
         try {
           final currentLinks = await repository.getLinksTo(
             taskId,
@@ -323,7 +340,7 @@ class EmbeddingService {
 
       if (!fullScanRequested) {
         for (final taskId in changedTaskIds) {
-          if (_stopped) return;
+          if (_stopped || !_embeddingsEnabled) return;
           try {
             final currentLinks = await repository.getLinksTo(
               taskId,
@@ -383,7 +400,7 @@ class EmbeddingService {
       final taskLinksByTaskId = <String, List<AgentLink>>{};
       var topologyIncomplete = false;
       for (final agent in agents) {
-        if (_stopped) return;
+        if (_stopped || !_embeddingsEnabled) return;
 
         try {
           final taskLinks = await repository.getLinksFrom(
@@ -413,7 +430,7 @@ class EmbeddingService {
       }
 
       for (final entry in taskLinksByTaskId.entries) {
-        if (_stopped) return;
+        if (_stopped || !_embeddingsEnabled) return;
         final primaryLink = entry.value.selectPrimary();
         final agent = agentsById[primaryLink.fromId];
         if (agent == null) continue;
@@ -446,6 +463,8 @@ class EmbeddingService {
       }
 
       if (failureCount > 0) {
+        _agentReportRecoveryPending = true;
+        _fullAgentReportRecoveryPending = true;
         developer.log(
           'Agent report embedding recovery skipped $failureCount operation(s)',
           error: firstError,
@@ -454,6 +473,10 @@ class EmbeddingService {
         );
       }
     } on Object catch (error, stackTrace) {
+      if (!_stopped) {
+        _agentReportRecoveryPending = true;
+        _fullAgentReportRecoveryPending = true;
+      }
       developer.log(
         'Agent report embedding recovery failed: $error',
         error: error,
@@ -489,7 +512,7 @@ class EmbeddingService {
     final attemptedReportIds = <String>{};
     final removedReportIds = <String>{};
 
-    while (!_stopped) {
+    while (!_stopped && _embeddingsEnabled) {
       final report = await repository.getLatestReport(
         agent.id,
         AgentReportScopes.current,
@@ -510,6 +533,7 @@ class EmbeddingService {
         embeddingRepository: embeddingRepository,
         baseUrl: baseUrl,
         writeGuard: () async {
+          if (!_embeddingsEnabled || _stopped) return false;
           final status = await _reportRecoveryTargetStatus(
             repository: repository,
             agentId: agent.id,
@@ -520,6 +544,7 @@ class EmbeddingService {
           return status == _ReportRecoveryTargetStatus.current;
         },
       );
+      if (!_embeddingsEnabled || _stopped) return;
       final postStoreStatus = await _reportRecoveryTargetStatus(
         repository: repository,
         agentId: agent.id,
@@ -620,8 +645,12 @@ class EmbeddingService {
     try {
       // Resolve config flag and base URL once per batch to avoid
       // redundant DB queries for each entity.
+      final flagRevision = _embeddingFlagRevision;
       final enabled = await journalDb.getConfigFlag(enableEmbeddingsFlag);
-      if (!enabled) {
+      if (flagRevision == _embeddingFlagRevision) {
+        _embeddingsEnabled = enabled;
+      }
+      if (!enabled || !_embeddingsEnabled) {
         if (!_entityBatchRerunRequested) _pendingEntityIds.clear();
         return;
       }
@@ -646,7 +675,7 @@ class EmbeddingService {
         );
       }
 
-      while (_pendingEntityIds.isNotEmpty && !_stopped) {
+      while (_pendingEntityIds.isNotEmpty && !_stopped && _embeddingsEnabled) {
         final entityId = _pendingEntityIds.first;
         _pendingEntityIds.remove(entityId);
 
@@ -658,6 +687,7 @@ class EmbeddingService {
             embeddingRepository: embeddingRepository,
             baseUrl: baseUrl,
             labelNameResolver: labelResolver,
+            writeGuard: () => _embeddingsEnabled && !_stopped,
           );
         } on OllamaEmbeddingAvailabilityException catch (e) {
           developer.log(

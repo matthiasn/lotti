@@ -40,6 +40,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -165,6 +166,9 @@ void main() {
     mockLabelsRepository = MockLabelsRepository();
     mockTemplateService = MockAgentTemplateService();
 
+    when(
+      () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+    ).thenAnswer((_) async => true);
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
     stubAppendMilestone(mockSyncService);
     stubReconciledAgentState(mockSyncService, mockAgentRepository);
@@ -4762,6 +4766,154 @@ not describe task configuration or tool activity as progress.
           );
         },
       );
+
+      test('disabled embeddings cancel a deferred report retry', () async {
+        final mockEmbeddingStore = MockEmbeddingStore();
+        final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+        final persistedReports = <AgentReportEntity>[];
+        final retryScheduled = Completer<void>();
+        final releaseRetry = Completer<void>();
+        final storedReportIds = <String>[];
+        var embeddingsEnabled = true;
+        var embeddingCallCount = 0;
+        final workflowWithEmbeddings = TaskAgentWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          domainLogger: DomainLogger(loggingService: LoggingService())
+            ..enabledDomains.add(LogDomain.agentWorkflow),
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepository,
+          reportEmbeddingDelay: (_) {
+            retryScheduled.complete();
+            return releaseRetry.future;
+          },
+        );
+
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer(
+          (_) async => persistedReports.isEmpty ? null : persistedReports.last,
+        );
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+          call,
+        ) async {
+          final entity = call.positionalArguments.first;
+          if (entity is AgentReportEntity) persistedReports.add(entity);
+        });
+        when(
+          () => mockAiConfigRepository.resolveOllamaBaseUrl(),
+        ).thenAnswer((_) async => 'http://localhost:11434');
+        when(
+          () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+        ).thenAnswer((_) async => embeddingsEnabled);
+        when(
+          () => mockJournalDb.getAllLabelDefinitions(),
+        ).thenAnswer((_) async => []);
+        when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer(
+          (_) async => TestTaskFactory.create(
+            id: taskId,
+            title: 'Cancel disabled report retry',
+            categoryId: 'cat-001',
+          ),
+        );
+        when(
+          () => mockEmbeddingRepository.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        ).thenAnswer((_) async {
+          embeddingCallCount++;
+          if (embeddingCallCount == 1) {
+            throw OllamaEmbeddingUnavailableException(
+              'Ollama transport retries exhausted',
+              retryAt: clock.now(),
+            );
+          }
+          return Float32List(kEmbeddingDimensions);
+        });
+        when(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: any(named: 'entityId'),
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        ).thenAnswer((invocation) {
+          storedReportIds.add(invocation.namedArguments[#entityId] as String);
+        });
+
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy is TaskAgentStrategy) {
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    const ChatCompletionMessageToolCall(
+                      id: 'rpt-call',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: 'update_report',
+                        arguments:
+                            r'{"content":"# Deferred report\nThis report remains durable but must not be embedded after the flag is disabled.","oneLiner":"Deferred report","tldr":"Deferred report for disabled retry coverage."}',
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+              }
+              return null;
+            };
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        final result = await workflowWithEmbeddings.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        await retryScheduled.future;
+        expect(embeddingCallCount, 1);
+
+        embeddingsEnabled = false;
+        releaseRetry.complete();
+        await pumpEventQueue();
+
+        expect(embeddingCallCount, 1);
+        expect(storedReportIds, isEmpty);
+      });
 
       test(
         'removes reports superseded during store and durable head lookup',

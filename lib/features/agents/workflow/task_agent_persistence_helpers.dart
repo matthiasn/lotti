@@ -48,7 +48,9 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
   /// Non-fatal: failures do not affect the wake cycle. Availability failures
   /// defer the latest report per task until the endpoint's retry time. When a
   /// newer report coalesces that work, it inherits the last predecessor known
-  /// to be searchable rather than the unembedded intermediate report.
+  /// to be searchable rather than the unembedded intermediate report. A retry
+  /// rechecks the embeddings flag after its wait and stops if the feature was
+  /// disabled during the cooldown.
   /// Called as fire-and-forget via [unawaited] after report persistence.
   Future<void> _embedAgentReport({
     required String reportId,
@@ -77,6 +79,10 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     }
 
     try {
+      if (isRetry && !await journalDb.getConfigFlag(enableEmbeddingsFlag)) {
+        _completeAgentReportEmbedding(taskId, reportId);
+        return;
+      }
       final baseUrl = await this.aiConfigRepository.resolveOllamaBaseUrl();
       if (baseUrl == null) {
         _completeAgentReportEmbedding(taskId, reportId);

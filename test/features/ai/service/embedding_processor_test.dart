@@ -458,6 +458,7 @@ void main() {
     JournalEntity? entity,
     String? entityId,
     LabelNameResolver? labelNameResolver,
+    EmbeddingWriteGuard? writeGuard,
   }) {
     if (entity != null) {
       _stubEntity(mockJournalDb, entity);
@@ -469,6 +470,7 @@ void main() {
       embeddingRepository: mockEmbeddingRepo,
       baseUrl: _baseUrl,
       labelNameResolver: labelNameResolver,
+      writeGuard: writeGuard,
     );
   }
 
@@ -823,6 +825,29 @@ void main() {
             any(),
             any(),
           ),
+        );
+      });
+
+      test('write guard rejects an unchanged-content shard move', () async {
+        final entry = JournalEntry(
+          meta: _meta(categoryId: 'cat-new'),
+          entryText: const EntryText(plainText: _longText),
+        );
+        when(
+          () => mockEmbeddingStore.getContentHash(entry.id),
+        ).thenReturn(_hashOf(_longText));
+        when(
+          () => mockEmbeddingStore.getCategoryId(entry.id),
+        ).thenReturn('cat-old');
+
+        final result = await processEntity(
+          entity: entry,
+          writeGuard: () => false,
+        );
+
+        expect(result, isFalse);
+        verifyNever(
+          () => mockEmbeddingStore.moveEntityToShard(any(), any()),
         );
       });
 

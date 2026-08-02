@@ -503,7 +503,11 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     }
   }
 
-  /// Rebuilds [_primaryIndex] and [_reverseTaskIndex] from all open shards.
+  /// Rebuilds [_primaryIndex] and task ownership indexes from all open shards.
+  ///
+  /// Duplicate rows left by an interrupted cross-shard move are resolved in
+  /// shard order, and [_setTaskIndex] removes ownership contributed by the
+  /// discarded copy before indexing the survivor.
   void _rebuildIndexes() {
     _primaryIndex.clear();
     _reverseTaskIndex.clear();
@@ -523,11 +527,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
           );
         }
         _primaryIndex[row.entityId] = shardKey;
-
-        if (row.taskId.isNotEmpty) {
-          _entityTaskIndex[row.entityId] = row.taskId;
-          (_reverseTaskIndex[row.taskId] ??= {}).add(row.entityId);
-        }
+        _setTaskIndex(row.entityId, row.taskId);
       }
     }
   }
