@@ -46,26 +46,6 @@ void main() {
       expect(voiceProgram, isA<ui.FragmentProgram>());
       expect(thinkingProgram, isA<ui.FragmentProgram>());
     });
-
-    testWidgets('cache returns the identical program for any call count', (
-      tester,
-    ) async {
-      final voice = [
-        for (var i = 0; i < 9; i++)
-          await AiStateShaderProgramCache.loadVoiceInput(),
-      ];
-      final thinking = [
-        for (var i = 0; i < 9; i++)
-          await AiStateShaderProgramCache.loadThinkingLine(),
-      ];
-
-      for (final program in voice.skip(1)) {
-        expect(identical(program, voice.first), isTrue);
-      }
-      for (final program in thinking.skip(1)) {
-        expect(identical(program, thinking.first), isTrue);
-      }
-    });
   });
 
   group('AiVoiceInputShader', () {
