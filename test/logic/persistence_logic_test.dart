@@ -617,9 +617,13 @@ void main() {
         updatedTestText,
       );
 
-      verify(
-        () => mockFts5Db.insertText(any(), removePrevious: true),
-      ).called(2);
+      final indexedEntries = verify(
+        () => mockFts5Db.insertText(captureAny(), removePrevious: true),
+      ).captured.cast<JournalEntity>();
+      expect(
+        indexedEntries.map((entry) => entry.entryText?.plainText),
+        contains(updatedTestText),
+      );
       _verifyAndResetBadge(mockNotificationService);
     });
 
