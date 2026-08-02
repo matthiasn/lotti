@@ -4,10 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
@@ -49,12 +52,20 @@ void main() {
   // fresh mock per test would therefore not be seen by `_db` after the first
   // method call, so we reuse one mock and only re-stub it each time.
   final sharedDb = MockJournalDb();
+  late MockDomainLogger domainLogger;
 
   setUp(() async {
     debugDefaultTargetPlatformOverride = TargetPlatform.linux;
     FlutterLocalNotificationsPlatform.instance = _FakeNotificationsPlatform();
+    domainLogger = MockDomainLogger();
 
-    await setUpTestGetIt();
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(domainLogger);
+      },
+    );
     // Replace the helper's JournalDb with our stable shared instance so it is
     // the one `_db` resolves to.
     if (getIt.isRegistered<JournalDb>()) {
@@ -62,9 +73,7 @@ void main() {
     }
     getIt.registerSingleton<JournalDb>(sharedDb);
 
-    when(
-      () => sharedDb.getConfigFlag(any()),
-    ).thenAnswer((_) async => true);
+    when(() => sharedDb.getConfigFlag(any())).thenAnswer((_) async => true);
     // ignore: unnecessary_lambdas
     when(() => sharedDb.getWipCount()).thenAnswer((_) async => 0);
   });
@@ -88,6 +97,48 @@ void main() {
         NotificationConstants.encouragementHigh,
         "Let's get that number down",
       );
+    });
+  });
+
+  group('NotificationLocationResolver', () {
+    late tz.Location originalLocation;
+
+    setUp(() {
+      tzdata.initializeTimeZones();
+      originalLocation = tz.local;
+      tz.setLocalLocation(tz.getLocation('Europe/Berlin'));
+    });
+
+    tearDown(() => tz.setLocalLocation(originalLocation));
+
+    test('returns a named location without logging', () {
+      final resolver = NotificationLocationResolver();
+
+      expect(resolver.resolve('Asia/Tokyo').name, 'Asia/Tokyo');
+      verifyNever(
+        () => domainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      );
+    });
+
+    test('logs each unresolved zone once and returns local', () {
+      final resolver = NotificationLocationResolver();
+
+      expect(resolver.resolve('CEST').name, 'Europe/Berlin');
+      expect(resolver.resolve('CEST').name, 'Europe/Berlin');
+
+      verify(
+        () => domainLogger.error(
+          LogDomain.notifications,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'resolveLocation',
+        ),
+      ).called(1);
     });
   });
 

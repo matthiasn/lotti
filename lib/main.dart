@@ -27,6 +27,7 @@ import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/fd_limits.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/utils/timezone.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
@@ -58,6 +59,17 @@ Future<AppExitResponse> handleAppExitRequested() => _handleAppExitRequested();
 /// their timer when orderly shutdown begins.
 void flushPendingFrameworkErrorSummaries() {
   _frameworkErrorLimiter.flushPendingSummaries();
+}
+
+/// Records a startup timezone-resolution failure without aborting startup.
+@visibleForTesting
+void handleTimezoneConfigurationError(Object error, StackTrace stackTrace) {
+  getIt<DomainLogger>().error(
+    LogDomain.general,
+    error,
+    stackTrace: stackTrace,
+    subDomain: 'configureLocalTimezone',
+  );
 }
 
 Future<void> main() async {
@@ -136,6 +148,13 @@ Future<void> main() async {
 
       await getIt<WindowService>().restore();
       tz.initializeTimeZones();
+      // Loading the database does not pick a zone — without this the
+      // package's `local` stays UTC and scheduled reminders land hours off.
+      // coverage:ignore-start
+      await configureLocalTimezone(
+        onError: handleTimezoneConfigurationError,
+      );
+      // coverage:ignore-end
 
       await registerSingletons();
 

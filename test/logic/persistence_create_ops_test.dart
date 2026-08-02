@@ -8,11 +8,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_create_ops.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
+import '../test_data/test_data.dart';
 import '../widget_test_utils.dart';
 
 /// Mirror test for [PersistenceCreateOps].
@@ -23,6 +25,7 @@ import '../widget_test_utils.dart';
 /// [MockPersistenceLogic] standing in as the facade.
 void main() {
   late MockPersistenceLogic logic;
+  late MockDomainLogger domainLogger;
   late PersistenceCreateOps ops;
 
   Metadata metaFor(String id) => Metadata(
@@ -35,9 +38,13 @@ void main() {
 
   setUp(() async {
     registerAllFallbackValues();
+    domainLogger = MockDomainLogger();
     await setUpTestGetIt(
       additionalSetup: () {
-        getIt.registerSingleton<NotificationService>(MockNotificationService());
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(domainLogger)
+          ..registerSingleton<NotificationService>(MockNotificationService());
       },
     );
     logic = MockPersistenceLogic();
@@ -110,10 +117,7 @@ void main() {
 
       expect(result, isA<JournalEvent>());
       verify(
-        () => logic.createDbEntity(
-          any<JournalEntity>(),
-          linkedId: 'parent-1',
-        ),
+        () => logic.createDbEntity(any<JournalEntity>(), linkedId: 'parent-1'),
       ).called(1);
     },
   );
@@ -176,4 +180,63 @@ void main() {
 
     expect(result, isNull);
   });
+
+  test(
+    'a failing reminder does not make a saved completion look unsaved',
+    () async {
+      // Regression: scheduleHabitNotification threw (on macOS, getLocation
+      // rejected the "CEST" abbreviation), the exception escaped to the outer
+      // catch, and the method returned null — after createDbEntity had already
+      // committed. The caller reads null as "the write didn't commit", so the
+      // user got no confirmation for a completion that IS in the database, and
+      // would tap again and record a duplicate.
+      when(
+        () => logic.createDbEntity(
+          any(),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final notificationService =
+          getIt<NotificationService>() as MockNotificationService;
+      when(
+        () => notificationService.scheduleHabitNotification(
+          any(),
+          daysToAdd: any(named: 'daysToAdd'),
+        ),
+      ).thenThrow(
+        // The real failure shape.
+        ArgumentError('Location with the name "CEST" doesn\'t exist'),
+      );
+
+      final result = await ops.createHabitCompletionEntryImpl(
+        data: HabitCompletionData(
+          habitId: habitFlossing.id,
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          completionType: HabitCompletionType.success,
+        ),
+        habitDefinition: habitFlossing,
+      );
+
+      expect(
+        result,
+        isNotNull,
+        reason:
+            'the completion was written; a failed reminder is not a '
+            'failed write',
+      );
+      expect(result!.data.habitId, habitFlossing.id);
+      verify(
+        () => domainLogger.error(
+          LogDomain.persistence,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'createHabitCompletionEntry.scheduleNotification',
+        ),
+      ).called(1);
+    },
+  );
 }

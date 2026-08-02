@@ -530,6 +530,22 @@ void main() {
     verifyNoMoreInteractions(domainLogger);
   });
 
+  test('timezone configuration errors reach the durable log', () {
+    final error = StateError('timezone unavailable');
+    final stack = StackTrace.current;
+
+    app.handleTimezoneConfigurationError(error, stack);
+
+    verify(
+      () => domainLogger.error(
+        LogDomain.general,
+        error,
+        stackTrace: stack,
+        subDomain: 'configureLocalTimezone',
+      ),
+    ).called(1);
+  });
+
   test('exit request awaits the platform-aware window close path', () async {
     final responseFuture = app.handleAppExitRequested();
     var responseCompleted = false;

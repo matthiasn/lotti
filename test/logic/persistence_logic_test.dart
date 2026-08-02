@@ -2015,8 +2015,10 @@ void main() {
         );
 
         expect(result, isNull);
-        // Note: the source reuses the 'createMeasurementEntry' subDomain here.
-        verifyLogged(LogDomain.persistence, 'createMeasurementEntry');
+        // The subDomain used to be copy-pasted from createMeasurementEntry,
+        // which made this failure impossible to find in the logs — the stack
+        // said habit completion, the label said measurement.
+        verifyLogged(LogDomain.persistence, 'createHabitCompletionEntry');
       },
     );
 
