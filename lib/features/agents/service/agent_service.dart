@@ -28,7 +28,7 @@ class AgentService {
     this.onPersistedStateChanged,
     this.sidecarReclaimer,
     this.onTaskLinksWillBeHardDeleted,
-    this.onTaskLinksHardDeleted,
+    this.onTaskLinksNeedReconciliation,
   });
 
   final AgentRepository repository;
@@ -44,7 +44,10 @@ class AgentService {
   final void Function(String agentId)? onPersistedStateChanged;
   final Future<void> Function(Set<String> taskIds)?
   onTaskLinksWillBeHardDeleted;
-  final void Function(Set<String> taskIds)? onTaskLinksHardDeleted;
+
+  /// Reconciles derived task data after topology deletion or a partial
+  /// pre-delete cleanup failure.
+  final void Function(Set<String> taskIds)? onTaskLinksNeedReconciliation;
 
   static const _uuid = Uuid();
 
@@ -259,11 +262,22 @@ class AgentService {
       agentId,
       type: AgentLinkTypes.agentTask,
     )).map((link) => link.toId).toSet();
-    final preDeleteCleanup = onTaskLinksWillBeHardDeleted;
-    if (taskIds.isNotEmpty && preDeleteCleanup != null) {
-      await preDeleteCleanup(taskIds);
+    late final ({List<String> entityIds, List<String> linkIds}) removed;
+    try {
+      final preDeleteCleanup = onTaskLinksWillBeHardDeleted;
+      if (taskIds.isNotEmpty && preDeleteCleanup != null) {
+        await preDeleteCleanup(taskIds);
+      }
+      removed = await repository.hardDeleteAgent(agentId);
+    } on Object {
+      if (taskIds.isNotEmpty) {
+        onTaskLinksNeedReconciliation?.call(taskIds);
+      }
+      rethrow;
     }
-    final removed = await repository.hardDeleteAgent(agentId);
+    if (taskIds.isNotEmpty) {
+      onTaskLinksNeedReconciliation?.call(taskIds);
+    }
     // The rows are only half of what a synced agent leaves behind: its JSON
     // sidecars stay readable on disk otherwise, outliving the delete the user
     // just asked for.
@@ -271,9 +285,6 @@ class AgentService {
       entityIds: removed.entityIds,
       linkIds: removed.linkIds,
     );
-    if (taskIds.isNotEmpty) {
-      onTaskLinksHardDeleted?.call(taskIds);
-    }
     developer.log(
       'Deleted all data for agent ${DomainLogger.sanitizeId(agentId)}',
       name: 'AgentService',

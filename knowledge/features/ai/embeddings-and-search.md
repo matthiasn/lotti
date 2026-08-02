@@ -156,8 +156,11 @@ flowchart LR
   including-deleted journal read, deletes every report vector in that task's
   reverse index, and makes no provider request. Provider
   and flag streams skip their initial snapshots because startup already
-  requests one pass; later enablement resumes both pending report recovery and
-  any availability-paused entity batch. Disabling embeddings cancels the retry
+  requests one pass, and their asynchronous errors remain contained inside the
+  optional service. If the provider repository's initial all-config bootstrap
+  fails, the next observed config save retries it and installs the database
+  watch without a polling loop. Later enablement resumes both pending report
+  recovery and any availability-paused entity batch. Disabling embeddings cancels the retry
   timer and drops queued journal entities. Final write guards also reject
   entity or report vectors whose provider request was already in flight, and
   the guard is rechecked between chunks so no further provider calls start

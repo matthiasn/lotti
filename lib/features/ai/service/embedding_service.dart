@@ -109,7 +109,10 @@ class EmbeddingService {
     _embeddingFlagSubscription = journalDb
         .watchConfigFlag(enableEmbeddingsFlag)
         .skip(1)
-        .listen(_onEmbeddingFlagChanged);
+        .listen(
+          _onEmbeddingFlagChanged,
+          onError: _onEmbeddingFlagWatchError,
+        );
     if (agentRepository != null) {
       _requestAgentReportRecovery();
     }
@@ -264,6 +267,17 @@ class EmbeddingService {
     if (_isProcessing) _entityBatchRerunRequested = true;
     _requestAgentReportRecovery();
     _resumePendingEntityBatch();
+  }
+
+  /// Keeps optional embedding-flag failures inside this service.
+  void _onEmbeddingFlagWatchError(Object error, StackTrace stackTrace) {
+    if (_stopped) return;
+    developer.log(
+      'Embedding flag watch failed',
+      error: error,
+      stackTrace: stackTrace,
+      name: 'EmbeddingService',
+    );
   }
 
   void _resumePendingEntityBatch() {

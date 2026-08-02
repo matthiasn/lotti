@@ -397,7 +397,7 @@ AgentService agentService(Ref ref) {
         await embeddingStore.deleteEntityEmbeddings(reportId);
       }
     },
-    onTaskLinksHardDeleted: (taskIds) {
+    onTaskLinksNeedReconciliation: (taskIds) {
       notifications.notify({
         for (final taskId in taskIds) '$agentTaskLinkNotificationPrefix$taskId',
       });

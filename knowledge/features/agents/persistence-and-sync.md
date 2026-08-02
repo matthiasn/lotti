@@ -292,11 +292,14 @@ that the task still has no agent link. Local hard deletion follows the same
 rule: `AgentService.deleteAgent` reads the agent's task-link targets and awaits
 deletion of every report vector found through their reverse task index before
 the repository removes those identifying rows. If cleanup fails, the hard
-delete is aborted and the topology remains available for a retry. A crash after
-vector cleanup but before topology deletion is likewise recoverable because
-startup reconciliation can rebuild the still-linked current report. After a
-successful hard delete, a local task-keyed notification reconciles any surviving
-canonical agent report. The hard delete itself remains intentionally unsynced.
+delete is aborted and the topology remains available for a retry; a task-keyed
+notification immediately rebuilds any current vectors already removed before
+the failure. The same compensation runs if the database hard delete fails after
+vector cleanup. A crash after vector cleanup but before topology deletion is
+likewise recoverable because startup reconciliation can rebuild the still-linked
+current report. After a successful hard delete, the task-keyed notification is
+sent before sidecar reclamation and reconciles any surviving canonical agent
+report. The hard delete itself remains intentionally unsynced.
 
 Legacy `WeekRollupEntity` JSON can omit `weekStart`. The shared
 `AgentDomainEntity.fromJson` read boundary repairs it only when the entity id is

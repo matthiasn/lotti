@@ -1327,6 +1327,49 @@ void main() {
         expect(errors.first, isA<Exception>());
       },
     );
+
+    test('a provider save restarts a failed all-config bootstrap', () async {
+      final provider = AiConfig.inferenceProvider(
+        id: 'ollama-after-bootstrap-failure',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        name: 'Recovered Ollama',
+        createdAt: fixedDate,
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+      final providerEntity = AiConfigDbEntity(
+        id: provider.id,
+        type: AiConfigType.inferenceProvider.name,
+        name: provider.name,
+        serialized: jsonEncode(provider.toJson()),
+        createdAt: fixedDate,
+      );
+      var bootstrapCount = 0;
+      when(() => mockDb.getAllConfigs()).thenAnswer((_) async {
+        bootstrapCount++;
+        if (bootstrapCount == 1) {
+          throw StateError('Transient bootstrap failure');
+        }
+        return [providerEntity];
+      });
+      final errors = <Object>[];
+      final snapshots = <List<AiConfig>>[];
+      final subscription = repository
+          .watchConfigsByType(AiConfigType.inferenceProvider)
+          .listen(snapshots.add, onError: errors.add);
+
+      await pumpEventQueue();
+      expect(errors, hasLength(1));
+      expect(snapshots, isEmpty);
+
+      await repository.saveConfig(provider);
+      await pumpEventQueue();
+
+      expect(bootstrapCount, 2);
+      expect(snapshots.single.single.id, provider.id);
+      verify(() => mockDb.watchAllConfigs()).called(1);
+      await subscription.cancel();
+    });
   });
 
   group('AiConfigRepository with mocks — _cacheConfigInTypeList paths', () {

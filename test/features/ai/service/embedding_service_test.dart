@@ -683,6 +683,28 @@ void main() {
       expect(uncaughtErrors, isEmpty);
     });
 
+    test('contains embedding flag watcher errors', () async {
+      final flagChanges = StreamController<bool>.broadcast(sync: true);
+      final uncaughtErrors = <Object>[];
+      addTearDown(flagChanges.close);
+      when(
+        () => mockJournalDb.watchConfigFlag(enableEmbeddingsFlag),
+      ).thenAnswer((_) => flagChanges.stream);
+
+      await runZonedGuarded(
+        () async {
+          service.start();
+          flagChanges
+            ..add(true)
+            ..addError(StateError('Embedding flag watch failed'));
+          await pumpEventQueue();
+        },
+        (error, _) => uncaughtErrors.add(error),
+      );
+
+      expect(uncaughtErrors, isEmpty);
+    });
+
     test(
       'startup recovers the latest report and removes stale report embeddings',
       () async {

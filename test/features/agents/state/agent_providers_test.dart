@@ -2164,7 +2164,7 @@ void main() {
         () => mockEmbeddingStore.deleteEntityEmbeddings('shared-report'),
       ).called(1);
 
-      service.onTaskLinksHardDeleted?.call({'task-1', 'task-2'});
+      service.onTaskLinksNeedReconciliation?.call({'task-1', 'task-2'});
 
       verify(
         () => mockNotifications.notify({

@@ -264,7 +264,7 @@ void main() {
       orchestrator: mockOrchestrator,
       syncService: mockSyncService,
       onPersistedStateChanged: notifiedAgentIds.add,
-      onTaskLinksHardDeleted: hardDeletedTaskIds.add,
+      onTaskLinksNeedReconciliation: hardDeletedTaskIds.add,
     );
   });
 
@@ -928,6 +928,54 @@ void main() {
         verify(
           () => mockRepository.hardDeleteAgent('agent-with-report'),
         ).called(1);
+      });
+
+      test('reconciles task vectors when durable cleanup aborts', () async {
+        const agentId = 'agent-partial-cleanup';
+        const taskId = 'task-partial-cleanup';
+        final reconciledTaskIds = <Set<String>>[];
+        when(
+          () => mockRepository.getEntity(agentId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockOrchestrator.removeSubscriptions(agentId),
+        ).thenReturn(null);
+        when(
+          () => mockRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentLink.agentTask(
+              id: 'agent-partial-cleanup-task-link',
+              fromId: agentId,
+              toId: taskId,
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+          ],
+        );
+        final partialCleanupService = AgentService(
+          repository: mockRepository,
+          orchestrator: mockOrchestrator,
+          syncService: mockSyncService,
+          onTaskLinksWillBeHardDeleted: (_) async {
+            throw StateError('Second vector delete failed');
+          },
+          onTaskLinksNeedReconciliation: reconciledTaskIds.add,
+        );
+
+        await expectLater(
+          partialCleanupService.deleteAgent(agentId),
+          throwsA(isA<StateError>()),
+        );
+
+        verifyNever(() => mockRepository.hardDeleteAgent(agentId));
+        expect(reconciledTaskIds, [
+          <String>{taskId},
+        ]);
       });
 
       test('reclaims the sidecars of everything it deleted', () async {

@@ -538,6 +538,24 @@ class AiConfigRepository {
     }
 
     _cacheConfigInTypeList(config);
+    _retryObservedAllConfigsBootstrap();
+  }
+
+  /// Retries a failed all-config bootstrap after an observed local mutation.
+  ///
+  /// A listener survives its initial bootstrap error. Retrying only when a
+  /// config is actually written avoids a timer loop against a persistently
+  /// unavailable database while ensuring that a newly configured provider
+  /// can wake the listener in the same session.
+  void _retryObservedAllConfigsBootstrap() {
+    if (_allConfigsLoaded || !_allConfigsController.hasListener) return;
+    unawaited(
+      _ensureAllConfigsLoaded().catchError((Object error, StackTrace stack) {
+        if (!_allConfigsController.isClosed) {
+          _allConfigsController.addError(error, stack);
+        }
+      }),
+    );
   }
 
   void _invalidateConfig(String id) {
