@@ -37,11 +37,6 @@ const eventsQueryLimit = 1000;
 /// hundreds of events instead of querying and resolving every cover up front.
 const eventsPageSize = 60;
 
-/// Loads every event in one shot. Kept for callers/tests that want the full
-/// set; the overview itself pages via [loadResolvedEventsPage].
-Future<List<ResolvedEvent>> loadResolvedEvents() =>
-    loadResolvedEventsPage(limit: eventsQueryLimit, offset: 0);
-
 /// Loads one page of (non-deleted) events for the overview — newest first,
 /// [limit] rows from [offset], optionally restricted to [categoryId] — and
 /// resolves each one's category styling and cover image. Pure-ish glue: all

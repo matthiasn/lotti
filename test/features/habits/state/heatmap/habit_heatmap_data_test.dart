@@ -469,28 +469,6 @@ void main() {
       expect(data.streaksByHabit, isEmpty);
     });
 
-    test('copyWith replaces only the given fields', () {
-      final base = HabitHeatmapData.empty();
-      const day = HeatmapDay(
-        ymd: '2024-03-15',
-        successCount: 1,
-        activeCount: 1,
-        isToday: true,
-      );
-      final next = base.copyWith(
-        days: [day],
-        hasHabits: true,
-        isLoading: false,
-        streaksByHabit: {'h1': 5},
-      );
-      expect(next.days, [day]);
-      expect(next.hasHabits, isTrue);
-      expect(next.isLoading, isFalse);
-      expect(next.streaksByHabit, {'h1': 5});
-      // Unchanged copy keeps prior values.
-      expect(next.copyWith().streaksByHabit, {'h1': 5});
-    });
-
     test('value equality by fields', () {
       expect(HabitHeatmapData.empty(), HabitHeatmapData.empty());
     });

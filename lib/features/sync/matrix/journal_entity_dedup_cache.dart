@@ -1,7 +1,6 @@
 import 'dart:collection';
 
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:meta/meta.dart';
 
 /// LRU cache of recently-processed journal entity fingerprints, keyed by
 /// `entryId`. Used by `SyncEventProcessor` to short-circuit replays of the
@@ -61,13 +60,4 @@ class JournalEntityDedupCache {
       ..sort((a, b) => a.key.compareTo(b.key));
     return entries.map((entry) => '${entry.key}:${entry.value}').join('|');
   }
-
-  @visibleForTesting
-  int get size => _fingerprints.length;
-
-  @visibleForTesting
-  int get capacity => _capacity;
-
-  @visibleForTesting
-  List<String> get orderedKeys => _fingerprints.keys.toList(growable: false);
 }

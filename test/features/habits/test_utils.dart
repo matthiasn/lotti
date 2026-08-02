@@ -10,9 +10,7 @@ class FakeHabitsController extends HabitsController {
   final HabitsState _state;
 
   final List<HabitDisplayFilter?> displayFilterCalls = [];
-  final List<String> toggledCategoryIds = [];
   int toggleShowSearchCalls = 0;
-  int toggleShowTimeSpanCalls = 0;
   int toggleZeroBasedCalls = 0;
   bool setTimeSpanCalled = false;
   int? lastTimeSpan;
@@ -34,16 +32,6 @@ class FakeHabitsController extends HabitsController {
   void toggleShowSearch() {
     toggleShowSearchCalls++;
     state = state.copyWith(showSearch: !state.showSearch);
-  }
-
-  @override
-  void toggleShowTimeSpan() {
-    toggleShowTimeSpanCalls++;
-  }
-
-  @override
-  void toggleSelectedCategoryIds(String categoryId) {
-    toggledCategoryIds.add(categoryId);
   }
 
   @override

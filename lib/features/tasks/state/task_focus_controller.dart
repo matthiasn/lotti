@@ -101,14 +101,3 @@ void publishTaskFocus({
         alignment: alignment,
       );
 }
-
-/// Helper function to publish a task-suggestions focus intent.
-void publishTaskSuggestionFocus({
-  required String taskId,
-  required WidgetRef ref,
-  double alignment = 0.1,
-}) {
-  ref
-      .read(taskFocusControllerProvider(taskId).notifier)
-      .publishSuggestionFocus(alignment: alignment);
-}

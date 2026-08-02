@@ -328,22 +328,6 @@ class HabitsController extends Notifier<HabitsState> {
     state = state.copyWith(showSearch: !state.showSearch);
   }
 
-  /// Toggles the time span selector visibility.
-  void toggleShowTimeSpan() {
-    state = state.copyWith(showTimeSpan: !state.showTimeSpan);
-  }
-
-  /// Toggles a category ID in the selected categories filter.
-  void toggleSelectedCategoryIds(String categoryId) {
-    final currentIds = state.selectedCategoryIds;
-    final newIds = currentIds.contains(categoryId)
-        ? (Set<String>.from(currentIds)..remove(categoryId))
-        : (Set<String>.from(currentIds)..add(categoryId));
-
-    state = state.copyWith(selectedCategoryIds: newIds);
-    _determineHabitSuccessByDays();
-  }
-
   /// Replaces the selected categories filter in a single write (used by the
   /// deferred category picker, which commits the whole set on Apply).
   void setSelectedCategoryIds(Set<String> categoryIds) {

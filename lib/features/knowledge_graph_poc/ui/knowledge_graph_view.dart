@@ -161,7 +161,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     super.didChangeDependencies();
     _disableAnimations =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    _motion.reduceMotion = _disableAnimations;
+    _motion.setReduceMotion(value: _disableAnimations);
     if (_disableAnimations) {
       _cam.stop();
       _wakeCtl

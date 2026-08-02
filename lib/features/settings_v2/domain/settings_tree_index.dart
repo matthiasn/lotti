@@ -243,20 +243,4 @@ class SettingsTreeIndex {
   /// The returned list is the pre-wrapped unmodifiable view stored on
   /// this index — safe to retain without copying.
   List<String>? ancestors(String id) => _ancestors[id];
-
-  /// `true` if [path] is safe to install as tree state — i.e. every
-  /// id resolves AND the ids form the canonical root → self chain
-  /// of the last segment. A path like `['sync/backfill']` (missing
-  /// the `sync` ancestor) or `['advanced', 'sync/backfill']` (wrong
-  /// parent) is rejected, so callers can use this as a guard
-  /// without worrying about dangling selections.
-  bool isValidPath(List<String> path) {
-    if (path.isEmpty) return true;
-    final expected = _ancestors[path.last];
-    if (expected == null || expected.length != path.length) return false;
-    for (var i = 0; i < path.length; i++) {
-      if (expected[i] != path[i]) return false;
-    }
-    return true;
-  }
 }

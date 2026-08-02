@@ -5,9 +5,6 @@ part 'recorder_state.freezed.dart';
 
 /// Represents the various states of the audio recorder.
 enum AudioRecorderStatus {
-  /// Recorder is being initialized (permissions, setup).
-  initializing,
-
   /// Actively recording audio.
   recording,
 

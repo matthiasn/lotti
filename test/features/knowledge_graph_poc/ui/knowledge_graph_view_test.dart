@@ -894,7 +894,12 @@ void main() {
         painter.motion!.offsetFor(scenario.seedId).distance,
         greaterThan(0),
       );
-      expect(painter.motion!.activeNodeCount, greaterThan(1));
+      expect(
+        scenario.nodes
+            .where((node) => node.id != scenario.seedId)
+            .any((node) => painter.motion!.offsetFor(node.id) != Offset.zero),
+        isTrue,
+      );
 
       painter.motion!.settle();
       await tester.pump();
@@ -920,8 +925,7 @@ void main() {
 
       final motion = painterOf(tester).motion;
       expect(motion, isNotNull);
-      expect(motion!.hasActiveMotion, isFalse);
-      expect(motion.offsetFor(scenario.seedId), Offset.zero);
+      expect(motion!.offsetFor(scenario.seedId), Offset.zero);
     });
   });
 
@@ -976,7 +980,7 @@ void main() {
       expect(jumped.focusId, targetId);
       expect(jumped.wake, 0);
       expect(jumped.motion, isNotNull);
-      expect(jumped.motion!.hasActiveMotion, isFalse);
+      expect(jumped.motion!.offsetFor(targetId), Offset.zero);
 
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -1106,7 +1110,12 @@ void main() {
       expect(after.focusId, scenario.seedId);
       expect(motion, isNotNull);
       expect(motion!.offsetFor(scenario.seedId).distance, greaterThan(0));
-      expect(motion.activeNodeCount, greaterThan(1));
+      expect(
+        scenario.nodes
+            .where((node) => node.id != scenario.seedId)
+            .any((node) => motion.offsetFor(node.id) != Offset.zero),
+        isTrue,
+      );
     });
 
     testWidgets('trackpad scroll zooms the graph', (tester) async {

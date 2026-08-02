@@ -1174,7 +1174,7 @@ void main() {
 
     group('AudioRecordingModal - Recording Style Visualizer', () {
       final restingState = AudioRecorderState(
-        status: AudioRecorderStatus.initializing,
+        status: AudioRecorderStatus.stopped,
         progress: Duration.zero,
         vu: -20,
         dBFS: -34,

@@ -281,7 +281,7 @@ void main() {
       expect(state.openNow.length, 2);
 
       // Filter by cat-1
-      controller.toggleSelectedCategoryIds('cat-1');
+      controller.setSelectedCategoryIds({'cat-1'});
       await pumpEventQueue();
 
       state = container.read(habitsControllerProvider);
@@ -323,7 +323,7 @@ void main() {
       expect(state.completed.length, 2);
 
       // Filter by cat-2
-      controller.toggleSelectedCategoryIds('cat-2');
+      controller.setSelectedCategoryIds({'cat-2'});
       await pumpEventQueue();
 
       state = container.read(habitsControllerProvider);
@@ -346,7 +346,7 @@ void main() {
       await pumpEventQueue();
 
       // Filter by cat-1 - both habits have cat-1
-      controller.toggleSelectedCategoryIds('cat-1');
+      controller.setSelectedCategoryIds({'cat-1'});
       await pumpEventQueue();
 
       final state = container.read(habitsControllerProvider);

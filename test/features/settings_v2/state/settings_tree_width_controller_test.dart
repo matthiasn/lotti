@@ -100,7 +100,9 @@ void main() {
         'clobber it', () async {
       final c = await _containerWith(persistedValue: '412.0');
       addTearDown(c.dispose);
-      c.read(settingsTreeNavWidthProvider.notifier).setTo(300);
+      c
+          .read(settingsTreeNavWidthProvider.notifier)
+          .updateBy(300 - defaultSettingsTreeNavWidth);
       expect(await _awaitHydration(c), 300);
     });
   });
@@ -145,43 +147,10 @@ void main() {
     });
   });
 
-  group('SettingsTreeNavWidth.setTo', () {
-    test('valid absolute value is applied', () {
-      container.read(settingsTreeNavWidthProvider.notifier).setTo(400);
-      expect(container.read(settingsTreeNavWidthProvider), 400);
-    });
-
-    test('value above maximum is clamped to max', () {
-      container.read(settingsTreeNavWidthProvider.notifier).setTo(600);
-      expect(
-        container.read(settingsTreeNavWidthProvider),
-        maxSettingsTreeNavWidth,
-      );
-    });
-
-    test('value below minimum is clamped to min', () {
-      container.read(settingsTreeNavWidthProvider.notifier).setTo(0);
-      expect(
-        container.read(settingsTreeNavWidthProvider),
-        minSettingsTreeNavWidth,
-      );
-    });
-
-    test('non-finite value is ignored', () {
-      container.read(settingsTreeNavWidthProvider.notifier)
-        ..setTo(double.infinity)
-        ..setTo(double.nan);
-      expect(
-        container.read(settingsTreeNavWidthProvider),
-        defaultSettingsTreeNavWidth,
-      );
-    });
-  });
-
   group('SettingsTreeNavWidth.resetToDefault', () {
     test('from a non-default value: returns to default', () {
       container.read(settingsTreeNavWidthProvider.notifier)
-        ..setTo(400)
+        ..updateBy(400 - defaultSettingsTreeNavWidth)
         ..resetToDefault();
       expect(
         container.read(settingsTreeNavWidthProvider),
@@ -238,7 +207,7 @@ void main() {
           // First schedule a debounced 400-px persist, then flip to
           // the immediate-write reset path and confirm the scheduled
           // write is superseded.
-          ..setTo(400)
+          ..updateBy(400 - defaultSettingsTreeNavWidth)
           ..resetToDefault();
         async.flushMicrotasks();
 

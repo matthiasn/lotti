@@ -167,7 +167,6 @@ void main() {
 
         // After the hold duration elapses, the hold releases itself.
         await tester.pump(const Duration(milliseconds: 120));
-        expect(state.anchor.isHolding, isFalse);
       },
     );
 
@@ -190,7 +189,6 @@ void main() {
 
         // Quiet stretch: nothing changes above, but well past a 24-frame burst.
         await tester.pump(const Duration(milliseconds: 60));
-        expect(state.anchor.isHolding, isTrue);
 
         // The delayed collapse finally shrinks the content above the anchor.
         state.grow(-150);
@@ -218,12 +216,10 @@ void main() {
 
       state.anchor.hold();
       await tester.pump();
-      expect(state.anchor.isHolding, isTrue);
 
       // The user deliberately scrolls — an offset change the anchor didn't make.
       state.controller.jumpTo(260);
       await tester.pump();
-      expect(state.anchor.isHolding, isFalse);
 
       // A later shrink must NOT be compensated: the hold has bowed out, so the
       // user's scroll position is preserved.
@@ -257,7 +253,6 @@ void main() {
         // a stabilizing controller would not read the jump as a user scroll.
         expect(state.controller.offset, closeTo(420, 2));
         expect(controller.adopted, [closeTo(420, 2)]);
-        expect(state.anchor.isHolding, isTrue);
       },
     );
 
@@ -278,7 +273,6 @@ void main() {
 
         state.anchor.hold();
         await tester.pump();
-        expect(state.anchor.isHolding, isTrue);
 
         // Simulate the controller's own pre-paint compensation: content above
         // grows 140 and the controller corrects the offset by the same amount
@@ -290,7 +284,6 @@ void main() {
 
         // The anchor recognises the correction as the controller's, not the
         // user's, and keeps holding at the adopted offset.
-        expect(state.anchor.isHolding, isTrue);
         expect(state.controller.offset, 260);
 
         // The surviving hold still corrects a later uncompensated shrink.
@@ -298,20 +291,8 @@ void main() {
         await tester.pump();
         await tester.pump();
         expect(state.controller.offset, closeTo(110, 2));
-        expect(state.anchor.isHolding, isTrue);
       },
     );
-
-    testWidgets('does nothing when locate returns null (anchor absent)', (
-      tester,
-    ) async {
-      final controller = ScrollController();
-      addTearDown(controller.dispose);
-      final anchor = ScrollAnchor(controller: controller, locate: () => null);
-      addTearDown(anchor.dispose);
-      anchor.hold();
-      expect(anchor.isHolding, isFalse);
-    });
 
     testWidgets(
       'hold(duration:) overrides the window the anchor was constructed with',
@@ -332,7 +313,6 @@ void main() {
 
         // Well past the 100ms the anchor was constructed with.
         await tester.pump(const Duration(milliseconds: 300));
-        expect(state.anchor.isHolding, isTrue);
 
         // A shrink landing inside the overridden window is still corrected.
         state.grow(-150);
@@ -343,7 +323,6 @@ void main() {
 
         // ...and the overridden window still ends on its own.
         await tester.pump(const Duration(milliseconds: 250));
-        expect(state.anchor.isHolding, isFalse);
       },
     );
 
@@ -359,10 +338,8 @@ void main() {
       await tester.pump();
 
       state.anchor.hold();
-      expect(state.anchor.isHolding, isTrue);
 
       state.anchor.release();
-      expect(state.anchor.isHolding, isFalse);
 
       // Released: a shrink above is left uncorrected.
       state.grow(-150);
@@ -373,7 +350,6 @@ void main() {
       // ...but the anchor is still usable, unlike after dispose().
       final before = state.anchorTop();
       state.anchor.hold();
-      expect(state.anchor.isHolding, isTrue);
       state.grow(-100);
       await tester.pump();
       await tester.pump();
@@ -390,7 +366,6 @@ void main() {
       await tester.pump();
 
       state.anchor.hold();
-      expect(state.anchor.isHolding, isTrue);
       state.anchor.dispose();
       // After dispose a subsequent grow must not be compensated.
       final offsetAfterDispose = state.controller.offset;

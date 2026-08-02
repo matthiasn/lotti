@@ -74,6 +74,9 @@ LinkedDbEntry _link(String id, {required String from, required String to}) {
   );
 }
 
+Future<List<ResolvedEvent>> _loadAllResolvedEvents() =>
+    loadResolvedEventsPage(limit: eventsQueryLimit, offset: 0);
+
 void main() {
   late MockJournalDb db;
   late MockEntitiesCacheService cache;
@@ -144,7 +147,7 @@ void main() {
     stubEvents([_event(id: 'e1')]);
     when(() => db.getJournalEntitiesForIds(any())).thenAnswer((_) async => []);
 
-    final resolved = await loadResolvedEvents();
+    final resolved = await _loadAllResolvedEvents();
 
     expect(resolved, hasLength(1));
     expect(resolved.single.event.meta.id, 'e1');
@@ -173,7 +176,7 @@ void main() {
       () => db.getJournalEntitiesForIds(any()),
     ).thenAnswer((_) async => [_image('img-1')]);
 
-    final resolved = await loadResolvedEvents();
+    final resolved = await _loadAllResolvedEvents();
 
     final cover = resolved.single.coverImage;
     expect(cover, isA<FileImage>());
@@ -188,7 +191,7 @@ void main() {
     () async {
       stubEvents([_event(id: 'e1')]);
 
-      final resolved = await loadResolvedEvents();
+      final resolved = await _loadAllResolvedEvents();
 
       expect(resolved.single.coverImage, isNull);
       // No cover-art ids → the by-id fetch is skipped; the fallback queries
@@ -209,7 +212,7 @@ void main() {
       () => db.getJournalEntitiesForIds(any()),
     ).thenAnswer((_) async => [_image('img-1')]);
 
-    final resolved = await loadResolvedEvents();
+    final resolved = await _loadAllResolvedEvents();
 
     final cover = resolved.single.coverImage;
     expect(cover, isA<FileImage>());
@@ -233,7 +236,7 @@ void main() {
       () => db.getJournalEntitiesForIds(any()),
     ).thenAnswer((_) async => [older, newer]);
 
-    final resolved = await loadResolvedEvents();
+    final resolved = await _loadAllResolvedEvents();
 
     expect(
       (resolved.single.coverImage! as FileImage).file.path,
@@ -247,7 +250,7 @@ void main() {
       when(() => cache.showPrivateEntries).thenReturn(false);
       stubEvents([]);
 
-      await loadResolvedEvents();
+      await _loadAllResolvedEvents();
 
       final captured = verify(
         () => db.getJournalEntities(

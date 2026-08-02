@@ -35,21 +35,13 @@ class GraphMotionController extends ChangeNotifier {
   static const double _restDistance = 0.12;
   static const double _restVelocity = 1.1;
 
-  bool get reduceMotion => _reduceMotion;
-
-  set reduceMotion(bool value) {
+  void setReduceMotion({required bool value}) {
     if (_reduceMotion == value) return;
     _reduceMotion = value;
     if (value) {
       settle();
     }
   }
-
-  bool get isAnimating => _ticker.isActive;
-
-  bool get hasActiveMotion => _bodies.isNotEmpty;
-
-  int get activeNodeCount => _bodies.length;
 
   Offset offsetFor(String id) => _bodies[id]?.offset ?? Offset.zero;
 

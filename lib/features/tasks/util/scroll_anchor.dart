@@ -136,10 +136,6 @@ class ScrollAnchor {
   bool _scheduled = false;
   bool _disposed = false;
 
-  /// Whether a hold is currently active (visible for tests).
-  @visibleForTesting
-  bool get isHolding => _anchorTop != null;
-
   /// Begin holding: capture the current anchor position and start correcting.
   ///
   /// [duration] overrides [holdDuration] for this hold only, so one anchor can

@@ -231,20 +231,6 @@ class HabitHeatmapData extends Equatable {
   /// Per-habit current streak (see [currentStreaksByHabit]); habit id → length.
   final Map<String, int> streaksByHabit;
 
-  HabitHeatmapData copyWith({
-    List<HeatmapDay>? days,
-    bool? hasHabits,
-    bool? isLoading,
-    Map<String, int>? streaksByHabit,
-  }) {
-    return HabitHeatmapData(
-      days: days ?? this.days,
-      hasHabits: hasHabits ?? this.hasHabits,
-      isLoading: isLoading ?? this.isLoading,
-      streaksByHabit: streaksByHabit ?? this.streaksByHabit,
-    );
-  }
-
   @override
   List<Object?> get props => [days, hasHabits, isLoading, streaksByHabit];
 }
