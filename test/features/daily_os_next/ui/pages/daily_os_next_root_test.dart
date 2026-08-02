@@ -622,7 +622,7 @@ void main() {
     testWidgets(
       'a pane too narrow for the year drops it, desktop window or not',
       (tester) async {
-        setTestSurfaceSize(tester, const Size(380, 900));
+        setTestSurfaceSize(tester, const Size(405, 900));
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
@@ -648,6 +648,9 @@ void main() {
           await tester.pump();
           await tester.pump();
 
+          // 405pt is inside the band where the date and both chevrons fit
+          // but the label's own step3 insets do not: budgeting them is what
+          // keeps the year from being chosen and then ellipsized.
           expect(find.text('Wed, May 27'), findsOneWidget);
           expect(find.text('Wed, May 27, 2026'), findsNothing);
           _expectLabelNotTruncated(tester, find.text('Wed, May 27'));

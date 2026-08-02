@@ -129,9 +129,10 @@ Three invariants make repeated navigation cheap:
   `MediaQuery.textScalerOf` (`_stableDateLabelWidth`, cached per locale ×
   pattern × style × scale) and rendered with tabular figures. The reservation
   is measured rather than hardcoded, so it follows the user's font-size setting
-  instead of clipping at large text. The pattern is `yMMMEd` on desktop and
-  year-less `MMMEd` below `kDesktopBreakpoint`, because the widest `yMMMEd`
-  string plus two chevrons does not fit a 390 pt phone.
+  instead of clipping at large text. Which pattern is reserved — `yMMMEd` or
+  year-less `MMMEd` — is itself a fit check against the pane (see below), not a
+  device class: the widest `yMMMEd` string plus two chevrons does not fit a
+  390 pt phone, but it does fit a wide pane on any device.
 - **Day navigation owns its row when the header stacks.** `_MeasuredDayHeader`
   lays title, toggle and actions out inline when they fit; when they do not, the
   date strip takes the first row alone. The toggle and the actions then share

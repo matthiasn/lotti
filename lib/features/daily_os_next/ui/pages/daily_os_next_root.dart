@@ -224,17 +224,24 @@ class _DateStrip extends StatelessWidget {
       todayLabel: todayLabel,
     );
     const chevrons = kMinInteractiveDimension * 2;
+    // The label's own chrome counts too: it sits in a step3 inset on each
+    // side, so a pane between `reserved + chevrons` and that plus the insets
+    // would pick the year and then ellipsize it.
+    final labelChrome = tokens.spacing.step3 * 2;
     // Unbounded width (a test or an intrinsic pass) cannot be measured
     // against; fall back to the window breakpoint there.
     final wide = available.isFinite
-        ? available >= wideReserved + chevrons
+        ? available >= wideReserved + chevrons + labelChrome
         : isDesktopLayout(context);
     final showToday =
         !isToday &&
         wide &&
         (!available.isFinite ||
             available >=
-                wideReserved + chevrons + _todayControlWidth(context, tokens));
+                wideReserved +
+                    chevrons +
+                    labelChrome +
+                    _todayControlWidth(context, tokens));
     final format = wide ? DateFormat.yMMMEd(locale) : DateFormat.MMMEd(locale);
     return Row(
       mainAxisSize: MainAxisSize.min,
