@@ -951,6 +951,36 @@ void main() {
         });
       });
 
+      test('a crossing claim between the checks stops the fire', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {
+            final record = leased(
+              leaseHostId: 'host-a',
+              leaseUntil: now.toUtc().add(const Duration(minutes: 30)),
+              updatedAt: now,
+            );
+            final manager = managerFor(record);
+            // A peer's claim lands after the lease check approved the record
+            // but before the final read. It is still pending, so a
+            // status-only check would fire — on a lease this device has lost.
+            var reads = 0;
+            when(() => repository.getEntity(record.id)).thenAnswer((_) async {
+              reads++;
+              return reads == 1
+                  ? record
+                  : record.copyWith(
+                      leaseHostId: 'host-b',
+                      leaseUntil: now.toUtc().add(const Duration(minutes: 45)),
+                    );
+            });
+            async.flushMicrotasks();
+
+            expectNoWake();
+            manager.stop();
+          });
+        });
+      });
+
       test('a claim confirmed after the settle fires exactly once', () {
         fakeAsync((async) {
           withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {

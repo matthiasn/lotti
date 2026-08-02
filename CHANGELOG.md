@@ -47,8 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for one result, every morning, forever. Devices signed in to sync now agree
   among themselves which one prepares it, using the record they already share
   rather than anything new. If the chosen device goes away before it starts,
-  another takes the window over about half an hour later. A device that is not
-  signed in to sync has no one to coordinate with and still prepares its own.
+  another takes the window over about half an hour later. A device with no sync
+  identity of its own has no one to coordinate with and still prepares its own.
 - **Old day-status records stop piling up.** These are the running record of
   how each day was going, raised several times a day and kept indefinitely, so
   the database grew every month with nothing ever released. The full record is

@@ -2184,6 +2184,8 @@ void main() {
       final mockOrchestrator = MockWakeOrchestrator();
       final mockSyncService = MockAgentSyncService();
       final notifications = UpdateNotifications();
+      // Owns a stream controller; the sibling test disposes it too.
+      addTearDown(notifications.dispose);
       final vectorClockService = MockVectorClockService();
       // getHost throws until initialized completes, exactly as the real
       // service does — it reads a `late` field assigned in init(). A stub that

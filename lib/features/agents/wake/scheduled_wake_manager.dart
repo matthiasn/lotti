@@ -193,7 +193,8 @@ class ScheduledWakeManager {
     var enqueued = 0;
     for (final record in dueRecords) {
       try {
-        if (!await _holdsLease(record, now, generation)) continue;
+        final approved = await _leaseApprovedRecord(record, now, generation);
+        if (approved == null) continue;
         // `stop()` can land while the lease check is awaiting the host lookup.
         // Firing afterwards would enqueue through a disposed manager, and if
         // the provider has already rebuilt one, both instances would fire the
@@ -205,9 +206,15 @@ class ScheduledWakeManager {
         // ran when that version landed, so the in-memory `record` is simply
         // stale, and firing from it bills a second digest for a window the
         // database already says is finished.
+        // Ownership too, not just status: a peer's crossing claim leaves the
+        // record pending while moving `leaseHostId` or the deadline, and
+        // firing on that would be this device acting on a lease it lost.
         final current = await _repository.getEntity(record.id);
         if (current is ScheduledWakeEntity &&
-            current.status != ScheduledWakeStatus.pending) {
+            (current.status != ScheduledWakeStatus.pending ||
+                current.leaseHostId != approved.leaseHostId ||
+                current.leaseUntil != approved.leaseUntil ||
+                !current.scheduledAt.isAtSameMomentAs(approved.scheduledAt))) {
           continue;
         }
         _orchestrator.enqueueManualWake(
@@ -237,7 +244,7 @@ class ScheduledWakeManager {
     return enqueued;
   }
 
-  /// Whether this device may fire [due] now.
+  /// The record this device may fire now, or null when it may not.
   ///
   /// Always true for the ordinary device-local records. For a leased record it
   /// runs one round of claim–settle–confirm:
@@ -260,17 +267,17 @@ class ScheduledWakeManager {
   /// to happen. A lease that lapses without the record being consumed is a
   /// claimant that crashed or went offline, and any device may take over, so a
   /// window is delayed rather than lost.
-  Future<bool> _holdsLease(
+  Future<ScheduledWakeEntity?> _leaseApprovedRecord(
     ScheduledWakeEntity due,
     DateTime now,
     int generation,
   ) async {
     final needsLease = requiresLease?.call(due) ?? false;
     final hostIdOf = localHostId;
-    if (!needsLease || hostIdOf == null) return true;
+    if (!needsLease || hostIdOf == null) return due;
 
     final hostId = await hostIdOf();
-    if (hostId == null) return true;
+    if (hostId == null) return due;
 
     // Re-read after the host lookup: sync can apply a crossing claim, a
     // `consumed` version, or the next window's re-arm while that await is
@@ -278,9 +285,9 @@ class ScheduledWakeManager {
     // the due query returned would overwrite a newer local row with older
     // lease fields.
     final refreshed = await _repository.getEntity(due.id);
-    if (refreshed is! ScheduledWakeEntity) return false;
-    if (refreshed.status != ScheduledWakeStatus.pending) return false;
-    if (!refreshed.scheduledAt.isAtSameMomentAs(due.scheduledAt)) return false;
+    if (refreshed is! ScheduledWakeEntity) return null;
+    if (refreshed.status != ScheduledWakeStatus.pending) return null;
+    if (!refreshed.scheduledAt.isAtSameMomentAs(due.scheduledAt)) return null;
     final record = refreshed;
 
     final until = record.leaseUntil;
@@ -295,7 +302,7 @@ class ScheduledWakeManager {
       // claimant that crashed would hold the window until the next hourly
       // tick — up to an hour late on top of the 30-minute lease.
       _scheduleRecheck(until.difference(now), generation);
-      return false;
+      return null;
     }
     if (held && record.leaseHostId == hostId) {
       // Claim time is derived from the deadline rather than read off
@@ -312,9 +319,9 @@ class ScheduledWakeManager {
         // device would then reclaim its own record and delay the briefing by
         // about an hour. Arm the remainder instead.
         _scheduleRecheck(leaseSettle - waited, generation);
-        return false;
+        return null;
       }
-      return true;
+      return record;
     }
 
     await _syncService.upsertEntity(
@@ -331,7 +338,7 @@ class ScheduledWakeManager {
       ),
     );
     _scheduleRecheck(leaseSettle, generation);
-    return false;
+    return null;
   }
 
   /// Whether [agentId]'s identity is live (lifecycle `active`). A missing,
