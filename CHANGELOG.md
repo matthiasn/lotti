@@ -6,11 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.1]
 ### Added
-- **Daily OS has a Today button.** Once you step off today, a Today button
-  appears beside the date arrows and takes you straight back. Returning
-  previously meant either opening the date picker or knowing that a long press
-  on the date did it. On today itself the button is not shown, since there is
-  nowhere to return to.
+- **Daily OS has a Today button.** On a desktop window, once you step off today
+  a Today button appears beside the date arrows and takes you straight back.
+  Returning previously meant either opening the date picker or knowing that a
+  long press on the date did it. On today itself the button is not shown, since
+  there is nowhere to return to. A phone has no room for it beside the date, so
+  it is not shown there — instead, tapping the date now opens Lotti's own date
+  sheet, which carries a Today shortcut of its own.
 - **A failed planning step now says so on the day it happened.** When Daily OS
   could not draft or update a plan, or could not read a check-in, it failed in
   silence: no notification arrived, and the day showed no sign anything had
@@ -37,7 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the pointer and walking through a week meant re-aiming at every step. The
   date now sits in a fixed slot wide enough for the longest date your language
   can produce, so both arrows stay put. The slot is measured, not fixed in
-  pixels, so it still fits when you increase the text size.
+  pixels, so it still fits when you increase the text size. On a phone, day
+  navigation moved onto a line of its own — it previously shared the top line
+  with the filter and menu buttons, which squeezed the date until it was cut
+  off mid-word — and drops the year, which is the least useful part of it while
+  stepping between nearby days.
 - **Daily OS stays in the view you chose while you move between days.** Whatever
   you had open — Day, Agenda or Activity — was thrown away and replaced by that
   day's default view every time you stepped to another date, which made reading

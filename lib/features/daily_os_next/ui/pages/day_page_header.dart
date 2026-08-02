@@ -331,34 +331,20 @@ class _RenderMeasuredDayHeader extends RenderBox
         actionsSize.width;
     final fitsInline = inlineWidth <= contentWidth;
 
-    if (!fitsInline) {
-      final titleWidth = math.max<double>(
-        0,
-        contentWidth - actionsSize.width - itemGap,
-      );
-      title.layout(
-        BoxConstraints.loose(Size(titleWidth, maxChildHeight)),
-        parentUsesSize: true,
-      );
-      titleSize = title.size;
-    }
-
-    final firstRowHeight = math.max(titleSize.height, actionsSize.height);
-    final headerHeight = fitsInline
-        ? verticalPadding * 2 + math.max(firstRowHeight, toggleSize.height)
-        : verticalPadding * 2 + firstRowHeight + rowGap + toggleSize.height;
-
-    size = constraints.constrain(Size(width, headerHeight));
-
-    // A multi-line title block (chevron line + title + date) reads as a
-    // masthead: actions belong on its FIRST line, not centered against
-    // the whole block.
-    final actionsY = titleSize.height > actionsSize.height
-        ? verticalPadding
-        : verticalPadding + (firstRowHeight - actionsSize.height) / 2;
-
     if (fitsInline) {
-      final rowHeight = math.max(firstRowHeight, toggleSize.height);
+      final rowHeight = math.max(
+        math.max(titleSize.height, actionsSize.height),
+        toggleSize.height,
+      );
+      size = constraints.constrain(
+        Size(width, verticalPadding * 2 + rowHeight),
+      );
+      // A multi-line title block (chevron line + title + date) reads as a
+      // masthead: actions belong on its FIRST line, not centered against
+      // the whole block.
+      final actionsY = titleSize.height > actionsSize.height
+          ? verticalPadding
+          : verticalPadding + (rowHeight - actionsSize.height) / 2;
       _position(
         title,
         Offset(
@@ -380,20 +366,40 @@ class _RenderMeasuredDayHeader extends RenderBox
       return;
     }
 
+    // Too narrow for one row: **day navigation gets a row of its own**, and
+    // the toggle and actions share the row beneath it. Sharing row one with
+    // the actions cluster is what squeezed the date into an ellipsis on a
+    // phone — the element that must stay readable and repeatedly tappable
+    // was the one giving up its width.
+    title.layout(
+      BoxConstraints.loose(Size(contentWidth, maxChildHeight)),
+      parentUsesSize: true,
+    );
+    titleSize = title.size;
+
+    final secondRowHeight = math.max(toggleSize.height, actionsSize.height);
+    size = constraints.constrain(
+      Size(
+        width,
+        verticalPadding * 2 + titleSize.height + rowGap + secondRowHeight,
+      ),
+    );
+
+    final secondRowTop = verticalPadding + titleSize.height + rowGap;
+    _position(title, Offset(horizontalPadding, verticalPadding));
     _position(
-      title,
+      toggle,
       Offset(
         horizontalPadding,
-        verticalPadding + (firstRowHeight - titleSize.height) / 2,
+        secondRowTop + (secondRowHeight - toggleSize.height) / 2,
       ),
     );
     _position(
       actions,
-      Offset(width - horizontalPadding - actionsSize.width, actionsY),
-    );
-    _position(
-      toggle,
-      Offset(horizontalPadding, verticalPadding + firstRowHeight + rowGap),
+      Offset(
+        width - horizontalPadding - actionsSize.width,
+        secondRowTop + (secondRowHeight - actionsSize.height) / 2,
+      ),
     );
   }
 

@@ -14,11 +14,11 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
-import 'package:lotti/utils/device_region.dart';
-import 'package:lotti/utils/first_day_of_week_picker.dart';
 
 /// Entry point for the Daily OS Next surface.
 ///
@@ -74,18 +74,20 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     }
   }
 
+  /// Opens the design-system date picker.
+  ///
+  /// The shared modal carries its own "Today" quick action in the header,
+  /// which is what lets the phone header drop the standalone Today button
+  /// without losing the way back to today.
   Future<void> _pickDate() async {
     // Anchor the picker window to the current selection (not `_today`)
     // so the prev/next chevrons can never drift past `firstDate` or
-    // `lastDate` and trip a `showDatePicker` assertion. Day arithmetic
-    // via the `DateTime` constructor stays DST-safe.
+    // `lastDate`. Day arithmetic via the `DateTime` constructor stays
+    // DST-safe.
     final selected = ref.read(dailyOsNextSelectedDateProvider);
-    final firstDayOfWeekIndex = await ref.read(
-      firstDayOfWeekIndexProvider.future,
-    );
-    if (!mounted) return;
-    final picked = await showDatePicker(
+    final picked = await showDesignSystemDatePicker(
       context: context,
+      title: context.messages.dailyOsNextDayTitle,
       initialDate: selected,
       firstDate: DateTime(
         selected.year - 1,
@@ -97,10 +99,10 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
         selected.month,
         selected.day,
       ),
-      builder: firstDayOfWeekPickerBuilder(firstDayOfWeekIndex),
     );
-    if (picked != null) {
-      ref.read(dailyOsNextSelectedDateProvider.notifier).select(picked);
+    final date = picked?.date;
+    if (date != null) {
+      ref.read(dailyOsNextSelectedDateProvider.notifier).select(date);
     }
   }
 
@@ -151,16 +153,17 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   }
 }
 
-/// Compact date strip — prev arrow, tappable date label that opens a
-/// date picker, next arrow, and a "Today" button once the selection has
-/// left today.
+/// Compact date strip — prev arrow, tappable date label that opens the
+/// design-system date picker, next arrow, and on desktop a "Today" button
+/// once the selection has left today.
 ///
 /// Layout is stable across dates: the label reserves the width of the
 /// *widest* date this locale, style and text scale can produce (see
 /// [_stableDateLabelWidth]), so neither chevron moves as the user steps
 /// through days and the next chevron can be clicked repeatedly. The Today
 /// button sits after the chevrons, so its appearance cannot push them
-/// either.
+/// either; on a phone it is left out altogether and the picker's own
+/// Today action is the way back.
 class _DateStrip extends StatelessWidget {
   const _DateStrip({
     required this.selected,
@@ -189,6 +192,12 @@ class _DateStrip extends StatelessWidget {
       color: tokens.colors.text.highEmphasis,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
+    final wide = isDesktopLayout(context);
+    // A phone drops the year: reserving the widest possible "Wed, Sep 30,
+    // 2026" plus two chevrons does not fit 390 pt, and the year is the least
+    // useful part of it while stepping through nearby days.
+    final locale = Localizations.localeOf(context).toString();
+    final format = wide ? DateFormat.yMMMEd(locale) : DateFormat.MMMEd(locale);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -214,17 +223,15 @@ class _DateStrip extends StatelessWidget {
                 constraints: BoxConstraints(
                   minWidth: _stableDateLabelWidth(
                     context,
+                    format: format,
                     style: labelStyle,
                     todayLabel: messages.dailyOsTodayButton,
                   ),
                 ),
                 child: Text(
-                  _formatDate(
-                    context,
-                    selected,
-                    isToday: isToday,
-                    todayLabel: messages.dailyOsTodayButton,
-                  ),
+                  isToday
+                      ? messages.dailyOsTodayButton
+                      : format.format(selected),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -239,10 +246,11 @@ class _DateStrip extends StatelessWidget {
           tooltip: material.nextPageTooltip,
           onPressed: onNext,
         ),
-        // Only shown off-today: with nothing to jump back to it would be
-        // dead chrome, and sitting after the chevrons it can appear and
-        // disappear without moving them.
-        if (!isToday) ...[
+        // Desktop only, and only off-today. A phone header has no width to
+        // spare beside the date — the button squeezed the date into an
+        // ellipsis — and the picker this label opens carries its own Today
+        // quick action, so nothing is lost by leaving it out there.
+        if (!isToday && wide) ...[
           SizedBox(width: tokens.spacing.step2),
           DesignSystemButton(
             key: const Key('daily_os_date_strip_today'),
@@ -256,18 +264,6 @@ class _DateStrip extends StatelessWidget {
       ],
     );
   }
-
-  String _formatDate(
-    BuildContext context,
-    DateTime date, {
-    required bool isToday,
-    required String todayLabel,
-  }) {
-    if (isToday) return todayLabel;
-    final locale = Localizations.localeOf(context).toString();
-    // Weekday included on every concrete date in the Daily OS.
-    return DateFormat.yMMMEd(locale).format(date);
-  }
 }
 
 /// Cache of measured label widths, keyed by everything that can change one:
@@ -280,22 +276,24 @@ final Map<String, double> _dateLabelWidthCache = <String, double>{};
 /// Date strings differ in width by weekday and month name ("Sun, May 3" vs.
 /// "Wednesday, September 11"), which is what makes an unreserved label push
 /// the next chevron around as the user navigates. Laying out every
-/// weekday × month combination the locale's `yMMMEd` pattern can produce (plus
-/// the "Today" label) yields an exact upper bound that follows the font, the
-/// locale and the user's font-size setting — where a hardcoded pixel width
-/// would clip or wobble the moment any of those changed.
+/// weekday × month combination [format] can produce (plus the "Today" label)
+/// yields an exact upper bound that follows the font, the locale and the
+/// user's font-size setting — where a hardcoded pixel width would clip or
+/// wobble the moment any of those changed.
 double _stableDateLabelWidth(
   BuildContext context, {
+  required DateFormat format,
   required TextStyle style,
   required String todayLabel,
 }) {
   final locale = Localizations.localeOf(context).toString();
   final textScaler = MediaQuery.textScalerOf(context);
-  final key = '$locale|$todayLabel|${style.hashCode}|${textScaler.scale(100)}';
+  final key =
+      '$locale|${format.pattern}|$todayLabel|${style.hashCode}'
+      '|${textScaler.scale(100)}';
   final cached = _dateLabelWidthCache[key];
   if (cached != null) return cached;
 
-  final format = DateFormat.yMMMEd(locale);
   final candidates = <String>[todayLabel];
   for (var month = 1; month <= 12; month++) {
     // Seven consecutive two-digit days cover all seven weekday names, and

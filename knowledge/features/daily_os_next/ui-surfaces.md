@@ -115,18 +115,27 @@ arbitrary five or six lines.
 
 `DailyOsNextRoot` renders one `DayPage` per selected day and injects a
 `_DateStrip` — prev chevron, tappable date label (tap opens the picker,
-long-press returns to today), next chevron, and a `Today` button shown only
-when the selection has left today — as that page's header title.
+long-press returns to today), next chevron, and on desktop a `Today` button
+shown only when the selection has left today — as that page's header title.
 
-Two invariants make repeated navigation cheap:
+Three invariants make repeated navigation cheap:
 
 - **The chevrons never move.** The date label reserves the width of the widest
-  string its locale's `yMMMEd` pattern can produce, measured with the real
-  style and `MediaQuery.textScalerOf` (`_stableDateLabelWidth`, cached per
-  locale × style × scale) and rendered with tabular figures. The reservation is
-  measured rather than hardcoded, so it follows the user's font-size setting
-  instead of clipping at large text. The `Today` button sits *after* the next
-  chevron, so appearing and disappearing cannot displace either arrow.
+  string its date pattern can produce, measured with the real style and
+  `MediaQuery.textScalerOf` (`_stableDateLabelWidth`, cached per locale ×
+  pattern × style × scale) and rendered with tabular figures. The reservation
+  is measured rather than hardcoded, so it follows the user's font-size setting
+  instead of clipping at large text. The pattern is `yMMMEd` on desktop and
+  year-less `MMMEd` below `kDesktopBreakpoint`, because the widest `yMMMEd`
+  string plus two chevrons does not fit a 390 pt phone.
+- **Day navigation owns its row when the header stacks.** `_MeasuredDayHeader`
+  lays title, toggle and actions out inline when they fit; when they do not, the
+  date strip takes the first row alone and the toggle and actions share the
+  second. Sharing row one with the actions cluster is what truncated the date
+  to an ellipsis on a phone. The phone also drops the `Today` button entirely —
+  `showDesignSystemDatePicker`, which the label opens, carries its own Today
+  quick action, so the way back to today survives without spending header
+  width on it.
 - **The projection survives the day change.** The root re-keys `DayPage` on
   every date change, so the selected `PlanView` lives in
   `dailyOsNextPlanViewProvider` rather than in the page's `State`. `null` there

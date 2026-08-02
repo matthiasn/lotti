@@ -18,6 +18,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/utils/device_region.dart';
@@ -35,6 +36,7 @@ Widget _wrap(
   List<TimeBlock> actualBlocks = const [],
   List<Override> overrides = const [],
   DailyOsSetupStatus Function()? setupStatus,
+  MediaQueryData mediaQueryData = const MediaQueryData(size: Size(1280, 900)),
 }) {
   return ProviderScope(
     overrides: [
@@ -53,10 +55,7 @@ Widget _wrap(
       ),
       ...overrides,
     ],
-    child: makeTestableWidget2(
-      child,
-      mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
-    ),
+    child: makeTestableWidget2(child, mediaQueryData: mediaQueryData),
   );
 }
 
@@ -86,6 +85,16 @@ DraftPlan _draftPlan() {
 
 /// Recorder stub whose denied permission keeps toggle() a no-op error path,
 /// so root-page tests never touch the mic or transcription stack.
+/// Sizes the test view so a "phone" test really lays out at phone width —
+/// a MediaQuery override alone leaves the render tree on the 800x600
+/// default surface, where a squeezed header would still have room.
+void _setSurfaceSize(WidgetTester tester, Size size) {
+  tester.view
+    ..physicalSize = size * tester.view.devicePixelRatio
+    ..devicePixelRatio = tester.view.devicePixelRatio;
+  addTearDown(tester.view.resetPhysicalSize);
+}
+
 MockAudioRecorderRepository _permissionlessRecorder() {
   final recorder = MockAudioRecorderRepository();
   when(recorder.hasPermission).thenAnswer((_) async => false);
@@ -425,7 +434,8 @@ void main() {
     );
 
     testWidgets(
-      'tapping the date label opens showDatePicker; cancelling keeps selection',
+      'the date label opens the design-system picker; dismissing keeps '
+      'the selection',
       (tester) async {
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -444,16 +454,17 @@ void main() {
 
           await tester.tap(find.text('Today'));
           await tester.pump();
-          await tester.pump(const Duration(milliseconds: 200));
-          await tester.pump(const Duration(milliseconds: 200));
+          await tester.pump(const Duration(milliseconds: 300));
 
-          final material = MaterialLocalizations.of(
-            tester.element(find.byType(DailyOsNextRoot)),
-          );
-          await tester.tap(find.text(material.cancelButtonLabel));
+          expect(find.byType(CalendarDatePicker), findsOneWidget);
+
+          Navigator.of(
+            tester.element(find.byType(CalendarDatePicker)),
+          ).pop();
           await tester.pump();
-          await tester.pump(const Duration(milliseconds: 200));
+          await tester.pump(const Duration(milliseconds: 300));
 
+          expect(find.byType(CalendarDatePicker), findsNothing);
           expect(find.text('Today'), findsOneWidget);
         });
       },
@@ -497,12 +508,14 @@ void main() {
     );
 
     testWidgets(
-      'confirming a date in the picker updates the selected date',
+      "the picker's own Today action is the phone's way back to today",
       (tester) async {
+        _setSurfaceSize(tester, const Size(390, 844));
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
               const DailyOsNextRoot(),
+              mediaQueryData: const MediaQueryData(size: Size(390, 844)),
               overrides: [
                 captureControllerProvider.overrideWith(
                   () => CaptureController(recorder: _permissionlessRecorder()),
@@ -514,24 +527,95 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          // Open the date picker by tapping "Today".
+          // Step off today. The phone header carries no Today button — the
+          // date is the one thing that must stay readable at this width.
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+          expect(find.text('Wed, May 27'), findsOneWidget);
+          expect(
+            find.byKey(const Key('daily_os_date_strip_today')),
+            findsNothing,
+          );
+
+          // Tapping the date opens the design-system picker, whose header
+          // carries the Today quick action that replaces it.
+          await tester.tap(find.text('Wed, May 27'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byType(CalendarDatePicker), findsOneWidget);
+
           await tester.tap(find.text('Today'));
           await tester.pump();
-          await tester.pump(const Duration(milliseconds: 200));
-          await tester.pump(const Duration(milliseconds: 200));
-
-          // Confirm the currently selected date (May 26 2026) using the OK
-          // button — this exercises the `if (picked != null)` branch.
-          final material = MaterialLocalizations.of(
-            tester.element(find.byType(DailyOsNextRoot)),
-          );
-          await tester.tap(find.text(material.okButtonLabel));
+          await tester.tap(find.text('Done'));
           await tester.pump();
-          await tester.pump(const Duration(milliseconds: 200));
-          await tester.pump(const Duration(milliseconds: 200));
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump();
 
-          // The widget stayed on today (same date confirmed).
           expect(find.text('Today'), findsOneWidget);
+          expect(find.text('Wed, May 27'), findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
+      'the phone header gives day navigation a row of its own, unsqueezed',
+      (tester) async {
+        _setSurfaceSize(tester, const Size(390, 844));
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          final label = find.text('Wed, May 27');
+          expect(label, findsOneWidget);
+
+          // The label got the full width it reserved: nothing on the
+          // navigation row squeezed it into an ellipsis.
+          final reserved = tester
+              .widget<ConstrainedBox>(
+                find
+                    .ancestor(of: label, matching: find.byType(ConstrainedBox))
+                    .first,
+              )
+              .constraints
+              .minWidth;
+          expect(
+            tester.getSize(label).width,
+            greaterThanOrEqualTo(reserved),
+            reason: 'the date must not be truncated on a phone',
+          );
+
+          // Navigation owns its row: the view toggle and the trailing
+          // actions sit strictly below the chevrons.
+          final navBottom = tester
+              .getBottomLeft(find.byIcon(Icons.chevron_right_rounded))
+              .dy;
+          expect(
+            tester.getTopLeft(find.byType(PlanViewToggle)).dy,
+            greaterThanOrEqualTo(navBottom),
+          );
+          expect(
+            tester.getTopLeft(find.byType(ProcessingCategoryFilterButton)).dy,
+            greaterThanOrEqualTo(navBottom),
+          );
         });
       },
     );
