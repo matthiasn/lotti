@@ -1851,7 +1851,7 @@ void main() {
         updateNotifications.notify(
           {
             agentTaskLinkNotification,
-            '$agentTaskLinkNotification:$taskId',
+            '$agentTaskLinkNotificationPrefix$taskId',
           },
           fromSync: true,
         );

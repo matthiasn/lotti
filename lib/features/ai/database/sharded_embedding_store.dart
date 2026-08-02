@@ -467,7 +467,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     for (final dir in entries) {
       final shardKey = p.basename(dir.path);
       if (!_shards.containsKey(shardKey)) {
-        await _openShardFromDirectory(shardKey, dir.path);
+        await _openExistingShard(shardKey);
       }
     }
   }

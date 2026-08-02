@@ -294,6 +294,41 @@ void main() {
         },
       );
 
+      test(
+        'joins a writer opening a shard during an all-shard search',
+        () async {
+          final factoryStarted = Completer<void>();
+          final releaseFactory = Completer<void>();
+          var factoryCallCount = 0;
+          store = await ShardedEmbeddingStore.open(
+            basePath: tempDir.path,
+            opsFactory: (directory) async {
+              factoryCallCount++;
+              if (!factoryStarted.isCompleted) factoryStarted.complete();
+              await releaseFactory.future;
+              return createMockOps(directory);
+            },
+          );
+
+          final write = store.replaceEntityEmbeddings(
+            entityId: 'entity-written-while-searching',
+            entityType: 'journalEntry',
+            modelId: 'nomic-embed-text',
+            contentHash: 'hash-written-while-searching',
+            embeddings: [validVector()],
+            categoryId: 'cat-opened-by-writer',
+          );
+          await factoryStarted.future;
+
+          final search = store.search(queryVector: validVector());
+          await Directory(tempDir.path).list().drain<void>();
+
+          expect(factoryCallCount, 1);
+          releaseFactory.complete();
+          await Future.wait<void>([write, search]);
+        },
+      );
+
       test('returns empty when no shards exist', () async {
         await openStore();
 
