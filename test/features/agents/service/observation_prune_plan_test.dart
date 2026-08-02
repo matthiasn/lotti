@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/projection/agent_event.dart';
 import 'package:lotti/features/agents/projection/agent_projection.dart';
 import 'package:lotti/features/agents/service/observation_prune_plan.dart';
@@ -280,5 +281,136 @@ void main() {
         reason: 'Two devices with the same log must plan the same delete.',
       );
     });
+  });
+
+  group('properties', () {
+    /// Builds a deterministic pseudo-random DAG from two seeds: every message
+    /// links only to earlier ones, so the graph is acyclic by construction and
+    /// the properties below are about the planner, not the generator.
+    List<PrunableMessage> dag(int shapeSeed, int kindSeed) {
+      final messages = <PrunableMessage>[];
+      var shape = shapeSeed | 1;
+      var kinds = kindSeed | 1;
+      for (var i = 0; i < 12; i++) {
+        shape = (shape * 1103515245 + 12345) & 0x7fffffff;
+        kinds = (kinds * 1103515245 + 12345) & 0x7fffffff;
+        final parents = <String>[];
+        if (i > 0) {
+          parents.add('m${shape % i}');
+          if (shape % 5 == 0 && i > 1) {
+            final second = 'm${(shape ~/ 7) % i}';
+            if (second != parents.first) parents.add(second);
+          }
+        }
+        messages.add(
+          PrunableMessage(
+            id: 'm$i',
+            // Ages deliberately out of causal order: the planner must not
+            // lean on timestamps agreeing with the graph.
+            createdAt: DateTime.utc(2026, 1, 1 + (shape % 20)),
+            isObservation: kinds % 3 != 0,
+            parentIds: parents,
+          ),
+        );
+      }
+      return messages;
+    }
+
+    Set<String> headsOf(List<PrunableMessage> messages, Set<String> gone) {
+      final referenced = <String>{};
+      for (final message in messages) {
+        if (gone.contains(message.id)) continue;
+        for (final parentId in message.parentIds) {
+          if (!gone.contains(parentId)) referenced.add(parentId);
+        }
+      }
+      return {
+        for (final message in messages)
+          if (!gone.contains(message.id) && !referenced.contains(message.id))
+            message.id,
+      };
+    }
+
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(1, 5000),
+      glados.IntAnys(glados.any).intInRange(1, 5000),
+      glados.ExploreConfig(numRuns: 200),
+    ).test('pruning never adds a head, and is ancestor-closed', (a, b) {
+      final messages = dag(a, b);
+      final planned = planObservationPrune(
+        messages: messages,
+        cutoff: DateTime.utc(2026, 1, 15),
+        protectedIds: const {},
+        limit: 100,
+      ).messageIds;
+      final gone = planned.toSet();
+
+      // Ancestor-closure: a planned message's parents are planned too.
+      final byId = {for (final m in messages) m.id: m};
+      for (final id in planned) {
+        for (final parentId in byId[id]!.parentIds) {
+          expect(
+            gone.contains(parentId),
+            isTrue,
+            reason: '$id was planned while its parent $parentId survives',
+          );
+        }
+      }
+
+      // The head set never grows — a fork is exactly what must not appear.
+      final before = headsOf(messages, const {});
+      final after = headsOf(messages, gone);
+      expect(
+        after.difference(before),
+        isEmpty,
+        reason: 'pruning manufactured head(s) ${after.difference(before)}',
+      );
+    }, tags: 'glados');
+
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(1, 5000),
+      glados.IntAnys(glados.any).intInRange(1, 5000),
+      glados.ExploreConfig(numRuns: 200),
+    ).test('the plan is independent of input order', (a, b) {
+      final messages = dag(a, b);
+      List<String> planFor(List<PrunableMessage> input) => planObservationPrune(
+        messages: input,
+        cutoff: DateTime.utc(2026, 1, 15),
+        protectedIds: const {},
+        limit: 100,
+      ).messageIds;
+
+      // Two devices holding the same log must plan the same delete.
+      expect(planFor(messages.reversed.toList()), planFor(messages));
+    }, tags: 'glados');
+
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(1, 5000),
+      glados.IntAnys(glados.any).intInRange(1, 5000),
+      glados.ExploreConfig(numRuns: 200),
+    ).test('a protected id and its descendants are never planned', (a, b) {
+      final messages = dag(a, b);
+      final plan = planObservationPrune(
+        messages: messages,
+        cutoff: DateTime.utc(2026, 1, 15),
+        protectedIds: const {'m6'},
+        limit: 100,
+      ).messageIds;
+
+      expect(plan, isNot(contains('m6')));
+      // Anything reachable from m6 upward stays too: its own ancestors may go,
+      // but nothing that has m6 as an ancestor may.
+      final byId = {for (final m in messages) m.id: m};
+      bool descendsFromProtected(String id, [int depth = 0]) {
+        if (depth > 12) return false;
+        final parents = byId[id]?.parentIds ?? const [];
+        return parents.contains('m6') ||
+            parents.any((p) => descendsFromProtected(p, depth + 1));
+      }
+
+      for (final id in plan) {
+        expect(descendsFromProtected(id), isFalse, reason: '$id descends m6');
+      }
+    }, tags: 'glados');
   });
 }
