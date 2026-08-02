@@ -61,7 +61,7 @@ flowchart LR
 
 | Component | Role |
 |-----------|------|
-| `EmbeddingService` | Listens to local entities, provider configuration, and synced report-head/task-link notifications; performs real-time embedding work and reconciles current task-agent reports |
+| `EmbeddingService` | Listens to local entities, embedding/provider configuration, and narrow synced report/head/task/link notifications; performs real-time embedding work and reconciles current task-agent reports |
 | `EmbeddingProcessor` | Hashes content, chunks text, generates embeddings, writes atomically |
 | `EmbeddingStore` | Storage abstraction |
 | `ShardedEmbeddingStore` | Production implementation, backed by **per-category ObjectBox shards** |
@@ -109,12 +109,18 @@ flowchart LR
   initial transport budget is exhausted or a known cooldown suppresses the
   call, instead of emitting one stack trace per remaining item.
 - `EmbeddingService` scans durable current task-agent report heads at startup
-  and re-runs reconciliation only when sync emits a dedicated current-report
-  head or task-agent-link token, or when provider configuration changes;
+  and re-runs reconciliation when sync emits a dedicated current-report body,
+  head, task change, or task-agent-link token, or when embedding/provider
+  configuration changes;
   generic agent messages, state, and usage changes do not trigger a global
-  scan. Task-link sync includes a task-keyed token, allowing recovery to delete
-  orphaned report vectors after the final link is removed even though no active
-  link remains in the topology scan. Its long-lived read-only repository
+  scan. Report-body sync closes the sequence-gap case where a head arrives
+  before its referenced report, while task sync relocates the current vector
+  after a remote category change. Task-link sync includes a task-keyed token,
+  allowing recovery to delete orphaned report vectors after the final link is
+  removed even though no active link remains in the topology scan. Provider
+  and flag streams skip their initial snapshots because startup already
+  requests one pass; later changes resume both pending report recovery and any
+  availability-paused entity batch. Its long-lived read-only repository
   invalidates its own identity snapshot before each pass because writes happen
   through other repository wrappers. When multiple agents are linked to one
   task, the same canonical primary-link ordering used by task report reads
@@ -129,18 +135,24 @@ flowchart LR
   advances during any of those awaits, recovery removes only a stale vector it
   just wrote and follows the successor. If the primary link or category
   changes, it abandons that pass and rebuilds topology and shard state before
-  cleanup. An availability failure leaves reconciliation pending on the shared
-  retry timer, while a later journal, report-head, or task-link notification
-  rechecks disabled/provider gates without requiring an app restart.
+  cleanup. If any agent-to-task topology read fails, the pass stays pending but
+  stops before selecting from the partial snapshot; it waits for a later
+  external signal instead of immediately regenerating and deleting vectors in
+  an unbounded retry loop. An availability failure leaves reconciliation
+  pending on the shared retry timer, while a later journal, report-head, or
+  task-link notification rechecks disabled/provider gates without requiring an
+  app restart.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
   maps it to the active locale; the suppression count and retry timestamp stay
   in diagnostic logs. A failed optional embedding never rolls back the
   already-persisted agent report or deletes its previous embedding. Availability
   failures defer the latest report per task until `retryAt`; a newer report
   synchronously supersedes the queued one. The workflow checks its local claim,
-  durable report head, and canonical primary task-agent link after asynchronous
-  URL/task resolution, immediately before vector storage, and after the atomic
-  store replacement.
+  durable report head, canonical primary task-agent link, and task category
+  after asynchronous URL/task resolution, immediately before vector storage,
+  and after the atomic store replacement. A category change removes only the
+  just-written stale-shard vector and makes one bounded retry against a fresh
+  category snapshot.
   Each durable lookup rechecks the local claim after its await so a successor
   cannot race an older snapshot. A report superseded during the write has only
   its newly written vector removed; it never deletes the searchable predecessor.

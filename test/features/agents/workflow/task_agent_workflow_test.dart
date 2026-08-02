@@ -4018,6 +4018,158 @@ not describe task configuration or tool activity as progress.
       );
 
       test(
+        'removes a report vector written after its task changes category',
+        () async {
+          const oldCategoryId = 'category-before-report-write';
+          const newCategoryId = 'category-after-report-write';
+          final mockEmbeddingStore = MockEmbeddingStore();
+          final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+          final persistedReports = <AgentReportEntity>[];
+          final storeStarted = Completer<void>();
+          final releaseStore = Completer<void>();
+          var categoryChanged = false;
+          final workflowWithEmbeddings = TaskAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            domainLogger: DomainLogger(loggingService: LoggingService())
+              ..enabledDomains.add(LogDomain.agentWorkflow),
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepository,
+          );
+
+          when(
+            () => mockAgentRepository.getReportHead(
+              agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAgentRepository.getLatestReport(
+              agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer(
+            (_) async =>
+                persistedReports.isEmpty ? null : persistedReports.last,
+          );
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            call,
+          ) async {
+            final entity = call.positionalArguments.first;
+            if (entity is AgentReportEntity) persistedReports.add(entity);
+          });
+          when(
+            mockAiConfigRepository.resolveOllamaBaseUrl,
+          ).thenAnswer((_) async => 'http://localhost:11434');
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer(
+            (_) async => TestTaskFactory.create(
+              id: taskId,
+              title: 'Move the task during report storage',
+              categoryId: categoryChanged ? newCategoryId : oldCategoryId,
+            ),
+          );
+          when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
+          when(
+            () => mockEmbeddingRepository.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+            ),
+          ).thenAnswer((_) async => Float32List(kEmbeddingDimensions));
+          when(
+            () => mockEmbeddingStore.replaceEntityEmbeddings(
+              entityId: any(named: 'entityId'),
+              entityType: any(named: 'entityType'),
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: oldCategoryId,
+              taskId: taskId,
+              subtype: AgentReportScopes.current,
+            ),
+          ).thenAnswer((_) async {
+            storeStarted.complete();
+            await releaseStore.future;
+          });
+          when(
+            () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+          ).thenReturn(null);
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      const ChatCompletionMessageToolCall(
+                        id: 'category-race-report',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: TaskAgentToolNames.updateReport,
+                          arguments:
+                              r'{"content":"# Report\nThis current report is long enough to embed.","oneLiner":"Report stored","tldr":"The report was stored while its task moved."}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+          when(() => mockConversationManager.messages).thenReturn([]);
+
+          final result = await workflowWithEmbeddings.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+          await storeStarted.future;
+          categoryChanged = true;
+          releaseStore.complete();
+          await pumpEventQueue();
+
+          expect(result.success, isTrue);
+          expect(persistedReports, hasLength(1));
+          verify(
+            () => mockEmbeddingStore.deleteEntityEmbeddings(
+              persistedReports.single.id,
+            ),
+          ).called(1);
+          verify(
+            () => mockEmbeddingStore.replaceEntityEmbeddings(
+              entityId: persistedReports.single.id,
+              entityType: any(named: 'entityType'),
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: newCategoryId,
+              taskId: taskId,
+              subtype: AgentReportScopes.current,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'does not embed a report produced by a non-primary task agent',
         () async {
           const primaryAgentId = 'agent-primary-for-task';

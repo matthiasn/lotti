@@ -61,6 +61,7 @@ class EmbeddingService {
   StreamSubscription<Set<String>>? _subscription;
   StreamSubscription<Set<String>>? _syncSubscription;
   StreamSubscription<List<AiConfig>>? _providerConfigSubscription;
+  StreamSubscription<bool>? _embeddingFlagSubscription;
   final _pendingEntityIds = <String>{};
   final _pendingUnlinkedTaskIds = <String>{};
   bool _isProcessing = false;
@@ -90,10 +91,15 @@ class EmbeddingService {
     _syncSubscription = updateNotifications.syncUpdateStream.listen(
       _onSyncBatch,
     );
+    _providerConfigSubscription = aiConfigRepository
+        .watchConfigsByType(AiConfigType.inferenceProvider)
+        .skip(1)
+        .listen((_) => _onProviderConfigsChanged());
     if (agentRepository != null) {
-      _providerConfigSubscription = aiConfigRepository
-          .watchConfigsByType(AiConfigType.inferenceProvider)
-          .listen((_) => _onProviderConfigsChanged());
+      _embeddingFlagSubscription = journalDb
+          .watchConfigFlag(enableEmbeddingsFlag)
+          .skip(1)
+          .listen(_onEmbeddingFlagChanged);
       _requestAgentReportRecovery();
     }
   }
@@ -117,6 +123,10 @@ class EmbeddingService {
       unawaited(_providerConfigSubscription!.cancel());
     }
     _providerConfigSubscription = null;
+    if (_embeddingFlagSubscription != null) {
+      unawaited(_embeddingFlagSubscription!.cancel());
+    }
+    _embeddingFlagSubscription = null;
     _pendingEntityIds.clear();
     _pendingUnlinkedTaskIds.clear();
     _agentReportRecoveryPending = false;
@@ -178,7 +188,9 @@ class EmbeddingService {
         .where((taskId) => taskId.isNotEmpty);
     _pendingUnlinkedTaskIds.addAll(affectedTaskIds);
     if (!tokens.contains(agentReportHeadNotification) &&
+        !tokens.contains(agentReportNotification) &&
         !tokens.contains(agentTaskLinkNotification) &&
+        !tokens.contains(taskNotification) &&
         !hasTaskSpecificChange) {
       return;
     }
@@ -194,6 +206,21 @@ class EmbeddingService {
     _availabilityRetryTimer?.cancel();
     _availabilityRetryTimer = null;
     _requestAgentReportRecovery();
+    _resumePendingEntityBatch();
+  }
+
+  void _onEmbeddingFlagChanged(bool enabled) {
+    if (!enabled) return;
+    _availabilityRetryTimer?.cancel();
+    _availabilityRetryTimer = null;
+    _requestAgentReportRecovery();
+    _resumePendingEntityBatch();
+  }
+
+  void _resumePendingEntityBatch() {
+    if (_stopped || _pendingEntityIds.isEmpty || _isProcessing) return;
+    _inFlightProcessing = _processNext();
+    unawaited(_inFlightProcessing);
   }
 
   /// Requests one recovery pass, coalescing a request that arrives mid-pass.
@@ -275,6 +302,7 @@ class EmbeddingService {
 
       final agentsById = {for (final agent in agents) agent.id: agent};
       final taskLinksByTaskId = <String, List<AgentLink>>{};
+      var topologyIncomplete = false;
       for (final agent in agents) {
         if (_stopped) return;
 
@@ -287,8 +315,21 @@ class EmbeddingService {
             taskLinksByTaskId.putIfAbsent(link.toId, () => []).add(link);
           }
         } catch (error, stackTrace) {
+          topologyIncomplete = true;
           recordFailure(error, stackTrace);
         }
+      }
+
+      if (topologyIncomplete) {
+        _agentReportRecoveryPending = true;
+        developer.log(
+          'Agent report embedding recovery skipped $failureCount operation(s) '
+          'because the task topology snapshot was incomplete',
+          error: firstError,
+          stackTrace: firstStackTrace,
+          name: 'EmbeddingService',
+        );
+        return;
       }
 
       for (final entry in taskLinksByTaskId.entries) {

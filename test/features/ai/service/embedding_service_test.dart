@@ -446,6 +446,9 @@ void main() {
     when(
       () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
     ).thenAnswer((_) async => true);
+    when(
+      () => mockJournalDb.watchConfigFlag(enableEmbeddingsFlag),
+    ).thenAnswer((_) => const Stream.empty());
 
     // Default: Ollama provider configured
     when(
@@ -1621,6 +1624,96 @@ void main() {
       },
     );
 
+    test(
+      'recovery aborts when its task topology snapshot is partial',
+      () async {
+        const primaryAgentId = 'agent-topology-primary';
+        const secondaryAgentId = 'agent-topology-secondary';
+        const taskId = 'task-partial-topology';
+        final agentRepository = MockAgentRepository();
+        final primaryLink = AgentLink.agentTask(
+          id: 'link-topology-primary',
+          fromId: primaryAgentId,
+          toId: taskId,
+          createdAt: _agentTestDate,
+          updatedAt: _agentTestDate,
+          vectorClock: null,
+        );
+        final secondaryLink = AgentLink.agentTask(
+          id: 'link-topology-secondary',
+          fromId: secondaryAgentId,
+          toId: taskId,
+          createdAt: _agentTestDate.subtract(const Duration(minutes: 1)),
+          updatedAt: _agentTestDate.subtract(const Duration(minutes: 1)),
+          vectorClock: null,
+        );
+        when(agentRepository.getAllAgentIdentities).thenAnswer(
+          (_) async => [
+            _agentIdentity(primaryAgentId),
+            _agentIdentity(secondaryAgentId),
+          ],
+        );
+        when(
+          () => agentRepository.getLinksFrom(
+            primaryAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenThrow(StateError('primary topology read failed'));
+        when(
+          () => agentRepository.getLinksFrom(
+            secondaryAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [secondaryLink]);
+        when(
+          () => agentRepository.getLinksTo(
+            taskId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [secondaryLink, primaryLink]);
+        when(
+          () => agentRepository.getLatestReport(
+            secondaryAgentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer(
+          (_) async => _agentReport(
+            id: 'report-partial-topology',
+            agentId: secondaryAgentId,
+          ),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        stubEmbedding();
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+
+        await pumpEventQueue(times: 5);
+
+        verifyNever(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        );
+        verify(
+          () => agentRepository.getLinksFrom(
+            primaryAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).called(1);
+      },
+    );
+
     test('startup report recovery respects the disabled flag', () async {
       final agentRepository = MockAgentRepository();
       final flagChecked = Completer<void>();
@@ -1749,6 +1842,119 @@ void main() {
           subtype: AgentReportScopes.current,
         ),
       ).called(1);
+    });
+
+    test(
+      'provider initial snapshot does not duplicate startup recovery',
+      () async {
+        final agentRepository = MockAgentRepository();
+        when(
+          () => mockAiConfigRepo.watchConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) => Stream.value(const <AiConfig>[]));
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => []);
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+
+        await pumpEventQueue();
+
+        verify(agentRepository.getAllAgentIdentities).called(1);
+      },
+    );
+
+    test('enabling embeddings restarts pending report recovery', () async {
+      final agentRepository = MockAgentRepository();
+      final flagChanges = StreamController<bool>.broadcast(sync: true);
+      addTearDown(flagChanges.close);
+      final initialFlagChecked = Completer<void>();
+      var enabled = false;
+      when(
+        () => mockJournalDb.watchConfigFlag(enableEmbeddingsFlag),
+      ).thenAnswer((_) => flagChanges.stream);
+      when(
+        () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+      ).thenAnswer((_) async {
+        if (!initialFlagChecked.isCompleted) initialFlagChecked.complete();
+        return enabled;
+      });
+      when(
+        agentRepository.getAllAgentIdentities,
+      ).thenAnswer((_) async => []);
+
+      service = EmbeddingService(
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        journalDb: mockJournalDb,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: mockAiConfigRepo,
+        agentRepository: agentRepository,
+      )..start();
+
+      await initialFlagChecked.future;
+      flagChanges.add(false);
+      enabled = true;
+      flagChanges.add(true);
+      await pumpEventQueue();
+
+      verify(agentRepository.getAllAgentIdentities).called(1);
+    });
+
+    test('provider change resumes an availability-paused entity batch', () {
+      final providerConfigs = StreamController<List<AiConfig>>.broadcast(
+        sync: true,
+      );
+      addTearDown(providerConfigs.close);
+      when(
+        () => mockAiConfigRepo.watchConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) => providerConfigs.stream);
+      stubEntity(
+        JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        ),
+      );
+      var embeddingCalls = 0;
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenAnswer((_) async {
+        embeddingCalls++;
+        if (embeddingCalls == 1) {
+          throw OllamaEmbeddingCooldownException(
+            retryAt: clock.now().add(const Duration(hours: 1)),
+            suppressedRequestCount: 1,
+          );
+        }
+        return _fakeEmbedding();
+      });
+
+      fakeAsync((async) {
+        service.start();
+        providerConfigs.add(const []);
+        sendAndProcess(async, {_entityId, textEntryNotification});
+        expect(embeddingCalls, 1);
+
+        providerConfigs.add(const []);
+        async.flushMicrotasks();
+
+        expect(embeddingCalls, 2);
+        stopInZone(async);
+      });
     });
 
     test('a journal notification rechecks recovery after enabling it', () {
@@ -2049,6 +2255,176 @@ void main() {
             subtype: AgentReportScopes.current,
           ),
         ).called(1);
+        stopInZone(async);
+      });
+    });
+
+    test('synced report arrival retries a previously missing current body', () {
+      fakeAsync((async) {
+        const agentId = 'agent-report-arrival';
+        const taskId = 'task-report-arrival';
+        final agentRepository = MockAgentRepository();
+        AgentReportEntity? currentReport;
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => currentReport);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        stubEmbedding();
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+        verifyNever(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: any(named: 'entityId'),
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        );
+
+        currentReport = _agentReport(
+          id: 'report-arrived-after-head',
+          agentId: agentId,
+        );
+        updateNotifications.notify(
+          {agentId, agentReportNotification},
+          fromSync: true,
+        );
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: currentReport!.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).called(1);
+        stopInZone(async);
+      });
+    });
+
+    test('synced task change relocates its current report embedding', () {
+      fakeAsync((async) {
+        const agentId = 'agent-synced-task-category';
+        const taskId = 'task-synced-task-category';
+        const oldCategoryId = 'category-before-task-sync';
+        const newCategoryId = 'category-after-task-sync';
+        final agentRepository = MockAgentRepository();
+        final report = _agentReport(
+          id: 'report-synced-task-category',
+          agentId: agentId,
+        );
+        final storedCategories = <String>[];
+        var categoryChanged = false;
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => report);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer(
+          (_) async => TestTaskFactory.create(
+            id: taskId,
+            title: 'Task category changed through sync',
+            categoryId: categoryChanged ? newCategoryId : oldCategoryId,
+          ),
+        );
+        stubEmbedding();
+        when(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((invocation) {
+          storedCategories.add(
+            invocation.namedArguments[#categoryId]! as String,
+          );
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+        expect(storedCategories, [oldCategoryId]);
+
+        categoryChanged = true;
+        updateNotifications.notify(
+          {taskId, taskNotification},
+          fromSync: true,
+        );
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+
+        expect(storedCategories, [oldCategoryId, newCategoryId]);
         stopInZone(async);
       });
     });
@@ -2371,95 +2747,135 @@ void main() {
       });
     });
 
-    test('startup report recovery continues after one agent fails', () async {
-      const failedAgentId = 'agent-failed';
-      const recoveredAgentId = 'agent-recovered';
-      const taskId = 'task-recovered';
-      final agentRepository = MockAgentRepository();
-      final report = _agentReport(
-        id: 'report-recovered',
-        agentId: recoveredAgentId,
-      );
-      final reportStored = Completer<void>();
+    test(
+      'partial topology recovery retries on the next provider signal',
+      () async {
+        const failedAgentId = 'agent-failed';
+        const recoveredAgentId = 'agent-recovered';
+        const taskId = 'task-recovered';
+        final agentRepository = MockAgentRepository();
+        final providerConfigs = StreamController<List<AiConfig>>.broadcast(
+          sync: true,
+        );
+        addTearDown(providerConfigs.close);
+        final report = _agentReport(
+          id: 'report-recovered',
+          agentId: recoveredAgentId,
+        );
+        final failedTopologyRead = Completer<void>();
+        final reportStored = Completer<void>();
+        var failedAgentReadCount = 0;
 
-      when(agentRepository.getAllAgentIdentities).thenAnswer(
-        (_) async => [
-          _agentIdentity(failedAgentId),
-          _agentIdentity(recoveredAgentId),
-        ],
-      );
-      when(
-        () => agentRepository.getLinksFrom(
-          failedAgentId,
-          type: AgentLinkTypes.agentTask,
-        ),
-      ).thenThrow(StateError('agent DB read failed'));
-      when(
-        () => agentRepository.getLinksFrom(
-          recoveredAgentId,
-          type: AgentLinkTypes.agentTask,
-        ),
-      ).thenAnswer(
-        (_) async => [
-          _agentTaskLink(agentId: recoveredAgentId, taskId: taskId),
-        ],
-      );
-      stubPrimaryTaskAgent(
-        agentRepository,
-        agentId: recoveredAgentId,
-        taskId: taskId,
-      );
-      when(
-        () => agentRepository.getLatestReport(
-          recoveredAgentId,
-          AgentReportScopes.current,
-        ),
-      ).thenAnswer((_) async => report);
-      when(
-        () => agentRepository.getEntitiesByAgentIdAndSubtype(
-          recoveredAgentId,
-          type: AgentEntityTypes.agentReport,
-          subtype: AgentReportScopes.current,
-        ),
-      ).thenAnswer((_) async => [report]);
-      when(
-        () => mockJournalDb.journalEntityById(taskId),
-      ).thenAnswer((_) async => null);
-      stubEmbedding();
-      when(
-        () => mockEmbeddingStore.replaceEntityEmbeddings(
-          entityId: report.id,
-          entityType: any(named: 'entityType'),
-          modelId: any(named: 'modelId'),
-          contentHash: any(named: 'contentHash'),
-          embeddings: any(named: 'embeddings'),
-          categoryId: any(named: 'categoryId'),
+        when(
+          () => mockAiConfigRepo.watchConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) => providerConfigs.stream);
+
+        when(agentRepository.getAllAgentIdentities).thenAnswer(
+          (_) async => [
+            _agentIdentity(failedAgentId),
+            _agentIdentity(recoveredAgentId),
+          ],
+        );
+        when(
+          () => agentRepository.getLinksFrom(
+            failedAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async {
+          failedAgentReadCount++;
+          if (failedAgentReadCount == 1) {
+            failedTopologyRead.complete();
+            throw StateError('agent DB read failed');
+          }
+          return [];
+        });
+        when(
+          () => agentRepository.getLinksFrom(
+            recoveredAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _agentTaskLink(agentId: recoveredAgentId, taskId: taskId),
+          ],
+        );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: recoveredAgentId,
           taskId: taskId,
-          subtype: AgentReportScopes.current,
-        ),
-      ).thenAnswer((_) {
-        reportStored.complete();
-      });
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            recoveredAgentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => report);
+        when(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
+            recoveredAgentId,
+            type: AgentEntityTypes.agentReport,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => [report]);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        stubEmbedding();
+        when(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) {
+          reportStored.complete();
+        });
 
-      service = EmbeddingService(
-        embeddingStore: mockEmbeddingStore,
-        embeddingRepository: mockEmbeddingRepo,
-        journalDb: mockJournalDb,
-        updateNotifications: updateNotifications,
-        aiConfigRepository: mockAiConfigRepo,
-        agentRepository: agentRepository,
-      )..start();
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
 
-      await reportStored.future;
-      await pumpEventQueue();
+        providerConfigs.add(const []);
+        await failedTopologyRead.future;
+        await pumpEventQueue();
+        verifyNever(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        );
 
-      verify(
-        () => agentRepository.getLinksFrom(
-          recoveredAgentId,
-          type: AgentLinkTypes.agentTask,
-        ),
-      ).called(1);
-    });
+        providerConfigs.add(const []);
+        await reportStored.future;
+        await pumpEventQueue();
+
+        expect(failedAgentReadCount, 2);
+        verify(
+          () => agentRepository.getLinksFrom(
+            recoveredAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).called(2);
+      },
+    );
 
     test('startup report recovery continues after one task fails', () async {
       const failedAgentId = 'agent-report-failed';
@@ -3237,6 +3653,11 @@ void main() {
             }
             return scenario.hasBaseUrl ? 'http://localhost:11434' : null;
           });
+          when(
+            () => generatedAiConfigRepo.watchConfigsByType(
+              AiConfigType.inferenceProvider,
+            ),
+          ).thenAnswer((_) => const Stream.empty());
           when(
             generatedJournalDb.getAllLabelDefinitions,
           ).thenAnswer((_) async {

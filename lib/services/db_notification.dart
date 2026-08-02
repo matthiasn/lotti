@@ -136,6 +136,13 @@ const agentNotification = 'AGENT_CHANGED';
 /// state, usage, templates, and every other agent-domain mutation.
 const agentReportHeadNotification = 'AGENT_REPORT_HEAD_CHANGED';
 
+/// Fired when a durable agent report body arrives through sync.
+///
+/// A current-report head can arrive before its referenced report during gap
+/// repair. This narrow signal lets derived report embeddings retry without
+/// reacting to unrelated agent messages, state, or usage updates.
+const agentReportNotification = 'AGENT_REPORT_CHANGED';
+
 /// Fired when an agent-to-task link changes.
 ///
 /// Report recovery uses this narrow topology signal to reselect the canonical

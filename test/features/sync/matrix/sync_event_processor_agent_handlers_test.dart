@@ -835,6 +835,12 @@ void main() {
       await processor.process(event: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', agentNotification, agentReportNotification},
+          fromSync: true,
+        ),
+      ).called(1);
     });
 
     test('processes agent report head entity', () async {

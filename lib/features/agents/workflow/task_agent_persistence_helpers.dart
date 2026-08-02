@@ -57,6 +57,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     required String agentId,
     String? previousReportId,
     bool isRetry = false,
+    bool allowStaleTargetRetry = true,
   }) async {
     final store = embeddingStore;
     final repo = embeddingRepository;
@@ -91,8 +92,16 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
         agentId: agentId,
         taskId: taskId,
         reportId: reportId,
+        categoryId: categoryId,
       )) {
-        _completeAgentReportEmbedding(taskId, reportId);
+        await _retryStaleAgentReportTarget(
+          reportId: reportId,
+          reportContent: reportContent,
+          taskId: taskId,
+          agentId: agentId,
+          previousReportId: embeddingPredecessorId,
+          allowRetry: allowStaleTargetRetry,
+        );
         return;
       }
 
@@ -109,25 +118,39 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
           agentId: agentId,
           taskId: taskId,
           reportId: reportId,
+          categoryId: categoryId,
         ),
       );
+
+      final isStillCurrent = await _isCurrentAgentReport(
+        agentId: agentId,
+        taskId: taskId,
+        reportId: reportId,
+        categoryId: categoryId,
+      );
+      if (!isStillCurrent) {
+        if (didEmbed) {
+          // Storage completed after one of the durable selectors changed.
+          // Remove only the vector just written, then retry once against a
+          // fresh task/category snapshot if this report still owns the local
+          // claim.
+          await store.deleteEntityEmbeddings(reportId);
+        }
+        await _retryStaleAgentReportTarget(
+          reportId: reportId,
+          reportContent: reportContent,
+          taskId: taskId,
+          agentId: agentId,
+          previousReportId: embeddingPredecessorId,
+          allowRetry: allowStaleTargetRetry,
+        );
+        return;
+      }
 
       // Delete the old report's embedding only after the new one succeeds,
       // so we don't lose search coverage if the embedding call fails or
       // the content is too short.
       if (didEmbed) {
-        if (!await _isCurrentAgentReport(
-          agentId: agentId,
-          taskId: taskId,
-          reportId: reportId,
-        )) {
-          // A successor was published while the atomic store replacement was
-          // awaiting. This report was never promoted to the searchable
-          // predecessor, so remove only the stale vector just written.
-          await store.deleteEntityEmbeddings(reportId);
-          _completeAgentReportEmbedding(taskId, reportId);
-          return;
-        }
         // Once storage succeeds, a report arriving while predecessor cleanup
         // is still in flight must supersede this newly stored report, not the
         // older report that this operation is already deleting.
@@ -176,6 +199,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     required String agentId,
     required String taskId,
     required String reportId,
+    required String categoryId,
   }) async {
     if (_latestReportEmbeddingIds[taskId] != reportId) return false;
     final durableHead = await agentRepository.getLatestReport(
@@ -190,9 +214,37 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
       taskId,
       type: AgentLinkTypes.agentTask,
     );
+    if (_latestReportEmbeddingIds[taskId] != reportId ||
+        taskLinks.isEmpty ||
+        taskLinks.selectPrimary().fromId != agentId) {
+      return false;
+    }
+    final task = await journalDb.journalEntityById(taskId);
     return _latestReportEmbeddingIds[taskId] == reportId &&
-        taskLinks.isNotEmpty &&
-        taskLinks.selectPrimary().fromId == agentId;
+        (task?.meta.categoryId ?? '') == categoryId;
+  }
+
+  Future<void> _retryStaleAgentReportTarget({
+    required String reportId,
+    required String reportContent,
+    required String taskId,
+    required String agentId,
+    required String? previousReportId,
+    required bool allowRetry,
+  }) async {
+    if (!allowRetry) {
+      _completeAgentReportEmbedding(taskId, reportId);
+      return;
+    }
+    await _embedAgentReport(
+      reportId: reportId,
+      reportContent: reportContent,
+      taskId: taskId,
+      agentId: agentId,
+      previousReportId: previousReportId,
+      isRetry: true,
+      allowStaleTargetRetry: false,
+    );
   }
 
   void _completeAgentReportEmbedding(String taskId, String reportId) {
