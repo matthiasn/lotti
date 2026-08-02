@@ -117,8 +117,6 @@ class BridgeCoordinator {
   int _consecutiveIncomplete = 0;
   Timer? _incompleteRetryTimer;
 
-  bool get isRunning => _sub != null;
-
   /// True while a forward-walk timeline pass is in flight. Used by the
   /// backfill request service to suppress analysis+dispatch while we
   /// are still reading the latest events from the room — any gap

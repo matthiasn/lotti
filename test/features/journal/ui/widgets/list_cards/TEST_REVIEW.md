@@ -64,9 +64,6 @@ Note: `journal_card_timer_text_test.dart` (38 lines) has no corresponding source
 - [x] **[MED]** `CardWrapperWidget._DistanceBadge._colorForDistance(double d)` is a **pure function** with 4 threshold-based branches (`< 0.3`, `< 0.6`, `< 0.8`, `>= 0.8`). A Glados property could assert: (a) for any `d in [0, 1]`, the returned color is always one of the 4 expected colors; (b) color values are monotonically "warmer" as `d` increases; (c) the function never throws for any finite double. The current test covers only `d = 0.15` (green branch) — three branches are untested.
   **RESOLVED:** done — `_colorForDistance` now delegates to top-level `@visibleForTesting colorForVectorDistance` in `card_wrapper_widget.dart`; a Glados property (numRuns 120, permille 0–1200) asserts the threshold oracle for all four branches plus membership in the 4-color set.
 
-- [x] **[LOW]** `ModernJournalCard._formatDate()` branches on `item is JournalEvent` → `dfShort.format` vs `dfShorter.format`. A property test with generated `DateTime` values could assert that both formatters return non-empty strings and that the event formatter uses the longer format (more characters). This is a minor pure-function invariant.
-  **RESOLVED (corrected premise):** the item's premise was inverted — `dfShort` (`yyyy-MM-dd`, used for events) is the *shorter* format and `dfShorter` (`yyyy-MM-dd HH:mm`, used for everything else) is the *longer* one. Added a Glados property group `ModernJournalCard._formatDate formatters — properties` to `journal_card_test.dart` (numRuns 150, `tags: 'glados'`) over a seed→DateTime spread that asserts the true invariants `_formatDate` relies on: both formats are non-empty, the event format (`dfShort`) is a strict prefix of the entry format (`dfShorter`), and the entry format is strictly longer.
-
 ---
 
 ## Coverage / missing-behavior gaps

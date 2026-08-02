@@ -327,8 +327,6 @@ class _InspectorContent extends StatelessWidget {
                             context.messages,
                             now.difference(n.createdAt),
                           ),
-                          categoryLabel:
-                              categoryNames[n.categoryId] ?? n.categoryId,
                           color: style
                               .edgeVisual(relStyleForNeighborType(n.type))
                               .color,
@@ -527,7 +525,6 @@ class _TimelineItem extends StatelessWidget {
   const _TimelineItem({
     required this.node,
     required this.ageLabel,
-    required this.categoryLabel,
     required this.color,
     required this.tokens,
     required this.onTap,
@@ -535,7 +532,6 @@ class _TimelineItem extends StatelessWidget {
 
   final GraphNode node;
   final String ageLabel;
-  final String categoryLabel;
   final Color color;
   final DsTokens tokens;
   final VoidCallback? onTap;

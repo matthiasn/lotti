@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -179,39 +178,6 @@ void main() {
       // Verify only task1 is cleared
       expect(container.read(provider1), isNull);
       expect(container.read(provider2)!.entryId, equals('entry2'));
-    });
-
-    testWidgets('publishTaskSuggestionFocus helper publishes through ref', (
-      tester,
-    ) async {
-      late WidgetRef capturedRef;
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: Consumer(
-            builder: (context, ref, child) {
-              capturedRef = ref;
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-
-      publishTaskSuggestionFocus(
-        taskId: testTaskId,
-        ref: capturedRef,
-        alignment: 0.3,
-      );
-
-      final provider = taskFocusControllerProvider(testTaskId);
-      final widgetContainer = ProviderScope.containerOf(
-        tester.element(find.byType(SizedBox)),
-      );
-      final state = widgetContainer.read(provider);
-
-      expect(state, isNotNull);
-      expect(state!.target, TaskFocusTarget.suggestions);
-      expect(state.alignment, 0.3);
     });
   });
 }

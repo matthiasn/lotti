@@ -156,8 +156,6 @@ class GraphStyle {
     required this.coreLift,
     required this.glyphColor,
     required this.labelStyle,
-    required this.legendStyle,
-    required this.titleStyle,
     required this.labelPill,
     required this.categoryPalette,
     required this.relVisuals,
@@ -182,12 +180,6 @@ class GraphStyle {
       coreLift: t.colors.text.onInteractiveAlert,
       glyphColor: t.colors.text.onInteractiveAlert,
       labelStyle: t.typography.styles.others.caption.copyWith(
-        color: t.colors.text.highEmphasis,
-      ),
-      legendStyle: t.typography.styles.others.overline.copyWith(
-        color: t.colors.text.mediumEmphasis,
-      ),
-      titleStyle: t.typography.styles.subtitle.subtitle1.copyWith(
         color: t.colors.text.highEmphasis,
       ),
       labelPill: t.colors.background.level02,
@@ -249,8 +241,6 @@ class GraphStyle {
   final Color coreLift;
   final Color glyphColor;
   final TextStyle labelStyle;
-  final TextStyle legendStyle;
-  final TextStyle titleStyle;
   final Color labelPill;
   final Map<String, Color> categoryPalette;
 

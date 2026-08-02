@@ -103,10 +103,9 @@ confirmation first, so the page returns to exactly how it looked before.
 `pause()` and `resume()` exist on the controller but are **not surfaced by the
 current modal UI**.
 
-Two state fields are vestigial and easy to misread:
-`AudioRecorderStatus.initializing` exists but `build()` returns `stopped`
-immediately — there is no asynchronous initialization step; and `showIndicator`
-exists but the desktop and mobile indicators derive visibility from
+There is no asynchronous recorder initialization state: `build()` returns
+`stopped` immediately. The vestigial `showIndicator` field remains easy to
+misread because the desktop and mobile indicators derive visibility from
 `status == recording && !modalVisible` instead.
 
 **`build()` must never touch the microphone.** `AudioRecorderRepository

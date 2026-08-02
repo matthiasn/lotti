@@ -100,52 +100,6 @@ void main() {
       expect(e.toId, 'b');
       expect(e.kind, GraphEdgeKind.containment);
     });
-
-    group('isDirectional', () {
-      test('is true for containment, provenance and evaluation', () {
-        for (final kind in [
-          GraphEdgeKind.containment,
-          GraphEdgeKind.provenance,
-          GraphEdgeKind.evaluation,
-        ]) {
-          expect(
-            GraphEdge(fromId: 'a', toId: 'b', kind: kind).isDirectional,
-            isTrue,
-            reason: 'expected $kind to be directional',
-          );
-        }
-      });
-
-      test('is false for association and checklist', () {
-        for (final kind in [
-          GraphEdgeKind.association,
-          GraphEdgeKind.checklist,
-        ]) {
-          expect(
-            GraphEdge(fromId: 'a', toId: 'b', kind: kind).isDirectional,
-            isFalse,
-            reason: 'expected $kind to be non-directional',
-          );
-        }
-      });
-
-      test('covers every kind in GraphEdgeKind.values', () {
-        // Guards against a new kind being added without a directionality
-        // decision: the partition below must account for all values.
-        const directional = {
-          GraphEdgeKind.containment,
-          GraphEdgeKind.provenance,
-          GraphEdgeKind.evaluation,
-        };
-        for (final kind in GraphEdgeKind.values) {
-          expect(
-            GraphEdge(fromId: 'a', toId: 'b', kind: kind).isDirectional,
-            directional.contains(kind),
-            reason: 'directionality mismatch for $kind',
-          );
-        }
-      });
-    });
   });
 
   group('GraphScenario', () {

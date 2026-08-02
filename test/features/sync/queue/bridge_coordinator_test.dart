@@ -590,18 +590,6 @@ void main() {
   });
 
   test(
-    'isRunning flips false → true on start and back to false on stop',
-    () async {
-      final coordinator = buildCoordinator();
-      expect(coordinator.isRunning, isFalse);
-      coordinator.start();
-      expect(coordinator.isRunning, isTrue);
-      await coordinator.stop();
-      expect(coordinator.isRunning, isFalse);
-    },
-  );
-
-  test(
     'subscription onError forwards to logging.captureException so a '
     'broken sync stream does not crash the coordinator silently',
     () async {

@@ -280,16 +280,6 @@ void main() {
         style.labelStyle.fontSize,
         tokens.typography.styles.others.caption.fontSize,
       );
-      expect(style.legendStyle.color, tokens.colors.text.mediumEmphasis);
-      expect(
-        style.legendStyle.fontSize,
-        tokens.typography.styles.others.overline.fontSize,
-      );
-      expect(style.titleStyle.color, tokens.colors.text.highEmphasis);
-      expect(
-        style.titleStyle.fontSize,
-        tokens.typography.styles.subtitle.subtitle1.fontSize,
-      );
     });
 
     test('builds the synthetic category palette from AI-provider tokens', () {

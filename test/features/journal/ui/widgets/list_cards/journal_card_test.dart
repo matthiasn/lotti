@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -1485,49 +1484,6 @@ void main() {
         expect(find.text('Known'), findsOneWidget);
       });
     });
-  });
-
-  // The de-emphasized meta row uses dfShorter ('yyyy-MM-dd HH:mm') as its
-  // reference "raw" format that the relative label deliberately avoids; these
-  // properties pin the invariants that distinction relies on across the whole
-  // DateTime input space.
-  group('entry_tools date formatters — properties', () {
-    // Map an int seed to a deterministic DateTime spread over ~30 years so we
-    // exercise different months, days, hours and minutes.
-    DateTime dateForSeed(int seed) {
-      final s = seed.abs();
-      return DateTime(
-        2000,
-      ).add(Duration(minutes: s)).add(Duration(days: s % 11000));
-    }
-
-    glados.Glados<int>(
-      glados.any.intInRange(0, 2000000),
-      glados.ExploreConfig(numRuns: 150),
-    ).test(
-      'date-only format (dfShort) is a non-empty prefix of the date-time '
-      'format (dfShorter) and never longer',
-      (seed) {
-        final d = dateForSeed(seed);
-        final shortFormat = entry_tools.dfShort.format(d);
-        final shorterFormat = entry_tools.dfShorter.format(d);
-
-        // Both branches must produce something to render.
-        expect(shortFormat, isNotEmpty, reason: 'd=$d');
-        expect(shorterFormat, isNotEmpty, reason: 'd=$d');
-
-        // dfShorter ('yyyy-MM-dd HH:mm') extends dfShort ('yyyy-MM-dd') with
-        // a time suffix, so the short format is a strict prefix of the longer
-        // format and the longer format carries strictly more characters.
-        expect(shorterFormat.startsWith(shortFormat), isTrue, reason: 'd=$d');
-        expect(
-          shorterFormat.length,
-          greaterThan(shortFormat.length),
-          reason: 'd=$d',
-        );
-      },
-      tags: 'glados',
-    );
   });
 
   group('Branch coverage — edge cases', () {

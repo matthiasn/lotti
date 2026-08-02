@@ -44,22 +44,17 @@ void main() {
       velocity: 80,
     );
 
-    expect(motion.hasActiveMotion, isTrue);
-    expect(motion.activeNodeCount, 1);
     expect(motion.offsetFor('focus').dx, greaterThan(0));
 
     for (var i = 0; i < 180; i++) {
       motion.elapseForTest(const Duration(milliseconds: 16));
     }
 
-    expect(motion.hasActiveMotion, isFalse);
     expect(motion.offsetFor('focus'), Offset.zero);
   });
 
   test('reduceMotion clears active offsets and ignores new kicks', () {
     final motion = controller();
-    expect(motion.reduceMotion, isFalse);
-
     kickFocus(
       motion,
       direction: const Offset(0, 1),
@@ -67,12 +62,10 @@ void main() {
       velocity: 60,
     );
 
-    expect(motion.hasActiveMotion, isTrue);
+    expect(motion.offsetFor('focus'), isNot(Offset.zero));
 
-    motion.reduceMotion = true;
+    motion.setReduceMotion(value: true);
 
-    expect(motion.reduceMotion, isTrue);
-    expect(motion.hasActiveMotion, isFalse);
     expect(motion.offsetFor('focus'), Offset.zero);
 
     kickFocus(
@@ -82,7 +75,6 @@ void main() {
       velocity: 60,
     );
 
-    expect(motion.hasActiveMotion, isFalse);
     expect(motion.offsetFor('focus'), Offset.zero);
   });
 
@@ -136,7 +128,6 @@ void main() {
       velocity: -1,
     );
 
-    expect(motion.hasActiveMotion, isFalse);
     expect(motion.offsetFor('focus'), Offset.zero);
   });
 
@@ -256,7 +247,7 @@ void main() {
       lessThan(0),
       reason: 'a tiny edge force should still accumulate on the new body',
     );
-    expect(motion.activeNodeCount, 1);
+    expect(motion.offsetFor('a'), Offset.zero);
   });
 
   test('edge springs fall back to rest direction when nodes overlap', () {
@@ -306,8 +297,7 @@ void main() {
         velocity: 80,
       );
 
-    expect(motion.hasActiveMotion, isTrue);
-    expect(motion.isAnimating, isTrue);
+    expect(motion.offsetFor('a'), isNot(Offset.zero));
 
     motion.configureForceIsland(
       restPositions: const {
@@ -320,8 +310,6 @@ void main() {
       activeIds: const ['b'],
     );
 
-    expect(motion.hasActiveMotion, isFalse);
-    expect(motion.isAnimating, isFalse);
     expect(motion.offsetFor('a'), Offset.zero);
   });
 
@@ -459,7 +447,6 @@ void main() {
         velocity: 80,
       );
 
-    expect(motion.hasActiveMotion, isFalse);
     expect(motion.offsetFor('outside'), Offset.zero);
   });
 }

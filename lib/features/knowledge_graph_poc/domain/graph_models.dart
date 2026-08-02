@@ -96,13 +96,6 @@ class GraphEdge {
   final String fromId;
   final String toId;
   final GraphEdgeKind kind;
-
-  /// These relations point at the thing they describe (project → task, AI →
-  /// source, rating → task), so an arrowhead reads as "about".
-  bool get isDirectional =>
-      kind == GraphEdgeKind.containment ||
-      kind == GraphEdgeKind.provenance ||
-      kind == GraphEdgeKind.evaluation;
 }
 
 /// A self-contained scenario: a focus node (the task being explored) plus its

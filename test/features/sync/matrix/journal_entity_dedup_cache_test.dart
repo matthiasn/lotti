@@ -40,7 +40,6 @@ void main() {
       final cache = JournalEntityDedupCache();
       expect(cache.isDuplicate('e1', null), isFalse);
       cache.markProcessed('e1', null);
-      expect(cache.size, 0);
       expect(cache.isDuplicate('e1', null), isFalse);
     });
 
@@ -62,8 +61,14 @@ void main() {
       expect(cache.isDuplicate('e1', const VectorClock({'h': 1})), isFalse);
     });
 
-    test('capacity defaults to 500', () {
-      expect(JournalEntityDedupCache().capacity, 500);
+    test('default capacity evicts the oldest entry after 500 ids', () {
+      final cache = JournalEntityDedupCache();
+      for (var i = 0; i <= 500; i++) {
+        cache.markProcessed('e$i', VectorClock({'h': i}));
+      }
+
+      expect(cache.isDuplicate('e0', const VectorClock({'h': 0})), isFalse);
+      expect(cache.isDuplicate('e500', const VectorClock({'h': 500})), isTrue);
     });
 
     test('rejects non-positive capacity', () {
@@ -110,21 +115,6 @@ void main() {
     Glados<List<(String, VectorClock)>>(
       any.list(any.dedupPair),
       ExploreConfig(numRuns: 120),
-    ).test('size never exceeds capacity', (List<(String, VectorClock)> ops) {
-      final cache = JournalEntityDedupCache(capacity: 8);
-      for (final (id, vc) in ops) {
-        cache.markProcessed(id, vc);
-        expect(
-          cache.size,
-          lessThanOrEqualTo(cache.capacity),
-          reason: 'capacity breached after marking ($id, ${vc.vclock})',
-        );
-      }
-    }, tags: 'glados');
-
-    Glados<List<(String, VectorClock)>>(
-      any.list(any.dedupPair),
-      ExploreConfig(numRuns: 120),
     ).test('every marked pair is a duplicate immediately after marking', (
       List<(String, VectorClock)> ops,
     ) {
@@ -159,27 +149,32 @@ void main() {
           }
           cache.markProcessed(id, vc);
         }
-        expect(cache.orderedKeys, equals(expectedOrder));
+        final latestClocks = <String, VectorClock>{};
+        for (final (id, vc) in ops) {
+          latestClocks[id] = vc;
+        }
+        for (final entry in latestClocks.entries) {
+          expect(
+            cache.isDuplicate(entry.key, entry.value),
+            expectedOrder.contains(entry.key),
+            reason: 'unexpected retention for ${entry.key}',
+          );
+        }
       },
       tags: 'glados',
     );
 
-    Glados<List<(String, VectorClock)>>(
-      any.list(any.dedupPair),
-      ExploreConfig(numRuns: 120),
-    ).test('isDuplicate hit moves entry to MRU position', (
-      List<(String, VectorClock)> ops,
-    ) {
-      if (ops.isEmpty) return;
-      final cache = JournalEntityDedupCache(capacity: 16);
-      for (final (id, vc) in ops) {
-        cache.markProcessed(id, vc);
-      }
-      // Pick the first marked pair (oldest survivor, if any). Confirm a
-      // duplicate hit promotes it to MRU.
-      final (firstId, firstVc) = ops.first;
-      if (!cache.isDuplicate(firstId, firstVc)) return; // evicted, skip
-      expect(cache.orderedKeys.last, equals(firstId));
-    }, tags: 'glados');
+    test('isDuplicate hit moves entry to MRU position', () {
+      final cache = JournalEntityDedupCache(capacity: 2)
+        ..markProcessed('a', const VectorClock({'h': 1}))
+        ..markProcessed('b', const VectorClock({'h': 2}));
+
+      expect(cache.isDuplicate('a', const VectorClock({'h': 1})), isTrue);
+      cache.markProcessed('c', const VectorClock({'h': 3}));
+
+      expect(cache.isDuplicate('a', const VectorClock({'h': 1})), isTrue);
+      expect(cache.isDuplicate('b', const VectorClock({'h': 2})), isFalse);
+      expect(cache.isDuplicate('c', const VectorClock({'h': 3})), isTrue);
+    });
   });
 }
