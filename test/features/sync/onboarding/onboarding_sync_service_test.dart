@@ -106,14 +106,30 @@ void main() {
         {'local-host': 12, 'peer-host': 7},
         reason: 'the sender remains protected while the end barrier drains',
       );
-      await service.handleMessageSent(
-        enqueued.whereType<SyncOnboardingSnapshotEnd>().single,
-      );
+      final end = enqueued.whereType<SyncOnboardingSnapshotEnd>().single;
+      await service.handleMessageSent(end);
       expect((await db.onboardingSyncRound('round-1'))?.state, 'completed');
       expect(
         await service.activeOutboundCoverageForRequester('phone-host'),
         isEmpty,
       );
+
+      // A low-priority End can share one dequeue-time text bundle with an
+      // adjacent low-priority row. The sender callback receives the logical
+      // bundle and must finalize each contained control too.
+      await db.updateOnboardingSyncRound(
+        'round-1',
+        const OnboardingSyncRoundsCompanion(state: Value('ending')),
+      );
+      await service.handleMessageSent(
+        SyncMessage.outboxBundle(
+          children: [
+            const SyncMessage.aiConfigDelete(id: 'adjacent-low-row'),
+            end,
+          ],
+        ),
+      );
+      expect((await db.onboardingSyncRound('round-1'))?.state, 'completed');
     },
   );
 

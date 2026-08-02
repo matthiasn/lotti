@@ -448,9 +448,13 @@ class MatrixService {
         syncRoom: targetRoom,
         unverifiedDevices: getUnverifiedDevices(),
       ),
-      onSent: (String _, SyncMessage sentMessage) async {
+      onSent: (String _, SyncMessage _) async {
         incrementSentCountOf(sentType);
-        await onSyncMessageSent?.call(sentMessage);
+        // The payload sender strips outbox-bundle children into an attachment
+        // before transport. Protocol lifecycle hooks need the original
+        // logical message so they can observe controls contained in that
+        // successfully sent bundle.
+        await onSyncMessageSent?.call(syncMessage);
       },
     );
   }

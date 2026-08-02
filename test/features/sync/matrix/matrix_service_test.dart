@@ -234,6 +234,54 @@ void main() {
       },
     );
 
+    test('sent hook receives original outbox bundle children', () async {
+      when(() => roomManager.currentRoom).thenReturn(null);
+      when(() => roomManager.currentRoomId).thenReturn(null);
+      when(() => client.getRoomById(any())).thenReturn(null);
+      const end = SyncMessage.onboardingSnapshotEnd(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        reason: OnboardingSyncEndReason.complete,
+      );
+      const original = SyncMessage.outboxBundle(
+        children: [
+          SyncMessage.aiConfigDelete(id: 'adjacent'),
+          end,
+        ],
+      );
+      when(
+        () => messageSender.sendMatrixMessage(
+          message: original,
+          context: any(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onSent =
+            invocation.namedArguments[#onSent] as MatrixMessageSentCallback;
+        await onSent(
+          r'$evt-bundle',
+          const SyncOutboxBundle(
+            children: [],
+            jsonPath: '/outbox_bundles/stripped.json',
+          ),
+        );
+        return true;
+      });
+
+      final service = createService();
+      SyncMessage? observed;
+      service.onSyncMessageSent = (message) async => observed = message;
+
+      expect(
+        await service.sendMatrixMsg(original, myRoomId: '!room:s'),
+        isTrue,
+      );
+      expect(observed, original);
+    });
+
     test('messageCountsController emits stats', () async {
       final service = createService();
 

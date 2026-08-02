@@ -246,8 +246,15 @@ class OnboardingSyncService {
   /// sent. Sender echoes are filtered by the sent-event registry, so the
   /// durable sender lifecycle cannot depend on receiving its own event.
   Future<void> handleMessageSent(SyncMessage message) async {
-    if (message case final SyncOnboardingSnapshotEnd end) {
-      await _handleOutboundEndSent(end);
+    switch (message) {
+      case final SyncOnboardingSnapshotEnd end:
+        await _handleOutboundEndSent(end);
+      case SyncOutboxBundle(:final children):
+        for (final child in children) {
+          await handleMessageSent(child);
+        }
+      default:
+        return;
     }
   }
 

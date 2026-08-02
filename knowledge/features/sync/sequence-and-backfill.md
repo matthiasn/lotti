@@ -174,8 +174,11 @@ stateDiagram-v2
 The persisted state strings are `awaitingAcceptance`, `active`, `ending`,
 `completed` and `aborted`. `ending` keeps sender-side filtering alive while the
 low-priority end barrier drains; the sender terminalizes it only when Matrix
-confirms that event was sent. Sender echoes are consumed by the sent-event
-registry and are not a lifecycle signal. On the receiver, an inbound round is
+confirms that event was sent. If End shares an outbox bundle, the transport
+callback receives the original logical bundle and inspects its children; the
+wire bundle has already moved those children into an attachment. Sender echoes
+are consumed by the sent-event registry and are not a lifecycle signal. On the
+receiver, an inbound round is
 only `active` and transitions directly to `completed` or `aborted` when its
 matching End arrives. A completed round stops suppressing immediately. An
 aborted round deliberately remains suppressive until its original lease
