@@ -984,8 +984,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 28', () {
-      expect(db.schemaVersion, 28);
+    test('schema version is 29', () {
+      expect(db.schemaVersion, 29);
     });
 
     test('OutboxStatus indices used by the partial-index annotation '
