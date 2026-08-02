@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
@@ -59,7 +60,9 @@ class EmbeddingService {
 
   StreamSubscription<Set<String>>? _subscription;
   StreamSubscription<Set<String>>? _syncSubscription;
+  StreamSubscription<List<AiConfig>>? _providerConfigSubscription;
   final _pendingEntityIds = <String>{};
+  final _pendingUnlinkedTaskIds = <String>{};
   bool _isProcessing = false;
   bool _stopped = false;
   Future<void>? _inFlightProcessing;
@@ -88,6 +91,9 @@ class EmbeddingService {
       _onSyncBatch,
     );
     if (agentRepository != null) {
+      _providerConfigSubscription = aiConfigRepository
+          .watchConfigsByType(AiConfigType.inferenceProvider)
+          .listen((_) => _onProviderConfigsChanged());
       _requestAgentReportRecovery();
     }
   }
@@ -104,7 +110,15 @@ class EmbeddingService {
     _subscription = null;
     await _syncSubscription?.cancel();
     _syncSubscription = null;
+    if (_providerConfigSubscription != null) {
+      // Provider streams can be backed by a fake-async bootstrap future. The
+      // stopped guard already makes late emissions inert, so do not let that
+      // cancellation delay shutdown or a second idempotent stop call.
+      unawaited(_providerConfigSubscription!.cancel());
+    }
+    _providerConfigSubscription = null;
     _pendingEntityIds.clear();
+    _pendingUnlinkedTaskIds.clear();
     _agentReportRecoveryPending = false;
     _agentReportRecoveryRerunRequested = false;
     final inFlight = _inFlightProcessing;
@@ -153,14 +167,32 @@ class EmbeddingService {
 
   /// Reconciles derived vectors when sync advances a current report head.
   void _onSyncBatch(Set<String> tokens) {
+    final hasTaskSpecificChange = tokens.any(
+      (token) => token.startsWith(agentTaskLinkNotificationPrefix),
+    );
+    final affectedTaskIds = tokens
+        .where((token) => token.startsWith(agentTaskLinkNotificationPrefix))
+        .map(
+          (token) => token.substring(agentTaskLinkNotificationPrefix.length),
+        )
+        .where((taskId) => taskId.isNotEmpty);
+    _pendingUnlinkedTaskIds.addAll(affectedTaskIds);
     if (!tokens.contains(agentReportHeadNotification) &&
-        !tokens.contains(agentTaskLinkNotification)) {
+        !tokens.contains(agentTaskLinkNotification) &&
+        !hasTaskSpecificChange) {
       return;
     }
     if (_availabilityRetryTimer?.isActive ?? false) {
       _availabilityRetryTimer?.cancel();
       _availabilityRetryTimer = null;
     }
+    _requestAgentReportRecovery();
+  }
+
+  /// Rechecks pending report recovery when provider configuration changes.
+  void _onProviderConfigsChanged() {
+    _availabilityRetryTimer?.cancel();
+    _availabilityRetryTimer = null;
     _requestAgentReportRecovery();
   }
 
@@ -205,11 +237,6 @@ class EmbeddingService {
         return;
       }
 
-      // This service owns a dedicated long-lived repository wrapper. Agent
-      // writes happen through Riverpod and sync repository instances, whose
-      // cache invalidations cannot reach this wrapper.
-      repository.invalidateAgentIdentitiesCache();
-      final agents = await repository.getAllAgentIdentities();
       var failureCount = 0;
       Object? firstError;
       StackTrace? firstStackTrace;
@@ -219,6 +246,32 @@ class EmbeddingService {
         firstError ??= error;
         firstStackTrace ??= stackTrace;
       }
+
+      final unlinkedTaskIds = Set<String>.of(_pendingUnlinkedTaskIds);
+      _pendingUnlinkedTaskIds.removeAll(unlinkedTaskIds);
+      for (final taskId in unlinkedTaskIds) {
+        if (_stopped) return;
+        try {
+          final currentLinks = await repository.getLinksTo(
+            taskId,
+            type: AgentLinkTypes.agentTask,
+          );
+          if (currentLinks.isNotEmpty) continue;
+          final reportIds = await embeddingStore.getEntityIdsForTask(taskId);
+          for (final reportId in reportIds) {
+            await embeddingStore.deleteEntityEmbeddings(reportId);
+          }
+        } catch (error, stackTrace) {
+          _pendingUnlinkedTaskIds.add(taskId);
+          recordFailure(error, stackTrace);
+        }
+      }
+
+      // This service owns a dedicated long-lived repository wrapper. Agent
+      // writes happen through Riverpod and sync repository instances, whose
+      // cache invalidations cannot reach this wrapper.
+      repository.invalidateAgentIdentitiesCache();
+      final agents = await repository.getAllAgentIdentities();
 
       final agentsById = {for (final agent in agents) agent.id: agent};
       final taskLinksByTaskId = <String, List<AgentLink>>{};
@@ -272,7 +325,7 @@ class EmbeddingService {
 
       if (failureCount > 0) {
         developer.log(
-          'Agent report embedding recovery skipped $failureCount report(s)',
+          'Agent report embedding recovery skipped $failureCount operation(s)',
           error: firstError,
           stackTrace: firstStackTrace,
           name: 'EmbeddingService',

@@ -1324,6 +1324,88 @@ void main() {
       expect(result, isFalse);
     });
 
+    test('moves an unchanged report into its current category', () async {
+      const reportId = 'report-moved-after-restart';
+      const reportContent =
+          'This unchanged report has enough content for embedding.';
+      when(
+        () => mockEmbeddingStore.getContentHash(reportId),
+      ).thenReturn(_hashOf(reportContent));
+      when(
+        () => mockEmbeddingStore.getCategoryId(reportId),
+      ).thenReturn('category-before-restart');
+      when(
+        () => mockEmbeddingStore.moveEntityToShard(
+          reportId,
+          'category-after-restart',
+        ),
+      ).thenReturn(null);
+      var guardCalls = 0;
+
+      final result = await EmbeddingProcessor.processAgentReport(
+        reportId: reportId,
+        reportContent: reportContent,
+        taskId: 'task-moved-after-restart',
+        categoryId: 'category-after-restart',
+        subtype: 'current',
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        baseUrl: _baseUrl,
+        writeGuard: () {
+          guardCalls++;
+          return true;
+        },
+      );
+
+      expect(result, isTrue);
+      expect(guardCalls, 1);
+      verify(
+        () => mockEmbeddingStore.moveEntityToShard(
+          reportId,
+          'category-after-restart',
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      );
+    });
+
+    test('does not move an unchanged report after ownership changes', () async {
+      const reportId = 'report-with-stale-category-work';
+      const reportContent =
+          'This unchanged report has enough content for embedding.';
+      when(
+        () => mockEmbeddingStore.getContentHash(reportId),
+      ).thenReturn(_hashOf(reportContent));
+      when(
+        () => mockEmbeddingStore.getCategoryId(reportId),
+      ).thenReturn('category-before-ownership-change');
+
+      final result = await EmbeddingProcessor.processAgentReport(
+        reportId: reportId,
+        reportContent: reportContent,
+        taskId: 'task-with-stale-category-work',
+        categoryId: 'category-after-ownership-change',
+        subtype: 'current',
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        baseUrl: _baseUrl,
+        writeGuard: () => false,
+      );
+
+      expect(result, isFalse);
+      verifyNever(
+        () => mockEmbeddingStore.moveEntityToShard(
+          reportId,
+          'category-after-ownership-change',
+        ),
+      );
+    });
+
     test('embeds when content hash differs (content changed)', () async {
       const reportContent = 'Updated report content that is long enough.';
       when(

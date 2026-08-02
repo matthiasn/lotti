@@ -992,6 +992,7 @@ void main() {
             'task-1',
             agentNotification,
             agentTaskLinkNotification,
+            '$agentTaskLinkNotification:task-1',
           },
           fromSync: true,
         ),

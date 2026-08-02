@@ -248,7 +248,20 @@ void main() {
     ).thenAnswer((_) async {});
     when(
       () => mockAgentRepository.getLinksTo(any(), type: 'agent_task'),
-    ).thenAnswer((_) async => <AgentLink>[]);
+    ).thenAnswer((invocation) async {
+      final linkedTaskId = invocation.positionalArguments.first as String;
+      if (linkedTaskId != taskId) return <AgentLink>[];
+      return [
+        AgentLink.agentTask(
+          id: 'primary-link-$agentId-$taskId',
+          fromId: agentId,
+          toId: taskId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      ];
+    });
     when(
       () => mockAgentRepository.getPendingChangeSets(
         any(),
@@ -4005,6 +4018,157 @@ not describe task configuration or tool activity as progress.
       );
 
       test(
+        'does not embed a report produced by a non-primary task agent',
+        () async {
+          const primaryAgentId = 'agent-primary-for-task';
+          final mockEmbeddingStore = MockEmbeddingStore();
+          final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+          final persistedReports = <AgentReportEntity>[];
+          final workflowWithEmbeddings = TaskAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            domainLogger: DomainLogger(loggingService: LoggingService())
+              ..enabledDomains.add(LogDomain.agentWorkflow),
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepository,
+          );
+
+          when(
+            () => mockAgentRepository.getReportHead(agentId, 'current'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAgentRepository.getLatestReport(
+              agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer(
+            (_) async =>
+                persistedReports.isEmpty ? null : persistedReports.last,
+          );
+          when(
+            () => mockAgentRepository.getLinksTo(
+              taskId,
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              AgentLink.agentTask(
+                id: 'secondary-agent-link',
+                fromId: agentId,
+                toId: taskId,
+                createdAt: testDate,
+                updatedAt: testDate,
+                vectorClock: null,
+              ),
+              AgentLink.agentTask(
+                id: 'primary-agent-link',
+                fromId: primaryAgentId,
+                toId: taskId,
+                createdAt: testDate.add(const Duration(minutes: 1)),
+                updatedAt: testDate.add(const Duration(minutes: 1)),
+                vectorClock: null,
+              ),
+            ],
+          );
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            call,
+          ) async {
+            final entity = call.positionalArguments.first;
+            if (entity is AgentReportEntity) persistedReports.add(entity);
+          });
+          when(
+            mockAiConfigRepository.resolveOllamaBaseUrl,
+          ).thenAnswer((_) async => 'http://localhost:11434');
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer(
+            (_) async => TestTaskFactory.create(
+              id: taskId,
+              title: 'Only the primary agent owns semantic search',
+              categoryId: 'cat-001',
+            ),
+          );
+          when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
+          when(
+            () => mockEmbeddingRepository.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+            ),
+          ).thenAnswer((_) async => Float32List(kEmbeddingDimensions));
+          when(
+            () => mockEmbeddingStore.replaceEntityEmbeddings(
+              entityId: any(named: 'entityId'),
+              entityType: any(named: 'entityType'),
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: any(named: 'categoryId'),
+              taskId: any(named: 'taskId'),
+              subtype: any(named: 'subtype'),
+            ),
+          ).thenReturn(null);
+
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      const ChatCompletionMessageToolCall(
+                        id: 'rpt-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'update_report',
+                          arguments:
+                              r'{"content":"# Secondary report\nThis durable report must not enter semantic search.","oneLiner":"Secondary report","tldr":"A secondary agent produced this report."}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+          when(() => mockConversationManager.messages).thenReturn([]);
+
+          final result = await workflowWithEmbeddings.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+          await pumpEventQueue();
+
+          expect(result.success, isTrue);
+          expect(persistedReports, hasLength(1));
+          verifyNever(
+            () => mockEmbeddingRepository.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+            ),
+          );
+        },
+      );
+
+      test(
         'swallows errors thrown while embedding the report',
         () async {
           // _embedAgentReport runs fire-and-forget after the transaction
@@ -4111,8 +4275,16 @@ not describe task configuration or tool activity as progress.
           final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
           final mockDomainLogger = MockDomainLogger();
           final persistedReports = <AgentReportEntity>[];
-          final retryScheduled = [Completer<void>(), Completer<void>()];
-          final releaseRetry = [Completer<void>(), Completer<void>()];
+          final retryScheduled = [
+            Completer<void>(),
+            Completer<void>(),
+            Completer<void>(),
+          ];
+          final releaseRetry = [
+            Completer<void>(),
+            Completer<void>(),
+            Completer<void>(),
+          ];
           final retryDelays = <Duration>[];
           var retryDelayCallCount = 0;
           final workflowWithEmbeddings = TaskAgentWorkflow(
@@ -4175,6 +4347,7 @@ not describe task configuration or tool activity as progress.
 
           final embeddingAttempted = Completer<void>();
           final secondEmbeddingAttempted = Completer<void>();
+          final thirdEmbeddingAttempted = Completer<void>();
           final embeddingStored = Completer<void>();
           var embeddingCallCount = 0;
           when(
@@ -4195,6 +4368,13 @@ not describe task configuration or tool activity as progress.
             }
             if (embeddingCallCount == 2) {
               secondEmbeddingAttempted.complete();
+              throw OllamaEmbeddingCooldownException(
+                retryAt: clock.now(),
+                suppressedRequestCount: 3,
+              );
+            }
+            if (embeddingCallCount == 3) {
+              thirdEmbeddingAttempted.complete();
               throw OllamaEmbeddingCooldownException(
                 retryAt: clock.now(),
                 suppressedRequestCount: 8,
@@ -4275,9 +4455,20 @@ not describe task configuration or tool activity as progress.
           expect(embeddingCallCount, 2);
 
           releaseRetry[1].complete();
+          await thirdEmbeddingAttempted.future;
+          await retryScheduled[2].future;
+
+          expect(retryDelays, [
+            Duration.zero,
+            Duration.zero,
+            Duration.zero,
+          ]);
+          expect(embeddingCallCount, 3);
+
+          releaseRetry[2].complete();
           await embeddingStored.future;
 
-          expect(embeddingCallCount, 3);
+          expect(embeddingCallCount, 4);
 
           verify(
             () => mockDomainLogger.error(
@@ -4304,6 +4495,22 @@ not describe task configuration or tool activity as progress.
                   'counted cooldown summary',
             ),
           ).called(1);
+
+          verifyNever(
+            () => mockDomainLogger.error(
+              LogDomain.agentWorkflow,
+              any(
+                that: isA<OllamaEmbeddingCooldownException>().having(
+                  (error) => error.suppressedRequestCount,
+                  'suppressed request count',
+                  3,
+                ),
+              ),
+              message:
+                  'optional agent report embedding paused; '
+                  'counted cooldown summary',
+            ),
+          );
         },
       );
 

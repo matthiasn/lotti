@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -69,6 +70,13 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   /// Concurrent writers join the same future so ObjectBox is never opened
   /// twice for one directory.
   final Map<String, Future<_Shard>> _openingShards = {};
+
+  /// The tail of each entity's mutation queue.
+  ///
+  /// Shard moves await directory creation after reading their source chunks.
+  /// Serializing replacements, moves, and deletions prevents a later delete
+  /// from completing first and then being resurrected by that paused move.
+  final Map<String, Future<void>> _entityMutations = {};
 
   /// entityId → shardKey for fast lookup.
   final Map<String, String> _primaryIndex = {};
@@ -179,7 +187,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     String categoryId = '',
     String taskId = '',
     String subtype = '',
-  }) async {
+  }) => _serializeEntityMutation(entityId, () async {
     final shardKey = sanitizeShardKey(categoryId);
     final targetShard = await _getOrCreateShard(shardKey);
 
@@ -215,16 +223,17 @@ class ShardedEmbeddingStore implements EmbeddingStore {
         (_reverseTaskIndex[taskId] ??= {}).add(entityId);
       }
     }
-  }
+  });
 
   @override
-  Future<void> deleteEntityEmbeddings(String entityId) async {
-    final shardKey = _primaryIndex[entityId];
-    if (shardKey == null) return;
+  Future<void> deleteEntityEmbeddings(String entityId) =>
+      _serializeEntityMutation(entityId, () {
+        final shardKey = _primaryIndex[entityId];
+        if (shardKey == null) return;
 
-    _shards[shardKey]?.store.deleteEntityEmbeddings(entityId);
-    _removeFromIndexes(entityId);
-  }
+        _shards[shardKey]?.store.deleteEntityEmbeddings(entityId);
+        _removeFromIndexes(entityId);
+      });
 
   /// Removes an entity from all in-memory indexes.
   void _removeFromIndexes(String entityId) {
@@ -258,7 +267,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   Future<void> moveEntityToShard(
     String entityId,
     String newCategoryId,
-  ) async {
+  ) => _serializeEntityMutation(entityId, () async {
     final newShardKey = sanitizeShardKey(newCategoryId);
     final oldShardKey = _primaryIndex[entityId];
 
@@ -286,7 +295,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
 
     // Update primary index.
     _primaryIndex[entityId] = newShardKey;
-  }
+  });
 
   @override
   Future<void> moveRelatedReportEmbeddings(
@@ -341,6 +350,27 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   // ---------------------------------------------------------------------------
   // Shard management
   // ---------------------------------------------------------------------------
+
+  /// Runs mutations for one entity in call order while allowing unrelated
+  /// entities to proceed concurrently.
+  Future<void> _serializeEntityMutation(
+    String entityId,
+    FutureOr<void> Function() operation,
+  ) {
+    final previous = _entityMutations[entityId] ?? Future<void>.value();
+    final previousSettled = previous.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    late final Future<void> tracked;
+    tracked = previousSettled.then((_) => operation()).whenComplete(() {
+      if (identical(_entityMutations[entityId], tracked)) {
+        _entityMutations.remove(entityId);
+      }
+    });
+    _entityMutations[entityId] = tracked;
+    return tracked;
+  }
 
   /// Returns or creates a shard for the given key (write path).
   Future<_Shard> _getOrCreateShard(String shardKey) async {

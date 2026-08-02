@@ -153,8 +153,9 @@ class EmbeddingProcessor {
   /// Agent reports live in the agent database (not the journal), so this
   /// method accepts the report content directly rather than looking it up.
   ///
-  /// Returns `true` if an embedding was generated and stored, `false` if
-  /// skipped (too short, unchanged content hash, etc.).
+  /// Returns `true` if an embedding was generated and stored or an unchanged
+  /// report was moved to its current category shard. Returns `false` when the
+  /// report is skipped (too short, unchanged and already in place, etc.).
   ///
   /// When provided, [writeGuard] is re-evaluated after generation and directly
   /// before storage so superseded asynchronous work cannot recreate a stale
@@ -175,7 +176,15 @@ class EmbeddingProcessor {
 
     final hash = EmbeddingContentExtractor.contentHash(text);
     final existingHash = await embeddingStore.getContentHash(reportId);
-    if (existingHash == hash) return false;
+    if (existingHash == hash) {
+      final existingCategoryId = await embeddingStore.getCategoryId(reportId);
+      if (existingCategoryId != null && existingCategoryId != categoryId) {
+        if (writeGuard != null && !await writeGuard()) return false;
+        await embeddingStore.moveEntityToShard(reportId, categoryId);
+        return true;
+      }
+      return false;
+    }
 
     return _embedChunks(
       text: text,

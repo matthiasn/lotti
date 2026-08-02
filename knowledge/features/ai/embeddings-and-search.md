@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/ai/database/objectbox_embedding_store.dart
     title: ObjectBox-backed embedding store
     last_modified: 2026-03-08
+  - id: sharded-store
+    resource: ../../../lib/features/ai/database/sharded_embedding_store.dart
+    title: Per-category embedding store
+    last_modified: 2026-08-02
   - id: search
     resource: ../../../lib/features/ai/repository/vector_search_repository.dart
     title: VectorSearchRepository
@@ -57,7 +61,7 @@ flowchart LR
 
 | Component | Role |
 |-----------|------|
-| `EmbeddingService` | Listens to local entity and synced report-head notifications, performs real-time embedding work, and reconciles current task-agent reports at startup |
+| `EmbeddingService` | Listens to local entities, provider configuration, and synced report-head/task-link notifications; performs real-time embedding work and reconciles current task-agent reports |
 | `EmbeddingProcessor` | Hashes content, chunks text, generates embeddings, writes atomically |
 | `EmbeddingStore` | Storage abstraction |
 | `ShardedEmbeddingStore` | Production implementation, backed by **per-category ObjectBox shards** |
@@ -74,7 +78,9 @@ flowchart LR
   back to the owning task. The sharded store maintains a reverse task index for
   report-ID cleanup and coalesces concurrent opens of the same category shard,
   so startup recovery and notification writes cannot open one ObjectBox
-  directory twice.
+  directory twice. Replacements, moves, and deletions are serialized per report
+  ID, preventing a paused shard move from resurrecting a vector deleted by a
+  newer recovery decision while unrelated reports still proceed concurrently.
 - The production `OllamaEmbeddingRepository` is shared. The first request for
   an unobserved base URL exclusively reserves the initial availability probe;
   concurrent callers join that probe instead of starting their own retry loops.
@@ -104,13 +110,18 @@ flowchart LR
   call, instead of emitting one stack trace per remaining item.
 - `EmbeddingService` scans durable current task-agent report heads at startup
   and re-runs reconciliation only when sync emits a dedicated current-report
-  head or task-agent-link token; generic agent messages, state, and usage
-  changes do not trigger a global scan. Its long-lived read-only repository
+  head or task-agent-link token, or when provider configuration changes;
+  generic agent messages, state, and usage changes do not trigger a global
+  scan. Task-link sync includes a task-keyed token, allowing recovery to delete
+  orphaned report vectors after the final link is removed even though no active
+  link remains in the topology scan. Its long-lived read-only repository
   invalidates its own identity snapshot before each pass because writes happen
   through other repository wrappers. When multiple agents are linked to one
   task, the same canonical primary-link ordering used by task report reads
   selects the only report that recovery may keep searchable. Content hashes
-  keep unchanged reports cheap. Recovery revalidates the durable head, current
+  keep unchanged reports cheap; if only the task category changed, the stored
+  chunks move to the current shard without another provider call. Recovery
+  revalidates the durable head, current
   primary link, and task category before and after vector storage, then reads
   cleanup candidates from the embedding store's reverse task index and checks
   all three selectors again. It never loads the agent's historical report
@@ -126,9 +137,10 @@ flowchart LR
   in diagnostic logs. A failed optional embedding never rolls back the
   already-persisted agent report or deletes its previous embedding. Availability
   failures defer the latest report per task until `retryAt`; a newer report
-  synchronously supersedes the queued one. The workflow checks both its local
-  claim and the durable report head after asynchronous URL/task resolution,
-  immediately before vector storage, and after the atomic store replacement.
+  synchronously supersedes the queued one. The workflow checks its local claim,
+  durable report head, and canonical primary task-agent link after asynchronous
+  URL/task resolution, immediately before vector storage, and after the atomic
+  store replacement.
   Each durable lookup rechecks the local claim after its await so a successor
   cannot race an older snapshot. A report superseded during the write has only
   its newly written vector removed; it never deletes the searchable predecessor.

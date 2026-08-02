@@ -396,6 +396,8 @@ extension _AgentHandlers on SyncEventProcessor {
           resolvedLink.toId,
           agentNotification,
           if (resolvedLink is AgentTaskLink) agentTaskLinkNotification,
+          if (resolvedLink is AgentTaskLink)
+            '$agentTaskLinkNotificationPrefix${resolvedLink.toId}',
         },
         fromSync: true,
       );

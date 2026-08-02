@@ -142,6 +142,12 @@ const agentReportHeadNotification = 'AGENT_REPORT_HEAD_CHANGED';
 /// primary agent without reacting to every agent-domain mutation.
 const agentTaskLinkNotification = 'AGENT_TASK_LINK_CHANGED';
 
+/// Prefix for a task-specific [agentTaskLinkNotification] token.
+///
+/// Sync includes the task ID so derived stores can remove vectors when the
+/// final link is deleted and no active topology row remains to discover it.
+const agentTaskLinkNotificationPrefix = '$agentTaskLinkNotification:';
+
 /// Fired alongside the affected task/category ids whenever an AI consumption
 /// event is recorded or arrives via sync. Consumption dashboards subscribe to
 /// this to refresh per-task and per-category aggregates.

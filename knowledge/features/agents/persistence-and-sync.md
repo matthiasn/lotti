@@ -278,6 +278,10 @@ subscribes to that token so messages, state updates, and token-usage rows do not
 launch full report-head scans. Applied `AgentTaskLink` rows likewise emit
 `agentTaskLinkNotification`, allowing recovery to reselect the canonical agent
 when task ownership changes without subscribing to every agent link mutation.
+They also emit a task-keyed form of that token. The keyed task ID survives a
+last-link deletion, when an active-link scan can no longer discover the task,
+so embedding recovery can remove derived report vectors only after confirming
+that the task still has no agent link.
 
 Legacy `WeekRollupEntity` JSON can omit `weekStart`. The shared
 `AgentDomainEntity.fromJson` read boundary repairs it only when the entity id is

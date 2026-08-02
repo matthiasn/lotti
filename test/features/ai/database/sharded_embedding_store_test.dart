@@ -478,6 +478,36 @@ void main() {
         ).called(2);
       });
 
+      test('continues an entity queue after a failed mutation', () async {
+        var factoryAttempts = 0;
+        store = await ShardedEmbeddingStore.open(
+          basePath: tempDir.path,
+          opsFactory: (directory) async {
+            factoryAttempts++;
+            if (factoryAttempts == 1) {
+              throw StateError('first shard open failed');
+            }
+            return createMockOps(directory);
+          },
+        );
+
+        Future<void> write() => store.replaceEntityEmbeddings(
+          entityId: 'entity-retried',
+          entityType: 'journalEntry',
+          modelId: 'nomic-embed-text',
+          contentHash: 'hash-retried',
+          embeddings: [validVector()],
+          categoryId: 'cat-retried',
+        );
+
+        await expectLater(write(), throwsStateError);
+        await write();
+
+        expect(factoryAttempts, 2);
+        expect(await store.hasEmbedding('entity-retried'), isTrue);
+        verify(() => getShardOps('cat-retried').putMany(any())).called(1);
+      });
+
       test('routes to correct shard based on categoryId', () async {
         await openStore();
 
@@ -878,6 +908,51 @@ void main() {
     });
 
     group('moveEntityToShard', () {
+      test('serializes deletion after an in-flight shard move', () async {
+        final sourceDirectory = Directory(p.join(tempDir.path, 'cat-a'));
+        await sourceDirectory.create(recursive: true);
+        final destinationFactoryStarted = Completer<void>();
+        final releaseDestinationFactory = Completer<void>();
+
+        store = await ShardedEmbeddingStore.open(
+          basePath: tempDir.path,
+          opsFactory: (directory) async {
+            final shardKey = p.basename(directory);
+            if (shardKey == 'cat-b') {
+              destinationFactoryStarted.complete();
+              await releaseDestinationFactory.future;
+            }
+            final mock = createMockOps(directory);
+            if (shardKey == 'cat-a') {
+              when(mock.queryAllEntityMetadata).thenReturn([
+                const EntityMetadataRow(entityId: 'report-1', taskId: 'task-1'),
+              ]);
+            }
+            return mock;
+          },
+        );
+        final oldOps = getShardOps('cat-a');
+        when(
+          () => oldOps.findEntitiesByEntityId('report-1'),
+        ).thenReturn([
+          makeEntity(
+            entityId: 'report-1',
+            categoryId: 'cat-a',
+            taskId: 'task-1',
+          ),
+        ]);
+
+        final move = store.moveEntityToShard('report-1', 'cat-b');
+        await destinationFactoryStarted.future;
+        final deletion = store.deleteEntityEmbeddings('report-1');
+
+        releaseDestinationFactory.complete();
+        await Future.wait([move, deletion]);
+
+        expect(await store.hasEmbedding('report-1'), isFalse);
+        expect(store.getEntityIdsForTask('task-1'), isEmpty);
+      });
+
       test('moves chunks between shards', () async {
         final chunks = [
           makeEntity(

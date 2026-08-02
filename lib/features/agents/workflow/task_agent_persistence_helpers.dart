@@ -171,7 +171,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     }
   }
 
-  /// Confirms the local claim before and after reading the durable report head.
+  /// Confirms the local claim, durable report head, and canonical task owner.
   Future<bool> _isCurrentAgentReport({
     required String agentId,
     required String taskId,
@@ -182,8 +182,17 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
       agentId,
       AgentReportScopes.current,
     );
+    if (_latestReportEmbeddingIds[taskId] != reportId ||
+        durableHead?.id != reportId) {
+      return false;
+    }
+    final taskLinks = await agentRepository.getLinksTo(
+      taskId,
+      type: AgentLinkTypes.agentTask,
+    );
     return _latestReportEmbeddingIds[taskId] == reportId &&
-        durableHead?.id == reportId;
+        taskLinks.isNotEmpty &&
+        taskLinks.selectPrimary().fromId == agentId;
   }
 
   void _completeAgentReportEmbedding(String taskId, String reportId) {
