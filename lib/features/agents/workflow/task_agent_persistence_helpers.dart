@@ -46,7 +46,9 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
   /// report's embedding if one exists.
   ///
   /// Non-fatal: failures do not affect the wake cycle. Availability failures
-  /// defer the latest report per task until the endpoint's retry time.
+  /// defer the latest report per task until the endpoint's retry time. When a
+  /// newer report coalesces that work, it inherits the last predecessor known
+  /// to be searchable rather than the unembedded intermediate report.
   /// Called as fire-and-forget via [unawaited] after report persistence.
   Future<void> _embedAgentReport({
     required String reportId,
@@ -58,8 +60,15 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     final store = embeddingStore;
     final repo = embeddingRepository;
     if (store == null || repo == null) return;
+    var embeddingPredecessorId = previousReportId;
     if (!isRetry) {
+      final activeReportId = _latestReportEmbeddingIds[taskId];
+      if (activeReportId == previousReportId &&
+          _reportEmbeddingPredecessorIds.containsKey(taskId)) {
+        embeddingPredecessorId = _reportEmbeddingPredecessorIds[taskId];
+      }
       _latestReportEmbeddingIds[taskId] = reportId;
+      _reportEmbeddingPredecessorIds[taskId] = embeddingPredecessorId;
       _pendingReportEmbeddings.remove(taskId);
     } else if (_latestReportEmbeddingIds[taskId] != reportId) {
       return;
@@ -93,10 +102,14 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
       // Delete the old report's embedding only after the new one succeeds,
       // so we don't lose search coverage if the embedding call fails or
       // the content is too short.
-      if (didEmbed &&
-          previousReportId != null &&
-          _latestReportEmbeddingIds[taskId] == reportId) {
-        await store.deleteEntityEmbeddings(previousReportId);
+      if (didEmbed && _latestReportEmbeddingIds[taskId] == reportId) {
+        // Once storage succeeds, a report arriving while predecessor cleanup
+        // is still in flight must supersede this newly stored report, not the
+        // older report that this operation is already deleting.
+        _reportEmbeddingPredecessorIds[taskId] = reportId;
+        if (embeddingPredecessorId != null) {
+          await store.deleteEntityEmbeddings(embeddingPredecessorId);
+        }
       }
       _completeAgentReportEmbedding(taskId, reportId);
     } on OllamaEmbeddingAvailabilityException catch (e, stackTrace) {
@@ -106,7 +119,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
           reportId: reportId,
           reportContent: reportContent,
           taskId: taskId,
-          previousReportId: previousReportId,
+          previousReportId: embeddingPredecessorId,
           retryAt: e.retryAt,
         ),
       );
@@ -135,6 +148,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
   void _completeAgentReportEmbedding(String taskId, String reportId) {
     if (_latestReportEmbeddingIds[taskId] == reportId) {
       _latestReportEmbeddingIds.remove(taskId);
+      _reportEmbeddingPredecessorIds.remove(taskId);
     }
   }
 

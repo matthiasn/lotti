@@ -3,6 +3,8 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
@@ -14,6 +16,8 @@ import 'package:lotti/utils/consts.dart';
 ///
 /// Listens to [UpdateNotifications.localUpdateStream] for entity changes
 /// and generates embeddings for text-rich entries using Ollama's `/api/embed`.
+/// When [agentRepository] is available, startup also reconciles durable current
+/// task-agent reports so an interrupted in-memory retry is recovered.
 ///
 /// Respects the [enableEmbeddingsFlag] config flag — when disabled, the
 /// service silently drops all notifications.
@@ -28,6 +32,7 @@ class EmbeddingService {
     required this.journalDb,
     required this.updateNotifications,
     required this.aiConfigRepository,
+    this.agentRepository,
   });
 
   final EmbeddingStore embeddingStore;
@@ -36,11 +41,19 @@ class EmbeddingService {
   final UpdateNotifications updateNotifications;
   final AiConfigRepository aiConfigRepository;
 
+  /// Optional agent store used to recover current report embeddings at
+  /// startup. Reports are durable while their normal availability retry is
+  /// deliberately in-memory, so a startup scan closes interrupted retries.
+  final AgentRepository? agentRepository;
+
   StreamSubscription<Set<String>>? _subscription;
   final _pendingEntityIds = <String>{};
   bool _isProcessing = false;
   bool _stopped = false;
   Future<void>? _inFlightProcessing;
+  Future<void>? _inFlightAgentReportRecovery;
+  bool _agentReportRecoveryPending = false;
+  bool _agentReportRecoveryRunning = false;
   Timer? _availabilityRetryTimer;
 
   /// The notification tokens that indicate an embeddable entity was changed.
@@ -58,6 +71,10 @@ class EmbeddingService {
     if (_subscription != null) return;
     _stopped = false;
     _subscription = updateNotifications.localUpdateStream.listen(_onBatch);
+    if (agentRepository != null) {
+      _agentReportRecoveryPending = true;
+      _startAgentReportRecovery();
+    }
   }
 
   /// Stops listening, clears pending work, and awaits any in-flight processing.
@@ -71,11 +88,17 @@ class EmbeddingService {
     await _subscription?.cancel();
     _subscription = null;
     _pendingEntityIds.clear();
+    _agentReportRecoveryPending = false;
     final inFlight = _inFlightProcessing;
     _inFlightProcessing = null;
+    final reportRecovery = _inFlightAgentReportRecovery;
+    _inFlightAgentReportRecovery = null;
     if (inFlight != null) {
       // Ignore errors — _processEntity already handles them internally.
       await inFlight.catchError((_) {});
+    }
+    if (reportRecovery != null) {
+      await reportRecovery.catchError((_) {});
     }
   }
 
@@ -102,6 +125,128 @@ class EmbeddingService {
     if (!_isProcessing) {
       _inFlightProcessing = _processNext();
       unawaited(_inFlightProcessing);
+    }
+    _startAgentReportRecovery();
+  }
+
+  void _startAgentReportRecovery() {
+    if (_stopped ||
+        !_agentReportRecoveryPending ||
+        _agentReportRecoveryRunning) {
+      return;
+    }
+    _inFlightAgentReportRecovery = _recoverAgentReportEmbeddings();
+    unawaited(_inFlightAgentReportRecovery);
+  }
+
+  Future<void> _recoverAgentReportEmbeddings() async {
+    final repository = agentRepository;
+    if (repository == null || _agentReportRecoveryRunning) return;
+    _agentReportRecoveryRunning = true;
+
+    try {
+      final enabled = await journalDb.getConfigFlag(enableEmbeddingsFlag);
+      if (!enabled || _stopped) {
+        _agentReportRecoveryPending = false;
+        return;
+      }
+
+      final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
+      if (baseUrl == null || _stopped) {
+        _agentReportRecoveryPending = false;
+        return;
+      }
+
+      final agents = await repository.getAllAgentIdentities();
+      var failureCount = 0;
+      Object? firstError;
+      StackTrace? firstStackTrace;
+
+      for (final agent in agents) {
+        if (_stopped) return;
+
+        try {
+          final taskLinks = await repository.getLinksFrom(
+            agent.id,
+            type: AgentLinkTypes.agentTask,
+          );
+          if (taskLinks.isEmpty) continue;
+
+          final report = await repository.getLatestReport(
+            agent.id,
+            AgentReportScopes.current,
+          );
+          if (report == null || report.content.isEmpty) continue;
+
+          final taskId = taskLinks.first.toId;
+          final task = await journalDb.journalEntityById(taskId);
+          final didEmbed = await EmbeddingProcessor.processAgentReport(
+            reportId: report.id,
+            reportContent: report.content,
+            taskId: taskId,
+            categoryId: task?.meta.categoryId ?? '',
+            subtype: AgentReportScopes.current,
+            embeddingStore: embeddingStore,
+            embeddingRepository: embeddingRepository,
+            baseUrl: baseUrl,
+          );
+          final currentReportIsSearchable =
+              didEmbed || await embeddingStore.hasEmbedding(report.id);
+          if (!currentReportIsSearchable) continue;
+
+          final currentReports = await repository
+              .getEntitiesByAgentIdAndSubtype(
+                agent.id,
+                type: AgentEntityTypes.agentReport,
+                subtype: AgentReportScopes.current,
+              );
+          for (final historicalReport in currentReports) {
+            if (historicalReport.id != report.id) {
+              await embeddingStore.deleteEntityEmbeddings(
+                historicalReport.id,
+              );
+            }
+          }
+        } on OllamaEmbeddingAvailabilityException catch (error) {
+          if (!_stopped) {
+            _agentReportRecoveryPending = true;
+            _scheduleAvailabilityRetry(error.retryAt);
+          }
+          if (error is! OllamaEmbeddingCooldownException ||
+              error.shouldLogSummary) {
+            developer.log(
+              'Agent report embedding recovery paused because Ollama is '
+              'unavailable: $error',
+              name: 'EmbeddingService',
+            );
+          }
+          return;
+        } catch (error, stackTrace) {
+          failureCount++;
+          firstError ??= error;
+          firstStackTrace ??= stackTrace;
+        }
+      }
+
+      _agentReportRecoveryPending = false;
+      if (failureCount > 0) {
+        developer.log(
+          'Agent report embedding recovery skipped $failureCount report(s)',
+          error: firstError,
+          stackTrace: firstStackTrace,
+          name: 'EmbeddingService',
+        );
+      }
+    } on Object catch (error, stackTrace) {
+      _agentReportRecoveryPending = false;
+      developer.log(
+        'Agent report embedding recovery failed: $error',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'EmbeddingService',
+      );
+    } finally {
+      _agentReportRecoveryRunning = false;
     }
   }
 
@@ -190,9 +335,12 @@ class EmbeddingService {
     final delay = remaining.isNegative ? Duration.zero : remaining;
     _availabilityRetryTimer = Timer(delay, () {
       _availabilityRetryTimer = null;
-      if (_stopped || _pendingEntityIds.isEmpty || _isProcessing) return;
-      _inFlightProcessing = _processNext();
-      unawaited(_inFlightProcessing);
+      if (_stopped) return;
+      _startAgentReportRecovery();
+      if (_pendingEntityIds.isNotEmpty && !_isProcessing) {
+        _inFlightProcessing = _processNext();
+        unawaited(_inFlightProcessing);
+      }
     });
   }
 

@@ -143,6 +143,7 @@ class TaskAgentWorkflow {
   final Future<void> Function(Duration) _reportEmbeddingDelay;
   final _pendingReportEmbeddings = <String, _PendingReportEmbedding>{};
   final _latestReportEmbeddingIds = <String, String>{};
+  final _reportEmbeddingPredecessorIds = <String, String?>{};
 
   /// Optional task agent service for auto-assigning agents to follow-up tasks.
   final TaskAgentService? taskAgentService;

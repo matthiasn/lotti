@@ -142,6 +142,7 @@ Future<void> _registerLateAndOptionalServices() async {
           journalDb: getIt<JournalDb>(),
           updateNotifications: getIt<UpdateNotifications>(),
           aiConfigRepository: getIt<AiConfigRepository>(),
+          agentRepository: AgentRepository(getIt<AgentDatabase>()),
         ),
         dispose: (svc) async => svc.stop(),
       )

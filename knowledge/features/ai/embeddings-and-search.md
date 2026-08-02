@@ -44,7 +44,10 @@ app stores data outside Drift.
 ```mermaid
 flowchart LR
   Change["Entity change notification"] --> Service["EmbeddingService"]
+  Startup["Application startup"] --> Service
+  Service --> Reports["Current task-agent report heads"]
   Service --> Extract["EmbeddingProcessor"]
+  Reports --> Extract
   Extract --> Chunk["TextChunker.chunk()"]
   Chunk --> Embed["OllamaEmbeddingRepository.embed()"]
   Embed --> Store["EmbeddingStore / ShardedEmbeddingStore"]
@@ -54,7 +57,7 @@ flowchart LR
 
 | Component | Role |
 |-----------|------|
-| `EmbeddingService` | Listens to local update notifications and performs real-time embedding work |
+| `EmbeddingService` | Listens to local update notifications, performs real-time embedding work, and reconciles current task-agent reports at startup |
 | `EmbeddingProcessor` | Hashes content, chunks text, generates embeddings, writes atomically |
 | `EmbeddingStore` | Storage abstraction |
 | `ShardedEmbeddingStore` | Production implementation, backed by **per-category ObjectBox shards** |
@@ -96,6 +99,13 @@ flowchart LR
   still fast-fails before network I/O. Manual backfill loops stop when the
   initial transport budget is exhausted or a known cooldown suppresses the
   call, instead of emitting one stack trace per remaining item.
+- `EmbeddingService` also scans durable current task-agent report heads at
+  startup. Content hashes keep unchanged reports cheap. Once the current report
+  is confirmed searchable, every older current-scope report embedding for that
+  agent is removed. An availability failure leaves this reconciliation pending
+  on the service's shared retry timer, so exiting during an in-memory workflow
+  retry cannot permanently strand the latest report or its searchable
+  predecessor.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
   maps it to the active locale; the suppression count and retry timestamp stay
   in diagnostic logs. A failed optional embedding never rolls back the
@@ -104,7 +114,10 @@ flowchart LR
   synchronously supersedes the queued one, and freshness is checked again after
   asynchronous URL/task resolution and immediately before vector storage. Work
   overtaken during generation is finalized as superseded without recreating a
-  stale report vector or deleting the newer report's predecessor.
+  stale report vector or deleting the newer report's predecessor. Coalesced
+  reports carry forward the last predecessor that was actually searchable; a
+  deferred intermediate report is never mistaken for the vector that the final
+  report must supersede.
 
 ```mermaid
 stateDiagram-v2

@@ -11,6 +11,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
@@ -4275,9 +4276,11 @@ not describe task configuration or tool activity as progress.
       );
 
       test(
-        'keeps the newer report when URL resolutions finish out of order',
+        'keeps the newer report and supersedes the last embedded predecessor '
+        'when URL resolutions finish out of order',
         () async {
           const baseUrl = 'http://localhost:11434';
+          const embeddedPredecessorId = 'embedded-predecessor';
           final mockEmbeddingStore = MockEmbeddingStore();
           final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
           final mockDomainLogger = MockDomainLogger();
@@ -4291,6 +4294,7 @@ not describe task configuration or tool activity as progress.
           final successfulEmbedding = Completer<void>();
           final persistedReports = <AgentReportEntity>[];
           final storedReportIds = <String>[];
+          final deletedReportIds = <String>[];
           var urlResolutionCallCount = 0;
           var secondReportEmbeddingCallCount = 0;
           var reportCallCount = 0;
@@ -4318,7 +4322,20 @@ not describe task configuration or tool activity as progress.
 
           when(
             () => mockAgentRepository.getReportHead(agentId, 'current'),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async {
+            final previousReportId = persistedReports.length == 1
+                ? embeddedPredecessorId
+                : persistedReports[persistedReports.length - 2].id;
+            return AgentDomainEntity.agentReportHead(
+                  id: 'current-report-head',
+                  agentId: agentId,
+                  scope: AgentReportScopes.current,
+                  reportId: previousReportId,
+                  updatedAt: testDate,
+                  vectorClock: null,
+                )
+                as AgentReportHeadEntity;
+          });
           when(
             () => mockAiConfigRepository.resolveOllamaBaseUrl(),
           ).thenAnswer((_) {
@@ -4377,6 +4394,13 @@ not describe task configuration or tool activity as progress.
           ).thenAnswer((invocation) {
             final reportId = invocation.namedArguments[#entityId] as String;
             storedReportIds.add(reportId);
+          });
+          when(
+            () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+          ).thenAnswer((invocation) async {
+            deletedReportIds.add(
+              invocation.positionalArguments.single as String,
+            );
           });
           when(() => mockSyncService.upsertEntity(any())).thenAnswer((
             call,
@@ -4438,7 +4462,7 @@ not describe task configuration or tool activity as progress.
             triggerTokens: {'entity-b'},
             threadId: threadId,
           );
-          expect(secondResult.success, isTrue);
+          expect(secondResult.success, isTrue, reason: secondResult.error);
           expect(persistedReports, hasLength(2));
           await urlResolutionStarted[1].future;
 
@@ -4454,6 +4478,7 @@ not describe task configuration or tool activity as progress.
 
           expect(persistedReports, hasLength(2));
           expect(storedReportIds, [persistedReports.last.id]);
+          expect(deletedReportIds, [embeddedPredecessorId]);
           expect(secondReportEmbeddingCallCount, 2);
         },
       );

@@ -9,6 +9,11 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
@@ -18,6 +23,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/entity_factories.dart';
 import '../../../mocks/mocks.dart';
 
 /// A minimal [Metadata] for test entities.
@@ -32,6 +38,49 @@ Metadata _meta({String id = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'}) =>
 
 const _entityId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 const _longText = 'This is a sufficiently long text for embedding generation.';
+final _agentTestDate = DateTime.utc(2026, 8, 2);
+
+AgentIdentityEntity _agentIdentity(String id) =>
+    AgentDomainEntity.agent(
+          id: id,
+          agentId: id,
+          kind: 'task_agent',
+          displayName: 'Test Agent $id',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-$id',
+          config: const AgentConfig(),
+          createdAt: _agentTestDate,
+          updatedAt: _agentTestDate,
+          vectorClock: null,
+        )
+        as AgentIdentityEntity;
+
+AgentReportEntity _agentReport({
+  required String id,
+  required String agentId,
+  String content = 'A current report with enough content for embedding.',
+}) =>
+    AgentDomainEntity.agentReport(
+          id: id,
+          agentId: agentId,
+          scope: AgentReportScopes.current,
+          createdAt: _agentTestDate,
+          vectorClock: null,
+          content: content,
+        )
+        as AgentReportEntity;
+
+AgentLink _agentTaskLink({required String agentId, required String taskId}) =>
+    AgentLink.basic(
+      id: 'link-$agentId-$taskId',
+      fromId: agentId,
+      toId: taskId,
+      createdAt: _agentTestDate,
+      updatedAt: _agentTestDate,
+      vectorClock: null,
+    );
 
 /// Creates a fake Float32List matching the expected dimensions.
 Float32List _fakeEmbedding() => Float32List(kEmbeddingDimensions);
@@ -521,6 +570,430 @@ void main() {
 
         stopInZone(async);
       });
+    });
+
+    test(
+      'startup recovers the latest report and removes stale report embeddings',
+      () async {
+        const agentId = 'agent-1';
+        const taskId = 'task-1';
+        const currentReportId = 'report-current';
+        const staleReportId = 'report-stale';
+        final agentRepository = MockAgentRepository();
+        final currentReportStored = Completer<void>();
+        final agent = _agentIdentity(agentId);
+        final currentReport = _agentReport(
+          id: currentReportId,
+          agentId: agentId,
+          content:
+              'The current report has enough content for startup recovery.',
+        );
+        final staleReport = _agentReport(
+          id: staleReportId,
+          agentId: agentId,
+          content:
+              'The stale report was embedded before the interrupted retry.',
+        );
+        final taskLink = _agentTaskLink(agentId: agentId, taskId: taskId);
+
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [agent]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [taskLink]);
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => currentReport);
+        when(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
+            agentId,
+            type: AgentEntityTypes.agentReport,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => [currentReport, staleReport]);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer(
+          (_) async => TestTaskFactory.create(
+            id: taskId,
+            title: 'Recover report embeddings',
+            categoryId: 'cat-1',
+          ),
+        );
+        stubEmbedding();
+        when(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: currentReportId,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: 'cat-1',
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) {
+          currentReportStored.complete();
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+
+        await currentReportStored.future;
+        await pumpEventQueue();
+
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: currentReportId,
+            entityType: kEntityTypeAgentReport,
+            modelId: ollamaEmbedDefaultModel,
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: 'cat-1',
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).called(1);
+        verify(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(staleReportId),
+        ).called(1);
+        verifyNever(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(currentReportId),
+        );
+      },
+    );
+
+    test('startup report recovery respects the disabled flag', () async {
+      final agentRepository = MockAgentRepository();
+      final flagChecked = Completer<void>();
+      when(
+        () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+      ).thenAnswer((_) async {
+        flagChecked.complete();
+        return false;
+      });
+
+      service = EmbeddingService(
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        journalDb: mockJournalDb,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: mockAiConfigRepo,
+        agentRepository: agentRepository,
+      )..start();
+
+      await flagChecked.future;
+      await pumpEventQueue();
+
+      verifyNever(agentRepository.getAllAgentIdentities);
+    });
+
+    test('startup report recovery requires a configured provider', () async {
+      final agentRepository = MockAgentRepository();
+      final baseUrlChecked = Completer<void>();
+      when(mockAiConfigRepo.resolveOllamaBaseUrl).thenAnswer((_) async {
+        baseUrlChecked.complete();
+        return null;
+      });
+
+      service = EmbeddingService(
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        journalDb: mockJournalDb,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: mockAiConfigRepo,
+        agentRepository: agentRepository,
+      )..start();
+
+      await baseUrlChecked.future;
+      await pumpEventQueue();
+
+      verifyNever(agentRepository.getAllAgentIdentities);
+    });
+
+    test(
+      'startup keeps historical coverage when the current report is not '
+      'searchable',
+      () async {
+        const agentId = 'agent-unsearchable';
+        const taskId = 'task-unsearchable';
+        final agentRepository = MockAgentRepository();
+        final report = _agentReport(
+          id: 'report-unsearchable',
+          agentId: agentId,
+        );
+        final hash = EmbeddingContentExtractor.contentHash(report.content);
+        final searchableChecked = Completer<void>();
+
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => report);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockEmbeddingStore.getContentHash(report.id),
+        ).thenReturn(hash);
+        when(
+          () => mockEmbeddingStore.hasEmbedding(report.id),
+        ).thenAnswer((_) {
+          searchableChecked.complete();
+          return false;
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+
+        await searchableChecked.future;
+        await pumpEventQueue();
+
+        verifyNever(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
+            agentId,
+            type: AgentEntityTypes.agentReport,
+            subtype: AgentReportScopes.current,
+          ),
+        );
+        verifyNever(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+        );
+      },
+    );
+
+    test('startup report recovery retries after an Ollama outage', () {
+      fakeAsync((async) {
+        const agentId = 'agent-retry';
+        const taskId = 'task-retry';
+        final agentRepository = MockAgentRepository();
+        final report = _agentReport(id: 'report-retry', agentId: agentId);
+        var embedCallCount = 0;
+
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => report);
+        when(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
+            agentId,
+            type: AgentEntityTypes.agentReport,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => [report]);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((_) async {
+          embedCallCount++;
+          if (embedCallCount == 1) {
+            throw OllamaEmbeddingCooldownException(
+              retryAt: clock.now().add(
+                OllamaEmbeddingRepository.availabilityCooldown,
+              ),
+              suppressedRequestCount: 1,
+            );
+          }
+          return _fakeEmbedding();
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+
+        expect(embedCallCount, 1);
+
+        async
+          ..elapse(OllamaEmbeddingRepository.availabilityCooldown)
+          ..flushMicrotasks();
+
+        expect(embedCallCount, 2);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).called(1);
+
+        stopInZone(async);
+      });
+    });
+
+    test('startup report recovery continues after one agent fails', () async {
+      const failedAgentId = 'agent-failed';
+      const recoveredAgentId = 'agent-recovered';
+      const taskId = 'task-recovered';
+      final agentRepository = MockAgentRepository();
+      final report = _agentReport(
+        id: 'report-recovered',
+        agentId: recoveredAgentId,
+      );
+      final reportStored = Completer<void>();
+
+      when(agentRepository.getAllAgentIdentities).thenAnswer(
+        (_) async => [
+          _agentIdentity(failedAgentId),
+          _agentIdentity(recoveredAgentId),
+        ],
+      );
+      when(
+        () => agentRepository.getLinksFrom(
+          failedAgentId,
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenThrow(StateError('agent DB read failed'));
+      when(
+        () => agentRepository.getLinksFrom(
+          recoveredAgentId,
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          _agentTaskLink(agentId: recoveredAgentId, taskId: taskId),
+        ],
+      );
+      when(
+        () => agentRepository.getLatestReport(
+          recoveredAgentId,
+          AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) async => report);
+      when(
+        () => agentRepository.getEntitiesByAgentIdAndSubtype(
+          recoveredAgentId,
+          type: AgentEntityTypes.agentReport,
+          subtype: AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) async => [report]);
+      when(
+        () => mockJournalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => null);
+      stubEmbedding();
+      when(
+        () => mockEmbeddingStore.replaceEntityEmbeddings(
+          entityId: report.id,
+          entityType: any(named: 'entityType'),
+          modelId: any(named: 'modelId'),
+          contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
+          categoryId: any(named: 'categoryId'),
+          taskId: taskId,
+          subtype: AgentReportScopes.current,
+        ),
+      ).thenAnswer((_) {
+        reportStored.complete();
+      });
+
+      service = EmbeddingService(
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        journalDb: mockJournalDb,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: mockAiConfigRepo,
+        agentRepository: agentRepository,
+      )..start();
+
+      await reportStored.future;
+      await pumpEventQueue();
+
+      verify(
+        () => agentRepository.getLinksFrom(
+          recoveredAgentId,
+          type: AgentLinkTypes.agentTask,
+        ),
+      ).called(1);
+    });
+
+    test('startup report recovery contains repository failures', () async {
+      final agentRepository = MockAgentRepository();
+      final readAttempted = Completer<void>();
+      when(agentRepository.getAllAgentIdentities).thenAnswer((_) {
+        readAttempted.complete();
+        throw StateError('agent database unavailable');
+      });
+
+      service = EmbeddingService(
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        journalDb: mockJournalDb,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: mockAiConfigRepo,
+        agentRepository: agentRepository,
+      )..start();
+
+      await readAttempted.future;
+      await pumpEventQueue();
+
+      verify(agentRepository.getAllAgentIdentities).called(1);
+      verifyNever(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      );
     });
 
     test('stop waits for the in-flight embedding before returning', () async {
