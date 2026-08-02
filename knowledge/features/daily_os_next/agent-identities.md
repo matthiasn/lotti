@@ -5,17 +5,17 @@ description: One durable coordinator plus one agent per day, the day-forward cut
 resource: ../../../lib/features/daily_os_next/agents
 tags: [daily-os, agents, identity, adr-0022, adr-0032]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-02T00:30:00Z }
 stale_after: 2026-10-26
 sources:
   - id: identity
     resource: ../../../lib/features/daily_os_next/agents/domain/day_agent_identity.dart
-    title: perDayAgentId, isPerDayAgentId, isDailyOsDayOwner
-    last_modified: 2026-07-25
+    title: perDayAgentId, isPerDayAgentId, dayIdOfPerDayAgent
+    last_modified: 2026-08-02
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Day-agent services and workflow
-    last_modified: 2026-07-26
+    last_modified: 2026-08-02
   - id: adr-0022
     resource: ../../../docs/adr/0022-long-lived-daily-os-planner.md
     title: ADR 0022 — Long-lived Daily OS planner
@@ -163,9 +163,10 @@ Dart-side fallback scan. **Schema v17 backfills existing rows through that same
 Dart projection**, not a SQL `json_extract` update, because a backfilled value
 that disagreed with the writer would silently drop rows out of their day.
 
-# Not yet implemented
+# Implementation status
 
-The `DayDirectiveEntity`/`DayStatusEvent` protocol is live (see
-[coordination protocol](coordination-protocol.md)), but **dormancy for closed
-days** is not — no day-close lifecycle exists yet. ADR 0032's Amendments section
-carries the full list of where implementation diverged from the original text.
+The `DayDirectiveEntity`/`DayStatusEvent` protocol is live, and so is
+**dormancy for closed days**: a per-day agent is retired one day after its own,
+described in [coordination protocol](coordination-protocol.md). ADR 0032's
+Amendments section carries the full list of where implementation diverged from
+the original text.

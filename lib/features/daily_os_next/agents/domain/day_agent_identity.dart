@@ -35,6 +35,13 @@ String perDayAgentIdForDate(DateTime date) =>
 /// `false` for the coordinator and for bare legacy `dayplan-…` ids.
 bool isPerDayAgentId(String agentId) => agentId.startsWith(perDayAgentIdPrefix);
 
+/// The `dayplan-YYYY-MM-DD` id a per-day agent belongs to, or null when
+/// [agentId] is not a per-day identity.
+String? dayIdOfPerDayAgent(String agentId) =>
+    isPerDayAgentId(agentId) && agentId.length > perDayAgentIdPrefix.length
+    ? agentId.substring(perDayAgentIdPrefix.length)
+    : null;
+
 /// Whether [agentId] legitimately owns Daily OS day artifacts (plans,
 /// summaries, captures): the coordinator or any per-day agent.
 ///

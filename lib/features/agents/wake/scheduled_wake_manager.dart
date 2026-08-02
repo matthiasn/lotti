@@ -193,6 +193,24 @@ class ScheduledWakeManager {
     var enqueued = 0;
     for (final record in dueRecords) {
       try {
+        // Same guard as the due-*states* loop above, and for the same reason:
+        // `getDueScheduledWakeRecords` filters on the deadline, not lifecycle.
+        // A retired per-day agent still holding a `set_next_wake` record would
+        // otherwise keep firing — the record path is the one per-day agents
+        // actually use for pre-warms, so without this retirement does nothing.
+        final identity = await _repository.getEntity(record.agentId);
+        if (identity == null) {
+          // Not "inactive" — *unknown*. Sync can deliver a wake record before
+          // the identity it belongs to, and consuming is terminal, so a
+          // record that arrived first would be destroyed rather than delayed.
+          // Leave it pending; it fires once the identity lands.
+          continue;
+        }
+        final lifecycle = identity.mapOrNull(agent: (e) => e.lifecycle);
+        if (lifecycle != AgentLifecycle.active) {
+          await _consumeStaleWakeRecord(record, now);
+          continue;
+        }
         final approved = await _leaseApprovedRecord(record, generation);
         if (approved == null) continue;
         // `stop()` can land while the lease check is awaiting the host lookup.
@@ -352,6 +370,24 @@ class ScheduledWakeManager {
     final identity = await _repository.getEntity(agentId);
     return identity?.mapOrNull(agent: (e) => e.lifecycle) ==
         AgentLifecycle.active;
+  }
+
+  /// Marks a due record for a non-active agent consumed, so it stops
+  /// surfacing. Mirrors the stale-wake clearing on the state path.
+  Future<void> _consumeStaleWakeRecord(
+    ScheduledWakeEntity record,
+    DateTime now,
+  ) async {
+    await _syncService.upsertEntity(
+      record.copyWith(
+        status: ScheduledWakeStatus.consumed,
+        consumedAt: now,
+        updatedAt: now,
+      ),
+    );
+    // The pending-wakes surface refreshes from the shared notification, not
+    // from the sync write, so without this the record lingers on screen.
+    onPersistedStateChanged?.call(record.agentId);
   }
 
   /// Clears an archived agent's stale `scheduledWakeAt` so the due query stops

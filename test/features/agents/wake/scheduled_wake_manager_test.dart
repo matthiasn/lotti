@@ -1022,6 +1022,59 @@ void main() {
         });
       });
 
+      test('a retired agent does not fire its scheduled-wake record', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final record = leased();
+            final manager = managerFor(
+              record,
+              checkInterval: const Duration(hours: 1),
+            );
+            // getDueScheduledWakeRecords filters on the deadline, not
+            // lifecycle. A retired per-day agent still holding a
+            // `set_next_wake` record would keep firing without this guard —
+            // and that record path is the one per-day agents actually use.
+            when(() => repository.getEntity(record.agentId)).thenAnswer(
+              (_) async => makeTestIdentity().copyWith(
+                lifecycle: AgentLifecycle.dormant,
+              ),
+            );
+            async.flushMicrotasks();
+
+            expectNoWake();
+            final written = verify(
+              () => syncService.upsertEntity(captureAny()),
+            ).captured.whereType<ScheduledWakeEntity>().single;
+            // Consumed, so it stops surfacing on every tick.
+            expect(written.status, ScheduledWakeStatus.consumed);
+            manager.stop();
+          });
+        });
+      });
+
+      test('a wake whose identity has not synced stays pending', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final record = leased();
+            final manager = managerFor(
+              record,
+              checkInterval: const Duration(hours: 1),
+            );
+            // Sync can deliver a wake record before the identity it belongs
+            // to. Consuming is terminal, so treating "missing" as "inactive"
+            // would destroy the wake rather than delay it.
+            when(
+              () => repository.getEntity(record.agentId),
+            ).thenAnswer((_) async => null);
+            async.flushMicrotasks();
+
+            expectNoWake();
+            verifyNever(() => syncService.upsertEntity(any()));
+            manager.stop();
+          });
+        });
+      });
+
       test('a claim confirmed after the settle fires exactly once', () {
         fakeAsync((async) {
           withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {
@@ -1138,7 +1191,12 @@ void main() {
             );
             // The fire path re-reads the register, so a `consumed` version
             // another device wrote during this one's host lookup is seen.
-            when(() => repo.getEntity(any())).thenAnswer((_) async => shared);
+            // Id-aware: the record id resolves to the shared register, the
+            // agent id to a live identity for the lifecycle guard.
+            when(() => repo.getEntity(any())).thenAnswer((invocation) async {
+              final id = invocation.positionalArguments.single as String;
+              return id == shared.id ? shared : makeTestIdentity();
+            });
             when(() => sync.upsertEntity(any())).thenAnswer((invocation) async {
               final incoming =
                   invocation.positionalArguments.single as ScheduledWakeEntity;

@@ -108,6 +108,11 @@ class DayAgentService {
     final dayId = dayAgentIdForDate(date);
     final agentId = perDayAgentId(dayId);
     final existing = await agentService.getAgent(agentId);
+    // Deliberately returned as-is, whatever its lifecycle. Reactivating a
+    // dormant one here looks helpful but cannot tell retirement apart from a
+    // deliberate pause — `AgentService.pauseAgent` writes the same `dormant`
+    // — so it would silently resume an agent the user switched off. A retired
+    // day is readable; it just does not think again on its own.
     if (existing != null) return existing;
 
     // Ensures the coordinator (and its learning substrate) exists and gives
@@ -701,6 +706,93 @@ class DayAgentService {
     agentService.cancelPendingWake(agentId);
   }
 
+  /// How many calendar days a per-day agent stays active past its own day.
+  ///
+  /// One, so it can wake the morning after and hand the coordinator anything
+  /// its day left unreported. After that the day is finished and there is
+  /// nothing for it to do on a timer.
+  static const dayAgentHandoverDays = 1;
+
+  /// Stands down per-day agents whose day is over.
+  ///
+  /// **Why this exists.** A `day_agent:<dayId>` was created active and nothing
+  /// ever retired it, so the active set grew by one per day of use forever:
+  /// [restoreSubscriptions] re-hydrated every one of them on each launch, and
+  /// `getDueScheduledAgentStates` filters on `scheduledWakeAt` alone — not
+  /// lifecycle — so any past day left holding a deadline was due on every
+  /// tick. That is model spend on days that are finished.
+  ///
+  /// Retiring sets `lifecycle: dormant` and clears the agent's
+  /// `scheduledWakeAt`. Both matter: the lifecycle flip is what stops the wake
+  /// manager (its `_isActiveAgent` guard already skips non-active agents), and
+  /// clearing the deadline stops the row surfacing in the due query at all.
+  ///
+  /// **Retired is not deleted, and not revived.** The day's artifacts stay
+  /// exactly where they are and the day stays readable.
+  /// [getOrCreateDayAgentForDate] returns a dormant agent unchanged:
+  /// reactivating there cannot tell retirement apart from a deliberate pause
+  /// — `AgentService.pauseAgent` writes the same `dormant` — so it would
+  /// silently resume an agent the user switched off.
+  Future<int> retirePastDayAgents() async {
+    // Calendar arithmetic, not a 24-hour subtraction: across a DST change a
+    // fixed Duration does not reliably land on the previous calendar date.
+    final today = localDay(clock.now());
+    final cutoff = dayAgentIdForDate(
+      DateTime(today.year, today.month, today.day - dayAgentHandoverDays),
+    );
+    final active = await agentService.listAgents(
+      lifecycle: AgentLifecycle.active,
+    );
+
+    var retired = 0;
+    for (final agent in active) {
+      final dayId = dayIdOfPerDayAgent(agent.agentId);
+      // Lexicographic works because the id is `dayplan-YYYY-MM-DD`.
+      if (dayId == null || dayId.compareTo(cutoff) >= 0) continue;
+      try {
+        await _retireDayAgent(agent);
+        retired++;
+      } catch (e, s) {
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message: 'failed to retire ${DomainLogger.sanitizeId(agent.agentId)}',
+          stackTrace: s,
+        );
+      }
+    }
+    if (retired > 0) {
+      domainLogger.log(
+        LogDomain.agentRuntime,
+        'retired $retired finished day agent(s)',
+        subDomain: 'lifecycle',
+      );
+    }
+    return retired;
+  }
+
+  Future<void> _retireDayAgent(AgentIdentityEntity agent) async {
+    final now = clock.now();
+    // One transaction: either the agent is dormant *and* its deadline is gone,
+    // or neither happened and the next pass retries. Half a retirement is a
+    // live agent robbed of its pre-warm, or a dormant one still holding a wake
+    // that later passes cannot see — they list active identities only.
+    await syncService.runInTransaction(() async {
+      final state = await repository.getAgentState(agent.agentId);
+      if (state?.scheduledWakeAt != null) {
+        await syncService.upsertEntity(
+          state!.copyWith(scheduledWakeAt: null, updatedAt: now),
+        );
+      }
+      await syncService.upsertEntity(
+        agent.copyWith(lifecycle: AgentLifecycle.dormant, updatedAt: now),
+      );
+    });
+    // Surfaces watching lifecycle refresh on this, as they do for every other
+    // identity mutation in this service.
+    onPersistedStateChanged?.call(agent.agentId);
+  }
+
   /// Restore in-memory runtime state for active day agents at app startup.
   ///
   /// The persisted states are loaded in one snapshot before runtime hydration,
@@ -712,6 +804,17 @@ class DayAgentService {
       'restoring day-agent runtime state...',
       subDomain: 'restore',
     );
+
+    try {
+      await retirePastDayAgents();
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'failed to retire past day agents',
+        stackTrace: s,
+      );
+    }
 
     final activeAgents = await agentService.listAgents(
       lifecycle: AgentLifecycle.active,

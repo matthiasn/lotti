@@ -5,13 +5,13 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-01T12:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-02T12:00:00Z }
 stale_after: 2026-11-01
 sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Directive, status and digest services
-    last_modified: 2026-08-01
+    last_modified: 2026-08-02
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination
@@ -29,6 +29,48 @@ sources:
 The coordinator and per-day agents coordinate through **two durable, synced
 entities — no RPC** (ADR 0016/0018/0019). Everything is an append-only or
 last-write-wins register that converges on its own.
+
+## A per-day agent is retired when its day is done
+
+A `day_agent:<dayId>` is created for the day it plans and stays active for
+that day plus a **one-day handover**, so it can wake the morning after and give
+the coordinator anything its day left unreported. Then
+`DayAgentService.retirePastDayAgents` sets it dormant and clears its
+`scheduledWakeAt`.
+
+Both halves are load-bearing. The lifecycle flip is what `ScheduledWakeManager`
+keys on — its `_isActiveAgent` guard already skips a non-active agent and
+clears the stale wake. Clearing the deadline stops the row surfacing at all,
+because `getDueScheduledAgentStates` filters on `scheduledWakeAt` **only, not
+lifecycle**: a finished day still holding a deadline is otherwise due on every
+tick, forever.
+
+Without this the active set grew by one per day of use and
+`restoreSubscriptions` re-hydrated every one of them on each launch — model
+spend on days that are over, and the pressure behind much of the bounding work
+in `lotti3-hkb`.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Active: day agent created for its day
+  Active --> Active: its own day, plus one handover day
+  Active --> Dormant: retirePastDayAgents — lifecycle flip + scheduledWakeAt cleared
+  Dormant --> [*]: stays readable, never wakes on its own
+```
+
+**Retired is not deleted, and not revived.** The day's artifacts stay where
+they are and the day stays readable. `getOrCreateDayAgentForDate` returns a
+dormant agent **as-is**: reactivating there looks helpful but cannot tell
+retirement apart from a deliberate pause — `AgentService.pauseAgent` writes the
+same `dormant` — so it would silently resume an agent the user switched off.
+
+**Both wake paths are guarded, not just one.** `set_next_wake` persists a
+*standalone* `ScheduledWakeEntity`, not `AgentStateEntity.scheduledWakeAt`, and
+that record path is the one per-day agents actually use for pre-warms. Since
+`getDueScheduledWakeRecords` also filters on the deadline alone, the manager
+checks lifecycle in **both** loops and marks a non-active agent's due record
+consumed. Clearing only the state field would have left retirement doing
+nothing for the path that matters.
 
 ```mermaid
 sequenceDiagram
