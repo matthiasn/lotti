@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/features/ai/widgetbook/ai_shader_animations_widgetbook.dart';
-import 'package:lotti/features/dashboards/widgetbook/insights_widgetbook.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_button_widgetbook.dart';
 import 'package:lotti/features/projects/widgetbook/project_widgetbook.dart';
@@ -61,7 +60,6 @@ class WidgetbookApp extends StatelessWidget {
         buildProjectsWidgetbookFolder(),
         buildSettingsWidgetbookFolder(),
         buildChecklistWidgetbookFolder(),
-        buildInsightsWidgetbookFolder(),
         buildTasksWidgetbookFolder(),
         WidgetbookFolder(
           name: 'Task Widgets',
