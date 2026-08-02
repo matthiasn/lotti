@@ -133,6 +133,24 @@ void main() {
     expect(file.existsSync(), isFalse);
   });
 
+  test('a large batch yields the isolate instead of blocking it', () async {
+    // The deletes are synchronous, so a full sweep of ten thousand ids would
+    // monopolise the isolate and show up as a startup freeze. Crossing the
+    // yield threshold must not change what gets removed.
+    final ids = [for (var i = 0; i < 250; i++) 'bulk-$i'];
+    for (final id in ids) {
+      writeSidecar(relativeAgentEntityPath(id));
+    }
+
+    expect(await reclaimer.reclaim(entityIds: ids), 250);
+    for (final id in ids) {
+      expect(
+        File('${root.path}${relativeAgentEntityPath(id)}').existsSync(),
+        isFalse,
+      );
+    }
+  });
+
   test(
     'no documents directory disables reclamation rather than failing',
     () async {
