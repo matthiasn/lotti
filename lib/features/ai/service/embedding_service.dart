@@ -383,10 +383,6 @@ class EmbeddingService {
         final targetedTaskIds = changedTaskIds.toList(growable: false);
         for (var index = 0; index < targetedTaskIds.length; index++) {
           if (_shouldStopAgentReportRecoveryPass(providerConfigRevision)) {
-            if (!_stopped) {
-              _pendingChangedTaskIds.addAll(targetedTaskIds.skip(index));
-              _agentReportRecoveryPending = true;
-            }
             return;
           }
           final taskId = targetedTaskIds[index];
@@ -556,8 +552,16 @@ class EmbeddingService {
       !_embeddingsEnabled ||
       providerConfigRevision != _providerConfigRevision;
 
-  Future<void> _deleteReportEmbeddingsForTask(String taskId) async {
-    final reportIds = await embeddingStore.getEntityIdsForTask(taskId);
+  /// Deletes every vector indexed to [taskId], plus a just-written report that
+  /// may not yet be visible through the reverse index.
+  Future<void> _deleteReportEmbeddingsForTask(
+    String taskId, {
+    String? additionalReportId,
+  }) async {
+    final reportIds = {
+      ...await embeddingStore.getEntityIdsForTask(taskId),
+      ?additionalReportId,
+    };
     for (final reportId in reportIds) {
       await embeddingStore.deleteEntityEmbeddings(reportId);
     }
@@ -632,12 +636,15 @@ class EmbeddingService {
         categoryId: categoryId,
       );
       if (postStoreStatus != _ReportRecoveryTargetStatus.current) {
+        if (postStoreStatus == _ReportRecoveryTargetStatus.taskDeleted) {
+          await _deleteReportEmbeddingsForTask(
+            taskId,
+            additionalReportId: didEmbed ? report.id : null,
+          );
+          return;
+        }
         if (didEmbed && removedReportIds.add(report.id)) {
           await embeddingStore.deleteEntityEmbeddings(report.id);
-        }
-        if (postStoreStatus == _ReportRecoveryTargetStatus.taskDeleted) {
-          await _deleteReportEmbeddingsForTask(taskId);
-          return;
         }
         if (postStoreStatus == _ReportRecoveryTargetStatus.reportHeadChanged) {
           // Follow a successor for the same agent without rebuilding the
@@ -665,13 +672,16 @@ class EmbeddingService {
         categoryId: categoryId,
       );
       if (statusAfterCandidateRead != _ReportRecoveryTargetStatus.current) {
-        if (didEmbed && removedReportIds.add(report.id)) {
-          await embeddingStore.deleteEntityEmbeddings(report.id);
-        }
         if (statusAfterCandidateRead ==
             _ReportRecoveryTargetStatus.taskDeleted) {
-          await _deleteReportEmbeddingsForTask(taskId);
+          await _deleteReportEmbeddingsForTask(
+            taskId,
+            additionalReportId: didEmbed ? report.id : null,
+          );
           return;
+        }
+        if (didEmbed && removedReportIds.add(report.id)) {
+          await embeddingStore.deleteEntityEmbeddings(report.id);
         }
         if (statusAfterCandidateRead ==
             _ReportRecoveryTargetStatus.reportHeadChanged) {

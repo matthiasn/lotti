@@ -128,6 +128,8 @@ enum _GeneratedEmbeddingRelevantTypeSlot {
   aiResponse,
 }
 
+enum _TaskDeletionRacePoint { afterStore, afterCandidateRead }
+
 const Map<_GeneratedEmbeddingEntitySlot, String>
 _generatedEmbeddingEntityIds = {
   _GeneratedEmbeddingEntitySlot.first: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0001',
@@ -542,6 +544,109 @@ void main() {
   void stopInZone(FakeAsync async) {
     unawaited(service.stop());
     async.flushMicrotasks();
+  }
+
+  Future<void> expectTaskDeletionRaceCleanup(
+    _TaskDeletionRacePoint racePoint,
+  ) async {
+    const agentId = 'agent-task-deletion-race';
+    const taskId = 'task-deletion-race';
+    const staleReportId = 'report-task-deletion-race-stale';
+    final agentRepository = MockAgentRepository();
+    final report = _agentReport(
+      id: 'report-task-deletion-race-current',
+      agentId: agentId,
+    );
+    final activeTask = TestTaskFactory.create(id: taskId);
+    final deletedTask = activeTask.copyWith(
+      meta: activeTask.meta.copyWith(deletedAt: _agentTestDate),
+    );
+    final deletedReportIds = <String>[];
+    var taskDeleted = false;
+
+    when(
+      agentRepository.getAllAgentIdentities,
+    ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+    when(
+      () => agentRepository.getLinksFrom(
+        agentId,
+        type: AgentLinkTypes.agentTask,
+      ),
+    ).thenAnswer(
+      (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+    );
+    stubPrimaryTaskAgent(
+      agentRepository,
+      agentId: agentId,
+      taskId: taskId,
+    );
+    when(
+      () => agentRepository.getLatestReport(
+        agentId,
+        AgentReportScopes.current,
+      ),
+    ).thenAnswer((_) async => report);
+    when(
+      () => mockJournalDb.journalEntityById(taskId),
+    ).thenAnswer((_) async => taskDeleted ? null : activeTask);
+    when(
+      () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([taskId]),
+    ).thenAnswer((_) async => {taskId: deletedTask});
+    when(
+      () => mockEmbeddingStore.getEntityIdsForTask(taskId),
+    ).thenAnswer((_) {
+      if (racePoint == _TaskDeletionRacePoint.afterCandidateRead) {
+        taskDeleted = true;
+      }
+      return {report.id, staleReportId};
+    });
+    when(
+      () => mockEmbeddingStore.replaceEntityEmbeddings(
+        entityId: report.id,
+        entityType: kEntityTypeAgentReport,
+        modelId: any(named: 'modelId'),
+        contentHash: any(named: 'contentHash'),
+        embeddings: any(named: 'embeddings'),
+        categoryId: any(named: 'categoryId'),
+        taskId: taskId,
+        subtype: AgentReportScopes.current,
+      ),
+    ).thenAnswer((_) {
+      if (racePoint == _TaskDeletionRacePoint.afterStore) {
+        taskDeleted = true;
+      }
+    });
+    when(
+      () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+    ).thenAnswer((invocation) {
+      deletedReportIds.add(invocation.positionalArguments.first as String);
+    });
+    stubEmbedding();
+
+    service = EmbeddingService(
+      embeddingStore: mockEmbeddingStore,
+      embeddingRepository: mockEmbeddingRepo,
+      journalDb: mockJournalDb,
+      updateNotifications: updateNotifications,
+      aiConfigRepository: mockAiConfigRepo,
+      agentRepository: agentRepository,
+    )..start();
+    await pumpEventQueue();
+
+    expect(taskDeleted, isTrue);
+    expect(deletedReportIds, unorderedEquals([report.id, staleReportId]));
+    verify(
+      () => mockEmbeddingStore.replaceEntityEmbeddings(
+        entityId: report.id,
+        entityType: kEntityTypeAgentReport,
+        modelId: any(named: 'modelId'),
+        contentHash: any(named: 'contentHash'),
+        embeddings: any(named: 'embeddings'),
+        categoryId: any(named: 'categoryId'),
+        taskId: taskId,
+        subtype: AgentReportScopes.current,
+      ),
+    ).called(1);
   }
 
   group('EmbeddingService', () {
@@ -3432,6 +3537,21 @@ void main() {
         ).called(1);
       });
     });
+
+    test('startup purges task vectors when deletion races the store', () async {
+      await expectTaskDeletionRaceCleanup(
+        _TaskDeletionRacePoint.afterStore,
+      );
+    });
+
+    test(
+      'startup purges task vectors when deletion races candidate cleanup',
+      () async {
+        await expectTaskDeletionRaceCleanup(
+          _TaskDeletionRacePoint.afterCandidateRead,
+        );
+      },
+    );
 
     test('failed synced task recovery retries only that task', () {
       fakeAsync((async) {

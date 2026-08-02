@@ -1370,6 +1370,54 @@ void main() {
       verify(() => mockDb.watchAllConfigs()).called(1);
       await subscription.cancel();
     });
+
+    test(
+      'a failed mutation-driven bootstrap retry stays on the observed stream',
+      () async {
+        final provider = AiConfig.inferenceProvider(
+          id: 'ollama-while-database-unavailable',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          name: 'Unavailable Ollama',
+          createdAt: fixedDate,
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+        var bootstrapCount = 0;
+        when(() => mockDb.getAllConfigs()).thenAnswer((_) async {
+          bootstrapCount++;
+          throw StateError('Bootstrap failure $bootstrapCount');
+        });
+        final streamErrors = <Object>[];
+        final zoneErrors = <Object>[];
+
+        await runZonedGuarded(
+          () async {
+            final subscription = repository
+                .watchConfigsByType(AiConfigType.inferenceProvider)
+                .listen((_) {}, onError: streamErrors.add);
+            await pumpEventQueue();
+
+            await repository.saveConfig(provider);
+            await pumpEventQueue();
+
+            await subscription.cancel();
+          },
+          (error, _) => zoneErrors.add(error),
+        );
+
+        expect(bootstrapCount, 2);
+        expect(streamErrors, hasLength(2));
+        expect(
+          streamErrors.map((error) => error.toString()),
+          containsAll(<String>[
+            'Bad state: Bootstrap failure 1',
+            'Bad state: Bootstrap failure 2',
+          ]),
+        );
+        expect(zoneErrors, isEmpty);
+        verifyNever(mockDb.watchAllConfigs);
+      },
+    );
   });
 
   group('AiConfigRepository with mocks — _cacheConfigInTypeList paths', () {

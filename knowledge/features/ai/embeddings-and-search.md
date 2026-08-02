@@ -178,7 +178,9 @@ flowchart LR
   revalidates the durable head, current
   primary link, and task category before and after vector storage, then reads
   cleanup candidates from the embedding store's reverse task index and checks
-  all three selectors again. It never loads the agent's historical report
+  all three selectors again. If either revalidation observes a task tombstone,
+  recovery unions any just-written report with the reverse-index snapshot and
+  deletes each task vector once. It never loads the agent's historical report
   bodies or treats wall-clock timestamps as ordering authority. If the head
   advances during any of those awaits, recovery removes only a stale vector it
   just wrote and follows the successor. If the primary link or category
