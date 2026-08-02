@@ -138,7 +138,6 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                 for (var i = 0; i < flatRows.length; i++) ...[
                   if (i > 0) const DesignSystemDivider(),
                   LinkedTaskRow(
-                    taskId: taskId,
                     data: flatRows[i],
                     manageMode: uiState.manageMode,
                     onEdit: () => EditLinkTypeModal.show(

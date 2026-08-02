@@ -272,7 +272,6 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
     final tokens = context.designTokens;
 
     return AppCommandScope(
-      debugLabel: 'project-create',
       handlers: {
         AppCommandId.save: AppCommandHandler(
           isEnabled: () => !_isSaving,

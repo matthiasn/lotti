@@ -148,7 +148,6 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
     }
 
     return AppCommandScope(
-      debugLabel: 'entry-details',
       handlers: {
         AppCommandId.save: AppCommandHandler(
           invoke: (_) => ref.read(provider.notifier).save(),

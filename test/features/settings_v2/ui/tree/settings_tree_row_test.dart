@@ -55,7 +55,6 @@ Future<void> _pumpRow(
           width: 400,
           child: SettingsTreeRow(
             node: node,
-            depth: 0,
             onActivePath: onActivePath,
             isExpanded: isExpanded,
             showLeafChevron: showLeafChevron,

@@ -192,7 +192,6 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
         }
       },
       child: AppCommandScope(
-        debugLabel: 'project-detail',
         handlers: {
           AppCommandId.save: AppCommandHandler(
             isEnabled: () => state.hasChanges && !state.isSaving,

@@ -79,17 +79,6 @@ void main() {
       },
     );
 
-    test('clearPreExpansionStates clears the stored states', () {
-      // Enter and exit sorting mode, then clear
-      container.read(checklistsSortingControllerProvider(taskId).notifier)
-        ..enterSortingMode({'checklist-1': true})
-        ..exitSortingMode()
-        ..clearPreExpansionStates();
-
-      final state = container.read(checklistsSortingControllerProvider(taskId));
-      expect(state.preExpansionStates, isEmpty);
-    });
-
     test('preExpansionStates are preserved after exitSortingMode', () {
       // Enter and exit sorting mode
       container.read(checklistsSortingControllerProvider(taskId).notifier)

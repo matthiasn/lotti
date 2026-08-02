@@ -91,7 +91,6 @@ class _SettingsTreeNodeWidgetState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppCommandScope(
-          debugLabel: 'settings-tree:${node.id}',
           handlers: {
             AppCommandId.selectPrevious: AppCommandHandler(
               invoke: (_) => moveFocus(TraversalDirection.up),
@@ -121,7 +120,6 @@ class _SettingsTreeNodeWidgetState
           },
           child: SettingsTreeRow(
             node: node,
-            depth: depth,
             focusNode: _focusNode,
             onActivePath: onActivePath,
             isExpanded: isExpanded,

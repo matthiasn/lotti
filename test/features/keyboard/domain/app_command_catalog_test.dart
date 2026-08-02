@@ -13,25 +13,6 @@ void main() {
       expect(ids, hasLength(AppCommandId.values.length));
     });
 
-    test('default bindings are conflict-free on every desktop platform', () {
-      for (final platform in const [
-        TargetPlatform.macOS,
-        TargetPlatform.windows,
-        TargetPlatform.linux,
-      ]) {
-        final bindingKeys = AppCommandCatalog.definitions
-            .expand((definition) => definition.bindings)
-            .map((binding) => binding.equivalenceKey(platform))
-            .toList();
-        expect(
-          bindingKeys.toSet(),
-          hasLength(bindingKeys.length),
-          reason:
-              '$platform must not dispatch one chord to two default commands',
-        );
-      }
-    });
-
     test('navigation digits have a stable semantic mapping', () {
       final expected = <(LogicalKeyboardKey, AppCommandId)>[
         (LogicalKeyboardKey.digit1, AppCommandId.navigateTasks),

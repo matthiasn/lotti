@@ -114,7 +114,6 @@ class _AppCommandHostState extends State<AppCommandHost> {
           child: Shortcuts(
             shortcuts: shortcuts,
             child: AppCommandScope(
-              debugLabel: 'app-global',
               handlers: handlers,
               registerShortcuts: false,
               child: widget.child,

@@ -22,9 +22,7 @@ linkedTasksControllerProvider = NotifierProvider.autoDispose
     );
 
 class LinkedTasksController extends Notifier<LinkedTasksState> {
-  LinkedTasksController([this.taskId = '']);
-
-  final String taskId;
+  LinkedTasksController([String _ = '']);
 
   @override
   LinkedTasksState build() {

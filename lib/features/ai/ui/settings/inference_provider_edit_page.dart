@@ -493,7 +493,6 @@ class _InferenceProviderEditPageState
     final providerType = formState?.inferenceProviderType;
 
     return AppCommandScope(
-      debugLabel: 'inference-provider-editor',
       handlers: {
         AppCommandId.save: AppCommandHandler(
           isEnabled: () => isFormValid && !_isSaving,

@@ -45,15 +45,6 @@ TaskListData buildTaskListDetailMockData() {
   );
 
   return TaskListData(
-    currentTime: DateTime(2026, 4, 1, 10, 30),
-    categories: [
-      work,
-      study,
-      leisure,
-      meals,
-      household,
-      meeting,
-    ],
     tasks: [
       mockTaskRecord(
         id: 'user-testing',
@@ -80,7 +71,6 @@ TaskListData buildTaskListDetailMockData() {
             durationLabel: '6m 10s',
             note:
                 'Prepared prompts, aligned note-taking, and captured the final blocker for the next iteration.',
-            active: true,
           ),
         ],
         checklistItems: const [

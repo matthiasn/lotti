@@ -103,7 +103,6 @@ TaskRecord _makeRecord({
     sectionTitle: 'Today',
     sectionDate: DateTime(2024, 3, 15),
     projectTitle: projectTitle,
-    timeRange: '10:00-11:00am',
     labels: labels,
     aiSummary: aiSummary,
     description: description,

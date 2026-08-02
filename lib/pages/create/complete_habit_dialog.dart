@@ -146,7 +146,6 @@ class _HabitDialogState extends State<HabitDialog> {
     );
 
     return AppCommandScope(
-      debugLabel: 'habit-completion',
       handlers: {
         AppCommandId.save: AppCommandHandler(
           invoke: (_) => saveHabit(_outcome),

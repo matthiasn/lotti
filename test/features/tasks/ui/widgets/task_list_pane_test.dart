@@ -86,7 +86,6 @@ void main() {
       sectionTitle: 'P1 High',
       sectionDate: DateTime(2026, 4, 8),
       projectTitle: 'Design system',
-      timeRange: '09:00-10:00',
       labels: const <TaskShowcaseLabel>[],
       aiSummary: 'summary',
       description: 'description',
@@ -239,10 +238,8 @@ void main() {
             : {priorityId},
       );
       return TaskListDetailState(
-        data: TaskListData(
-          categories: const [],
-          tasks: const [],
-          currentTime: DateTime(2026, 4, 17),
+        data: const TaskListData(
+          tasks: [],
         ),
         searchQuery: '',
         selectedTaskId: '',
@@ -342,10 +339,8 @@ void main() {
         ),
       );
       return TaskListDetailState(
-        data: TaskListData(
-          categories: const [],
-          tasks: const [],
-          currentTime: DateTime(2026, 4, 17),
+        data: const TaskListData(
+          tasks: [],
         ),
         searchQuery: '',
         selectedTaskId: '',
@@ -521,10 +516,8 @@ void main() {
     // empty branch, and the empty-state test asserts on it directly.
     Future<void> pumpEmptyPane(WidgetTester tester) async {
       final state = TaskListDetailState(
-        data: TaskListData(
-          categories: const [],
-          tasks: const [],
-          currentTime: DateTime(2026, 4, 17),
+        data: const TaskListData(
+          tasks: [],
         ),
         searchQuery: '',
         selectedTaskId: '',

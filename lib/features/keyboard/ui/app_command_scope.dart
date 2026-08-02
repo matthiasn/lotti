@@ -9,14 +9,12 @@ class AppCommandScope extends StatefulWidget {
   const AppCommandScope({
     required this.handlers,
     required this.child,
-    this.debugLabel,
     this.registerShortcuts = true,
     super.key,
   });
 
   final Map<AppCommandId, AppCommandHandler> handlers;
   final Widget child;
-  final String? debugLabel;
 
   /// The root host already installs its global shortcuts, so its scope only
   /// contributes handlers. Feature scopes keep the default `true`.
@@ -27,9 +25,7 @@ class AppCommandScope extends StatefulWidget {
 }
 
 class _AppCommandScopeState extends State<AppCommandScope> {
-  late final AppCommandScopeNode _node = AppCommandScopeNode(
-    debugLabel: widget.debugLabel,
-  );
+  late final AppCommandScopeNode _node = AppCommandScopeNode();
   AppCommandController? _controller;
 
   void _syncController() {
@@ -118,9 +114,7 @@ class _AppCommandScopeState extends State<AppCommandScope> {
 
 /// Mutable lifecycle node kept behind the immutable inherited marker.
 class AppCommandScopeNode {
-  AppCommandScopeNode({this.debugLabel});
-
-  final String? debugLabel;
+  AppCommandScopeNode();
   AppCommandScopeNode? parent;
   BuildContext? _ownerContext;
   Map<AppCommandId, AppCommandHandler> _handlers = const {};

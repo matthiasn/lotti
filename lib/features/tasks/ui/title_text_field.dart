@@ -212,7 +212,6 @@ class _TitleTextFieldState extends State<TitleTextField> {
     );
 
     return AppCommandScope(
-      debugLabel: 'title-text-field',
       handlers: {
         AppCommandId.save: AppCommandHandler(
           invoke: (_) => onSave(_controller.text),

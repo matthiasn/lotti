@@ -134,7 +134,6 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
     }
 
     return AppCommandScope(
-      debugLabel: 'projects-list',
       handlers: {
         AppCommandId.focusSearch: AppCommandHandler(
           invoke: (_) => _searchFocusNode.requestFocus(),

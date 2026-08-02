@@ -167,7 +167,6 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
         journalPageScopeProvider.overrideWithValue(true),
       ],
       child: AppCommandScope(
-        debugLabel: 'tasks-list',
         handlers: {
           AppCommandId.refresh: AppCommandHandler(
             invoke: (_) => ref

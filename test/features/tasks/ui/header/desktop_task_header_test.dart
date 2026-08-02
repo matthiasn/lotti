@@ -121,13 +121,11 @@ DesktopTaskHeaderData _fixture({
 
 const _projectFixture = DesktopTaskHeaderProject(
   label: 'Device Sync - Lotti Mobile App Implementation',
-  icon: Icons.folder_outlined,
 );
 
 const _categoryFixture = DesktopTaskHeaderCategory(
   label: 'Work',
   color: Color(0xFF1CA3E3),
-  icon: Icons.work_outline_rounded,
 );
 
 const _dueFixture = DesktopTaskHeaderDueDate(label: 'Due: Apr 1, 2026');

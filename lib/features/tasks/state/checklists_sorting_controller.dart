@@ -32,9 +32,7 @@ abstract class ChecklistsSortingState with _$ChecklistsSortingState {
 /// notifier.enterSortingMode({'checklist-1': true, 'checklist-2': false});
 /// ```
 class ChecklistsSortingController extends Notifier<ChecklistsSortingState> {
-  ChecklistsSortingController(this.taskId);
-
-  final String taskId;
+  ChecklistsSortingController(String _);
 
   @override
   ChecklistsSortingState build() {
@@ -59,13 +57,6 @@ class ChecklistsSortingController extends Notifier<ChecklistsSortingState> {
   /// and restore their expansion state.
   void exitSortingMode() {
     state = state.copyWith(isSorting: false);
-  }
-
-  /// Clears the stored expansion states after they have been restored.
-  ///
-  /// Call this after all checklists have restored their expansion states.
-  void clearPreExpansionStates() {
-    state = state.copyWith(preExpansionStates: const <String, bool>{});
   }
 }
 

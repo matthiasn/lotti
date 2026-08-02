@@ -143,7 +143,6 @@ class TaskRelationshipSections extends ConsumerWidget {
       for (final entry in sections[s].entries) {
         children.add(
           LinkedTaskRow(
-            taskId: taskId,
             data: LinkedTaskRowData(task: entry.task),
             manageMode: manageMode,
             onEdit: () => EditLinkTypeModal.show(

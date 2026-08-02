@@ -13,7 +13,6 @@ import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 class SettingsTreeRow extends StatelessWidget {
   const SettingsTreeRow({
     required this.node,
-    required this.depth,
     required this.onActivePath,
     required this.isExpanded,
     required this.onTap,
@@ -27,7 +26,6 @@ class SettingsTreeRow extends StatelessWidget {
   });
 
   final SettingsNode node;
-  final int depth;
 
   /// When `true`, the leading icon tile is always painted in the teal
   /// accent (teal glyph on a teal-tinted tile) regardless of selection,

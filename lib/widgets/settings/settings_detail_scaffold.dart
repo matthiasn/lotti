@@ -154,7 +154,6 @@ class SettingsDetailScaffold extends StatelessWidget {
 
     if (onSaveShortcut == null) return scaffold;
     return AppCommandScope(
-      debugLabel: 'settings-detail',
       handlers: {
         AppCommandId.save: AppCommandHandler(
           isEnabled: saveShortcutEnabled,

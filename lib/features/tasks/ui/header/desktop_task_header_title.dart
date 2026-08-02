@@ -87,7 +87,6 @@ class TitleEditor extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return AppCommandScope(
-      debugLabel: 'task-title-editor',
       handlers: {
         AppCommandId.save: AppCommandHandler(invoke: (_) => onCommit()),
         AppCommandId.cancel: AppCommandHandler(invoke: (_) => onCancel()),

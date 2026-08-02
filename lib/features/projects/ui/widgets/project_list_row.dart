@@ -129,7 +129,6 @@ class ProjectRow extends ConsumerWidget {
     if (detailFocusController == null) return row;
 
     return AppCommandScope(
-      debugLabel: 'project-row:$projectId',
       handlers: {
         AppCommandId.expand: AppCommandHandler(
           invoke: (_) {
