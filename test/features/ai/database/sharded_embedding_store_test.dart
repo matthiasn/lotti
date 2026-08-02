@@ -535,8 +535,11 @@ void main() {
           categoryId: 'cat-retried',
         );
 
-        await expectLater(write(), throwsStateError);
-        await write();
+        final failedWrite = write();
+        final queuedWrite = write();
+
+        await expectLater(failedWrite, throwsStateError);
+        await queuedWrite;
 
         expect(factoryAttempts, 2);
         expect(await store.hasEmbedding('entity-retried'), isTrue);

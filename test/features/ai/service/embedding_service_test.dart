@@ -2451,7 +2451,7 @@ void main() {
       });
     });
 
-    test('synced task change relocates its current report embedding', () {
+    test('synced task change retries report relocation after an outage', () {
       fakeAsync((async) {
         const agentId = 'agent-synced-task-category';
         const taskId = 'task-synced-task-category';
@@ -2463,6 +2463,7 @@ void main() {
           agentId: agentId,
         );
         final storedCategories = <String>[];
+        var embedCallCount = 0;
         var categoryChanged = false;
         var scanCount = 0;
         when(agentRepository.getAllAgentIdentities).thenAnswer((_) async {
@@ -2500,7 +2501,24 @@ void main() {
             categoryId: categoryChanged ? newCategoryId : oldCategoryId,
           ),
         );
-        stubEmbedding();
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((_) async {
+          embedCallCount++;
+          if (embedCallCount == 2) {
+            throw OllamaEmbeddingCooldownException(
+              retryAt: clock.now().add(
+                OllamaEmbeddingRepository.availabilityCooldown,
+              ),
+              suppressedRequestCount: 1,
+            );
+          }
+          return _fakeEmbedding();
+        });
         when(
           () => mockEmbeddingStore.replaceEntityEmbeddings(
             entityId: report.id,
@@ -2542,10 +2560,114 @@ void main() {
         async
           ..elapse(const Duration(seconds: 1))
           ..flushMicrotasks();
-        stopInZone(async);
 
+        expect(embedCallCount, 2);
+        expect(storedCategories, [oldCategoryId]);
+        expect(scanCount, 1);
+
+        async
+          ..elapse(OllamaEmbeddingRepository.availabilityCooldown)
+          ..flushMicrotasks();
+
+        expect(embedCallCount, 3);
         expect(storedCategories, [oldCategoryId, newCategoryId]);
         expect(scanCount, 1);
+        stopInZone(async);
+      });
+    });
+
+    test('failed synced task recovery retries only that task', () {
+      fakeAsync((async) {
+        const agentId = 'agent-targeted-task-retry';
+        const taskId = 'task-targeted-retry';
+        final agentRepository = MockAgentRepository();
+        final report = _agentReport(
+          id: 'report-targeted-task-retry',
+          agentId: agentId,
+        );
+        var agentReadCount = 0;
+        var scanCount = 0;
+
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async {
+          scanCount++;
+          return [];
+        });
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        when(() => agentRepository.getEntity(agentId)).thenAnswer((_) async {
+          agentReadCount++;
+          if (agentReadCount == 1) {
+            throw StateError('temporary targeted agent read failure');
+          }
+          return _agentIdentity(agentId);
+        });
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => report);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        stubEmbedding();
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+
+        void notifyTaskChanged() {
+          updateNotifications.notify(
+            {taskNotification, '$taskNotificationPrefix$taskId'},
+            fromSync: true,
+          );
+          async
+            ..elapse(const Duration(seconds: 1))
+            ..flushMicrotasks();
+        }
+
+        notifyTaskChanged();
+
+        expect(agentReadCount, 1);
+        verifyNever(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: any(named: 'subtype'),
+          ),
+        );
+
+        notifyTaskChanged();
+
+        expect(agentReadCount, 2);
+        expect(scanCount, 1);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).called(1);
+        stopInZone(async);
       });
     });
 

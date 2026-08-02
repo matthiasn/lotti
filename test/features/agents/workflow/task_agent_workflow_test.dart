@@ -3856,6 +3856,103 @@ not describe task configuration or tool activity as progress.
         expect(head.id, 'existing-head-id');
       });
 
+      test('skips optional report embedding without Ollama', () async {
+        final mockEmbeddingStore = MockEmbeddingStore();
+        final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+        final baseUrlResolved = Completer<void>();
+        final workflowWithEmbeddings = TaskAgentWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          domainLogger: DomainLogger(loggingService: LoggingService())
+            ..enabledDomains.add(LogDomain.agentWorkflow),
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepository,
+        );
+
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
+        when(
+          mockAiConfigRepository.resolveOllamaBaseUrl,
+        ).thenAnswer((_) async {
+          if (!baseUrlResolved.isCompleted) baseUrlResolved.complete();
+          return null;
+        });
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy is TaskAgentStrategy) {
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    const ChatCompletionMessageToolCall(
+                      id: 'rpt-call',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: 'update_report',
+                        arguments:
+                            r'{"content":"# Report\nThis report remains durable without optional semantic search.","oneLiner":"Durable report","tldr":"The report is saved without Ollama."}',
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+              }
+              return null;
+            };
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        final result = await workflowWithEmbeddings.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+        await baseUrlResolved.future;
+        await pumpEventQueue();
+
+        expect(result.success, isTrue);
+        final persisted = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(persisted.whereType<AgentReportEntity>(), hasLength(1));
+        verifyNever(
+          () => mockEmbeddingRepository.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        );
+        verifyNever(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: any(named: 'entityId'),
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        );
+      });
+
       test(
         'embeds a new report and deletes the previous report embedding',
         () async {
