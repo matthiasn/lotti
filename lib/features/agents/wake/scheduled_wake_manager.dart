@@ -237,7 +237,7 @@ class ScheduledWakeManager {
     return enqueued;
   }
 
-  /// Whether this device may fire [record] now.
+  /// Whether this device may fire [due] now.
   ///
   /// Always true for the ordinary device-local records. For a leased record it
   /// runs one round of claim–settle–confirm:
@@ -261,16 +261,28 @@ class ScheduledWakeManager {
   /// claimant that crashed or went offline, and any device may take over, so a
   /// window is delayed rather than lost.
   Future<bool> _holdsLease(
-    ScheduledWakeEntity record,
+    ScheduledWakeEntity due,
     DateTime now,
     int generation,
   ) async {
-    final needsLease = requiresLease?.call(record) ?? false;
+    final needsLease = requiresLease?.call(due) ?? false;
     final hostIdOf = localHostId;
     if (!needsLease || hostIdOf == null) return true;
 
     final hostId = await hostIdOf();
     if (hostId == null) return true;
+
+    // Re-read after the host lookup: sync can apply a crossing claim, a
+    // `consumed` version, or the next window's re-arm while that await is
+    // outstanding. Deciding — or worse, writing a claim — from the snapshot
+    // the due query returned would overwrite a newer local row with older
+    // lease fields.
+    final refreshed = await _repository.getEntity(due.id);
+    if (refreshed is! ScheduledWakeEntity) return false;
+    if (refreshed.status != ScheduledWakeStatus.pending) return false;
+    if (!refreshed.scheduledAt.isAtSameMomentAs(due.scheduledAt)) return false;
+    final record = refreshed;
+
     final until = record.leaseUntil;
     final held = until != null && until.isAfter(now);
 

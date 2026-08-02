@@ -910,6 +910,47 @@ void main() {
         });
       });
 
+      test('a claim is not written over a newer version', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final record = leased();
+            final manager = managerFor(record);
+            // Sync applies the peer's completion while the host lookup is
+            // awaiting. Claiming from the due snapshot would copy its stale
+            // pending fields straight over that newer row.
+            when(() => repository.getEntity(record.id)).thenAnswer(
+              (_) async => record.copyWith(
+                status: ScheduledWakeStatus.consumed,
+                consumedAt: now,
+              ),
+            );
+            async.flushMicrotasks();
+
+            verifyNever(() => syncService.upsertEntity(any()));
+            expectNoWake();
+            manager.stop();
+          });
+        });
+      });
+
+      test('a re-armed next window is not claimed from the old snapshot', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final record = leased();
+            final manager = managerFor(record);
+            when(() => repository.getEntity(record.id)).thenAnswer(
+              (_) async => record.copyWith(
+                scheduledAt: record.scheduledAt.add(const Duration(days: 1)),
+              ),
+            );
+            async.flushMicrotasks();
+
+            verifyNever(() => syncService.upsertEntity(any()));
+            manager.stop();
+          });
+        });
+      });
+
       test('a claim confirmed after the settle fires exactly once', () {
         fakeAsync((async) {
           withClock(Clock.fixed(now.add(const Duration(minutes: 4))), () {
