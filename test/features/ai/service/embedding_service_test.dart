@@ -949,7 +949,7 @@ void main() {
       });
     });
 
-    test('a new notification resumes a deferred batch after recovery', () {
+    test('a new notification retries a deferred batch before cooldown', () {
       fakeAsync((async) {
         const entityId2 = 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee';
         final entry1 = JournalEntry(
@@ -998,7 +998,7 @@ void main() {
         expect(embedCallCount, 3);
         verify(
           () => mockEmbeddingStore.replaceEntityEmbeddings(
-            entityId: any(named: 'entityId'),
+            entityId: _entityId,
             entityType: any(named: 'entityType'),
             modelId: any(named: 'modelId'),
             contentHash: any(named: 'contentHash'),
@@ -1007,7 +1007,19 @@ void main() {
             taskId: any(named: 'taskId'),
             subtype: any(named: 'subtype'),
           ),
-        ).called(2);
+        ).called(1);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: entityId2,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        ).called(1);
 
         stopInZone(async);
       });

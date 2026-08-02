@@ -59,7 +59,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     final repo = embeddingRepository;
     if (store == null || repo == null) return;
     if (!isRetry) {
-      _latestReportEmbeddingIds.remove(taskId);
+      _latestReportEmbeddingIds[taskId] = reportId;
       _pendingReportEmbeddings.remove(taskId);
     } else if (_latestReportEmbeddingIds[taskId] != reportId) {
       return;
@@ -67,14 +67,15 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
 
     try {
       final baseUrl = await this.aiConfigRepository.resolveOllamaBaseUrl();
-      if (baseUrl == null) return;
-      if (!isRetry) {
-        _latestReportEmbeddingIds[taskId] = reportId;
-        _pendingReportEmbeddings.remove(taskId);
+      if (baseUrl == null) {
+        _completeAgentReportEmbedding(taskId, reportId);
+        return;
       }
+      if (_latestReportEmbeddingIds[taskId] != reportId) return;
 
       // Resolve the task's category for category-scoped search.
       final taskEntity = await journalDb.journalEntityById(taskId);
+      if (_latestReportEmbeddingIds[taskId] != reportId) return;
       final categoryId = taskEntity?.meta.categoryId ?? '';
 
       final didEmbed = await EmbeddingProcessor.processAgentReport(
@@ -86,12 +87,15 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
         embeddingStore: store,
         embeddingRepository: repo,
         baseUrl: baseUrl,
+        writeGuard: () => _latestReportEmbeddingIds[taskId] == reportId,
       );
 
       // Delete the old report's embedding only after the new one succeeds,
       // so we don't lose search coverage if the embedding call fails or
       // the content is too short.
-      if (didEmbed && previousReportId != null) {
+      if (didEmbed &&
+          previousReportId != null &&
+          _latestReportEmbeddingIds[taskId] == reportId) {
         await store.deleteEntityEmbeddings(previousReportId);
       }
       _completeAgentReportEmbedding(taskId, reportId);

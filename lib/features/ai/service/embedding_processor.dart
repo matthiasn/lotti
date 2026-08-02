@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -23,6 +24,9 @@ typedef LabelNameResolver =
     Future<List<String>> Function(
       List<String> labelIds,
     );
+
+/// Revalidates whether generated embeddings still belong to current work.
+typedef EmbeddingWriteGuard = FutureOr<bool> Function();
 
 /// Shared embedding processing logic used by both the embedding service
 /// (real-time) and the backfill controller (batch backfill).
@@ -151,6 +155,10 @@ class EmbeddingProcessor {
   ///
   /// Returns `true` if an embedding was generated and stored, `false` if
   /// skipped (too short, unchanged content hash, etc.).
+  ///
+  /// When provided, [writeGuard] is re-evaluated after generation and directly
+  /// before storage so superseded asynchronous work cannot recreate a stale
+  /// report vector.
   static Future<bool> processAgentReport({
     required String reportId,
     required String reportContent,
@@ -160,6 +168,7 @@ class EmbeddingProcessor {
     required EmbeddingStore embeddingStore,
     required OllamaEmbeddingRepository embeddingRepository,
     required String baseUrl,
+    EmbeddingWriteGuard? writeGuard,
   }) async {
     final text = reportContent.trim();
     if (text.length < kMinEmbeddingTextLength) return false;
@@ -168,7 +177,7 @@ class EmbeddingProcessor {
     final existingHash = await embeddingStore.getContentHash(reportId);
     if (existingHash == hash) return false;
 
-    await _embedChunks(
+    return _embedChunks(
       text: text,
       entityId: reportId,
       entityType: kEntityTypeAgentReport,
@@ -179,9 +188,8 @@ class EmbeddingProcessor {
       embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
+      writeGuard: writeGuard,
     );
-
-    return true;
   }
 
   /// Chunks [text] and generates embeddings for each chunk.
@@ -189,7 +197,7 @@ class EmbeddingProcessor {
   /// All embeddings are generated first, then old data is deleted and new
   /// data inserted. This avoids leaving an entity with no embeddings if a
   /// transient embedding failure occurs mid-way.
-  static Future<void> _embedChunks({
+  static Future<bool> _embedChunks({
     required String text,
     required String entityId,
     required String entityType,
@@ -200,6 +208,7 @@ class EmbeddingProcessor {
     String categoryId = '',
     String taskId = '',
     String subtype = '',
+    EmbeddingWriteGuard? writeGuard,
   }) async {
     final chunks = TextChunker.chunk(text);
     final capture = getIt.isRegistered<AiInteractionCapture>()
@@ -262,6 +271,20 @@ class EmbeddingProcessor {
         generated.add(embedding);
       }
 
+      if (writeGuard != null && !await writeGuard()) {
+        final supersededSession = attributionSession;
+        if (supersededSession != null) {
+          completionStarted = true;
+          await capture!.completeSession(
+            session: supersededSession,
+            outputs: const [],
+            status: AiWorkStatus.cancelled,
+            errorCode: 'superseded',
+          );
+        }
+        return false;
+      }
+
       await embeddingStore.replaceEntityEmbeddings(
         entityId: entityId,
         entityType: entityType,
@@ -280,6 +303,7 @@ class EmbeddingProcessor {
           outputs: [output],
         );
       }
+      return true;
     } on Object catch (error) {
       final failedSession = attributionSession;
       if (failedSession != null && !completionStarted) {

@@ -101,7 +101,10 @@ flowchart LR
   in diagnostic logs. A failed optional embedding never rolls back the
   already-persisted agent report or deletes its previous embedding. Availability
   failures defer the latest report per task until `retryAt`; a newer report
-  supersedes the queued one so recovery does not index stale report revisions.
+  synchronously supersedes the queued one, and freshness is checked again after
+  asynchronous URL/task resolution and immediately before vector storage. Work
+  overtaken during generation is finalized as superseded without recreating a
+  stale report vector or deleting the newer report's predecessor.
 
 ```mermaid
 stateDiagram-v2

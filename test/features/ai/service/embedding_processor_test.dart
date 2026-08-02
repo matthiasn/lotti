@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -1202,6 +1203,67 @@ void main() {
           subtype: 'current',
         ),
       ).called(1);
+    });
+
+    test('cancels stale report work before vector storage', () async {
+      final bench = AiInteractionCaptureTestBench.create()..register();
+      addTearDown(bench.unregister);
+      final embeddingStarted = Completer<void>();
+      final releaseEmbedding = Completer<void>();
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+          invocationWrapper: any(named: 'invocationWrapper'),
+        ),
+      ).thenAnswer(
+        (invocation) => _runEmbeddingInvocation(invocation, () async {
+          embeddingStarted.complete();
+          await releaseEmbedding.future;
+          return _fakeEmbedding();
+        }),
+      );
+      var isCurrent = true;
+
+      final run = EmbeddingProcessor.processAgentReport(
+        reportId: 'report-stale',
+        reportContent:
+            'This report becomes stale while its embedding is generated.',
+        taskId: 'task-stale',
+        categoryId: 'cat-stale',
+        subtype: 'current',
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        baseUrl: _baseUrl,
+        writeGuard: () => isCurrent,
+      );
+      await embeddingStarted.future;
+      isCurrent = false;
+      releaseEmbedding.complete();
+
+      expect(await run, isFalse);
+      verifyNever(
+        () => mockEmbeddingStore.replaceEntityEmbeddings(
+          entityId: 'report-stale',
+          entityType: any(named: 'entityType'),
+          modelId: any(named: 'modelId'),
+          contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
+          categoryId: any(named: 'categoryId'),
+          taskId: any(named: 'taskId'),
+          subtype: any(named: 'subtype'),
+        ),
+      );
+      verify(
+        () => bench.service.prepareCompletion(
+          attributionId: any(named: 'attributionId'),
+          outputs: const [],
+          status: AiWorkStatus.cancelled,
+          errorCode: 'superseded',
+        ),
+      ).called(1);
+      verify(() => bench.service.finalize(any())).called(1);
     });
 
     test('returns false when content is too short', () async {
