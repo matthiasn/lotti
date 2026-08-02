@@ -795,7 +795,7 @@ void main() {
         },
       );
 
-      test('a stale concurrent failure cannot hide a newer success', () async {
+      test('stale failure stays retryable after concurrent success', () async {
         var callCount = 0;
         var failureCallCount = 0;
         final successStarted = Completer<void>();
@@ -866,13 +866,10 @@ void main() {
         await expectLater(
           failingRequest,
           throwsA(
-            allOf(
-              isA<Exception>().having(
-                (error) => error.toString(),
-                'diagnostic message',
-                contains('Network error during embedding generation'),
-              ),
-              isNot(isA<OllamaEmbeddingAvailabilityException>()),
+            isA<OllamaEmbeddingUnavailableException>().having(
+              (error) => error.toString(),
+              'diagnostic message',
+              contains('Network error during embedding generation'),
             ),
           ),
         );

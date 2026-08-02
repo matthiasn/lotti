@@ -113,8 +113,10 @@ flowchart LR
   and an exhausted transport budget opens a cooldown only while its captured
   generation is still current. Concurrent failures share an already-opened
   cooldown and its retry timestamp, while a failure completing after a newer
-  successful response cannot hide recovery by reopening the circuit or carry
-  the availability marker that pauses batch callers.
+  successful response cannot hide recovery by reopening the circuit. That
+  individual exhausted request still receives an immediate availability retry
+  marker, so batch callers requeue its entity instead of dropping it through a
+  generic error path.
 - The first call after the cooldown exclusively reserves the recovery probe;
   concurrent callers join it until reachability is known. Availability is
   reserved before the invocation wrapper begins AI attribution, so a
@@ -226,7 +228,7 @@ stateDiagram-v2
   InitialProbe --> Available: HTTP response received
   InitialProbe --> CoolingDown: transport retries exhausted
   Available --> Available: HTTP response advances generation
-  Available --> Available: stale transport failure ignored
+  Available --> Available: stale failure requeues caller
   Available --> CoolingDown: current-generation retries exhausted
   CoolingDown --> CoolingDown: calls suppressed and counted
   CoolingDown --> RecoveryProbe: five minutes elapsed

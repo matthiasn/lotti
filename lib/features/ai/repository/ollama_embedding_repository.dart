@@ -49,9 +49,11 @@ class OllamaEmbeddingRepository {
   /// Returns a [Float32List] with exactly [kEmbeddingDimensions] elements.
   ///
   /// Throws [ModelNotInstalledException] if the model is not pulled locally.
-  /// Throws [OllamaEmbeddingAvailabilityException] when a confirmed transport
-  /// outage should pause optional work. Other response and parsing failures
-  /// surface as [Exception].
+  /// Throws [OllamaEmbeddingAvailabilityException] when exhausted transport
+  /// retries should pause or requeue optional work. A concurrent successful
+  /// request can keep the shared endpoint available while this call receives
+  /// an immediate retry marker. Other response and parsing failures surface as
+  /// [Exception].
   Future<Float32List> embed({
     required String input,
     required String baseUrl,
@@ -92,10 +94,13 @@ class OllamaEmbeddingRepository {
           context: 'embedding generation',
         );
       } on _OllamaEmbeddingTransportException catch (error, stackTrace) {
-        final retryAt = _openAvailabilityCooldown(availabilityAttempt);
-        if (retryAt == null) {
-          Error.throwWithStackTrace(error, stackTrace);
-        }
+        // A newer concurrent success advances the endpoint generation and
+        // deliberately prevents this stale failure from opening a cooldown.
+        // The individual request still exhausted its transport budget, so
+        // classify it for immediate requeue instead of leaking the private
+        // transport exception through a generic caller catch.
+        final retryAt =
+            _openAvailabilityCooldown(availabilityAttempt) ?? clock.now();
         Error.throwWithStackTrace(
           OllamaEmbeddingUnavailableException(
             error.message,
