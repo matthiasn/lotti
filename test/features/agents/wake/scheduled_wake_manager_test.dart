@@ -1939,15 +1939,21 @@ void main() {
     });
 
     group('overlapping triggers', () {
-      /// Stubs the due query so the first pass blocks on [gate], and counts
-      /// how many passes reached it.
+      /// Stubs the due-*record* query — the path a coalesced re-run covers —
+      /// so the first pass blocks on [gate], and counts how many passes
+      /// reached it.
       int Function() gatedDueQuery(Completer<void> gate, List<int> counter) {
-        when(() => repository.getDueScheduledAgentStates(any())).thenAnswer((
+        // Nothing due on the state path unless a test says otherwise; the
+        // record path below is what these tests measure.
+        when(
+          () => repository.getDueScheduledAgentStates(any()),
+        ).thenAnswer((_) async => <AgentStateEntity>[]);
+        when(() => repository.getDueScheduledWakeRecords(any())).thenAnswer((
           _,
         ) async {
           counter[0]++;
           if (counter[0] == 1) await gate.future;
-          return <AgentStateEntity>[];
+          return <ScheduledWakeEntity>[];
         });
         return () => counter[0];
       }
@@ -2011,6 +2017,43 @@ void main() {
           });
         },
       );
+
+      test('the re-run does not enqueue a due agent a second time', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 15, 9);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final gate = Completer<void>();
+            gatedDueQuery(gate, [0]);
+            // Still due on the re-run: `scheduledWakeAt` is cleared by the
+            // wake itself, which has not run yet.
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
+            );
+
+            final manager = createAndStart();
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(minutes: 1))
+              ..flushMicrotasks();
+
+            gate.complete();
+            async.flushMicrotasks();
+
+            // A second enqueue would bill a second inference: supersede only
+            // removes work still queued, not a run that has already started.
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+              ),
+            ).called(1);
+
+            manager.stop();
+          });
+        });
+      });
 
       test('a stop during the pass cancels the queued re-run', () {
         final now = DateTime(2024, 3, 15, 10, 30);

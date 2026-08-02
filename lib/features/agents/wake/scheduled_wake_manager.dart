@@ -139,6 +139,15 @@ class ScheduledWakeManager {
   /// expiring while another pass is in flight would wait for the next hourly
   /// tick before any device could take it over. Re-running once afterwards
   /// costs one extra query and answers every trigger, however many arrived.
+  ///
+  /// The re-run covers the **record** path only. Records are what carry
+  /// sub-hour deadlines, and they are consumed as they fire, so re-reading
+  /// them is safe. Due *states* are not: `scheduledWakeAt` is cleared by the
+  /// wake itself, so an immediate second pass would still see the agent as due
+  /// and enqueue it again — and `enqueueManualWake` supersedes only work still
+  /// queued, so a run that had already started would be billed twice. Nothing
+  /// is lost by skipping them: a due state stays due until its wake runs, and
+  /// the pass that just finished read them microseconds ago.
   Future<void> _checkAndEnqueue() async {
     if (_isChecking) {
       _rerunRequested = true;
@@ -148,10 +157,12 @@ class ScheduledWakeManager {
     // A stop during the pass must not be followed by a re-run: the generation
     // it was queued under is gone, and a restarted manager owns the schedule.
     final entryGeneration = _generation;
+    var includeDueStates = true;
     try {
       do {
         _rerunRequested = false;
-        await _runPass();
+        await _runPass(includeDueStates: includeDueStates);
+        includeDueStates = false;
       } while (_rerunRequested && _generation == entryGeneration);
     } finally {
       _rerunRequested = false;
@@ -159,7 +170,7 @@ class ScheduledWakeManager {
     }
   }
 
-  Future<void> _runPass() async {
+  Future<void> _runPass({required bool includeDueStates}) async {
     // Captured before the first await: `stop()` may land while this pass is
     // waiting on the repository, the host lookup or the claim write, and the
     // continuation must not then arm a timer the stop could never cancel.
@@ -186,7 +197,9 @@ class ScheduledWakeManager {
       // Read after the pre-check: it can await sync writes, and a `now`
       // captured before them would age across the pass it is meant to time.
       final now = clock.now();
-      final dueStates = await _repository.getDueScheduledAgentStates(now);
+      final dueStates = includeDueStates
+          ? await _repository.getDueScheduledAgentStates(now)
+          : const <AgentStateEntity>[];
       if (generation != _generation) return;
 
       var enqueued = 0;
