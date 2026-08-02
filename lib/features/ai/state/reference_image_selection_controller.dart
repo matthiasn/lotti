@@ -185,10 +185,6 @@ class ReferenceImageSelectionController
     state = state.copyWith(selectedImageIds: current);
   }
 
-  void clearSelection() {
-    state = state.copyWith(selectedImageIds: {});
-  }
-
   /// Processes selected images and returns them ready for API submission.
   ///
   /// If an individual image fails to process (e.g., file not found, corrupt),

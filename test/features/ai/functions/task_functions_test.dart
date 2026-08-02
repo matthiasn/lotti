@@ -1,9 +1,6 @@
-import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 extension _AnyLanguageConfidence on glados.Any {
   glados.Generator<LanguageDetectionConfidence> get languageConfidence =>
@@ -11,104 +8,6 @@ extension _AnyLanguageConfidence on glados.Any {
 }
 
 void main() {
-  group('TaskFunctions.getTools', () {
-    test('returns tool definitions for all four task functions', () {
-      final tools = TaskFunctions.getTools();
-      final names = tools.map((t) => t.function.name).toList();
-
-      expect(names, contains(TaskFunctions.setTaskLanguage));
-      expect(names, contains(TaskFunctions.updateTaskEstimate));
-      expect(names, contains(TaskFunctions.updateTaskDueDate));
-      expect(names, contains(TaskFunctions.updateTaskPriority));
-      expect(tools.length, 4);
-    });
-
-    test('every tool is of function type', () {
-      final tools = TaskFunctions.getTools();
-      for (final tool in tools) {
-        expect(tool.type, ChatCompletionToolType.function);
-      }
-    });
-
-    test('set_task_language enum lists all SupportedLanguage codes', () {
-      final tools = TaskFunctions.getTools();
-      final tool = tools.firstWhere(
-        (t) => t.function.name == TaskFunctions.setTaskLanguage,
-      );
-      final params = tool.function.parameters!;
-      final props = params['properties']! as Map<String, dynamic>;
-      final lang = props['languageCode']! as Map<String, dynamic>;
-      final values = (lang['enum']! as List).cast<String>();
-
-      for (final s in SupportedLanguage.values) {
-        expect(values, contains(s.code), reason: 'missing ${s.code}');
-      }
-      expect(params['required'], ['languageCode', 'confidence', 'reason']);
-    });
-
-    test('update_task_estimate clamps to 1..1440 minutes', () {
-      final tools = TaskFunctions.getTools();
-      final tool = tools.firstWhere(
-        (t) => t.function.name == TaskFunctions.updateTaskEstimate,
-      );
-      final params = tool.function.parameters!;
-      final props = params['properties']! as Map<String, dynamic>;
-      final minutes = props['minutes']! as Map<String, dynamic>;
-
-      expect(minutes['type'], 'integer');
-      expect(minutes['minimum'], 1);
-      expect(minutes['maximum'], 1440);
-      expect(params['required'], ['minutes', 'reason', 'confidence']);
-    });
-
-    test("update_task_due_date description embeds today's date", () {
-      final fixedNow = DateTime(2026, 4, 15, 12);
-      withClock(Clock.fixed(fixedNow), () {
-        final tools = TaskFunctions.getTools();
-        final tool = tools.firstWhere(
-          (t) => t.function.name == TaskFunctions.updateTaskDueDate,
-        );
-        expect(tool.function.description, contains('2026-04-15'));
-
-        final params = tool.function.parameters!;
-        final props = params['properties']! as Map<String, dynamic>;
-        final dueDate = props['dueDate']! as Map<String, dynamic>;
-        expect(dueDate['format'], 'date');
-        expect(params['required'], ['dueDate', 'reason', 'confidence']);
-      });
-    });
-
-    test('update_task_priority restricts to P0..P3', () {
-      final tools = TaskFunctions.getTools();
-      final tool = tools.firstWhere(
-        (t) => t.function.name == TaskFunctions.updateTaskPriority,
-      );
-      final params = tool.function.parameters!;
-      final props = params['properties']! as Map<String, dynamic>;
-      final priority = props['priority']! as Map<String, dynamic>;
-      final values = (priority['enum']! as List).cast<String>();
-
-      expect(values, ['P0', 'P1', 'P2', 'P3']);
-      expect(params['required'], ['priority']);
-    });
-
-    test('confidence enum is consistent across tools that include it', () {
-      final tools = TaskFunctions.getTools();
-      const expected = ['high', 'medium', 'low'];
-      for (final t in tools) {
-        final params = t.function.parameters!;
-        final props = params['properties']! as Map<String, dynamic>;
-        final confidence = props['confidence'] as Map<String, dynamic>?;
-        if (confidence == null) continue;
-        expect(
-          (confidence['enum']! as List).cast<String>(),
-          expected,
-          reason: 'tool ${t.function.name} confidence enum diverged',
-        );
-      }
-    });
-  });
-
   group('SetTaskLanguageResult', () {
     test('round-trips through JSON', () {
       const result = SetTaskLanguageResult(

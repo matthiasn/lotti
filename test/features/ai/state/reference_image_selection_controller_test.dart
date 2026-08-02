@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -15,91 +14,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-
-enum _GeneratedReferenceImageSlot {
-  first,
-  second,
-  third,
-  fourth,
-  fifth,
-  sixth,
-  missing,
-}
-
-enum _GeneratedReferenceSelectionOperationKind { toggle, clear }
-
-String _generatedReferenceImageId(_GeneratedReferenceImageSlot slot) {
-  return switch (slot) {
-    _GeneratedReferenceImageSlot.first => 'img-1',
-    _GeneratedReferenceImageSlot.second => 'img-2',
-    _GeneratedReferenceImageSlot.third => 'img-3',
-    _GeneratedReferenceImageSlot.fourth => 'img-4',
-    _GeneratedReferenceImageSlot.fifth => 'img-5',
-    _GeneratedReferenceImageSlot.sixth => 'img-6',
-    _GeneratedReferenceImageSlot.missing => 'missing-img',
-  };
-}
-
-class _GeneratedReferenceSelectionOperation {
-  const _GeneratedReferenceSelectionOperation({
-    required this.kind,
-    required this.imageSlot,
-  });
-
-  final _GeneratedReferenceSelectionOperationKind kind;
-  final _GeneratedReferenceImageSlot imageSlot;
-
-  String get imageId => _generatedReferenceImageId(imageSlot);
-
-  @override
-  String toString() {
-    return '_GeneratedReferenceSelectionOperation('
-        'kind: $kind, imageSlot: $imageSlot)';
-  }
-}
-
-class _GeneratedReferenceSelectionScenario {
-  const _GeneratedReferenceSelectionScenario({required this.operations});
-
-  final List<_GeneratedReferenceSelectionOperation> operations;
-
-  @override
-  String toString() {
-    return '_GeneratedReferenceSelectionScenario(operations: $operations)';
-  }
-}
-
-extension _AnyGeneratedReferenceSelectionScenario on glados.Any {
-  glados.Generator<_GeneratedReferenceImageSlot> get referenceImageSlot =>
-      glados.AnyUtils(this).choose(_GeneratedReferenceImageSlot.values);
-
-  glados.Generator<_GeneratedReferenceSelectionOperationKind>
-  get referenceSelectionOperationKind => glados.AnyUtils(
-    this,
-  ).choose(_GeneratedReferenceSelectionOperationKind.values);
-
-  glados.Generator<_GeneratedReferenceSelectionOperation>
-  get referenceSelectionOperation => glados.CombinableAny(this).combine2(
-    referenceSelectionOperationKind,
-    referenceImageSlot,
-    (
-      _GeneratedReferenceSelectionOperationKind kind,
-      _GeneratedReferenceImageSlot imageSlot,
-    ) => _GeneratedReferenceSelectionOperation(
-      kind: kind,
-      imageSlot: imageSlot,
-    ),
-  );
-
-  glados.Generator<_GeneratedReferenceSelectionScenario>
-  get referenceSelectionScenario => glados.ListAnys(this)
-      .listWithLengthInRange(0, 45, referenceSelectionOperation)
-      .map(
-        (operations) => _GeneratedReferenceSelectionScenario(
-          operations: operations,
-        ),
-      );
-}
 
 void main() {
   group('ReferenceImageSelectionState', () {
@@ -460,107 +374,6 @@ void main() {
       expect(state.selectedImageIds.length, kMaxReferenceImages);
       expect(state.selectedImageIds.contains('img-6'), isFalse);
     });
-
-    test('clearSelection removes all selections', () async {
-      const taskId = 'test-task';
-      final images = [buildTestImage('img-1'), buildTestImage('img-2')];
-
-      when(
-        () => mockJournalRepo.getLinkedImagesForTask(taskId),
-      ).thenAnswer((_) async => images);
-
-      // Wait for loading to complete
-      await waitForLoaded(taskId);
-
-      // Add some selections first, then clear them
-      container.read(
-          referenceImageSelectionControllerProvider(taskId).notifier,
-        )
-        ..toggleImageSelection('img-1')
-        ..toggleImageSelection('img-2')
-        ..clearSelection();
-
-      final state = container.read(
-        referenceImageSelectionControllerProvider(taskId),
-      );
-
-      expect(state.selectedImageIds, isEmpty);
-    });
-
-    glados.Glados(
-      glados.any.referenceSelectionScenario,
-      glados.ExploreConfig(numRuns: 180),
-    ).test('matches generated toggle and clear selection semantics', (
-      scenario,
-    ) async {
-      const taskId = 'generated-task';
-      final generatedRepo = MockJournalRepository();
-      final generatedContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(generatedRepo),
-        ],
-      );
-      final images = [
-        for (var i = 1; i <= 6; i++) buildTestImage('img-$i'),
-      ];
-      final expected = <String>{};
-
-      when(
-        () => generatedRepo.getLinkedImagesForTask(taskId),
-      ).thenAnswer((_) async => images);
-      when(
-        () => generatedRepo.getLinksFromId(any()),
-      ).thenAnswer((_) async => []);
-      when(
-        () => generatedRepo.getLinkedToEntities(
-          linkedTo: any(named: 'linkedTo'),
-        ),
-      ).thenAnswer((_) async => []);
-
-      try {
-        await _waitForLoaded(generatedContainer, taskId);
-        final controller = generatedContainer.read(
-          referenceImageSelectionControllerProvider(taskId).notifier,
-        );
-
-        for (final operation in scenario.operations) {
-          switch (operation.kind) {
-            case _GeneratedReferenceSelectionOperationKind.toggle:
-              controller.toggleImageSelection(operation.imageId);
-              if (expected.contains(operation.imageId)) {
-                expected.remove(operation.imageId);
-              } else if (expected.length < kMaxReferenceImages) {
-                expected.add(operation.imageId);
-              }
-
-            case _GeneratedReferenceSelectionOperationKind.clear:
-              controller.clearSelection();
-              expected.clear();
-          }
-
-          final state = generatedContainer.read(
-            referenceImageSelectionControllerProvider(taskId),
-          );
-          expect(
-            state.selectedImageIds,
-            equals(expected),
-            reason: '$scenario after $operation',
-          );
-          expect(
-            state.selectionCount,
-            expected.length,
-            reason: '$scenario after $operation',
-          );
-          expect(
-            state.canSelectMore,
-            expected.length < kMaxReferenceImages,
-            reason: '$scenario after $operation',
-          );
-        }
-      } finally {
-        generatedContainer.dispose();
-      }
-    }, tags: 'glados');
 
     test('different taskIds have independent state', () async {
       const taskId1 = 'task-1';

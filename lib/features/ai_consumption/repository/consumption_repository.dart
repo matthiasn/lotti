@@ -194,15 +194,4 @@ class ConsumptionRepository {
         ),
     ];
   }
-
-  /// All events whose serialized clock is null — used to backfill vector clocks
-  /// into the sync sequence log.
-  Future<List<AiConsumptionEvent>> eventsWithNullVectorClock() async {
-    final rows = await _db.getConsumptionEventsWithNullVectorClock().get();
-    return rows.map(ConsumptionDbConversions.fromRow).toList();
-  }
-
-  /// Run [action] inside a database transaction.
-  Future<T> runInTransaction<T>(Future<T> Function() action) =>
-      _db.transaction(action);
 }

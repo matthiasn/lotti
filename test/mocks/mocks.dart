@@ -931,10 +931,7 @@ class MockAgentRepository extends Mock implements AgentRepository {
   Future<T> runInTransaction<T>(Future<T> Function() action) => action();
 }
 
-class MockConsumptionRepository extends Mock implements ConsumptionRepository {
-  @override
-  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
-}
+class MockConsumptionRepository extends Mock implements ConsumptionRepository {}
 
 class MockAiAttributionService extends Mock implements AiAttributionService {}
 

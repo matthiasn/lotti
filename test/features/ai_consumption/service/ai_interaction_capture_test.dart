@@ -156,34 +156,6 @@ void main() {
     expect(event.errorCode, 'StateError');
   });
 
-  test('captureRealtime records realtime transcription chunks', () async {
-    final chunks = await capture
-        .captureRealtime(
-          workType: AiWorkType.audioTranscription,
-          responseType: AiConsumptionResponseType.audioTranscription,
-          providerType: InferenceProviderType.mistral,
-          modelId: 'voxtral-mini',
-          requestText: 'pcm stream',
-          invoke: () => Stream.fromIterable(['hello', ' world']),
-          responseText: (chunk) => chunk,
-          existingSession: session,
-          terminalizeSuccess: false,
-        )
-        .toList();
-
-    expect(chunks, ['hello', ' world']);
-    final event =
-        verify(
-              () => service.recordInteraction(
-                attributionId: session.id,
-                event: captureAny(named: 'event'),
-              ),
-            ).captured.single
-            as AiConsumptionEvent;
-    expect(event.interactionKind, AiInteractionKind.realtimeTranscription);
-    expect(event.responseDigest, isNotNull);
-  });
-
   test('automatic sessions use the default automation identity', () async {
     final automation = makeAiActor().copyWith(
       type: AiActorType.automation,

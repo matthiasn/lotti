@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -78,67 +77,4 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
-
-  /// Stream consumption events with their vector clocks for populating the sync
-  /// sequence log. Yields batches of `(id, vectorClock)` records using
-  /// lightweight SQL + JSON extraction to avoid full deserialization. Mirrors
-  /// `AgentDatabase.streamAgentEntitiesWithVectorClock`, but uses keyset
-  /// pagination (`id > last`) instead of OFFSET so the scan stays linear as
-  /// this high-volume table grows.
-  Stream<List<({String id, Map<String, int>? vectorClock})>>
-  streamConsumptionEventsWithVectorClock({int batchSize = 1000}) async* {
-    String? lastId;
-    while (true) {
-      final rows = await customSelect(
-        'SELECT id, serialized FROM consumption_events '
-        '${lastId != null ? 'WHERE id > ? ' : ''}'
-        'ORDER BY id LIMIT ?',
-        variables: [
-          if (lastId != null) Variable(lastId),
-          Variable(batchSize),
-        ],
-      ).get();
-
-      if (rows.isEmpty) break;
-
-      yield rows
-          .map(
-            (row) => (
-              id: row.read<String>('id'),
-              vectorClock: _extractVectorClock(row.read<String>('serialized')),
-            ),
-          )
-          .toList();
-      lastId = rows.last.read<String>('id');
-    }
-  }
-
-  /// Count total consumption events for sync progress reporting.
-  Future<int> countAllConsumptionEvents() async {
-    final result = await customSelect(
-      'SELECT COUNT(*) AS cnt FROM consumption_events',
-    ).getSingle();
-    return result.read<int>('cnt');
-  }
-
-  /// Lightweight extraction of the vector clock from serialized JSON. Returns
-  /// null for any malformed data rather than throwing.
-  static Map<String, int>? _extractVectorClock(String serialized) {
-    try {
-      final decoded = jsonDecode(serialized);
-      if (decoded is! Map<String, dynamic>) return null;
-
-      final vc = decoded['vectorClock'];
-      if (vc is! Map<String, dynamic>) return null;
-
-      final result = <String, int>{};
-      for (final entry in vc.entries) {
-        if (entry.value is! num) return null;
-        result[entry.key] = (entry.value as num).toInt();
-      }
-      return result;
-    } on Object catch (_) {
-      return null;
-    }
-  }
 }

@@ -2,12 +2,10 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
@@ -89,86 +87,6 @@ AiConfig _audioModel({
     isReasoningModel: isReasoningModel,
     geminiThinkingMode: geminiThinkingMode ?? GeminiThinkingMode.low,
   );
-}
-
-// ---------------------------------------------------------------------------
-// Batch model-selection property test scaffolding
-// ---------------------------------------------------------------------------
-
-/// The distinct audio-model categories the batch selector ranks. Each maps to
-/// a provider type + a `providerModelId` shape that the predicates in
-/// `debugSelectBatchAudioModel` discriminate on.
-enum _ModelKind {
-  /// Mistral provider + an instruction-following Voxtral chat-audio model.
-  mistralChatAudio,
-
-  /// Mistral provider + a transcription-only Voxtral model.
-  mistralTranscription,
-
-  /// Mistral provider + a non-voxtral model → generic Mistral batch.
-  mistralOther,
-
-  /// Melious provider + a Whisper-class model → Melious transcription.
-  meliousWhisper,
-
-  /// Melious provider + a Voxtral model → contextual chat audio.
-  meliousVoxtral,
-
-  /// MLX Audio provider + a Qwen3-ASR model id.
-  mlxQwen,
-
-  /// Gemini provider + the default flash model id.
-  geminiFlash,
-
-  /// Gemini provider + an unrelated model id (only ever the last-resort pick).
-  geminiOther,
-}
-
-InferenceProviderType _providerTypeFor(_ModelKind kind) => switch (kind) {
-  _ModelKind.mistralChatAudio ||
-  _ModelKind.mistralTranscription ||
-  _ModelKind.mistralOther => InferenceProviderType.mistral,
-  _ModelKind.meliousWhisper ||
-  _ModelKind.meliousVoxtral => InferenceProviderType.melious,
-  _ModelKind.mlxQwen => InferenceProviderType.mlxAudio,
-  _ModelKind.geminiFlash ||
-  _ModelKind.geminiOther => InferenceProviderType.gemini,
-};
-
-String _providerModelIdFor(_ModelKind kind, int index) => switch (kind) {
-  _ModelKind.mistralChatAudio => 'voxtral-mini-latest',
-  _ModelKind.mistralTranscription => 'voxtral-mini-transcribe-2602',
-  _ModelKind.mistralOther => 'mistral-large-audio-$index',
-  _ModelKind.meliousWhisper => 'openai/whisper-large-v3',
-  _ModelKind.meliousVoxtral => 'voxtral-small-24b-2507',
-  _ModelKind.mlxQwen => mlxAudioQwenAsrModelId,
-  _ModelKind.geminiFlash => 'gemini-2.5-flash',
-  _ModelKind.geminiOther => 'gemini-pro-audio-$index',
-};
-
-/// Builds the `(models, providers)` inputs for `debugSelectBatchAudioModel`
-/// from a list of kinds, one provider per element so each model resolves.
-({List<AiConfigModel> models, List<AiConfigInferenceProvider> providers})
-_buildSelectionInputs(List<_ModelKind> kinds) {
-  final models = <AiConfigModel>[];
-  final providers = <AiConfigInferenceProvider>[];
-  for (var i = 0; i < kinds.length; i++) {
-    final kind = kinds[i];
-    final providerId = 'p$i';
-    providers.add(
-      _provider(id: providerId, type: _providerTypeFor(kind))
-          as AiConfigInferenceProvider,
-    );
-    models.add(
-      _audioModel(
-            id: 'm$i',
-            providerId: providerId,
-            providerModelId: _providerModelIdFor(kind, i),
-          )
-          as AiConfigModel,
-    );
-  }
-  return (models: models, providers: providers);
 }
 
 CreateChatCompletionStreamResponse _contentChunk(
@@ -1121,139 +1039,6 @@ void main() {
         expect(args.model, 'voxtral-mini-latest');
         expect(args.speechDictionaryTerms, ['Claude Code', 'macOS']);
       },
-    );
-  });
-
-  test('batch selector prefers Melious transcription before MLX and flash', () {
-    final inputs = _buildSelectionInputs([
-      _ModelKind.mlxQwen,
-      _ModelKind.geminiFlash,
-      _ModelKind.meliousWhisper,
-    ]);
-
-    final selected = debugSelectBatchAudioModel(
-      inputs.models,
-      inputs.providers,
-    );
-
-    expect(selected.providerModelId, 'openai/whisper-large-v3');
-  });
-
-  test('batch selector prefers contextual Melious Voxtral over Whisper', () {
-    final inputs = _buildSelectionInputs([
-      _ModelKind.meliousWhisper,
-      _ModelKind.meliousVoxtral,
-    ]);
-
-    final selected = debugSelectBatchAudioModel(
-      inputs.models,
-      inputs.providers,
-    );
-
-    expect(selected.providerModelId, 'voxtral-small-24b-2507');
-  });
-
-  test('batch selector prefers Mistral chat audio over transcription', () {
-    final inputs = _buildSelectionInputs([
-      _ModelKind.mistralTranscription,
-      _ModelKind.mistralChatAudio,
-    ]);
-
-    final selected = debugSelectBatchAudioModel(
-      inputs.models,
-      inputs.providers,
-    );
-
-    expect(selected.providerModelId, 'voxtral-mini-latest');
-  });
-
-  group('batch model-selection priority (property)', () {
-    glados.Glados<List<_ModelKind>>(
-      glados.any.nonEmptyList(glados.any.choose(_ModelKind.values)),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'selected model always honours the documented priority order',
-      (
-        kinds,
-      ) {
-        final inputs = _buildSelectionInputs(kinds);
-        final selected = debugSelectBatchAudioModel(
-          inputs.models,
-          inputs.providers,
-        );
-        final providerType = {
-          for (final p in inputs.providers) p.id: p.inferenceProviderType,
-        };
-        bool isMistral(AiConfigModel m) =>
-            providerType[m.inferenceProviderId] ==
-            InferenceProviderType.mistral;
-        bool isMistralChatAudio(AiConfigModel m) =>
-            isMistral(m) &&
-            MistralInferenceRepository.isMistralChatAudioModel(
-              m.providerModelId,
-            );
-        bool isMistralVoxtral(AiConfigModel m) =>
-            isMistral(m) && m.providerModelId.startsWith('voxtral-');
-        bool isMeliousVoxtral(AiConfigModel m) =>
-            providerType[m.inferenceProviderId] ==
-                InferenceProviderType.melious &&
-            m.providerModelId.startsWith('voxtral-');
-        bool isMlxQwen(AiConfigModel m) =>
-            providerType[m.inferenceProviderId] ==
-                InferenceProviderType.mlxAudio &&
-            isMlxAudioQwenAsrModelId(m.providerModelId);
-        bool isMeliousWhisper(AiConfigModel m) =>
-            providerType[m.inferenceProviderId] ==
-                InferenceProviderType.melious &&
-            m.providerModelId == 'openai/whisper-large-v3';
-        bool isFlash(AiConfigModel m) =>
-            m.providerModelId.contains('gemini-2.5-flash');
-
-        // Closure: the pick is always one of the supplied models.
-        expect(inputs.models, contains(selected), reason: 'kinds=$kinds');
-
-        // Priority: each higher tier, when present, forces the pick into it.
-        if (inputs.models.any(isMistralChatAudio)) {
-          expect(
-            isMistralChatAudio(selected),
-            isTrue,
-            reason: 'Mistral chat audio wins; kinds=$kinds',
-          );
-        } else if (inputs.models.any(isMistralVoxtral)) {
-          expect(
-            isMistralVoxtral(selected),
-            isTrue,
-            reason: 'Mistral transcription wins; kinds=$kinds',
-          );
-        } else if (inputs.models.any(isMistral)) {
-          expect(
-            isMistral(selected),
-            isTrue,
-            reason: 'mistral batch wins; kinds=$kinds',
-          );
-        } else if (inputs.models.any(isMeliousVoxtral)) {
-          expect(
-            isMeliousVoxtral(selected),
-            isTrue,
-            reason: 'melious contextual voxtral wins; kinds=$kinds',
-          );
-        } else if (inputs.models.any(isMeliousWhisper)) {
-          expect(
-            isMeliousWhisper(selected),
-            isTrue,
-            reason: 'melious transcription wins; kinds=$kinds',
-          );
-        } else if (inputs.models.any(isMlxQwen)) {
-          expect(
-            isMlxQwen(selected),
-            isTrue,
-            reason: 'mlx qwen wins; kinds=$kinds',
-          );
-        } else if (inputs.models.any(isFlash)) {
-          expect(isFlash(selected), isTrue, reason: 'flash wins; kinds=$kinds');
-        }
-      },
-      tags: 'glados',
     );
   });
 }

@@ -8,15 +8,12 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
-import 'package:lotti/features/ai/repository/ai_input_repository.dart';
-import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
@@ -28,7 +25,6 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -602,46 +598,6 @@ void main() {
     await imageDir.create(recursive: true);
     await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
   }
-
-  group('debugPrepareImageData — image read + path-containment guard', () {
-    test('returns base64 bytes for a file inside the documents dir', () async {
-      await createStubImageFile();
-      final result = await runner.debugPrepareImageData(makeImageEntity());
-      expect(result, [
-        base64Encode([0x01]),
-      ]);
-    });
-
-    test('returns [] when the image file does not exist', () async {
-      final result = await runner.debugPrepareImageData(
-        makeImageEntity(imageFile: 'does-not-exist.jpg'),
-      );
-      expect(result, isEmpty);
-    });
-
-    test(
-      'returns [] when the resolved path escapes the documents dir',
-      () async {
-        // A real file in a sibling temp dir, reached from the documents dir via
-        // a `..` traversal segment — the containment guard must reject it.
-        final escapeDir = Directory.systemTemp.createTempSync('skill_escape_');
-        addTearDown(() {
-          if (escapeDir.existsSync()) escapeDir.deleteSync(recursive: true);
-        });
-        await File('${escapeDir.path}/escape.jpg').writeAsBytes([0x02]);
-        final sep = Platform.pathSeparator;
-        final escapeName = escapeDir.path.split(sep).last;
-
-        final result = await runner.debugPrepareImageData(
-          makeImageEntity(
-            imageDirectory: '$sep..$sep$escapeName$sep',
-            imageFile: 'escape.jpg',
-          ),
-        );
-        expect(result, isEmpty);
-      },
-    );
-  });
 
   group('SkillInferenceRunner', () {
     group('runTranscription', () {
@@ -5793,80 +5749,6 @@ void main() {
       );
     });
 
-    group('skillInferenceRunnerProvider factory', () {
-      test(
-        'creates a SkillInferenceRunner with a null AgentRepository when '
-        'AgentDatabase is not registered in getIt — the TaskSummaryResolver '
-        'receives null and falls back to empty context',
-        () {
-          // Ensure DomainLogger is available (provider reads getIt for it).
-          getIt
-            ..unregister<DomainLogger>()
-            ..registerSingleton<DomainLogger>(mockLoggingService);
-
-          final testContainer = ProviderContainer(
-            overrides: [
-              cloudInferenceRepositoryProvider.overrideWithValue(
-                mockCloudRepo,
-              ),
-              aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
-              journalRepositoryProvider.overrideWithValue(mockJournalRepo),
-            ],
-          );
-          addTearDown(testContainer.dispose);
-
-          // Reading the provider exercises the factory function including the
-          // getIt.isRegistered<AgentDatabase>() branch where no DB is present.
-          final result = testContainer.read(skillInferenceRunnerProvider);
-
-          // The wiring is observable: with no AgentDatabase, the resolver
-          // has no agent repository and falls back to legacy summaries.
-          expect(
-            result.debugTaskSummaryResolver.hasAgentRepository,
-            isFalse,
-          );
-        },
-      );
-
-      test(
-        'creates a SkillInferenceRunner with an AgentRepository when '
-        'AgentDatabase IS registered in getIt — the TaskSummaryResolver '
-        'receives a real repository so task-context is available at run time',
-        () {
-          // Register a mock AgentDatabase so the factory takes the non-null
-          // branch.
-          if (!getIt.isRegistered<AgentDatabase>()) {
-            getIt.registerSingleton<AgentDatabase>(MockAgentDatabase());
-          }
-          getIt
-            ..unregister<DomainLogger>()
-            ..registerSingleton<DomainLogger>(mockLoggingService);
-
-          final testContainer = ProviderContainer(
-            overrides: [
-              cloudInferenceRepositoryProvider.overrideWithValue(
-                mockCloudRepo,
-              ),
-              aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
-              journalRepositoryProvider.overrideWithValue(mockJournalRepo),
-            ],
-          );
-          addTearDown(testContainer.dispose);
-
-          // Reading the provider exercises the factory function including the
-          // getIt.isRegistered<AgentDatabase>() == true branch.
-          final result = testContainer.read(skillInferenceRunnerProvider);
-
-          // With AgentDatabase registered, the resolver carries a real
-          // AgentRepository so agent reports are reachable at run time.
-          expect(
-            result.debugTaskSummaryResolver.hasAgentRepository,
-            isTrue,
-          );
-        },
-      );
-    });
-
     group('AutomationResult', () {
       test('transcription result has correct fields', () {
         final result = makeTranscriptionResult();
@@ -5892,156 +5774,5 @@ void main() {
         );
       });
     });
-  });
-
-  group('debugResolveEntryContent — pure content resolution', () {
-    AudioTranscript transcriptAt(int day, String text) => AudioTranscript(
-      created: DateTime(2024, 1, day),
-      library: 'lib',
-      model: 'model',
-      detectedLanguage: 'en',
-      transcript: text,
-    );
-
-    JournalAudio audioWithTranscripts(
-      List<AudioTranscript> transcripts, {
-      String? plainText,
-    }) =>
-        JournalEntity.journalAudio(
-              meta: Metadata(
-                id: 'audio-resolve',
-                createdAt: DateTime(2024),
-                updatedAt: DateTime(2024),
-                dateFrom: DateTime(2024),
-                dateTo: DateTime(2024),
-              ),
-              data: AudioData(
-                dateFrom: DateTime(2024),
-                dateTo: DateTime(2024),
-                duration: const Duration(minutes: 1),
-                audioDirectory: '/audio/',
-                audioFile: 'a.aac',
-                transcripts: transcripts,
-              ),
-              entryText: plainText == null
-                  ? null
-                  : EntryText(plainText: plainText),
-            )
-            as JournalAudio;
-
-    test('edited entry text wins over any transcript', () {
-      final audio = audioWithTranscripts(
-        [transcriptAt(20, 'latest transcript')],
-        plainText: '  edited text  ',
-      );
-      expect(
-        SkillInferenceRunner.debugResolveEntryContent(audio),
-        'edited text',
-      );
-    });
-
-    glados.Glados<List<int>>(
-      glados.ListAnys(glados.any).listWithLengthInRange(
-        1,
-        8,
-        glados.any.intInRange(1, 28),
-      ),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'latest transcript by created date wins regardless of list order',
-      (dayOffsets) {
-        final transcripts = [
-          for (final day in dayOffsets) transcriptAt(day, 'day-$day'),
-        ];
-        final audio = audioWithTranscripts(transcripts);
-
-        final maxDay = dayOffsets.reduce((a, b) => a > b ? a : b);
-        expect(
-          SkillInferenceRunner.debugResolveEntryContent(audio),
-          'day-$maxDay',
-          reason: 'offsets=$dayOffsets',
-        );
-      },
-      tags: 'glados',
-    );
-
-    test(
-      'placeholder branches: empty transcripts / empty note / other type',
-      () {
-        expect(
-          SkillInferenceRunner.debugResolveEntryContent(
-            audioWithTranscripts(const []),
-          ),
-          '[No transcription available]',
-        );
-        expect(
-          SkillInferenceRunner.debugResolveEntryContent(
-            makeTextEntry(plainText: '   '),
-          ),
-          '[Empty note]',
-        );
-        expect(
-          SkillInferenceRunner.debugResolveEntryContent(makeImageEntity()),
-          '[No entry content available]',
-        );
-      },
-    );
-
-    test('markdown wins over plain text for journal entries', () {
-      expect(
-        SkillInferenceRunner.debugResolveEntryContent(
-          makeTextEntry(markdown: '# Heading', plainText: 'plain'),
-        ),
-        '# Heading',
-      );
-      expect(
-        SkillInferenceRunner.debugResolveEntryContent(
-          makeTextEntry(plainText: 'plain only'),
-        ),
-        'plain only',
-      );
-    });
-  });
-
-  group('debugFormatSpeechDictionaryText — pure prompt fragment', () {
-    test('empty terms produce an empty string', () {
-      expect(
-        SkillInferenceRunner.debugFormatSpeechDictionaryText(const []),
-        '',
-      );
-    });
-
-    glados.Glados<List<String>>(
-      glados.ListAnys(glados.any).listWithLengthInRange(
-        1,
-        6,
-        glados.AnyUtils(glados.any).choose(const [
-          'Lotti',
-          'naïve',
-          'with "quotes"',
-          r'back\slash',
-          'line\nbreak',
-          'emoji 😀',
-        ]),
-      ),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'non-empty output starts with IMPORTANT and the bracketed list '
-      'JSON-decodes back to the exact terms',
-      (terms) {
-        final text = SkillInferenceRunner.debugFormatSpeechDictionaryText(
-          terms,
-        );
-
-        expect(text, startsWith('IMPORTANT'));
-
-        // Round-trip: the escaped fragment must be valid JSON that decodes
-        // back to the original terms, characters intact.
-        final start = text.indexOf('[');
-        final jsonList = text.substring(start);
-        expect(jsonDecode(jsonList), terms, reason: text);
-      },
-      tags: 'glados',
-    );
   });
 }

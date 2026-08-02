@@ -19,9 +19,6 @@ class FakeReferenceImageSelectionController
   /// Every image id passed to [toggleImageSelection], in call order.
   final List<String> toggledImageIds = [];
 
-  /// Number of [clearSelection] invocations.
-  int clearSelectionCalls = 0;
-
   /// The `taskId` the controller was last [build]-ed with, or `null` if the
   /// controller has not been built yet.
   String? builtWithTaskId;
@@ -35,11 +32,6 @@ class FakeReferenceImageSelectionController
   @override
   void toggleImageSelection(String imageId) {
     toggledImageIds.add(imageId);
-  }
-
-  @override
-  void clearSelection() {
-    clearSelectionCalls++;
   }
 
   @override
