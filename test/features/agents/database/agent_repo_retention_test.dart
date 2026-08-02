@@ -112,7 +112,11 @@ void main() {
         maxBatches: 5,
       );
 
-      expect(pruned, 1);
+      expect(
+        pruned,
+        ['a-old'],
+        reason: 'The ids removed, for sidecars.',
+      );
       expect(
         await idsOfType('day_status_event'),
         ['a-newest', 'b-only'],
