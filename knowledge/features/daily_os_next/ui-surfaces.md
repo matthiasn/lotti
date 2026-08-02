@@ -119,8 +119,10 @@ arbitrary five or six lines.
 
 `DailyOsNextRoot` renders one `DayPage` per selected day and injects a
 `_DateStrip` — prev chevron, tappable date label (tap opens the picker,
-long-press returns to today), next chevron, and on desktop a `Today` button
-shown only when the selection has left today — as that page's header title.
+long-press returns to today), next chevron, and a `Today` button shown when
+the selection has left today *and* the pane measures wide enough for it — as
+that page's header title. Nothing keys off a device class: a wide pane on a
+phone would carry the button, and a narrow pane on a desktop does not.
 
 Three invariants make repeated navigation cheap:
 
@@ -149,6 +151,7 @@ Three invariants make repeated navigation cheap:
   own token-derived width fit. Where `Today` is dropped, the way back survives
   in `showDesignSystemDatePicker`, which the label opens and which carries its
   own Today quick action.
+
 ```mermaid
 stateDiagram-v2
   [*] --> NoExplicitPick: app start
