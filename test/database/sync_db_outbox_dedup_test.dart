@@ -360,17 +360,12 @@ void main() {
         ),
       );
 
-      final rows = await database
-          .customSelect(
-            'EXPLAIN QUERY PLAN '
-            'SELECT * FROM outbox '
-            'INDEXED BY idx_outbox_actionable_subject '
-            'WHERE status IN (0, 3) '
-            "AND subject >= 'backfillRequest:' "
-            "AND subject < 'backfillRequest;'",
-          )
-          .get();
-      final plan = rows.map((r) => r.data.toString()).join('\n');
+      final capture = _SelectPlanCapture();
+      final entries = await database.runWithInterceptor(
+        database.getPendingBackfillEntries,
+        interceptor: capture,
+      );
+      final plan = capture.formattedPlan;
 
       expect(
         plan,
@@ -386,8 +381,6 @@ void main() {
             'no base-table scan once the planner can see the subject '
             'prefix range and actionable status set',
       );
-
-      final entries = await database.getPendingBackfillEntries();
       expect(entries, hasLength(1));
     });
 
@@ -577,17 +570,14 @@ void main() {
         );
         await database.customStatement('ANALYZE');
 
-        final rows = await database
-            .customSelect(
-              'EXPLAIN QUERY PLAN '
-              'SELECT * FROM outbox '
-              'WHERE status = 0 AND outbox_entry_id = ?1 '
-              'ORDER BY created_at DESC LIMIT 1',
-              variables: [const Variable<String>('entry-123')],
-            )
-            .get();
-        final plan = rows.map((row) => row.data.toString()).join('\n');
+        final capture = _SelectPlanCapture();
+        final result = await database.runWithInterceptor(
+          () => database.findPendingByEntryId('entry-123'),
+          interceptor: capture,
+        );
+        final plan = capture.formattedPlan;
 
+        expect(result, isNotNull);
         expect(
           plan,
           contains('idx_outbox_pending_entry_id_created_at'),
@@ -1185,4 +1175,20 @@ void main() {
       expect(await database.getDailyOutboxVolume(days: -3), isEmpty);
     });
   });
+}
+
+class _SelectPlanCapture extends QueryInterceptor {
+  List<Map<String, Object?>> _plan = const [];
+
+  String get formattedPlan => _plan.map((row) => row.toString()).join('\n');
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) async {
+    _plan = await executor.runSelect('EXPLAIN QUERY PLAN $statement', args);
+    return executor.runSelect(statement, args);
+  }
 }

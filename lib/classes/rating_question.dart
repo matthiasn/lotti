@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'rating_question.freezed.dart';
-part 'rating_question.g.dart';
 
 /// Defines a single question within a rating catalog.
 ///

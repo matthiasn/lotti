@@ -312,7 +312,6 @@ as List<RatingQuestionOption>?,
 
 }
 
-
 /// @nodoc
 mixin _$RatingQuestionOption {
 
@@ -325,8 +324,6 @@ mixin _$RatingQuestionOption {
 @pragma('vm:prefer-inline')
 $RatingQuestionOptionCopyWith<RatingQuestionOption> get copyWith => _$RatingQuestionOptionCopyWithImpl<RatingQuestionOption>(this as RatingQuestionOption, _$identity);
 
-  /// Serializes this RatingQuestionOption to a JSON map.
-  Map<String, dynamic> toJson();
 
 
 @override
@@ -334,7 +331,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is RatingQuestionOption&&(identical(other.label, label) || other.label == label)&&(identical(other.value, value) || other.value == value));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,label,value);
 
@@ -510,11 +507,11 @@ return $default(_that.label,_that.value);case _:
 }
 
 /// @nodoc
-@JsonSerializable()
+
 
 class _RatingQuestionOption implements RatingQuestionOption {
   const _RatingQuestionOption({required this.label, required this.value});
-  factory _RatingQuestionOption.fromJson(Map<String, dynamic> json) => _$RatingQuestionOptionFromJson(json);
+  
 
 /// Display label for this option (localized).
 @override final  String label;
@@ -527,17 +524,14 @@ class _RatingQuestionOption implements RatingQuestionOption {
 @pragma('vm:prefer-inline')
 _$RatingQuestionOptionCopyWith<_RatingQuestionOption> get copyWith => __$RatingQuestionOptionCopyWithImpl<_RatingQuestionOption>(this, _$identity);
 
-@override
-Map<String, dynamic> toJson() {
-  return _$RatingQuestionOptionToJson(this, );
-}
+
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _RatingQuestionOption&&(identical(other.label, label) || other.label == label)&&(identical(other.value, value) || other.value == value));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,label,value);
 

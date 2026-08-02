@@ -609,9 +609,6 @@ void main() {
         DateTime(2024, 3, 15, 10, 35),
       );
 
-      // Yield to allow real SQLite I/O to complete
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
       // expect to find updated entry
       expect(
         (await getIt<JournalDb>().journalEntityById(
