@@ -193,7 +193,7 @@ class ScheduledWakeManager {
     var enqueued = 0;
     for (final record in dueRecords) {
       try {
-        final approved = await _leaseApprovedRecord(record, now, generation);
+        final approved = await _leaseApprovedRecord(record, generation);
         if (approved == null) continue;
         // `stop()` can land while the lease check is awaiting the host lookup.
         // Firing afterwards would enqueue through a disposed manager, and if
@@ -267,9 +267,11 @@ class ScheduledWakeManager {
   /// to happen. A lease that lapses without the record being consumed is a
   /// claimant that crashed or went offline, and any device may take over, so a
   /// window is delayed rather than lost.
+  /// Takes no `now`: the clock is read *after* the repository and host
+  /// lookups, since either can stall across `leaseUntil` and a value captured
+  /// before them would approve an already-expired claim.
   Future<ScheduledWakeEntity?> _leaseApprovedRecord(
     ScheduledWakeEntity due,
-    DateTime now,
     int generation,
   ) async {
     final needsLease = requiresLease?.call(due) ?? false;
@@ -290,8 +292,10 @@ class ScheduledWakeManager {
     if (!refreshed.scheduledAt.isAtSameMomentAs(due.scheduledAt)) return null;
     final record = refreshed;
 
+    final at = clock.now();
+
     final until = record.leaseUntil;
-    final held = until != null && until.isAfter(now);
+    final held = until != null && until.isAfter(at);
 
     if (held && record.leaseHostId != hostId) {
       _log(
@@ -301,7 +305,7 @@ class ScheduledWakeManager {
       // Take over the moment the foreign lease lapses. Without this, a
       // claimant that crashed would hold the window until the next hourly
       // tick — up to an hour late on top of the 30-minute lease.
-      _scheduleRecheck(until.difference(now), generation);
+      _scheduleRecheck(until.difference(at), generation);
       return null;
     }
     if (held && record.leaseHostId == hostId) {
@@ -312,7 +316,7 @@ class ScheduledWakeManager {
       // peer's later crossing claim moves the deadline forward too, so this
       // still restarts the settle for both sides.
       final claimedAt = until.subtract(leaseDuration);
-      final waited = now.toUtc().difference(claimedAt);
+      final waited = at.toUtc().difference(claimedAt);
       if (waited < leaseSettle) {
         // A restart inside the settle window loses the original timer, and the
         // hourly tick would not come back before the lease expired — the
@@ -333,8 +337,8 @@ class ScheduledWakeManager {
         // expired and be taken over immediately — both devices firing, which
         // is the duplicate this lease exists to prevent — while the reverse
         // direction would stretch a 30-minute lease by hours.
-        leaseUntil: now.toUtc().add(leaseDuration),
-        updatedAt: now,
+        leaseUntil: at.toUtc().add(leaseDuration),
+        updatedAt: at,
       ),
     );
     _scheduleRecheck(leaseSettle, generation);

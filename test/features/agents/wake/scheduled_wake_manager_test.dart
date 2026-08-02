@@ -669,6 +669,7 @@ void main() {
         // Tests about an armed timer must not be rescued by the periodic tick,
         // or they pass with no timer at all.
         Duration checkInterval = const Duration(minutes: 1),
+        Duration hostLookupDelay = Duration.zero,
       }) {
         when(
           () => repository.getDueScheduledAgentStates(any()),
@@ -688,7 +689,12 @@ void main() {
           syncService: syncService,
           checkInterval: checkInterval,
           requiresLease: (r) => r.workspaceKey == digestWorkspace,
-          localHostId: () async => hostId,
+          localHostId: () async {
+            if (hostLookupDelay > Duration.zero) {
+              await Future<void>.delayed(hostLookupDelay);
+            }
+            return hostId;
+          },
         )..start();
       }
 
@@ -975,6 +981,33 @@ void main() {
             });
             async.flushMicrotasks();
 
+            expectNoWake();
+            manager.stop();
+          });
+        });
+      });
+
+      test('a lease that expires during the lookup is not approved', () {
+        fakeAsync((async) {
+          // Clock advances with fake time; the lease has one minute left when
+          // the pass starts, and the host lookup takes two.
+          final start = now.add(const Duration(minutes: 29));
+          withClock(Clock(() => start.add(async.elapsed)), () {
+            final manager = managerFor(
+              leased(
+                leaseHostId: 'host-a',
+                leaseUntil: now.toUtc().add(const Duration(minutes: 30)),
+                updatedAt: now,
+              ),
+              hostLookupDelay: const Duration(minutes: 2),
+              checkInterval: const Duration(hours: 1),
+            );
+            async
+              ..elapse(const Duration(minutes: 3))
+              ..flushMicrotasks();
+
+            // Comparing against the time captured before the lookup would
+            // approve a claim that expired while it was outstanding.
             expectNoWake();
             manager.stop();
           });
