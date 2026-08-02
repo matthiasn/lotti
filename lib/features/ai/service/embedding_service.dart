@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
@@ -189,7 +190,27 @@ class EmbeddingService {
             embeddingStore: embeddingStore,
             embeddingRepository: embeddingRepository,
             baseUrl: baseUrl,
+            writeGuard: () async {
+              final latestReport = await repository.getLatestReport(
+                agent.id,
+                AgentReportScopes.current,
+              );
+              return latestReport?.id == report.id;
+            },
           );
+          final latestReport = await repository.getLatestReport(
+            agent.id,
+            AgentReportScopes.current,
+          );
+          if (latestReport?.id != report.id) {
+            // The head advanced while the store swap was in flight. Remove
+            // only the vector this recovery attempt can have introduced;
+            // the new head's normal workflow owns predecessor cleanup.
+            if (didEmbed) {
+              await embeddingStore.deleteEntityEmbeddings(report.id);
+            }
+            continue;
+          }
           final currentReportIsSearchable =
               didEmbed || await embeddingStore.hasEmbedding(report.id);
           if (!currentReportIsSearchable) continue;
@@ -200,8 +221,12 @@ class EmbeddingService {
                 type: AgentEntityTypes.agentReport,
                 subtype: AgentReportScopes.current,
               );
-          for (final historicalReport in currentReports) {
-            if (historicalReport.id != report.id) {
+          for (final historicalReport
+              in currentReports.whereType<AgentReportEntity>()) {
+            // A newer report may be persisted after the head recheck but
+            // before this query completes. Never let startup recovery delete
+            // a report at or beyond the still-current snapshot.
+            if (historicalReport.createdAt.isBefore(report.createdAt)) {
               await embeddingStore.deleteEntityEmbeddings(
                 historicalReport.id,
               );

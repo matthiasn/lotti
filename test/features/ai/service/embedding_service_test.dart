@@ -61,12 +61,13 @@ AgentReportEntity _agentReport({
   required String id,
   required String agentId,
   String content = 'A current report with enough content for embedding.',
+  DateTime? createdAt,
 }) =>
     AgentDomainEntity.agentReport(
           id: id,
           agentId: agentId,
           scope: AgentReportScopes.current,
-          createdAt: _agentTestDate,
+          createdAt: createdAt ?? _agentTestDate,
           vectorClock: null,
           content: content,
         )
@@ -591,6 +592,7 @@ void main() {
         final staleReport = _agentReport(
           id: staleReportId,
           agentId: agentId,
+          createdAt: _agentTestDate.subtract(const Duration(minutes: 1)),
           content:
               'The stale report was embedded before the interrupted retry.',
         );
@@ -672,6 +674,196 @@ void main() {
         ).called(1);
         verifyNever(
           () => mockEmbeddingStore.deleteEntityEmbeddings(currentReportId),
+        );
+      },
+    );
+
+    test(
+      'startup skips a report superseded before its store write',
+      () async {
+        const agentId = 'agent-superseded-before-store';
+        const taskId = 'task-superseded-before-store';
+        final agentRepository = MockAgentRepository();
+        final reportA = _agentReport(
+          id: 'report-a',
+          agentId: agentId,
+          createdAt: _agentTestDate.subtract(const Duration(minutes: 1)),
+        );
+        final reportB = _agentReport(id: 'report-b', agentId: agentId);
+        final embedStarted = Completer<void>();
+        final releaseEmbedding = Completer<Float32List>();
+        final recoverySettled = Completer<void>();
+        var currentHead = reportA;
+        var latestReportReadCount = 0;
+
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async {
+          latestReportReadCount++;
+          if (latestReportReadCount > 1 && !recoverySettled.isCompleted) {
+            recoverySettled.complete();
+          }
+          return currentHead;
+        });
+        when(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
+            agentId,
+            type: AgentEntityTypes.agentReport,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async {
+          if (!recoverySettled.isCompleted) recoverySettled.complete();
+          return [reportA, reportB];
+        });
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((_) {
+          if (!embedStarted.isCompleted) embedStarted.complete();
+          return releaseEmbedding.future;
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+
+        await embedStarted.future;
+        currentHead = reportB;
+        releaseEmbedding.complete(_fakeEmbedding());
+        await recoverySettled.future;
+        await pumpEventQueue();
+
+        verifyNever(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: reportA.id,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        );
+        verifyNever(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(reportB.id),
+        );
+      },
+    );
+
+    test(
+      'startup removes a report superseded during its store write',
+      () async {
+        const agentId = 'agent-superseded-during-store';
+        const taskId = 'task-superseded-during-store';
+        final agentRepository = MockAgentRepository();
+        final reportA = _agentReport(
+          id: 'report-a',
+          agentId: agentId,
+          createdAt: _agentTestDate.subtract(const Duration(minutes: 1)),
+        );
+        final reportB = _agentReport(id: 'report-b', agentId: agentId);
+        final storeStarted = Completer<void>();
+        final releaseStore = Completer<void>();
+        final deletionObserved = Completer<void>();
+        final deletedReportIds = <String>[];
+        var currentHead = reportA;
+
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => currentHead);
+        when(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
+            agentId,
+            type: AgentEntityTypes.agentReport,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => [reportA, reportB]);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        stubEmbedding();
+        when(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: reportA.id,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) {
+          storeStarted.complete();
+          return releaseStore.future;
+        });
+        when(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+        ).thenAnswer((invocation) {
+          deletedReportIds.add(
+            invocation.positionalArguments.first as String,
+          );
+          if (!deletionObserved.isCompleted) deletionObserved.complete();
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+
+        await storeStarted.future;
+        currentHead = reportB;
+        releaseStore.complete();
+        await deletionObserved.future;
+        await pumpEventQueue();
+
+        expect(deletedReportIds, [reportA.id]);
+        verifyNever(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(reportB.id),
         );
       },
     );

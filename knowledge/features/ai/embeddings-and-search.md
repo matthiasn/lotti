@@ -102,10 +102,14 @@ flowchart LR
 - `EmbeddingService` also scans durable current task-agent report heads at
   startup. Content hashes keep unchanged reports cheap. Once the current report
   is confirmed searchable, every older current-scope report embedding for that
-  agent is removed. An availability failure leaves this reconciliation pending
-  on the service's shared retry timer, so exiting during an in-memory workflow
-  retry cannot permanently strand the latest report or its searchable
-  predecessor.
+  agent is removed. Recovery revalidates the durable head immediately before
+  and after vector storage. If the head advances during the store swap, recovery
+  removes only the stale vector it just wrote; historical cleanup is restricted
+  to reports created before the still-current head, so a concurrently published
+  successor cannot be deleted. An availability failure leaves this
+  reconciliation pending on the service's shared retry timer, so exiting during
+  an in-memory workflow retry cannot permanently strand the latest report or
+  its searchable predecessor.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
   maps it to the active locale; the suppression count and retry timestamp stay
   in diagnostic logs. A failed optional embedding never rolls back the
