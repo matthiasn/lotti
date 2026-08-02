@@ -377,9 +377,25 @@ deleting by it is the shape of an earlier incident that destroyed user content.
 Reclaiming agent-owned payloads needs a positive ownership signal that field
 does not carry on its own.
 
-Agents are visited with a **cursor** rather than a fixed ordered prefix: one
-agent that cannot be pruned would otherwise hide every agent behind it on every
-start, and the sweep would converge on doing nothing.
+The sweep is budgeted by **rows removed**, not by agents visited. The service
+is constructed fresh for each start-up pass, so a cursor carried in a field
+would always begin at the front and every start would re-examine the same
+leading agents — the starvation the cursor was meant to fix. Paging until the
+delete budget is spent means an agent that yields nothing costs one bounded
+read and the pass moves past it immediately, with `maxAgentsPerSweep` as the
+ceiling for a store where nothing is prunable at all.
+
+Two partial-sync states block a prune outright, because in both the sweep
+cannot see enough to be sure:
+
+- **No live head.** If the agent has no state row yet, or its
+  `recentHeadMessageId` is null, the whole chain including its tip is
+  eligible on paper — and a later state update would then install a head
+  pointing at a row that no longer exists, which `_appendMessage` chains off.
+- **A parent known only to the entity.** A message carries `prevMessageId` as
+  well as its separately-synced `messagePrev` link, so the sweep unions both.
+  Trusting the link alone reads a message whose link has not arrived as a root
+  and prunes it, forking the moment the link lands.
 
 ## Hard delete, no tombstone — and no inbound guard
 

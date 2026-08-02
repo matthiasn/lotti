@@ -109,8 +109,9 @@ class AgentRepoObservationRetention {
   }) async {
     final rows = await _db
         .customSelect(
-          'SELECT id, subtype, created_at FROM agent_entities '
-          'WHERE agent_id = ?1 AND type = ?2 '
+          'SELECT id, subtype, created_at, '
+          r"json_extract(serialized, '$.prevMessageId') AS prev_message_id "
+          'FROM agent_entities WHERE agent_id = ?1 AND type = ?2 '
           'AND deleted_at IS NULL ORDER BY created_at, id LIMIT ?3',
           variables: [
             Variable<String>(agentId),
@@ -126,6 +127,26 @@ class AgentRepoObservationRetention {
 
     final ids = [for (final row in rows) row.read<String>('id')];
     final parents = await _messagePrevParents(ids);
+    // A message carries its parent in `prevMessageId` as well as in the
+    // separately-synced link row. Trusting only the link would read a message
+    // whose link has not arrived as a root and prune it, forking the moment
+    // the link lands — so union the two.
+    for (final row in rows) {
+      final prev = row.readNullable<String>('prev_message_id');
+      if (prev == null) continue;
+      final known = parents.putIfAbsent(row.read<String>('id'), () => []);
+      if (!known.contains(prev)) known.add(prev);
+    }
+    final protectedIds = await _protectedMessageIds(agentId);
+    if (protectedIds.isEmpty) {
+      // No live head to protect means either this agent has no state row yet
+      // or sync has not delivered one. Pruning now can delete the whole chain
+      // including its tip, and a later state update would install
+      // `recentHeadMessageId` for a row that no longer exists — a dangling
+      // head `_appendMessage` would then chain off.
+      return const ObservationSweepResult.empty();
+    }
+
     final plan = planObservationPrune(
       messages: [
         for (final row in rows)
@@ -138,7 +159,7 @@ class AgentRepoObservationRetention {
           ),
       ],
       cutoff: cutoff,
-      protectedIds: await _protectedMessageIds(agentId),
+      protectedIds: protectedIds,
       limit: limit,
     );
     if (plan.isEmpty) return const ObservationSweepResult.empty();

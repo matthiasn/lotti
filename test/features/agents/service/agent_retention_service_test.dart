@@ -151,43 +151,62 @@ void main() {
       ).called(1);
     });
 
-    test('the next sweep resumes after the last agent seen', () async {
+    test('walks past unprunable agents within one sweep', () async {
+      // The service is built fresh for each start-up sweep, so a cursor held
+      // across sweeps would always begin at null and every start would
+      // re-examine the same leading agents. Walking until the delete budget is
+      // spent reaches the later ones in the same pass instead.
       const policy = AgentRetentionPolicy();
-      seedAgents([
-        for (var i = 0; i < policy.agentsPerSweep; i++) 'agent-$i',
-      ]);
-
-      await withClock(Clock.fixed(now), service.sweep);
-      await withClock(Clock.fixed(now), service.sweep);
-
-      // A full page means there is more behind it; without the cursor the
-      // second sweep re-reads the same prefix and anything further back is
-      // never reached.
-      verify(
+      var page = 0;
+      when(
         () => repository.agentsWithAgedObservations(
           any(),
-          limit: policy.agentsPerSweep,
-          afterAgentId: 'agent-${policy.agentsPerSweep - 1}',
+          limit: any(named: 'limit'),
+          afterAgentId: any(named: 'afterAgentId'),
         ),
-      ).called(1);
-    });
-
-    test('a short page wraps the cursor back to the front', () async {
-      seedAgents(['only-one']);
+      ).thenAnswer((_) async {
+        page++;
+        if (page > 2) return [];
+        return [
+          for (var i = 0; i < policy.agentsPerSweep; i++) 'page$page-agent-$i',
+        ];
+      });
 
       await withClock(Clock.fixed(now), service.sweep);
-      await withClock(Clock.fixed(now), service.sweep);
 
-      // Otherwise the sweep walks off the end and never returns to agents
-      // whose observations aged after it passed them.
+      // Every agent on the first page yields nothing, so the sweep must ask
+      // for a second page rather than stopping at the page boundary.
       verify(
         () => repository.agentsWithAgedObservations(
           any(),
           limit: any(named: 'limit'),
-          // ignore: avoid_redundant_argument_values
-          afterAgentId: null,
+          afterAgentId: 'page1-agent-${policy.agentsPerSweep - 1}',
         ),
-      ).called(2);
+      ).called(1);
+    });
+
+    test('stops once the delete budget is spent', () async {
+      const policy = AgentRetentionPolicy();
+      seedAgents(['agent-a', 'agent-b']);
+      when(
+        () => repository.pruneAgentObservations(
+          agentId: any(named: 'agentId'),
+          cutoff: any(named: 'cutoff'),
+          limit: any(named: 'limit'),
+          maxMessages: any(named: 'maxMessages'),
+        ),
+      ).thenAnswer(
+        (_) async => ObservationSweepResult(
+          messageIds: [for (var i = 0; i < policy.batchSize; i++) 'm$i'],
+          linkIds: const [],
+        ),
+      );
+
+      final result = await withClock(Clock.fixed(now), service.sweep);
+
+      // One agent already fills the budget, so the pass ends rather than
+      // walking the rest of the store on a single start-up.
+      expect(result.observations, policy.batchSize);
     });
 
     test('one failing agent does not stop the others', () async {

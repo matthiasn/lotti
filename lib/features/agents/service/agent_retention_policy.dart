@@ -39,6 +39,7 @@ class AgentRetentionPolicy {
     this.dayStatusEvents = const Duration(days: 90),
     this.observations = const Duration(days: 180),
     this.agentsPerSweep = 25,
+    this.maxAgentsPerSweep = 500,
     this.maxAgentMessages = 20000,
     this.batchSize = 500,
     this.maxBatchesPerSweep = 20,
@@ -58,9 +59,12 @@ class AgentRetentionPolicy {
   /// is one row, whereas deleting one early loses context permanently.
   final Duration observations;
 
-  /// Agents visited per sweep, so one start-up pass stays bounded. The sweep
-  /// resumes after the last one it saw rather than restarting at the front.
+  /// Agents fetched per page while walking toward the delete budget.
   final int agentsPerSweep;
+
+  /// Hard ceiling on agents examined in one sweep, so a store where nothing is
+  /// prunable still ends in bounded time rather than walking every agent.
+  final int maxAgentsPerSweep;
 
   /// An agent whose message log is longer than this is skipped rather than
   /// partially pruned — ancestor-closure needs the chain from its root, and a

@@ -91,6 +91,7 @@ AgentMessageEntity makeTestMessage({
   VectorClock? vectorClock,
   AgentMessageMetadata? metadata,
   String? contentEntryId,
+  String? prevMessageId,
   // Convenience shortcuts — used when [metadata] is not provided.
   String? toolName,
   String? errorMessage,
@@ -111,6 +112,7 @@ AgentMessageEntity makeTestMessage({
               runKey: runKey,
             ),
         contentEntryId: contentEntryId,
+        prevMessageId: prevMessageId,
       )
       as AgentMessageEntity;
 }

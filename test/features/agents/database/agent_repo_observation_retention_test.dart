@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show Variable;
+import 'package:drift/drift.dart' show UpdateKind, Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart'
     hide AgentLink;
@@ -46,6 +46,10 @@ void main() {
     await db.close();
   });
 
+  Future<void> setHead(String id) => core.upsertEntity(
+    makeTestState(agentId: agentId).copyWith(recentHeadMessageId: id),
+  );
+
   Future<void> seedMessage(
     String id,
     DateTime createdAt, {
@@ -73,6 +77,9 @@ void main() {
         ),
       );
     }
+    // _appendMessage advances the head on every append, so the newest seeded
+    // message is the live tip. Without a head the sweep refuses outright.
+    await setHead(id);
   }
 
   /// Seeds `a <- b <- c <- tip`, the shape every guard is about.
@@ -242,6 +249,61 @@ void main() {
     });
   });
 
+  group('partial sync', () {
+    test('refuses to prune while there is no live head', () async {
+      await seedMessage('a', oldest);
+      await seedMessage('b', older, parentId: 'a');
+      // Sync delivered the chain but not the state row. Pruning now could
+      // take the whole chain including its tip, and a later state update
+      // would install recentHeadMessageId for a row that no longer exists —
+      // a dangling head _appendMessage would then chain off.
+      await db.customUpdate(
+        'DELETE FROM agent_entities WHERE type = ?1',
+        variables: [const Variable<String>(AgentEntityTypes.agentState)],
+        updateKind: UpdateKind.delete,
+      );
+
+      expect((await sweep()).isEmpty, isTrue);
+      expect(await messageIds(), ['a', 'b']);
+    });
+
+    test('honours prevMessageId when the link has not arrived', () async {
+      // The entity carries its parent as well as the separately-synced link.
+      // Trusting only the link reads `b` as a root and prunes it, forking the
+      // moment the link lands.
+      await core.upsertEntity(
+        makeTestMessage(
+          id: 'summary-a',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.summary,
+          createdAt: oldest,
+        ),
+      );
+      await core.upsertEntity(
+        makeTestMessage(
+          id: 'b',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: older,
+          // The link row has not synced yet; only the entity knows its parent.
+          prevMessageId: 'summary-a',
+        ),
+      );
+      // A separate live tip, so `b` is not protected as the head and its
+      // prunability turns purely on whether the parent is seen.
+      await seedMessage('tip', young, parentId: 'b');
+
+      expect(
+        (await sweep()).isEmpty,
+        isTrue,
+        reason: 'Pruning `b` would strand the summary as a head.',
+      );
+      expect(await messageIds(), ['summary-a', 'b', 'tip']);
+    });
+  });
+
   group('the chain crosses threads', () {
     Future<void> seedInThread(
       String id,
@@ -271,6 +333,7 @@ void main() {
           ),
         );
       }
+      await setHead(id);
     }
 
     test('prunes across the wake boundary, not just within a thread', () async {

@@ -61,11 +61,6 @@ class AgentRetentionService {
   /// documents directory simply skip reclamation.
   final AgentSidecarReclaimer? sidecarReclaimer;
 
-  /// Where the last observation sweep stopped, so the next one resumes after
-  /// it instead of re-reading the same ordered prefix and starving whatever
-  /// sits behind an agent it cannot prune.
-  String? _observationCursor;
-
   /// The digest's unconsumed backlog is never eligible: returns the earlier of
   /// [cutoff] and the coordinator's watermark, so a stalled digest holds
   /// retention back rather than losing the events it has yet to read.
@@ -118,42 +113,53 @@ class AgentRetentionService {
   /// one malformed log must not stop every other agent from being collected.
   Future<int> _sweepObservations(DateTime now) async {
     final cutoff = now.subtract(policy.observations);
-    final agents = await repository.agentsWithAgedObservations(
-      cutoff,
-      limit: policy.agentsPerSweep,
-      afterAgentId: _observationCursor,
-    );
-    // Wrap when the tail is reached, so the next start resumes at the front
-    // rather than stopping once the last page is exhausted.
-    _observationCursor = agents.length < policy.agentsPerSweep
-        ? null
-        : agents.last;
-
     var pruned = 0;
-    for (final agentId in agents) {
-      try {
-        final swept = await repository.pruneAgentObservations(
-          agentId: agentId,
-          cutoff: cutoff,
-          limit: policy.batchSize,
-          maxMessages: policy.maxAgentMessages,
-        );
-        if (swept.isEmpty) continue;
-        await sidecarReclaimer?.reclaim(
-          entityIds: swept.messageIds,
-          linkIds: swept.linkIds,
-        );
-        pruned += swept.messageIds.length;
-      } catch (e, s) {
-        domainLogger.error(
-          LogDomain.agentRuntime,
-          e,
-          message:
-              'observation retention failed for agent '
-              '${DomainLogger.sanitizeId(agentId)}; skipping it',
-          stackTrace: s,
-        );
+    var scanned = 0;
+    String? cursor;
+
+    // Budgeted by rows actually removed, not by agents visited. The service is
+    // constructed fresh for each start-up sweep, so a cursor held in a field
+    // would always begin at null and every start would re-examine the same
+    // leading agents — the starvation a cursor was meant to fix. Walking until
+    // the delete budget is spent instead means an agent that yields nothing
+    // costs one bounded read and the sweep moves past it within the same pass.
+    while (pruned < policy.batchSize && scanned < policy.maxAgentsPerSweep) {
+      final agents = await repository.agentsWithAgedObservations(
+        cutoff,
+        limit: policy.agentsPerSweep,
+        afterAgentId: cursor,
+      );
+      if (agents.isEmpty) break;
+      cursor = agents.last;
+      scanned += agents.length;
+
+      for (final agentId in agents) {
+        if (pruned >= policy.batchSize) break;
+        try {
+          final swept = await repository.pruneAgentObservations(
+            agentId: agentId,
+            cutoff: cutoff,
+            limit: policy.batchSize,
+            maxMessages: policy.maxAgentMessages,
+          );
+          if (swept.isEmpty) continue;
+          await sidecarReclaimer?.reclaim(
+            entityIds: swept.messageIds,
+            linkIds: swept.linkIds,
+          );
+          pruned += swept.messageIds.length;
+        } catch (e, s) {
+          domainLogger.error(
+            LogDomain.agentRuntime,
+            e,
+            message:
+                'observation retention failed for agent '
+                '${DomainLogger.sanitizeId(agentId)}; skipping it',
+            stackTrace: s,
+          );
+        }
       }
+      if (agents.length < policy.agentsPerSweep) break;
     }
     return pruned;
   }
