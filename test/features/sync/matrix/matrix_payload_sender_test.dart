@@ -569,6 +569,37 @@ void main() {
       );
     });
 
+    test(
+      'a jsonPath that escapes the documents directory is refused',
+      () async {
+        // jsonPath arrives on synced messages, so it is untrusted, and joinAll
+        // drops empty segments but keeps '..'. The restore path *writes*, so
+        // an escaping path would create a file outside the documents
+        // directory — which is why the target must NOT exist beforehand.
+        final outside = File('${documentsDirectory.parent.path}/escaped.json');
+        expect(outside.existsSync(), isFalse);
+        addTearDown(() {
+          if (outside.existsSync()) outside.deleteSync();
+        });
+
+        final result = await payloadSender.enrichAndUploadAgentPayload(
+          room: room,
+          message: SyncMessage.agentEntity(
+            agentEntity: makeTestCapture(id: 'entity-esc'),
+            jsonPath: '/../escaped.json',
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        expect(result, isNull);
+        expect(
+          outside.existsSync(),
+          isFalse,
+          reason: 'The restore must not write outside the documents directory.',
+        );
+      },
+    );
+
     test('a sidecar it did not rebuild is left alone', () async {
       final entity = makeTestCapture(id: 'entity-2');
       final relativePath = relativeAgentEntityPath('entity-2');

@@ -219,10 +219,15 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     required String relativePath,
     required String logLabel,
   }) async {
-    final relativeJoined = p.joinAll(
-      relativePath.split('/').where((part) => part.isNotEmpty),
-    );
-    final fullPath = p.join(documentsDirectory.path, relativeJoined);
+    final fullPath = _resolveSidecarPath(relativePath);
+    if (fullPath == null) {
+      loggingService.log(
+        LogDomain.sync,
+        'refusing $logLabel send: jsonPath escapes the documents directory',
+        subDomain: 'sendMatrixMsg',
+      );
+      return false;
+    }
 
     late final Uint8List jsonBytes;
     try {
@@ -250,10 +255,9 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
   /// succeeded and a failure here must not fail it.
   Future<void> _deletePayloadFromDisk(String relativePath) async {
     try {
-      final relativeJoined = p.joinAll(
-        relativePath.split('/').where((part) => part.isNotEmpty),
-      );
-      final file = File(p.join(documentsDirectory.path, relativeJoined));
+      final full = _resolveSidecarPath(relativePath);
+      if (full == null) return;
+      final file = File(full);
       if (file.existsSync()) file.deleteSync();
     } catch (error, stackTrace) {
       loggingService.error(
@@ -265,12 +269,30 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     }
   }
 
+  /// Resolves a sidecar path under the documents directory, or null when it
+  /// would escape it.
+  ///
+  /// `jsonPath` arrives on synced messages, so it is untrusted. `joinAll`
+  /// drops empty segments but keeps `..`, so a crafted path would otherwise
+  /// resolve outside the documents directory — and these helpers read, write
+  /// and delete through it.
+  String? _resolveSidecarPath(String relativePath) {
+    final segments = relativePath
+        .split('/')
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (segments.contains('..')) return null;
+    final full = p.normalize(
+      p.join(documentsDirectory.path, p.joinAll(segments)),
+    );
+    if (!p.isWithin(documentsDirectory.path, full)) return null;
+    return full;
+  }
+
   /// Whether the sidecar at [relativePath] is still on disk.
   bool _payloadExists(String relativePath) {
-    final relativeJoined = p.joinAll(
-      relativePath.split('/').where((part) => part.isNotEmpty),
-    );
-    return File(p.join(documentsDirectory.path, relativeJoined)).existsSync();
+    final full = _resolveSidecarPath(relativePath);
+    return full != null && File(full).existsSync();
   }
 
   /// Writes a payload to disk under the documents directory, creating parent
@@ -281,10 +303,15 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     required String relativePath,
     required String jsonPayload,
   }) async {
-    final relativeJoined = p.joinAll(
-      relativePath.split('/').where((part) => part.isNotEmpty),
-    );
-    final fullPath = p.join(documentsDirectory.path, relativeJoined);
+    final fullPath = _resolveSidecarPath(relativePath);
+    if (fullPath == null) {
+      loggingService.log(
+        LogDomain.sync,
+        'refusing to write a sidecar outside the documents directory',
+        subDomain: 'sendMatrixMsg',
+      );
+      return;
+    }
     final file = File(fullPath);
     await file.parent.create(recursive: true);
     await file.writeAsString(jsonPayload);
