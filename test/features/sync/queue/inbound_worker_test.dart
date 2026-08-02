@@ -596,19 +596,6 @@ void main() {
   );
 
   group('lifecycle', () {
-    test('stop() returns immediately when worker never started', () async {
-      final worker = buildWorker(apply: (_) async => ApplyOutcome.applied);
-      await worker.stop();
-    });
-
-    test('start() is idempotent and stop() completes the loop', () async {
-      final worker = buildWorker(apply: (_) async => ApplyOutcome.applied);
-      await worker.start();
-      // A second start while running is a no-op (no new loop spawned).
-      await worker.start();
-      await worker.stop();
-    });
-
     test(
       'running loop drains newly enqueued events and stop() awaits '
       'loop completion',

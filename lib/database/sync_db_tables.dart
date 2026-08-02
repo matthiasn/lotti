@@ -340,7 +340,7 @@ class OnboardingSyncRounds extends Table {
   '''WHERE status IN ('enqueued', 'leased', 'retrying')''',
 )
 // Path-based resurrection: `AttachmentIndex.pathRecorded` fires with a
-// path; `resurrectByPath` scans abandoned rows for matching
+// path; `resurrectByPaths` scans abandoned rows for matching
 // `json_path`. Partial on abandoned so the resurrect path is O(log n)
 // over only the rows eligible to wake.
 @TableIndex.sql(
@@ -485,7 +485,7 @@ class InboundEventQueue extends Table {
       text().named('last_error_reason').nullable()();
 
   /// Count of times this row has been flipped from `abandoned` back
-  /// to `enqueued`. Guards against thrash: `resurrectByPath` /
+  /// to `enqueued`. Guards against thrash: `resurrectByPaths` /
   /// `resurrectAll` skip rows whose count exceeds the hard cap so a
   /// truly poison event cannot be resurrected forever.
   IntColumn get resurrectionCount =>
@@ -493,7 +493,7 @@ class InboundEventQueue extends Table {
 
   /// Derived from the Lotti sync payload (text message content
   /// `jsonPath`) when present. Used by
-  /// `AttachmentIndex.pathRecorded` → `resurrectByPath` to wake the
+  /// `AttachmentIndex.pathRecorded` → `resurrectByPaths` to wake the
   /// matching abandoned row as soon as the descriptor lands on disk.
   /// NULL when the event type does not carry a `jsonPath`.
   TextColumn get jsonPath => text().named('json_path').nullable()();

@@ -2088,14 +2088,14 @@ class InboundEventQueueItem extends DataClass
   final String? lastErrorReason;
 
   /// Count of times this row has been flipped from `abandoned` back
-  /// to `enqueued`. Guards against thrash: `resurrectByPath` /
+  /// to `enqueued`. Guards against thrash: `resurrectByPaths` /
   /// `resurrectAll` skip rows whose count exceeds the hard cap so a
   /// truly poison event cannot be resurrected forever.
   final int resurrectionCount;
 
   /// Derived from the Lotti sync payload (text message content
   /// `jsonPath`) when present. Used by
-  /// `AttachmentIndex.pathRecorded` → `resurrectByPath` to wake the
+  /// `AttachmentIndex.pathRecorded` → `resurrectByPaths` to wake the
   /// matching abandoned row as soon as the descriptor lands on disk.
   /// NULL when the event type does not carry a `jsonPath`.
   final String? jsonPath;
