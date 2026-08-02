@@ -1694,6 +1694,33 @@ void main() {
       verifyNever(() => syncService.upsertEntity(any()));
     });
 
+    test('clears the deadline before flipping lifecycle', () async {
+      // Future passes look at active identities only, so flipping first and
+      // then failing would strand a dormant agent that still holds a wake and
+      // can never be retried.
+      final old = dayAgent('dayplan-2026-05-01');
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async => [old]);
+      when(() => repository.getAgentState(old.agentId)).thenAnswer(
+        (_) async => state(
+          stateAgentId: old.agentId,
+          id: 'state-${old.agentId}',
+        ).copyWith(scheduledWakeAt: now.add(const Duration(hours: 1))),
+      );
+
+      await withClock(Clock.fixed(now), service.retirePastDayAgents);
+
+      final written = verify(
+        () => syncService.upsertEntity(captureAny()),
+      ).captured.toList();
+      expect(written.first, isA<AgentStateEntity>());
+      expect(written.last, isA<AgentIdentityEntity>());
+      // Surfaces watching lifecycle must refresh, as for every other identity
+      // mutation in this service.
+      expect(changedTokens, contains(old.agentId));
+    });
+
     test('one failure does not stop the rest', () async {
       final bad = dayAgent('dayplan-2026-05-01');
       final good = dayAgent('dayplan-2026-05-02');

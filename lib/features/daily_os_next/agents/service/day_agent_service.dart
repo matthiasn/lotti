@@ -706,8 +706,6 @@ class DayAgentService {
     agentService.cancelPendingWake(agentId);
   }
 
-  /// Restore in-memory runtime state for active day agents at app startup.
-  ///
   /// How long a per-day agent stays active past its own day.
   ///
   /// One day, so it can wake the morning after and hand the coordinator
@@ -771,17 +769,26 @@ class DayAgentService {
 
   Future<void> _retireDayAgent(AgentIdentityEntity agent) async {
     final now = clock.now();
-    await syncService.upsertEntity(
-      agent.copyWith(lifecycle: AgentLifecycle.dormant, updatedAt: now),
-    );
+    // Deadline first, lifecycle second. Future passes only look at *active*
+    // identities, so flipping first and then failing would strand a dormant
+    // agent that still holds a wake and can never be retried. In this order a
+    // failure leaves it active, and the next pass simply tries again.
     final state = await repository.getAgentState(agent.agentId);
     if (state?.scheduledWakeAt != null) {
       await syncService.upsertEntity(
         state!.copyWith(scheduledWakeAt: null, updatedAt: now),
       );
     }
+    await syncService.upsertEntity(
+      agent.copyWith(lifecycle: AgentLifecycle.dormant, updatedAt: now),
+    );
+    // Surfaces watching lifecycle refresh on this, as they do for every other
+    // identity mutation in this service.
+    onPersistedStateChanged?.call(agent.agentId);
   }
 
+  /// Restore in-memory runtime state for active day agents at app startup.
+  ///
   /// The persisted states are loaded in one snapshot before runtime hydration,
   /// so a database failure aborts this restoration pass before the per-agent
   /// loop can amplify it.
