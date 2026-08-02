@@ -119,14 +119,6 @@ path:
   messages and links derive an equal state regardless of arrival order. That is
   the guarantee **the mutable cache cannot make** under last-write-wins.
 
-`compareShadowProjection` (`shadow_projection.dart`) is the other half: it checks
-the projection against the live mutable state and returns a
-`ShadowProjectionReport` — match or divergence — used as a test assertion and an
-optional debug-mode runtime check. There is no `ShadowProjection` type; the pieces
-are the function, that report and `ShadowProjectionStatus`. It never drives a read;
-it makes a drifted cache **detectable** where the reconcile above makes it
-**self-healing**.
-
 The projection is plain Dart with no I/O, so it can be exercised with property
 tests over shuffled event sets — the only honest way to test a claim about
 permutation invariance.

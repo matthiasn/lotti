@@ -11,7 +11,6 @@
 |------|-------|-----------|-----------|
 | `lib/features/agents/projection/derived_agent_state.dart` | 401 | Yes | None — largest file in dir, but well under 500 lines |
 | `lib/features/agents/projection/input_capture.dart` | 291 | Yes | None |
-| `lib/features/agents/projection/shadow_projection.dart` | 125 | Yes | None |
 | `lib/features/agents/projection/canonical_order.dart` | 117 | Yes | None |
 | `lib/features/agents/projection/compaction_summary.dart` | 145 | Yes | None |
 | `lib/features/agents/projection/checkpoint_selection.dart` | 130 | Yes | None |
@@ -23,9 +22,7 @@
 | `lib/features/agents/projection/projection_diagnostics.dart` | 78 | Yes | None |
 | `test/features/agents/projection/derived_agent_state_test.dart` | 715 | n/a | **[MED]** Large; Glados generators + reconcile logic inflates size |
 | `test/features/agents/projection/input_capture_test.dart` | 421 | n/a | None |
-| `test/features/agents/projection/append_path_shadow_projection_test.dart` | 325 | n/a | None (no corresponding impl file — maps to `shadow_projection.dart` append path) |
 | `test/features/agents/projection/canonical_order_test.dart` | 342 | n/a | None |
-| `test/features/agents/projection/shadow_projection_test.dart` | 269 | n/a | None |
 | `test/features/agents/projection/compaction_summary_test.dart` | 253 | n/a | None |
 | `test/features/agents/projection/agent_projection_test.dart` | 241 | n/a | None |
 | `test/features/agents/projection/input_frontier_test.dart` | 350 | n/a | None |
@@ -39,8 +36,6 @@
 | `test/features/agents/projection/projection_test_fixtures.dart` | 253 | n/a | Shared fixtures — not a test file proper |
 | `test/features/agents/projection/capture_test_fixtures.dart` | 109 | n/a | Shared generators — not a test file proper |
 
-**Note:** `append_path_shadow_projection_test.dart` (325 lines) has no one-to-one impl mirror — it tests the append-path behaviour of `shadow_projection.dart`. The "one test file per source file" guideline allows for this only when the extra file tests a clearly distinct subsystem. Since `shadow_projection.dart` already has `shadow_projection_test.dart`, the append-path tests could be merged into that file (combined 594 lines, still within bounds) unless the separation is deliberate for readability.
-
 ---
 
 ## File size / split opportunities
@@ -49,24 +44,15 @@
 - No test file exceeds 715 lines. No file exceeds the 1000-line hard limit.
 - [x] **[MED]** `test/features/agents/projection/derived_agent_state_test.dart` (715 lines) — the file is large because it covers four distinct concerns: (1) `deriveAgentState` watermark fold, (2) `deriveAgentState` slot fold, (3) `compareDerivedAgentState` mismatch/error, and (4) `reconcileAgentState` merge semantics. These could be split into `derived_agent_state_fold_test.dart` and `derived_agent_state_reconcile_test.dart` at roughly equal sizes, but this is a quality-of-life split rather than a hard requirement.
   - **RESOLVED:** (assessed, no change) — all four concerns live in one source file (`derived_agent_state.dart`), and the one-test-file-per-source rule forbids splitting its tests across files; 715 lines is within bounds and the item itself calls the split optional.
-- [x] **[LOW]** Consider merging `append_path_shadow_projection_test.dart` (325 lines) into `shadow_projection_test.dart` (269 lines, total ~594) under a separate `group('append-path', ...)` block, satisfying the one-test-file-per-source-file rule. If the separation is intentional for CI shard locality keep as-is.
-  - **RESOLVED:** (assessed, no change) — the separation is deliberate: `append_path_shadow_projection_test.dart` is an *integration* harness that drives the real `AgentSyncService` over in-memory repos with mocktail vector-clock/outbox mocks, whereas `shadow_projection_test.dart` is a clean pure-function test of `compareShadowProjection`. Merging would force the pure file to import mocktail, the sync service, vector clocks and fallbacks, coupling a pure-function suite to the heavy integration harness. Kept as-is.
-
 ---
 
 ## Test quality improvements
-
-- [x] **[LOW]** `shadow_projection_test.dart:156` — `expect(report.error, isNotNull)` when a cycle is injected. This is an appropriate signal-presence check for the error field, but the error string is predictable (it starts with `'ProjectionCycleException'`). Adding `expect(report.error, contains('ProjectionCycleException'))` would make the assertion stronger without being brittle.
-  - **RESOLVED:** done — strengthened to `expect(report.error, contains('ProjectionCycleException'))`. Verified against `canonical_order.dart`: the injected messagePrev cycle makes `canonicalOrder` throw `ProjectionCycleException`, whose `toString()` begins with that name; `compareShadowProjection` captures it as `e.toString()`.
 
 - [x] **[LOW]** `derived_agent_state_test.dart:397` — `expect(report.error, isNotNull)` when a duplicate-id exception is injected. Same pattern as above; consider `expect(report.error, contains('DuplicateEventIdException'))`.
   - **RESOLVED:** done — strengthened to `expect(report.error, contains('ProjectionCycleException'))`. The item's premise was slightly off: the test (now at line ~423) injects a *messagePrev cycle* (`m1 → m2 → m1`), not a duplicate id, so the captured exception is `ProjectionCycleException` (verified in `canonical_order.dart`). Asserting the actual exception type rather than a duplicate-id string.
 
 - [x] **[LOW]** `projection_convergence_test.dart` (88 lines) — the single Glados test drives `compareDerivedAgentState` and checks `equivalent == true` for a well-formed log. It verifies `report.error == null` and `report.fieldMismatches.isEmpty` indirectly through the `equivalent` getter. No weak assertions; no issue beyond the small scope.
   - **RESOLVED:** (assessed, no change) — observation confirmed accurate on re-read. The file actually tests `project(canonicalOrder(...))` convergence (not `compareDerivedAgentState`), with strong assertions on `headIds` and full-projection value equality across shuffles and partial views; no weak `findsOneWidget`-style checks. No change warranted.
-
-- [x] **[MED]** `append_path_shadow_projection_test.dart` — two Glados tests at lines 256 and 281 each re-declare similar generator extensions. The generators are small (3–4 lines each), but they partially overlap with `_AnyProjectionDag` in `projection_test_fixtures.dart`. Neither is in three or more files (only this file), so the convention allows per-file generators here. No action required, but note for future housekeeping if a third file adopts the same shape.
-  - **RESOLVED:** (assessed, no change) — as the item concludes: per-file generators are allowed below the three-file threshold; noted for future housekeeping.
 
 - [x] **[LOW]** `agent_event_adapter_test.dart:30` — `glados.Glados(glados.any.messageKind).test('maps every message kind', ...)` verifies that `agentEventsFromLog` maps every `AgentMessageKind` to an `AgentEventKind`. The property uses `glados.any.messageKind` (a `choose` generator over all enum values). After mapping, the test asserts `events.length == 1` and that the kind is non-null. A stronger assertion would verify the actual `AgentEventKind` value produced for each `AgentMessageKind`, particularly for the `system` kind which maps to `AgentEventKind.message` (i.e., confirm the mapping is not accidentally silent). This is a minor quality improvement.
   - **RESOLVED:** done — added an exhaustive example-based table `expectedByKind` that pins each of the 7 `AgentMessageKind` values to its exact `AgentEventKind` (no oracle catch-all), making the non-obvious `system→message` and `toolResult→message` collapses explicit, plus a count assertion (`expectedByKind.keys == AgentMessageKind.values`) that fails if a new kind is added without a row. The Glados property now asserts against this same explicit table instead of a `_`-default switch, so a single mis-mapping can no longer be masked.
@@ -95,9 +81,6 @@ The projection subdir already has one of the densest Glados test suites in the r
 - [x] **[MED]** `lib/features/agents/projection/derived_agent_state.dart:398–401` — `_laterOf(null, null)` returns `null` (both branches return early). This trivial path is exercised indirectly by the Glados fold tests whenever no markers exist. An explicit `test('_laterOf returns null when both are null', ...)` would be clean documentation, but since `_laterOf` is private and thoroughly exercised via `reconcileAgentState` tests it is low risk.
   - **RESOLVED:** done — added an explicit reconcile test `'null watermarks on both sides stay null'`: empty cache + no markers keeps `lastWakeAt` and all slot watermarks null and returns a value-equal row (the `_laterOf(null, null)` path).
 
-- [x] **[LOW]** `lib/features/agents/projection/shadow_projection.dart:119` — the `liveHeadId == null` branch returning `mismatch` when `heads` is non-empty is tested at `shadow_projection_test.dart` line ~130 (`'non-empty projection but null live head → mismatch'`). Confirmed covered.
-  - **RESOLVED:** (assessed, no change) — confirmed: `shadow_projection_test.dart` covers this branch directly via `'non-empty projection with no live head → mismatch, not forked'`, and the `Glados2` biconditional property also asserts `mismatch ⇔ !liveIsTip && !(empty)` across a null-live-head category. Already covered.
-
 - [x] **[LOW]** `lib/features/agents/projection/checkpoint_selection.dart:100–107` — the tie-breaking logic for concurrent summaries with equal coverage (`coverage == bestCoverage && event.id < active.id`) is tested by an example-based test in `checkpoint_selection_test.dart` ("concurrent summaries: lowest id wins"). The Glados property at line 79 drives `selectActiveCheckpoint` with arbitrary DAGs but does not include summary events (the generator produces only `AgentEventKind.message` events). A Glados extension that randomly sprinkles `summary` events into the DAG would exercise the tiebreak path combinatorially. Given the existing example-based coverage this is a **[LOW]** gap.
   - **RESOLVED:** done (with a correction) — the item's premise is factually wrong: `projectionDag`'s `_buildEvents` assigns `AgentEventKind.values[kindSeed % length]`, which spans all four kinds *including* `summary`, so the existing properties already feed summaries through `selectActiveCheckpoint`. The equal-coverage tiebreak, however, only arises probabilistically. Added a targeted `Glados(intInRange(2, 6))` (`numRuns: 120`) property `_equalCoverageSummaries(k)` that builds `k` concurrent summaries over a shared `e0 ← e1` frontier joined by one head — every summary ties on coverage (3) — with ids emitted in *descending* order so a position-based (wrong) tiebreak would disagree with the id-based one; it asserts the lowest id (`s0`) always wins and the covered/tail partition is exact.
 
@@ -124,7 +107,7 @@ The projection subdir already has one of the densest Glados test suites in the r
   - **RESOLVED:** done — the two surviving 250-run pure-function properties (`compaction_summary_test.dart` `selectActiveSummary` order-independence, and `derived_agent_state_test.dart` `deriveAgentState` convergence) normalized to `numRuns: 200`, matching the dir's established 200-run guideline already applied to the MED items above. (The third referenced property had already been normalized in a prior batch; only two 250-run properties remained.)
 
 - [x] **[LOW]** No `pumpAndSettle`, `Future.delayed`, real `Timer`, `Stream.periodic`, or `sleep` calls found in any projection test file. No fake-time violations. No per-test DB open/close or heavy mock-rebuild patterns (all projection tests are pure-function Glados or example-based with no I/O).
-  - **RESOLVED:** (assessed, no change) — observation re-verified across the dir, including the only async file (`append_path_shadow_projection_test.dart`, which `await`s pure in-memory `AgentSyncService` calls with no timers/delays). No fake-time violations; nothing to change.
+  - **RESOLVED:** (assessed, no change) — observation re-verified across the dir. No fake-time violations; nothing to change.
 
 ---
 

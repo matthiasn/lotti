@@ -56,12 +56,6 @@ void main() {
     required SagaLogData entry,
   }) => database.into(database.sagaLog).insert(entry.toCompanion(true));
 
-  Future<List<WakeRunLogData>> getWakeRunsInWindow(
-    AgentDatabase database, {
-    required DateTime since,
-    required DateTime until,
-  }) => database.getWakeRunsInWindow(since, until).get();
-
   // ── Thin local wrappers ────────────────────────────────────────────────────
   // These delegate to the shared test_utils factories but pin the defaults
   // expected throughout this file (e.g. testDate, testAgentId, vector clocks).
@@ -3593,20 +3587,6 @@ void main() {
             reason: '$scenario',
           );
 
-          final globalWindowRuns = await getWakeRunsInWindow(
-            localDb,
-            since: generatedWakeWindowStart,
-            until: generatedWakeWindowEnd,
-          );
-          expect(
-            globalWindowRuns.map((run) => run.runKey).toList(),
-            scenario.expectedGlobalWindowRunKeys(
-              generatedWakeWindowStart,
-              generatedWakeWindowEnd,
-            ),
-            reason: '$scenario',
-          );
-
           final metrics = await localRepo.aggregateWakeRunMetrics(
             generatedWakeTargetTemplateId,
           );
@@ -4907,16 +4887,6 @@ void main() {
         expect(
           usage.map((entry) => entry.id).toList(),
           scenario.expectedTokenUsageIds(limit: scenario.usageLimit),
-          reason: '$scenario',
-        );
-
-        final usageSince = await localRepo.getTokenUsageForTemplateSince(
-          generatedInstanceTargetTemplateId,
-          since: generatedTemplateInstanceSince,
-        );
-        expect(
-          usageSince.map((entry) => entry.id).toList(),
-          scenario.expectedTokenUsageIdsSince(generatedTemplateInstanceSince),
           reason: '$scenario',
         );
 

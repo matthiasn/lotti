@@ -448,21 +448,6 @@ class AgentRepoLinks {
         .toList();
   }
 
-  /// Fetch token usage records for all instances of [templateId] created on or
-  /// after [since].
-  Future<List<WakeTokenUsageEntity>> getTokenUsageForTemplateSince(
-    String templateId, {
-    required DateTime since,
-  }) async {
-    final rows = await _db
-        .getTokenUsageByTemplateSince(templateId, since)
-        .get();
-    return rows
-        .map(AgentDbConversions.fromEntityRow)
-        .whereType<WakeTokenUsageEntity>()
-        .toList();
-  }
-
   /// Mark any wake runs still in `running` status as `abandoned`.
   ///
   /// Called on startup to clean up runs left behind by a hot restart or crash.

@@ -5,7 +5,6 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/agent_event_adapter.dart';
 import 'package:lotti/features/agents/projection/agent_projection.dart';
 import 'package:lotti/features/agents/projection/canonical_order.dart';
-import 'package:lotti/features/agents/projection/shadow_projection.dart';
 
 /// The agent's derived state, folded from the append-only log (PR 4 B5).
 ///
@@ -50,8 +49,8 @@ class DerivedAgentState extends Equatable {
   });
 
   /// Structural projection from the kernel: heads, latest report, dangling
-  /// parents. The live `recentHeadMessageId` corresponds to the single head
-  /// (or one tip of a fork — see [compareShadowProjection]).
+  /// parents. The live `recentHeadMessageId` corresponds to the single head or
+  /// one tip of a fork.
   final AgentProjection projection;
 
   /// `slots.activeTaskId` — `toId` of the agent's primary active `agentTask`
