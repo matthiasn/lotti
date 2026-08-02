@@ -14,12 +14,19 @@ import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 
+enum _ReportRecoveryTargetStatus {
+  current,
+  reportHeadChanged,
+  primaryAgentChanged,
+  taskCategoryChanged,
+}
+
 /// Background embedding generation service.
 ///
 /// Listens to [UpdateNotifications.localUpdateStream] for entity changes and
-/// [UpdateNotifications.syncUpdateStream] for durable current-report-head
-/// changes, then generates embeddings for text-rich entries using Ollama's
-/// `/api/embed`.
+/// [UpdateNotifications.syncUpdateStream] for durable current-report-head and
+/// task-agent-link changes, then generates embeddings for text-rich entries
+/// using Ollama's `/api/embed`.
 /// When [agentRepository] is available, startup also reconciles durable current
 /// task-agent reports so an interrupted in-memory retry is recovered.
 ///
@@ -146,7 +153,10 @@ class EmbeddingService {
 
   /// Reconciles derived vectors when sync advances a current report head.
   void _onSyncBatch(Set<String> tokens) {
-    if (!tokens.contains(agentReportHeadNotification)) return;
+    if (!tokens.contains(agentReportHeadNotification) &&
+        !tokens.contains(agentTaskLinkNotification)) {
+      return;
+    }
     if (_availabilityRetryTimer?.isActive ?? false) {
       _availabilityRetryTimer?.cancel();
       _availabilityRetryTimer = null;
@@ -195,6 +205,10 @@ class EmbeddingService {
         return;
       }
 
+      // This service owns a dedicated long-lived repository wrapper. Agent
+      // writes happen through Riverpod and sync repository instances, whose
+      // cache invalidations cannot reach this wrapper.
+      repository.invalidateAgentIdentitiesCache();
       final agents = await repository.getAllAgentIdentities();
       var failureCount = 0;
       Object? firstError;
@@ -296,6 +310,7 @@ class EmbeddingService {
     required String baseUrl,
   }) async {
     final task = await journalDb.journalEntityById(taskId);
+    final categoryId = task?.meta.categoryId ?? '';
     final attemptedReportIds = <String>{};
     final removedReportIds = <String>{};
 
@@ -314,31 +329,42 @@ class EmbeddingService {
         reportId: report.id,
         reportContent: report.content,
         taskId: taskId,
-        categoryId: task?.meta.categoryId ?? '',
+        categoryId: categoryId,
         subtype: AgentReportScopes.current,
         embeddingStore: embeddingStore,
         embeddingRepository: embeddingRepository,
         baseUrl: baseUrl,
         writeGuard: () async {
-          final latestReport = await repository.getLatestReport(
-            agent.id,
-            AgentReportScopes.current,
+          final status = await _reportRecoveryTargetStatus(
+            repository: repository,
+            agentId: agent.id,
+            taskId: taskId,
+            reportId: report.id,
+            categoryId: categoryId,
           );
-          return latestReport?.id == report.id;
+          return status == _ReportRecoveryTargetStatus.current;
         },
       );
-      final latestReport = await repository.getLatestReport(
-        agent.id,
-        AgentReportScopes.current,
+      final postStoreStatus = await _reportRecoveryTargetStatus(
+        repository: repository,
+        agentId: agent.id,
+        taskId: taskId,
+        reportId: report.id,
+        categoryId: categoryId,
       );
-      if (latestReport?.id != report.id) {
-        // The head advanced while the store swap was in flight. Remove only
-        // the vector this attempt introduced, then reconcile the successor so
-        // its last searchable predecessor is not stranded.
+      if (postStoreStatus != _ReportRecoveryTargetStatus.current) {
         if (didEmbed && removedReportIds.add(report.id)) {
           await embeddingStore.deleteEntityEmbeddings(report.id);
         }
-        continue;
+        if (postStoreStatus == _ReportRecoveryTargetStatus.reportHeadChanged) {
+          // Follow a successor for the same agent without rebuilding the
+          // task topology snapshot.
+          continue;
+        }
+        // Topology and category changes require a fresh outer pass so agent
+        // selection and the target shard are rebuilt from durable state.
+        _requestAgentReportRecovery();
+        return;
       }
 
       final currentReportIsSearchable =
@@ -348,18 +374,25 @@ class EmbeddingService {
       final cleanupCandidateIds = await embeddingStore.getEntityIdsForTask(
         taskId,
       );
-      final headAfterCandidateRead = await repository.getLatestReport(
-        agent.id,
-        AgentReportScopes.current,
+      final statusAfterCandidateRead = await _reportRecoveryTargetStatus(
+        repository: repository,
+        agentId: agent.id,
+        taskId: taskId,
+        reportId: report.id,
+        categoryId: categoryId,
       );
-      if (headAfterCandidateRead?.id != report.id) {
-        // The candidate snapshot cannot contain a successor published after
-        // it was read. Reconcile that successor before deleting anything from
-        // the snapshot, and remove this attempt only if recovery wrote it.
+      if (statusAfterCandidateRead != _ReportRecoveryTargetStatus.current) {
         if (didEmbed && removedReportIds.add(report.id)) {
           await embeddingStore.deleteEntityEmbeddings(report.id);
         }
-        continue;
+        if (statusAfterCandidateRead ==
+            _ReportRecoveryTargetStatus.reportHeadChanged) {
+          // The candidate snapshot cannot contain a successor published after
+          // it was read. Reconcile that successor before deleting anything.
+          continue;
+        }
+        _requestAgentReportRecovery();
+        return;
       }
       for (final candidateId in cleanupCandidateIds) {
         if (candidateId != report.id && removedReportIds.add(candidateId)) {
@@ -368,6 +401,41 @@ class EmbeddingService {
       }
       return;
     }
+  }
+
+  /// Confirms every durable selector that determines a report vector's owner.
+  ///
+  /// The checks run immediately before storage and cleanup. A changed report
+  /// head can be followed inside the current task pass; a changed primary link
+  /// or category needs a fresh outer pass to rebuild topology and shard state.
+  Future<_ReportRecoveryTargetStatus> _reportRecoveryTargetStatus({
+    required AgentRepository repository,
+    required String agentId,
+    required String taskId,
+    required String reportId,
+    required String categoryId,
+  }) async {
+    final latestReport = await repository.getLatestReport(
+      agentId,
+      AgentReportScopes.current,
+    );
+    if (latestReport?.id != reportId) {
+      return _ReportRecoveryTargetStatus.reportHeadChanged;
+    }
+
+    final taskLinks = await repository.getLinksTo(
+      taskId,
+      type: AgentLinkTypes.agentTask,
+    );
+    if (taskLinks.isEmpty || taskLinks.selectPrimary().fromId != agentId) {
+      return _ReportRecoveryTargetStatus.primaryAgentChanged;
+    }
+
+    final task = await journalDb.journalEntityById(taskId);
+    if ((task?.meta.categoryId ?? '') != categoryId) {
+      return _ReportRecoveryTargetStatus.taskCategoryChanged;
+    }
+    return _ReportRecoveryTargetStatus.current;
   }
 
   Future<void> _processNext() async {

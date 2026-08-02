@@ -2389,6 +2389,30 @@ void main() {
   });
 
   group('getAllAgentIdentities', () {
+    test(
+      'explicit invalidation refreshes a cache populated by another wrapper',
+      () async {
+        final cachedReader = AgentRepository(db);
+
+        expect(await cachedReader.getAllAgentIdentities(), isEmpty);
+
+        await repo.upsertEntity(makeAgent());
+
+        expect(await cachedReader.getAllAgentIdentities(), isEmpty);
+
+        cachedReader.invalidateAgentIdentitiesCache();
+
+        expect(
+          await cachedReader.getAllAgentIdentities(),
+          contains(
+            predicate<AgentIdentityEntity>(
+              (agent) => agent.id == makeAgent().id,
+            ),
+          ),
+        );
+      },
+    );
+
     test('returns all agent identity entities', () async {
       await repo.upsertEntity(makeAgent(id: 'agent-a', agentId: 'a-001'));
       await repo.upsertEntity(makeAgent(id: 'agent-b', agentId: 'b-001'));

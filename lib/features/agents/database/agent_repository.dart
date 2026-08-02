@@ -352,6 +352,14 @@ class AgentRepository {
   Future<List<AgentIdentityEntity>> getAllAgentIdentities() =>
       _evolution.getAllAgentIdentities();
 
+  /// Drops this repository instance's cached identity snapshot.
+  ///
+  /// Long-lived read-only wrappers call this before reconciliation passes
+  /// when writes are performed through other [AgentRepository] instances.
+  void invalidateAgentIdentitiesCache() {
+    _core.invalidateAgentIdentitiesCache();
+  }
+
   Future<List<AgentIdentityEntity>> getAgentIdentitiesByLifecycle(
     AgentLifecycle lifecycle,
   ) => _evolution.getAgentIdentitiesByLifecycle(lifecycle);

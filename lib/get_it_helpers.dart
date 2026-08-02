@@ -144,8 +144,9 @@ Future<void> _registerLateAndOptionalServices() async {
           aiConfigRepository: getIt<AiConfigRepository>(),
           // Intentionally dedicated: the app's primary AgentRepository is
           // Riverpod-scoped, while this late startup service is created before
-          // any ProviderContainer exists. Both wrappers share AgentDatabase;
-          // recovery only performs reads and runs for startup-pending work.
+          // any ProviderContainer exists. Both wrappers share AgentDatabase,
+          // and recovery explicitly refreshes this wrapper's identity cache
+          // before each read-only reconciliation pass.
           agentRepository: AgentRepository(getIt<AgentDatabase>()),
         ),
         dispose: (svc) async => svc.stop(),

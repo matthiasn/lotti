@@ -965,6 +965,39 @@ void main() {
       ).called(1);
     });
 
+    test('processes agent task link with a recovery notification', () async {
+      final link = AgentLink.agentTask(
+        id: 'task-link-1',
+        fromId: 'agent-1',
+        toId: 'task-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        deletedAt: DateTime(2024, 3, 16),
+      );
+
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertLink(link)).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {
+            'agent-1',
+            'task-1',
+            agentNotification,
+            agentTaskLinkNotification,
+          },
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
     group('concurrent-branch LWW resolution', () {
       // Two concurrent clocks (each leads on a different host). In canonical
       // host order `host-A` sorts first, so `vcWinsTie` (greater on host-A) is

@@ -103,21 +103,24 @@ flowchart LR
   initial transport budget is exhausted or a known cooldown suppresses the
   call, instead of emitting one stack trace per remaining item.
 - `EmbeddingService` scans durable current task-agent report heads at startup
-  and re-runs reconciliation only when sync emits the dedicated current-report
-  head token; generic agent messages, state, and usage changes do not trigger a
-  global scan. When multiple agents are linked to one task, the same canonical
-  primary-link ordering used by task report reads selects the only report that
-  recovery may keep searchable. Content hashes keep unchanged reports cheap.
-  Recovery revalidates the durable head before and after vector storage, then
-  reads cleanup candidates from the embedding store's reverse task index and
-  revalidates the head again. It never loads the agent's historical report
+  and re-runs reconciliation only when sync emits a dedicated current-report
+  head or task-agent-link token; generic agent messages, state, and usage
+  changes do not trigger a global scan. Its long-lived read-only repository
+  invalidates its own identity snapshot before each pass because writes happen
+  through other repository wrappers. When multiple agents are linked to one
+  task, the same canonical primary-link ordering used by task report reads
+  selects the only report that recovery may keep searchable. Content hashes
+  keep unchanged reports cheap. Recovery revalidates the durable head, current
+  primary link, and task category before and after vector storage, then reads
+  cleanup candidates from the embedding store's reverse task index and checks
+  all three selectors again. It never loads the agent's historical report
   bodies or treats wall-clock timestamps as ordering authority. If the head
   advances during any of those awaits, recovery removes only a stale vector it
-  just wrote, follows the successor until the head is stable, and then deletes
-  every indexed non-head report ID. An availability failure leaves
-  reconciliation pending on the shared retry timer, while a later journal or
-  report-head notification rechecks disabled/provider gates without requiring
-  an app restart.
+  just wrote and follows the successor. If the primary link or category
+  changes, it abandons that pass and rebuilds topology and shard state before
+  cleanup. An availability failure leaves reconciliation pending on the shared
+  retry timer, while a later journal, report-head, or task-link notification
+  rechecks disabled/provider gates without requiring an app restart.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
   maps it to the active locale; the suppression count and retry timestamp stay
   in diagnostic logs. A failed optional embedding never rolls back the

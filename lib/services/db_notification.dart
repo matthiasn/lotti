@@ -136,6 +136,12 @@ const agentNotification = 'AGENT_CHANGED';
 /// state, usage, templates, and every other agent-domain mutation.
 const agentReportHeadNotification = 'AGENT_REPORT_HEAD_CHANGED';
 
+/// Fired when an agent-to-task link changes.
+///
+/// Report recovery uses this narrow topology signal to reselect the canonical
+/// primary agent without reacting to every agent-domain mutation.
+const agentTaskLinkNotification = 'AGENT_TASK_LINK_CHANGED';
+
 /// Fired alongside the affected task/category ids whenever an AI consumption
 /// event is recorded or arrives via sync. Consumption dashboards subscribe to
 /// this to refresh per-task and per-category aggregates.

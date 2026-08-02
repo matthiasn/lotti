@@ -225,7 +225,7 @@ and re-decoding every identity. The read is not bursty — 1,449 of its 1,587
 occurrences in the 2026-06/07 logs are isolated — so coalescing does nothing for
 it; not repeating the work is what helps.
 
-The cache lives on `AgentRepoCore`, and three rules keep it honest:
+The cache lives on `AgentRepoCore`, and four rules keep it honest:
 
 - **Every path that changes which identities exist must invalidate it.** That is
   `_upsertEntity` (covering local writes, incoming sync writes, and soft
@@ -240,6 +240,10 @@ The cache lives on `AgentRepoCore`, and three rules keep it honest:
   write an identity, read the list back, then roll back; caching that read
   would publish a row the database no longer has. `AgentRepoCore` marks its
   transactions with a zone value so the load can tell.
+- **A long-lived wrapper that observes writes made through other wrappers must
+  refresh explicitly.** Cache invalidation is instance-local. The embedding
+  recovery service owns a dedicated read-only `AgentRepository`, so it calls
+  `invalidateAgentIdentitiesCache` before every durable reconciliation pass.
 
 Latest-per-agent batch reads are backed by active-row indexes that include the
 `(created_at DESC, id DESC)` ranking order for both type-only and
@@ -271,7 +275,9 @@ Every applied agent entity still emits the broad `agentNotification` topic for
 UI invalidation. A synced `AgentReportHeadEntity` in the `current` scope also
 emits the narrower `agentReportHeadNotification`; background embedding recovery
 subscribes to that token so messages, state updates, and token-usage rows do not
-launch full report-head scans.
+launch full report-head scans. Applied `AgentTaskLink` rows likewise emit
+`agentTaskLinkNotification`, allowing recovery to reselect the canonical agent
+when task ownership changes without subscribing to every agent link mutation.
 
 Legacy `WeekRollupEntity` JSON can omit `weekStart`. The shared
 `AgentDomainEntity.fromJson` read boundary repairs it only when the entity id is

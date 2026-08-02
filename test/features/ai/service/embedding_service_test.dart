@@ -9,6 +9,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/database/agent_database.dart'
+    hide AgentLink;
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -74,7 +77,7 @@ AgentReportEntity _agentReport({
         as AgentReportEntity;
 
 AgentLink _agentTaskLink({required String agentId, required String taskId}) =>
-    AgentLink.basic(
+    AgentLink.agentTask(
       id: 'link-$agentId-$taskId',
       fromId: agentId,
       toId: taskId,
@@ -497,6 +500,21 @@ void main() {
     ).thenAnswer((_) async => _fakeEmbedding());
   }
 
+  void stubPrimaryTaskAgent(
+    MockAgentRepository repository, {
+    required String agentId,
+    required String taskId,
+  }) {
+    when(
+      () => repository.getLinksTo(
+        taskId,
+        type: AgentLinkTypes.agentTask,
+      ),
+    ).thenAnswer(
+      (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+    );
+  }
+
   /// Sends a notification batch and advances fake time past the debounce
   /// timer (100ms), then flushes microtasks so async processing completes.
   void sendAndProcess(FakeAsync async, Set<String> tokens) {
@@ -610,6 +628,11 @@ void main() {
             type: AgentLinkTypes.agentTask,
           ),
         ).thenAnswer((_) async => [taskLink]);
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
         when(
           () => agentRepository.getLatestReport(
             agentId,
@@ -742,6 +765,12 @@ void main() {
           ),
         ).thenAnswer((_) async => [primaryLink]);
         when(
+          () => agentRepository.getLinksTo(
+            taskId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [olderLink, primaryLink]);
+        when(
           () => agentRepository.getLatestReport(
             olderAgentId,
             AgentReportScopes.current,
@@ -812,6 +841,354 @@ void main() {
     );
 
     test(
+      'recovery abandons a report when the primary agent changes mid-pass',
+      () async {
+        const originalAgentId = 'agent-primary-original';
+        const successorAgentId = 'agent-primary-successor';
+        const taskId = 'task-primary-changed';
+        final agentRepository = MockAgentRepository();
+        final originalAgent = _agentIdentity(originalAgentId);
+        final successorAgent = _agentIdentity(successorAgentId);
+        final originalReport = _agentReport(
+          id: 'report-primary-original',
+          agentId: originalAgentId,
+        );
+        final successorReport = _agentReport(
+          id: 'report-primary-successor',
+          agentId: successorAgentId,
+        );
+        final originalLink = AgentLink.agentTask(
+          id: 'link-primary-original',
+          fromId: originalAgentId,
+          toId: taskId,
+          createdAt: _agentTestDate,
+          updatedAt: _agentTestDate,
+          vectorClock: null,
+        );
+        final initialSuccessorLink = AgentLink.agentTask(
+          id: 'link-primary-successor-old',
+          fromId: successorAgentId,
+          toId: taskId,
+          createdAt: _agentTestDate.subtract(const Duration(minutes: 1)),
+          updatedAt: _agentTestDate.subtract(const Duration(minutes: 1)),
+          vectorClock: null,
+        );
+        final promotedSuccessorLink = AgentLink.agentTask(
+          id: 'link-primary-successor-new',
+          fromId: successorAgentId,
+          toId: taskId,
+          createdAt: _agentTestDate.add(const Duration(minutes: 1)),
+          updatedAt: _agentTestDate.add(const Duration(minutes: 1)),
+          vectorClock: null,
+        );
+        final embedStarted = Completer<void>();
+        final releaseEmbedding = Completer<Float32List>();
+        var primaryChanged = false;
+        var embedCallCount = 0;
+
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [originalAgent, successorAgent]);
+        when(
+          () => agentRepository.getLinksFrom(
+            originalAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [originalLink]);
+        when(
+          () => agentRepository.getLinksFrom(
+            successorAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async {
+            final successorLink = primaryChanged
+                ? promotedSuccessorLink
+                : initialSuccessorLink;
+            return [successorLink];
+          },
+        );
+        when(
+          () => agentRepository.getLinksTo(
+            taskId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async {
+            final successorLink = primaryChanged
+                ? promotedSuccessorLink
+                : initialSuccessorLink;
+            return [originalLink, successorLink];
+          },
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            originalAgentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => originalReport);
+        when(
+          () => agentRepository.getLatestReport(
+            successorAgentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => successorReport);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockEmbeddingStore.getEntityIdsForTask(taskId),
+        ).thenReturn({successorReport.id});
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((_) {
+          embedCallCount++;
+          if (embedCallCount == 1) {
+            embedStarted.complete();
+            return releaseEmbedding.future;
+          }
+          return Future.value(_fakeEmbedding());
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+
+        await embedStarted.future;
+        primaryChanged = true;
+        releaseEmbedding.complete(_fakeEmbedding());
+        await pumpEventQueue();
+
+        verifyNever(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: originalReport.id,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        );
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: successorReport.id,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(successorReport.id),
+        );
+      },
+    );
+
+    test(
+      'recovery stores a report in the task category current at write time',
+      () async {
+        const agentId = 'agent-task-category-changed';
+        const taskId = 'task-category-changed';
+        const oldCategoryId = 'category-before-recovery';
+        const newCategoryId = 'category-after-recovery';
+        final agentRepository = MockAgentRepository();
+        final agent = _agentIdentity(agentId);
+        final report = _agentReport(
+          id: 'report-task-category-changed',
+          agentId: agentId,
+        );
+        final taskLink = AgentLink.agentTask(
+          id: 'link-task-category-changed',
+          fromId: agentId,
+          toId: taskId,
+          createdAt: _agentTestDate,
+          updatedAt: _agentTestDate,
+          vectorClock: null,
+        );
+        final embedStarted = Completer<void>();
+        final releaseEmbedding = Completer<Float32List>();
+        var categoryChanged = false;
+        var embedCallCount = 0;
+
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [agent]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [taskLink]);
+        when(
+          () => agentRepository.getLinksTo(
+            taskId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [taskLink]);
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => report);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer(
+          (_) async => TestTaskFactory.create(
+            id: taskId,
+            title: 'Task whose category changes during recovery',
+            categoryId: categoryChanged ? newCategoryId : oldCategoryId,
+          ),
+        );
+        when(
+          () => mockEmbeddingStore.getEntityIdsForTask(taskId),
+        ).thenReturn({report.id});
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((_) {
+          embedCallCount++;
+          if (embedCallCount == 1) {
+            embedStarted.complete();
+            return releaseEmbedding.future;
+          }
+          return Future.value(_fakeEmbedding());
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+
+        await embedStarted.future;
+        categoryChanged = true;
+        releaseEmbedding.complete(_fakeEmbedding());
+        await pumpEventQueue();
+
+        verifyNever(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: oldCategoryId,
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        );
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: newCategoryId,
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'startup bypasses a stale identity cache owned by its repository',
+      () async {
+        const agentId = 'agent-after-identity-cache';
+        const taskId = 'task-after-identity-cache';
+        final db = AgentDatabase(inMemoryDatabase: true, background: false);
+        final recoveryRepository = AgentRepository(db);
+        final writerRepository = AgentRepository(db);
+        final report = _agentReport(
+          id: 'report-after-identity-cache',
+          agentId: agentId,
+        );
+
+        try {
+          expect(await recoveryRepository.getAllAgentIdentities(), isEmpty);
+          await writerRepository.upsertEntity(_agentIdentity(agentId));
+          await writerRepository.upsertLink(
+            AgentLink.agentTask(
+              id: 'link-after-identity-cache',
+              fromId: agentId,
+              toId: taskId,
+              createdAt: _agentTestDate,
+              updatedAt: _agentTestDate,
+              vectorClock: null,
+            ),
+          );
+          await writerRepository.upsertEntity(report);
+          await writerRepository.upsertEntity(
+            AgentDomainEntity.agentReportHead(
+              id: 'head-after-identity-cache',
+              agentId: agentId,
+              scope: AgentReportScopes.current,
+              reportId: report.id,
+              updatedAt: _agentTestDate,
+              vectorClock: null,
+            ),
+          );
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockEmbeddingStore.getEntityIdsForTask(taskId),
+          ).thenReturn({report.id});
+          stubEmbedding();
+
+          service = EmbeddingService(
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepo,
+            journalDb: mockJournalDb,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: mockAiConfigRepo,
+            agentRepository: recoveryRepository,
+          )..start();
+
+          await pumpEventQueue();
+
+          verify(
+            () => mockEmbeddingStore.replaceEntityEmbeddings(
+              entityId: report.id,
+              entityType: kEntityTypeAgentReport,
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: any(named: 'categoryId'),
+              taskId: taskId,
+              subtype: AgentReportScopes.current,
+            ),
+          ).called(1);
+        } finally {
+          await service.stop();
+          await db.close();
+        }
+      },
+    );
+
+    test(
       'startup skips a report superseded before its store write',
       () async {
         const agentId = 'agent-superseded-before-store';
@@ -839,6 +1216,11 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
         );
         when(
           () => agentRepository.getLatestReport(
@@ -955,6 +1337,11 @@ void main() {
         ).thenAnswer(
           (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
         );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
         when(
           () => agentRepository.getLatestReport(
             agentId,
@@ -1066,6 +1453,11 @@ void main() {
         ).thenAnswer(
           (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
         );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
         when(
           () => agentRepository.getLatestReport(
             agentId,
@@ -1116,6 +1508,109 @@ void main() {
         expect(deletedReportIds, [reportB.id, reportA.id]);
         verifyNever(
           () => mockEmbeddingStore.deleteEntityEmbeddings(reportC.id),
+        );
+      },
+    );
+
+    test(
+      'startup rebuilds the category after reading cleanup candidates',
+      () async {
+        const agentId = 'agent-category-changes-during-cleanup';
+        const taskId = 'task-category-changes-during-cleanup';
+        const oldCategoryId = 'category-before-candidate-read';
+        const newCategoryId = 'category-after-candidate-read';
+        const staleReportId = 'report-from-stale-candidate-snapshot';
+        final agentRepository = MockAgentRepository();
+        final report = _agentReport(
+          id: 'report-category-changes-during-cleanup',
+          agentId: agentId,
+        );
+        final secondStore = Completer<void>();
+        final storedCategoryIds = <String>[];
+        var categoryChanged = false;
+        var cleanupReadCount = 0;
+
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => report);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer(
+          (_) async => TestTaskFactory.create(
+            id: taskId,
+            title: 'Task whose category changes after candidate read',
+            categoryId: categoryChanged ? newCategoryId : oldCategoryId,
+          ),
+        );
+        when(
+          () => mockEmbeddingStore.getEntityIdsForTask(taskId),
+        ).thenAnswer((_) {
+          cleanupReadCount++;
+          if (cleanupReadCount == 1) {
+            categoryChanged = true;
+            return {report.id, staleReportId};
+          }
+          return {report.id};
+        });
+        stubEmbedding();
+        when(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: report.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: taskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).thenAnswer((invocation) {
+          storedCategoryIds.add(
+            invocation.namedArguments[#categoryId]! as String,
+          );
+          if (storedCategoryIds.length == 2) secondStore.complete();
+        });
+        when(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+        ).thenReturn(null);
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+
+        await secondStore.future;
+        await pumpEventQueue();
+
+        expect(storedCategoryIds, [oldCategoryId, newCategoryId]);
+        verify(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(report.id),
+        ).called(1);
+        verifyNever(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(staleReportId),
         );
       },
     );
@@ -1257,6 +1752,11 @@ void main() {
         ).thenAnswer(
           (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
         );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
         when(
           () => agentRepository.getLatestReport(
             agentId,
@@ -1392,6 +1892,11 @@ void main() {
         ).thenAnswer(
           (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
         );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
         when(
           () => agentRepository.getLatestReport(
             agentId,
@@ -1481,6 +1986,11 @@ void main() {
         ).thenAnswer(
           (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
         );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
         when(
           () => agentRepository.getLatestReport(
             agentId,
@@ -1537,6 +2047,11 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
         );
         when(
           () => agentRepository.getLatestReport(
@@ -1640,6 +2155,11 @@ void main() {
           _agentTaskLink(agentId: recoveredAgentId, taskId: taskId),
         ],
       );
+      stubPrimaryTaskAgent(
+        agentRepository,
+        agentId: recoveredAgentId,
+        taskId: taskId,
+      );
       when(
         () => agentRepository.getLatestReport(
           recoveredAgentId,
@@ -1732,6 +2252,11 @@ void main() {
             taskId: recoveredTaskId,
           ),
         ],
+      );
+      stubPrimaryTaskAgent(
+        agentRepository,
+        agentId: recoveredAgentId,
+        taskId: recoveredTaskId,
       );
       when(
         () => agentRepository.getLatestReport(

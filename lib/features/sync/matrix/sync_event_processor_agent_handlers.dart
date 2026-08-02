@@ -391,7 +391,12 @@ extension _AgentHandlers on SyncEventProcessor {
         }
       }
       _updateNotifications.notify(
-        {resolvedLink.fromId, resolvedLink.toId, agentNotification},
+        {
+          resolvedLink.fromId,
+          resolvedLink.toId,
+          agentNotification,
+          if (resolvedLink is AgentTaskLink) agentTaskLinkNotification,
+        },
         fromSync: true,
       );
       _trace(
