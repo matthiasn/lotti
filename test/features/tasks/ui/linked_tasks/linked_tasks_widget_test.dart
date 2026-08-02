@@ -273,6 +273,38 @@ void main() {
 
   group('LinkedTasksWidget rendering', () {
     testWidgets(
+      'the header sits nearer the content it labels than the card edge',
+      (tester) async {
+        await pumpWidget(tester, incoming: [], outgoing: []);
+
+        final card = tester.getRect(find.byType(DecoratedBox).first);
+        final title = tester.getRect(
+          find.byKey(const ValueKey('linked-tasks-card-title')),
+        );
+        final firstRow = tester.getRect(find.text('Link a task…'));
+
+        final above = title.top - card.top;
+        final below = firstRow.top - title.bottom;
+
+        // Proximity: a section title belongs to what follows it. Only the
+        // header's own padding holds it off the card's top edge, while the row
+        // beneath contributes step3 of its own, so symmetric header padding
+        // produces an asymmetric result — it measured 4pt above and 14pt below
+        // before this was made asymmetric.
+        expect(
+          above,
+          greaterThanOrEqualTo(below),
+          reason:
+              'the title must not sit closer to the border than to the '
+              'list it heads',
+        );
+        // Not merely ordered but comfortably clear of the edge: an earlier
+        // 4pt crowded the title against the border.
+        expect(above, greaterThanOrEqualTo(12));
+      },
+    );
+
+    testWidgets(
       'with no links it still renders a header carrying the link action — '
       'otherwise the feature has no reachable entry point at all',
       (tester) async {

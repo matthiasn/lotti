@@ -262,14 +262,23 @@ class _LinkedTasksHeader extends ConsumerWidget {
     return InkWell(
       onTap: onToggleExpanded,
       child: Padding(
-        // step2 vertically, not step3: the row's height is set by the overflow
-        // button's own 48pt target, so this padding is added on top of a
-        // control that is already at its minimum — it buys the header nothing
-        // but height. What is left still keeps the title clear of the card's
-        // top edge and of the first section label below it.
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step5,
-          vertical: tokens.spacing.step2,
+        // Asymmetric, because what sits above and below the header is not
+        // symmetric. Only this padding separates the title from the card's top
+        // edge, while everything below it — an empty-state action, a section
+        // label, a linked row — brings its own top padding (step3 at
+        // DesignSystemListItem's small size). Matching 4pt on both sides
+        // therefore measured 4pt above the title and 14pt below it: the header
+        // sat three and a half times closer to the card's edge than to the
+        // content it labels, which reads as a title belonging to the border
+        // rather than to the list.
+        //
+        // step4 above and nothing below inverts that to 12pt / 10pt — the
+        // title now sits nearest the thing it names, and its distance from the
+        // card's top edge matches the Todos card above it on the same screen.
+        padding: EdgeInsets.only(
+          left: tokens.spacing.step5,
+          right: tokens.spacing.step5,
+          top: tokens.spacing.step4,
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
