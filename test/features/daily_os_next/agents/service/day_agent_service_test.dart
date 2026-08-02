@@ -260,7 +260,7 @@ void main() {
           },
         );
 
-        await service.restoreSubscriptions();
+        await withClock(Clock.fixed(now), service.restoreSubscriptions);
 
         verify(
           () => orchestrator.restorePendingWake(
@@ -1625,5 +1625,129 @@ void main() {
         );
       });
     }
+  });
+
+  group('retirePastDayAgents', () {
+    // A day that is over must not hold a live agent: nothing retired them, so
+    // the active set grew by one per day of use and every one was re-hydrated
+    // on each launch, with any lingering scheduledWakeAt due on every tick.
+    AgentIdentityEntity dayAgent(String dayId) =>
+        identity(id: perDayAgentId(dayId));
+
+    test('retires a finished day and clears its wake', () async {
+      final old = dayAgent('dayplan-2026-05-01');
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async => [old]);
+      when(() => repository.getAgentState(old.agentId)).thenAnswer(
+        (_) async => state(
+          stateAgentId: old.agentId,
+          id: 'state-${old.agentId}',
+        ).copyWith(scheduledWakeAt: now.add(const Duration(hours: 1))),
+      );
+
+      expect(
+        await withClock(Clock.fixed(now), service.retirePastDayAgents),
+        1,
+      );
+
+      final written = verify(
+        () => syncService.upsertEntity(captureAny()),
+      ).captured.toList();
+      final retired = written.whereType<AgentIdentityEntity>().single;
+      expect(retired.lifecycle, AgentLifecycle.dormant);
+      // Both matter: the lifecycle flip stops the wake manager, and clearing
+      // the deadline stops the row surfacing in the due query at all.
+      expect(
+        written.whereType<AgentStateEntity>().single.scheduledWakeAt,
+        isNull,
+      );
+    });
+
+    test('keeps today and the handover day', () async {
+      final today = dayAgent(dayAgentIdForDate(now));
+      final yesterday = dayAgent(
+        dayAgentIdForDate(now.subtract(const Duration(days: 1))),
+      );
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async => [today, yesterday]);
+
+      // Yesterday still wakes once to hand the coordinator anything its day
+      // left unreported; that is the whole handover window.
+      expect(
+        await withClock(Clock.fixed(now), service.retirePastDayAgents),
+        0,
+      );
+      verifyNever(() => syncService.upsertEntity(any()));
+    });
+
+    test('never retires the coordinator', () async {
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async => [identity(id: dailyOsPlannerAgentId)]);
+
+      expect(
+        await withClock(Clock.fixed(now), service.retirePastDayAgents),
+        0,
+      );
+      verifyNever(() => syncService.upsertEntity(any()));
+    });
+
+    test('one failure does not stop the rest', () async {
+      final bad = dayAgent('dayplan-2026-05-01');
+      final good = dayAgent('dayplan-2026-05-02');
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async => [bad, good]);
+      when(
+        () => repository.getAgentState(bad.agentId),
+      ).thenThrow(Exception('boom'));
+      when(
+        () => repository.getAgentState(good.agentId),
+      ).thenAnswer((_) async => null);
+
+      expect(
+        await withClock(Clock.fixed(now), service.retirePastDayAgents),
+        1,
+      );
+    });
+  });
+
+  group('getOrCreateDayAgentForDate revival', () {
+    test('reactivates a retired agent when the day is acted on', () async {
+      final retired = identity(
+        id: perDayAgentId(dayAgentIdForDate(now)),
+      ).copyWith(lifecycle: AgentLifecycle.dormant);
+      when(
+        () => agentService.getAgent(retired.agentId),
+      ).thenAnswer((_) async => retired);
+
+      final resolved = await withClock(
+        Clock.fixed(now),
+        () => service.getOrCreateDayAgentForDate(now),
+      );
+
+      // Reaching this seam is someone opening, refining or retrying that day —
+      // work that was asked for, not the timer spend retirement stops.
+      expect(resolved.lifecycle, AgentLifecycle.active);
+      verify(() => syncService.upsertEntity(any())).called(1);
+    });
+
+    test('leaves an already-active agent untouched', () async {
+      final active = identity(id: perDayAgentId(dayAgentIdForDate(now)));
+      when(
+        () => agentService.getAgent(active.agentId),
+      ).thenAnswer((_) async => active);
+
+      expect(
+        (await withClock(
+          Clock.fixed(now),
+          () => service.getOrCreateDayAgentForDate(now),
+        )).lifecycle,
+        AgentLifecycle.active,
+      );
+      verifyNever(() => syncService.upsertEntity(any()));
+    });
   });
 }

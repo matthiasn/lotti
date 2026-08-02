@@ -108,7 +108,21 @@ class DayAgentService {
     final dayId = dayAgentIdForDate(date);
     final agentId = perDayAgentId(dayId);
     final existing = await agentService.getAgent(agentId);
-    if (existing != null) return existing;
+    if (existing != null) {
+      // Reaching here is someone acting on that day — opening it, refining a
+      // plan, retrying a job. A retired agent is reactivated for that, which
+      // is not the spend retirement exists to stop: nothing on a timer comes
+      // through this seam, only work that was asked for.
+      if (existing.lifecycle == AgentLifecycle.dormant) {
+        final revived = existing.copyWith(
+          lifecycle: AgentLifecycle.active,
+          updatedAt: clock.now(),
+        );
+        await syncService.upsertEntity(revived);
+        return revived;
+      }
+      return existing;
+    }
 
     // Ensures the coordinator (and its learning substrate) exists and gives
     // the cutover check + category inheritance a resolved identity.
@@ -703,6 +717,80 @@ class DayAgentService {
 
   /// Restore in-memory runtime state for active day agents at app startup.
   ///
+  /// How long a per-day agent stays active past its own day.
+  ///
+  /// One day, so it can wake the morning after and hand the coordinator
+  /// anything its day left unreported. After that the day is finished and
+  /// there is nothing for it to do on a timer.
+  static const dayAgentHandoverWindow = Duration(days: 1);
+
+  /// Stands down per-day agents whose day is over.
+  ///
+  /// **Why this exists.** A `day_agent:<dayId>` was created active and nothing
+  /// ever retired it, so the active set grew by one per day of use forever:
+  /// [restoreSubscriptions] re-hydrated every one of them on each launch, and
+  /// `getDueScheduledAgentStates` filters on `scheduledWakeAt` alone — not
+  /// lifecycle — so any past day left holding a deadline was due on every
+  /// tick. That is model spend on days that are finished.
+  ///
+  /// Retiring sets `lifecycle: dormant` and clears the agent's
+  /// `scheduledWakeAt`. Both matter: the lifecycle flip is what stops the wake
+  /// manager (its `_isActiveAgent` guard already skips non-active agents), and
+  /// clearing the deadline stops the row surfacing in the due query at all.
+  ///
+  /// **Retired is not deleted.** The day's artifacts stay exactly where they
+  /// are and the day stays readable. Nothing revives a retired agent on a
+  /// timer; only an explicit resolution through [getOrCreateDayAgentForDate]
+  /// does, because that is work someone asked for rather than work that
+  /// happens on its own.
+  Future<int> retirePastDayAgents() async {
+    final cutoff = dayAgentIdForDate(
+      clock.now().subtract(dayAgentHandoverWindow),
+    );
+    final active = await agentService.listAgents(
+      lifecycle: AgentLifecycle.active,
+    );
+
+    var retired = 0;
+    for (final agent in active) {
+      final dayId = dayIdOfPerDayAgent(agent.agentId);
+      // Lexicographic works because the id is `dayplan-YYYY-MM-DD`.
+      if (dayId == null || dayId.compareTo(cutoff) >= 0) continue;
+      try {
+        await _retireDayAgent(agent);
+        retired++;
+      } catch (e, s) {
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message: 'failed to retire ${DomainLogger.sanitizeId(agent.agentId)}',
+          stackTrace: s,
+        );
+      }
+    }
+    if (retired > 0) {
+      domainLogger.log(
+        LogDomain.agentRuntime,
+        'retired $retired finished day agent(s)',
+        subDomain: 'lifecycle',
+      );
+    }
+    return retired;
+  }
+
+  Future<void> _retireDayAgent(AgentIdentityEntity agent) async {
+    final now = clock.now();
+    await syncService.upsertEntity(
+      agent.copyWith(lifecycle: AgentLifecycle.dormant, updatedAt: now),
+    );
+    final state = await repository.getAgentState(agent.agentId);
+    if (state?.scheduledWakeAt != null) {
+      await syncService.upsertEntity(
+        state!.copyWith(scheduledWakeAt: null, updatedAt: now),
+      );
+    }
+  }
+
   /// The persisted states are loaded in one snapshot before runtime hydration,
   /// so a database failure aborts this restoration pass before the per-agent
   /// loop can amplify it.
@@ -754,6 +842,17 @@ class DayAgentService {
           stackTrace: s,
         );
       }
+    }
+
+    try {
+      await retirePastDayAgents();
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'failed to retire past day agents',
+        stackTrace: s,
+      );
     }
 
     if (sawCoordinator) {
