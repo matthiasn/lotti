@@ -879,6 +879,7 @@ void main() {
       test('waits for durable task cleanup before hard-delete', () async {
         final cleanupStarted = Completer<void>();
         final releaseCleanup = Completer<void>();
+        final finishedAgentIds = <String>[];
         when(
           () => mockRepository.getEntity('agent-with-report'),
         ).thenAnswer((_) async => null);
@@ -911,29 +912,34 @@ void main() {
           repository: mockRepository,
           orchestrator: mockOrchestrator,
           syncService: mockSyncService,
-          onTaskLinksWillBeHardDeleted: (taskIds) async {
+          onTaskLinksWillBeHardDeleted: (agentId, taskIds) async {
+            expect(agentId, 'agent-with-report');
             expect(taskIds, {'task-with-report'});
             cleanupStarted.complete();
             await releaseCleanup.future;
           },
+          onAgentHardDeleteFinished: finishedAgentIds.add,
         ).deleteAgent('agent-with-report');
 
         await cleanupStarted.future;
         verifyNever(
           () => mockRepository.hardDeleteAgent('agent-with-report'),
         );
+        expect(finishedAgentIds, isEmpty);
 
         releaseCleanup.complete();
         await deletion;
         verify(
           () => mockRepository.hardDeleteAgent('agent-with-report'),
         ).called(1);
+        expect(finishedAgentIds, ['agent-with-report']);
       });
 
       test('reconciles task vectors when durable cleanup aborts', () async {
         const agentId = 'agent-partial-cleanup';
         const taskId = 'task-partial-cleanup';
         final reconciledTaskIds = <Set<String>>[];
+        final finishedAgentIds = <String>[];
         when(
           () => mockRepository.getEntity(agentId),
         ).thenAnswer((_) async => null);
@@ -961,9 +967,11 @@ void main() {
           repository: mockRepository,
           orchestrator: mockOrchestrator,
           syncService: mockSyncService,
-          onTaskLinksWillBeHardDeleted: (_) async {
+          onTaskLinksWillBeHardDeleted: (preparedAgentId, _) async {
+            expect(preparedAgentId, agentId);
             throw StateError('Second vector delete failed');
           },
+          onAgentHardDeleteFinished: finishedAgentIds.add,
           onTaskLinksNeedReconciliation: reconciledTaskIds.add,
         );
 
@@ -976,6 +984,7 @@ void main() {
         expect(reconciledTaskIds, [
           <String>{taskId},
         ]);
+        expect(finishedAgentIds, [agentId]);
       });
 
       test('reclaims the sidecars of everything it deleted', () async {

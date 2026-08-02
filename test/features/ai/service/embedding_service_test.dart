@@ -45,13 +45,16 @@ const _entityId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 const _longText = 'This is a sufficiently long text for embedding generation.';
 final _agentTestDate = DateTime.utc(2026, 8, 2);
 
-AgentIdentityEntity _agentIdentity(String id) =>
+AgentIdentityEntity _agentIdentity(
+  String id, {
+  AgentLifecycle lifecycle = AgentLifecycle.active,
+}) =>
     AgentDomainEntity.agent(
           id: id,
           agentId: id,
           kind: 'task_agent',
           displayName: 'Test Agent $id',
-          lifecycle: AgentLifecycle.active,
+          lifecycle: lifecycle,
           mode: AgentInteractionMode.autonomous,
           allowedCategoryIds: const {},
           currentStateId: 'state-$id',
@@ -825,6 +828,51 @@ void main() {
         await pumpEventQueue();
 
         expect(recoveryScanCount, 2);
+      },
+    );
+
+    test(
+      'first flag snapshot after a bootstrap error resumes recovery',
+      () async {
+        final flagChanges = StreamController<bool>.broadcast(sync: true);
+        final agentRepository = MockAgentRepository();
+        var flagReadCount = 0;
+        var recoveryScanCount = 0;
+        addTearDown(flagChanges.close);
+        when(
+          () => mockJournalDb.watchConfigFlag(enableEmbeddingsFlag),
+        ).thenAnswer((_) => flagChanges.stream);
+        when(
+          () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+        ).thenAnswer((_) async {
+          flagReadCount++;
+          if (flagReadCount == 1) {
+            throw StateError('Embedding flag bootstrap failed');
+          }
+          return true;
+        });
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async {
+          recoveryScanCount++;
+          return [];
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        await pumpEventQueue();
+        expect(recoveryScanCount, 0);
+
+        flagChanges.addError(StateError('Embedding flag bootstrap failed'));
+        await pumpEventQueue();
+        flagChanges.add(true);
+        await pumpEventQueue();
+
+        expect(recoveryScanCount, 1);
       },
     );
 
@@ -3727,6 +3775,113 @@ void main() {
         verify(
           () => mockEmbeddingStore.deleteEntityEmbeddings(staleReportId),
         ).called(1);
+      });
+    });
+
+    test('local task tombstone purges its report vectors', () {
+      fakeAsync((async) {
+        const agentId = 'agent-local-deleted-task-report';
+        const taskId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0009';
+        const currentReportId = 'report-local-deleted-task-current';
+        const staleReportId = 'report-local-deleted-task-stale';
+        final agentRepository = MockAgentRepository();
+        final activeTask = TestTaskFactory.create(id: taskId);
+        final deletedTask = activeTask.copyWith(
+          meta: activeTask.meta.copyWith(deletedAt: _agentTestDate),
+        );
+
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async => []);
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        when(
+          () => agentRepository.getEntity(agentId),
+        ).thenAnswer((_) async => _agentIdentity(agentId));
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([taskId]),
+        ).thenAnswer((_) async => {taskId: deletedTask});
+        when(
+          () => mockEmbeddingStore.getEntityIdsForTask(taskId),
+        ).thenReturn({currentReportId, staleReportId});
+        when(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+        ).thenReturn(null);
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+        verifyNever(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+        );
+
+        sendAndProcess(async, {taskNotification, taskId});
+
+        verify(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(currentReportId),
+        ).called(1);
+        verify(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(staleReportId),
+        ).called(1);
+        verify(agentRepository.getAllAgentIdentities).called(1);
+        stopInZone(async);
+      });
+    });
+
+    test('startup skips reports owned by a destroyed agent', () {
+      fakeAsync((async) {
+        const agentId = 'agent-destroyed-before-recovery';
+        const taskId = 'task-destroyed-before-recovery';
+        final agentRepository = MockAgentRepository();
+
+        when(agentRepository.getAllAgentIdentities).thenAnswer(
+          (_) async => [
+            _agentIdentity(agentId, lifecycle: AgentLifecycle.destroyed),
+          ],
+        );
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+
+        verifyNever(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        );
+        verifyNever(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        );
+        stopInZone(async);
       });
     });
 

@@ -263,11 +263,15 @@ extension _AgentHandlers on SyncEventProcessor {
               resolvedEntity.templateId != null)
             resolvedEntity.templateId!,
           agentNotification,
-          if (resolvedEntity is AgentIdentityEntity) agentIdentityNotification,
+          if (resolvedEntity is AgentIdentityEntity &&
+              resolvedEntity.kind == 'task_agent')
+            agentIdentityNotification,
           if (resolvedEntity is AgentReportHeadEntity &&
               resolvedEntity.scope == AgentReportScopes.current)
             agentReportHeadNotification,
-          if (resolvedEntity is AgentReportEntity) agentReportNotification,
+          if (resolvedEntity is AgentReportEntity &&
+              resolvedEntity.scope == AgentReportScopes.current)
+            agentReportNotification,
         },
         fromSync: true,
       );

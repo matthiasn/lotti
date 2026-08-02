@@ -89,6 +89,41 @@ void main() {
       ).called(1);
     });
 
+    test('project identity does not request task-report recovery', () async {
+      final entity = AgentDomainEntity.agent(
+        id: 'project-agent-1',
+        agentId: 'project-agent-1',
+        kind: 'project_agent',
+        displayName: 'Project Agent',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {'cat-1'},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => updateNotifications.notify(
+          {'project-agent-1', agentNotification},
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
     test(
       'older-client rewrite preserves explicit task-agent setup fields',
       () async {
@@ -838,6 +873,35 @@ void main() {
       verify(
         () => updateNotifications.notify(
           {'agent-1', agentNotification, agentReportNotification},
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
+    test('non-current report does not request task-report recovery', () async {
+      final entity = AgentDomainEntity.agentReport(
+        id: 'daily-report-1',
+        agentId: 'agent-1',
+        scope: 'daily',
+        createdAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        content: 'Daily report content',
+      );
+
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', agentNotification},
           fromSync: true,
         ),
       ).called(1);

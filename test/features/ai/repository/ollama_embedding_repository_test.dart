@@ -598,6 +598,11 @@ void main() {
                       isTrue,
                     )
                     .having(
+                      (error) => error.shouldLogDiagnostic,
+                      'caller diagnostic',
+                      isTrue,
+                    )
+                    .having(
                       (error) => error.toString(),
                       'diagnostic summary',
                       allOf(
@@ -635,6 +640,11 @@ void main() {
                     .having(
                       (error) => error.shouldLogSummary,
                       'summary boundary',
+                      isFalse,
+                    )
+                    .having(
+                      (error) => error.shouldLogDiagnostic,
+                      'caller diagnostic',
                       isFalse,
                     ),
               ),

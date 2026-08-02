@@ -28,6 +28,7 @@ class AgentService {
     this.onPersistedStateChanged,
     this.sidecarReclaimer,
     this.onTaskLinksWillBeHardDeleted,
+    this.onAgentHardDeleteFinished,
     this.onTaskLinksNeedReconciliation,
   });
 
@@ -42,8 +43,12 @@ class AgentService {
   /// headless contexts without a documents directory simply skip reclamation.
   final AgentSidecarReclaimer? sidecarReclaimer;
   final void Function(String agentId)? onPersistedStateChanged;
-  final Future<void> Function(Set<String> taskIds)?
+  final Future<void> Function(String agentId, Set<String> taskIds)?
   onTaskLinksWillBeHardDeleted;
+
+  /// Releases resources quiesced by [onTaskLinksWillBeHardDeleted] after the
+  /// hard-delete attempt finishes, including when cleanup or deletion fails.
+  final void Function(String agentId)? onAgentHardDeleteFinished;
 
   /// Reconciles derived task data after topology deletion or a partial
   /// pre-delete cleanup failure.
@@ -247,9 +252,12 @@ class AgentService {
   ///
   /// Destroys the agent first if it is not already destroyed, then hard-deletes
   /// all entities, links, wake runs, and saga ops from the database. Task-link
-  /// targets are captured before deletion. Derived report vectors are removed
-  /// durably before their identifying task-link rows disappear; the later
-  /// notification reconciles any surviving canonical task agent.
+  /// targets are captured before deletion. Report writers for this agent are
+  /// quiesced and drained before derived vectors are removed, then released
+  /// after the hard-delete attempt. The synced destroyed lifecycle prevents a
+  /// restart from recreating those vectors before the identifying task-link
+  /// rows disappear; the later notification reconciles any surviving
+  /// canonical task agent.
   Future<void> deleteAgent(String agentId) async {
     final identity = await getAgent(agentId);
     if (identity != null && identity.lifecycle != AgentLifecycle.destroyed) {
@@ -263,10 +271,12 @@ class AgentService {
       type: AgentLinkTypes.agentTask,
     )).map((link) => link.toId).toSet();
     late final ({List<String> entityIds, List<String> linkIds}) removed;
+    var preparedReportWrites = false;
     try {
       final preDeleteCleanup = onTaskLinksWillBeHardDeleted;
       if (taskIds.isNotEmpty && preDeleteCleanup != null) {
-        await preDeleteCleanup(taskIds);
+        preparedReportWrites = true;
+        await preDeleteCleanup(agentId, taskIds);
       }
       removed = await repository.hardDeleteAgent(agentId);
     } on Object {
@@ -274,6 +284,10 @@ class AgentService {
         onTaskLinksNeedReconciliation?.call(taskIds);
       }
       rethrow;
+    } finally {
+      if (preparedReportWrites) {
+        onAgentHardDeleteFinished?.call(agentId);
+      }
     }
     if (taskIds.isNotEmpty) {
       onTaskLinksNeedReconciliation?.call(taskIds);

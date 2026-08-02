@@ -2152,7 +2152,10 @@ void main() {
         () => mockNotifications.notifyUiOnly({'agent-1', agentNotification}),
       ).called(1);
 
-      await service.onTaskLinksWillBeHardDeleted?.call({'task-1', 'task-2'});
+      await service.onTaskLinksWillBeHardDeleted?.call('agent-1', {
+        'task-1',
+        'task-2',
+      });
 
       verify(
         () => mockEmbeddingStore.deleteEntityEmbeddings('report-1'),
@@ -2163,6 +2166,8 @@ void main() {
       verify(
         () => mockEmbeddingStore.deleteEntityEmbeddings('shared-report'),
       ).called(1);
+
+      service.onAgentHardDeleteFinished?.call('agent-1');
 
       service.onTaskLinksNeedReconciliation?.call({'task-1', 'task-2'});
 

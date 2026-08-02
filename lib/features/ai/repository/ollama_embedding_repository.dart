@@ -377,6 +377,9 @@ sealed class OllamaEmbeddingAvailabilityException implements Exception {
   const OllamaEmbeddingAvailabilityException();
 
   DateTime get retryAt;
+
+  /// Whether a caller should emit its compact availability diagnostic.
+  bool get shouldLogDiagnostic => true;
 }
 
 /// A transient Ollama outage confirmed after the repository's retry budget.
@@ -417,6 +420,9 @@ class OllamaEmbeddingCooldownException
   bool get shouldLogSummary =>
       suppressedRequestCount > 0 &&
       suppressedRequestCount & (suppressedRequestCount - 1) == 0;
+
+  @override
+  bool get shouldLogDiagnostic => shouldLogSummary;
 
   @override
   String toString() =>

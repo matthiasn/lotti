@@ -135,32 +135,46 @@ flowchart LR
   cooldown timer, resolves the new URL, and processes the complete entity there
   before continuing queued work. Manual backfill loops stop when the
   initial transport budget is exhausted or a known cooldown suppresses the
-  call, instead of emitting one stack trace per remaining item.
+  call, instead of emitting one stack trace per remaining item. Entity and
+  report workers also emit cooldown summaries only when the cumulative
+  suppression count reaches a power of two, retaining outage-growth evidence
+  with logarithmic log volume.
 - `EmbeddingService` scans durable current task-agent report heads at startup
   and re-runs reconciliation when sync emits a dedicated current-report body,
   head, agent-identity, task-keyed change, or task-agent-link token, or when
-  embedding/provider configuration changes;
+  embedding/provider configuration changes. Sync emits the broad identity and
+  report markers only for task-agent identities and current report bodies;
+  project agents and historical or daily reports cannot start this recovery;
   generic agent messages, state, and usage changes do not trigger a global
   scan. Identity sync retries topology that arrived before its referenced
   identity, while report-body sync closes the sequence-gap case where a head
   arrives before its referenced report. Task sync uses the keyed task ID to
-  relocate only that task's current vector after a remote category change;
-  generic task notifications do not launch a full agent-topology scan.
+  relocate only that task's current vector after a remote category change.
+  Local task changes use the same targeted queue, including a tombstone whose
+  normal entity embedding is skipped, so deleted tasks still purge their
+  report vectors; generic task notifications do not launch a full
+  agent-topology scan.
   Task-link sync includes a task-keyed token, allowing recovery to delete
   orphaned report vectors after the final link is removed even though no active
   link remains in the topology scan. Local agent hard deletion first captures
-  its task links and synchronously deletes every report vector found through
-  their reverse task index. Only after that durable cleanup succeeds does it
-  remove the topology rows, so a crash cannot strand vectors whose last task
-  link has disappeared. A post-delete keyed signal then reconciles a surviving
-  canonical agent, if any, and rebuilds its current vector. A soft-deleted task
+  its task links, blocks new report writes for that agent, drains writes already
+  in flight, and synchronously deletes every report vector found through their
+  reverse task index. Only after that durable cleanup succeeds does it remove
+  the topology rows. The already-synced destroyed lifecycle is the restart-safe
+  barrier: startup recovery ignores destroyed agents, so a crash cannot
+  recreate their vectors or strand vectors whose last task link has
+  disappeared. The in-memory gate is released after either a successful or
+  failed hard-delete attempt. A post-delete keyed signal then reconciles a
+  surviving canonical agent, if any, and rebuilds its current vector. A
+  soft-deleted task
   is likewise a cleanup boundary: recovery confirms its tombstone through the
   including-deleted journal read, deletes every report vector in that task's
   reverse index, and makes no provider request. Flag streams and a confirmed
   initial provider snapshot are skipped because startup already requests one
   pass, and their asynchronous errors remain contained inside the optional
-  service. A provider-watch error consumes that initial-snapshot suppression,
-  so the first successful provider snapshot after recovery wakes pending work.
+  service. An error from either skipped stream consumes that initial-snapshot
+  suppression, so the first successful flag or provider snapshot after
+  recovery wakes pending work.
   If the provider repository's initial all-config bootstrap fails, the next
   observed config save retries it and installs the database watch without a
   polling loop. Later enablement resumes both pending report recovery and any

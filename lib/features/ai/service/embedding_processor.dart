@@ -36,6 +36,17 @@ typedef EmbeddingWriteGuard = FutureOr<bool> Function();
 class EmbeddingProcessor {
   EmbeddingProcessor._();
 
+  static final _agentReportWriteGate = _AgentReportWriteGate();
+
+  /// Prevents new report-vector writes for [agentId] and waits until every
+  /// write that already entered the processor has finished.
+  static Future<void> quiesceAgentReportWrites(String agentId) =>
+      _agentReportWriteGate.quiesce(agentId);
+
+  /// Reopens report-vector writes after a hard-delete attempt has finished.
+  static void resumeAgentReportWrites(String agentId) =>
+      _agentReportWriteGate.resume(agentId);
+
   /// Processes a single entity for embedding generation.
   ///
   /// Returns `true` if an embedding was generated and stored, `false` if
@@ -176,44 +187,55 @@ class EmbeddingProcessor {
     required EmbeddingStore embeddingStore,
     required OllamaEmbeddingRepository embeddingRepository,
     required String baseUrl,
+    String? agentId,
     EmbeddingWriteGuard? writeGuard,
   }) async {
-    final text = reportContent.trim();
-    if (text.length < kMinEmbeddingTextLength) return false;
+    final writeLease = agentId == null
+        ? null
+        : _agentReportWriteGate.tryAcquire(agentId);
+    if (agentId != null && writeLease == null) return false;
+    try {
+      final text = reportContent.trim();
+      if (text.length < kMinEmbeddingTextLength) return false;
 
-    final hash = EmbeddingContentExtractor.contentHash(text);
-    final existingHash = await embeddingStore.getContentHash(reportId);
-    if (existingHash == hash) {
-      final existingCategoryId = await embeddingStore.getCategoryId(reportId);
-      final existingTaskId = await embeddingStore.getTaskId(reportId);
-      final categoryChanged =
-          existingCategoryId != null && existingCategoryId != categoryId;
-      final taskChanged = existingTaskId != null && existingTaskId != taskId;
-      if (categoryChanged || taskChanged) {
-        if (writeGuard != null && !await writeGuard()) return false;
-        await embeddingStore.moveEntityToShard(
+      final hash = EmbeddingContentExtractor.contentHash(text);
+      final existingHash = await embeddingStore.getContentHash(reportId);
+      if (existingHash == hash) {
+        final existingCategoryId = await embeddingStore.getCategoryId(
           reportId,
-          categoryId,
-          taskId: taskId,
         );
-        return true;
+        final existingTaskId = await embeddingStore.getTaskId(reportId);
+        final categoryChanged =
+            existingCategoryId != null && existingCategoryId != categoryId;
+        final taskChanged = existingTaskId != null && existingTaskId != taskId;
+        if (categoryChanged || taskChanged) {
+          if (writeGuard != null && !await writeGuard()) return false;
+          await embeddingStore.moveEntityToShard(
+            reportId,
+            categoryId,
+            taskId: taskId,
+          );
+          return true;
+        }
+        return false;
       }
-      return false;
-    }
 
-    return _embedChunks(
-      text: text,
-      entityId: reportId,
-      entityType: kEntityTypeAgentReport,
-      contentHash: hash,
-      categoryId: categoryId,
-      taskId: taskId,
-      subtype: subtype,
-      embeddingStore: embeddingStore,
-      embeddingRepository: embeddingRepository,
-      baseUrl: baseUrl,
-      writeGuard: writeGuard,
-    );
+      return await _embedChunks(
+        text: text,
+        entityId: reportId,
+        entityType: kEntityTypeAgentReport,
+        contentHash: hash,
+        categoryId: categoryId,
+        taskId: taskId,
+        subtype: subtype,
+        embeddingStore: embeddingStore,
+        embeddingRepository: embeddingRepository,
+        baseUrl: baseUrl,
+        writeGuard: writeGuard,
+      );
+    } finally {
+      writeLease?.release();
+    }
   }
 
   /// Chunks [text] and generates embeddings for each chunk.
@@ -347,4 +369,47 @@ class EmbeddingProcessor {
       rethrow;
     }
   }
+}
+
+class _AgentReportWriteGate {
+  final _blockedAgentIds = <String>{};
+  final _activeWriteCounts = <String, int>{};
+  final _drained = <String, Completer<void>>{};
+
+  Future<void> quiesce(String agentId) {
+    _blockedAgentIds.add(agentId);
+    if ((_activeWriteCounts[agentId] ?? 0) == 0) {
+      return Future.value();
+    }
+    return _drained.putIfAbsent(agentId, Completer<void>.new).future;
+  }
+
+  _AgentReportWriteLease? tryAcquire(String agentId) {
+    if (_blockedAgentIds.contains(agentId)) return null;
+    _activeWriteCounts.update(agentId, (count) => count + 1, ifAbsent: () => 1);
+    return _AgentReportWriteLease(() => _release(agentId));
+  }
+
+  void _release(String agentId) {
+    final remaining = (_activeWriteCounts[agentId] ?? 1) - 1;
+    if (remaining > 0) {
+      _activeWriteCounts[agentId] = remaining;
+      return;
+    }
+    _activeWriteCounts.remove(agentId);
+    _drained.remove(agentId)?.complete();
+  }
+
+  void resume(String agentId) {
+    _blockedAgentIds.remove(agentId);
+    _drained.remove(agentId);
+  }
+}
+
+class _AgentReportWriteLease {
+  _AgentReportWriteLease(this._onRelease);
+
+  final void Function() _onRelease;
+
+  void release() => _onRelease();
 }

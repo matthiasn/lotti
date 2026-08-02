@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -118,12 +119,23 @@ class EmbeddingService {
             _onProviderConfigWatchError(error, stackTrace);
           },
         );
+    var shouldSkipInitialFlagSnapshot = true;
     _embeddingFlagSubscription = journalDb
         .watchConfigFlag(enableEmbeddingsFlag)
-        .skip(1)
         .listen(
-          _onEmbeddingFlagChanged,
-          onError: _onEmbeddingFlagWatchError,
+          (enabled) {
+            if (shouldSkipInitialFlagSnapshot) {
+              shouldSkipInitialFlagSnapshot = false;
+              return;
+            }
+            _onEmbeddingFlagChanged(enabled);
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            // Stream errors do not represent the initial database snapshot.
+            // The first data event after recovery must wake pending work.
+            shouldSkipInitialFlagSnapshot = false;
+            _onEmbeddingFlagWatchError(error, stackTrace);
+          },
         );
     if (agentRepository != null) {
       _requestAgentReportRecovery();
@@ -175,6 +187,7 @@ class EmbeddingService {
 
   void _onBatch(Set<String> tokens) {
     final hasAgentChange = tokens.contains(agentNotification);
+    final hasTaskChange = tokens.contains(taskNotification);
     final hasRelevantEntityType = tokens.any(_relevantTokens.contains);
     final unlinkedTaskIds = _idsWithPrefix(
       tokens,
@@ -193,7 +206,11 @@ class EmbeddingService {
     if (unlinkedTaskIds.isNotEmpty) {
       _pendingUnlinkedTaskIds.addAll(unlinkedTaskIds);
     }
-    if (hasAgentChange || unlinkedTaskIds.isNotEmpty) {
+    final entityIds = tokens.where(_isEntityId).toSet();
+    if (hasTaskChange) {
+      _pendingChangedTaskIds.addAll(entityIds);
+    }
+    if (hasAgentChange || hasTaskChange || unlinkedTaskIds.isNotEmpty) {
       _requestAgentReportRecovery(fullScan: hasAgentChange);
     }
     if (!hasRelevantEntityType) {
@@ -202,7 +219,6 @@ class EmbeddingService {
     }
 
     // Extract entity UUIDs from the batch (filter out type tokens).
-    final entityIds = tokens.where(_isEntityId).toSet();
     if (entityIds.isEmpty) return;
 
     _pendingEntityIds.addAll(entityIds);
@@ -409,7 +425,10 @@ class EmbeddingService {
             if (currentLinks.isEmpty) continue;
             final primaryLink = currentLinks.selectPrimary();
             final agentEntity = await repository.getEntity(primaryLink.fromId);
-            if (agentEntity is! AgentIdentityEntity) continue;
+            if (agentEntity is! AgentIdentityEntity ||
+                agentEntity.lifecycle == AgentLifecycle.destroyed) {
+              continue;
+            }
             await _recoverAgentReportsForTask(
               repository: repository,
               agent: agentEntity,
@@ -422,8 +441,7 @@ class EmbeddingService {
               _agentReportRecoveryPending = true;
               _scheduleAvailabilityRetry(error.retryAt);
             }
-            if (error is! OllamaEmbeddingCooldownException ||
-                error.shouldLogSummary) {
+            if (error.shouldLogDiagnostic) {
               developer.log(
                 'Agent report embedding recovery paused because Ollama is '
                 'unavailable: $error',
@@ -454,7 +472,9 @@ class EmbeddingService {
       // writes happen through Riverpod and sync repository instances, whose
       // cache invalidations cannot reach this wrapper.
       repository.invalidateAgentIdentitiesCache();
-      final agents = await repository.getAllAgentIdentities();
+      final agents = (await repository.getAllAgentIdentities())
+          .where((agent) => agent.lifecycle != AgentLifecycle.destroyed)
+          .toList(growable: false);
 
       final agentsById = {for (final agent in agents) agent.id: agent};
       final taskLinksByTaskId = <String, List<AgentLink>>{};
@@ -512,8 +532,7 @@ class EmbeddingService {
             _fullAgentReportRecoveryPending = true;
             _scheduleAvailabilityRetry(error.retryAt);
           }
-          if (error is! OllamaEmbeddingCooldownException ||
-              error.shouldLogSummary) {
+          if (error.shouldLogDiagnostic) {
             developer.log(
               'Agent report embedding recovery paused because Ollama is '
               'unavailable: $error',
@@ -625,6 +644,7 @@ class EmbeddingService {
         reportId: report.id,
         reportContent: report.content,
         taskId: taskId,
+        agentId: agent.id,
         categoryId: categoryId,
         subtype: AgentReportScopes.current,
         embeddingStore: embeddingStore,
@@ -811,10 +831,12 @@ class EmbeddingService {
                 providerConfigRevision == _providerConfigRevision,
           );
         } on OllamaEmbeddingAvailabilityException catch (e) {
-          developer.log(
-            'Embedding batch paused because Ollama is unavailable: $e',
-            name: 'EmbeddingService',
-          );
+          if (e.shouldLogDiagnostic) {
+            developer.log(
+              'Embedding batch paused because Ollama is unavailable: $e',
+              name: 'EmbeddingService',
+            );
+          }
           if (!_stopped) {
             _pendingEntityIds.add(entityId);
             _scheduleAvailabilityRetry(e.retryAt);

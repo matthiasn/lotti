@@ -29,6 +29,7 @@ import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/ai/util/seed_tombstone_migration.dart';
@@ -386,7 +387,8 @@ AgentService agentService(Ref ref) {
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
-    onTaskLinksWillBeHardDeleted: (taskIds) async {
+    onTaskLinksWillBeHardDeleted: (agentId, taskIds) async {
+      await EmbeddingProcessor.quiesceAgentReportWrites(agentId);
       if (!getIt.isRegistered<EmbeddingStore>()) return;
       final embeddingStore = getIt<EmbeddingStore>();
       final reportIds = <String>{};
@@ -397,6 +399,7 @@ AgentService agentService(Ref ref) {
         await embeddingStore.deleteEntityEmbeddings(reportId);
       }
     },
+    onAgentHardDeleteFinished: EmbeddingProcessor.resumeAgentReportWrites,
     onTaskLinksNeedReconciliation: (taskIds) {
       notifications.notify({
         for (final taskId in taskIds) '$agentTaskLinkNotificationPrefix$taskId',

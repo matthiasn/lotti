@@ -1045,6 +1045,84 @@ void main() {
   });
 
   group('EmbeddingProcessor.processAgentReport', () {
+    test('quiescing an agent drains and blocks report writes', () async {
+      const agentId = 'agent-being-hard-deleted';
+      final bothEmbeddingsStarted = Completer<void>();
+      final releaseEmbeddings = [Completer<void>(), Completer<void>()];
+      var embeddingCount = 0;
+      var quiesced = false;
+      addTearDown(() => EmbeddingProcessor.resumeAgentReportWrites(agentId));
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenAnswer((_) async {
+        final embeddingIndex = embeddingCount++;
+        if (embeddingCount == releaseEmbeddings.length) {
+          bothEmbeddingsStarted.complete();
+        }
+        await releaseEmbeddings[embeddingIndex].future;
+        return _fakeEmbedding();
+      });
+
+      Future<bool> startWrite(
+        int index,
+      ) => EmbeddingProcessor.processAgentReport(
+        reportId: 'report-in-flight-during-delete-$index',
+        reportContent:
+            'Report write $index is already in flight when deletion begins.',
+        taskId: 'task-being-hard-deleted',
+        categoryId: 'category-before-delete',
+        subtype: 'current',
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        baseUrl: _baseUrl,
+        agentId: agentId,
+      );
+
+      final inFlightWrites = [startWrite(1), startWrite(2)];
+      await bothEmbeddingsStarted.future;
+
+      final quiesce = EmbeddingProcessor.quiesceAgentReportWrites(
+        agentId,
+      ).then((_) => quiesced = true);
+      await pumpEventQueue();
+      expect(quiesced, isFalse);
+
+      releaseEmbeddings.first.complete();
+      expect(await inFlightWrites.first, isTrue);
+      await pumpEventQueue();
+      expect(quiesced, isFalse);
+
+      releaseEmbeddings.last.complete();
+      expect(await inFlightWrites.last, isTrue);
+      await quiesce;
+      expect(quiesced, isTrue);
+
+      final blockedWrite = await EmbeddingProcessor.processAgentReport(
+        reportId: 'report-started-after-delete-began',
+        reportContent:
+            'This report must not start after hard-delete cleanup begins.',
+        taskId: 'task-being-hard-deleted',
+        categoryId: 'category-before-delete',
+        subtype: 'current',
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        baseUrl: _baseUrl,
+        agentId: agentId,
+      );
+      expect(blockedWrite, isFalse);
+      verify(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).called(2);
+    });
+
     test(
       'attributes embedding calls and finalizes the stored vector',
       () async {

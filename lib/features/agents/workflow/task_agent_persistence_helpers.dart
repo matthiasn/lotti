@@ -116,6 +116,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
         reportId: reportId,
         reportContent: reportContent,
         taskId: taskId,
+        agentId: agentId,
         categoryId: categoryId,
         subtype: AgentReportScopes.current,
         embeddingStore: store,
