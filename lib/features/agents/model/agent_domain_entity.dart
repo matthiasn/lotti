@@ -179,6 +179,22 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     @Default(<String>[]) List<String> triggerTokens,
     String? workspaceKey,
     DateTime? consumedAt,
+
+    /// Host that most recently claimed this record, for records whose work
+    /// must run on exactly one device (the coordinator digest).
+    ///
+    /// The record is one synced last-write-wins register, so concurrent claims
+    /// converge to a single surviving host — that convergence *is* the
+    /// election. A claimant confirms by re-reading after a settle period and
+    /// only proceeds if the survivor is still itself.
+    String? leaseHostId,
+
+    /// When the `leaseHostId` claim lapses.
+    ///
+    /// Without an expiry a device that claims and then goes offline would
+    /// silently drop that window forever; past this instant any device may
+    /// claim again.
+    DateTime? leaseUntil,
     DateTime? deletedAt,
   }) = ScheduledWakeEntity;
 

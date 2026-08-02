@@ -548,6 +548,8 @@ Decision section in place.
 
 ## Related
 
+- ADR 0048 (one device runs the coordinator digest — decides which device
+  performs the digest this ADR schedules)
 - ADR 0022 (long-lived planner — amended by this ADR)
 - ADR 0023 (durable domain agents — coordinator remains the negotiation
   counterparty)

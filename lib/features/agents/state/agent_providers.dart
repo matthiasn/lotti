@@ -29,6 +29,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/ai/util/seed_tombstone_migration.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -313,6 +314,22 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
     syncService: ref.watch(agentSyncServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+    // The coordinator's morning digest is the one scheduled wake whose work
+    // is shared rather than device-local: every device firing it means one
+    // inference billed per device for a single result. Everything else stays
+    // on the unleased path.
+    requiresLease: (record) =>
+        record.workspaceKey == coordinatorDigestWorkspaceKey,
+    // `getHost()` reads a `late` field the service only assigns in `init()`,
+    // so a cold start that reaches here first throws
+    // LateInitializationError. The manager would catch that as a per-record
+    // failure and leave a due digest neither claimed nor fired until the next
+    // hourly tick.
+    localHostId: () async {
+      final vectorClock = getIt<VectorClockService>();
+      await vectorClock.initialized;
+      return vectorClock.getHost();
+    },
   );
   ref.onDispose(manager.stop);
   return manager;

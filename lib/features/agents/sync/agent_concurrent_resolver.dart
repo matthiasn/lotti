@@ -70,8 +70,12 @@ ConcurrentWinner resolveConcurrent({
 /// - **Scheduled wakes — a future reschedule beats a past consume.** A pending
 ///   pre-warm targeting a strictly-later instant wins over a concurrent consume
 ///   of an earlier instant, so a re-armed wake is not silently dropped.
-///   Same-instant conflicts defer to LWW (the consume wins), so a stale pending
-///   can never resurrect a wake that already fired — no double-fire.
+///   For the **same** instant, consumption is terminal and wins in both
+///   directions. Deferring to LWW there was the bug this replaces: a peer that
+///   missed the consume can take over past `leaseUntil` and stamp a younger
+///   pending claim, and `updatedAt` LWW would then let that claim beat the
+///   completion — resurrecting a wake that already fired. Same-status
+///   conflicts at one instant are what still defer.
 /// - **Day summaries — earliest `createdAt` wins.** A day summary is the
 ///   planner's contemporaneous testimony about a day; plain LWW would let a
 ///   later (less contemporaneous, possibly stale-device) write silently
@@ -92,8 +96,20 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
   }
   if (local is ScheduledWakeEntity && incoming is ScheduledWakeEntity) {
     final byTarget = local.scheduledAt.compareTo(incoming.scheduledAt);
-    if (byTarget == 0) return null;
-    return byTarget > 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+    if (byTarget != 0) {
+      return byTarget > 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+    }
+    // Consumption is terminal for a wake window. Without this, a peer that saw
+    // the winning lease but missed the later `consumed` write could take over
+    // past `leaseUntil` and write a fresh pending claim; generic updatedAt LWW
+    // would then let that younger claim defeat the completion, and the peer
+    // would bill a second briefing for a window it already knew was finished.
+    // Re-arming the *next* window carries a later scheduledAt, so it is
+    // decided above and never reaches here.
+    final localConsumed = local.status == ScheduledWakeStatus.consumed;
+    final incomingConsumed = incoming.status == ScheduledWakeStatus.consumed;
+    if (localConsumed == incomingConsumed) return null;
+    return localConsumed ? ConcurrentWinner.local : ConcurrentWinner.incoming;
   }
   if (local is DaySummaryEntity && incoming is DaySummaryEntity) {
     final byCreated = local.createdAt.compareTo(incoming.createdAt);
