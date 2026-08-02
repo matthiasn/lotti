@@ -2320,6 +2320,9 @@ void main() {
       final notifications = UpdateNotifications();
       final dayAgentService = MockDayAgentService();
       when(dayAgentService.retirePastDayAgents).thenAnswer((_) async => 2);
+      when(
+        dayAgentService.ensureCoordinatorDigestWake,
+      ).thenAnswer((_) async {});
 
       final container = ProviderContainer(
         overrides: [
@@ -2345,6 +2348,9 @@ void main() {
       await manager.beforeCheck!();
 
       verify(dayAgentService.retirePastDayAgents).called(1);
+      // Armed before the scan, or a retry for an already-past slot would sit
+      // due until the next hourly tick.
+      verify(dayAgentService.ensureCoordinatorDigestWake).called(1);
     });
   });
 

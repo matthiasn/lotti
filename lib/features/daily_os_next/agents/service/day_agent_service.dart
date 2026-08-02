@@ -881,6 +881,22 @@ class DayAgentService {
     );
   }
 
+  /// Ensures the coordinator's digest cadence has a pending record.
+  ///
+  /// Wired into the wake manager's pre-check, so a retry armed for a slot that
+  /// is already past gets scanned by the pass right behind it. Arming it from
+  /// `restoreSubscriptions` alone would not be enough: that runs well after
+  /// the manager's first pass, so the recovered record would sit due until the
+  /// next hourly tick — and a user who opens the app briefly after a crash
+  /// would still get no briefing.
+  ///
+  /// No coordinator means no cadence to bootstrap, and creating one here would
+  /// stand up an agent for a user who never enabled Daily OS.
+  Future<void> ensureCoordinatorDigestWake() async {
+    if (await agentService.getAgent(dailyOsPlannerAgentId) == null) return;
+    await _ensurePendingDigestWake();
+  }
+
   /// Cold-start bootstrap for the coordinator's digest cadence (ADR 0032
   /// phase 3): ensure one pending digest `ScheduledWakeEntity` exists. A
   /// completed digest re-arms the next one deterministically; this covers
@@ -898,7 +914,35 @@ class DayAgentService {
         existing.status == ScheduledWakeStatus.pending) {
       return;
     }
-    final next = await _digestSlotToArm(existing, now);
+    final interrupted = await _interruptedDigest(existing, now);
+    if (interrupted != null) {
+      // Re-armed by `copyWith`, not rebuilt: the retry keeps the consumed
+      // record's `scheduledAt`, and `agent_concurrent_resolver` makes
+      // consumption *terminal* for a wake window. A row stamped from a null
+      // clock would be concurrent with the consumed version on peers and lose
+      // to it — the retry would be rejected everywhere but here. Carrying the
+      // existing clock forward makes the pending row causally dominate, so it
+      // never reaches the concurrent path at all.
+      await syncService.upsertEntity(
+        interrupted.copyWith(
+          status: ScheduledWakeStatus.pending,
+          updatedAt: now,
+          consumedAt: null,
+          // The claim belonged to the run that died. Clearing it lets the
+          // retry re-elect rather than inherit a lease no device now holds.
+          leaseHostId: null,
+          leaseUntil: null,
+        ),
+      );
+      domainLogger.log(
+        LogDomain.agentRuntime,
+        'retrying interrupted coordinator digest for '
+        '${interrupted.scheduledAt.toIso8601String()}',
+        subDomain: 'restore',
+      );
+      return;
+    }
+    final next = nextDigestTime(now);
     await syncService.upsertEntity(
       AgentDomainEntity.scheduledWake(
         id: id,
@@ -919,49 +963,80 @@ class DayAgentService {
     );
   }
 
-  /// The slot to arm: today's again when a run was interrupted before it could
-  /// re-arm, otherwise the ordinary next one.
+  /// The consumed record of a digest this device started today and never
+  /// finished, or null when there is nothing to retry.
   ///
-  /// Reaching here with a *consumed* record means the record fired and neither
-  /// completion path ran — both `_scheduleNextCoordinatorDigest` calls leave a
-  /// pending record behind, on success and on failure alike. So the process
-  /// died mid-digest, and arming `nextDigestTime(now)` would skip to tomorrow:
-  /// today's briefing lost outright rather than retried.
+  /// A *consumed* record means it fired and neither completion path ran — both
+  /// `_scheduleNextCoordinatorDigest` calls leave a pending record behind, on
+  /// success and on failure alike. So the process died mid-digest, and arming
+  /// `nextDigestTime(now)` would skip to tomorrow: today's briefing lost
+  /// outright rather than retried.
   ///
-  /// Re-arming the slot it already passed makes the record due immediately, so
-  /// the retry runs on the first pass after start-up.
-  Future<DateTime> _digestSlotToArm(
+  /// Three conditions bound the retry:
+  ///
+  /// * **This device ran it.** A leased digest records its claimant, and on a
+  ///   peer the consumed row can arrive before the completion milestone that
+  ///   followed it — an absent local watermark there means "not synced yet",
+  ///   not "interrupted". Only the host that held the claim can read its own
+  ///   silence as a crash. An unleased record has no claimant to check.
+  /// * **It ran today.** Judged by `consumedAt` — when the record actually
+  ///   fired — not by `scheduledAt`, which an overdue catch-up keeps from the
+  ///   day it was armed for even though the workflow re-anchors it to today.
+  /// * **No watermark.** See [_digestRanIn].
+  Future<ScheduledWakeEntity?> _interruptedDigest(
     AgentDomainEntity? existing,
     DateTime now,
   ) async {
-    final fallback = nextDigestTime(now);
     if (existing is! ScheduledWakeEntity ||
         existing.status != ScheduledWakeStatus.consumed) {
-      return fallback;
+      return null;
     }
-    final slot = existing.scheduledAt;
-    // Only today's briefing is recoverable. A device off for days has slots it
-    // can no longer usefully fill, and firing them would digest days the
-    // coordinator has already moved past.
-    if (slot.isAfter(now) || localDay(slot) != localDay(now)) return fallback;
-    if (await _digestRanAt(slot)) return fallback;
-    domainLogger.log(
-      LogDomain.agentRuntime,
-      'retrying interrupted coordinator digest for '
-      '${slot.toIso8601String()}',
-      subDomain: 'restore',
-    );
-    return slot;
+    // Falls back to the slot for a record consumed by a build that predates
+    // `consumedAt`; the day check below is what either answer feeds.
+    final ranAt = existing.consumedAt ?? existing.scheduledAt;
+    if (ranAt.isAfter(now) || localDay(ranAt) != localDay(now)) return null;
+    if (!await _thisDeviceRan(existing)) return null;
+    if (await _digestRanIn(ranAt, now)) return null;
+    return existing;
   }
 
-  /// Whether a digest committed its watermark at or after [slot].
+  /// Whether this device was the claimant of [record], or nobody was.
+  ///
+  /// Fail-soft to `false`: an unreadable host id cannot establish that the
+  /// silent watermark is this device's own, and guessing costs a duplicate
+  /// briefing on every peer that guessed the same way.
+  Future<bool> _thisDeviceRan(ScheduledWakeEntity record) async {
+    final claimant = record.leaseHostId;
+    if (claimant == null) return true;
+    try {
+      return await syncService.localHost() == claimant;
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'failed to read local host; skipping the digest retry',
+        stackTrace: s,
+      );
+      return false;
+    }
+  }
+
+  /// Whether a digest committed its watermark between [ranAt] and [now].
   ///
   /// The crash can land *between* the milestone and the re-arm, and that run
   /// did digest the day — retrying it would bill a second inference for a
-  /// briefing the user already has. An unreadable log therefore answers "yes":
-  /// of the two failure modes, a duplicate digest is the one that costs money,
-  /// and a broken message log at cold start is not a state a retry improves.
-  Future<bool> _digestRanAt(DateTime slot) async {
+  /// briefing the user already has.
+  ///
+  /// Bounded at both ends. Synced history can carry a *future-dated*
+  /// `dailyWakeCompleted` from a peer with a skewed clock, which an open-ended
+  /// "at or after" test would read as proof that today's run finished — and
+  /// suppress the very retry this exists for. Only a watermark inside the
+  /// window the interrupted run occupied is evidence about that run.
+  ///
+  /// An unreadable log answers "it ran": of the two failure modes, a duplicate
+  /// digest is the one that costs money, and a broken message log at cold
+  /// start is not a state a retry improves.
+  Future<bool> _digestRanIn(DateTime ranAt, DateTime now) async {
     try {
       final milestones = await repository.getMessagesByKind(
         dailyOsPlannerAgentId,
@@ -970,7 +1045,8 @@ class DayAgentService {
       return milestones.any(
         (m) =>
             m.metadata.milestone == AgentMilestone.dailyWakeCompleted &&
-            !m.createdAt.isBefore(slot),
+            !m.createdAt.isBefore(ranAt) &&
+            !m.createdAt.isAfter(now),
       );
     } catch (e, s) {
       domainLogger.error(

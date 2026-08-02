@@ -246,20 +246,43 @@ due until its asynchronous state update lands, and forgetting it at the
 generation boundary would bill the restarted scan twice. The set crosses only
 this in-flight handoff; an independent later scan starts clean.
 
-The lease recovers the **claim**, not the run — the run is recovered at cold
-start instead. Both completion paths re-arm a *pending* record, on success and
-on failure alike, so a **consumed** record found at start-up means the process
-died mid-digest. `_ensurePendingDigestWake` then re-arms the slot it already
-passed rather than tomorrow's, which makes the record due immediately and runs
-the retry on the first pass.
+The lease recovers the **claim**, not the run — the run is recovered separately.
+Both completion paths re-arm a *pending* record, on success and on failure
+alike, so a **consumed** record means the process died mid-digest.
+`ensureCoordinatorDigestWake` then re-arms the slot it already passed rather
+than tomorrow's, which makes the record due immediately.
 
-Two bounds keep that from costing more than it saves. Only **today's** slot is
-retried: a device off for days cannot usefully fill those windows, and firing
-them would digest days the coordinator has moved past. And the retry is skipped
-when a `dailyWakeCompleted` watermark exists at or after the slot — the crash
-can land between the milestone and the re-arm, and that run did digest the day.
-An unreadable message log answers "it ran", because of the two failure modes a
-duplicate digest is the one that bills.
+It runs from the wake manager's `beforeCheck`, not only from
+`restoreSubscriptions`. The restore pass happens well after the manager's first
+scan, so a record armed there would sit due until the next hourly tick — and a
+user who opens the app briefly after a crash would still get no briefing.
+
+Three bounds keep the retry from costing more than it saves:
+
+- **This device ran it.** On a peer, the consumed row can arrive before the
+  milestone that followed it, so an absent local watermark there means "not
+  synced yet", not "interrupted". Only the host in `leaseHostId` may read its
+  own silence as a crash; an unleased record has no claimant to check.
+- **It ran today**, judged by `consumedAt` rather than `scheduledAt` — an
+  overdue catch-up keeps the slot it was armed for even though the workflow
+  re-anchors it to today.
+- **No `dailyWakeCompleted` watermark inside `[consumedAt, now]`.** The crash
+  can land between the milestone and the re-arm, and that run did digest the
+  day. The window is bounded at *both* ends because synced history can carry a
+  future-dated milestone from a skewed peer clock, which an open-ended test
+  would read as proof today's run finished.
+
+The retry is the consumed record carried forward by `copyWith`, not a fresh
+row. It keeps the same `scheduledAt`, and consumption is **terminal** for a
+wake window (see the resolver above) — a row stamped from a null clock would be
+*concurrent* with the consumed version and lose to it on every peer. Carrying
+the clock forward makes the pending row causally dominate, so it never reaches
+the concurrent path. The lease fields are cleared: the claim belonged to the run
+that died, and the retry re-elects.
+
+Both fail-soft branches decline the retry — an unreadable message log or an
+unreadable local host answers "leave it alone" — because of the two failure
+modes, the duplicate digest is the one that bills.
 
 **The lease bounds cost, not correctness.** Devices partitioned from sync while
 their model providers stay reachable can each hold a locally-consistent claim and

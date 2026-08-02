@@ -10,6 +10,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.da
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -19,6 +20,18 @@ import '../../../agents/test_utils.dart';
 class _TransactionTrackingAgentSyncService extends MockAgentSyncService {
   final events = <String>[];
   bool inTransaction = false;
+
+  /// Thrown by [localHost] when set. The shared mock hard-codes a host, so a
+  /// test that needs the lookup to fail needs a seam of its own.
+  Object? localHostError;
+
+  @override
+  Future<String> localHost() async {
+    final error = localHostError;
+    // ignore: only_throw_errors
+    if (error != null) throw error;
+    return super.localHost();
+  }
 
   @override
   Future<T> runInTransaction<T>(Future<T> Function() action) async {
@@ -486,19 +499,25 @@ void main() {
         );
       });
 
-      /// A digest record that fired at 06:00 today and was consumed.
-      AgentDomainEntity consumedTodayAt(DateTime slot) =>
-          AgentDomainEntity.scheduledWake(
-            id: digestRecordId,
-            agentId: dailyOsPlannerAgentId,
-            scheduledAt: slot,
-            status: ScheduledWakeStatus.consumed,
-            reason: dayAgentDigestReason,
-            updatedAt: now,
-            vectorClock: null,
-            triggerTokens: [dayAgentDigestToken('dayplan-2026-05-25')],
-            workspaceKey: coordinatorDigestWorkspaceKey,
-          );
+      /// A digest record that fired and was consumed.
+      AgentDomainEntity consumedTodayAt(
+        DateTime slot, {
+        DateTime? consumedAt,
+        String? leaseHostId,
+        VectorClock? vectorClock,
+      }) => AgentDomainEntity.scheduledWake(
+        id: digestRecordId,
+        agentId: dailyOsPlannerAgentId,
+        scheduledAt: slot,
+        consumedAt: consumedAt,
+        leaseHostId: leaseHostId,
+        status: ScheduledWakeStatus.consumed,
+        reason: dayAgentDigestReason,
+        updatedAt: now,
+        vectorClock: vectorClock,
+        triggerTokens: [dayAgentDigestToken('dayplan-2026-05-25')],
+        workspaceKey: coordinatorDigestWorkspaceKey,
+      );
 
       test('re-arms tomorrow after a digest that completed today', () async {
         withDigestWatermarks([digestWatermark(DateTime(2026, 5, 25, 6, 2))]);
@@ -552,6 +571,102 @@ void main() {
         // filled, and firing it would digest a day already moved past.
         await restoreWithPlanner(
           existingRecord: consumedTodayAt(DateTime(2026, 5, 22, 6)),
+        );
+
+        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 26, 6));
+      });
+
+      test('judges the day by when the record fired, not its slot', () async {
+        withDigestWatermarks([]);
+
+        // An overdue digest armed days ago but consumed today: the workflow
+        // re-anchors it to today, while the record keeps its stale slot.
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(
+            DateTime(2026, 5, 22, 6),
+            consumedAt: DateTime(2026, 5, 25, 7, 30),
+          ),
+        );
+
+        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 22, 6));
+      });
+
+      test('a future-dated watermark does not suppress the retry', () async {
+        // Synced history from a peer with a skewed clock. An open-ended "at or
+        // after" test would read this as proof today's run finished.
+        withDigestWatermarks([digestWatermark(DateTime(2026, 5, 30, 6))]);
+
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(DateTime(2026, 5, 25, 6)),
+        );
+
+        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 25, 6));
+      });
+
+      test('a peer does not retry a digest another host claimed', () async {
+        withDigestWatermarks([]);
+        // On this device the missing watermark means "not synced yet", not
+        // "interrupted" — the consumed row can arrive before the milestone.
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(
+            DateTime(2026, 5, 25, 6),
+            leaseHostId: 'another-host',
+          ),
+        );
+
+        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 26, 6));
+      });
+
+      test('the claimant itself does retry its own interrupted run', () async {
+        withDigestWatermarks([]);
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(
+            DateTime(2026, 5, 25, 6),
+            // The shared mock's fixed local host.
+            leaseHostId: 'test-host',
+          ),
+        );
+
+        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 25, 6));
+      });
+
+      test(
+        'the retry carries the consumed record forward, not a new row',
+        () async {
+          withDigestWatermarks([]);
+          const clock = VectorClock({'host-a': 7, 'host-b': 3});
+
+          await restoreWithPlanner(
+            existingRecord: consumedTodayAt(
+              DateTime(2026, 5, 25, 6),
+              vectorClock: clock,
+            ),
+          );
+
+          final record = upsertedWakes().single;
+          // Stamped from the consumed clock, the pending row causally dominates.
+          // Built from null it would be *concurrent*, and the resolver makes
+          // consumption terminal — every peer would reject the retry.
+          expect(record.vectorClock, clock);
+          expect(record.status, ScheduledWakeStatus.pending);
+          // The claim belonged to the run that died; the retry re-elects.
+          expect(record.consumedAt, isNull);
+          expect(record.leaseHostId, isNull);
+          expect(record.leaseUntil, isNull);
+        },
+      );
+
+      test('an unreadable local host skips the retry', () async {
+        withDigestWatermarks([]);
+        syncService.localHostError = StateError('no host id');
+
+        // Guessing costs a duplicate briefing on every peer that guessed the
+        // same way, so an unanswerable claim check declines to retry.
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(
+            DateTime(2026, 5, 25, 6),
+            leaseHostId: 'another-host',
+          ),
         );
 
         expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 26, 6));
