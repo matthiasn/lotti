@@ -35,14 +35,6 @@ void main() {
   const testAgentId = 'agent-001';
   const otherAgentId = 'agent-002';
 
-  Future<WakeRunLogData?> getWakeRun(
-    AgentDatabase database,
-    String runKey,
-  ) async {
-    final rows = await database.getWakeRunByKey(runKey).get();
-    return rows.isEmpty ? null : rows.first;
-  }
-
   Future<void> updateWakeRunRating(
     AgentDatabase database,
     String runKey, {
@@ -3675,10 +3667,6 @@ void main() {
     );
   });
 
-  // ── Saga log ────────────────────────────────────────────────────────────────
-
-  // ── hardDeleteAgent ─────────────────────────────────────────────────────────
-
   group('runInTransaction', () {
     test('commits all operations atomically', () async {
       final agent = makeAgent();
@@ -3736,6 +3724,8 @@ void main() {
       expect(result, 42);
     });
   });
+
+  // ── hardDeleteAgent ───────────────────────────────────────────────────────
 
   group('hardDeleteAgent', () {
     final deleteDate = DateTime(2026, 2, 21);
@@ -5927,8 +5917,6 @@ void main() {
     });
   });
 
-  // ── countEntitiesByAgentAndType (facade delegation) ───────────────────────
-
   // ── countEntitiesByType (facade delegation) ───────────────────────────────
 
   group('countEntitiesByType', () {
@@ -5956,7 +5944,7 @@ void main() {
     });
   });
 
-  // ── getEvolutionSessionRecaps / getEvolutionSessionRecap ──────────────────
+  // ── getEvolutionSessionRecaps ─────────────────────────────────────────────
 
   group('getEvolutionSessionRecaps', () {
     const templateId = 'tpl-recap-001';
@@ -6185,8 +6173,6 @@ void main() {
       expect(result.length, 2);
     });
   });
-
-  // ── getGlobalTokenUsageSince ──────────────────────────────────────────────
 
   // ── getActiveSoulDocumentVersionsBySoulIds empty branch ───────────────────
 

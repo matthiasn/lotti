@@ -175,8 +175,7 @@ void main() {
       );
 
       await links.updateWakeRunStatus('run-1', 'completed');
-      final rows = await db.getWakeRunByKey('run-1').get();
-      expect(rows.single.status, 'completed');
+      expect((await getWakeRun(db, 'run-1'))?.status, 'completed');
     });
 
     test('insertWakeRun throws on a duplicate run key', () async {
@@ -204,8 +203,7 @@ void main() {
 
       final count = await links.abandonOrphanedWakeRuns();
       expect(count, 1);
-      final rows = await db.getWakeRunByKey('orphan').get();
-      expect(rows.single.status, 'abandoned');
+      expect((await getWakeRun(db, 'orphan'))?.status, 'abandoned');
     });
   });
 
@@ -232,7 +230,7 @@ void main() {
       await links.hardDeleteAgent('agent-del');
 
       expect(await links.getLinksFrom('agent-del'), isEmpty);
-      expect(await db.getWakeRunByKey('run-del').get(), isEmpty);
+      expect(await getWakeRun(db, 'run-del'), isNull);
     });
 
     test('reports links between two of the agent-owned entities', () async {

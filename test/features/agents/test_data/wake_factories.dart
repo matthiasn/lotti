@@ -42,6 +42,14 @@ WakeRunLogData makeTestWakeRun({
   );
 }
 
+Future<WakeRunLogData?> getWakeRun(
+  AgentDatabase database,
+  String runKey,
+) async {
+  final rows = await database.getWakeRunByKey(runKey).get();
+  return rows.isEmpty ? null : rows.first;
+}
+
 WakeTokenUsageEntity makeTestWakeTokenUsage({
   String id = 'token-usage-001',
   String agentId = kTestAgentId,
