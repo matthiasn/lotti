@@ -56,9 +56,15 @@ than from `updatedAt`, which is serialized without an offset.
 
 ## Consequences
 
-- The digest costs one inference per window regardless of device count.
-- A window can be delayed by up to the lease duration when a claimant dies
-  immediately after claiming. It is never skipped.
+- **While devices can see each other's writes**, the digest costs one inference
+  per window regardless of device count. That is the whole point of the change,
+  and it is conditional on sync — see the third bullet for what happens when it
+  is unavailable.
+- A window can be delayed by up to `leaseDuration + leaseSettle` when a claimant
+  dies immediately after claiming: the record stays claimed until `leaseUntil`,
+  and the device that takes over then writes its own claim and waits out its own
+  settle before firing. With the defaults that is about 33 minutes. It is never
+  skipped.
 - The lease is a **cost** mechanism, not a correctness one. It narrows the
   double-fire window rather than closing it: devices partitioned from sync while
   their model providers stay reachable can each hold a locally-consistent claim
