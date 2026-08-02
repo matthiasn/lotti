@@ -133,15 +133,15 @@ class AgentRepoObservationRetention {
 
     final ids = [for (final row in rows) row.read<String>('id')];
     final parents = await _messagePrevParents(ids);
-    // A message carries its parent in `prevMessageId` as well as in the
-    // separately-synced link row. Trusting only the link would read a message
-    // whose link has not arrived as a root and prune it, forking the moment
-    // the link lands — so union the two.
+    // `prevMessageId` is kept *apart* from the link rows rather than unioned
+    // into them: the two are different evidence. See `PrunableMessage`.
+    final hints = <String, List<String>>{};
     for (final row in rows) {
       final prev = row.readNullable<String>('prev_message_id');
       if (prev == null) continue;
-      final known = parents.putIfAbsent(row.read<String>('id'), () => []);
-      if (!known.contains(prev)) known.add(prev);
+      final id = row.read<String>('id');
+      if (parents[id]?.contains(prev) ?? false) continue;
+      hints.putIfAbsent(id, () => []).add(prev);
     }
     final protectedIds = await _protectedMessageIds(agentId);
     if (protectedIds.isEmpty) {
@@ -162,6 +162,7 @@ class AgentRepoObservationRetention {
             isObservation:
                 row.readNullable<String>('subtype') == _observationSubtype,
             parentIds: parents[row.read<String>('id')] ?? const [],
+            hintedParentIds: hints[row.read<String>('id')] ?? const [],
           ),
       ],
       cutoff: cutoff,

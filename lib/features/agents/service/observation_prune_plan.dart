@@ -13,6 +13,7 @@ class PrunableMessage {
     required this.createdAt,
     required this.isObservation,
     required this.parentIds,
+    this.hintedParentIds = const [],
   });
 
   final String id;
@@ -22,8 +23,21 @@ class PrunableMessage {
   /// durable memory.
   final bool isObservation;
 
-  /// This message's `messagePrev` parents (0..n; n > 1 denotes a join).
+  /// Parents named by an existing `messagePrev` **link row** (0..n; n > 1
+  /// denotes a join). The canonical edge — `agentEventsFromLog` builds the
+  /// causal graph from exactly these.
   final List<String> parentIds;
+
+  /// Parents named only by the message's own `prevMessageId`, with no link row
+  /// backing them.
+  ///
+  /// The two carry different evidence, and conflating them deadlocks the
+  /// sweep. A link that is present while its parent is missing means the edge
+  /// synced ahead of the node, so the parent is genuinely in flight. A
+  /// `prevMessageId` with *no* link means the link was deleted — which is what
+  /// this sweep does to every edge pointing into what it removes — so the
+  /// parent is already collected and constrains nothing.
+  final List<String> hintedParentIds;
 }
 
 /// What a sweep should delete for one thread.
@@ -91,6 +105,15 @@ ObservationPrunePlan planObservationPrune({
     for (final message in messages) message.id: message,
   };
 
+  /// Linked parents, plus hinted parents whose row is actually present — a
+  /// hint that resolves is as binding as an edge, and one that does not names
+  /// a row an earlier sweep took.
+  List<String> effectiveParents(PrunableMessage message) => [
+    ...message.parentIds,
+    for (final id in message.hintedParentIds)
+      if (byId.containsKey(id) && !message.parentIds.contains(id)) id,
+  ];
+
   // Deterministic iteration order, so two devices with the same log produce
   // the same plan and a truncated sweep resumes predictably.
   final ordered = byId.values.toList()
@@ -127,7 +150,11 @@ ObservationPrunePlan planObservationPrune({
         continue;
       }
 
-      // An edge pointing at a row we cannot see: refuse rather than guess.
+      // A *linked* edge pointing at a row we cannot see: the node is still in
+      // flight, so refuse rather than guess. A hinted parent that is absent
+      // was collected by an earlier sweep and is ignored — otherwise the
+      // oldest survivor, which keeps `prevMessageId` naming the row just
+      // deleted, would block itself and everything after it forever.
       if (message.parentIds.any((parentId) => !byId.containsKey(parentId))) {
         prunable[id] = false;
         stack.removeLast();
@@ -136,7 +163,7 @@ ObservationPrunePlan planObservationPrune({
       }
 
       final unresolved = [
-        for (final parentId in message.parentIds)
+        for (final parentId in effectiveParents(message))
           if (!prunable.containsKey(parentId) && !onStack.contains(parentId))
             parentId,
       ];
@@ -149,10 +176,12 @@ ObservationPrunePlan planObservationPrune({
       // A parent still on the stack — including this message itself — is a
       // cycle, so the log is malformed. Refuse to prune rather than reason
       // about it; the sweep is best-effort and a wrong delete is permanent.
-      final cyclic = message.parentIds.any(onStack.contains);
+      final cyclic = effectiveParents(message).any(onStack.contains);
       prunable[id] =
           !cyclic &&
-          message.parentIds.every((parentId) => prunable[parentId] ?? false);
+          effectiveParents(
+            message,
+          ).every((parentId) => prunable[parentId] ?? false);
       stack.removeLast();
       onStack.remove(id);
     }
@@ -169,7 +198,7 @@ ObservationPrunePlan planObservationPrune({
       if (planned.length >= limit) break;
       if (emitted.contains(message.id)) continue;
       if (!(prunable[message.id] ?? false)) continue;
-      final parentsReady = message.parentIds.every(emitted.contains);
+      final parentsReady = effectiveParents(message).every(emitted.contains);
       if (!parentsReady) continue;
       planned.add(message.id);
       emitted.add(message.id);

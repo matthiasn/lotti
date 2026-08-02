@@ -249,6 +249,93 @@ void main() {
     });
   });
 
+  group('repeated sweeps', () {
+    /// Seeds the way production appends: **both** the `messagePrev` link and
+    /// `prevMessageId` on every message. Fixtures that set only the link hid
+    /// the stall this group exists to pin.
+    Future<void> seedAsProduction(
+      String id,
+      DateTime at, {
+      String? parent,
+      AgentMessageKind kind = AgentMessageKind.observation,
+    }) async {
+      await core.upsertEntity(
+        makeTestMessage(
+          id: id,
+          agentId: agentId,
+          threadId: threadId,
+          createdAt: at,
+          kind: kind,
+          prevMessageId: parent,
+        ),
+      );
+      if (parent != null) {
+        await links.upsertLink(
+          AgentLink.messagePrev(
+            id: 'link-$id',
+            fromId: id,
+            toId: parent,
+            createdAt: at,
+            updatedAt: at,
+            vectorClock: null,
+          ),
+        );
+      }
+      await setHead(id);
+    }
+
+    test('successive sweeps keep making progress', () async {
+      await seedAsProduction('a', oldest);
+      await seedAsProduction('b', older, parent: 'a');
+      await seedAsProduction('c', old, parent: 'b');
+      await seedAsProduction('tip', young, parent: 'c');
+
+      // One at a time, so a stall shows up as an empty second result rather
+      // than being masked by a single generous batch.
+      final first = await sweep(limit: 1);
+      final second = await sweep(limit: 1);
+      final third = await sweep(limit: 1);
+
+      expect(first.messageIds, ['a']);
+      expect(
+        second.messageIds,
+        ['b'],
+        reason:
+            'The oldest survivor keeps prevMessageId naming the row just '
+            'deleted; treating that as an in-flight parent stalls the sweep '
+            'permanently after its first pass.',
+      );
+      expect(third.messageIds, ['c']);
+      expect(await messageIds(), ['tip']);
+
+      final projection = await survivingProjection();
+      expect(projection.headIds, ['tip']);
+      expect(projection.danglingParentIds, isEmpty);
+    });
+
+    test(
+      'an in-flight parent still blocks, link present but node absent',
+      () async {
+        // The link synced ahead of its node — the case the absent-parent rule
+        // exists for, and the one a blanket "ignore missing parents" would break.
+        await seedAsProduction('b', older);
+        await links.upsertLink(
+          AgentLink.messagePrev(
+            id: 'link-b-inflight',
+            fromId: 'b',
+            toId: 'not-yet-synced',
+            createdAt: older,
+            updatedAt: older,
+            vectorClock: null,
+          ),
+        );
+        await seedAsProduction('tip', young, parent: 'b');
+
+        expect((await sweep()).isEmpty, isTrue);
+      },
+    );
+  });
+
   group('partial sync', () {
     test('refuses to prune while there is no live head', () async {
       await seedMessage('a', oldest);

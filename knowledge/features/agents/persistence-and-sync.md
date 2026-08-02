@@ -345,7 +345,7 @@ inside the agent's causal message DAG, which is where a naive sweep does damage:
 |---|---|---|
 | `message_prev` edges | Deleting a *mid-chain* observation cuts the chain in two. `project()` calls every unreferenced event a head, so the deleted row's parent becomes a second head and the next wake mistakes a retention cut for a real multi-device fork | Only **ancestor-closed** sets are pruned: if a message goes, so does every one of its parents, so no survivor can lose a child |
 | Chains that cross threads | `recentHeadMessageId` is per **agent**, and `AgentSyncService._appendMessage` chains each wake's first message off the previous wake's tip — the sync service exists partly to stop a stale head forking the DAG "at the wake boundary". Planning per thread would read a cross-thread parent as absent | The sweep plans over an agent's **whole** message log, never a thread slice |
-| A parent that has not synced yet | A `messagePrev` link can arrive before the entity it points at, and an in-flight parent looks identical to one an earlier sweep took. Treating absence as "already gone" prunes the child and forks when the parent lands | A message with **any** absent parent is not prunable. A genuinely pruned parent leaves no edge at all — the sweep deletes the edges into whatever it deletes — so a dangling edge always means "not yet" |
+| A parent that has not synced yet | A `messagePrev` link can arrive before the entity it points at, and an in-flight parent looks identical to one an earlier sweep took. Treating absence as "already gone" prunes the child and forks when the parent lands | A missing parent named by a **link row** blocks the prune; one named only by `prevMessageId`, with no link, was collected by an earlier sweep and is ignored. The sweep deletes the edges into whatever it removes, so the surviving link set is what distinguishes the two — `prevMessageId` alone cannot, and treating it as an edge stalls the sweep after one pass |
 | `viewComplete` | A survivor still pointing at a pruned parent leaves a permanent dangling parent, and `planJoin` is gated on `danglingParentIds.isEmpty` — fork healing would switch off for good, unbounding the very context retention exists to bound | Every `message_prev` edge **into** the pruned set is deleted with it, leaving the oldest survivor a parentless root |
 | `AgentStateEntity.recentHeadMessageId` | A head pointing at a deleted message is trusted on the next append, creating a permanent dangling parent | `recentHeadMessageId` and `latestSummaryMessageId` are protected, and nothing downstream of them is prunable either |
 | `agentMessagePayload` | Payloads written by `AgentInputCaptureService` are **user content**, content-addressed under `sharedContentAgentId` and referenced by `messagePayload` **links** — not by any message's `contentEntryId`. An ownership check based on `contentEntryId` reads them as orphans and deletes them | Payload rows are never deleted. Only the pruned message's own edge to one goes |
@@ -393,9 +393,20 @@ cannot see enough to be sure:
   eligible on paper — and a later state update would then install a head
   pointing at a row that no longer exists, which `_appendMessage` chains off.
 - **A parent known only to the entity.** A message carries `prevMessageId` as
-  well as its separately-synced `messagePrev` link, so the sweep unions both.
-  Trusting the link alone reads a message whose link has not arrived as a root
-  and prunes it, forking the moment the link lands.
+  well as its separately-synced `messagePrev` link, and the two are *different
+  evidence* — conflating them deadlocks the sweep.
+
+  | What is seen | What it means | Effect |
+  |---|---|---|
+  | Link row present, parent row absent | The edge synced ahead of its node | **Blocks** — the parent is in flight |
+  | `prevMessageId` set, resolves to a present row | A real parent whose link has not arrived | Binding, exactly like an edge |
+  | `prevMessageId` set, no link, target absent | The link was deleted with the parent — which is what this sweep does | Ignored — already collected |
+
+  Getting that last row wrong is not academic: treating it as in-flight makes
+  the oldest survivor block on the row the sweep just deleted, so retention
+  collects **one message per agent and then stalls forever**. The
+  `repeated sweeps` tests pin it, seeding chains the way production appends —
+  both the link *and* `prevMessageId`, which earlier fixtures did not.
 
 ## Hard delete, no tombstone — and no inbound guard
 
