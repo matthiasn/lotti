@@ -14,6 +14,7 @@ import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.d
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
+import 'package:lotti/features/daily_os_next/state/day_agent_persona_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -1175,6 +1177,50 @@ void main() {
       expect(toggleTop, greaterThan(dateBottom));
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'a second row too narrow for both drops the actions below the toggle',
+      (tester) async {
+        // Narrow enough that the toggle and the trailing actions cannot sit
+        // side by side. Pinning them to opposite edges without a fit check
+        // overlapped them, hiding toggle segments behind the filter/menu
+        // cluster.
+        _setSurfaceSize(tester, const Size(390, 900));
+        const label = 'May 31, 2026';
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(
+              draft: _drafted(),
+              dateStrip: _dateStripLike(label),
+            ),
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: const Size(390, 900),
+              textScaler: const TextScaler.linear(1.3),
+            ),
+            overrides: [
+              // A non-idle agent renders the "Needs attention" pill, which is
+              // what makes the actions cluster wide enough to collide.
+              dayAgentPersonaStateProvider.overrideWith(
+                (ref, date) async => DayAgentPersonaState.attention,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final toggle = tester.getRect(find.byType(PlanViewToggle));
+        final actions = tester.getRect(
+          find.byType(ProcessingCategoryFilterButton),
+        );
+        expect(
+          toggle.overlaps(actions),
+          isFalse,
+          reason: 'the toggle and the header actions must never overlap',
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('header relayouts when design-system spacing changes', (
       tester,

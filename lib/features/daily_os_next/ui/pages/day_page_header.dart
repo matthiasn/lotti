@@ -377,11 +377,37 @@ class _RenderMeasuredDayHeader extends RenderBox
     );
     titleSize = title.size;
 
-    final secondRowHeight = math.max(toggleSize.height, actionsSize.height);
+    // The toggle and the actions only share the second row if they actually
+    // fit side by side. Pinning them to opposite edges without checking
+    // overlaps them the moment the actions cluster grows — a non-idle
+    // "Needs attention" agent chip, or any large text scale.
+    final toggleRoom = contentWidth - actionsSize.width - itemGap;
+    final shareSecondRow = toggleRoom > 0;
+    if (shareSecondRow) {
+      // The segmented toggle compacts itself to icons under a tight
+      // constraint, so hand it exactly the room that is left.
+      toggle.layout(
+        BoxConstraints.loose(Size(toggleRoom, maxChildHeight)),
+        parentUsesSize: true,
+      );
+    }
+    final placedToggleSize = toggle.size;
+
+    final secondRowHeight = shareSecondRow
+        ? math.max(placedToggleSize.height, actionsSize.height)
+        : placedToggleSize.height;
+    final thirdRowHeight = shareSecondRow ? 0.0 : actionsSize.height;
+    final thirdRowGap = shareSecondRow ? 0.0 : rowGap;
+
     size = constraints.constrain(
       Size(
         width,
-        verticalPadding * 2 + titleSize.height + rowGap + secondRowHeight,
+        verticalPadding * 2 +
+            titleSize.height +
+            rowGap +
+            secondRowHeight +
+            thirdRowGap +
+            thirdRowHeight,
       ),
     );
 
@@ -391,14 +417,16 @@ class _RenderMeasuredDayHeader extends RenderBox
       toggle,
       Offset(
         horizontalPadding,
-        secondRowTop + (secondRowHeight - toggleSize.height) / 2,
+        secondRowTop + (secondRowHeight - placedToggleSize.height) / 2,
       ),
     );
     _position(
       actions,
       Offset(
         width - horizontalPadding - actionsSize.width,
-        secondRowTop + (secondRowHeight - actionsSize.height) / 2,
+        shareSecondRow
+            ? secondRowTop + (secondRowHeight - actionsSize.height) / 2
+            : secondRowTop + secondRowHeight + rowGap,
       ),
     );
   }

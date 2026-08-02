@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
@@ -85,6 +87,30 @@ DraftPlan _draftPlan() {
 
 /// Recorder stub whose denied permission keeps toggle() a no-op error path,
 /// so root-page tests never touch the mic or transcription stack.
+/// Asserts the date label is rendered in full at its current layout.
+///
+/// Comparing the label's *laid-out* size against the reserved width proves
+/// nothing: the `Text` sits inside the production `ConstrainedBox`, so it
+/// reports the reserved width whether or not the string fit, and the ellipsis
+/// hides the difference. The honest check is the paragraph's own intrinsic
+/// width plus its overflow flag.
+void _expectLabelNotTruncated(WidgetTester tester, Finder label) {
+  final paragraph = tester.renderObject<RenderParagraph>(label);
+  final intrinsic = paragraph.getMaxIntrinsicWidth(double.infinity);
+  expect(
+    paragraph.didExceedMaxLines,
+    isFalse,
+    reason: 'the date label was ellipsized',
+  );
+  expect(
+    paragraph.size.width,
+    greaterThanOrEqualTo(intrinsic - 0.01),
+    reason:
+        'the reserved slot (${paragraph.size.width}) is narrower than the '
+        'string needs ($intrinsic)',
+  );
+}
+
 /// Sizes the test view so a "phone" test really lays out at phone width —
 /// a MediaQuery override alone leaves the render tree on the 800x600
 /// default surface, where a squeezed header would still have room.
@@ -560,6 +586,57 @@ void main() {
     );
 
     testWidgets(
+      "a selection far from today still gets the picker's Today action",
+      (tester) async {
+        _setSurfaceSize(tester, const Size(390, 844));
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(recorder: _permissionlessRecorder()),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // More than a year out. Anchoring the picker window on the
+          // selection alone would put today outside it, and the picker
+          // disables its own Today action when today is out of range —
+          // leaving a phone, which carries no Today button, with no way back.
+          ProviderScope.containerOf(
+                tester.element(find.byType(DailyOsNextRoot)),
+              )
+              .read(dailyOsNextSelectedDateProvider.notifier)
+              .select(DateTime(2028, 2, 10));
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.text('Thu, Feb 10'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byType(CalendarDatePicker), findsOneWidget);
+
+          await tester.tap(find.text('Today'));
+          await tester.pump();
+          await tester.tap(find.text('Done'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump();
+
+          expect(find.text('Today'), findsOneWidget);
+          expect(find.text('Thu, Feb 10'), findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
       'the phone header gives day navigation a row of its own, unsqueezed',
       (tester) async {
         _setSurfaceSize(tester, const Size(390, 844));
@@ -587,21 +664,9 @@ void main() {
           final label = find.text('Wed, May 27');
           expect(label, findsOneWidget);
 
-          // The label got the full width it reserved: nothing on the
-          // navigation row squeezed it into an ellipsis.
-          final reserved = tester
-              .widget<ConstrainedBox>(
-                find
-                    .ancestor(of: label, matching: find.byType(ConstrainedBox))
-                    .first,
-              )
-              .constraints
-              .minWidth;
-          expect(
-            tester.getSize(label).width,
-            greaterThanOrEqualTo(reserved),
-            reason: 'the date must not be truncated on a phone',
-          );
+          // Nothing on the navigation row squeezed the date into an
+          // ellipsis.
+          _expectLabelNotTruncated(tester, label);
 
           // Navigation owns its row: the view toggle and the trailing
           // actions sit strictly below the chevrons.
@@ -725,8 +790,11 @@ void main() {
 
           final label = find.text('Wed, Sep 30, 2026');
           expect(label, findsOneWidget);
-          final labelWidth = tester.getSize(label).width;
-          final reserved = tester
+          // Nothing is clipped: the reservation covers what the string
+          // actually needs at this scale, measured intrinsically rather than
+          // read back off the constrained box.
+          _expectLabelNotTruncated(tester, label);
+          return tester
               .widget<ConstrainedBox>(
                 find
                     .ancestor(
@@ -737,10 +805,6 @@ void main() {
               )
               .constraints
               .minWidth;
-          // Nothing is clipped: the reserved box is wide enough for the
-          // string it holds at this scale.
-          expect(reserved, greaterThanOrEqualTo(labelWidth));
-          return reserved;
         }
 
         await withClock(Clock.fixed(DateTime(2026, 9, 29, 9)), () async {

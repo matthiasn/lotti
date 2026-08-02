@@ -85,26 +85,35 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     // `lastDate`. Day arithmetic via the `DateTime` constructor stays
     // DST-safe.
     final selected = ref.read(dailyOsNextSelectedDateProvider);
+    final today = _today;
+    // ...but always keep today inside the window. A selection more than a
+    // year out would otherwise fall outside it, and the picker disables its
+    // own Today action when today is out of range — exactly the case where
+    // the phone, which carries no Today button, needs it most.
+    final firstDate = _earlier(
+      DateTime(selected.year - 1, selected.month, selected.day),
+      today,
+    );
+    final lastDate = _later(
+      DateTime(selected.year + 1, selected.month, selected.day),
+      today,
+    );
     final picked = await showDesignSystemDatePicker(
       context: context,
       title: context.messages.dailyOsNextDayTitle,
       initialDate: selected,
-      firstDate: DateTime(
-        selected.year - 1,
-        selected.month,
-        selected.day,
-      ),
-      lastDate: DateTime(
-        selected.year + 1,
-        selected.month,
-        selected.day,
-      ),
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     final date = picked?.date;
     if (date != null) {
       ref.read(dailyOsNextSelectedDateProvider.notifier).select(date);
     }
   }
+
+  DateTime _earlier(DateTime a, DateTime b) => a.isAfter(b) ? b : a;
+
+  DateTime _later(DateTime a, DateTime b) => a.isBefore(b) ? b : a;
 
   void _goToToday() {
     ref.read(dailyOsNextSelectedDateProvider.notifier).goToToday();
@@ -258,6 +267,10 @@ class _DateStrip extends StatelessWidget {
             leadingIcon: Icons.today_rounded,
             variant: DesignSystemButtonVariant.outlined,
             size: DesignSystemButtonSize.dense,
+            // The row is already 48dp tall because of the chevrons, so the
+            // padded target costs no height and keeps Today no harder to hit
+            // than either arrow.
+            tapTargetSize: MaterialTapTargetSize.padded,
             onPressed: onToday,
           ),
         ],

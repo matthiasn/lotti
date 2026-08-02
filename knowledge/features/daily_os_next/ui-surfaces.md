@@ -136,6 +136,17 @@ Three invariants make repeated navigation cheap:
   `showDesignSystemDatePicker`, which the label opens, carries its own Today
   quick action, so the way back to today survives without spending header
   width on it.
+```mermaid
+stateDiagram-v2
+  [*] --> NoExplicitPick: app start
+  NoExplicitPick --> DefaultAgenda: render, day has a plan
+  NoExplicitPick --> DefaultActivity: render, day has no plan
+  DefaultAgenda --> ExplicitPick: user taps the toggle
+  DefaultActivity --> ExplicitPick: user taps the toggle
+  ExplicitPick --> ExplicitPick: date changes (chevrons / Today / picker / sidebar)
+  ExplicitPick --> [*]: app restart clears the in-memory provider
+```
+
 - **The projection survives the day change.** The root re-keys `DayPage` on
   every date change, so the selected `PlanView` lives in
   `dailyOsNextPlanViewProvider` rather than in the page's `State`. `null` there
