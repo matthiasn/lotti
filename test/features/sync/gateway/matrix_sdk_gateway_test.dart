@@ -501,10 +501,6 @@ void main() {
     await gateway.sendText(roomId: '!room:server', message: 'hi');
 
     expect(sentEventRegistry.consume(r'$text-evt'), isTrue);
-    expect(
-      sentEventRegistry.debugSource(r'$text-evt'),
-      equals(SentEventSource.text),
-    );
   });
 
   test('sendFile throws when matrix SDK returns null id', () async {
@@ -555,10 +551,6 @@ void main() {
             room.sendFileEvent(any(), extraContent: any(named: 'extraContent')),
       );
       expect(sentEventRegistry.consume(r'$plain'), isTrue);
-      expect(
-        sentEventRegistry.debugSource(r'$plain'),
-        equals(SentEventSource.file),
-      );
     },
   );
 
@@ -575,10 +567,6 @@ void main() {
     );
 
     expect(sentEventRegistry.consume(r'$file-evt'), isTrue);
-    expect(
-      sentEventRegistry.debugSource(r'$file-evt'),
-      equals(SentEventSource.file),
-    );
   });
 
   test('keyVerificationRequests proxies the underlying stream', () async {

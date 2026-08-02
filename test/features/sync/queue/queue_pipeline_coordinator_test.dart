@@ -2588,7 +2588,6 @@ void main() {
               'separate ones',
         );
         // Single call covers the whole burst.
-        verifyNever(() => queue.resurrectByPath(any()));
 
         await coordinator.stop();
       },
@@ -4960,7 +4959,7 @@ void main() {
         // processor's retriable flag so the next prepare succeeds,
         // then record an attachment event for the matching path. The
         // coordinator's `pathRecorded` subscription fires, calls
-        // `queue.resurrectByPath`, and the worker wakes.
+        // `queue.resurrectByPaths`, and the worker wakes.
         attachmentAvailable = true;
 
         final attachmentEvent = MockEvent();
@@ -5105,7 +5104,7 @@ void main() {
         // `AttachmentIngestor.process` which calls
         // `attachmentIndex.record(event)` synchronously. That fires
         // `pathRecorded` -> the coordinator's own subscription calls
-        // `queue.resurrectByPath(path)` -> the row flips back to
+        // `queue.resurrectByPaths([path])` -> the row flips back to
         // `enqueued` and the next prepare succeeds (we flip the flag
         // right before emitting the event).
         attachmentAvailable = true;

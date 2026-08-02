@@ -1,13 +1,6 @@
 import 'dart:collection';
 
 import 'package:clock/clock.dart';
-import 'package:meta/meta.dart';
-
-/// Identifies the origin of a sent event for diagnostics.
-enum SentEventSource {
-  text,
-  file,
-}
 
 /// In-memory registry of Matrix event IDs emitted by this device.
 ///
@@ -36,25 +29,18 @@ class SentEventRegistry {
       LinkedHashMap<String, _RegistryEntry>();
   DateTime _nextPruneAt;
 
-  /// Registers [eventId] with a fresh expiry and retains the most recent
-  /// source label so diagnostics can attribute suppressed traffic. The entry
-  /// is (re)queued at the tail so FIFO eviction behaves deterministically.
-  void register(
-    String eventId, {
-    SentEventSource? source,
-  }) {
+  /// Registers [eventId] with a fresh expiry. The entry is (re)queued at the
+  /// tail so FIFO eviction behaves deterministically.
+  void register(String eventId) {
     assert(eventId.isNotEmpty, 'Matrix event IDs must not be empty');
     if (eventId.isEmpty) return;
     final now = _clock.now();
     _maybePrune(now, force: _entries.length >= maxEntries);
 
     // Refresh order when re-registering an existing id.
-    final existing = _entries.remove(eventId);
+    _entries.remove(eventId);
     final expiry = now.add(ttl);
-    _entries[eventId] = _RegistryEntry(
-      expiry: expiry,
-      source: source ?? existing?.source,
-    );
+    _entries[eventId] = _RegistryEntry(expiry: expiry);
 
     // Enforce maxEntries (FIFO) after refresh.
     while (_entries.length > maxEntries) {
@@ -82,29 +68,6 @@ class SentEventRegistry {
     return true;
   }
 
-  /// Removes expired entries relative to [now] (or the current time) and
-  /// enforces the FIFO size cap. This is mainly exposed for tests; runtime
-  /// callers should rely on the scheduled pruning interval instead.
-  void prune([DateTime? now]) {
-    _prune(now ?? _clock.now());
-  }
-
-  /// Removes all entries and resets the next scheduled prune instant. This is
-  /// mainly intended for tests that want to start from a clean slate.
-  void clear() {
-    _entries.clear();
-    _nextPruneAt = _clock.now().add(pruneInterval);
-  }
-
-  /// Number of tracked event IDs (including pending expirations).
-  int get length => _entries.length;
-
-  @visibleForTesting
-  DateTime get debugNextPruneAt => _nextPruneAt;
-
-  @visibleForTesting
-  SentEventSource? debugSource(String eventId) => _entries[eventId]?.source;
-
   void _maybePrune(DateTime now, {bool force = false}) {
     if (!force && now.isBefore(_nextPruneAt)) return;
     _prune(now);
@@ -120,11 +83,7 @@ class SentEventRegistry {
 }
 
 class _RegistryEntry {
-  _RegistryEntry({
-    required this.expiry,
-    this.source,
-  });
+  _RegistryEntry({required this.expiry});
 
   final DateTime expiry;
-  final SentEventSource? source;
 }

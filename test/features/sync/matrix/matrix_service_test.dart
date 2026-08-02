@@ -36,7 +36,6 @@ void main() {
   late MockSyncEventProcessor eventProcessor;
   late MockSecureStorage secureStorage;
   late MockMatrixClient client;
-  late MockSentEventRegistry sentEventRegistry;
   late MockMatrixSessionManager sessionManager;
   late MockSyncRoomManager roomManager;
   late MockMatrixStreamConsumer pipeline;
@@ -78,7 +77,6 @@ void main() {
     eventProcessor = MockSyncEventProcessor();
     secureStorage = MockSecureStorage();
     client = MockMatrixClient();
-    sentEventRegistry = MockSentEventRegistry();
     sessionManager = MockMatrixSessionManager();
     roomManager = MockSyncRoomManager();
     pipeline = MockMatrixStreamConsumer();
@@ -88,7 +86,6 @@ void main() {
 
     when(() => sessionManager.client).thenReturn(client);
     when(() => sessionManager.matrixConfig).thenReturn(null);
-    when(() => messageSender.sentEventRegistry).thenReturn(sentEventRegistry);
     when(() => roomManager.currentRoomId).thenReturn(null);
     when(() => roomManager.currentRoom).thenReturn(null);
     when(() => syncEngine.lifecycleCoordinator).thenReturn(coordinator);

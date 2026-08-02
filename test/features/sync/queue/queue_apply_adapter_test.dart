@@ -544,7 +544,7 @@ void main() {
           status: SyncEntryStatus.update,
         );
 
-        expect(QueueApplyAdapter.writesJournalDbForTesting(message), isFalse);
+        expect(QueueApplyAdapter.writesJournalDb(message), isFalse);
       },
     );
   });

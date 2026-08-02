@@ -18,24 +18,16 @@ class _MutableClock extends Clock {
   DateTime now() => _now;
 }
 
-enum _GeneratedRegistryOperationKind {
-  registerWithoutSource,
-  registerText,
-  registerFile,
-  consume,
-  prune,
-  clear,
-  advance,
-}
+enum _OperationKind { register, consume, advance }
 
-class _GeneratedRegistryOperation {
-  const _GeneratedRegistryOperation({
+class _Operation {
+  const _Operation({
     required this.kind,
     required this.eventSlot,
     required this.advanceSeconds,
   });
 
-  final _GeneratedRegistryOperationKind kind;
+  final _OperationKind kind;
   final int eventSlot;
   final int advanceSeconds;
 
@@ -43,134 +35,76 @@ class _GeneratedRegistryOperation {
       r'$generated-'
       '$eventSlot';
 
-  SentEventSource? get source {
-    switch (kind) {
-      case _GeneratedRegistryOperationKind.registerText:
-        return SentEventSource.text;
-      case _GeneratedRegistryOperationKind.registerFile:
-        return SentEventSource.file;
-      case _GeneratedRegistryOperationKind.registerWithoutSource:
-      case _GeneratedRegistryOperationKind.consume:
-      case _GeneratedRegistryOperationKind.prune:
-      case _GeneratedRegistryOperationKind.clear:
-      case _GeneratedRegistryOperationKind.advance:
-        return null;
-    }
-  }
-
   @override
-  String toString() {
-    return '_GeneratedRegistryOperation('
-        'kind: $kind, '
-        'eventSlot: $eventSlot, '
-        'advanceSeconds: $advanceSeconds'
-        ')';
-  }
+  String toString() =>
+      '_Operation(kind: $kind, eventSlot: $eventSlot, '
+      'advanceSeconds: $advanceSeconds)';
 }
 
-class _GeneratedRegistryScenario {
-  const _GeneratedRegistryScenario({
-    required this.maxEntries,
-    required this.operations,
-  });
+class _Scenario {
+  const _Scenario({required this.maxEntries, required this.operations});
 
   final int maxEntries;
-  final List<_GeneratedRegistryOperation> operations;
+  final List<_Operation> operations;
 
   @override
-  String toString() {
-    return '_GeneratedRegistryScenario('
-        'maxEntries: $maxEntries, '
-        'operations: $operations'
-        ')';
-  }
+  String toString() =>
+      '_Scenario(maxEntries: $maxEntries, operations: $operations)';
 }
 
-class _ExpectedRegistryEntry {
-  _ExpectedRegistryEntry({
-    required this.expirySecond,
-    this.source,
-  });
-
-  int expirySecond;
-  SentEventSource? source;
-}
-
-class _ExpectedSentRegistry {
-  _ExpectedSentRegistry({
-    required this.ttlSeconds,
-    required this.maxEntries,
-  });
+class _ExpectedRegistry {
+  _ExpectedRegistry({required this.ttlSeconds, required this.maxEntries});
 
   final int ttlSeconds;
   final int maxEntries;
-  final LinkedHashMap<String, _ExpectedRegistryEntry> entries =
-      LinkedHashMap<String, _ExpectedRegistryEntry>();
+  final LinkedHashMap<String, int> entries = LinkedHashMap<String, int>();
   int nowSecond = 0;
 
   void advance(int seconds) {
     nowSecond += seconds;
   }
 
-  void register(String eventId, {SentEventSource? source}) {
-    prune();
-    final existing = entries.remove(eventId);
-    entries[eventId] = _ExpectedRegistryEntry(
-      expirySecond: nowSecond + ttlSeconds,
-      source: source ?? existing?.source,
-    );
-    _enforceCapacity();
-  }
-
-  bool consume(String eventId) {
-    prune();
-    return entries.containsKey(eventId);
-  }
-
-  void prune() {
-    entries.removeWhere((_, entry) => entry.expirySecond < nowSecond);
-    _enforceCapacity();
-  }
-
-  void clear() {
-    entries.clear();
-  }
-
-  void _enforceCapacity() {
+  void register(String eventId) {
+    _prune();
+    entries
+      ..remove(eventId)
+      ..[eventId] = nowSecond + ttlSeconds;
     while (entries.length > maxEntries) {
       entries.remove(entries.keys.first);
     }
   }
+
+  bool contains(String eventId) {
+    _prune();
+    return entries.containsKey(eventId);
+  }
+
+  void _prune() {
+    entries.removeWhere((_, expirySecond) => expirySecond < nowSecond);
+  }
 }
 
 extension _AnySentRegistryScenario on glados.Any {
-  glados.Generator<_GeneratedRegistryOperationKind> get registryOperationKind =>
-      glados.AnyUtils(this).choose(_GeneratedRegistryOperationKind.values);
+  glados.Generator<_OperationKind> get operationKind =>
+      glados.AnyUtils(this).choose(_OperationKind.values);
 
-  glados.Generator<_GeneratedRegistryOperation> get registryOperation =>
+  glados.Generator<_Operation> get operation =>
       glados.CombinableAny(this).combine3(
-        registryOperationKind,
+        operationKind,
         glados.IntAnys(this).intInRange(0, 5),
         glados.IntAnys(this).intInRange(0, 7),
-        (
-          _GeneratedRegistryOperationKind kind,
-          int eventSlot,
-          int advanceSeconds,
-        ) => _GeneratedRegistryOperation(
+        (_OperationKind kind, int eventSlot, int advanceSeconds) => _Operation(
           kind: kind,
           eventSlot: eventSlot,
           advanceSeconds: advanceSeconds,
         ),
       );
 
-  glados.Generator<_GeneratedRegistryScenario> get registryScenario =>
+  glados.Generator<_Scenario> get registryScenario =>
       glados.CombinableAny(this).combine2(
         glados.IntAnys(this).intInRange(1, 5),
-        glados.ListAnys(this).listWithLengthInRange(1, 30, registryOperation),
-        (
-          int maxEntries,
-          List<_GeneratedRegistryOperation> operations,
-        ) => _GeneratedRegistryScenario(
+        glados.ListAnys(this).listWithLengthInRange(1, 30, operation),
+        (int maxEntries, List<_Operation> operations) => _Scenario(
           maxEntries: maxEntries,
           operations: operations,
         ),
@@ -178,32 +112,32 @@ extension _AnySentRegistryScenario on glados.Any {
 }
 
 void main() {
-  test('consume returns true only after registering id', () {
-    final registry = SentEventRegistry(ttl: const Duration(seconds: 10));
-
-    expect(registry.consume(r'$evt-1'), isFalse);
-
-    registry.register(r'$evt-1', source: SentEventSource.text);
-    expect(registry.consume(r'$evt-1'), isTrue);
-    expect(
-      registry.consume(r'$evt-1'),
-      isTrue,
-      reason: 'entry remains valid until TTL expires',
-    );
-  });
-
-  test('entries expire after ttl', () {
+  test('consume reports registered IDs until their TTL expires', () {
     final clock = _MutableClock(DateTime.utc(2024));
     final registry = SentEventRegistry(
       ttl: const Duration(seconds: 5),
       clockSource: clock,
-    )..register(r'$evt-2');
-    clock.advance(const Duration(seconds: 6));
+    )..register(r'$evt');
 
-    expect(registry.consume(r'$evt-2'), isFalse);
+    expect(registry.consume(r'$evt'), isTrue);
+    clock.advance(const Duration(seconds: 5));
+    expect(registry.consume(r'$evt'), isTrue);
+    clock.advance(const Duration(seconds: 1));
+    expect(registry.consume(r'$evt'), isFalse);
   });
 
-  test('prune evicts expired entries and enforces size cap', () {
+  test('capacity evicts the oldest ID in FIFO order', () {
+    final registry = SentEventRegistry(maxEntries: 2)
+      ..register(r'$a')
+      ..register(r'$b')
+      ..register(r'$c');
+
+    expect(registry.consume(r'$a'), isFalse);
+    expect(registry.consume(r'$b'), isTrue);
+    expect(registry.consume(r'$c'), isTrue);
+  });
+
+  test('re-registering refreshes expiry and FIFO order', () {
     final clock = _MutableClock(DateTime.utc(2024));
     final registry =
         SentEventRegistry(
@@ -211,121 +145,32 @@ void main() {
             maxEntries: 2,
             clockSource: clock,
           )
-          ..register(r'$evt-a')
-          ..register(r'$evt-b')
-          ..register(r'$evt-c'); // exceeds cap, oldest should drop
-    expect(registry.length, 2);
-    expect(
-      registry.consume(r'$evt-a'),
-      isFalse,
-      reason: 'oldest entry evicted when cap exceeded',
-    );
-
-    clock.advance(const Duration(seconds: 6));
-    registry.prune();
-    expect(registry.length, 0);
-  });
-
-  test('consume removes expired entry and returns false', () {
-    final clock = _MutableClock(DateTime.utc(2024));
-    final registry = SentEventRegistry(
-      ttl: const Duration(seconds: 2),
-      clockSource: clock,
-    )..register(r'$evt-expire');
-    clock.advance(const Duration(seconds: 3));
-
-    expect(registry.consume(r'$evt-expire'), isFalse);
-    expect(registry.length, 0);
-  });
-
-  test('re-registering id refreshes expiry and order', () {
-    final clock = _MutableClock(DateTime.utc(2024));
-    final registry =
-        SentEventRegistry(
-            ttl: const Duration(seconds: 5),
-            maxEntries: 3,
-            clockSource: clock,
-          )
-          ..register(r'$evt-a')
-          ..register(r'$evt-b');
+          ..register(r'$a')
+          ..register(r'$b');
 
     clock.advance(const Duration(seconds: 3));
     registry
-      ..register(r'$evt-a') // refresh expiry & order
-      ..register(r'$evt-c'); // triggers eviction of evt-b (oldest)
+      ..register(r'$a')
+      ..register(r'$c');
 
-    expect(registry.consume(r'$evt-a'), isTrue);
-    expect(
-      registry.consume(r'$evt-b'),
-      isTrue,
-      reason: 're-registering another id should not evict existing entries',
-    );
-    registry.register(r'$evt-d'); // exceed cap; oldest (evt-b) should drop now
-    expect(registry.consume(r'$evt-b'), isFalse);
-
-    clock.advance(const Duration(seconds: 6));
-    expect(registry.consume(r'$evt-a'), isFalse);
+    expect(registry.consume(r'$b'), isFalse);
+    expect(registry.consume(r'$a'), isTrue);
+    clock.advance(const Duration(seconds: 3));
+    expect(registry.consume(r'$a'), isTrue);
   });
 
-  test('register observes prune interval before running', () {
-    final clock = _MutableClock(DateTime.utc(2024));
-    final registry = SentEventRegistry(
-      pruneInterval: const Duration(seconds: 45),
-      clockSource: clock,
-    )..register(r'$evt-a');
-    final firstNextPrune = registry.debugNextPruneAt;
-
-    clock.advance(const Duration(seconds: 10));
-    registry.consume(r'$evt-a'); // should not trigger prune yet
-    expect(registry.debugNextPruneAt, firstNextPrune);
-  });
-
-  test('force prune executes even within interval', () {
-    final clock = _MutableClock(DateTime.utc(2024));
-    final registry = SentEventRegistry(
-      pruneInterval: const Duration(seconds: 45),
-      clockSource: clock,
-    )..register(r'$evt-a');
-    final firstNextPrune = registry.debugNextPruneAt;
-
-    clock.advance(const Duration(seconds: 5));
-    // Observe that consume does not force pruning when there is no entry.
-    registry.consume(r'$missing');
-    expect(registry.debugNextPruneAt, firstNextPrune);
-  });
-
-  test('empty eventIds are ignored (asserts in debug)', () {
+  test('empty event IDs assert', () {
     final registry = SentEventRegistry();
+
     expect(() => registry.register(''), throwsA(isA<AssertionError>()));
     expect(() => registry.consume(''), throwsA(isA<AssertionError>()));
-  });
-
-  test('re-registering without source preserves original source', () {
-    final registry = SentEventRegistry()
-      ..register(r'$evt-a', source: SentEventSource.file)
-      ..register(r'$evt-a');
-    expect(registry.debugSource(r'$evt-a'), equals(SentEventSource.file));
-  });
-
-  test('clear resets next prune time', () {
-    final clock = _MutableClock(DateTime.utc(2024));
-    final registry = SentEventRegistry(
-      pruneInterval: const Duration(seconds: 45),
-      clockSource: clock,
-    )..register(r'$evt-a');
-    final firstNextPrune = registry.debugNextPruneAt;
-    clock.advance(const Duration(seconds: 10));
-
-    registry.clear();
-    expect(registry.length, 0);
-    expect(registry.debugNextPruneAt.isAfter(firstNextPrune), isTrue);
   });
 
   glados.Glados(
     glados.any.registryScenario,
     glados.ExploreConfig(numRuns: 160),
   ).test(
-    'generated operation sequences preserve TTL, FIFO cap, and sources',
+    'generated operation sequences preserve TTL and FIFO capacity',
     (scenario) {
       const ttlSeconds = 5;
       final clock = _MutableClock(DateTime.utc(2024));
@@ -335,46 +180,32 @@ void main() {
         pruneInterval: Duration.zero,
         clockSource: clock,
       );
-      final expected = _ExpectedSentRegistry(
+      final expected = _ExpectedRegistry(
         ttlSeconds: ttlSeconds,
         maxEntries: scenario.maxEntries,
       );
 
       for (final operation in scenario.operations) {
         switch (operation.kind) {
-          case _GeneratedRegistryOperationKind.registerWithoutSource:
-          case _GeneratedRegistryOperationKind.registerText:
-          case _GeneratedRegistryOperationKind.registerFile:
-            registry.register(operation.eventId, source: operation.source);
-            expected.register(operation.eventId, source: operation.source);
-          case _GeneratedRegistryOperationKind.consume:
+          case _OperationKind.register:
+            registry.register(operation.eventId);
+            expected.register(operation.eventId);
+          case _OperationKind.consume:
             expect(
               registry.consume(operation.eventId),
-              expected.consume(
-                operation.eventId,
-              ),
+              expected.contains(operation.eventId),
             );
-          case _GeneratedRegistryOperationKind.prune:
-            registry.prune();
-            expected.prune();
-          case _GeneratedRegistryOperationKind.clear:
-            registry.clear();
-            expected.clear();
-          case _GeneratedRegistryOperationKind.advance:
+          case _OperationKind.advance:
             final delta = Duration(seconds: operation.advanceSeconds);
             clock.advance(delta);
             expected.advance(operation.advanceSeconds);
         }
 
-        expect(registry.length, expected.entries.length);
         for (var slot = 0; slot < 5; slot++) {
           final eventId =
               r'$generated-'
               '$slot';
-          expect(
-            registry.debugSource(eventId),
-            expected.entries[eventId]?.source,
-          );
+          expect(registry.consume(eventId), expected.contains(eventId));
         }
       }
     },

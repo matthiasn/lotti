@@ -53,8 +53,6 @@ class MatrixMessageSender {
   /// part-file extensions.
   final MatrixPayloadSender _payloadSender;
 
-  SentEventRegistry get sentEventRegistry => _sentEventRegistry;
-
   void _trace(String message, {String? subDomain}) {
     _domainLogger?.log(
       LogDomain.sync,
@@ -302,10 +300,7 @@ class MatrixMessageSender {
         return false;
       }
 
-      _sentEventRegistry.register(
-        eventId,
-        source: SentEventSource.text,
-      );
+      _sentEventRegistry.register(eventId);
 
       try {
         onSent(eventId, outboundMessage);

@@ -27,11 +27,6 @@ class ResolvedEvent {
   final ImageProvider? coverImage;
 }
 
-/// Safeguard cap for a single non-paged query (the query layer has no unbounded
-/// mode). Far above any realistic event count; the overview pages instead of
-/// loading this many at once (see [loadResolvedEventsPage]).
-const eventsQueryLimit = 1000;
-
 /// How many events the overview loads per page — the initial load and each
 /// subsequent scroll fetch. Keeps the initial load light on accounts with
 /// hundreds of events instead of querying and resolving every cover up front.

@@ -280,7 +280,7 @@ void main() {
     // than silently inheriting a wrong default.
 
     bool wraps(SyncMessage message) =>
-        QueueApplyAdapter.writesJournalDbForTesting(message);
+        QueueApplyAdapter.writesJournalDb(message);
 
     test('SyncJournalEntity bypasses outer wrap (owns its own narrow tx)', () {
       const message = SyncMessage.journalEntity(

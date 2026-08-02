@@ -80,7 +80,6 @@ void main() {
     when(() => pipeline.recordConnectivitySignal()).thenReturn(null);
 
     when(() => eventProcessor.applyObserver = any()).thenReturn(null);
-    when(() => messageSender.sentEventRegistry).thenReturn(SentEventRegistry());
     when(() => sessionManager.client).thenReturn(client);
     when(() => sessionManager.dispose()).thenAnswer((_) async {});
     when(() => roomManager.saveRoomId(any())).thenAnswer((_) async {});

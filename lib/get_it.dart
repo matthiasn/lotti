@@ -49,7 +49,6 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/agent_vc_dominance_check.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
-import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -269,11 +268,6 @@ Future<void> registerSingletons() async {
     logging: domainLogger,
     verboseLogging: false,
   );
-  final readMarkerService = SyncReadMarkerService(
-    settingsDb: settingsDb,
-    loggingService: domainLogger,
-  );
-
   // Self-healing sync: sequence log service for gap detection
   final syncSequenceLogService = SyncSequenceLogService(
     syncDatabase: syncDatabase,
@@ -395,7 +389,6 @@ Future<void> registerSingletons() async {
       attachmentIndex,
       dispose: (index) => index.dispose(),
     )
-    ..registerSingleton<SyncReadMarkerService>(readMarkerService)
     ..registerSingleton<SyncEventProcessor>(syncEventProcessor)
     ..registerSingleton<MatrixService>(matrixService)
     ..registerSingleton<SyncSequenceLogService>(syncSequenceLogService)

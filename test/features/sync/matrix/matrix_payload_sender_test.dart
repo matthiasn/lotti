@@ -94,10 +94,7 @@ void main() {
         );
 
         expect(ok, isTrue);
-        expect(
-          sentEventRegistry.debugSource('uploaded-event'),
-          SentEventSource.file,
-        );
+        expect(sentEventRegistry.consume('uploaded-event'), isTrue);
       },
     );
 

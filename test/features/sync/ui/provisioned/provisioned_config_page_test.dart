@@ -149,7 +149,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+        const ProvisionedConfigWidget(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
           provisioningControllerProvider.overrideWith(

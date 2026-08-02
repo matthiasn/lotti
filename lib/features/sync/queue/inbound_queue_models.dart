@@ -161,7 +161,7 @@ InboundEventProducer producerFromName(String name) {
 ///         ▲               ├─► retrying ─► leased ...
 ///         │               └─► abandoned (markSkipped after max attempts)
 ///         │
-///         └── resurrectByPath / resurrectAll (from abandoned)
+///         └── resurrectByPaths / resurrectAll (from abandoned)
 ///
 /// The string literals must stay in sync with the partial-index DDL
 /// in `lib/database/sync_db.dart` (and the literal SQL fragments in

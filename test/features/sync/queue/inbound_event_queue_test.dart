@@ -209,7 +209,7 @@ class _GeneratedResurrectionScenario {
 /// `_resurrectByPathsChunkSize` (900) boundary one or more times. The
 /// invariant: chunking is transparent — `resurrectByPaths` resurrects
 /// exactly the seeded rows whose path is requested, identical to the
-/// union of individual `resurrectByPath` calls, no matter how many
+/// union of individual single-path `resurrectByPaths` calls, no matter how many
 /// chunks the padding forces.
 class _GeneratedChunkingScenario {
   const _GeneratedChunkingScenario({
@@ -1399,7 +1399,7 @@ void main() {
     glados.Glados(
       glados.any.resurrectionScenario,
     ).test(
-      'resurrectByPath only reopens generated abandoned rows for that path',
+      'resurrectByPaths only reopens generated abandoned rows for that path',
       (scenario) async {
         await _withFreshInboundQueue((_, queue) async {
           await queue.enqueueBatch(
@@ -1426,7 +1426,9 @@ void main() {
           }
 
           final expectedEventIds = scenario.expectedResurrectedEventIds();
-          final resurrected = await queue.resurrectByPath(scenario.targetPath);
+          final resurrected = await queue.resurrectByPaths([
+            scenario.targetPath,
+          ]);
 
           expect(resurrected, expectedEventIds.length);
 
@@ -1497,7 +1499,7 @@ void main() {
           );
 
           // Count invariant: exactly the requested-and-seeded rows flip,
-          // identical to the union of per-path resurrectByPath calls, no
+          // identical to the union of single-path resurrectByPaths calls, no
           // matter how many chunks the padding forced.
           expect(resurrected, expectedIndices.length);
 
@@ -2015,7 +2017,7 @@ void main() {
     );
 
     test(
-      'resurrectByPath flips abandoned rows whose json_path matches '
+      'resurrectByPaths flips abandoned rows whose json_path matches '
       'back to enqueued and re-zeroes attempts so the worker picks '
       'them up immediately on the next drain cycle',
       () async {
@@ -2037,7 +2039,7 @@ void main() {
         );
         expect(await statusOf(batch.first.queueId), 'abandoned');
 
-        final resurrected = await queue.resurrectByPath(path);
+        final resurrected = await queue.resurrectByPaths([path]);
         expect(resurrected, 1);
         expect(await statusOf(batch.first.queueId), 'enqueued');
 
@@ -2091,7 +2093,7 @@ void main() {
         // 10-minute deadline, so the row must adopt the resurrection
         // timestamp instead.
         await withClock(Clock(() => resurrectAt), () async {
-          final resurrected = await queue.resurrectByPath(path);
+          final resurrected = await queue.resurrectByPaths([path]);
           expect(resurrected, 1);
         });
 
@@ -2104,7 +2106,7 @@ void main() {
     );
 
     test(
-      'resurrectByPath respects the hard cap so a poison row that '
+      'resurrectByPaths respects the hard cap so a poison row that '
       'keeps failing to apply cannot thrash the worker forever',
       () async {
         const path = '/audio/2026-04-21/poison.m4a.json';
@@ -2129,8 +2131,7 @@ void main() {
           const InboundEventQueueCompanion(resurrectionCount: Value(50)),
         );
 
-        // ignore: avoid_redundant_argument_values
-        final resurrected = await queue.resurrectByPath(path, hardCap: 50);
+        final resurrected = await queue.resurrectByPaths([path]);
         expect(resurrected, 0);
         expect(await statusOf(batch.first.queueId), 'abandoned');
       },

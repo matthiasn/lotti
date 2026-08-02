@@ -69,7 +69,7 @@ void main() {
     db.inboundEventQueue,
   )..where((t) => t.queueId.equals(queueId))).getSingle();
 
-  group('resurrectByPath', () {
+  group('resurrectByPaths', () {
     test(
       'flips the matching abandoned row back to a fresh enqueued state',
       () async {
@@ -78,7 +78,7 @@ void main() {
 
         final count = await withClock(
           Clock.fixed(_frozenNow),
-          () => resurrection.resurrectByPath('/a/b.json'),
+          () => resurrection.resurrectByPaths(['/a/b.json']),
         );
 
         expect(count, 1);
@@ -96,7 +96,7 @@ void main() {
         verify(
           () => logging.log(
             LogDomain.sync,
-            any(that: contains('path=/a/b.json')),
+            any(that: contains('paths=1')),
             subDomain: 'queue.resurrect',
           ),
         ).called(1);
@@ -105,7 +105,7 @@ void main() {
 
     test('non-matching path resurrects nothing and stays silent', () async {
       final otherId = await insertRow(jsonPath: '/other.json');
-      final count = await resurrection.resurrectByPath('/missing.json');
+      final count = await resurrection.resurrectByPaths(['/missing.json']);
       expect(count, 0);
       expect(depthChangedCalls, 0);
       expect(
@@ -124,7 +124,10 @@ void main() {
         resurrectionCount: 1,
       );
 
-      final count = await resurrection.resurrectByPath('/p.json', hardCap: 2);
+      final count = await resurrection.resurrectByPaths(
+        ['/p.json'],
+        hardCap: 2,
+      );
 
       expect(count, 1);
       expect(
@@ -142,7 +145,7 @@ void main() {
         status: InboundQueueStatuses.retrying,
         jsonPath: '/p.json',
       );
-      final count = await resurrection.resurrectByPath('/p.json');
+      final count = await resurrection.resurrectByPaths(['/p.json']);
       expect(count, 0);
       final row = await readRow(activeId);
       expect(row.status, InboundQueueStatuses.retrying);
@@ -150,7 +153,7 @@ void main() {
     });
   });
 
-  group('resurrectByPaths', () {
+  group('bulk resurrection', () {
     test('empty input returns 0 without signalling', () async {
       expect(await resurrection.resurrectByPaths(const []), 0);
       expect(depthChangedCalls, 0);

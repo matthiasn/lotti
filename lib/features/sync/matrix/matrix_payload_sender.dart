@@ -116,10 +116,7 @@ class MatrixPayloadSender {
         return false;
       }
 
-      sentEventRegistry.register(
-        eventId,
-        source: SentEventSource.file,
-      );
+      sentEventRegistry.register(eventId);
       return true;
     } catch (error, stackTrace) {
       _trace(
@@ -533,7 +530,7 @@ class MatrixPayloadSender {
       return null;
     }
 
-    sentEventRegistry.register(uploadEventId, source: SentEventSource.file);
+    sentEventRegistry.register(uploadEventId);
 
     return message.copyWith(
       jsonPath: relativePath,

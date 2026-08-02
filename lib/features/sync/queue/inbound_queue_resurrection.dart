@@ -8,7 +8,7 @@ import 'package:matrix/matrix.dart';
 const _logSubResurrect = 'queue.resurrect';
 
 /// Resurrection layer of `InboundQueue`: re-arming skipped entries by
-/// path, reason, or wholesale. The queue keeps thin delegators so
+/// paths, reason, or wholesale. The queue keeps thin delegators so
 /// `MockInboundQueue` keeps intercepting the public API.
 class InboundQueueResurrection {
   InboundQueueResurrection({
@@ -31,31 +31,8 @@ class InboundQueueResurrection {
   /// [_resurrectWhere] without bumping into the cap.
   static const int _resurrectByPathsChunkSize = 900;
 
-  /// Flips abandoned rows whose `json_path` matches [path] back to
-  /// `enqueued` so the worker re-attempts them. Intended for the
-  /// `AttachmentIndex.pathRecorded` signal — when an attachment JSON
-  /// finally lands on disk, the sibling event whose apply failed
-  /// with a descriptor-missing error is automatically un-parked.
-  ///
-  /// [hardCap] caps per-row resurrections so a truly poison event
-  /// cannot thrash the worker forever. Rows with
-  /// `resurrection_count >= hardCap` are skipped; the user can still
-  /// discard them manually from the Skipped-events page.
-  ///
-  /// Returns the number of rows resurrected.
-  Future<int> resurrectByPath(
-    String path, {
-    int hardCap = 50,
-  }) async {
-    return _resurrectWhere(
-      (t) => t.jsonPath.equals(path),
-      hardCap: hardCap,
-      diagnostic: 'path=$path',
-    );
-  }
-
-  /// Bulk variant of [resurrectByPath] — flips abandoned rows whose
-  /// `json_path` is in [paths] back to `enqueued`. Issues one
+  /// Flips abandoned rows whose `json_path` is in [paths] back to `enqueued`.
+  /// Issues one
   /// SELECT + transactional UPDATE round-trip per
   /// [_resurrectByPathsChunkSize] batch.
   ///
@@ -159,7 +136,7 @@ class InboundQueueResurrection {
     // each declared with the literal `WHERE status = 'abandoned'`.
     // Drift's `t.status.equals(...)` binds the value as a
     // parameter; the planner can't see it at plan time, the
-    // partial-index match fails, and resurrectByReason / resurrectByPath
+    // partial-index match fails, and resurrectByReason / resurrectByPaths
     // fall back to scanning the full append-only ledger. The
     // 2026-05-09 desktop slow_queries log captured this shape at
     // 107 hits/day in the 200–877 ms band even with the v17 partial
