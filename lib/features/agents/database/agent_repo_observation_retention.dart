@@ -144,7 +144,11 @@ class AgentRepoObservationRetention {
       hints.putIfAbsent(id, () => []).add(prev);
     }
     final protectedIds = await _protectedMessageIds(agentId);
-    if (protectedIds.isEmpty) {
+    // Every protected id must be a row we actually loaded. A head delivered
+    // ahead of the message it names makes `protectedIds` non-empty while
+    // protecting nothing, so the guard below would pass and the plan could
+    // take the chain out from under a head that is about to arrive.
+    if (protectedIds.isEmpty || !protectedIds.every(ids.contains)) {
       // No live head to protect means either this agent has no state row yet
       // or sync has not delivered one. Pruning now can delete the whole chain
       // including its tip, and a later state update would install

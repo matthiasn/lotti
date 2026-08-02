@@ -354,6 +354,22 @@ void main() {
       expect(await messageIds(), ['a', 'b']);
     });
 
+    test('refuses when the head names a row that has not arrived', () async {
+      // protectedIds is non-empty, so the no-head guard passes — but nothing
+      // in the loaded set is actually protected, and pruning the chain now
+      // would strand the head that is still in flight.
+      await seedMessage('a', oldest);
+      await seedMessage('b', older, parentId: 'a');
+      await core.upsertEntity(
+        makeTestState(agentId: agentId).copyWith(
+          recentHeadMessageId: 'not-yet-synced',
+        ),
+      );
+
+      expect((await sweep()).isEmpty, isTrue);
+      expect(await messageIds(), ['a', 'b']);
+    });
+
     test('honours prevMessageId when the link has not arrived', () async {
       // The entity carries its parent as well as the separately-synced link.
       // Trusting only the link reads `b` as a root and prunes it, forking the

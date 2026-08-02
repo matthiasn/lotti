@@ -40,7 +40,7 @@ class PrunableMessage {
   final List<String> hintedParentIds;
 }
 
-/// What a sweep should delete for one thread.
+/// What a sweep should delete for one agent's message log.
 @immutable
 class ObservationPrunePlan {
   const ObservationPrunePlan({required this.messageIds});
@@ -54,7 +54,7 @@ class ObservationPrunePlan {
   bool get isEmpty => messageIds.isEmpty;
 }
 
-/// Chooses the observations a thread may forget, without disturbing the shape
+/// Chooses the observations an agent may forget, without disturbing the shape
 /// of its `messagePrev` DAG.
 ///
 /// Three invariants make this safe, each guarding a distinct failure:
@@ -77,7 +77,7 @@ class ObservationPrunePlan {
 ///
 /// **3. [protectedIds] are never pruned, nor is anything downstream of them.**
 /// `agentState.recentHeadMessageId` and `latestSummaryMessageId` point into
-/// this log; a thread whose messages are *all* old observations would otherwise
+/// this log; a log whose messages are *all* old observations would otherwise
 /// be deleted whole, leaving live state pointing at a row that no longer
 /// exists.
 ///
@@ -123,7 +123,7 @@ ObservationPrunePlan planObservationPrune({
     });
 
   // Resolved lazily with an explicit stack: recursion would blow the frame
-  // budget on a long-lived thread, which is exactly the thread this exists for.
+  // budget on a long-lived agent, which is exactly the case this exists for.
   final prunable = <String, bool>{};
 
   bool candidate(PrunableMessage message) =>
