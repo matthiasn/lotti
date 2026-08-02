@@ -1588,28 +1588,32 @@ void main() {
         });
       });
 
-      test('enqueue failure does not mark a re-request as sent', () async {
-        final service = buildService(maxBatchSize: 50);
-        when(
-          () => mockSequenceService.getRequestedEntries(
-            limit: 50,
-            offset: any(named: 'offset'),
-          ),
-        ).thenAnswer((_) async => [_createRequestedLogItem(aliceHostId, 10)]);
-        when(
-          () => mockSequenceService.resetRequestCounts(any()),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
-        ).thenThrow(StateError('enqueue failed'));
+      test(
+        'enqueue failure does not reset or mark a re-request as sent',
+        () async {
+          final service = buildService(maxBatchSize: 50);
+          when(
+            () => mockSequenceService.getRequestedEntries(
+              limit: 50,
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((_) async => [_createRequestedLogItem(aliceHostId, 10)]);
+          when(
+            () => mockSequenceService.resetRequestCounts(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+          ).thenThrow(StateError('enqueue failed'));
 
-        expect(await service.processReRequest(), 0);
+          expect(await service.processReRequest(), 0);
 
-        verify(
-          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
-        ).called(1);
-        verifyNever(() => mockSequenceService.markAsRequested(any()));
-      });
+          verify(
+            () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+          ).called(1);
+          verifyNever(() => mockSequenceService.resetRequestCounts(any()));
+          verifyNever(() => mockSequenceService.markAsRequested(any()));
+        },
+      );
 
       test('returns zero when no requested entries', () {
         fakeAsync((async) {
@@ -2232,6 +2236,66 @@ void main() {
     });
 
     group('nudgeAfterDrain', () {
+      test(
+        'coalesces a drain bypass behind an active automatic pass',
+        () {
+          fakeAsync((async) {
+            final firstQuery = Completer<List<SyncSequenceLogItem>>();
+            var queryCount = 0;
+            when(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              queryCount++;
+              if (queryCount == 1) return firstQuery.future;
+              return Future.value(<SyncSequenceLogItem>[]);
+            });
+
+            final service = buildService(
+              requestInterval: const Duration(minutes: 10),
+              missingDebounce: const Duration(minutes: 7),
+            );
+
+            service.nudge();
+            async.flushMicrotasks();
+            service
+              ..nudgeAfterDrain()
+              ..nudgeAfterDrain();
+            async.flushMicrotasks();
+
+            expect(queryCount, 1);
+            firstQuery.complete(<SyncSequenceLogItem>[]);
+            async.flushMicrotasks();
+
+            final captured = verify(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                minAge: captureAny(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            ).captured;
+            expect(
+              captured,
+              equals([const Duration(minutes: 7), Duration.zero]),
+              reason:
+                  'the active normal pass must be followed by exactly one '
+                  'coalesced drain-bypass pass',
+            );
+          });
+        },
+      );
+
       test(
         'collapses the missing-debounce minAge to zero so a row freshly '
         'flagged missing during catch-up is requested as soon as the '

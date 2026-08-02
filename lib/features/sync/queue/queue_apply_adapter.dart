@@ -13,6 +13,16 @@ const _logSub = 'queue.apply';
 typedef HasOlderActiveInboundEntry =
     Future<bool> Function(InboundQueueEntry entry);
 
+bool _containsOnboardingSnapshotEnd(SyncMessage message) {
+  return switch (message) {
+    SyncOnboardingSnapshotEnd() => true,
+    SyncOutboxBundle(:final children) => children.any(
+      _containsOnboardingSnapshotEnd,
+    ),
+    _ => false,
+  };
+}
+
 /// Bridges [InboundWorker] to the existing
 /// [SyncEventProcessor.prepare]/[SyncEventProcessor.apply] path.
 ///
@@ -199,13 +209,14 @@ class QueueApplyAdapter {
     } catch (_) {
       message = null;
     }
-    // Snapshot End is an inbound ordering barrier, not merely another
-    // low-priority outbox row. A prior payload can be attachment-pending or
-    // retrying with a future due time while End is ready now. Applying End in
-    // that state would release backfill suppression before the snapshot has
-    // actually drained. Keep End retryable until every earlier active row in
-    // this Matrix room has committed or been abandoned.
-    if (message is SyncOnboardingSnapshotEnd &&
+    // Snapshot End is an inbound ordering barrier, whether it arrives directly
+    // or nested in an outbox bundle. A prior payload can be attachment-pending
+    // or retrying with a future due time while End is ready now. Applying End
+    // in that state would release backfill suppression before the snapshot has
+    // actually drained. Keep the containing event retryable until every older
+    // active row in this Matrix room has committed or been abandoned.
+    if (message != null &&
+        _containsOnboardingSnapshotEnd(message) &&
         await _hasOlderActiveEntry(entry)) {
       _logging.log(
         LogDomain.sync,

@@ -9,7 +9,9 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 /// from the runner's timers, subscriptions, and database.
 
 /// Priority ahead of [OutboxPriority.high] for the bounded onboarding
-/// handshake only. The enum values retain their persisted ordering.
+/// handshake only. Negative-priority rows are also standalone dequeue
+/// boundaries, so the handshake cannot be delayed inside an ordinary bundle.
+/// The enum values retain their persisted ordering.
 const int onboardingHandshakePriority = -1;
 
 /// Row-level dispatch priority for [message]. Most values use

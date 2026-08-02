@@ -207,10 +207,11 @@ of requests from the target host is filtered even when those requests were
 emitted just before begin; the protocol prevents the repeated amplification,
 not time travel.
 
-Begin and Accepted use a dedicated priority ahead of the normal high-priority
-queue so a pre-existing history backlog cannot consume the one-minute
-acceptance timeout. Before history is staged, the sender emits its own
-authoritative `burned`
+Begin and Accepted use a dedicated negative priority ahead of the normal
+high-priority queue. Negative-priority rows are standalone dequeue boundaries,
+so neither a pre-existing history backlog nor unrelated children in the same
+transport bundle can consume the one-minute acceptance timeout. Before history
+is staged, the sender emits its own authoritative `burned`
 counters at or below its origin-host bound as compact ranges, with at most 250
 represented counters per event. It cannot claim burns for other origin hosts;
 any genuine residual gaps there become eligible when the barrier or lease ends.
@@ -221,14 +222,16 @@ database.
 
 After all journal and agent rows are staged, `onboardingSnapshotEnd` is queued
 at low priority. Existing high, normal and earlier low outbox rows therefore
-send first. The receiver treats End as a second, durable inbound barrier: if an
-older row in the same room is still enqueued, leased or retrying — including an
-attachment wait whose next due time is in the future — End remains retrying
-without the generic attempt cap. It can release suppression only after those
-older rows commit or become abandoned. A completed End then calls
-`nudgeAfterDrain`, bypassing the normal ten-minute missing-row debounce while
-still respecting prior-request cooldowns. If the sender crashes before staging
-the end, the one-hour lease
+send first. The receiver treats End, whether direct or nested in an outbox
+bundle, as a second, durable inbound barrier: if an older row in the same room
+is still enqueued, leased or retrying — including an attachment wait whose next
+due time is in the future — the containing event remains retrying without the
+generic attempt cap. It can release suppression only after those older rows
+commit or become abandoned. A completed End then calls `nudgeAfterDrain`,
+bypassing the normal ten-minute missing-row debounce while still respecting
+prior-request cooldowns. If another backfill pass is active, the drain nudge is
+coalesced and runs immediately after that pass finishes instead of being
+dropped. If the sender crashes before staging the end, the one-hour lease
 releases repair instead. An explicit abort also waits out that original lease;
 it does not turn a staging failure into an immediate request storm. This
 intentionally risks delaying a genuinely missing counter for up to an hour;

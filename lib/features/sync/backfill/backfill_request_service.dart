@@ -92,6 +92,7 @@ class BackfillRequestService {
 
   Timer? _timer;
   bool _isProcessing = false;
+  bool _pendingDrainNudge = false;
   bool _isDisposed = false;
 
   /// True once we have observed a non-empty inbound queue. The drain
@@ -192,6 +193,14 @@ class BackfillRequestService {
   /// pass, not a full historical backfill.
   void nudgeAfterDrain() {
     if (_isDisposed) return;
+    if (_isProcessing) {
+      _pendingDrainNudge = true;
+      _trace(
+        'nudge after queue drain queued behind active pass',
+        subDomain: 'backfill.nudge',
+      );
+      return;
+    }
     _trace(
       'nudge after queue drain (debounce bypassed)',
       subDomain: 'backfill.nudge',
@@ -251,11 +260,9 @@ class BackfillRequestService {
         // "file exists, skip" guard.
         _sweepLocalFiles(requested);
 
-        // Reset request counts for these entries
         final entries = requested
             .map((item) => (hostId: item.hostId, counter: item.counter))
             .toList();
-        await _sequenceLogService.resetRequestCounts(entries);
 
         // Build request entries
         final requestEntries = requested
@@ -274,6 +281,11 @@ class BackfillRequestService {
             requesterId: requesterId,
           ),
         );
+
+        // Reset only after the durable enqueue succeeds. Otherwise a failed
+        // send attempt would mutate retry eligibility without a corresponding
+        // request in the outbox.
+        await _sequenceLogService.resetRequestCounts(entries);
 
         // Mark all as requested (increments request count and sets lastRequestedAt)
         await _sequenceLogService.markAsRequested(entries);
@@ -301,7 +313,7 @@ class BackfillRequestService {
       );
       return totalProcessed;
     } finally {
-      _isProcessing = false;
+      _finishProcessing();
     }
   }
 
@@ -320,34 +332,37 @@ class BackfillRequestService {
   }) async {
     if (_isDisposed || _isProcessing) return 0;
 
-    // Check if backfill is enabled (skip check for manual triggers)
-    if (!ignoreEnabledFlag) {
-      final enabled = await isBackfillEnabled();
-      if (!enabled) {
-        _trace(
-          'processBackfillRequests: backfill is disabled, skipping',
-          subDomain: 'backfill.process',
-        );
-        return 0;
-      }
-    }
-
-    // Suppress automatic analysis+dispatch while the reconnect bridge
-    // is forward-walking the timeline. Any "missing" counter seen now
-    // may be closed by an event already in the pipe; asking peers for
-    // it would race ahead of the inbound path and generate a bogus
-    // request. Manual triggers (`ignoreEnabledFlag`) bypass this.
-    if (!ignoreEnabledFlag && (queueCoordinator?.isBridgeInFlight ?? false)) {
-      _trace(
-        'processBackfillRequests: bridge walk in flight, skipping',
-        subDomain: 'backfill.bridgeWalk',
-      );
-      return 0;
-    }
-
+    // Claim the processing slot before any asynchronous preference or bridge
+    // checks. This closes the preflight race where two nudges could both pass
+    // the guard and then enter the request pipeline concurrently.
     _isProcessing = true;
 
     try {
+      // Check if backfill is enabled (skip check for manual triggers)
+      if (!ignoreEnabledFlag) {
+        final enabled = await isBackfillEnabled();
+        if (!enabled) {
+          _trace(
+            'processBackfillRequests: backfill is disabled, skipping',
+            subDomain: 'backfill.process',
+          );
+          return 0;
+        }
+      }
+
+      // Suppress automatic analysis+dispatch while the reconnect bridge
+      // is forward-walking the timeline. Any "missing" counter seen now
+      // may be closed by an event already in the pipe; asking peers for
+      // it would race ahead of the inbound path and generate a bogus
+      // request. Manual triggers (`ignoreEnabledFlag`) bypass this.
+      if (!ignoreEnabledFlag && (queueCoordinator?.isBridgeInFlight ?? false)) {
+        _trace(
+          'processBackfillRequests: bridge walk in flight, skipping',
+          subDomain: 'backfill.bridgeWalk',
+        );
+        return 0;
+      }
+
       // Cheap actionable-existence probe: when the sync_sequence_log has no
       // rows in `missing`/`requested`, both retire passes and the load
       // batch below would each touch sync_db while producing nothing. The
@@ -456,8 +471,16 @@ class BackfillRequestService {
       );
       return 0;
     } finally {
-      _isProcessing = false;
+      _finishProcessing();
     }
+  }
+
+  void _finishProcessing() {
+    _isProcessing = false;
+    if (_isDisposed || !_pendingDrainNudge) return;
+
+    _pendingDrainNudge = false;
+    nudgeAfterDrain();
   }
 
   /// Deletes local files for entries that are about to be re-requested.
@@ -646,6 +669,7 @@ class BackfillRequestService {
   /// Dispose of the service and cancel the timer.
   void dispose() {
     _isDisposed = true;
+    _pendingDrainNudge = false;
     _timer?.cancel();
     _timer = null;
     unawaited(_depthSubscription?.cancel());

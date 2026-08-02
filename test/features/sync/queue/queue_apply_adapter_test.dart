@@ -255,6 +255,49 @@ void main() {
     );
   });
 
+  test('bundled onboarding End waits behind older active queue rows', () async {
+    final entry = hBuildEntry(
+      eventId: r'$bundled-onboarding-end',
+      roomId: '!r:x',
+      originTsMs: 20,
+    );
+    final prepared = AdapterMockPreparedSyncEvent();
+    const bundle = SyncMessage.outboxBundle(
+      children: [
+        SyncMessage.onboardingSnapshotEnd(
+          protocolVersion: 1,
+          roundId: 'round-1',
+          senderHostId: 'sender-host',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          reason: OnboardingSyncEndReason.complete,
+        ),
+      ],
+    );
+    when(
+      () => processor.prepare(event: any(named: 'event')),
+    ).thenAnswer((_) async => prepared);
+    when(() => prepared.syncMessage).thenReturn(bundle);
+
+    final adapter = QueueApplyAdapter(
+      processor: processor,
+      journalDb: journalDb,
+      logging: logging,
+      hasOlderActiveEntry: (candidate) async {
+        expect(candidate.eventId, entry.eventId);
+        return true;
+      },
+    );
+
+    expect(await adapter.bind()(entry, room), ApplyOutcome.pendingBarrier);
+    verifyNever(
+      () => processor.apply(
+        prepared: any(named: 'prepared'),
+        journalDb: journalDb,
+      ),
+    );
+  });
+
   test('FileSystemException during apply maps to retriable', () async {
     final entry = hBuildEntry(
       eventId: r'$fsApply',
