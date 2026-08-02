@@ -867,6 +867,7 @@ void main() {
               checkInterval: const Duration(hours: 1),
             );
 
+            // ignore: cascade_invocations
             manager.stop();
             async
               ..flushMicrotasks()
