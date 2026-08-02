@@ -1218,6 +1218,13 @@ void main() {
           isFalse,
           reason: 'the toggle and the header actions must never overlap',
         );
+        // With no room for both, the actions take a row of their own rather
+        // than the toggle being squeezed below its shrink-wrapped width.
+        expect(
+          actions.top,
+          greaterThanOrEqualTo(toggle.bottom),
+          reason: 'the actions must drop below the toggle, not beside it',
+        );
         expect(tester.takeException(), isNull);
       },
     );

@@ -71,7 +71,15 @@ class DayHeader extends StatelessWidget {
           children: [
             // ADR 0032 phase 4: the day agent's observable state (working /
             // attention / day-closed), tappable straight into its internals.
-            DayAgentStatusChip(date: date, onInspectAgent: onInspectAgent),
+            // Flexible so the pill's label is what yields at large text
+            // sizes — the icon buttons beside it have no slack, so an
+            // unconstrained pill overflows the row instead.
+            Flexible(
+              child: DayAgentStatusChip(
+                date: date,
+                onInspectAgent: onInspectAgent,
+              ),
+            ),
             const ProcessingCategoryFilterButton(),
             PopupMenuButton<_DayMenuAction>(
               icon: const Icon(Icons.more_vert_rounded),
@@ -381,21 +389,17 @@ class _RenderMeasuredDayHeader extends RenderBox
     // fit side by side. Pinning them to opposite edges without checking
     // overlaps them the moment the actions cluster grows — a non-idle
     // "Needs attention" agent chip, or any large text scale.
+    //
+    // "Fits" means the room left over covers the toggle's own measured
+    // width, not merely that some room is left: the segmented control
+    // shrink-wraps to a minimum, so squeezing it into a narrower loose
+    // constraint overflows its row and paints over the actions instead.
     final toggleRoom = contentWidth - actionsSize.width - itemGap;
-    final shareSecondRow = toggleRoom > 0;
-    if (shareSecondRow) {
-      // The segmented toggle compacts itself to icons under a tight
-      // constraint, so hand it exactly the room that is left.
-      toggle.layout(
-        BoxConstraints.loose(Size(toggleRoom, maxChildHeight)),
-        parentUsesSize: true,
-      );
-    }
-    final placedToggleSize = toggle.size;
+    final shareSecondRow = toggleRoom >= toggleSize.width;
 
     final secondRowHeight = shareSecondRow
-        ? math.max(placedToggleSize.height, actionsSize.height)
-        : placedToggleSize.height;
+        ? math.max(toggleSize.height, actionsSize.height)
+        : toggleSize.height;
     final thirdRowHeight = shareSecondRow ? 0.0 : actionsSize.height;
     final thirdRowGap = shareSecondRow ? 0.0 : rowGap;
 
@@ -417,7 +421,7 @@ class _RenderMeasuredDayHeader extends RenderBox
       toggle,
       Offset(
         horizontalPadding,
-        secondRowTop + (secondRowHeight - placedToggleSize.height) / 2,
+        secondRowTop + (secondRowHeight - toggleSize.height) / 2,
       ),
     );
     _position(
