@@ -347,6 +347,13 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
       await vectorClock.initialized;
       return vectorClock.getHost();
     },
+    // Retire finished day agents before every pass, including the immediate
+    // one in `start()`. A day agent whose day is over is still `active` until
+    // this runs, so its overdue wake would fire — once per cold start, and
+    // once per hourly tick for a session left open across the handover
+    // boundary. Read lazily: the day-agent service is not needed to build the
+    // manager, only to run a pass.
+    beforeCheck: () => ref.read(dayAgentServiceProvider).retirePastDayAgents(),
   );
   ref.onDispose(manager.stop);
   return manager;
@@ -503,28 +510,14 @@ Future<void> agentInitialization(Ref ref) async {
   // 3. Start the orchestrator on the local update stream.
   await orchestrator.start(updateNotifications.localUpdateStream);
 
-  // 3.5. Retire finished day agents BEFORE the wake manager starts.
+  // 3.5. Start the scheduled wake manager.
   //
-  // `start()` runs a check immediately, and `restoreSubscriptions` — which
-  // otherwise owns retirement — is several awaits further down. A day agent
-  // whose day is over is still `active` at that moment, so its overdue wake
-  // fires once per cold start: precisely the spend retirement exists to stop.
-  // Best-effort, like every other step here; a failure must not stop start-up.
-  try {
-    await ref.read(dayAgentServiceProvider).retirePastDayAgents();
-  } catch (e, s) {
-    getIt<DomainLogger>().error(
-      LogDomain.agentRuntime,
-      e,
-      message: 'failed to retire past day agents before wake manager start',
-      stackTrace: s,
-    );
-  }
-
-  // 3.6. Start the scheduled wake manager.
+  // Retirement of finished day agents is wired into the manager's own
+  // pre-check (`beforeCheck`), so it runs ahead of the immediate check here
+  // and ahead of every hourly tick thereafter.
   ref.watch(scheduledWakeManagerProvider).start();
 
-  // 3.7. Track project-linked activity without triggering immediate wakes.
+  // 3.6. Track project-linked activity without triggering immediate wakes.
   projectActivityMonitor.start();
 
   // 4. Wire the sync event processor for cross-device agent data.

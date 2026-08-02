@@ -1935,5 +1935,120 @@ void main() {
         });
       });
     });
+
+    group('beforeCheck', () {
+      test('runs before every due-record pass, not just the first', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final calls = <String>[];
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async {
+                calls.add('due');
+                return <AgentStateEntity>[];
+              },
+            );
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () async => calls.add('before'),
+            )..start();
+            async.flushMicrotasks();
+
+            // The immediate check must be preceded by the repair, or a day
+            // agent about to be retired fires on the very pass that retires it.
+            expect(calls, ['before', 'due']);
+
+            async
+              ..elapse(const Duration(minutes: 1))
+              ..flushMicrotasks();
+
+            // And the hourly tick — the boundary a long-running session
+            // crosses — repairs before it fires, too.
+            expect(calls, ['before', 'due', 'before', 'due']);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('an agent it retires does not fire on that same pass', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 14, 9);
+        var retired = false;
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
+            );
+            // The repair flips the identity dormant; the lifecycle guard in the
+            // pass then reads the post-repair value.
+            when(() => repository.getEntity(any())).thenAnswer(
+              (_) async => makeTestIdentity(
+                lifecycle: retired
+                    ? AgentLifecycle.dormant
+                    : AgentLifecycle.active,
+              ),
+            );
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () async => retired = true,
+            )..start();
+            async.flushMicrotasks();
+
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: any(named: 'reason'),
+              ),
+            );
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('a failing pre-check does not strand the due records', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 15, 9);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
+            );
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () async => throw Exception('retirement failed'),
+            )..start();
+            async.flushMicrotasks();
+
+            // Stale retirement costs one wake; skipping the pass would strand
+            // every genuinely due record behind it.
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+              ),
+            ).called(1);
+
+            manager.stop();
+          });
+        });
+      });
+    });
   });
 }

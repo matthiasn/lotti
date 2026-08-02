@@ -45,11 +45,20 @@ because `getDueScheduledAgentStates` filters on `scheduledWakeAt` **only, not
 lifecycle**: a finished day still holding a deadline is otherwise due on every
 tick, forever.
 
-Retirement runs **before `ScheduledWakeManager.start()`**, not only from
-`restoreSubscriptions`. `start()` checks immediately, and the restore pass is
-several awaits further down the provider's init — so a finished agent would
-otherwise still be `active` for that first check and fire once per cold start,
-which is the spend this exists to stop.
+Retirement runs **ahead of every due-record pass**, not only at start-up. It is
+wired into `ScheduledWakeManager.beforeCheck`, which the manager awaits at the
+top of each `_checkAndEnqueue` — the immediate one in `start()` and every
+hourly tick after it. Ordering is the whole point: a finished agent is still
+`active` until the pass runs, so retiring afterwards would let it fire on the
+very tick that was about to retire it. Covering the ticks and not just start-up
+is what catches a desktop session left open across the handover boundary, where
+the boundary arrives on a tick and no relaunch ever comes.
+
+`restoreSubscriptions` retires as well, before it takes its snapshot of active
+agents — otherwise start-up would re-hydrate runtime state for agents it is
+about to retire. A pre-check failure is logged and the pass continues: stale
+retirement costs one wake, while skipping the pass would strand every genuinely
+due record behind it.
 
 Without this the active set grew by one per day of use and
 `restoreSubscriptions` re-hydrated every one of them on each launch — model

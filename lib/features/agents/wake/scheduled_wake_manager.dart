@@ -27,6 +27,7 @@ class ScheduledWakeManager {
     this.onPersistedStateChanged,
     this.requiresLease,
     this.localHostId,
+    this.beforeCheck,
     this.leaseSettle = const Duration(minutes: 3),
     this.leaseDuration = const Duration(minutes: 30),
   });
@@ -54,6 +55,19 @@ class ScheduledWakeManager {
   /// device with no sync host has no peers to race, so firing is correct and
   /// blocking would mean never running the digest at all.
   final Future<String?> Function()? localHostId;
+
+  /// Repair work that must precede every due-record pass, not just the first.
+  ///
+  /// Retiring finished day agents is the caller this exists for: retirement
+  /// decides which identities may still wake, so running it after a pass would
+  /// let a day agent fire on the very tick that was about to retire it. Wiring
+  /// it here rather than only at start-up is what covers a session left open
+  /// across the handover boundary — the boundary arrives on a tick, and the
+  /// tick now retires before it fires.
+  ///
+  /// A failure is logged and the pass continues: stale retirement costs a
+  /// wake, but skipping the pass would strand every genuinely due record.
+  final Future<void> Function()? beforeCheck;
 
   /// How long a claimant waits before confirming its claim.
   ///
@@ -122,6 +136,20 @@ class ScheduledWakeManager {
     // continuation must not then arm a timer the stop could never cancel.
     final generation = _generation;
     try {
+      final before = beforeCheck;
+      if (before != null) {
+        try {
+          await before();
+        } catch (e, s) {
+          _logError(
+            'pre-check repair failed; continuing with the due-record pass',
+            error: e,
+            stackTrace: s,
+          );
+        }
+      }
+      // Read after the pre-check: it can await sync writes, and a `now`
+      // captured before them would age across the pass it is meant to time.
       final now = clock.now();
       final dueStates = await _repository.getDueScheduledAgentStates(now);
 
