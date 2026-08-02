@@ -133,10 +133,8 @@ enum InsightsPeriodUnit { day, week, month, quarter, year }
 /// A resolved, day-aligned analysis range `[startDay, endDayExclusive)`.
 @immutable
 class InsightsRange {
-  const InsightsRange({
-    required this.startDay,
-    required this.endDayExclusive,
-  }) : assert(startDay < endDayExclusive, 'range must span at least one day');
+  const InsightsRange({required this.startDay, required this.endDayExclusive})
+    : assert(startDay < endDayExclusive, 'range must span at least one day');
 
   /// First epoch day of the range (inclusive).
   final int startDay;
@@ -221,13 +219,6 @@ class InsightsChartData {
     this.partialFirstBucket = false,
     this.partialLastBucket = false,
   });
-
-  static const InsightsChartData empty = InsightsChartData(
-    granularity: InsightsGranularity.day,
-    bucketStarts: <DateTime>[],
-    seriesKeys: <String?>[],
-    values: <List<int>>[],
-  );
 
   final InsightsGranularity granularity;
 

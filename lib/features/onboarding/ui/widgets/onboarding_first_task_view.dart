@@ -265,7 +265,6 @@ class OnboardingFirstTaskView extends StatelessWidget {
                   SizedBox(height: tokens.spacing.step5),
                   _SuggestionChips(
                     tokens: tokens,
-                    accent: accent,
                     label: suggestionsLabel,
                     suggestions: suggestions,
                     onTap: onSuggestionTap,
@@ -278,9 +277,7 @@ class OnboardingFirstTaskView extends StatelessWidget {
                     child: Text(
                       ratherTypeLabel,
                       style: tokens.typography.styles.subtitle.subtitle1
-                          .copyWith(
-                            color: accent,
-                          ),
+                          .copyWith(color: accent),
                     ),
                   ),
                 ],
@@ -395,14 +392,12 @@ class _AnalogueRecorder extends StatelessWidget {
 class _SuggestionChips extends StatelessWidget {
   const _SuggestionChips({
     required this.tokens,
-    required this.accent,
     required this.label,
     required this.suggestions,
     required this.onTap,
   });
 
   final DsTokens tokens;
-  final Color accent;
   final String label;
   final List<String> suggestions;
   final void Function(String suggestion) onTap;
@@ -561,9 +556,7 @@ class _PickerChip extends StatelessWidget {
               border: Border.all(
                 color: selected
                     ? accent
-                    : tokens.colors.text.mediumEmphasis.withValues(
-                        alpha: 0.5,
-                      ),
+                    : tokens.colors.text.mediumEmphasis.withValues(alpha: 0.5),
               ),
             ),
             child: Padding(
@@ -657,9 +650,7 @@ class _CreatedTaskCardState extends State<_CreatedTaskCard>
             border: Border.all(
               color: widget.accent.withValues(alpha: 0.35 + 0.35 * t),
             ),
-            color: tokens.colors.background.level02.withValues(
-              alpha: 0.55,
-            ),
+            color: tokens.colors.background.level02.withValues(alpha: 0.55),
             boxShadow: [
               BoxShadow(
                 color: widget.accent.withValues(alpha: 0.10 + 0.16 * t),

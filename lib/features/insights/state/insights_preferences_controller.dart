@@ -22,8 +22,6 @@ class InsightsPreferences {
   /// in which case the KPI row shows only the total.
   final Set<String> focusCategoryIds;
 
-  bool get isConfigured => focusCategoryIds.isNotEmpty;
-
   @override
   bool operator ==(Object other) =>
       other is InsightsPreferences &&

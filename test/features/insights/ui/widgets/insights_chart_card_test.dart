@@ -247,7 +247,15 @@ void main() {
   testWidgets('empty data renders the no-data message instead of axes', (
     tester,
   ) async {
-    await pumpCard(tester, data: InsightsChartData.empty);
+    await pumpCard(
+      tester,
+      data: const InsightsChartData(
+        granularity: InsightsGranularity.day,
+        bucketStarts: <DateTime>[],
+        seriesKeys: <String?>[],
+        values: <List<int>>[],
+      ),
+    );
 
     expect(find.text('No data in this range'), findsOneWidget);
     expect(find.byType(BarChart), findsNothing);
@@ -257,9 +265,7 @@ void main() {
   testWidgets('long ranges thin labels to MMM-d format', (tester) async {
     final data = InsightsChartData(
       granularity: InsightsGranularity.day,
-      bucketStarts: [
-        for (var d = 0; d < 30; d++) DateTime(2026, 5, 9 + d),
-      ],
+      bucketStarts: [for (var d = 0; d < 30; d++) DateTime(2026, 5, 9 + d)],
       seriesKeys: const ['cat-a'],
       values: [
         [for (var d = 0; d < 30; d++) 1800],
@@ -349,10 +355,7 @@ void main() {
         final rows = item.children!.map((span) => span.toPlainText()).join();
         expect(rows, contains('Client Work  1h'));
         expect(rows, contains('Admin  30m'));
-        expect(
-          rows.indexOf('Client Work'),
-          lessThan(rows.indexOf('Admin')),
-        );
+        expect(rows.indexOf('Client Work'), lessThan(rows.indexOf('Admin')));
         // Zero-value bands are skipped: bucket 1 has no cat-a.
         final group1 = chart.data.barGroups[1];
         final item1 = tooltipData.getTooltipItem(
@@ -405,43 +408,42 @@ void main() {
       expect(item1.text, isNot(contains('partial week')));
     });
 
-    testWidgets(
-      'cumulative tooltip de-stacks to running per-series totals',
-      (tester) async {
-        await pumpCard(tester);
-        await tester.tap(toggle('Running total'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 600));
+    testWidgets('cumulative tooltip de-stacks to running per-series totals', (
+      tester,
+    ) async {
+      await pumpCard(tester);
+      await tester.tap(toggle('Running total'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
 
-        final chart = tester.widget<LineChart>(find.byType(LineChart));
-        final tooltipData = chart.data.lineTouchData.touchTooltipData;
-        // Hover bucket index 2: cat-a cumulative 1h+0+2h = 3h,
-        // cat-b 30m+15m+0 = 45m → grand total 3h 45m.
-        final spots = [
-          for (
-            var barIndex = 0;
-            barIndex < chart.data.lineBarsData.length;
-            barIndex++
-          )
-            LineBarSpot(
-              chart.data.lineBarsData[barIndex],
-              barIndex,
-              chart.data.lineBarsData[barIndex].spots[2],
-            ),
-        ];
-        final items = tooltipData.getTooltipItems(spots);
-        expect(items, hasLength(spots.length));
-        // One combined readout on the first spot, nulls for the rest.
-        expect(items.skip(1), everyElement(isNull));
-        final item = items.first!;
-        expect(item.text, contains('Wed 3'));
-        expect(item.text, contains('3h 45m'));
-        final rows = item.children!.map((s) => s.toPlainText()).join();
-        expect(rows, contains('Client Work  3h'));
-        expect(rows, contains('Admin  45m'));
-        expect(tooltipData.getTooltipColor(spots.first), isA<Color>());
-      },
-    );
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      final tooltipData = chart.data.lineTouchData.touchTooltipData;
+      // Hover bucket index 2: cat-a cumulative 1h+0+2h = 3h,
+      // cat-b 30m+15m+0 = 45m → grand total 3h 45m.
+      final spots = [
+        for (
+          var barIndex = 0;
+          barIndex < chart.data.lineBarsData.length;
+          barIndex++
+        )
+          LineBarSpot(
+            chart.data.lineBarsData[barIndex],
+            barIndex,
+            chart.data.lineBarsData[barIndex].spots[2],
+          ),
+      ];
+      final items = tooltipData.getTooltipItems(spots);
+      expect(items, hasLength(spots.length));
+      // One combined readout on the first spot, nulls for the rest.
+      expect(items.skip(1), everyElement(isNull));
+      final item = items.first!;
+      expect(item.text, contains('Wed 3'));
+      expect(item.text, contains('3h 45m'));
+      final rows = item.children!.map((s) => s.toPlainText()).join();
+      expect(rows, contains('Client Work  3h'));
+      expect(rows, contains('Admin  45m'));
+      expect(tooltipData.getTooltipColor(spots.first), isA<Color>());
+    });
   });
 
   // Period comparison is no longer drawn in the chart (it reads as a
@@ -485,9 +487,7 @@ void main() {
     ) async {
       final data = InsightsChartData(
         granularity: InsightsGranularity.day,
-        bucketStarts: [
-          for (var d = 0; d < 30; d++) DateTime(2026, 5, 9 + d),
-        ],
+        bucketStarts: [for (var d = 0; d < 30; d++) DateTime(2026, 5, 9 + d)],
         seriesKeys: const ['cat-a'],
         values: [
           [for (var d = 0; d < 30; d++) 1800],

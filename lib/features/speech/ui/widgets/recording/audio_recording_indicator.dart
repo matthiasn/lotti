@@ -16,8 +16,6 @@ class AudioRecordingIndicatorConstants {
   const AudioRecordingIndicatorConstants._();
 
   static const double indicatorHeight = 24;
-  static const double iconSize = 20;
-  static const double borderRadius = 8;
   static const EdgeInsets textPadding = EdgeInsets.only(
     left: 2,
     bottom: 1,

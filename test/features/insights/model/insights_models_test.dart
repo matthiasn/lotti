@@ -36,10 +36,7 @@ void main() {
             'work': InsightsDayCell(
               seconds: 3600,
               intervals: [
-                TimeInterval(
-                  DateTime(2024, 3, 1, 9),
-                  DateTime(2024, 3, 1, 10),
-                ),
+                TimeInterval(DateTime(2024, 3, 1, 9), DateTime(2024, 3, 1, 10)),
               ],
             ),
           },
@@ -77,7 +74,12 @@ void main() {
     });
 
     test('InsightsChartData equality and isEmpty semantics', () {
-      const empty = InsightsChartData.empty;
+      const empty = InsightsChartData(
+        granularity: InsightsGranularity.day,
+        bucketStarts: <DateTime>[],
+        seriesKeys: <String?>[],
+        values: <List<int>>[],
+      );
       expect(empty.isEmpty, isTrue);
 
       final zeroFilled = InsightsChartData(

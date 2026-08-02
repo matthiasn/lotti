@@ -57,7 +57,7 @@ void main() {
     vectorEstimator = MockOrtSession();
     vocoder = MockOrtSession();
     builtTensors = [];
-    style = VoiceStyle(MockOrtValue(), MockOrtValue(), const [], const []);
+    style = VoiceStyle(MockOrtValue(), MockOrtValue());
 
     durationOut = stubbedValue([0.1]); // 0.1s -> latentLen/dim of 1
     textEmbOut = stubbedValue(null); // used as an input tensor, never read
@@ -75,9 +75,7 @@ void main() {
     when(
       () => vectorEstimator.run(any()),
     ).thenAnswer((_) async => {'denoised': vectorOut});
-    when(
-      () => vocoder.run(any()),
-    ).thenAnswer((_) async => {'wav': wavOut});
+    when(() => vocoder.run(any())).thenAnswer((_) async => {'wav': wavOut});
   });
 
   SupertonicTtsSession buildSession() => SupertonicTtsSession(

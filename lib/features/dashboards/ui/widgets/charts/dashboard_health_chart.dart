@@ -85,7 +85,6 @@ class DashboardHealthChart extends ConsumerWidget {
 
     if (dataType == 'BODY_MASS_INDEX') {
       return DashboardHealthBmiChart(
-        chartConfig: chartConfig,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
         embedded: embedded,

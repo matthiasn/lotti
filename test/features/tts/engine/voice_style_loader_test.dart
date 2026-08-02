@@ -40,7 +40,7 @@ void main() {
       });
 
       final built = <(Float32List, List<int>)>[];
-      final style = await loadVoiceStyle(
+      await loadVoiceStyle(
         [file.path],
         tensorBuilder: (data, shape) async {
           built.add((data as Float32List, shape));
@@ -53,8 +53,6 @@ void main() {
       expect(built[0].$2, [1, 2, 2]); // [bsz, dim1, dim2]
       expect(built[1].$1, [5.0, 6.0]); // dp flattened
       expect(built[1].$2, [1, 1, 2]);
-      expect(style.ttlShape, [1, 2, 2]);
-      expect(style.dpShape, [1, 1, 2]);
     },
   );
 

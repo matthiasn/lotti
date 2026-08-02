@@ -19,11 +19,7 @@ class InsightsMockData {
       delta: '+0.4',
       deltaPositive: true,
     ),
-    InsightStatCard(
-      value: 'Design',
-      label: 'Top category',
-      delta: '38%',
-    ),
+    InsightStatCard(value: 'Design', label: 'Top category', delta: '38%'),
     InsightStatCard(
       value: '12',
       label: 'Interruptions',
@@ -116,21 +112,18 @@ class InsightsMockData {
       plannedFraction: 0.66,
       actualFraction: 0.77,
       delta: '+1.3h',
-      positive: true,
     ),
     PlanVsActualEntry(
       category: 'Development',
       plannedFraction: 0.66,
       actualFraction: 0.54,
       delta: '-1.5h',
-      positive: false,
     ),
     PlanVsActualEntry(
       category: 'Meetings',
       plannedFraction: 0.25,
       actualFraction: 0.35,
       delta: '+1.2h',
-      positive: true,
     ),
   ];
 
@@ -212,14 +205,12 @@ class PlanVsActualEntry {
     required this.plannedFraction,
     required this.actualFraction,
     required this.delta,
-    required this.positive,
   });
 
   final String category;
   final double plannedFraction;
   final double actualFraction;
   final String delta;
-  final bool positive;
 }
 
 class WellbeingData {

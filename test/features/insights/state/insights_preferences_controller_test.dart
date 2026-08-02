@@ -38,14 +38,13 @@ void main() {
     final container = makeContainer();
 
     expect(
-      container.read(insightsPreferencesControllerProvider).isConfigured,
-      isFalse,
+      container.read(insightsPreferencesControllerProvider).focusCategoryIds,
+      isEmpty,
     );
     await Future<void>.delayed(Duration.zero);
 
     final prefs = container.read(insightsPreferencesControllerProvider);
     expect(prefs.focusCategoryIds, {'cat-a', 'cat-b'});
-    expect(prefs.isConfigured, isTrue);
   });
 
   test('malformed or empty stored JSON degrades to unconfigured', () async {

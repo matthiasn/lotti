@@ -31,55 +31,8 @@ final FutureProviderFamily<AgentDomainEntity?, String> projectAgentProvider =
       projectAgent,
       name: 'projectAgentProvider',
     );
-Future<AgentDomainEntity?> projectAgent(
-  Ref ref,
-  String projectId,
-) async {
+Future<AgentDomainEntity?> projectAgent(Ref ref, String projectId) async {
   ref.watch(agentUpdateStreamProvider(projectId));
   final service = ref.watch(projectAgentServiceProvider);
   return service.getProjectAgentForProject(projectId);
 }
-
-/// Lightweight project-agent report freshness state for project UI surfaces.
-class ProjectAgentSummaryState {
-  const ProjectAgentSummaryState({
-    required this.hasReport,
-    this.pendingProjectActivityAt,
-  });
-
-  final bool hasReport;
-  final DateTime? pendingProjectActivityAt;
-}
-
-/// Fetches summary freshness data for the project's provisioned agent.
-final FutureProviderFamily<ProjectAgentSummaryState?, String>
-projectAgentSummaryProvider = FutureProvider.autoDispose
-    .family<ProjectAgentSummaryState?, String>((
-      ref,
-      projectId,
-    ) async {
-      final agentEntity = await ref.watch(
-        projectAgentProvider(projectId).future,
-      );
-      final identity = agentEntity?.mapOrNull(agent: (agent) => agent);
-      if (identity == null) return null;
-
-      final stateEntity = await ref.watch(
-        agentStateProvider(identity.agentId).future,
-      );
-      final reportEntity = await ref.watch(
-        agentReportProvider(identity.agentId).future,
-      );
-
-      final state = stateEntity?.mapOrNull(
-        agentState: (agentState) => agentState,
-      );
-      final report = reportEntity?.mapOrNull(
-        agentReport: (agentReport) => agentReport,
-      );
-
-      return ProjectAgentSummaryState(
-        hasReport: report != null && report.content.trim().isNotEmpty,
-        pendingProjectActivityAt: state?.slots.pendingProjectActivityAt,
-      );
-    });

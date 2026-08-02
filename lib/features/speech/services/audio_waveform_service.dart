@@ -33,15 +33,9 @@ const WaveformZoom _defaultZoom = WaveformZoom.pixelsPerSecond(120);
 
 /// Result of waveform extraction for use in the UI.
 class AudioWaveformData {
-  AudioWaveformData({
-    required this.amplitudes,
-    required this.bucketDuration,
-    required this.audioDuration,
-  });
+  AudioWaveformData({required this.amplitudes});
 
   final List<double> amplitudes;
-  final Duration bucketDuration;
-  final Duration audioDuration;
 }
 
 /// Serialisable payload stored on disk so waveforms can be reused.
@@ -232,11 +226,7 @@ class AudioWaveformService {
               AudioUtils.getRelativeAudioPath(audio) &&
           cached.audioFileSizeBytes == stat.size &&
           cached.audioFileModifiedAt.isAtSameMomentAs(stat.modified.toUtc())) {
-        return AudioWaveformData(
-          amplitudes: cached.amplitudes,
-          bucketDuration: Duration(microseconds: cached.bucketDurationMicros),
-          audioDuration: Duration(milliseconds: cached.audioDurationMs),
-        );
+        return AudioWaveformData(amplitudes: cached.amplitudes);
       }
     }
 
@@ -268,11 +258,7 @@ class AudioWaveformService {
         waveform: waveform,
         reducedBuckets: normalized.length,
       );
-      final data = AudioWaveformData(
-        amplitudes: normalized,
-        bucketDuration: bucketDuration,
-        audioDuration: waveform.duration,
-      );
+      final data = AudioWaveformData(amplitudes: normalized);
 
       final payload = _AudioWaveformCachePayload(
         version: _waveformCacheVersion,

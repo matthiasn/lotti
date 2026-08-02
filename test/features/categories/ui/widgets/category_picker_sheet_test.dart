@@ -48,9 +48,7 @@ void main() {
     mockCache = MockEntitiesCacheService();
     when(() => mockCache.sortedCategories).thenReturn(testCategories);
     for (final category in testCategories) {
-      when(
-        () => mockCache.getCategoryById(category.id),
-      ).thenReturn(category);
+      when(() => mockCache.getCategoryById(category.id)).thenReturn(category);
     }
     getIt.registerSingleton<EntitiesCacheService>(mockCache);
   });
@@ -113,7 +111,6 @@ void main() {
         child: CategoryPickerSheet(
           mode: CategoryPickerMode.multi,
           options: testCategories,
-          initialSelectedIds: staged.value,
           stagedNotifier: staged,
           showUnassignedRow: showUnassignedRow,
         ),
@@ -336,10 +333,7 @@ void main() {
       await tester.pump();
 
       // The clear row is suppressed (not left orphaned above the results).
-      expect(
-        find.byKey(const ValueKey('category-picker-clear')),
-        findsNothing,
-      );
+      expect(find.byKey(const ValueKey('category-picker-clear')), findsNothing);
       expect(
         find.byKey(const ValueKey('category-picker-row-cat3')),
         findsOneWidget,
@@ -644,9 +638,7 @@ void main() {
 
     testWidgets(
       'create-from-search stages the new category and clears search',
-      (
-        tester,
-      ) async {
+      (tester) async {
         registerAllFallbackValues();
         final mockRepository = MockCategoryRepository();
         when(

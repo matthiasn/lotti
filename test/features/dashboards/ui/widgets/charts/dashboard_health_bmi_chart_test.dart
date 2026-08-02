@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bmi_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
@@ -33,13 +32,6 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  const chartConfig =
-      DashboardItem.healthChart(
-            color: '#FF0000',
-            healthType: 'HealthDataType.WEIGHT',
-          )
-          as DashboardHealthItem;
-
   final rangeStart = DateTime(2024, 3);
   final rangeEnd = DateTime(2024, 3, 31);
 
@@ -63,12 +55,7 @@ void main() {
             width: 1000,
             height: 600,
             child: Stack(
-              children: [
-                BmiChartInfoWidget(
-                  minInRange: 70,
-                  maxInRange: 80,
-                ),
-              ],
+              children: [BmiChartInfoWidget(minInRange: 70, maxInRange: 80)],
             ),
           ),
         ),
@@ -87,10 +74,7 @@ void main() {
             height: 600,
             child: Stack(
               children: [
-                BmiChartInfoWidget(
-                  minInRange: 68.3,
-                  maxInRange: 82.7,
-                ),
+                BmiChartInfoWidget(minInRange: 68.3, maxInRange: 82.7),
               ],
             ),
           ),
@@ -111,12 +95,7 @@ void main() {
             width: 1000,
             height: 600,
             child: Stack(
-              children: [
-                BmiChartInfoWidget(
-                  minInRange: 0,
-                  maxInRange: 0,
-                ),
-              ],
+              children: [BmiChartInfoWidget(minInRange: 0, maxInRange: 0)],
             ),
           ),
         ),
@@ -134,12 +113,7 @@ void main() {
             width: 1000,
             height: 600,
             child: Stack(
-              children: [
-                BmiChartInfoWidget(
-                  minInRange: 75,
-                  maxInRange: 85,
-                ),
-              ],
+              children: [BmiChartInfoWidget(minInRange: 75, maxInRange: 85)],
             ),
           ),
         ),
@@ -166,11 +140,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          DashboardHealthBmiChart(
-            chartConfig: chartConfig,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-          ),
+          DashboardHealthBmiChart(rangeStart: rangeStart, rangeEnd: rangeEnd),
           overrides: [
             healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.WEIGHT',
@@ -193,11 +163,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          DashboardHealthBmiChart(
-            chartConfig: chartConfig,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-          ),
+          DashboardHealthBmiChart(rangeStart: rangeStart, rangeEnd: rangeEnd),
           overrides: [
             healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.WEIGHT',
@@ -221,11 +187,7 @@ void main() {
 
         await tester.pumpWidget(
           makeTestableWidget(
-            DashboardHealthBmiChart(
-              chartConfig: chartConfig,
-              rangeStart: rangeStart,
-              rangeEnd: rangeEnd,
-            ),
+            DashboardHealthBmiChart(rangeStart: rangeStart, rangeEnd: rangeEnd),
             overrides: [
               healthObservationsControllerProvider((
                 healthDataType: 'HealthDataType.WEIGHT',
@@ -248,11 +210,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          DashboardHealthBmiChart(
-            chartConfig: chartConfig,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-          ),
+          DashboardHealthBmiChart(rangeStart: rangeStart, rangeEnd: rangeEnd),
           overrides: [
             healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.WEIGHT',
@@ -274,11 +232,7 @@ void main() {
       // card now collapses and reserves no chart area.
       await tester.pumpWidget(
         makeTestableWidget(
-          DashboardHealthBmiChart(
-            chartConfig: chartConfig,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-          ),
+          DashboardHealthBmiChart(rangeStart: rangeStart, rangeEnd: rangeEnd),
           overrides: [
             healthObservationsControllerProvider((
               healthDataType: 'HealthDataType.WEIGHT',

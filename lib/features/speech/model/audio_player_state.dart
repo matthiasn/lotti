@@ -28,7 +28,6 @@ class AudioPlayerState {
     this.progress = Duration.zero,
     this.pausedAt = Duration.zero,
     this.speed = 1.0,
-    this.showTranscriptsList = false,
     this.buffered = Duration.zero,
     this.audioNote,
   });
@@ -48,9 +47,6 @@ class AudioPlayerState {
   /// Playback rate multiplier (1.0 = normal speed).
   final double speed;
 
-  /// Whether the transcripts list section is expanded in the UI.
-  final bool showTranscriptsList;
-
   /// How much of the media has buffered, clamped to [totalDuration].
   final Duration buffered;
 
@@ -67,7 +63,6 @@ class AudioPlayerState {
     Duration? progress,
     Duration? pausedAt,
     double? speed,
-    bool? showTranscriptsList,
     Duration? buffered,
     Object? audioNote = _undefined,
   }) {
@@ -77,7 +72,6 @@ class AudioPlayerState {
       progress: progress ?? this.progress,
       pausedAt: pausedAt ?? this.pausedAt,
       speed: speed ?? this.speed,
-      showTranscriptsList: showTranscriptsList ?? this.showTranscriptsList,
       buffered: buffered ?? this.buffered,
       audioNote: audioNote == _undefined
           ? this.audioNote

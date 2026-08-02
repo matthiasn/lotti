@@ -12,14 +12,12 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 
-/// Loaded voice style: the two conditioning tensors + their shapes.
+/// Loaded voice style: the two conditioning tensors.
 class VoiceStyle {
-  VoiceStyle(this.ttl, this.dp, this.ttlShape, this.dpShape);
+  VoiceStyle(this.ttl, this.dp);
 
   final OrtValue ttl;
   final OrtValue dp;
-  final List<int> ttlShape;
-  final List<int> dpShape;
 }
 
 Future<String> _readJson(String path) => path.startsWith('assets/')
@@ -74,8 +72,6 @@ Future<VoiceStyle> loadVoiceStyle(
   return VoiceStyle(
     await build(ttlFlat, ttlShape),
     await build(dpFlat, dpShape),
-    ttlShape,
-    dpShape,
   );
 }
 
