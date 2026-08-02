@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../database/sync_db_test_utils.dart';
 import '../../../mocks/mocks.dart';
 
 OutboxItem _item({

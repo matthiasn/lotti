@@ -203,15 +203,8 @@ class AgentLogCompactor {
         : content,
   );
 
-  /// Assembles the read-side compacted task log for [agentId] (ADR 0017
-  /// Decision 6): the active summary's prose followed by the verbatim event
-  /// tail in capture order — append-only between folds, so consecutive wakes
-  /// share a byte-identical prefix. Returns the empty string when the agent
-  /// has no captured input yet. Pure read — no writes.
-  Future<String> assembleContext(String agentId) async =>
-      (await assembleContextDetailed(agentId)).text;
-
-  /// [assembleContext] plus the reconstruction marker (ADR 0020 v2 prompt
+  /// Assembles the read-side compacted task log plus the reconstruction marker
+  /// (ADR 0020 v2 prompt
   /// records): the active checkpoint's summary-message id and the position of
   /// the LAST rendered tail event — together they pin this assembly so
   /// [assembleContextAsOf] can re-derive the identical block later, after

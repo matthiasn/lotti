@@ -6,11 +6,14 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
 
+import 'slow_query_logging_test_utils.dart';
+import 'sync_db_test_utils.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(SlowQueryLoggingGate.resetForTest);
-  tearDown(SlowQueryLoggingGate.resetForTest);
+  setUp(resetSlowQueryLoggingGate);
+  tearDown(resetSlowQueryLoggingGate);
 
   test('openDbConnection creates parent directory if missing', () async {
     final base = Directory.systemTemp.createTempSync('db_parent_create_');
@@ -148,7 +151,7 @@ void main() {
 
       final db = SyncDatabase.connect(DatabaseConnection(lazy));
       await db.customSelect('SELECT 1 AS one').getSingle();
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logDir = Directory('${base.path}/logs');
       final logFiles = logDir.existsSync()
@@ -189,7 +192,7 @@ void main() {
 
       final db = SyncDatabase.connect(DatabaseConnection(lazy));
       await db.customSelect('SELECT 1 AS one').getSingle();
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logFiles = Directory('${base.path}/logs')
           .listSync()
@@ -229,7 +232,7 @@ void main() {
 
       final db = SyncDatabase.connect(DatabaseConnection(lazy));
       await db.customSelect('SELECT 1 AS one').getSingle();
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logFiles = Directory('${base.path}/logs')
           .listSync()

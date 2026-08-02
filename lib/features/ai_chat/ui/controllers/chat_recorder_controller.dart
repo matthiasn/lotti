@@ -3,7 +3,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
@@ -58,49 +57,13 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         _transcriptionServiceOverride ??
         ref.read(audioTranscriptionServiceProvider);
 
-    // Clean up resources when the provider is disposed
-    ref.onDispose(() {
-      _maxTimer?.cancel();
-      // Capture references before async cleanup
-      final ampSub = _ampSub;
-      final recorder = _recorder;
-      final filePath = _filePath;
-      final tempDir = _tempDir;
-
-      // Chain cleanup operations sequentially to avoid race conditions
-      Future<void> cleanup() async {
-        try {
-          await ampSub?.cancel();
-        } catch (_) {}
-        try {
-          await recorder?.dispose();
-        } catch (_) {}
-        try {
-          if (filePath != null) {
-            await File(filePath).delete();
-          }
-        } catch (_) {}
-        try {
-          if (tempDir != null) {
-            await tempDir.delete(recursive: true);
-          }
-        } catch (_) {}
-      }
-
-      // Deliberately not awaited — onDispose callbacks are synchronous. The
-      // future is stored so tests can await the full chain deterministically.
-      disposeCleanupFuture = cleanup();
-    });
+    // Riverpod dispose callbacks are synchronous, so start the idempotent
+    // asynchronous cleanup and let callers that need determinism await
+    // [dispose] explicitly.
+    ref.onDispose(() => unawaited(dispose()));
 
     return const ChatRecorderState.initial();
   }
-
-  /// Completes when the `ref.onDispose` cleanup chain (subscription cancels,
-  /// recorder dispose, file/temp-dir deletion) has finished. Only set once the
-  /// provider has been disposed; exposed so tests can await the otherwise
-  /// unawaited teardown instead of polling the event queue.
-  @visibleForTesting
-  Future<void>? disposeCleanupFuture;
 
   record.AudioRecorder? _recorder;
   StreamSubscription<record.Amplitude>? _ampSub;
@@ -109,9 +72,38 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   String? _filePath;
   bool _isStarting = false;
   int _operationId = 0; // Incremented for each new operation to prevent races
+  Future<void>? _disposeFuture;
 
   static const int _cleanupTimeoutSeconds = 2;
   static const int _fileDeleteTimeoutSeconds = 2;
+
+  /// Releases recorder resources and temporary files exactly once.
+  Future<void> dispose() => _disposeFuture ??= _disposeResources();
+
+  Future<void> _disposeResources() async {
+    _maxTimer?.cancel();
+    final ampSub = _ampSub;
+    final recorder = _recorder;
+    final filePath = _filePath;
+    final tempDir = _tempDir;
+
+    try {
+      await ampSub?.cancel();
+    } catch (_) {}
+    try {
+      await recorder?.dispose();
+    } catch (_) {}
+    try {
+      if (filePath != null) {
+        await File(filePath).delete();
+      }
+    } catch (_) {}
+    try {
+      if (tempDir != null) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
+  }
 
   /// Begins a batch recording: checks mic permission, records to a temp `.m4a`
   /// file, streams throttled amplitude into [ChatRecorderState.amplitudeHistory],

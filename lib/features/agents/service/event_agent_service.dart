@@ -1,12 +1,10 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart'
-    show AgentLifecycle, AgentTemplateKind, WakeReason;
+    show AgentTemplateKind, WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -211,93 +209,6 @@ class EventAgentService {
     );
   }
 
-  /// Cancel a scheduled wake for [agentId].
-  ///
-  /// Clears the throttle deadline, cancels the deferred drain timer, and
-  /// removes any queued subscription jobs — so no automatic wake will fire.
-  void cancelScheduledWake(String agentId) {
-    domainLogger?.log(
-      LogDomain.agentRuntime,
-      'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
-      subDomain: 'lifecycle',
-    );
-    agentService.cancelPendingWake(agentId);
-  }
-
-  /// Restore event-agent runtime state after app startup.
-  ///
-  /// Re-registers the direct-edit subscription for each active event agent,
-  /// rehydrates any persisted throttle deadline, and mirrors the persisted
-  /// `awaitingContent` flag back into the orchestrator. States and
-  /// `agent_event` links are loaded in bulk before the per-agent loop so a
-  /// database failure aborts this restoration pass once.
-  Future<void> restoreSubscriptions() async {
-    domainLogger?.log(
-      LogDomain.agentRuntime,
-      'restoring event agent runtime state...',
-      subDomain: 'restore',
-    );
-
-    final activeAgents = await agentService.listAgents(
-      lifecycle: AgentLifecycle.active,
-    );
-    final eventAgents = activeAgents
-        .where((agent) => agent.kind == _agentKind)
-        .toList(growable: false);
-    final agentIds = [for (final agent in eventAgents) agent.agentId];
-    final statesByAgentId = eventAgents.isEmpty
-        ? const <String, AgentStateEntity>{}
-        : await repository.getAgentStatesByAgentIds(agentIds);
-    final linksByAgentId = eventAgents.isEmpty
-        ? const <String, List<AgentLink>>{}
-        : await repository.getLinksFromMultiple(
-            agentIds,
-            type: AgentLinkTypes.agentEvent,
-          );
-
-    var count = 0;
-    for (final agent in eventAgents) {
-      try {
-        final links = linksByAgentId[agent.agentId] ?? const <AgentLink>[];
-        final state = statesByAgentId[agent.agentId];
-        _hydrateThrottleDeadlineFromState(agent.agentId, state);
-        orchestrator.setAwaitingContent(
-          agent.agentId,
-          awaiting: state?.awaitingContent ?? false,
-        );
-        for (final link in links) {
-          _registerEventSubscription(agent.agentId, link.toId);
-        }
-        count++;
-      } catch (e, s) {
-        final msg =
-            'failed to restore runtime state '
-            'for ${DomainLogger.sanitizeId(agent.agentId)}';
-        if (domainLogger != null) {
-          domainLogger!.error(
-            LogDomain.agentRuntime,
-            e,
-            message: msg,
-            stackTrace: s,
-          );
-        } else {
-          developer.log(
-            '$msg (errorType=${e.runtimeType})',
-            name: 'EventAgentService',
-            error: e.runtimeType,
-            stackTrace: s,
-          );
-        }
-      }
-    }
-
-    domainLogger?.log(
-      LogDomain.agentRuntime,
-      'restored $count event agent(s)',
-      subDomain: 'restore',
-    );
-  }
-
   void _registerEventSubscription(String agentId, String eventId) {
     orchestrator.addSubscription(
       AgentSubscription(
@@ -313,15 +224,5 @@ class EventAgentService {
         matchEntityIds: {eventId},
       ),
     );
-  }
-
-  void _hydrateThrottleDeadlineFromState(
-    String agentId,
-    AgentStateEntity? state,
-  ) {
-    final deadline = state?.nextWakeAt;
-    if (deadline != null) {
-      orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);
-    }
   }
 }

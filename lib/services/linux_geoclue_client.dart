@@ -255,12 +255,6 @@ class LinuxGeoClueClient {
     if (lat == null || lon == null) {
       throw PortalLocationException('GeoClue location missing coordinates');
     }
-    int? micros;
-    final ts = dict['Timestamp'];
-    if (ts != null && ts.signature == DBusSignature('(tt)')) {
-      final parts = ts.asStruct();
-      micros = parts[0].asUint64() * 1000000 + parts[1].asUint64();
-    }
     return PortalLocation(
       latitude: lat,
       longitude: lon,
@@ -268,7 +262,6 @@ class LinuxGeoClueClient {
       accuracy: readDouble('Accuracy'),
       speed: readDouble('Speed'),
       heading: readDouble('Heading'),
-      timestampMicros: micros,
     );
   }
 }

@@ -60,10 +60,4 @@ abstract final class AiStateShaderProgramCache {
       AiStateShaderAssets.thinkingLine,
     );
   }
-
-  @visibleForTesting
-  static void reset() {
-    _voiceInputProgram = null;
-    _thinkingLineProgram = null;
-  }
 }

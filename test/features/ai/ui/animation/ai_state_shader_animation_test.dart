@@ -7,8 +7,6 @@ import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'ai_state_shader_animation_test_helpers.dart';
 
 void main() {
-  tearDown(AiStateShaderProgramCache.reset);
-
   group('AI state shader assets', () {
     test('are registered in pubspec.yaml', () {
       final pubspec = File('pubspec.yaml').readAsStringSync();
@@ -52,25 +50,20 @@ void main() {
     testWidgets('cache returns the identical program for any call count', (
       tester,
     ) async {
-      // Exhaustive over 2..9 calls per fresh cache — every call must return
-      // the very same memoised object, not merely an equal one.
-      for (var n = 2; n <= 9; n++) {
-        AiStateShaderProgramCache.reset();
-        final voice = [
-          for (var i = 0; i < n; i++)
-            await AiStateShaderProgramCache.loadVoiceInput(),
-        ];
-        final thinking = [
-          for (var i = 0; i < n; i++)
-            await AiStateShaderProgramCache.loadThinkingLine(),
-        ];
+      final voice = [
+        for (var i = 0; i < 9; i++)
+          await AiStateShaderProgramCache.loadVoiceInput(),
+      ];
+      final thinking = [
+        for (var i = 0; i < 9; i++)
+          await AiStateShaderProgramCache.loadThinkingLine(),
+      ];
 
-        for (final program in voice.skip(1)) {
-          expect(identical(program, voice.first), isTrue, reason: 'n=$n');
-        }
-        for (final program in thinking.skip(1)) {
-          expect(identical(program, thinking.first), isTrue, reason: 'n=$n');
-        }
+      for (final program in voice.skip(1)) {
+        expect(identical(program, voice.first), isTrue);
+      }
+      for (final program in thinking.skip(1)) {
+        expect(identical(program, thinking.first), isTrue);
       }
     });
   });

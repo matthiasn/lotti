@@ -32,7 +32,7 @@ void main() {
   late MockDomainLogger domainLogger;
 
   setUp(() async {
-    app.resetFrameworkErrorSuppressionForTesting();
+    app.configureFrameworkErrorSuppression();
     closeCompleter = Completer<void>();
     addTearDown(() {
       if (!closeCompleter.isCompleted) closeCompleter.complete();
@@ -108,7 +108,7 @@ void main() {
   });
 
   test('framework error count threshold emits a stack-free summary', () {
-    app.resetFrameworkErrorSuppressionForTesting(
+    app.configureFrameworkErrorSuppression(
       summaryEvery: 3,
       summaryInterval: const Duration(minutes: 10),
     );
@@ -190,7 +190,7 @@ void main() {
     );
 
     fakeAsync((async) {
-      app.resetFrameworkErrorSuppressionForTesting(
+      app.configureFrameworkErrorSuppression(
         scheduleIntervalSummaries: true,
       );
       app.handleFlutterFrameworkError(details);

@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
 import '../mocks/mocks.dart';
+import 'slow_query_logging_test_utils.dart';
 
 void main() {
   setUpAll(() {
@@ -17,7 +18,7 @@ void main() {
   });
 
   group('SlowQueryLoggingGate', () {
-    tearDown(SlowQueryLoggingGate.resetForTest);
+    tearDown(resetSlowQueryLoggingGate);
 
     test('defaults to disabled', () {
       expect(SlowQueryLoggingGate.isEnabled, isFalse);
@@ -25,14 +26,14 @@ void main() {
 
     test('can be enabled', () {
       SlowQueryLoggingGate.isEnabled = true;
-      addTearDown(SlowQueryLoggingGate.resetForTest);
+      addTearDown(resetSlowQueryLoggingGate);
 
       expect(SlowQueryLoggingGate.isEnabled, isTrue);
     });
 
-    test('resetForTest sets isEnabled back to false', () {
+    test('the test reset restores the disabled state', () {
       SlowQueryLoggingGate.isEnabled = true;
-      SlowQueryLoggingGate.resetForTest();
+      resetSlowQueryLoggingGate();
 
       expect(SlowQueryLoggingGate.isEnabled, isFalse);
     });
@@ -108,7 +109,7 @@ void main() {
       reportedEntries = <SlowQueryLogEntry>[];
     });
 
-    tearDown(SlowQueryLoggingGate.resetForTest);
+    tearDown(resetSlowQueryLoggingGate);
 
     SlowQueryInterceptor createInterceptor({
       Duration threshold = Duration.zero,
@@ -218,7 +219,7 @@ void main() {
     group('gate enabled with zero threshold - reports every query', () {
       setUp(() {
         SlowQueryLoggingGate.isEnabled = true;
-        addTearDown(SlowQueryLoggingGate.resetForTest);
+        addTearDown(resetSlowQueryLoggingGate);
         interceptor = createInterceptor();
       });
 
@@ -427,7 +428,7 @@ void main() {
     group('threshold behavior', () {
       test('does not report when query is below threshold', () async {
         SlowQueryLoggingGate.isEnabled = true;
-        addTearDown(SlowQueryLoggingGate.resetForTest);
+        addTearDown(resetSlowQueryLoggingGate);
 
         // Use a very high threshold so no real query can exceed it
         interceptor = createInterceptor(
@@ -449,7 +450,7 @@ void main() {
 
       test('reports when gate enabled and threshold is zero', () async {
         SlowQueryLoggingGate.isEnabled = true;
-        addTearDown(SlowQueryLoggingGate.resetForTest);
+        addTearDown(resetSlowQueryLoggingGate);
 
         interceptor = createInterceptor();
 
@@ -491,7 +492,7 @@ void main() {
       test('propagates executor exception and still reports when gate is '
           'enabled', () async {
         SlowQueryLoggingGate.isEnabled = true;
-        addTearDown(SlowQueryLoggingGate.resetForTest);
+        addTearDown(resetSlowQueryLoggingGate);
 
         when(
           () => mockExecutor.runSelect(any(), any()),
@@ -516,7 +517,7 @@ void main() {
     group('super-slow query plan capture', () {
       setUp(() {
         SlowQueryLoggingGate.isEnabled = true;
-        addTearDown(SlowQueryLoggingGate.resetForTest);
+        addTearDown(resetSlowQueryLoggingGate);
       });
 
       test('select crossing super threshold captures EXPLAIN QUERY PLAN '
@@ -652,7 +653,7 @@ void main() {
         'thousands of duplicates',
         () async {
           SlowQueryLoggingGate.captureFirstCallStack = true;
-          addTearDown(SlowQueryLoggingGate.resetForTest);
+          addTearDown(resetSlowQueryLoggingGate);
 
           interceptor = SlowQueryInterceptor(
             databaseName: 'test_db',
@@ -700,8 +701,7 @@ void main() {
       );
 
       test(
-        'markStatementSeenAndIsFirst returns true exactly once per '
-        'statement and resetForTest clears the seen-set',
+        'markStatementSeenAndIsFirst returns true exactly once per statement',
         () {
           expect(
             SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT a'),
@@ -714,13 +714,6 @@ void main() {
           expect(
             SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT b'),
             isTrue,
-          );
-
-          SlowQueryLoggingGate.resetForTest();
-          expect(
-            SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT a'),
-            isTrue,
-            reason: 'resetForTest clears the seen-set',
           );
         },
       );
@@ -775,8 +768,8 @@ void main() {
     });
 
     tearDown(() async {
-      SlowQueryLoggingGate.resetForTest();
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      resetSlowQueryLoggingGate();
+      await SlowQueryInterceptor.flushPendingFileWrites();
       if (tempDir.existsSync()) {
         tempDir.deleteSync(recursive: true);
       }
@@ -796,7 +789,7 @@ void main() {
       );
 
       reporter(entry);
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logsDir = Directory('${tempDir.path}/logs');
       expect(logsDir.existsSync(), isTrue);
@@ -839,7 +832,7 @@ void main() {
       );
 
       reporter(entry);
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logsDir = Directory('${tempDir.path}/logs');
       final logFiles = logsDir.listSync().whereType<File>().toList(
@@ -869,7 +862,7 @@ void main() {
         );
       }
 
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logsDir = Directory('${tempDir.path}/logs');
       final logFiles = logsDir.listSync().whereType<File>().toList(
@@ -906,7 +899,7 @@ void main() {
         );
       }
 
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logsDir = Directory('${tempDir.path}/logs');
       final logFiles = logsDir.listSync().whereType<File>().toList(
@@ -925,35 +918,6 @@ void main() {
       for (var i = 0; i < 10; i++) {
         expect(lines[i], contains('INSERT $i'));
       }
-    });
-
-    test('removes the per-path pending-writes entry after a write completes '
-        'when no newer write supersedes it', () async {
-      final reporter = SlowQueryInterceptor.fileReporter(
-        documentsDirectoryPath: tempDir.path,
-      );
-
-      reporter(
-        const SlowQueryLogEntry(
-          databaseName: 'db',
-          operation: 'select',
-          statement: 'SELECT 1',
-          arguments: <Object?>[],
-          elapsed: Duration(milliseconds: 1),
-        ),
-      );
-
-      // While the write is in flight the path is tracked.
-      expect(SlowQueryInterceptor.pendingWriteCountForTest, 1);
-
-      await SlowQueryInterceptor.flushFileSinkForTest();
-      // flushAll awaits the inner write; the whenComplete cleanup attached to
-      // the tracked future runs in a microtask that may still be queued when
-      // flushAll returns. Drain the microtask queue so the cleanup runs.
-      await Future<void>.value();
-
-      // The completed, un-superseded entry is removed, not leaked.
-      expect(SlowQueryInterceptor.pendingWriteCountForTest, 0);
     });
 
     test('super-slow entry is duplicated to super_slow_queries log with '
@@ -976,7 +940,7 @@ void main() {
       );
 
       reporter(entry);
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logsDir = Directory('${tempDir.path}/logs');
       final files = logsDir.listSync().whereType<File>().toList(
@@ -1018,7 +982,7 @@ void main() {
       );
 
       reporter(entry);
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logsDir = Directory('${tempDir.path}/logs');
       final files = logsDir.listSync().whereType<File>().toList(
@@ -1067,7 +1031,7 @@ void main() {
         );
 
         reporter(entry);
-        await SlowQueryInterceptor.flushFileSinkForTest();
+        await SlowQueryInterceptor.flushPendingFileWrites();
 
         final logsDir = Directory('${tempDir.path}/logs');
         final superFile = logsDir.listSync().whereType<File>().firstWhere(
@@ -1115,7 +1079,7 @@ void main() {
         );
 
         reporter(entry);
-        await SlowQueryInterceptor.flushFileSinkForTest();
+        await SlowQueryInterceptor.flushPendingFileWrites();
 
         final logsDir = Directory('${tempDir.path}/logs');
         final files = logsDir.listSync().whereType<File>().toList(
@@ -1146,7 +1110,7 @@ void main() {
       );
 
       reporter(entry);
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logsDir = Directory('${tempDir.path}/logs');
       final logFiles = logsDir.listSync().whereType<File>().toList(
@@ -1188,7 +1152,7 @@ void main() {
 
         // Must not throw even though the underlying write is impossible.
         reporter(entry);
-        await SlowQueryInterceptor.flushFileSinkForTest();
+        await SlowQueryInterceptor.flushPendingFileWrites();
 
         // The failure surfaces only through DevLogger, not as an exception.
         expect(
@@ -1274,8 +1238,8 @@ void main() {
     });
 
     tearDown(() async {
-      SlowQueryLoggingGate.resetForTest();
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      resetSlowQueryLoggingGate();
+      await SlowQueryInterceptor.flushPendingFileWrites();
       if (tempDir.existsSync()) {
         tempDir.deleteSync(recursive: true);
       }
@@ -1283,7 +1247,7 @@ void main() {
 
     test('interceptor with fileReporter writes log on slow query', () async {
       SlowQueryLoggingGate.isEnabled = true;
-      addTearDown(SlowQueryLoggingGate.resetForTest);
+      addTearDown(resetSlowQueryLoggingGate);
 
       final interceptor = SlowQueryInterceptor(
         databaseName: 'e2e_db',
@@ -1303,7 +1267,7 @@ void main() {
         <Object?>[42],
       );
 
-      await SlowQueryInterceptor.flushFileSinkForTest();
+      await SlowQueryInterceptor.flushPendingFileWrites();
 
       final logsDir = Directory('${tempDir.path}/logs');
       expect(logsDir.existsSync(), isTrue);

@@ -91,14 +91,6 @@ class WakeQueue {
     return true;
   }
 
-  /// Remove and return the next job (FIFO).
-  ///
-  /// Returns `null` when the queue is empty.
-  WakeJob? dequeue() {
-    if (_queue.isEmpty) return null;
-    return _queue.removeAt(0);
-  }
-
   /// Remove and return the first queued job accepted by [predicate].
   ///
   /// Jobs skipped by [predicate] keep their relative FIFO order. The bounded

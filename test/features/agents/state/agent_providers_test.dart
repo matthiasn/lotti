@@ -64,6 +64,10 @@ import '../test_utils.dart';
 import '../workflow/task_agent_workflow_test_helpers.dart';
 import 'agent_providers_test_helpers.dart';
 
+extension on WakeQueue {
+  WakeJob? dequeue() => dequeueFirstWhere((_) => true);
+}
+
 void main() {
   setUpAll(() {
     registerAllFallbackValues();

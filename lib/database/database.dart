@@ -165,10 +165,6 @@ class JournalDb extends _$JournalDb
     }
   }
 
-  @visibleForTesting
-  Future<bool> columnExistsForTesting(String table, String column) =>
-      _columnExists(table, column);
-
   @override
   Future<void> close() async {
     await _configFlagsController.close();

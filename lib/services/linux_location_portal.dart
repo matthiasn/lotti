@@ -15,11 +15,6 @@ const _responseCancelled = 1;
 /// Accuracy level passed to `org.freedesktop.portal.Location.CreateSession`.
 /// Values match the portal spec.
 enum PortalAccuracy {
-  none(0),
-  country(1),
-  city(2),
-  neighborhood(3),
-  street(4),
   exact(5);
 
   const PortalAccuracy(this.value);
@@ -34,7 +29,6 @@ class PortalLocation {
     this.accuracy,
     this.speed,
     this.heading,
-    this.timestampMicros,
   });
 
   final double latitude;
@@ -43,7 +37,6 @@ class PortalLocation {
   final double? accuracy;
   final double? speed;
   final double? heading;
-  final int? timestampMicros;
 }
 
 class PortalLocationException implements Exception {
@@ -298,13 +291,6 @@ class XdgLocationPortal {
       throw PortalLocationException('LocationUpdated missing coordinates');
     }
 
-    int? micros;
-    final ts = dict['Timestamp'];
-    if (ts != null && ts.signature == DBusSignature('(tt)')) {
-      final parts = ts.asStruct();
-      micros = parts[0].asUint64() * 1000000 + parts[1].asUint64();
-    }
-
     return PortalLocation(
       latitude: lat,
       longitude: lon,
@@ -312,7 +298,6 @@ class XdgLocationPortal {
       accuracy: readDouble('Accuracy'),
       speed: readDouble('Speed'),
       heading: readDouble('Heading'),
-      timestampMicros: micros,
     );
   }
 }

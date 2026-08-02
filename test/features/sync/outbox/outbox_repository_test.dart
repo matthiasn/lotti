@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../database/sync_db_test_utils.dart';
 import '../../../mocks/mocks.dart';
 
 enum _GeneratedRepositoryBatchOperation {

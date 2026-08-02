@@ -188,25 +188,4 @@ mixin _SyncDbOutboxDedup on _$SyncDatabase {
       );
     }).toList();
   }
-
-  /// Count of pending outbox items (non-stream, single-shot).
-  Future<int> getPendingOutboxCount() async {
-    final query = selectOnly(outbox)
-      ..addColumns([outbox.id.count()])
-      ..where(outbox.status.equals(OutboxStatus.pending.index));
-    final result = await query.getSingle();
-    return result.read(outbox.id.count()) ?? 0;
-  }
-
-  /// Count of outbox items with status = sent and updatedAt >= [since].
-  Future<int> getSentCountSince(DateTime since) async {
-    final result = await customSelect(
-      'SELECT COUNT(*) AS cnt '
-      'FROM outbox INDEXED BY idx_outbox_sent_updated_at '
-      'WHERE status = 1 AND updated_at >= ?',
-      variables: [Variable.withDateTime(since)],
-      readsFrom: {outbox},
-    ).getSingle();
-    return result.read<int>('cnt');
-  }
 }

@@ -263,7 +263,6 @@ void applyScreenshotDevice(WidgetTester tester, ScreenshotDevice device) {
   // Manual suites run several testWidgets cases in one process, each with a
   // fresh context, so carrying the memoized program across cases can hang the
   // next rasterization. Reload it lazily after every context reset.
-  AiStateShaderProgramCache.reset();
   tester.view
     ..physicalSize = device.size * device.devicePixelRatio
     ..devicePixelRatio = device.devicePixelRatio;

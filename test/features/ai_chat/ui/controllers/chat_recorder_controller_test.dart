@@ -486,9 +486,7 @@ void main() {
     sub.close();
     container.dispose();
 
-    // Await the otherwise-unawaited onDispose cleanup chain via the
-    // deterministic test hook.
-    await controller.disposeCleanupFuture;
+    await controller.dispose();
 
     // Directory is cleaned up after dispose
     expect(await tempSubdir.exists(), isFalse);
@@ -1029,9 +1027,7 @@ void main() {
     sub.close();
     container.dispose();
 
-    // Await the otherwise-unawaited onDispose cleanup chain via the
-    // deterministic test hook.
-    await controller.disposeCleanupFuture;
+    await controller.dispose();
 
     // Temp directory should be cleaned up by onDispose
     expect(await tempSubdir.exists(), isFalse);

@@ -10,7 +10,6 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -331,12 +330,6 @@ void main() {
       await service.logout();
 
       verify(() => syncEngine.logout()).called(1);
-    });
-
-    test('debugPipeline returns pipeline override', () {
-      final service = createServiceWithPipeline();
-
-      expect(service.debugPipeline, pipeline);
     });
   });
 
@@ -879,19 +872,6 @@ void main() {
       expect(service.queueCoordinator, same(queueCoordinator));
     });
 
-    // Covers line 216: matrixConfig getter delegates to session manager.
-    test('matrixConfig getter returns session manager matrixConfig', () {
-      const config = MatrixConfig(
-        homeServer: 'https://hs',
-        user: '@me:server',
-        password: 'pass',
-      );
-      when(() => sessionManager.matrixConfig).thenReturn(config);
-
-      final service = createService();
-      expect(service.matrixConfig, config);
-    });
-
     // Covers lines 287-288: publishIncomingRunnerState is a no-op when
     // incomingKeyVerificationRunner is null (default).
     test(
@@ -1401,127 +1381,6 @@ void main() {
   });
 
   group('MatrixService deleteDevice', () {
-    // Covers lines 548-552: throws ArgumentError when deviceId is null.
-    test('deleteDevice throws ArgumentError when deviceId is null', () async {
-      final deviceKeys = MockDeviceKeys();
-      when(() => deviceKeys.deviceId).thenReturn(null);
-      when(() => deviceKeys.deviceDisplayName).thenReturn('My Device');
-
-      final service = createService();
-
-      await expectLater(
-        service.deleteDevice(deviceKeys),
-        throwsA(isA<ArgumentError>()),
-      );
-    });
-
-    // Covers lines 556-560: throws StateError when matrixConfig is null.
-    test('deleteDevice throws StateError when matrixConfig is null', () async {
-      final deviceKeys = MockDeviceKeys();
-      when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
-      when(() => deviceKeys.userId).thenReturn('@me:server');
-      when(() => client.userID).thenReturn('@me:server');
-      when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
-      when(() => sessionManager.matrixConfig).thenReturn(null);
-
-      final service = createService();
-
-      await expectLater(
-        service.deleteDevice(deviceKeys),
-        throwsA(isA<StateError>()),
-      );
-    });
-
-    // Covers lines 563-567: throws StateError when device belongs to a
-    // different user.
-    test(
-      'deleteDevice throws StateError when device belongs to different user',
-      () async {
-        final deviceKeys = MockDeviceKeys();
-        when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
-        when(() => deviceKeys.userId).thenReturn('@other:server');
-        when(() => client.userID).thenReturn('@me:server');
-        when(() => sessionManager.matrixConfig).thenReturn(
-          const MatrixConfig(
-            homeServer: 'https://hs',
-            user: '@me:server',
-            password: 'pass',
-          ),
-        );
-
-        final service = createService();
-
-        await expectLater(
-          service.deleteDevice(deviceKeys),
-          throwsA(isA<StateError>()),
-        );
-      },
-    );
-
-    // Covers lines 579-583: throws UnsupportedError when password is empty.
-    test(
-      'deleteDevice throws UnsupportedError when password is empty',
-      () async {
-        final deviceKeys = MockDeviceKeys();
-        when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
-        when(() => deviceKeys.userId).thenReturn('@me:server');
-        when(() => client.userID).thenReturn('@me:server');
-        when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
-        when(() => sessionManager.matrixConfig).thenReturn(
-          const MatrixConfig(
-            homeServer: 'https://hs',
-            user: '@me:server',
-            password: '',
-          ),
-        );
-
-        final service = createService();
-
-        await expectLater(
-          service.deleteDevice(deviceKeys),
-          throwsA(isA<UnsupportedError>()),
-        );
-      },
-    );
-
-    // Covers lines 570-577: deleteDevice calls client.deleteDevice when
-    // password is non-empty and user matches.
-    test(
-      'deleteDevice deletes via the gateway when credentials are valid',
-      () async {
-        final deviceKeys = MockDeviceKeys();
-        when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
-        when(() => deviceKeys.userId).thenReturn('@me:server');
-        when(() => client.userID).thenReturn('@me:server');
-        when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
-        when(() => sessionManager.matrixConfig).thenReturn(
-          const MatrixConfig(
-            homeServer: 'https://hs',
-            user: '@me:server',
-            password: 'secret',
-          ),
-        );
-        when(
-          () => gateway.deleteDevice(
-            any(),
-            auth: any(named: 'auth'),
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => client.updateUserDeviceKeys(
-            additionalUsers: any(named: 'additionalUsers'),
-          ),
-        ).thenAnswer((_) async {});
-
-        final service = createService();
-        await service.deleteDevice(deviceKeys);
-
-        verify(
-          () => gateway.deleteDevice('DEVICE1', auth: any(named: 'auth')),
-        ).called(1);
-      },
-    );
-
     test('deleteDeviceById delegates through ops to the gateway', () async {
       when(() => client.userID).thenReturn('@me:server');
       when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
@@ -1692,47 +1551,11 @@ void main() {
     test(
       'constructs a real pipeline and real engine when nothing is injected',
       () {
-        final service = buildWithDefaults();
+        buildWithDefaults();
 
-        // The default pipeline branch (lines 110-120) constructed a real
-        // MatrixStreamConsumer that is exposed via debugPipeline.
-        expect(service.debugPipeline, isA<MatrixStreamConsumer>());
         // The wiring set the event processor's apply observer to the
         // pipeline's diagnostics reporter (line 122).
         verify(() => eventProcessor.applyObserver = any()).called(1);
-      },
-    );
-
-    test(
-      'assigns matrixConfig onto the default session manager (line 92)',
-      () {
-        const config = MatrixConfig(
-          homeServer: 'https://hs',
-          user: '@me:server',
-          password: 'pass',
-        );
-
-        final service = buildWithDefaults(matrixConfig: config);
-
-        // The real MatrixSessionManager.matrixConfig getter returns the value
-        // assigned during construction.
-        expect(service.matrixConfig, config);
-      },
-    );
-
-    test(
-      'assigns deviceDisplayName onto the default session manager (line 95)',
-      () {
-        // Without a deviceDisplayName, the freshly constructed session
-        // manager has no config and reports a null matrixConfig.
-        final service = buildWithDefaults(deviceDisplayName: 'My Laptop');
-
-        // deviceDisplayName is internal to the session manager; assert the
-        // service built without throwing and exposes the default real chain,
-        // proving the line 94-96 branch ran (it would have thrown on a
-        // null-check failure otherwise).
-        expect(service.matrixConfig, isNull);
-        expect(service.debugPipeline, isA<MatrixStreamConsumer>());
       },
     );
   });

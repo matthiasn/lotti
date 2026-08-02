@@ -57,12 +57,6 @@ class SoulDocumentService {
   Future<SoulDocumentEntity?> getSoul(String soulId) =>
       _versionOps.getSoul(soulId);
 
-  /// Update mutable fields on a soul document (currently just display name).
-  Future<SoulDocumentEntity> updateSoul({
-    required String soulId,
-    String? displayName,
-  }) => _versionOps.updateSoul(soulId: soulId, displayName: displayName);
-
   /// List all non-deleted soul documents.
   Future<List<SoulDocumentEntity>> getAllSouls() => _versionOps.getAllSouls();
 

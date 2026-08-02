@@ -3,10 +3,6 @@ import 'dart:convert';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
-/// Callback shape the `AttachmentIngestor` expects.
-typedef LocalVcDominatesFn =
-    Future<bool> Function(String relativePath, VectorClock? incomingVc);
-
 /// Decides whether the local copy of an agent entity / link already
 /// carries a vector clock equal to or newer than the one advertised
 /// by an incoming sync-message attachment. When `true`, the ingestor

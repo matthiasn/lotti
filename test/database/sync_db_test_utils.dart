@@ -11,6 +11,87 @@ import 'package:glados/glados.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 
+extension SyncDatabaseTestQueries on SyncDatabase {
+  Future<List<OutboxItem>> get allOutboxItems => select(outbox).get();
+
+  Future<OutboxItem?> getOutboxItemById(int id) {
+    return (select(
+      outbox,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+  }
+
+  Stream<List<OutboxItem>> watchOutboxItems({
+    int limit = 1000,
+    List<OutboxStatus> statuses = const [
+      OutboxStatus.pending,
+      OutboxStatus.sending,
+      OutboxStatus.error,
+      OutboxStatus.sent,
+    ],
+  }) {
+    return (select(outbox)
+          ..where(
+            (table) => table.status.isIn(
+              statuses.map((status) => status.index),
+            ),
+          )
+          ..orderBy([
+            (table) => OrderingTerm(
+              expression: CustomExpression<int>(
+                'CASE WHEN status IN '
+                '(${OutboxStatus.pending.index}, '
+                '${OutboxStatus.sending.index}) THEN 0 '
+                'WHEN status = ${OutboxStatus.error.index} THEN 1 ELSE 2 END',
+              ),
+            ),
+            (table) => OrderingTerm(expression: table.priority),
+            (table) => OrderingTerm(
+              expression: table.createdAt,
+              mode: OrderingMode.desc,
+            ),
+            (table) => OrderingTerm(
+              expression: table.id,
+              mode: OrderingMode.desc,
+            ),
+          ])
+          ..limit(limit))
+        .watch();
+  }
+
+  Future<int> getMissingSequenceCount() =>
+      _countSequenceByStatus(SyncSequenceStatus.missing);
+
+  Future<int> getRequestedSequenceCount() =>
+      _countSequenceByStatus(SyncSequenceStatus.requested);
+
+  Future<int> _countSequenceByStatus(SyncSequenceStatus status) async {
+    final query = selectOnly(syncSequenceLog)
+      ..addColumns([syncSequenceLog.hostId.count()])
+      ..where(syncSequenceLog.status.equals(status.index));
+    final result = await query.getSingle();
+    return result.read(syncSequenceLog.hostId.count()) ?? 0;
+  }
+
+  Future<int> getPendingOutboxCount() async {
+    final query = selectOnly(outbox)
+      ..addColumns([outbox.id.count()])
+      ..where(outbox.status.equals(OutboxStatus.pending.index));
+    final result = await query.getSingle();
+    return result.read(outbox.id.count()) ?? 0;
+  }
+
+  Future<int> getSentCountSince(DateTime since) async {
+    final result = await customSelect(
+      'SELECT COUNT(*) AS cnt '
+      'FROM outbox INDEXED BY idx_outbox_sent_updated_at '
+      'WHERE status = 1 AND updated_at >= ?',
+      variables: [Variable.withDateTime(since)],
+      readsFrom: {outbox},
+    ).getSingle();
+    return result.read<int>('cnt');
+  }
+}
+
 OutboxCompanion buildOutboxCompanion({
   required OutboxStatus status,
   required DateTime createdAt,

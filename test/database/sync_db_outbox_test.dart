@@ -7,6 +7,7 @@ import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 
+import 'slow_query_logging_test_utils.dart';
 import 'sync_db_test_utils.dart';
 
 class _OutboxClaimRowSpec {
@@ -587,7 +588,7 @@ void main() {
       () async {
         final loggedEntries = <SlowQueryLogEntry>[];
         SlowQueryLoggingGate.isEnabled = true;
-        addTearDown(SlowQueryLoggingGate.resetForTest);
+        addTearDown(resetSlowQueryLoggingGate);
 
         final loggedDb = SyncDatabase.connect(
           DatabaseConnection(

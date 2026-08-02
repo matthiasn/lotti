@@ -16,6 +16,7 @@ import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
+import '../database/slow_query_logging_test_utils.dart';
 import '../mocks/mocks.dart';
 
 /// Finds the first `.log` file matching [prefix] in the logs/ subdirectory.
@@ -65,13 +66,13 @@ void main() {
       () => journalDb.watchConfigFlag(logSlowQueriesFlag),
     ).thenAnswer((_) => Stream<bool>.value(false));
 
-    SlowQueryLoggingGate.resetForTest();
+    resetSlowQueryLoggingGate();
 
     logging = getIt<LoggingService>();
     await logging.listenToConfigFlag();
   });
 
-  tearDown(SlowQueryLoggingGate.resetForTest);
+  tearDown(resetSlowQueryLoggingGate);
 
   /// Builds a [LoggingService] wired to two controllable config-flag streams so
   /// tests can drive values, errors and `done` deterministically. Registers
@@ -125,6 +126,30 @@ void main() {
         isTrue,
       );
     });
+  });
+
+  test('flush waits for queued slow-query file writes', () async {
+    final reporter = SlowQueryInterceptor.fileReporter(
+      documentsDirectoryPath: tempDocs.path,
+    );
+    reporter(
+      const SlowQueryLogEntry(
+        databaseName: 'journal',
+        operation: 'select',
+        statement: 'SELECT 1',
+        arguments: <Object?>[],
+        elapsed: Duration(milliseconds: 250),
+      ),
+    );
+
+    await logging.flush();
+
+    final slowQueryLog = _findLogFile(tempDocs, prefix: 'slow_queries-');
+    expect(slowQueryLog, isNotNull);
+    expect(
+      slowQueryLog!.readAsStringSync(),
+      contains('[journal] select 250.000ms args=0 SELECT 1'),
+    );
   });
 
   test('captureException writes to file; includes stack trace', () {
@@ -385,7 +410,7 @@ void main() {
       async.flushMicrotasks();
 
       svc.captureEvent('should be logged', domain: 'TOGGLE');
-      unawaited(svc.flushAllForTest());
+      unawaited(svc.flush());
       async.flushMicrotasks();
 
       final logFile = _findLogFile(tempDocs);
@@ -404,7 +429,7 @@ void main() {
       async.flushMicrotasks();
 
       svc.captureEvent('should be skipped again', domain: 'TOGGLE');
-      unawaited(svc.flushAllForTest());
+      unawaited(svc.flush());
       async.flushMicrotasks();
 
       // File content should not contain the disabled event
@@ -457,7 +482,7 @@ void main() {
         () => journalDb.watchConfigFlag(logSlowQueriesFlag),
       ).thenAnswer((_) => Stream<bool>.value(true));
 
-      SlowQueryLoggingGate.resetForTest();
+      resetSlowQueryLoggingGate();
       final svc = LoggingService();
       addTearDown(svc.dispose);
 
@@ -746,7 +771,7 @@ void main() {
         // force-flushes, so the only thing that drains it is the buffered
         // flush timer scheduled in `_appendToNamedFile` (lines 94-100 of
         // logging_service.dart). We deliberately do NOT call
-        // `flushAllForTest()` to trigger the buffering — only the timer
+        // `flush()` to trigger the buffering — only the timer
         // firing performs the drain. The `timerFactory` seam lets us drive
         // that 500 ms timer deterministically under `fakeAsync` instead of
         // polling wall-clock time, which was flaky on slow CI.
@@ -806,7 +831,7 @@ void main() {
         // Await the service's shutdown contract. The callback has already
         // moved the buffered line into an active drain, which flush must wait
         // for before returning.
-        await bufferedLogging.flushAllForTest();
+        await bufferedLogging.flush();
 
         final file = findGeneralLog();
         expect(
@@ -831,7 +856,7 @@ void main() {
       expect(findGeneralLog(), isNull);
 
       // Deterministic flush instead of racing real timers (flaky on CI).
-      await bufferedLogging.flushAllForTest();
+      await bufferedLogging.flush();
 
       final file = findGeneralLog();
       expect(file, isNotNull, reason: 'Log file should exist after flush');
@@ -846,7 +871,7 @@ void main() {
         level: InsightLevel.error,
       );
 
-      await bufferedLogging.flushAllForTest();
+      await bufferedLogging.flush();
 
       final file = findGeneralLog();
       expect(file, isNotNull, reason: 'Log file should exist');
@@ -864,7 +889,7 @@ void main() {
       }
 
       // Deterministically flush the buffered write chain (fake-time policy).
-      await bufferedLogging.flushAllForTest();
+      await bufferedLogging.flush();
 
       final file = findGeneralLog();
       expect(file, isNotNull, reason: 'Log file should exist');
@@ -881,7 +906,7 @@ void main() {
       );
 
       // Deterministically flush the buffered write chain (fake-time policy).
-      await bufferedLogging.flushAllForTest();
+      await bufferedLogging.flush();
 
       final file = findGeneralLog();
       expect(file, isNotNull, reason: 'Log file should exist');
@@ -919,7 +944,7 @@ void main() {
       );
 
       // Deterministically flush the buffered write chain (fake-time policy).
-      await bufferedLogging.flushAllForTest();
+      await bufferedLogging.flush();
 
       final file = findGeneralLog();
       expect(file, isNotNull, reason: 'Log file should exist');
@@ -936,7 +961,7 @@ void main() {
         subDomain: 'signal',
       );
 
-      await bufferedLogging.flushAllForTest();
+      await bufferedLogging.flush();
 
       final generalFile = findGeneralLog();
       final syncFile = findSyncLog();
@@ -959,7 +984,7 @@ void main() {
           stackTrace: 'trace',
         );
 
-        await bufferedLogging.flushAllForTest();
+        await bufferedLogging.flush();
 
         final generalFile = findGeneralLog();
         final syncFile = findSyncLog();

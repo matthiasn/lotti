@@ -4,6 +4,10 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'wake_queue_test_helpers.dart';
 
+extension on WakeQueue {
+  WakeJob? dequeue() => dequeueFirstWhere((_) => true);
+}
+
 void main() {
   late WakeQueue queue;
 
