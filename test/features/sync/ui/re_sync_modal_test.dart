@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/components/buttons/ds_segmented_tog
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -22,6 +23,9 @@ import '../../../widget_test_utils.dart';
 
 // ignore_for_file: avoid_redundant_argument_values
 
+class _MockOnboardingSyncService extends Mock
+    implements OnboardingSyncService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -29,10 +33,17 @@ void main() {
   late MockAgentRepository mockAgentRepository;
   late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
 
-  Future<void> pumpModal(WidgetTester tester) async {
+  Future<void> pumpModal(
+    WidgetTester tester, {
+    OnboardingSyncTarget? onboardingTarget,
+    OnboardingSyncService? onboardingSyncService,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        const ReSyncModalContent(),
+        ReSyncModalContent(
+          onboardingTarget: onboardingTarget,
+          onboardingSyncService: onboardingSyncService,
+        ),
         overrides: [
           maintenanceProvider.overrideWithValue(mockMaintenance),
           agentRepositoryProvider.overrideWithValue(mockAgentRepository),
@@ -192,6 +203,50 @@ void main() {
       ),
     ).called(1);
   });
+
+  testWidgets(
+    'initial onboarding installs suppression before staging full history',
+    (tester) async {
+      const target = OnboardingSyncTarget(
+        userId: '@alice:example.com',
+        deviceId: 'PHONE',
+      );
+      const round = OutboundOnboardingRound(
+        roundId: 'round-1',
+        senderHostId: 'desktop-host',
+        target: target,
+        coverageUpperBounds: {'desktop-host': 99},
+      );
+      final onboarding = _MockOnboardingSyncService();
+      when(
+        () => onboarding.beginOutbound(target),
+      ).thenAnswer((_) async => round);
+      when(
+        () => onboarding.completeOutbound(round),
+      ).thenAnswer((_) async {});
+
+      await pumpModal(
+        tester,
+        onboardingTarget: target,
+        onboardingSyncService: onboarding,
+      );
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+      await tester.pump();
+
+      verifyInOrder([
+        () => onboarding.beginOutbound(target),
+        () => mockMaintenance.reSyncInterval(
+          start: reSyncEverythingStart,
+          end: any(named: 'end'),
+          agentRepository: mockAgentRepository,
+          includeJournalEntities: true,
+          includeAgentEntities: true,
+          onProgress: any(named: 'onProgress'),
+        ),
+        () => onboarding.completeOutbound(round),
+      ]);
+    },
+  );
 
   testWidgets('Last 30 days sends a deterministic 30-day interval', (
     tester,

@@ -9,6 +9,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -46,6 +47,9 @@ class _UndeletableFile implements File {
   @override
   dynamic noSuchMethod(Invocation i) => _real.noSuchMethod(i);
 }
+
+class _MockOnboardingSyncService extends Mock
+    implements OnboardingSyncService {}
 
 class _GeneratedBackfillCandidate {
   const _GeneratedBackfillCandidate({
@@ -298,6 +302,7 @@ void main() {
     int? maxBatchSize,
     Duration? missingDebounce,
     Duration? amnestyWindow,
+    OnboardingSyncService? onboardingSyncService,
   }) {
     final service = BackfillRequestService(
       sequenceLogService: mockSequenceService,
@@ -312,6 +317,7 @@ void main() {
       maxBatchSize: maxBatchSize,
       missingDebounce: missingDebounce,
       amnestyWindow: amnestyWindow,
+      onboardingSyncService: onboardingSyncService,
     );
     addTearDown(service.dispose);
     return service;
@@ -369,6 +375,78 @@ void main() {
   });
 
   group('BackfillRequestService', () {
+    test(
+      'automatic queue-drain requests exclude the active onboarding range',
+      () async {
+        final onboarding = _MockOnboardingSyncService();
+        final requestSent = Completer<SyncBackfillRequest>();
+        final service = buildService(
+          maxBatchSize: 2,
+          onboardingSyncService: onboarding,
+        );
+        when(onboarding.activeInboundCoverage).thenAnswer(
+          (_) async => {aliceHostId: 10},
+        );
+        when(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((invocation) async {
+          final offset = invocation.namedArguments[#offset] as int;
+          if (offset > 0) return [];
+          return [
+            _createMissingLogItem(aliceHostId, 5),
+            _createMissingLogItem(bobHostId, 5),
+          ];
+        });
+        when(
+          () => mockOutboxService.enqueueMessage(any<SyncMessage>()),
+        ).thenAnswer((invocation) async {
+          requestSent.complete(
+            invocation.positionalArguments.single as SyncBackfillRequest,
+          );
+        });
+        when(
+          () => mockSequenceService.markAsRequested(any()),
+        ).thenAnswer((_) async {});
+
+        service.nudgeAfterDrain();
+        final request = await requestSent.future;
+
+        expect(
+          request.entries,
+          const [BackfillRequestEntry(hostId: bobHostId, counter: 5)],
+        );
+        verify(onboarding.activeInboundCoverage).called(1);
+      },
+    );
+
+    test(
+      'manual full backfill deliberately ignores onboarding suppression',
+      () async {
+        final onboarding = _MockOnboardingSyncService();
+        final service = buildService(onboardingSyncService: onboarding);
+        when(
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await service.processFullBackfill();
+
+        verifyNever(onboarding.activeInboundCoverage);
+      },
+    );
+
     test(
       'retires exhausted requested entries before loading the missing batch '
       'so a permanently stuck gap does not block the watermark indefinitely',
@@ -449,6 +527,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -504,6 +583,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -522,6 +602,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -537,6 +618,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -563,6 +645,7 @@ void main() {
               maxRequestCount: any(named: 'maxRequestCount'),
               maxAge: any(named: 'maxAge'),
               minAge: any(named: 'minAge'),
+              requestedMinAge: any(named: 'requestedMinAge'),
               maxPerHost: any(named: 'maxPerHost'),
               offset: any(named: 'offset'),
             ),
@@ -579,6 +662,7 @@ void main() {
               maxRequestCount: any(named: 'maxRequestCount'),
               maxAge: any(named: 'maxAge'),
               minAge: SyncTuning.backfillMissingDebounce,
+              requestedMinAge: SyncTuning.backfillRequestRetryCooldown,
               maxPerHost: any(named: 'maxPerHost'),
               offset: any(named: 'offset'),
             ),
@@ -622,6 +706,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -646,6 +731,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -808,6 +894,7 @@ void main() {
               maxRequestCount: any(named: 'maxRequestCount'),
               maxAge: any(named: 'maxAge'),
               minAge: any(named: 'minAge'),
+              requestedMinAge: any(named: 'requestedMinAge'),
               maxPerHost: any(named: 'maxPerHost'),
               offset: any(named: 'offset'),
             ),
@@ -907,6 +994,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -944,6 +1032,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -973,6 +1062,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -994,6 +1084,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1033,6 +1124,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1075,6 +1167,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1099,6 +1192,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1118,6 +1212,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1207,6 +1302,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1238,6 +1334,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1265,6 +1362,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1318,6 +1416,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1362,6 +1461,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1980,6 +2080,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -2086,6 +2187,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2110,6 +2212,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: captureAny(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2132,6 +2235,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2153,6 +2257,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: captureAny(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2193,6 +2298,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2223,6 +2329,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2257,6 +2364,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2334,6 +2442,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),
@@ -2373,6 +2482,7 @@ void main() {
                 maxRequestCount: any(named: 'maxRequestCount'),
                 maxAge: any(named: 'maxAge'),
                 minAge: any(named: 'minAge'),
+                requestedMinAge: any(named: 'requestedMinAge'),
                 maxPerHost: any(named: 'maxPerHost'),
                 offset: any(named: 'offset'),
               ),

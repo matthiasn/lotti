@@ -124,6 +124,7 @@ class SyncSequenceBackfillQueries {
     int maxRequestCount = 10,
     Duration? maxAge,
     Duration minAge = Duration.zero,
+    Duration? requestedMinAge,
     int? maxPerHost,
     int offset = 0,
   }) {
@@ -132,6 +133,7 @@ class SyncSequenceBackfillQueries {
       maxRequestCount: maxRequestCount,
       maxAge: maxAge,
       minAge: minAge,
+      requestedMinAge: requestedMinAge,
       maxPerHost: maxPerHost,
       offset: offset,
     );

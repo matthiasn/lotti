@@ -456,6 +456,28 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
             msg: msg,
             commonFields: commonFields,
           ),
+        final SyncOnboardingSnapshotBegin msg => _enqueueWriter.enqueueSimple(
+          commonFields: commonFields,
+          subject: 'onboarding:${msg.roundId}:begin',
+          logMessage: 'enqueue onboarding begin round=${msg.roundId}',
+        ),
+        final SyncOnboardingSnapshotAccepted msg =>
+          _enqueueWriter.enqueueSimple(
+            commonFields: commonFields,
+            subject: 'onboarding:${msg.roundId}:accepted',
+            logMessage: 'enqueue onboarding accepted round=${msg.roundId}',
+          ),
+        final SyncOnboardingTerminalCounters msg =>
+          _enqueueWriter.enqueueSimple(
+            commonFields: commonFields,
+            subject: 'onboarding:${msg.roundId}:terminal',
+            logMessage: 'enqueue onboarding terminal round=${msg.roundId}',
+          ),
+        final SyncOnboardingSnapshotEnd msg => _enqueueWriter.enqueueSimple(
+          commonFields: commonFields,
+          subject: 'onboarding:${msg.roundId}:end',
+          logMessage: 'enqueue onboarding end round=${msg.roundId}',
+        ),
         final SyncConsumptionEvent msg =>
           _enqueueWriter.enqueueConsumptionEvent(
             msg: msg,

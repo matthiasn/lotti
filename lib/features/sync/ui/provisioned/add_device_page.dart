@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
@@ -68,6 +69,9 @@ class AddDeviceJoinSignal extends ValueNotifier<AddDeviceJoinState> {
 
   /// Set by the body once it is mounted; read by the bar's error row.
   VoidCallback? onRetry;
+
+  /// Exact Matrix target discovered and verified by this onboarding sheet.
+  OnboardingSyncTarget? target;
 }
 
 /// The deliberate "hand this account to another device" act.
@@ -160,7 +164,11 @@ class AddDeviceActionBar extends StatelessWidget {
           leadingIcon: enabled ? Icons.history_rounded : Icons.lock_outline,
           onPressed: enabled
               ? () => unawaited(
-                  (onSendMessages ?? ReSyncModal.show)(context),
+                  onSendMessages?.call(context) ??
+                      ReSyncModal.show(
+                        context,
+                        onboardingTarget: signal.target,
+                      ),
                 )
               : null,
         );
@@ -309,6 +317,7 @@ class AddDeviceView extends ConsumerStatefulWidget {
 class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   String? _handover;
   String? _checkCode;
+  String? _localUserId;
   bool _loading = true;
   bool _revealed = false;
 
@@ -359,6 +368,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
       final service = ref.read(matrixServiceProvider);
       final config = await service.loadConfig();
       final roomId = service.syncRoomId;
+      _localUserId = config?.user;
       if (config != null && roomId != null) {
         check = pairingCheckCode(
           user: config.user,
@@ -489,6 +499,12 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
 
     for (final device in devices) {
       if (_rosterIdentity(device) == targetIdentity && device.verified) {
+        final userId = device.userId ?? _localUserId;
+        if (userId == null) return;
+        widget.signal?.target = OnboardingSyncTarget(
+          userId: userId,
+          deviceId: device.deviceId,
+        );
         _ready = true;
         _poll?.cancel();
         _publishJoinState();

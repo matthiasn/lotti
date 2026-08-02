@@ -19,6 +19,12 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 /// lookup stays total and side-effect-free for any future caller.
 int priorityForMessage(SyncMessage message) {
   return switch (message) {
+    SyncOnboardingSnapshotBegin() => OutboxPriority.high.index,
+    SyncOnboardingSnapshotAccepted() => OutboxPriority.high.index,
+    SyncOnboardingTerminalCounters() => OutboxPriority.high.index,
+    // Staged only after all history rows. Low priority makes this the durable
+    // completion barrier for the onboarding snapshot.
+    SyncOnboardingSnapshotEnd() => OutboxPriority.low.index,
     SyncJournalEntity() => OutboxPriority.high.index,
     SyncEntryLink() => OutboxPriority.high.index,
     SyncBackfillRequest() => OutboxPriority.normal.index,

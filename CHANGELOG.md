@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now raise the notification they were always meant to.
 
 ### Fixed
+- **Adding a device no longer sends the same history over and over.** During a
+  full initial message transfer, the new device could mistake queued or
+  in-flight history for missing data and repeatedly ask for it in batches,
+  adding substantial duplicate work on slower phones. The two devices now
+  coordinate that first full transfer: automatic gap repair waits for the
+  announced snapshot, resumes immediately when it finishes, and releases
+  itself after a bounded hour if the sending device disconnects or fails.
 - **Assistants for past days stop waking up.** Daily OS gives each day its own
   assistant. Those were never stood down, so every day you had ever used still
   counted as live: they were all reloaded each time the app started, and any one

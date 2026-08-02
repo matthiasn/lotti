@@ -516,12 +516,14 @@ class SyncSequenceReceiver {
     int maxRequestCount = 10,
     int offset = 0,
     Duration minAge = Duration.zero,
+    Duration? requestedMinAge,
   }) {
     return _syncDatabase.getMissingEntries(
       limit: limit,
       maxRequestCount: maxRequestCount,
       offset: offset,
       minAge: minAge,
+      requestedMinAge: requestedMinAge,
     );
   }
 

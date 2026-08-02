@@ -895,6 +895,87 @@ void main() {
       expect(missing.first.counter, 1);
     });
 
+    test(
+      'missing debounce bypass does not bypass the requested retry cooldown',
+      () async {
+        final database = db!;
+        final now = DateTime(2024, 3, 15, 12);
+
+        await database.batchInsertSequenceEntries([
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: const Value(1),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: const Value(2),
+            status: Value(SyncSequenceStatus.requested.index),
+            requestCount: const Value(1),
+            lastRequestedAt: Value(now.subtract(const Duration(minutes: 59))),
+            createdAt: Value(now.subtract(const Duration(days: 1))),
+            updatedAt: Value(now.subtract(const Duration(minutes: 59))),
+          ),
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: const Value(3),
+            status: Value(SyncSequenceStatus.requested.index),
+            requestCount: const Value(1),
+            lastRequestedAt: Value(now.subtract(const Duration(hours: 1))),
+            createdAt: Value(now.subtract(const Duration(days: 1))),
+            updatedAt: Value(now.subtract(const Duration(hours: 1))),
+          ),
+        ]);
+
+        final eligible = await database.getMissingEntriesWithLimits(
+          minAge: Duration.zero,
+          requestedMinAge: const Duration(hours: 1),
+          now: now,
+        );
+
+        expect(eligible.map((row) => row.counter), unorderedEquals([1, 3]));
+      },
+    );
+
+    test(
+      'requested rows without a request timestamp retry from updatedAt age',
+      () async {
+        final database = db!;
+        final now = DateTime(2024, 3, 15, 12);
+
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: const Value(1),
+            status: Value(SyncSequenceStatus.requested.index),
+            requestCount: const Value(1),
+            createdAt: Value(now.subtract(const Duration(days: 1))),
+            updatedAt: Value(now.subtract(const Duration(days: 1))),
+          ),
+        );
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: const Value(2),
+            status: Value(SyncSequenceStatus.requested.index),
+            requestCount: const Value(1),
+            createdAt: Value(now.subtract(const Duration(days: 1))),
+            updatedAt: Value(now.subtract(const Duration(minutes: 59))),
+          ),
+        );
+
+        final eligible = await database.getMissingEntriesWithLimits(
+          minAge: Duration.zero,
+          requestedMinAge: const Duration(hours: 1),
+          now: now,
+        );
+
+        expect(eligible.map((row) => row.counter), [1]);
+      },
+    );
+
     test('combines all limits correctly', () async {
       final database = db!;
       final now = DateTime(2024, 1, 3, 12);

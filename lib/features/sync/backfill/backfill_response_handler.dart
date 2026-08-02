@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -39,6 +40,7 @@ class BackfillResponseHandler {
     required this._vectorClockService,
     this._domainLogger,
     this._notificationsDb,
+    this._onboardingSyncService,
     @visibleForTesting Duration? responseCooldown,
   }) : _responseCooldown =
            responseCooldown ?? SyncTuning.backfillResponseCooldown;
@@ -50,6 +52,7 @@ class BackfillResponseHandler {
   final VectorClockService _vectorClockService;
   final DomainLogger? _domainLogger;
   final NotificationsDb? _notificationsDb;
+  final OnboardingSyncService? _onboardingSyncService;
   final Duration _responseCooldown;
 
   /// Agent repository, injected after construction to avoid circular
@@ -126,12 +129,23 @@ class BackfillResponseHandler {
       }
 
       // Limit entries to process to prevent outbox flooding
-      final entriesToProcess =
+      final boundedEntries =
           request.entries.length > SyncTuning.maxBackfillResponseBatchSize
           ? request.entries
                 .take(SyncTuning.maxBackfillResponseBatchSize)
                 .toList()
           : request.entries;
+
+      final onboardingCoverage = await _onboardingSyncService
+          ?.activeOutboundCoverageForRequester(request.requesterId);
+      final entriesToProcess = onboardingCoverage == null
+          ? boundedEntries
+          : boundedEntries
+                .where(
+                  (entry) =>
+                      entry.counter > (onboardingCoverage[entry.hostId] ?? -1),
+                )
+                .toList();
 
       final truncated =
           request.entries.length > SyncTuning.maxBackfillResponseBatchSize;

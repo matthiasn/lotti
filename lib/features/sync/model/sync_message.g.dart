@@ -17,6 +17,15 @@ Map<String, dynamic> _$BackfillRequestEntryToJson(
   _BackfillRequestEntry instance,
 ) => <String, dynamic>{'hostId': instance.hostId, 'counter': instance.counter};
 
+_SyncCounterRange _$SyncCounterRangeFromJson(Map<String, dynamic> json) =>
+    _SyncCounterRange(
+      start: (json['start'] as num).toInt(),
+      end: (json['end'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$SyncCounterRangeToJson(_SyncCounterRange instance) =>
+    <String, dynamic>{'start': instance.start, 'end': instance.end};
+
 SyncJournalEntity _$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
     SyncJournalEntity(
       id: json['id'] as String,
@@ -271,6 +280,119 @@ Map<String, dynamic> _$SyncNotificationStateUpdateToJson(
   'actedOnAt': instance.actedOnAt?.toIso8601String(),
   'deletedAt': instance.deletedAt?.toIso8601String(),
   'runtimeType': instance.$type,
+};
+
+SyncOnboardingSnapshotBegin _$SyncOnboardingSnapshotBeginFromJson(
+  Map<String, dynamic> json,
+) => SyncOnboardingSnapshotBegin(
+  protocolVersion: (json['protocolVersion'] as num).toInt(),
+  roundId: json['roundId'] as String,
+  senderHostId: json['senderHostId'] as String,
+  senderUserId: json['senderUserId'] as String,
+  senderDeviceId: json['senderDeviceId'] as String,
+  recipientUserId: json['recipientUserId'] as String,
+  recipientDeviceId: json['recipientDeviceId'] as String,
+  coverageUpperBounds: Map<String, int>.from(
+    json['coverageUpperBounds'] as Map,
+  ),
+  leaseSeconds: (json['leaseSeconds'] as num).toInt(),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncOnboardingSnapshotBeginToJson(
+  SyncOnboardingSnapshotBegin instance,
+) => <String, dynamic>{
+  'protocolVersion': instance.protocolVersion,
+  'roundId': instance.roundId,
+  'senderHostId': instance.senderHostId,
+  'senderUserId': instance.senderUserId,
+  'senderDeviceId': instance.senderDeviceId,
+  'recipientUserId': instance.recipientUserId,
+  'recipientDeviceId': instance.recipientDeviceId,
+  'coverageUpperBounds': instance.coverageUpperBounds,
+  'leaseSeconds': instance.leaseSeconds,
+  'runtimeType': instance.$type,
+};
+
+SyncOnboardingSnapshotAccepted _$SyncOnboardingSnapshotAcceptedFromJson(
+  Map<String, dynamic> json,
+) => SyncOnboardingSnapshotAccepted(
+  protocolVersion: (json['protocolVersion'] as num).toInt(),
+  roundId: json['roundId'] as String,
+  senderHostId: json['senderHostId'] as String,
+  senderUserId: json['senderUserId'] as String,
+  senderDeviceId: json['senderDeviceId'] as String,
+  recipientHostId: json['recipientHostId'] as String,
+  recipientDeviceId: json['recipientDeviceId'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncOnboardingSnapshotAcceptedToJson(
+  SyncOnboardingSnapshotAccepted instance,
+) => <String, dynamic>{
+  'protocolVersion': instance.protocolVersion,
+  'roundId': instance.roundId,
+  'senderHostId': instance.senderHostId,
+  'senderUserId': instance.senderUserId,
+  'senderDeviceId': instance.senderDeviceId,
+  'recipientHostId': instance.recipientHostId,
+  'recipientDeviceId': instance.recipientDeviceId,
+  'runtimeType': instance.$type,
+};
+
+SyncOnboardingTerminalCounters _$SyncOnboardingTerminalCountersFromJson(
+  Map<String, dynamic> json,
+) => SyncOnboardingTerminalCounters(
+  protocolVersion: (json['protocolVersion'] as num).toInt(),
+  roundId: json['roundId'] as String,
+  senderHostId: json['senderHostId'] as String,
+  recipientUserId: json['recipientUserId'] as String,
+  recipientDeviceId: json['recipientDeviceId'] as String,
+  ranges: (json['ranges'] as List<dynamic>)
+      .map((e) => SyncCounterRange.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncOnboardingTerminalCountersToJson(
+  SyncOnboardingTerminalCounters instance,
+) => <String, dynamic>{
+  'protocolVersion': instance.protocolVersion,
+  'roundId': instance.roundId,
+  'senderHostId': instance.senderHostId,
+  'recipientUserId': instance.recipientUserId,
+  'recipientDeviceId': instance.recipientDeviceId,
+  'ranges': instance.ranges.map((e) => e.toJson()).toList(),
+  'runtimeType': instance.$type,
+};
+
+SyncOnboardingSnapshotEnd _$SyncOnboardingSnapshotEndFromJson(
+  Map<String, dynamic> json,
+) => SyncOnboardingSnapshotEnd(
+  protocolVersion: (json['protocolVersion'] as num).toInt(),
+  roundId: json['roundId'] as String,
+  senderHostId: json['senderHostId'] as String,
+  recipientUserId: json['recipientUserId'] as String,
+  recipientDeviceId: json['recipientDeviceId'] as String,
+  reason: $enumDecode(_$OnboardingSyncEndReasonEnumMap, json['reason']),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncOnboardingSnapshotEndToJson(
+  SyncOnboardingSnapshotEnd instance,
+) => <String, dynamic>{
+  'protocolVersion': instance.protocolVersion,
+  'roundId': instance.roundId,
+  'senderHostId': instance.senderHostId,
+  'recipientUserId': instance.recipientUserId,
+  'recipientDeviceId': instance.recipientDeviceId,
+  'reason': _$OnboardingSyncEndReasonEnumMap[instance.reason]!,
+  'runtimeType': instance.$type,
+};
+
+const _$OnboardingSyncEndReasonEnumMap = {
+  OnboardingSyncEndReason.complete: 'complete',
+  OnboardingSyncEndReason.aborted: 'aborted',
 };
 
 SyncBackfillRequest _$SyncBackfillRequestFromJson(Map<String, dynamic> json) =>

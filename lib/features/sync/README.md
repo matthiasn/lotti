@@ -44,7 +44,9 @@ merge of two users' work.
   other device can send. Both transfers stay beside the pairing code and remain
   disabled until that exact new device is emoji-verified: message history
   defaults to everything, with 30-day and custom ranges available, and shows
-  progress until the messages are queued.
+  progress until the messages are queued. During that full initial transfer,
+  the new device holds off asking for history that is already on its way; a
+  failed or disconnected transfer releases that hold automatically.
 - **Gives both devices something a person can actually compare.** Before
   anything is configured, the joining device shows which account it is about to
   join and a six-character check code that the inviting device derives
@@ -84,6 +86,7 @@ lib/features/sync/
 ├── queue/       # inbound queue, catch-up bridge, worker
 ├── sequence/    # (hostId, counter) accounting
 ├── backfill/    # gap requests and responses
+├── onboarding/  # bounded initial-history suppression protocol
 ├── media/       # self-healing fetch for missing image/audio blobs
 ├── model/       # SyncMessage and node profiles
 ├── state/       # Riverpod controllers

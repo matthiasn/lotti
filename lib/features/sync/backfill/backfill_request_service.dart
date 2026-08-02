@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
@@ -30,11 +31,13 @@ class BackfillRequestService {
     this.documentsDirectory,
     this.queueCoordinator,
     this._domainLogger,
+    this._onboardingSyncService,
     Duration? requestInterval,
     int? maxBatchSize,
     int? maxRequestCount,
     Duration? maxAge,
     Duration? missingDebounce,
+    Duration? requestRetryCooldown,
     int? maxPerHost,
     Duration? amnestyWindow,
   }) : _requestInterval = requestInterval ?? SyncTuning.backfillRequestInterval,
@@ -44,6 +47,8 @@ class BackfillRequestService {
        _maxRequestCount = maxRequestCount ?? SyncTuning.backfillMaxRequestCount,
        _maxAge = maxAge ?? SyncTuning.defaultBackfillMaxAge,
        _missingDebounce = missingDebounce ?? SyncTuning.backfillMissingDebounce,
+       _requestRetryCooldown =
+           requestRetryCooldown ?? SyncTuning.backfillRequestRetryCooldown,
        _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost,
        _amnestyWindow = amnestyWindow ?? SyncTuning.backfillAmnestyWindow;
 
@@ -67,6 +72,7 @@ class BackfillRequestService {
   final VectorClockService _vectorClockService;
   final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
+  final OnboardingSyncService? _onboardingSyncService;
   final Duration _requestInterval;
   final int _maxBatchSize;
   final int _maxRequestCount;
@@ -80,6 +86,7 @@ class BackfillRequestService {
   /// via [processFullBackfill] explicitly bypasses the debounce so
   /// "request now" is not silently held back for 10 minutes.
   final Duration _missingDebounce;
+  final Duration _requestRetryCooldown;
   final int _maxPerHost;
   final Duration _amnestyWindow;
 
@@ -549,6 +556,10 @@ class BackfillRequestService {
     // true, so the bypass collapses `minAge` to zero while keeping
     // age + per-host limits intact.
     final effectiveMinAge = bypassDebounce ? Duration.zero : _missingDebounce;
+    final suppressedCoverage = useLimits
+        ? await _onboardingSyncService?.activeInboundCoverage() ??
+              const <String, int>{}
+        : const <String, int>{};
 
     while (selected.length < _maxBatchSize) {
       final remaining = _maxBatchSize - selected.length;
@@ -563,6 +574,7 @@ class BackfillRequestService {
               maxRequestCount: _maxRequestCount,
               maxAge: _maxAge,
               minAge: effectiveMinAge,
+              requestedMinAge: _requestRetryCooldown,
               maxPerHost: _maxPerHost,
               offset: offset,
             )
@@ -577,7 +589,15 @@ class BackfillRequestService {
       }
       offset += page.length;
 
-      final filteredPage = _filterAlreadyQueuedEntries(page, alreadyQueued);
+      final unsuppressedPage = page
+          .where(
+            (entry) => entry.counter > (suppressedCoverage[entry.hostId] ?? -1),
+          )
+          .toList();
+      final filteredPage = _filterAlreadyQueuedEntries(
+        unsuppressedPage,
+        alreadyQueued,
+      );
       filteredCount += page.length - filteredPage.length;
       selected.addAll(filteredPage);
 

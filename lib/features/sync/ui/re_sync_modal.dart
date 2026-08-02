@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/components/progress_bars/design_sys
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -30,7 +31,14 @@ enum ReSyncRangePreset {
 final DateTime reSyncEverythingStart = DateTime.utc(1);
 
 class ReSyncModalContent extends ConsumerStatefulWidget {
-  const ReSyncModalContent({super.key});
+  const ReSyncModalContent({
+    super.key,
+    this.onboardingTarget,
+    this.onboardingSyncService,
+  });
+
+  final OnboardingSyncTarget? onboardingTarget;
+  final OnboardingSyncService? onboardingSyncService;
 
   @override
   ConsumerState<ReSyncModalContent> createState() => _ReSyncModalContentState();
@@ -73,6 +81,12 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     ],
   ];
 
+  bool get _isFullOnboarding =>
+      widget.onboardingTarget != null &&
+      _rangePreset == ReSyncRangePreset.everything &&
+      _includeJournalEntities &&
+      _includeAgentEntities;
+
   Future<void> _start() async {
     if (!_canStart) return;
 
@@ -92,7 +106,15 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
       _progress = const {};
     });
 
+    OutboundOnboardingRound? onboardingRound;
     try {
+      if (_isFullOnboarding) {
+        final onboardingService =
+            widget.onboardingSyncService ?? getIt<OnboardingSyncService>();
+        onboardingRound = await onboardingService.beginOutbound(
+          widget.onboardingTarget!,
+        );
+      }
       await ref
           .read(maintenanceProvider)
           .reSyncInterval(
@@ -108,12 +130,31 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
               });
             },
           );
+      if (onboardingRound != null) {
+        final onboardingService =
+            widget.onboardingSyncService ?? getIt<OnboardingSyncService>();
+        await onboardingService.completeOutbound(onboardingRound);
+      }
       if (!mounted) return;
       setState(() {
         _isRunning = false;
         _isComplete = true;
       });
     } catch (error, stackTrace) {
+      if (onboardingRound != null) {
+        try {
+          final onboardingService =
+              widget.onboardingSyncService ?? getIt<OnboardingSyncService>();
+          await onboardingService.abortOutbound(onboardingRound);
+        } catch (abortError, abortStackTrace) {
+          getIt<DomainLogger>().error(
+            LogDomain.sync,
+            abortError,
+            stackTrace: abortStackTrace,
+            subDomain: 'reSyncOnboardingAbort',
+          );
+        }
+      }
       getIt<DomainLogger>().error(
         LogDomain.sync,
         error,
@@ -432,11 +473,16 @@ class _ReSyncProgressRow extends StatelessWidget {
 }
 
 class ReSyncModal {
-  static Future<void> show(BuildContext context) async {
+  static Future<void> show(
+    BuildContext context, {
+    OnboardingSyncTarget? onboardingTarget,
+  }) async {
     await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.maintenanceReSync,
-      builder: (_) => const ReSyncModalContent(),
+      builder: (_) => ReSyncModalContent(
+        onboardingTarget: onboardingTarget,
+      ),
     );
   }
 }

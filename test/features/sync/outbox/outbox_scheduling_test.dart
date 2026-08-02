@@ -14,6 +14,10 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import '../../ai_consumption/test_utils.dart';
 
 enum _GeneratedPriorityMessageKind {
+  onboardingSnapshotBegin,
+  onboardingSnapshotAccepted,
+  onboardingTerminalCounters,
+  onboardingSnapshotEnd,
   journalEntity,
   entityDefinition,
   entryLink,
@@ -54,6 +58,46 @@ class _GeneratedPriorityScenario {
   SyncMessage get message {
     final id = 'generated-$counterSlot';
     return switch (kind) {
+      _GeneratedPriorityMessageKind.onboardingSnapshotBegin =>
+        SyncMessage.onboardingSnapshotBegin(
+          protocolVersion: 1,
+          roundId: id,
+          senderHostId: 'sender-host',
+          senderUserId: 'sender-user',
+          senderDeviceId: 'sender-device',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          coverageUpperBounds: {'sender-host': counterSlot},
+          leaseSeconds: 3600,
+        ),
+      _GeneratedPriorityMessageKind.onboardingSnapshotAccepted =>
+        SyncMessage.onboardingSnapshotAccepted(
+          protocolVersion: 1,
+          roundId: id,
+          senderHostId: 'sender-host',
+          senderUserId: 'sender-user',
+          senderDeviceId: 'sender-device',
+          recipientHostId: 'recipient-host',
+          recipientDeviceId: 'recipient-device',
+        ),
+      _GeneratedPriorityMessageKind.onboardingTerminalCounters =>
+        SyncMessage.onboardingTerminalCounters(
+          protocolVersion: 1,
+          roundId: id,
+          senderHostId: 'sender-host',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          ranges: [SyncCounterRange(start: counterSlot, end: counterSlot)],
+        ),
+      _GeneratedPriorityMessageKind.onboardingSnapshotEnd =>
+        SyncMessage.onboardingSnapshotEnd(
+          protocolVersion: 1,
+          roundId: id,
+          senderHostId: 'sender-host',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          reason: OnboardingSyncEndReason.complete,
+        ),
       _GeneratedPriorityMessageKind.journalEntity => SyncMessage.journalEntity(
         id: id,
         jsonPath: '/entries/$id.json',
@@ -189,6 +233,12 @@ class _GeneratedPriorityScenario {
 
   int get expectedPriority {
     return switch (kind) {
+      _GeneratedPriorityMessageKind.onboardingSnapshotBegin ||
+      _GeneratedPriorityMessageKind.onboardingSnapshotAccepted ||
+      _GeneratedPriorityMessageKind.onboardingTerminalCounters =>
+        OutboxPriority.high.index,
+      _GeneratedPriorityMessageKind.onboardingSnapshotEnd =>
+        OutboxPriority.low.index,
       _GeneratedPriorityMessageKind.journalEntity ||
       _GeneratedPriorityMessageKind.entryLink => OutboxPriority.high.index,
       _GeneratedPriorityMessageKind.backfillRequest ||

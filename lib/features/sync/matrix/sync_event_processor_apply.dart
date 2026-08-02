@@ -236,6 +236,12 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           );
         }
         return null;
+      case SyncOnboardingSnapshotBegin() ||
+          SyncOnboardingSnapshotAccepted() ||
+          SyncOnboardingTerminalCounters() ||
+          SyncOnboardingSnapshotEnd():
+        await onboardingSyncService?.handleMessage(syncMessage);
+        return null;
       case SyncBackfillRequest():
         // Handle backfill request - another device is asking for a missing entry
         await backfillResponseHandler.handleBackfillRequest(syncMessage);

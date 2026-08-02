@@ -338,6 +338,10 @@ class QueueApplyAdapter {
       // notifications_db.
       notification: (_) => false,
       notificationStateUpdate: (_) => false,
+      onboardingSnapshotBegin: (_) => false,
+      onboardingSnapshotAccepted: (_) => false,
+      onboardingTerminalCounters: (_) => false,
+      onboardingSnapshotEnd: (_) => false,
       // backfill handler does its own DB selection; conservatively
       // wrap so any journal-writing branch stays atomic.
       backfillRequest: (_) => true,

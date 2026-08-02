@@ -478,6 +478,8 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(signal.value, AddDeviceJoinState.ready);
+      expect(signal.target?.deviceId, verifiedPhone.deviceId);
+      expect(signal.target?.userId, '@alice:example.com');
     });
 
     testWidgets('stops claiming to wait once the roster keeps failing', (

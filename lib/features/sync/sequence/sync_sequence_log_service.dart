@@ -170,11 +170,13 @@ class SyncSequenceLogService {
     int maxRequestCount = 10,
     int offset = 0,
     Duration minAge = Duration.zero,
+    Duration? requestedMinAge,
   }) => _receiver.getMissingEntries(
     limit: limit,
     maxRequestCount: maxRequestCount,
     offset: offset,
     minAge: minAge,
+    requestedMinAge: requestedMinAge,
   );
 
   /// Mark entries as requested and increment their request count.
@@ -299,6 +301,7 @@ class SyncSequenceLogService {
     int maxRequestCount = 10,
     Duration? maxAge,
     Duration minAge = Duration.zero,
+    Duration? requestedMinAge,
     int? maxPerHost,
     int offset = 0,
   }) => _backfillQueries.getMissingEntriesWithLimits(
@@ -306,6 +309,7 @@ class SyncSequenceLogService {
     maxRequestCount: maxRequestCount,
     maxAge: maxAge,
     minAge: minAge,
+    requestedMinAge: requestedMinAge,
     maxPerHost: maxPerHost,
     offset: offset,
   );

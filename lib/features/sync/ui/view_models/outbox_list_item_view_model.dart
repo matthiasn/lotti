@@ -102,6 +102,10 @@ class OutboxListItemViewModel {
         notification: (_) => messages.syncPayloadNotification,
         notificationStateUpdate: (_) =>
             messages.syncPayloadNotificationStateUpdate,
+        onboardingSnapshotBegin: (_) => messages.syncListUnknownPayload,
+        onboardingSnapshotAccepted: (_) => messages.syncListUnknownPayload,
+        onboardingTerminalCounters: (_) => messages.syncListUnknownPayload,
+        onboardingSnapshotEnd: (_) => messages.syncListUnknownPayload,
         consumptionEvent: (_) => messages.syncPayloadConsumptionEvent,
         backfillRequest: (_) => messages.syncPayloadBackfillRequest,
         mediaRequest: (_) => messages.syncPayloadMediaRequest,

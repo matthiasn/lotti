@@ -2999,6 +2999,822 @@ class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
   }
 }
 
+class $OnboardingSyncRoundsTable extends OnboardingSyncRounds
+    with TableInfo<$OnboardingSyncRoundsTable, OnboardingSyncRoundItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OnboardingSyncRoundsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _roundIdMeta = const VerificationMeta(
+    'roundId',
+  );
+  @override
+  late final GeneratedColumn<String> roundId = GeneratedColumn<String>(
+    'round_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _directionMeta = const VerificationMeta(
+    'direction',
+  );
+  @override
+  late final GeneratedColumn<String> direction = GeneratedColumn<String>(
+    'direction',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _senderHostIdMeta = const VerificationMeta(
+    'senderHostId',
+  );
+  @override
+  late final GeneratedColumn<String> senderHostId = GeneratedColumn<String>(
+    'sender_host_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _senderUserIdMeta = const VerificationMeta(
+    'senderUserId',
+  );
+  @override
+  late final GeneratedColumn<String> senderUserId = GeneratedColumn<String>(
+    'sender_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _senderDeviceIdMeta = const VerificationMeta(
+    'senderDeviceId',
+  );
+  @override
+  late final GeneratedColumn<String> senderDeviceId = GeneratedColumn<String>(
+    'sender_device_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _recipientHostIdMeta = const VerificationMeta(
+    'recipientHostId',
+  );
+  @override
+  late final GeneratedColumn<String> recipientHostId = GeneratedColumn<String>(
+    'recipient_host_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _recipientUserIdMeta = const VerificationMeta(
+    'recipientUserId',
+  );
+  @override
+  late final GeneratedColumn<String> recipientUserId = GeneratedColumn<String>(
+    'recipient_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recipientDeviceIdMeta = const VerificationMeta(
+    'recipientDeviceId',
+  );
+  @override
+  late final GeneratedColumn<String> recipientDeviceId =
+      GeneratedColumn<String>(
+        'recipient_device_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _coverageUpperBoundsJsonMeta =
+      const VerificationMeta('coverageUpperBoundsJson');
+  @override
+  late final GeneratedColumn<String> coverageUpperBoundsJson =
+      GeneratedColumn<String>(
+        'coverage_upper_bounds_json',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expiresAtMeta = const VerificationMeta(
+    'expiresAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+    'expires_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    roundId,
+    direction,
+    state,
+    senderHostId,
+    senderUserId,
+    senderDeviceId,
+    recipientHostId,
+    recipientUserId,
+    recipientDeviceId,
+    coverageUpperBoundsJson,
+    startedAt,
+    updatedAt,
+    expiresAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'onboarding_sync_rounds';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<OnboardingSyncRoundItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('round_id')) {
+      context.handle(
+        _roundIdMeta,
+        roundId.isAcceptableOrUnknown(data['round_id']!, _roundIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roundIdMeta);
+    }
+    if (data.containsKey('direction')) {
+      context.handle(
+        _directionMeta,
+        direction.isAcceptableOrUnknown(data['direction']!, _directionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_directionMeta);
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateMeta);
+    }
+    if (data.containsKey('sender_host_id')) {
+      context.handle(
+        _senderHostIdMeta,
+        senderHostId.isAcceptableOrUnknown(
+          data['sender_host_id']!,
+          _senderHostIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_senderHostIdMeta);
+    }
+    if (data.containsKey('sender_user_id')) {
+      context.handle(
+        _senderUserIdMeta,
+        senderUserId.isAcceptableOrUnknown(
+          data['sender_user_id']!,
+          _senderUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sender_device_id')) {
+      context.handle(
+        _senderDeviceIdMeta,
+        senderDeviceId.isAcceptableOrUnknown(
+          data['sender_device_id']!,
+          _senderDeviceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recipient_host_id')) {
+      context.handle(
+        _recipientHostIdMeta,
+        recipientHostId.isAcceptableOrUnknown(
+          data['recipient_host_id']!,
+          _recipientHostIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recipient_user_id')) {
+      context.handle(
+        _recipientUserIdMeta,
+        recipientUserId.isAcceptableOrUnknown(
+          data['recipient_user_id']!,
+          _recipientUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recipientUserIdMeta);
+    }
+    if (data.containsKey('recipient_device_id')) {
+      context.handle(
+        _recipientDeviceIdMeta,
+        recipientDeviceId.isAcceptableOrUnknown(
+          data['recipient_device_id']!,
+          _recipientDeviceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recipientDeviceIdMeta);
+    }
+    if (data.containsKey('coverage_upper_bounds_json')) {
+      context.handle(
+        _coverageUpperBoundsJsonMeta,
+        coverageUpperBoundsJson.isAcceptableOrUnknown(
+          data['coverage_upper_bounds_json']!,
+          _coverageUpperBoundsJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_coverageUpperBoundsJsonMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('expires_at')) {
+      context.handle(
+        _expiresAtMeta,
+        expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_expiresAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {roundId};
+  @override
+  OnboardingSyncRoundItem map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OnboardingSyncRoundItem(
+      roundId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}round_id'],
+      )!,
+      direction: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}direction'],
+      )!,
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      senderHostId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sender_host_id'],
+      )!,
+      senderUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sender_user_id'],
+      ),
+      senderDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sender_device_id'],
+      ),
+      recipientHostId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_host_id'],
+      ),
+      recipientUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_user_id'],
+      )!,
+      recipientDeviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_device_id'],
+      )!,
+      coverageUpperBoundsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}coverage_upper_bounds_json'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      expiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}expires_at'],
+      )!,
+    );
+  }
+
+  @override
+  $OnboardingSyncRoundsTable createAlias(String alias) {
+    return $OnboardingSyncRoundsTable(attachedDatabase, alias);
+  }
+}
+
+class OnboardingSyncRoundItem extends DataClass
+    implements Insertable<OnboardingSyncRoundItem> {
+  final String roundId;
+  final String direction;
+  final String state;
+  final String senderHostId;
+  final String? senderUserId;
+  final String? senderDeviceId;
+  final String? recipientHostId;
+  final String recipientUserId;
+  final String recipientDeviceId;
+  final String coverageUpperBoundsJson;
+  final DateTime startedAt;
+  final DateTime updatedAt;
+  final DateTime expiresAt;
+  const OnboardingSyncRoundItem({
+    required this.roundId,
+    required this.direction,
+    required this.state,
+    required this.senderHostId,
+    this.senderUserId,
+    this.senderDeviceId,
+    this.recipientHostId,
+    required this.recipientUserId,
+    required this.recipientDeviceId,
+    required this.coverageUpperBoundsJson,
+    required this.startedAt,
+    required this.updatedAt,
+    required this.expiresAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['round_id'] = Variable<String>(roundId);
+    map['direction'] = Variable<String>(direction);
+    map['state'] = Variable<String>(state);
+    map['sender_host_id'] = Variable<String>(senderHostId);
+    if (!nullToAbsent || senderUserId != null) {
+      map['sender_user_id'] = Variable<String>(senderUserId);
+    }
+    if (!nullToAbsent || senderDeviceId != null) {
+      map['sender_device_id'] = Variable<String>(senderDeviceId);
+    }
+    if (!nullToAbsent || recipientHostId != null) {
+      map['recipient_host_id'] = Variable<String>(recipientHostId);
+    }
+    map['recipient_user_id'] = Variable<String>(recipientUserId);
+    map['recipient_device_id'] = Variable<String>(recipientDeviceId);
+    map['coverage_upper_bounds_json'] = Variable<String>(
+      coverageUpperBoundsJson,
+    );
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['expires_at'] = Variable<DateTime>(expiresAt);
+    return map;
+  }
+
+  OnboardingSyncRoundsCompanion toCompanion(bool nullToAbsent) {
+    return OnboardingSyncRoundsCompanion(
+      roundId: Value(roundId),
+      direction: Value(direction),
+      state: Value(state),
+      senderHostId: Value(senderHostId),
+      senderUserId: senderUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(senderUserId),
+      senderDeviceId: senderDeviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(senderDeviceId),
+      recipientHostId: recipientHostId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recipientHostId),
+      recipientUserId: Value(recipientUserId),
+      recipientDeviceId: Value(recipientDeviceId),
+      coverageUpperBoundsJson: Value(coverageUpperBoundsJson),
+      startedAt: Value(startedAt),
+      updatedAt: Value(updatedAt),
+      expiresAt: Value(expiresAt),
+    );
+  }
+
+  factory OnboardingSyncRoundItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OnboardingSyncRoundItem(
+      roundId: serializer.fromJson<String>(json['roundId']),
+      direction: serializer.fromJson<String>(json['direction']),
+      state: serializer.fromJson<String>(json['state']),
+      senderHostId: serializer.fromJson<String>(json['senderHostId']),
+      senderUserId: serializer.fromJson<String?>(json['senderUserId']),
+      senderDeviceId: serializer.fromJson<String?>(json['senderDeviceId']),
+      recipientHostId: serializer.fromJson<String?>(json['recipientHostId']),
+      recipientUserId: serializer.fromJson<String>(json['recipientUserId']),
+      recipientDeviceId: serializer.fromJson<String>(json['recipientDeviceId']),
+      coverageUpperBoundsJson: serializer.fromJson<String>(
+        json['coverageUpperBoundsJson'],
+      ),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      expiresAt: serializer.fromJson<DateTime>(json['expiresAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'roundId': serializer.toJson<String>(roundId),
+      'direction': serializer.toJson<String>(direction),
+      'state': serializer.toJson<String>(state),
+      'senderHostId': serializer.toJson<String>(senderHostId),
+      'senderUserId': serializer.toJson<String?>(senderUserId),
+      'senderDeviceId': serializer.toJson<String?>(senderDeviceId),
+      'recipientHostId': serializer.toJson<String?>(recipientHostId),
+      'recipientUserId': serializer.toJson<String>(recipientUserId),
+      'recipientDeviceId': serializer.toJson<String>(recipientDeviceId),
+      'coverageUpperBoundsJson': serializer.toJson<String>(
+        coverageUpperBoundsJson,
+      ),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'expiresAt': serializer.toJson<DateTime>(expiresAt),
+    };
+  }
+
+  OnboardingSyncRoundItem copyWith({
+    String? roundId,
+    String? direction,
+    String? state,
+    String? senderHostId,
+    Value<String?> senderUserId = const Value.absent(),
+    Value<String?> senderDeviceId = const Value.absent(),
+    Value<String?> recipientHostId = const Value.absent(),
+    String? recipientUserId,
+    String? recipientDeviceId,
+    String? coverageUpperBoundsJson,
+    DateTime? startedAt,
+    DateTime? updatedAt,
+    DateTime? expiresAt,
+  }) => OnboardingSyncRoundItem(
+    roundId: roundId ?? this.roundId,
+    direction: direction ?? this.direction,
+    state: state ?? this.state,
+    senderHostId: senderHostId ?? this.senderHostId,
+    senderUserId: senderUserId.present ? senderUserId.value : this.senderUserId,
+    senderDeviceId: senderDeviceId.present
+        ? senderDeviceId.value
+        : this.senderDeviceId,
+    recipientHostId: recipientHostId.present
+        ? recipientHostId.value
+        : this.recipientHostId,
+    recipientUserId: recipientUserId ?? this.recipientUserId,
+    recipientDeviceId: recipientDeviceId ?? this.recipientDeviceId,
+    coverageUpperBoundsJson:
+        coverageUpperBoundsJson ?? this.coverageUpperBoundsJson,
+    startedAt: startedAt ?? this.startedAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    expiresAt: expiresAt ?? this.expiresAt,
+  );
+  OnboardingSyncRoundItem copyWithCompanion(
+    OnboardingSyncRoundsCompanion data,
+  ) {
+    return OnboardingSyncRoundItem(
+      roundId: data.roundId.present ? data.roundId.value : this.roundId,
+      direction: data.direction.present ? data.direction.value : this.direction,
+      state: data.state.present ? data.state.value : this.state,
+      senderHostId: data.senderHostId.present
+          ? data.senderHostId.value
+          : this.senderHostId,
+      senderUserId: data.senderUserId.present
+          ? data.senderUserId.value
+          : this.senderUserId,
+      senderDeviceId: data.senderDeviceId.present
+          ? data.senderDeviceId.value
+          : this.senderDeviceId,
+      recipientHostId: data.recipientHostId.present
+          ? data.recipientHostId.value
+          : this.recipientHostId,
+      recipientUserId: data.recipientUserId.present
+          ? data.recipientUserId.value
+          : this.recipientUserId,
+      recipientDeviceId: data.recipientDeviceId.present
+          ? data.recipientDeviceId.value
+          : this.recipientDeviceId,
+      coverageUpperBoundsJson: data.coverageUpperBoundsJson.present
+          ? data.coverageUpperBoundsJson.value
+          : this.coverageUpperBoundsJson,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OnboardingSyncRoundItem(')
+          ..write('roundId: $roundId, ')
+          ..write('direction: $direction, ')
+          ..write('state: $state, ')
+          ..write('senderHostId: $senderHostId, ')
+          ..write('senderUserId: $senderUserId, ')
+          ..write('senderDeviceId: $senderDeviceId, ')
+          ..write('recipientHostId: $recipientHostId, ')
+          ..write('recipientUserId: $recipientUserId, ')
+          ..write('recipientDeviceId: $recipientDeviceId, ')
+          ..write('coverageUpperBoundsJson: $coverageUpperBoundsJson, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('expiresAt: $expiresAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    roundId,
+    direction,
+    state,
+    senderHostId,
+    senderUserId,
+    senderDeviceId,
+    recipientHostId,
+    recipientUserId,
+    recipientDeviceId,
+    coverageUpperBoundsJson,
+    startedAt,
+    updatedAt,
+    expiresAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OnboardingSyncRoundItem &&
+          other.roundId == this.roundId &&
+          other.direction == this.direction &&
+          other.state == this.state &&
+          other.senderHostId == this.senderHostId &&
+          other.senderUserId == this.senderUserId &&
+          other.senderDeviceId == this.senderDeviceId &&
+          other.recipientHostId == this.recipientHostId &&
+          other.recipientUserId == this.recipientUserId &&
+          other.recipientDeviceId == this.recipientDeviceId &&
+          other.coverageUpperBoundsJson == this.coverageUpperBoundsJson &&
+          other.startedAt == this.startedAt &&
+          other.updatedAt == this.updatedAt &&
+          other.expiresAt == this.expiresAt);
+}
+
+class OnboardingSyncRoundsCompanion
+    extends UpdateCompanion<OnboardingSyncRoundItem> {
+  final Value<String> roundId;
+  final Value<String> direction;
+  final Value<String> state;
+  final Value<String> senderHostId;
+  final Value<String?> senderUserId;
+  final Value<String?> senderDeviceId;
+  final Value<String?> recipientHostId;
+  final Value<String> recipientUserId;
+  final Value<String> recipientDeviceId;
+  final Value<String> coverageUpperBoundsJson;
+  final Value<DateTime> startedAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime> expiresAt;
+  final Value<int> rowid;
+  const OnboardingSyncRoundsCompanion({
+    this.roundId = const Value.absent(),
+    this.direction = const Value.absent(),
+    this.state = const Value.absent(),
+    this.senderHostId = const Value.absent(),
+    this.senderUserId = const Value.absent(),
+    this.senderDeviceId = const Value.absent(),
+    this.recipientHostId = const Value.absent(),
+    this.recipientUserId = const Value.absent(),
+    this.recipientDeviceId = const Value.absent(),
+    this.coverageUpperBoundsJson = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.expiresAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  OnboardingSyncRoundsCompanion.insert({
+    required String roundId,
+    required String direction,
+    required String state,
+    required String senderHostId,
+    this.senderUserId = const Value.absent(),
+    this.senderDeviceId = const Value.absent(),
+    this.recipientHostId = const Value.absent(),
+    required String recipientUserId,
+    required String recipientDeviceId,
+    required String coverageUpperBoundsJson,
+    required DateTime startedAt,
+    required DateTime updatedAt,
+    required DateTime expiresAt,
+    this.rowid = const Value.absent(),
+  }) : roundId = Value(roundId),
+       direction = Value(direction),
+       state = Value(state),
+       senderHostId = Value(senderHostId),
+       recipientUserId = Value(recipientUserId),
+       recipientDeviceId = Value(recipientDeviceId),
+       coverageUpperBoundsJson = Value(coverageUpperBoundsJson),
+       startedAt = Value(startedAt),
+       updatedAt = Value(updatedAt),
+       expiresAt = Value(expiresAt);
+  static Insertable<OnboardingSyncRoundItem> custom({
+    Expression<String>? roundId,
+    Expression<String>? direction,
+    Expression<String>? state,
+    Expression<String>? senderHostId,
+    Expression<String>? senderUserId,
+    Expression<String>? senderDeviceId,
+    Expression<String>? recipientHostId,
+    Expression<String>? recipientUserId,
+    Expression<String>? recipientDeviceId,
+    Expression<String>? coverageUpperBoundsJson,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? expiresAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (roundId != null) 'round_id': roundId,
+      if (direction != null) 'direction': direction,
+      if (state != null) 'state': state,
+      if (senderHostId != null) 'sender_host_id': senderHostId,
+      if (senderUserId != null) 'sender_user_id': senderUserId,
+      if (senderDeviceId != null) 'sender_device_id': senderDeviceId,
+      if (recipientHostId != null) 'recipient_host_id': recipientHostId,
+      if (recipientUserId != null) 'recipient_user_id': recipientUserId,
+      if (recipientDeviceId != null) 'recipient_device_id': recipientDeviceId,
+      if (coverageUpperBoundsJson != null)
+        'coverage_upper_bounds_json': coverageUpperBoundsJson,
+      if (startedAt != null) 'started_at': startedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (expiresAt != null) 'expires_at': expiresAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  OnboardingSyncRoundsCompanion copyWith({
+    Value<String>? roundId,
+    Value<String>? direction,
+    Value<String>? state,
+    Value<String>? senderHostId,
+    Value<String?>? senderUserId,
+    Value<String?>? senderDeviceId,
+    Value<String?>? recipientHostId,
+    Value<String>? recipientUserId,
+    Value<String>? recipientDeviceId,
+    Value<String>? coverageUpperBoundsJson,
+    Value<DateTime>? startedAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime>? expiresAt,
+    Value<int>? rowid,
+  }) {
+    return OnboardingSyncRoundsCompanion(
+      roundId: roundId ?? this.roundId,
+      direction: direction ?? this.direction,
+      state: state ?? this.state,
+      senderHostId: senderHostId ?? this.senderHostId,
+      senderUserId: senderUserId ?? this.senderUserId,
+      senderDeviceId: senderDeviceId ?? this.senderDeviceId,
+      recipientHostId: recipientHostId ?? this.recipientHostId,
+      recipientUserId: recipientUserId ?? this.recipientUserId,
+      recipientDeviceId: recipientDeviceId ?? this.recipientDeviceId,
+      coverageUpperBoundsJson:
+          coverageUpperBoundsJson ?? this.coverageUpperBoundsJson,
+      startedAt: startedAt ?? this.startedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (roundId.present) {
+      map['round_id'] = Variable<String>(roundId.value);
+    }
+    if (direction.present) {
+      map['direction'] = Variable<String>(direction.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (senderHostId.present) {
+      map['sender_host_id'] = Variable<String>(senderHostId.value);
+    }
+    if (senderUserId.present) {
+      map['sender_user_id'] = Variable<String>(senderUserId.value);
+    }
+    if (senderDeviceId.present) {
+      map['sender_device_id'] = Variable<String>(senderDeviceId.value);
+    }
+    if (recipientHostId.present) {
+      map['recipient_host_id'] = Variable<String>(recipientHostId.value);
+    }
+    if (recipientUserId.present) {
+      map['recipient_user_id'] = Variable<String>(recipientUserId.value);
+    }
+    if (recipientDeviceId.present) {
+      map['recipient_device_id'] = Variable<String>(recipientDeviceId.value);
+    }
+    if (coverageUpperBoundsJson.present) {
+      map['coverage_upper_bounds_json'] = Variable<String>(
+        coverageUpperBoundsJson.value,
+      );
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (expiresAt.present) {
+      map['expires_at'] = Variable<DateTime>(expiresAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OnboardingSyncRoundsCompanion(')
+          ..write('roundId: $roundId, ')
+          ..write('direction: $direction, ')
+          ..write('state: $state, ')
+          ..write('senderHostId: $senderHostId, ')
+          ..write('senderUserId: $senderUserId, ')
+          ..write('senderDeviceId: $senderDeviceId, ')
+          ..write('recipientHostId: $recipientHostId, ')
+          ..write('recipientUserId: $recipientUserId, ')
+          ..write('recipientDeviceId: $recipientDeviceId, ')
+          ..write('coverageUpperBoundsJson: $coverageUpperBoundsJson, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$SyncDatabase extends GeneratedDatabase {
   _$SyncDatabase(QueryExecutor e) : super(e);
   _$SyncDatabase.connect(DatabaseConnection c) : super.connect(c);
@@ -3011,6 +3827,8 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
   late final $InboundEventQueueTable inboundEventQueue =
       $InboundEventQueueTable(this);
   late final $QueueMarkersTable queueMarkers = $QueueMarkersTable(this);
+  late final $OnboardingSyncRoundsTable onboardingSyncRounds =
+      $OnboardingSyncRoundsTable(this);
   late final Index idxOutboxStatusPriorityCreatedAt = Index(
     'idx_outbox_status_priority_created_at',
     'CREATE INDEX idx_outbox_status_priority_created_at ON outbox (status, priority, created_at)',
@@ -3117,6 +3935,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     hostActivity,
     inboundEventQueue,
     queueMarkers,
+    onboardingSyncRounds,
     idxOutboxStatusPriorityCreatedAt,
     idxOutboxActionablePriorityCreatedAt,
     idxOutboxActionableSubject,
@@ -4570,6 +5389,388 @@ typedef $$QueueMarkersTableProcessedTableManager =
       QueueMarkerItem,
       PrefetchHooks Function()
     >;
+typedef $$OnboardingSyncRoundsTableCreateCompanionBuilder =
+    OnboardingSyncRoundsCompanion Function({
+      required String roundId,
+      required String direction,
+      required String state,
+      required String senderHostId,
+      Value<String?> senderUserId,
+      Value<String?> senderDeviceId,
+      Value<String?> recipientHostId,
+      required String recipientUserId,
+      required String recipientDeviceId,
+      required String coverageUpperBoundsJson,
+      required DateTime startedAt,
+      required DateTime updatedAt,
+      required DateTime expiresAt,
+      Value<int> rowid,
+    });
+typedef $$OnboardingSyncRoundsTableUpdateCompanionBuilder =
+    OnboardingSyncRoundsCompanion Function({
+      Value<String> roundId,
+      Value<String> direction,
+      Value<String> state,
+      Value<String> senderHostId,
+      Value<String?> senderUserId,
+      Value<String?> senderDeviceId,
+      Value<String?> recipientHostId,
+      Value<String> recipientUserId,
+      Value<String> recipientDeviceId,
+      Value<String> coverageUpperBoundsJson,
+      Value<DateTime> startedAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime> expiresAt,
+      Value<int> rowid,
+    });
+
+class $$OnboardingSyncRoundsTableFilterComposer
+    extends Composer<_$SyncDatabase, $OnboardingSyncRoundsTable> {
+  $$OnboardingSyncRoundsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get roundId => $composableBuilder(
+    column: $table.roundId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get direction => $composableBuilder(
+    column: $table.direction,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get senderHostId => $composableBuilder(
+    column: $table.senderHostId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get senderUserId => $composableBuilder(
+    column: $table.senderUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get senderDeviceId => $composableBuilder(
+    column: $table.senderDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipientHostId => $composableBuilder(
+    column: $table.recipientHostId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipientUserId => $composableBuilder(
+    column: $table.recipientUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipientDeviceId => $composableBuilder(
+    column: $table.recipientDeviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverageUpperBoundsJson => $composableBuilder(
+    column: $table.coverageUpperBoundsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$OnboardingSyncRoundsTableOrderingComposer
+    extends Composer<_$SyncDatabase, $OnboardingSyncRoundsTable> {
+  $$OnboardingSyncRoundsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get roundId => $composableBuilder(
+    column: $table.roundId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get direction => $composableBuilder(
+    column: $table.direction,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get senderHostId => $composableBuilder(
+    column: $table.senderHostId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get senderUserId => $composableBuilder(
+    column: $table.senderUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get senderDeviceId => $composableBuilder(
+    column: $table.senderDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipientHostId => $composableBuilder(
+    column: $table.recipientHostId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipientUserId => $composableBuilder(
+    column: $table.recipientUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipientDeviceId => $composableBuilder(
+    column: $table.recipientDeviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get coverageUpperBoundsJson => $composableBuilder(
+    column: $table.coverageUpperBoundsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$OnboardingSyncRoundsTableAnnotationComposer
+    extends Composer<_$SyncDatabase, $OnboardingSyncRoundsTable> {
+  $$OnboardingSyncRoundsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get roundId =>
+      $composableBuilder(column: $table.roundId, builder: (column) => column);
+
+  GeneratedColumn<String> get direction =>
+      $composableBuilder(column: $table.direction, builder: (column) => column);
+
+  GeneratedColumn<String> get state =>
+      $composableBuilder(column: $table.state, builder: (column) => column);
+
+  GeneratedColumn<String> get senderHostId => $composableBuilder(
+    column: $table.senderHostId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get senderUserId => $composableBuilder(
+    column: $table.senderUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get senderDeviceId => $composableBuilder(
+    column: $table.senderDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recipientHostId => $composableBuilder(
+    column: $table.recipientHostId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recipientUserId => $composableBuilder(
+    column: $table.recipientUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recipientDeviceId => $composableBuilder(
+    column: $table.recipientDeviceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get coverageUpperBoundsJson => $composableBuilder(
+    column: $table.coverageUpperBoundsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get expiresAt =>
+      $composableBuilder(column: $table.expiresAt, builder: (column) => column);
+}
+
+class $$OnboardingSyncRoundsTableTableManager
+    extends
+        RootTableManager<
+          _$SyncDatabase,
+          $OnboardingSyncRoundsTable,
+          OnboardingSyncRoundItem,
+          $$OnboardingSyncRoundsTableFilterComposer,
+          $$OnboardingSyncRoundsTableOrderingComposer,
+          $$OnboardingSyncRoundsTableAnnotationComposer,
+          $$OnboardingSyncRoundsTableCreateCompanionBuilder,
+          $$OnboardingSyncRoundsTableUpdateCompanionBuilder,
+          (
+            OnboardingSyncRoundItem,
+            BaseReferences<
+              _$SyncDatabase,
+              $OnboardingSyncRoundsTable,
+              OnboardingSyncRoundItem
+            >,
+          ),
+          OnboardingSyncRoundItem,
+          PrefetchHooks Function()
+        > {
+  $$OnboardingSyncRoundsTableTableManager(
+    _$SyncDatabase db,
+    $OnboardingSyncRoundsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OnboardingSyncRoundsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OnboardingSyncRoundsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$OnboardingSyncRoundsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> roundId = const Value.absent(),
+                Value<String> direction = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<String> senderHostId = const Value.absent(),
+                Value<String?> senderUserId = const Value.absent(),
+                Value<String?> senderDeviceId = const Value.absent(),
+                Value<String?> recipientHostId = const Value.absent(),
+                Value<String> recipientUserId = const Value.absent(),
+                Value<String> recipientDeviceId = const Value.absent(),
+                Value<String> coverageUpperBoundsJson = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime> expiresAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => OnboardingSyncRoundsCompanion(
+                roundId: roundId,
+                direction: direction,
+                state: state,
+                senderHostId: senderHostId,
+                senderUserId: senderUserId,
+                senderDeviceId: senderDeviceId,
+                recipientHostId: recipientHostId,
+                recipientUserId: recipientUserId,
+                recipientDeviceId: recipientDeviceId,
+                coverageUpperBoundsJson: coverageUpperBoundsJson,
+                startedAt: startedAt,
+                updatedAt: updatedAt,
+                expiresAt: expiresAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String roundId,
+                required String direction,
+                required String state,
+                required String senderHostId,
+                Value<String?> senderUserId = const Value.absent(),
+                Value<String?> senderDeviceId = const Value.absent(),
+                Value<String?> recipientHostId = const Value.absent(),
+                required String recipientUserId,
+                required String recipientDeviceId,
+                required String coverageUpperBoundsJson,
+                required DateTime startedAt,
+                required DateTime updatedAt,
+                required DateTime expiresAt,
+                Value<int> rowid = const Value.absent(),
+              }) => OnboardingSyncRoundsCompanion.insert(
+                roundId: roundId,
+                direction: direction,
+                state: state,
+                senderHostId: senderHostId,
+                senderUserId: senderUserId,
+                senderDeviceId: senderDeviceId,
+                recipientHostId: recipientHostId,
+                recipientUserId: recipientUserId,
+                recipientDeviceId: recipientDeviceId,
+                coverageUpperBoundsJson: coverageUpperBoundsJson,
+                startedAt: startedAt,
+                updatedAt: updatedAt,
+                expiresAt: expiresAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$OnboardingSyncRoundsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$SyncDatabase,
+      $OnboardingSyncRoundsTable,
+      OnboardingSyncRoundItem,
+      $$OnboardingSyncRoundsTableFilterComposer,
+      $$OnboardingSyncRoundsTableOrderingComposer,
+      $$OnboardingSyncRoundsTableAnnotationComposer,
+      $$OnboardingSyncRoundsTableCreateCompanionBuilder,
+      $$OnboardingSyncRoundsTableUpdateCompanionBuilder,
+      (
+        OnboardingSyncRoundItem,
+        BaseReferences<
+          _$SyncDatabase,
+          $OnboardingSyncRoundsTable,
+          OnboardingSyncRoundItem
+        >,
+      ),
+      OnboardingSyncRoundItem,
+      PrefetchHooks Function()
+    >;
 
 class $SyncDatabaseManager {
   final _$SyncDatabase _db;
@@ -4584,4 +5785,6 @@ class $SyncDatabaseManager {
       $$InboundEventQueueTableTableManager(_db, _db.inboundEventQueue);
   $$QueueMarkersTableTableManager get queueMarkers =>
       $$QueueMarkersTableTableManager(_db, _db.queueMarkers);
+  $$OnboardingSyncRoundsTableTableManager get onboardingSyncRounds =>
+      $$OnboardingSyncRoundsTableTableManager(_db, _db.onboardingSyncRounds);
 }

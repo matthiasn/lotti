@@ -1,17 +1,17 @@
 ---
 type: Feature Module
 title: Sync message model
-description: The twenty SyncMessage families, which seven are sequence-tracked, and why saved task filters are deliberately not.
+description: The twenty-five SyncMessage families, which seven are sequence-tracked, and how onboarding control messages stay outside causal payload accounting.
 resource: ../../../lib/features/sync/model/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-02T16:09:19Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-message
     resource: ../../../lib/features/sync/model/sync_message.dart
     title: SyncMessage freezed union
-    last_modified: 2026-07-25
+    last_modified: 2026-08-02
   - id: payload-type
     resource: ../../../lib/features/sync/sequence/sync_sequence_payload_type.dart
     title: SyncSequencePayloadType
@@ -19,20 +19,32 @@ sources:
   - id: apply
     resource: ../../../lib/features/sync/matrix/sync_event_processor_apply.dart
     title: Apply path
-    last_modified: 2026-07-25
+    last_modified: 2026-08-02
 ---
 
 # Families
 
-Everything on the wire is a `SyncMessage` — a freezed union with twenty
+Everything on the wire is a `SyncMessage` — a freezed union with twenty-five
 variants:
 
 `journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
 `syncNodeProfile`, `aiConfigDelete`, `savedTaskFilter`,
 `savedTaskFilterDelete`, `configFlag`, `themingSelection`, `dailyOsUserName`,
-`notification`, `notificationStateUpdate`, `backfillRequest`,
-`backfillResponse`, `agentEntity`, `agentLink`, `consumptionEvent`,
-`agentBundle`, `outboxBundle`.
+`notification`, `notificationStateUpdate`, `onboardingSnapshotBegin`,
+`onboardingSnapshotAccepted`, `onboardingTerminalCounters`,
+`onboardingSnapshotEnd`, `backfillRequest`, `backfillResponse`, `mediaRequest`,
+`agentEntity`, `agentLink`, `consumptionEvent`, `agentBundle`, `outboxBundle`.
+
+## Initial-onboarding controls
+
+The four `onboarding*` variants coordinate one target device's bounded
+full-history transfer. They carry no vector clock and never become sequence-log
+payload rows. Begin freezes per-origin-host counter bounds and a fixed lease;
+accepted returns the target's host identity; terminal counters carry bounded
+inclusive ranges for the sender host's authoritative burns; end carries
+`complete` or `aborted`.
+Their persistence, ordering and suppression semantics live in
+[sequence log and backfill](sequence-and-backfill.md#initial-onboarding-suppression).
 
 ## Sequence-tracked payloads
 

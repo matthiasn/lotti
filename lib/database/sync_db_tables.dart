@@ -252,6 +252,33 @@ class HostActivity extends Table {
   Set<Column> get primaryKey => {hostId};
 }
 
+/// Durable sender/recipient state for target-specific initial-onboarding
+/// snapshot rounds. The table is intentionally small: completed rows remain
+/// useful for diagnostics and stale control-message idempotence, while active
+/// lookups are bounded by the number of devices currently onboarding.
+@DataClassName('OnboardingSyncRoundItem')
+class OnboardingSyncRounds extends Table {
+  TextColumn get roundId => text().named('round_id')();
+  TextColumn get direction => text()();
+  TextColumn get state => text()();
+  TextColumn get senderHostId => text().named('sender_host_id')();
+  TextColumn get senderUserId => text().named('sender_user_id').nullable()();
+  TextColumn get senderDeviceId =>
+      text().named('sender_device_id').nullable()();
+  TextColumn get recipientHostId =>
+      text().named('recipient_host_id').nullable()();
+  TextColumn get recipientUserId => text().named('recipient_user_id')();
+  TextColumn get recipientDeviceId => text().named('recipient_device_id')();
+  TextColumn get coverageUpperBoundsJson =>
+      text().named('coverage_upper_bounds_json')();
+  DateTimeColumn get startedAt => dateTime().named('started_at')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+  DateTimeColumn get expiresAt => dateTime().named('expires_at')();
+
+  @override
+  Set<Column> get primaryKey => {roundId};
+}
+
 /// Durable inbound queue for Matrix sync events. Three producers
 /// (live stream, limited-sync bridge, bootstrap pagination) write
 /// here; one `InboundWorker` drains and applies.

@@ -17,6 +17,7 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -32,6 +33,9 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import 'sync_event_processor_test_helpers.dart';
+
+class _MockOnboardingSyncService extends Mock
+    implements OnboardingSyncService {}
 
 // --- Glados generators for the _decodeSyncEventPayload round-trip property. ---
 
@@ -144,6 +148,59 @@ extension _AnyGeneratedJson on glados.Any {
 void main() {
   setUpAll(registerSyncProcessorFallbacks);
   setUp(setUpProcessorMocks);
+
+  test('routes onboarding controls to the onboarding coordinator', () async {
+    final onboardingSyncService = _MockOnboardingSyncService();
+    processor.onboardingSyncService = onboardingSyncService;
+    const controls = <SyncMessage>[
+      SyncMessage.onboardingSnapshotBegin(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        senderUserId: 'sender-user',
+        senderDeviceId: 'sender-device',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        coverageUpperBounds: {'sender-host': 42},
+        leaseSeconds: 3600,
+      ),
+      SyncMessage.onboardingSnapshotAccepted(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        senderUserId: 'sender-user',
+        senderDeviceId: 'sender-device',
+        recipientHostId: 'recipient-host',
+        recipientDeviceId: 'recipient-device',
+      ),
+      SyncMessage.onboardingTerminalCounters(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        ranges: [SyncCounterRange(start: 1, end: 2)],
+      ),
+      SyncMessage.onboardingSnapshotEnd(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        reason: OnboardingSyncEndReason.complete,
+      ),
+    ];
+    for (final control in controls) {
+      when(
+        () => onboardingSyncService.handleMessage(control),
+      ).thenAnswer((_) async {});
+      when(() => event.text).thenReturn(encodeMessage(control));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => onboardingSyncService.handleMessage(control)).called(1);
+    }
+  });
 
   test(
     'processes journal entities via loader and updates notifications',

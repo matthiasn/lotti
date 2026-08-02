@@ -535,6 +535,55 @@ void main() {
   });
 
   group('writesJournalDb classification', () {
+    test('onboarding controls bypass the JournalDb transaction wrap', () {
+      const controls = <SyncMessage>[
+        SyncMessage.onboardingSnapshotBegin(
+          protocolVersion: 1,
+          roundId: 'round-1',
+          senderHostId: 'sender-host',
+          senderUserId: 'sender-user',
+          senderDeviceId: 'sender-device',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          coverageUpperBounds: {'sender-host': 42},
+          leaseSeconds: 3600,
+        ),
+        SyncMessage.onboardingSnapshotAccepted(
+          protocolVersion: 1,
+          roundId: 'round-1',
+          senderHostId: 'sender-host',
+          senderUserId: 'sender-user',
+          senderDeviceId: 'sender-device',
+          recipientHostId: 'recipient-host',
+          recipientDeviceId: 'recipient-device',
+        ),
+        SyncMessage.onboardingTerminalCounters(
+          protocolVersion: 1,
+          roundId: 'round-1',
+          senderHostId: 'sender-host',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          ranges: [SyncCounterRange(start: 1, end: 2)],
+        ),
+        SyncMessage.onboardingSnapshotEnd(
+          protocolVersion: 1,
+          roundId: 'round-1',
+          senderHostId: 'sender-host',
+          recipientUserId: 'recipient-user',
+          recipientDeviceId: 'recipient-device',
+          reason: OnboardingSyncEndReason.complete,
+        ),
+      ];
+
+      for (final control in controls) {
+        expect(
+          QueueApplyAdapter.writesJournalDb(control),
+          isFalse,
+          reason: control.runtimeType.toString(),
+        );
+      }
+    });
+
     test(
       'consumptionEvent bypasses the JournalDb transaction wrap — its apply '
       'path writes to ai_consumption.sqlite, not JournalDb',

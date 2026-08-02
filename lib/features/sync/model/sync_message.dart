@@ -35,6 +35,21 @@ abstract class BackfillRequestEntry with _$BackfillRequestEntry {
       _$BackfillRequestEntryFromJson(json);
 }
 
+/// Inclusive counter range used by onboarding terminal-coverage chunks.
+@freezed
+abstract class SyncCounterRange with _$SyncCounterRange {
+  const factory SyncCounterRange({
+    required int start,
+    required int end,
+  }) = _SyncCounterRange;
+
+  factory SyncCounterRange.fromJson(Map<String, dynamic> json) =>
+      _$SyncCounterRangeFromJson(json);
+}
+
+/// Why an initial-onboarding snapshot round stopped suppressing backfill.
+enum OnboardingSyncEndReason { complete, aborted }
+
 /// The sealed envelope for every message that crosses the wire between
 /// devices.
 ///
@@ -191,6 +206,61 @@ sealed class SyncMessage with _$SyncMessage {
     DateTime? actedOnAt,
     DateTime? deletedAt,
   }) = SyncNotificationStateUpdate;
+
+  /// Announces a bounded, target-specific full-history onboarding round.
+  ///
+  /// Every peer receives the room event, but only the Matrix device named by
+  /// [recipientUserId] and [recipientDeviceId] persists the suppression lease
+  /// and acknowledges it. [coverageUpperBounds] captures the highest sequence
+  /// counter included in the snapshot for every origin host known to sender.
+  const factory SyncMessage.onboardingSnapshotBegin({
+    required int protocolVersion,
+    required String roundId,
+    required String senderHostId,
+    required String senderUserId,
+    required String senderDeviceId,
+    required String recipientUserId,
+    required String recipientDeviceId,
+    required Map<String, int> coverageUpperBounds,
+    required int leaseSeconds,
+  }) = SyncOnboardingSnapshotBegin;
+
+  /// Confirms that the target device durably installed the suppression lease.
+  /// The recipient host id lets the sender defer stale backfill requests from
+  /// exactly that new device while the round is active.
+  const factory SyncMessage.onboardingSnapshotAccepted({
+    required int protocolVersion,
+    required String roundId,
+    required String senderHostId,
+    required String senderUserId,
+    required String senderDeviceId,
+    required String recipientHostId,
+    required String recipientDeviceId,
+  }) = SyncOnboardingSnapshotAccepted;
+
+  /// Authoritative burned counters from the sender host, compressed into
+  /// inclusive ranges and chunked so one Matrix event stays bounded.
+  @JsonSerializable(explicitToJson: true)
+  const factory SyncMessage.onboardingTerminalCounters({
+    required int protocolVersion,
+    required String roundId,
+    required String senderHostId,
+    required String recipientUserId,
+    required String recipientDeviceId,
+    required List<SyncCounterRange> ranges,
+  }) = SyncOnboardingTerminalCounters;
+
+  /// Ordered barrier for a history round. It is queued at low priority after
+  /// every history row, so receiving it means all sendable snapshot rows were
+  /// dispatched or exhausted their outbox retries.
+  const factory SyncMessage.onboardingSnapshotEnd({
+    required int protocolVersion,
+    required String roundId,
+    required String senderHostId,
+    required String recipientUserId,
+    required String recipientDeviceId,
+    required OnboardingSyncEndReason reason,
+  }) = SyncOnboardingSnapshotEnd;
 
   /// Request to backfill missing entries identified by host ID and counter.
   /// Broadcast to all devices; any device with the entries can respond.

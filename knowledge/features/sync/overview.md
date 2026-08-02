@@ -5,21 +5,21 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-07-29T09:30:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-02T16:09:19Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-src
     resource: ../../../lib/features/sync
     title: Sync feature source
-    last_modified: 2026-08-01
+    last_modified: 2026-08-02
   - id: get-it
     resource: ../../../lib/get_it.dart
     title: Default bootstrap wiring
-    last_modified: 2026-07-25
+    last_modified: 2026-08-02
   - id: tuning
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning constants
-    last_modified: 2026-05-30
+    last_modified: 2026-08-02
   - id: current-architecture
     resource: ../../../docs/architecture/sync_current_architecture.md
     title: Failure history, log-backed investigations, tuning context
@@ -255,7 +255,11 @@ the inviting device exposes both follow-up transfers in the sticky action bar:
 and re-enqueues that device's local history. The latter defaults to
 *Everything*, with *Last 30 days* and a validated custom interval available,
 and reports the journal, agent-entity and agent-link enqueue phases before
-confirming that the messages are queued.
+confirming that the messages are queued. The full *Everything* action first
+coordinates a bounded suppression round with that exact new device, so it does
+not request snapshot rows that are merely queued or in flight; partial and
+manual repair flows remain unchanged. The runtime contract is in
+[sequence and backfill](sequence-and-backfill.md#initial-onboarding-suppression).
 
 The agent phases stamp before they send. An agent entity or link persisted with
 `vectorClock: null` is applied by the receiving peer but skipped by

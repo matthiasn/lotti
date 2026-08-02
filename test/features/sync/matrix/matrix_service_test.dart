@@ -1156,6 +1156,44 @@ void main() {
     );
 
     final variantsByBucket = <String, SyncMessage>{
+      'onboardingSnapshotBegin': const SyncMessage.onboardingSnapshotBegin(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        senderUserId: 'sender-user',
+        senderDeviceId: 'sender-device',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        coverageUpperBounds: {'sender-host': 42},
+        leaseSeconds: 3600,
+      ),
+      'onboardingSnapshotAccepted':
+          const SyncMessage.onboardingSnapshotAccepted(
+            protocolVersion: 1,
+            roundId: 'round-1',
+            senderHostId: 'sender-host',
+            senderUserId: 'sender-user',
+            senderDeviceId: 'sender-device',
+            recipientHostId: 'recipient-host',
+            recipientDeviceId: 'recipient-device',
+          ),
+      'onboardingTerminalCounters':
+          const SyncMessage.onboardingTerminalCounters(
+            protocolVersion: 1,
+            roundId: 'round-1',
+            senderHostId: 'sender-host',
+            recipientUserId: 'recipient-user',
+            recipientDeviceId: 'recipient-device',
+            ranges: [SyncCounterRange(start: 1, end: 2)],
+          ),
+      'onboardingSnapshotEnd': const SyncMessage.onboardingSnapshotEnd(
+        protocolVersion: 1,
+        roundId: 'round-1',
+        senderHostId: 'sender-host',
+        recipientUserId: 'recipient-user',
+        recipientDeviceId: 'recipient-device',
+        reason: OnboardingSyncEndReason.complete,
+      ),
       'entryLink': entryLink,
       'aiConfig': aiConfig,
       'notification': notification,
