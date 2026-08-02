@@ -2017,6 +2017,69 @@ void main() {
         });
       });
 
+      test('repeats the pre-check when it crosses local midnight', () {
+        // The repair keys on the calendar day; the due query below reads the
+        // clock after it. Straddling midnight, those disagree.
+        var currentTime = DateTime(2024, 3, 15, 23, 59, 59);
+        var calls = 0;
+
+        fakeAsync((async) {
+          withClock(Clock(() => currentTime), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => <AgentStateEntity>[]);
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () async {
+                calls++;
+                // The first repair runs long enough to cross the boundary.
+                if (calls == 1) currentTime = DateTime(2024, 3, 16, 0, 0, 1);
+              },
+            )..start();
+            async.flushMicrotasks();
+
+            // Repeated under the new day, so an agent whose handover expired
+            // at midnight is retired before this pass reads what is due.
+            expect(calls, 2);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('does not repeat the pre-check within one local day', () {
+        var currentTime = DateTime(2024, 3, 15, 10, 30);
+        var calls = 0;
+
+        fakeAsync((async) {
+          withClock(Clock(() => currentTime), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => <AgentStateEntity>[]);
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () async {
+                calls++;
+                currentTime = DateTime(2024, 3, 15, 10, 31);
+              },
+            )..start();
+            async.flushMicrotasks();
+
+            expect(calls, 1);
+
+            manager.stop();
+          });
+        });
+      });
+
       test('a failing pre-check does not strand the due records', () {
         final now = DateTime(2024, 3, 15, 10, 30);
         final pastSchedule = DateTime(2024, 3, 15, 9);

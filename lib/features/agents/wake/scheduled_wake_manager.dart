@@ -138,14 +138,16 @@ class ScheduledWakeManager {
     try {
       final before = beforeCheck;
       if (before != null) {
-        try {
-          await before();
-        } catch (e, s) {
-          _logError(
-            'pre-check repair failed; continuing with the due-record pass',
-            error: e,
-            stackTrace: s,
-          );
+        final startedOn = clock.now();
+        await _runPreCheck(before);
+        // The repair keys on the calendar day — retirement's handover cutoff
+        // does — while the due query below uses a `now` read after it. A pass
+        // that starts just before local midnight and finishes the repair just
+        // after would decide those two on different days, leaving an agent
+        // active for exactly the pass that should have retired it. Repeating
+        // the repair under the new day is cheaper than reasoning about it.
+        if (!_sameLocalDay(startedOn, clock.now())) {
+          await _runPreCheck(before);
         }
       }
       // Read after the pre-check: it can await sync writes, and a `now`
@@ -208,6 +210,23 @@ class ScheduledWakeManager {
       _isChecking = false;
     }
   }
+
+  /// Runs [before], logging a failure rather than aborting the pass: stale
+  /// repair costs a wake, while skipping the pass strands every due record.
+  Future<void> _runPreCheck(Future<void> Function() before) async {
+    try {
+      await before();
+    } catch (e, s) {
+      _logError(
+        'pre-check repair failed; continuing with the due-record pass',
+        error: e,
+        stackTrace: s,
+      );
+    }
+  }
+
+  static bool _sameLocalDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   /// Fire pending [ScheduledWakeEntity] records that are due (ADR 0022).
   ///

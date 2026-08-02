@@ -5,7 +5,7 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-02T12:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-02T20:00:00Z }
 stale_after: 2026-11-01
 sources:
   - id: agents
@@ -53,6 +53,11 @@ hourly tick after it. Ordering is the whole point: a finished agent is still
 very tick that was about to retire it. Covering the ticks and not just start-up
 is what catches a desktop session left open across the handover boundary, where
 the boundary arrives on a tick and no relaunch ever comes.
+
+The repair repeats if it crosses local midnight. Retirement's cutoff is a
+calendar date while the due query reads the clock *after* the repair, so a pass
+that straddles the boundary would decide the two on different days — leaving an
+agent active for exactly the pass that should have retired it.
 
 `restoreSubscriptions` retires as well, before it takes its snapshot of active
 agents — otherwise start-up would re-hydrate runtime state for agents it is
