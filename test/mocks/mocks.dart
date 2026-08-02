@@ -33,6 +33,7 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/event_agent_service.dart';
@@ -607,6 +608,8 @@ void stubLoggingService(MockLoggingService mock) {
     ),
   ).thenAnswer((_) {});
 }
+
+class MockAgentSidecarReclaimer extends Mock implements AgentSidecarReclaimer {}
 
 class MockDomainLogger extends Mock implements DomainLogger {
   MockDomainLogger() {

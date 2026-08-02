@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now raise the notification they were always meant to.
 
 ### Fixed
+- **Deleting an agent now deletes its files too.** Everything an assistant syncs
+  is also written to a file on disk so other devices can fetch it. Nothing ever
+  removed those: deleting an assistant cleared its data from the database and
+  left the files behind, still readable, and disk use tracked everything ever
+  synced rather than what you still had. Deleting an assistant — and the
+  background tidying of old day-status records — now removes the matching files
+  as well, as far as the system allows: a file the app cannot reach at that
+  moment is left alone rather than failing the deletion.
 - **Weekly totals stop changing on their own.** Daily OS pools each past week's
   planned and recorded minutes into a shared summary the morning briefing reads.
   Recorded time was bucketed into weeks using the calendar of whichever device

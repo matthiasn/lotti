@@ -7134,7 +7134,8 @@ void main() {
           batchSize: 10,
           maxBatches: 5,
         ),
-        1,
+        ['ancient'],
+        reason: 'Returns the ids, so their sidecars can be reclaimed too.',
       );
       expect(await repo.getEntity('ancient'), isNull);
     });

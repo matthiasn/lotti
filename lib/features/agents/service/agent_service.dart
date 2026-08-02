@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -25,6 +26,7 @@ class AgentService {
     required this.orchestrator,
     required this.syncService,
     this.onPersistedStateChanged,
+    this.sidecarReclaimer,
   });
 
   final AgentRepository repository;
@@ -33,6 +35,10 @@ class AgentService {
   /// Sync-aware write service. All entity/link writes go through this so
   /// they are automatically enqueued for cross-device sync.
   final AgentSyncService syncService;
+
+  /// Removes the JSON sidecars of hard-deleted rows. Optional so tests and
+  /// headless contexts without a documents directory simply skip reclamation.
+  final AgentSidecarReclaimer? sidecarReclaimer;
   final void Function(String agentId)? onPersistedStateChanged;
 
   static const _uuid = Uuid();
@@ -241,7 +247,14 @@ class AgentService {
       orchestrator.removeSubscriptions(agentId);
     }
 
-    await repository.hardDeleteAgent(agentId);
+    final removed = await repository.hardDeleteAgent(agentId);
+    // The rows are only half of what a synced agent leaves behind: its JSON
+    // sidecars stay readable on disk otherwise, outliving the delete the user
+    // just asked for.
+    await sidecarReclaimer?.reclaim(
+      entityIds: removed.entityIds,
+      linkIds: removed.linkIds,
+    );
     developer.log(
       'Deleted all data for agent ${DomainLogger.sanitizeId(agentId)}',
       name: 'AgentService',

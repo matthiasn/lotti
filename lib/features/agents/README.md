@@ -71,8 +71,10 @@ good, as are weekly totals, run history and ratings, and the record behind every
 suggestion accepted or rejected.
 
 What the app does forget is the machine's own working residue. Today that means
-day-status events older than ninety days, keeping each day's last one. Tidying
-runs in the background after start-up and is safe to interrupt.
+day-status events older than ninety days, keeping each day's last one. Deleting
+an agent, or forgetting one of those events, now also removes the copy the sync
+pipeline kept on disk — previously those files outlived the delete. Tidying runs
+in the background after start-up and is safe to interrupt.
 
 The policy, what is deliberately kept and why, how it behaves across devices,
 and what is still classified but not yet swept are in

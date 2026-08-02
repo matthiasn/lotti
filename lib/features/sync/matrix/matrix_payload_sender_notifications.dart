@@ -147,6 +147,11 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     }
 
     var enrichedPath = jsonPath;
+    // A sidecar this send had to rebuild is deleted again once it is up: the
+    // row was queued for an entity retention or a hard delete already
+    // reclaimed, so leaving the file behind would silently undo that
+    // reclamation and keep deleted agent data readable on disk.
+    var restoredForThisSend = false;
     // Enrich legacy items that lack jsonPath but have inline payload
     if (enrichedPath == null && inlineJson != null) {
       final id = switch (message) {
@@ -155,6 +160,20 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
         _ => throw StateError('unreachable'),
       };
       enrichedPath = pathBuilder(id);
+      await _savePayloadToDisk(
+        relativePath: enrichedPath,
+        jsonPayload: inlineJson,
+      );
+    } else if (enrichedPath != null &&
+        inlineJson != null &&
+        !_payloadExists(enrichedPath)) {
+      restoredForThisSend = true;
+      // The path is declared but the file is gone. Sidecar reclamation can
+      // take a file while a row referencing it is still queued — a hard
+      // delete and a pending send race by design — and without this the
+      // upload fails on a read that can never succeed, so the row retries
+      // until it ages out. The row still carries the payload inline, so
+      // rewrite the file rather than failing the send.
       await _savePayloadToDisk(
         relativePath: enrichedPath,
         jsonPayload: inlineJson,
@@ -175,6 +194,13 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
       relativePath: enrichedPath,
       logLabel: logLabel,
     );
+    // Clean up whether or not the upload succeeded. On failure the row is
+    // retried, and the retry would find the file already present, leave
+    // `restoredForThisSend` false, and never remove it — so a single failed
+    // attempt would permanently undo the reclamation.
+    if (restoredForThisSend) {
+      await _deletePayloadFromDisk(enrichedPath);
+    }
     if (!uploaded) return null;
 
     return switch (message) {
@@ -197,10 +223,15 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     required String relativePath,
     required String logLabel,
   }) async {
-    final relativeJoined = p.joinAll(
-      relativePath.split('/').where((part) => part.isNotEmpty),
-    );
-    final fullPath = p.join(documentsDirectory.path, relativeJoined);
+    final fullPath = _resolveSidecarPath(relativePath);
+    if (fullPath == null) {
+      loggingService.log(
+        LogDomain.sync,
+        'refusing $logLabel send: jsonPath escapes the documents directory',
+        subDomain: 'sendMatrixMsg',
+      );
+      return false;
+    }
 
     late final Uint8List jsonBytes;
     try {
@@ -223,19 +254,77 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     );
   }
 
-  /// Writes [jsonPayload] to disk at [relativePath] under the documents
-  /// directory, creating parent directories as needed. Used to enrich legacy
-  /// outbox items that lack a `jsonPath`.
+  /// Removes a sidecar this send rebuilt, so restoring it for the upload does
+  /// not resurrect a file reclamation deleted. Best-effort: the send already
+  /// succeeded and a failure here must not fail it.
+  Future<void> _deletePayloadFromDisk(String relativePath) async {
+    try {
+      final full = _resolveSidecarPath(relativePath);
+      if (full == null) return;
+      final file = File(full);
+      if (file.existsSync()) file.deleteSync();
+    } catch (error, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg',
+      );
+    }
+  }
+
+  /// Resolves a sidecar path under the documents directory, or null when it
+  /// would escape it.
+  ///
+  /// `jsonPath` arrives on synced messages, so it is untrusted. `joinAll`
+  /// drops empty segments but keeps `..`, so a crafted path would otherwise
+  /// resolve outside the documents directory — and these helpers read, write
+  /// and delete through it.
+  String? _resolveSidecarPath(String relativePath) {
+    final segments = relativePath
+        .split('/')
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (segments.contains('..')) return null;
+    final full = p.normalize(
+      p.join(documentsDirectory.path, p.joinAll(segments)),
+    );
+    if (!p.isWithin(documentsDirectory.path, full)) return null;
+    return full;
+  }
+
+  /// Whether the sidecar at [relativePath] is still on disk.
+  bool _payloadExists(String relativePath) {
+    final full = _resolveSidecarPath(relativePath);
+    return full != null && File(full).existsSync();
+  }
+
+  /// Writes a payload to disk under the documents directory, creating parent
+  /// directories as needed. Used to enrich legacy outbox items that lack a
+  /// `jsonPath`, and to restore a sidecar reclamation removed while a row
+  /// referencing it was still queued.
   Future<void> _savePayloadToDisk({
     required String relativePath,
     required String jsonPayload,
   }) async {
-    final relativeJoined = p.joinAll(
-      relativePath.split('/').where((part) => part.isNotEmpty),
-    );
-    final fullPath = p.join(documentsDirectory.path, relativeJoined);
+    final fullPath = _resolveSidecarPath(relativePath);
+    if (fullPath == null) {
+      loggingService.log(
+        LogDomain.sync,
+        'refusing to write a sidecar outside the documents directory',
+        subDomain: 'sendMatrixMsg',
+      );
+      return;
+    }
     final file = File(fullPath);
     await file.parent.create(recursive: true);
-    await file.writeAsString(jsonPayload);
+    // Write-then-rename. A process kill or a failure part-way through
+    // `writeAsString` would otherwise leave a truncated sidecar in place, and
+    // the retry's existence check would accept it and upload the corrupt
+    // bytes — after which the inline payload is stripped and the good copy is
+    // gone. A rename is atomic, so the destination is either absent or whole.
+    final staged = File('$fullPath.tmp');
+    await staged.writeAsString(jsonPayload, flush: true);
+    await staged.rename(file.path);
   }
 }

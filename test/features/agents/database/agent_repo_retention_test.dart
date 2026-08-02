@@ -35,6 +35,34 @@ void main() {
     return [for (final row in rows) row.read<String>('id')];
   }
 
+  group('chunkForStatement', () {
+    test('splits at the cap so a delete cannot exceed it', () {
+      final ids = [for (var i = 0; i < 5; i++) 'id-$i'];
+
+      expect(
+        chunkForStatement(ids, 2).toList(),
+        [
+          ['id-0', 'id-1'],
+          ['id-2', 'id-3'],
+          ['id-4'],
+        ],
+        reason:
+            'Exceeding the host-parameter cap throws, rolling back the '
+            'transaction and leaving every start-up retrying the same batch.',
+      );
+    });
+
+    test('an exact multiple yields no empty trailing chunk', () {
+      expect(chunkForStatement(['a', 'b'], 2).toList(), [
+        ['a', 'b'],
+      ]);
+    });
+
+    test('nothing to delete yields nothing', () {
+      expect(chunkForStatement([], 400), isEmpty);
+    });
+  });
+
   group('pruneDayStatusEventsBefore', () {
     test('deletes only events older than the cutoff', () async {
       for (final (id, age) in [('old', 200), ('edge', 91), ('recent', 5)]) {
@@ -53,7 +81,7 @@ void main() {
         maxBatches: 5,
       );
 
-      expect(pruned, 2);
+      expect(pruned, hasLength(2), reason: 'The ids removed, for sidecars.');
       expect(await idsOfType('day_status_event'), ['recent']);
     });
 
@@ -84,7 +112,11 @@ void main() {
         maxBatches: 5,
       );
 
-      expect(pruned, 1);
+      expect(
+        pruned,
+        ['a-old'],
+        reason: 'The ids removed, for sidecars.',
+      );
       expect(
         await idsOfType('day_status_event'),
         ['a-newest', 'b-only'],
@@ -115,7 +147,7 @@ void main() {
           maxBatches: 5,
         );
 
-        expect(pruned, 2);
+        expect(pruned, hasLength(2));
         expect(
           await idsOfType('day_status_event'),
           ['newest'],

@@ -706,7 +706,9 @@ void main() {
         ).thenReturn(null);
         when(
           () => generatedRepository.hardDeleteAgent(agentId),
-        ).thenAnswer((_) async {});
+        ).thenAnswer(
+          (_) async => (entityIds: <String>[], linkIds: <String>[]),
+        );
 
         final result = await withClock(Clock.fixed(testDate), () {
           return scenario.run(generatedService, agentId);
@@ -856,6 +858,45 @@ void main() {
     }
 
     group('deleteAgent', () {
+      test('reclaims the sidecars of everything it deleted', () async {
+        // The database rows are only half of what a synced agent leaves
+        // behind: its JSON sidecars stay readable on disk otherwise,
+        // outliving the delete the user just asked for.
+        final reclaimer = MockAgentSidecarReclaimer();
+        when(
+          () => reclaimer.reclaim(
+            entityIds: any(named: 'entityIds'),
+            linkIds: any(named: 'linkIds'),
+          ),
+        ).thenAnswer((_) async => 3);
+        when(
+          () => mockRepository.getEntity('agent-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockOrchestrator.removeSubscriptions('agent-1'),
+        ).thenReturn(null);
+        when(() => mockRepository.hardDeleteAgent('agent-1')).thenAnswer(
+          (_) async => (
+            entityIds: <String>['e-1', 'e-2'],
+            linkIds: <String>['l-1'],
+          ),
+        );
+
+        await AgentService(
+          repository: mockRepository,
+          orchestrator: mockOrchestrator,
+          syncService: mockSyncService,
+          sidecarReclaimer: reclaimer,
+        ).deleteAgent('agent-1');
+
+        verify(
+          () => reclaimer.reclaim(
+            entityIds: ['e-1', 'e-2'],
+            linkIds: ['l-1'],
+          ),
+        ).called(1);
+      });
+
       test(
         'destroys agent first if not already destroyed, then hard-deletes',
         () async {
@@ -870,7 +911,9 @@ void main() {
           ).thenReturn(null);
           when(
             () => mockRepository.hardDeleteAgent('agent-1'),
-          ).thenAnswer((_) async {});
+          ).thenAnswer(
+            (_) async => (entityIds: <String>[], linkIds: <String>[]),
+          );
 
           await service.deleteAgent('agent-1');
 
@@ -909,7 +952,9 @@ void main() {
         ).thenReturn(null);
         when(
           () => mockRepository.hardDeleteAgent('agent-2'),
-        ).thenAnswer((_) async {});
+        ).thenAnswer(
+          (_) async => (entityIds: <String>[], linkIds: <String>[]),
+        );
 
         await service.deleteAgent('agent-2');
 
@@ -932,7 +977,9 @@ void main() {
         ).thenReturn(null);
         when(
           () => mockRepository.hardDeleteAgent('non-existent'),
-        ).thenAnswer((_) async {});
+        ).thenAnswer(
+          (_) async => (entityIds: <String>[], linkIds: <String>[]),
+        );
 
         await service.deleteAgent('non-existent');
 

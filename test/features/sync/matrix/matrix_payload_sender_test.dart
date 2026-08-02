@@ -12,10 +12,12 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../agents/test_data/entity_factories.dart';
 
 /// Direct unit coverage for [MatrixPayloadSender]. The owning
 /// `MatrixMessageSender` exercises the higher-level payload methods through its
@@ -522,6 +524,138 @@ void main() {
         reason:
             'the send must abort on the first failure, not push the '
             'manifest that claims those entries were delivered',
+      );
+    });
+  });
+
+  group('enrichAndUploadAgentPayload restores a reclaimed sidecar', () {
+    test('rebuilds it for the upload, then removes it again', () async {
+      // Sidecar reclamation can take a file while a row referencing it is
+      // still queued: a hard delete and a pending send race by design. The
+      // restore path used to run only when jsonPath was null, so a declared
+      // path with a missing file failed a read that could never succeed and
+      // the row retried until it aged out.
+      final entity = makeTestCapture(id: 'entity-1');
+      final relativePath = relativeAgentEntityPath('entity-1');
+      final file = File('${documentsDirectory.path}$relativePath');
+      expect(
+        file.existsSync(),
+        isFalse,
+        reason: 'The reclaimed sidecar is exactly what is missing.',
+      );
+
+      when(
+        () => room.sendFileEvent(
+          any(),
+          extraContent: any(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'evt-1');
+
+      await payloadSender.enrichAndUploadAgentPayload(
+        room: room,
+        message: SyncMessage.agentEntity(
+          agentEntity: entity,
+          jsonPath: relativePath,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      expect(
+        file.existsSync(),
+        isFalse,
+        reason:
+            'Rebuilt for the upload, then removed again — leaving it would '
+            'undo the reclamation that deleted it and keep the data readable.',
+      );
+    });
+
+    test(
+      'a jsonPath that escapes the documents directory is refused',
+      () async {
+        // jsonPath arrives on synced messages, so it is untrusted, and joinAll
+        // drops empty segments but keeps '..'. The restore path *writes*, so
+        // an escaping path would create a file outside the documents
+        // directory — which is why the target must NOT exist beforehand.
+        final outside = File('${documentsDirectory.parent.path}/escaped.json');
+        expect(outside.existsSync(), isFalse);
+        addTearDown(() {
+          if (outside.existsSync()) outside.deleteSync();
+        });
+
+        final result = await payloadSender.enrichAndUploadAgentPayload(
+          room: room,
+          message: SyncMessage.agentEntity(
+            agentEntity: makeTestCapture(id: 'entity-esc'),
+            jsonPath: '/../escaped.json',
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        expect(result, isNull);
+        expect(
+          outside.existsSync(),
+          isFalse,
+          reason: 'The restore must not write outside the documents directory.',
+        );
+      },
+    );
+
+    test('a failed upload does not leave the rebuilt file behind', () async {
+      // The row is retried, and the retry would find the file present, leave
+      // restoredForThisSend false, and never remove it — so one failed attempt
+      // would permanently undo the reclamation.
+      final entity = makeTestCapture(id: 'entity-fail');
+      final relativePath = relativeAgentEntityPath('entity-fail');
+      final file = File('${documentsDirectory.path}$relativePath');
+      expect(file.existsSync(), isFalse);
+
+      when(
+        () => room.sendFileEvent(
+          any(),
+          extraContent: any(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final result = await payloadSender.enrichAndUploadAgentPayload(
+        room: room,
+        message: SyncMessage.agentEntity(
+          agentEntity: entity,
+          jsonPath: relativePath,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      expect(result, isNull);
+      expect(file.existsSync(), isFalse);
+    });
+
+    test('a sidecar it did not rebuild is left alone', () async {
+      final entity = makeTestCapture(id: 'entity-2');
+      final relativePath = relativeAgentEntityPath('entity-2');
+      final file = File('${documentsDirectory.path}$relativePath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('{"already":"here"}');
+
+      when(
+        () => room.sendFileEvent(
+          any(),
+          extraContent: any(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'evt-2');
+
+      await payloadSender.enrichAndUploadAgentPayload(
+        room: room,
+        message: SyncMessage.agentEntity(
+          agentEntity: entity,
+          jsonPath: relativePath,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      expect(
+        file.existsSync(),
+        isTrue,
+        reason: 'The normal path must not start deleting live sidecars.',
       );
     });
   });

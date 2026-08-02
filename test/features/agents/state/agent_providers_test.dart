@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -358,6 +359,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
         ],
@@ -395,6 +397,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           updateNotificationsProvider.overrideWithValue(mockNotifications),
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           projectRepositoryProvider.overrideWithValue(mockProjectRepository),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
@@ -543,6 +546,7 @@ void main() {
     ProviderContainer createTaskWorkflowContainer() {
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           conversationRepositoryProvider.overrideWith(
             ConversationRepository.new,
@@ -1681,6 +1685,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeQueueProvider.overrideWithValue(queue),
           wakeRunnerProvider.overrideWithValue(runner),
@@ -1752,6 +1757,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           wakeQueueProvider.overrideWithValue(queue),
@@ -1793,6 +1799,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
           agentSyncServiceProvider.overrideWithValue(bench.service),
           journalDbProvider.overrideWithValue(journalDb),
@@ -2111,6 +2118,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
@@ -2141,6 +2149,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           outboxServiceProvider.overrideWithValue(mockOutbox),
@@ -2154,6 +2163,57 @@ void main() {
     });
   });
 
+  group('agentSidecarReclaimerProvider', () {
+    // `Directory` is process-global in getIt, and CI runs many files in one
+    // isolate. Whatever a previous file registered is captured and put back,
+    // so these tests cannot make a later one order-dependent.
+    Directory? previousDirectory;
+
+    setUp(() {
+      previousDirectory = getIt.isRegistered<Directory>()
+          ? getIt<Directory>()
+          : null;
+      if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
+    });
+
+    tearDown(() {
+      if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
+      final previous = previousDirectory;
+      if (previous != null) getIt.registerSingleton<Directory>(previous);
+    });
+
+    test('uses the registered documents directory when there is one', () {
+      final dir = Directory.systemTemp.createTempSync('reclaimer-provider-');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      getIt.registerSingleton<Directory>(dir);
+
+      final container = ProviderContainer(
+        overrides: [domainLoggerProvider.overrideWithValue(MockDomainLogger())],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(agentSidecarReclaimerProvider).documentsDirectory,
+        same(dir),
+      );
+    });
+
+    test('falls back to no directory rather than throwing', () {
+      // Headless and test contexts have no documents directory; reclamation
+      // is skipped there instead of failing the delete or sweep that asked
+      // for it. setUp has already cleared any registration.
+      final container = ProviderContainer(
+        overrides: [domainLoggerProvider.overrideWithValue(MockDomainLogger())],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(agentSidecarReclaimerProvider).documentsDirectory,
+        isNull,
+      );
+    });
+  });
+
   group('scheduledWakeManagerProvider', () {
     test('creates ScheduledWakeManager instance', () {
       final mockRepo = MockAgentRepository();
@@ -2163,6 +2223,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
@@ -2259,6 +2320,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
@@ -2281,6 +2343,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
@@ -2318,6 +2381,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
@@ -2404,6 +2468,7 @@ void main() {
     }) {
       final container = ProviderContainer(
         overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),

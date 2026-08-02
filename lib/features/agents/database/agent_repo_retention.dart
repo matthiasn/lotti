@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:meta/meta.dart';
 
 /// Batched hard deletes for the derived rows retention may forget.
 ///
@@ -23,6 +24,20 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 /// returns how many it removed, so a sweep is bounded, resumable, and safe to
 /// interrupt: each batch is its own statement, and whatever is left is
 /// collected by the next sweep.
+/// Splits [ids] into runs of at most [size] so a delete never exceeds
+/// SQLite's host-parameter cap.
+///
+/// Exceeding it throws, which rolls back the surrounding transaction and
+/// leaves every start-up retrying the same batch — retention that never makes
+/// progress, which is worse than not sweeping at all.
+@visibleForTesting
+Iterable<List<String>> chunkForStatement(List<String> ids, int size) sync* {
+  for (var start = 0; start < ids.length; start += size) {
+    final end = start + size > ids.length ? ids.length : start + size;
+    yield ids.sublist(start, end);
+  }
+}
+
 class AgentRepoRetention {
   AgentRepoRetention(this._db);
 
@@ -47,45 +62,73 @@ class AgentRepoRetention {
   /// `idx_agent_entities_active_type_sub_created_id` partial index. Without it
   /// SQLite falls back to the broad `idx_agent_entities_type` and every batch
   /// rescans the whole status-event history — twenty times per sweep.
-  Future<int> pruneDayStatusEventsBefore(
+  ///
+  /// Returns the ids removed, so the caller can reclaim their JSON sidecars —
+  /// the database row is only half of what a synced entity leaves behind.
+  Future<List<String>> pruneDayStatusEventsBefore(
     DateTime cutoff, {
     required int batchSize,
     required int maxBatches,
-  }) => _batched(
+  }) => _batchedIds(
     maxBatches: maxBatches,
-    run: () => _db.customUpdate(
-      'DELETE FROM agent_entities WHERE id IN ( '
-      'SELECT e.id FROM agent_entities AS e '
-      'WHERE e.type = ?1 AND e.created_at < ?2 '
-      'AND e.deleted_at IS NULL '
-      'AND EXISTS ( '
-      '  SELECT 1 FROM agent_entities AS newer '
-      '  WHERE newer.type = ?1 AND newer.subtype = e.subtype '
-      '  AND newer.agent_id = e.agent_id '
-      '  AND newer.deleted_at IS NULL '
-      '  AND (newer.created_at > e.created_at '
-      '       OR (newer.created_at = e.created_at AND newer.id > e.id)) '
-      ') LIMIT ?3)',
-      variables: [
-        const Variable<String>(AgentEntityTypes.dayStatusEvent),
-        Variable<DateTime>(cutoff),
-        Variable<int>(batchSize),
-      ],
-      updateKind: UpdateKind.delete,
-    ),
+    run: () => _db.transaction(() async {
+      final victims = [
+        for (final row
+            in await _db
+                .customSelect(
+                  'SELECT e.id FROM agent_entities AS e '
+                  'WHERE e.type = ?1 AND e.created_at < ?2 '
+                  'AND e.deleted_at IS NULL '
+                  'AND EXISTS ( '
+                  '  SELECT 1 FROM agent_entities AS newer '
+                  '  WHERE newer.type = ?1 AND newer.subtype = e.subtype '
+                  '  AND newer.agent_id = e.agent_id '
+                  '  AND newer.deleted_at IS NULL '
+                  '  AND (newer.created_at > e.created_at '
+                  '       OR (newer.created_at = e.created_at AND newer.id > e.id)) '
+                  ') LIMIT ?3',
+                  variables: [
+                    const Variable<String>(AgentEntityTypes.dayStatusEvent),
+                    Variable<DateTime>(cutoff),
+                    Variable<int>(batchSize),
+                  ],
+                  readsFrom: {_db.agentEntities},
+                )
+                .get())
+          row.read<String>('id'),
+      ];
+      if (victims.isEmpty) return const <String>[];
+      await _deleteByIds(victims);
+      return victims;
+    }),
   );
 
-  /// Runs [run] until it stops removing rows or [maxBatches] is reached.
-  Future<int> _batched({
+  /// Host-parameter budget per statement; SQLite's default cap is 999.
+  static const _maxVariablesPerStatement = 400;
+
+  Future<void> _deleteByIds(List<String> ids) async {
+    for (final chunk in chunkForStatement(ids, _maxVariablesPerStatement)) {
+      final placeholders = List.filled(chunk.length, '?').join(',');
+      await _db.customUpdate(
+        'DELETE FROM agent_entities WHERE id IN ($placeholders)',
+        variables: [for (final id in chunk) Variable<String>(id)],
+        updateKind: UpdateKind.delete,
+      );
+    }
+  }
+
+  /// Accumulates ids until a batch comes back empty or [maxBatches] is
+  /// reached.
+  Future<List<String>> _batchedIds({
     required int maxBatches,
-    required Future<int> Function() run,
+    required Future<List<String>> Function() run,
   }) async {
-    var total = 0;
+    final all = <String>[];
     for (var batch = 0; batch < maxBatches; batch++) {
       final removed = await run();
-      if (removed == 0) break;
-      total += removed;
+      if (removed.isEmpty) break;
+      all.addAll(removed);
     }
-    return total;
+    return all;
   }
 }

@@ -370,11 +370,39 @@ A row sitting exactly on the boundary may survive a few hours longer on one
 device than another. For observational data that is invisible, and it converges
 as time passes.
 
-**The outbox's JSON sidecars are not reclaimed.** Every synced entity is also
-written to `/agent_entities/<id>.json`, and nothing in the app has ever deleted
-those — not retention, not `hardDeleteAgent`, not a tombstone. Retention bounds
-the database; the sidecar lifecycle is a separate, pre-existing gap that has to
-be settled against the sequence/backfill contract before files can be removed.
+**The outbox's JSON sidecars are reclaimed with their rows.** Every synced
+entity and link is also written to `/agent_entities/<id>.json` or
+`/agent_links/<id>.json` so the pipeline can serve it later. Both paths that
+remove rows for good now remove those files too: `hardDeleteAgent` returns the
+ids it deleted, and the retention sweep returns the ids it pruned.
+`AgentSidecarReclaimer` deletes exactly those, never sweeping the directory.
+
+**What a peer asking for a reclaimed payload gets is a terminal "deleted"
+response.** `BackfillResponseHandler._processAgentBackfillEntry` sends one when
+the payload cannot be loaded, so the requester stops asking instead of retrying
+against silence — no change to the sync contract. That is the right answer
+because both callers only reclaim rows that are intentionally gone: a destroyed
+agent's lifecycle is broadcast to every device (with the caveat below), and
+retention prunes by a rule every device applies to the same rows.
+
+The propagation is asynchronous, though, and worth stating plainly:
+`hardDeleteAgent` is local-only, so a peer can still hold the old payload — or
+ask for it — until the lifecycle update reaches it. The deleted response is what
+makes that window terminate cleanly; it is not something reclamation prevents.
+
+**And it is not guaranteed to close.** A peer that missed the `destroyed`
+identity update and then asks for it gets that same deleted response, because
+`hardDeleteAgent` has already removed the row it would have been served from.
+`SyncSequenceBackfillResponder` marks the counter deleted and moves on, so the
+lifecycle is never applied and that peer can keep an agent this device
+destroyed. Reclaiming the sidecar does not cause that — the row is gone either
+way — but the sentence above should not be read as a promise that every device
+converges on the delete.
+
+Reclamation is best-effort. A file that is already absent is the normal case —
+the entity may never have synced — and neither a missing documents directory
+nor an unreadable file may fail a delete or a sweep that has already committed
+its database work.
 
 ## Bounded, and safe to interrupt
 

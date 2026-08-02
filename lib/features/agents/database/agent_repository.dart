@@ -676,15 +676,19 @@ class AgentRepository {
   /// the cached identity list itself — otherwise the destroyed agent keeps
   /// appearing in [getAllAgentIdentities] until an unrelated identity write
   /// happens to invalidate it.
-  Future<void> hardDeleteAgent(String agentId) async {
-    await _links.hardDeleteAgent(agentId);
+  Future<({List<String> entityIds, List<String> linkIds})> hardDeleteAgent(
+    String agentId,
+  ) async {
+    final removed = await _links.hardDeleteAgent(agentId);
     _core.invalidateAgentIdentitiesCache();
+    return removed;
   }
 
   // ── Retention ───────────────────────────────────────────────────────────
 
-  /// Deletes day-status events created before [cutoff].
-  Future<int> pruneDayStatusEventsBefore(
+  /// Deletes day-status events created before [cutoff], keeping each day's
+  /// newest. Returns the removed ids so their sidecars can be reclaimed.
+  Future<List<String>> pruneDayStatusEventsBefore(
     DateTime cutoff, {
     required int batchSize,
     required int maxBatches,
