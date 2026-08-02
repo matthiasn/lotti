@@ -268,6 +268,7 @@ void main() {
         () => reclaimer.reclaim(entityIds: ['m1'], linkIds: ['l1']),
       ).called(1);
     });
+  });
 
   test('takes the newest marker regardless of the order returned', () async {
     // Nothing in getMessagesByKind promises newest-first, and depending on it
