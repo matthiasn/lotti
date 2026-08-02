@@ -20,6 +20,7 @@ enum _ReportRecoveryTargetStatus {
   reportHeadChanged,
   primaryAgentChanged,
   taskCategoryChanged,
+  taskDeleted,
 }
 
 /// Background embedding generation service.
@@ -219,8 +220,10 @@ class EmbeddingService {
     if (_availabilityRetryTimer?.isActive ?? false) {
       _availabilityRetryTimer?.cancel();
       _availabilityRetryTimer = null;
+      if (_isProcessing) _entityBatchRerunRequested = true;
     }
     _requestAgentReportRecovery(fullScan: requiresFullScan);
+    _resumePendingEntityBatch();
   }
 
   /// Rechecks pending report recovery when provider configuration changes.
@@ -354,10 +357,7 @@ class EmbeddingService {
             changedTaskIds.add(taskId);
             continue;
           }
-          final reportIds = await embeddingStore.getEntityIdsForTask(taskId);
-          for (final reportId in reportIds) {
-            await embeddingStore.deleteEntityEmbeddings(reportId);
-          }
+          await _deleteReportEmbeddingsForTask(taskId);
         } catch (error, stackTrace) {
           _pendingUnlinkedTaskIds.add(taskId);
           _agentReportRecoveryPending = true;
@@ -366,10 +366,16 @@ class EmbeddingService {
       }
 
       if (!fullScanRequested) {
-        for (final taskId in changedTaskIds) {
+        final targetedTaskIds = changedTaskIds.toList(growable: false);
+        for (var index = 0; index < targetedTaskIds.length; index++) {
           if (_shouldStopAgentReportRecoveryPass(providerConfigRevision)) {
+            if (!_stopped) {
+              _pendingChangedTaskIds.addAll(targetedTaskIds.skip(index));
+              _agentReportRecoveryPending = true;
+            }
             return;
           }
+          final taskId = targetedTaskIds[index];
           try {
             final currentLinks = await repository.getLinksTo(
               taskId,
@@ -387,7 +393,7 @@ class EmbeddingService {
             );
           } on OllamaEmbeddingAvailabilityException catch (error) {
             if (!_stopped) {
-              _pendingChangedTaskIds.add(taskId);
+              _pendingChangedTaskIds.addAll(targetedTaskIds.skip(index));
               _agentReportRecoveryPending = true;
               _scheduleAvailabilityRetry(error.retryAt);
             }
@@ -536,6 +542,20 @@ class EmbeddingService {
       !_embeddingsEnabled ||
       providerConfigRevision != _providerConfigRevision;
 
+  Future<void> _deleteReportEmbeddingsForTask(String taskId) async {
+    final reportIds = await embeddingStore.getEntityIdsForTask(taskId);
+    for (final reportId in reportIds) {
+      await embeddingStore.deleteEntityEmbeddings(reportId);
+    }
+  }
+
+  Future<bool> _taskIsDeleted(String taskId) async {
+    final entity = (await journalDb.journalEntityMapForIdsIncludingDeleted([
+      taskId,
+    ]))[taskId];
+    return entity?.meta.deletedAt != null;
+  }
+
   /// Reconciles one agent until its durable current-report head is stable.
   ///
   /// A normal wake can publish a successor while startup recovery awaits
@@ -549,6 +569,10 @@ class EmbeddingService {
     required String baseUrl,
   }) async {
     final task = await journalDb.journalEntityById(taskId);
+    if (task == null && await _taskIsDeleted(taskId)) {
+      await _deleteReportEmbeddingsForTask(taskId);
+      return;
+    }
     final categoryId = task?.meta.categoryId ?? '';
     final attemptedReportIds = <String>{};
     final removedReportIds = <String>{};
@@ -597,6 +621,10 @@ class EmbeddingService {
         if (didEmbed && removedReportIds.add(report.id)) {
           await embeddingStore.deleteEntityEmbeddings(report.id);
         }
+        if (postStoreStatus == _ReportRecoveryTargetStatus.taskDeleted) {
+          await _deleteReportEmbeddingsForTask(taskId);
+          return;
+        }
         if (postStoreStatus == _ReportRecoveryTargetStatus.reportHeadChanged) {
           // Follow a successor for the same agent without rebuilding the
           // task topology snapshot.
@@ -625,6 +653,11 @@ class EmbeddingService {
       if (statusAfterCandidateRead != _ReportRecoveryTargetStatus.current) {
         if (didEmbed && removedReportIds.add(report.id)) {
           await embeddingStore.deleteEntityEmbeddings(report.id);
+        }
+        if (statusAfterCandidateRead ==
+            _ReportRecoveryTargetStatus.taskDeleted) {
+          await _deleteReportEmbeddingsForTask(taskId);
+          return;
         }
         if (statusAfterCandidateRead ==
             _ReportRecoveryTargetStatus.reportHeadChanged) {
@@ -673,6 +706,9 @@ class EmbeddingService {
     }
 
     final task = await journalDb.journalEntityById(taskId);
+    if (task == null && await _taskIsDeleted(taskId)) {
+      return _ReportRecoveryTargetStatus.taskDeleted;
+    }
     if ((task?.meta.categoryId ?? '') != categoryId) {
       return _ReportRecoveryTargetStatus.taskCategoryChanged;
     }

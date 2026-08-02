@@ -425,6 +425,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(Float32List(0));
+    registerFallbackValue(<String>[]);
   });
 
   setUp(() {
@@ -465,6 +466,9 @@ void main() {
     when(
       () => mockEmbeddingStore.getEntityIdsForTask(any()),
     ).thenReturn(<String>{});
+    when(
+      () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+    ).thenAnswer((_) async => const {});
 
     // Default: store swap succeeds
     when(
@@ -3135,10 +3139,275 @@ void main() {
           ..elapse(OllamaEmbeddingRepository.availabilityCooldown)
           ..flushMicrotasks();
 
+        stopInZone(async);
         expect(embedCallCount, 3);
         expect(storedCategories, [oldCategoryId, newCategoryId]);
         expect(scanCount, 1);
+      });
+    });
+
+    test('targeted recovery retains every task after an Ollama outage', () {
+      fakeAsync((async) {
+        const firstAgentId = 'agent-targeted-outage-first';
+        const secondAgentId = 'agent-targeted-outage-second';
+        const firstTaskId = 'task-targeted-outage-first';
+        const secondTaskId = 'task-targeted-outage-second';
+        final agentRepository = MockAgentRepository();
+        final firstReport = _agentReport(
+          id: 'report-targeted-outage-first',
+          agentId: firstAgentId,
+        );
+        final secondReport = _agentReport(
+          id: 'report-targeted-outage-second',
+          agentId: secondAgentId,
+        );
+        var embedCallCount = 0;
+
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async => []);
+        for (final target in [
+          (agentId: firstAgentId, taskId: firstTaskId, report: firstReport),
+          (agentId: secondAgentId, taskId: secondTaskId, report: secondReport),
+        ]) {
+          stubPrimaryTaskAgent(
+            agentRepository,
+            agentId: target.agentId,
+            taskId: target.taskId,
+          );
+          when(
+            () => agentRepository.getEntity(target.agentId),
+          ).thenAnswer((_) async => _agentIdentity(target.agentId));
+          when(
+            () => agentRepository.getLatestReport(
+              target.agentId,
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer((_) async => target.report);
+          when(
+            () => mockJournalDb.journalEntityById(target.taskId),
+          ).thenAnswer(
+            (_) async => TestTaskFactory.create(id: target.taskId),
+          );
+        }
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((_) async {
+          embedCallCount++;
+          if (embedCallCount == 1) {
+            throw OllamaEmbeddingUnavailableException(
+              'Ollama transport retries exhausted',
+              retryAt: clock.now().add(
+                OllamaEmbeddingRepository.availabilityCooldown,
+              ),
+            );
+          }
+          return _fakeEmbedding();
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+
+        updateNotifications.notify(
+          {
+            '$taskNotificationPrefix$firstTaskId',
+            '$taskNotificationPrefix$secondTaskId',
+          },
+          fromSync: true,
+        );
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+        expect(embedCallCount, 1);
+
+        async
+          ..elapse(OllamaEmbeddingRepository.availabilityCooldown)
+          ..flushMicrotasks();
+
+        expect(embedCallCount, 3);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: firstReport.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: firstTaskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).called(1);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: secondReport.id,
+            entityType: kEntityTypeAgentReport,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: secondTaskId,
+            subtype: AgentReportScopes.current,
+          ),
+        ).called(1);
         stopInZone(async);
+      });
+    });
+
+    test('sync recovery signal resumes an availability-paused entity', () {
+      fakeAsync((async) {
+        const syncTaskId = 'task-sync-resumes-entity';
+        final agentRepository = MockAgentRepository();
+        final entry = JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        );
+        var embedCallCount = 0;
+
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async => []);
+        when(
+          () => agentRepository.getLinksTo(
+            syncTaskId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => []);
+        stubEntity(entry);
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((_) async {
+          embedCallCount++;
+          if (embedCallCount == 1) {
+            throw OllamaEmbeddingUnavailableException(
+              'Ollama transport retries exhausted',
+              retryAt: clock.now().add(
+                OllamaEmbeddingRepository.availabilityCooldown,
+              ),
+            );
+          }
+          return _fakeEmbedding();
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+        sendAndProcess(async, {_entityId, textEntryNotification});
+        expect(embedCallCount, 1);
+
+        updateNotifications.notify(
+          {'$taskNotificationPrefix$syncTaskId'},
+          fromSync: true,
+        );
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+
+        stopInZone(async);
+        expect(embedCallCount, 2);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: _entityId,
+            entityType: kEntityTypeJournalText,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        ).called(1);
+      });
+    });
+
+    test('startup purges report vectors owned by a deleted task', () {
+      fakeAsync((async) {
+        const agentId = 'agent-deleted-task-report';
+        const taskId = 'task-deleted-report-owner';
+        const staleReportId = 'report-deleted-task-stale';
+        final agentRepository = MockAgentRepository();
+        final report = _agentReport(
+          id: 'report-deleted-task-current',
+          agentId: agentId,
+        );
+        final activeTask = TestTaskFactory.create(id: taskId);
+        final deletedTask = activeTask.copyWith(
+          meta: activeTask.meta.copyWith(deletedAt: _agentTestDate),
+        );
+
+        when(
+          agentRepository.getAllAgentIdentities,
+        ).thenAnswer((_) async => [_agentIdentity(agentId)]);
+        when(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [_agentTaskLink(agentId: agentId, taskId: taskId)],
+        );
+        stubPrimaryTaskAgent(
+          agentRepository,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        when(
+          () => agentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer((_) async => report);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
+        ).thenAnswer((_) async => {taskId: deletedTask});
+        when(
+          () => mockEmbeddingStore.getEntityIdsForTask(taskId),
+        ).thenReturn({report.id, staleReportId});
+        stubEmbedding();
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+
+        stopInZone(async);
+        verifyNever(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        );
+        verify(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(report.id),
+        ).called(1);
+        verify(
+          () => mockEmbeddingStore.deleteEntityEmbeddings(staleReportId),
+        ).called(1);
       });
     });
 

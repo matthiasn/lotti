@@ -124,7 +124,10 @@ flowchart LR
   endpoint's `retryAt`. A fresh relevant notification joins the pending set and
   immediately re-runs preflight so endpoint recovery or a changed Ollama URL is
   used without waiting for an obsolete timer; an unchanged cooling endpoint
-  still fast-fails before network I/O. If provider configuration changes while
+  still fast-fails before network I/O. Task-keyed sync recovery signals do the
+  same for an already queued entity batch when they cancel its timer, even when
+  the changed task itself needs no provider work. If provider configuration
+  changes while
   an entity request is still using the old endpoint, the service latches a
   rerun; completion or failure of that request then cancels any obsolete
   cooldown timer and resolves the new URL before continuing queued work. Manual
@@ -148,7 +151,10 @@ flowchart LR
   their reverse task index. Only after that durable cleanup succeeds does it
   remove the topology rows, so a crash cannot strand vectors whose last task
   link has disappeared. A post-delete keyed signal then reconciles a surviving
-  canonical agent, if any, and rebuilds its current vector. Provider
+  canonical agent, if any, and rebuilds its current vector. A soft-deleted task
+  is likewise a cleanup boundary: recovery confirms its tombstone through the
+  including-deleted journal read, deletes every report vector in that task's
+  reverse index, and makes no provider request. Provider
   and flag streams skip their initial snapshots because startup already
   requests one pass; later enablement resumes both pending report recovery and
   any availability-paused entity batch. Disabling embeddings cancels the retry
@@ -180,7 +186,8 @@ flowchart LR
   an unbounded retry loop. A failure inside one task continues the other tasks
   but likewise retains the full-scan latch for the next external signal. An
   availability failure leaves reconciliation
-  pending on the shared retry timer, while a later journal, report-head, or
+  pending on the shared retry timer and retains the failed task plus every
+  unprocessed task in a coalesced targeted pass. A later journal, report-head, or
   task-link notification rechecks disabled/provider gates without requiring an
   app restart.
 - Manual backfill stores a typed `ollamaUnavailable` presentation code. The UI
