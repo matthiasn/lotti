@@ -132,10 +132,6 @@ void main() {
           vectorClockService: vcService,
         );
 
-    test('repository getter exposes the wrapped repository', () {
-      expect(service.repository, same(repo));
-    });
-
     test(
       'falls back to the getIt sequence log when none is injected',
       () async {
@@ -297,8 +293,6 @@ void main() {
         outboxService: outbox,
         vectorClockService: vcService,
       );
-      expect(bare.repository, same(repo));
-
       await bare.recordEvent(makeConsumptionEvent(id: 'e6'));
 
       verify(

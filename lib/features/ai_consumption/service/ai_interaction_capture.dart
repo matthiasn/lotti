@@ -248,49 +248,6 @@ class AiInteractionCapture {
     return result;
   }
 
-  Stream<T> captureRealtime<T>({
-    required AiWorkType workType,
-    required AiConsumptionResponseType responseType,
-    required InferenceProviderType providerType,
-    required String modelId,
-    required String requestText,
-    required Stream<T> Function() invoke,
-    required String Function(T chunk) responseText,
-    AiCapturedUsage? Function(T chunk)? usageForChunk,
-    AiCapturedContext? interactionContext,
-    AiAttributionSession? existingSession,
-    bool terminalizeSuccess = true,
-    bool terminalizeFailure = true,
-    AiTriggerType triggerType = AiTriggerType.manual,
-    AiActorSnapshot? initiator,
-    String? automationId,
-    String? automationDisplayName,
-    String? attributionId,
-    String? taskId,
-    String? categoryId,
-  }) => captureStream(
-    workType: workType,
-    interactionKind: AiInteractionKind.realtimeTranscription,
-    responseType: responseType,
-    providerType: providerType,
-    modelId: modelId,
-    requestText: requestText,
-    invoke: invoke,
-    responseText: responseText,
-    usageForChunk: usageForChunk,
-    interactionContext: interactionContext,
-    existingSession: existingSession,
-    terminalizeSuccess: terminalizeSuccess,
-    terminalizeFailure: terminalizeFailure,
-    triggerType: triggerType,
-    initiator: initiator,
-    automationId: automationId,
-    automationDisplayName: automationDisplayName,
-    attributionId: attributionId,
-    taskId: taskId,
-    categoryId: categoryId,
-  );
-
   /// Creates one logical-work owner before provider inference starts.
   Future<AiAttributionSession> beginSession({
     required AiWorkType workType,

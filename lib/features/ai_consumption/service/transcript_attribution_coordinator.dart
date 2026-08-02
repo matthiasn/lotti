@@ -82,31 +82,6 @@ class TranscriptAttributionCoordinator {
     );
   }
 
-  Future<PreparedTranscriptAttribution> prepare({
-    required String audioEntryId,
-    required String transcript,
-    required String providerName,
-    required String modelId,
-    required InferenceProviderType providerType,
-    required AiInteractionKind interactionKind,
-    String? taskId,
-    String? categoryId,
-  }) async {
-    final session = await begin(
-      providerName: providerName,
-      modelId: modelId,
-      providerType: providerType,
-      interactionKind: interactionKind,
-      taskId: taskId,
-      categoryId: categoryId,
-    );
-    return complete(
-      session: session,
-      audioEntryId: audioEntryId,
-      transcript: transcript,
-    );
-  }
-
   Future<PreparedTranscriptAttribution> complete({
     required TranscriptAttributionSession session,
     required String audioEntryId,
@@ -202,15 +177,6 @@ class TranscriptAttributionCoordinator {
     workStatus: AiWorkStatus.failed,
     errorCode: error.runtimeType.toString(),
   );
-
-  /// Records an explicit user cancellation.
-  Future<void> cancel(TranscriptAttributionSession session) =>
-      _terminalizeWithoutCarrier(
-        session: session,
-        interactionStatus: AiInteractionStatus.cancelled,
-        workStatus: AiWorkStatus.cancelled,
-        errorCode: 'cancelled',
-      );
 
   /// Terminalizes a session whose provider interaction is already recorded
   /// but whose durable transcript carrier could not be created.

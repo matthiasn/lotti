@@ -77,27 +77,6 @@ class PromptCapabilityFilter {
         if (checks[i]) prompts[i],
     ];
   }
-
-  /// Get the first available prompt from a list of prompt IDs
-  ///
-  /// This is useful for finding a fallback when the default prompt
-  /// is not available on the current platform
-  Future<AiConfigPrompt?> getFirstAvailablePrompt(
-    List<String> promptIds,
-  ) async {
-    for (final promptId in promptIds) {
-      final config = await ref
-          .read(aiConfigRepositoryProvider)
-          .getConfigById(promptId);
-
-      if (config is AiConfigPrompt &&
-          await isPromptAvailableOnPlatform(config)) {
-        return config;
-      }
-    }
-
-    return null;
-  }
 }
 
 /// Provider for the prompt capability filter

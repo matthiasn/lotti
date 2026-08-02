@@ -113,39 +113,6 @@ void main() {
     },
   );
 
-  test(
-    'prepare owns the full begin, interaction, and output preparation flow',
-    () async {
-      final prepared = await coordinator.prepare(
-        audioEntryId: 'audio-1',
-        transcript: 'fallback transcript',
-        providerName: 'Mistral',
-        modelId: 'voxtral',
-        providerType: InferenceProviderType.mistral,
-        interactionKind: AiInteractionKind.audioTranscription,
-        taskId: 'task-1',
-        categoryId: 'category-1',
-      );
-
-      expect(prepared.transcriptId, isNotEmpty);
-      final event =
-          verify(
-                () => service.recordInteraction(
-                  attributionId: session.id,
-                  event: captureAny(named: 'event'),
-                ),
-              ).captured.single
-              as AiConsumptionEvent;
-      expect(event.entryId, 'audio-1');
-      expect(event.interactionStatus, AiInteractionStatus.succeeded);
-      final command =
-          verify(() => service.begin(captureAny())).captured.single
-              as AiAttributionStart;
-      expect(command.taskId, 'task-1');
-      expect(command.categoryId, 'category-1');
-    },
-  );
-
   test('complete marks realtime fallback interactions as partial', () async {
     await coordinator.complete(
       session: runningSession(),
@@ -166,64 +133,42 @@ void main() {
     expect(event.errorCode, 'realtime_completion_fallback');
   });
 
-  for (final terminalCase in [
-    (
-      name: 'failure',
-      interactionStatus: AiInteractionStatus.failed,
-      workStatus: AiWorkStatus.failed,
-      errorCode: 'StateError',
-    ),
-    (
-      name: 'cancellation',
-      interactionStatus: AiInteractionStatus.cancelled,
-      workStatus: AiWorkStatus.cancelled,
-      errorCode: 'cancelled',
-    ),
-  ]) {
-    test(
-      '${terminalCase.name} records and finalizes without a carrier',
-      () async {
-        when(
-          () => service.prepareCompletion(
-            attributionId: any(named: 'attributionId'),
-            outputs: any(named: 'outputs'),
-            status: any(named: 'status'),
-            errorCode: any(named: 'errorCode'),
-          ),
-        ).thenAnswer((_) async => makeAiWorkAttribution());
+  test('failure records and finalizes without a carrier', () async {
+    when(
+      () => service.prepareCompletion(
+        attributionId: any(named: 'attributionId'),
+        outputs: any(named: 'outputs'),
+        status: any(named: 'status'),
+        errorCode: any(named: 'errorCode'),
+      ),
+    ).thenAnswer((_) async => makeAiWorkAttribution());
 
-        if (terminalCase.interactionStatus == AiInteractionStatus.failed) {
-          await coordinator.fail(
-            session: runningSession(),
-            error: StateError('provider failed'),
-          );
-        } else {
-          await coordinator.cancel(runningSession());
-        }
-
-        final event =
-            verify(
-                  () => service.recordInteraction(
-                    attributionId: session.id,
-                    event: captureAny(named: 'event'),
-                  ),
-                ).captured.single
-                as AiConsumptionEvent;
-        expect(event.interactionStatus, terminalCase.interactionStatus);
-        expect(event.errorCode, terminalCase.errorCode);
-        expect(event.responseDigest, isNotEmpty);
-        verify(
-          () => service.prepareCompletion(
-            attributionId: session.id,
-            outputs: const [],
-            status: terminalCase.workStatus,
-            errorCode: terminalCase.errorCode,
-          ),
-        ).called(1);
-        verify(() => service.finalize(any())).called(1);
-      },
+    await coordinator.fail(
+      session: runningSession(),
+      error: StateError('provider failed'),
     );
-  }
+
+    final event =
+        verify(
+              () => service.recordInteraction(
+                attributionId: session.id,
+                event: captureAny(named: 'event'),
+              ),
+            ).captured.single
+            as AiConsumptionEvent;
+    expect(event.interactionStatus, AiInteractionStatus.failed);
+    expect(event.errorCode, 'StateError');
+    expect(event.responseDigest, isNotEmpty);
+    verify(
+      () => service.prepareCompletion(
+        attributionId: session.id,
+        outputs: const [],
+        status: AiWorkStatus.failed,
+        errorCode: 'StateError',
+      ),
+    ).called(1);
+    verify(() => service.finalize(any())).called(1);
+  });
 
   test('failOutput finalizes a failed carrier-less attribution', () async {
     when(

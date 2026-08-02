@@ -36,9 +36,6 @@ class ConsumptionSyncService {
   final SyncSequenceLogService? _sequenceLogService;
   final UpdateNotifications? _updateNotifications;
 
-  /// The underlying repository for read-only operations.
-  ConsumptionRepository get repository => _repository;
-
   SyncSequenceLogService? get _sequenceLog =>
       _sequenceLogService ??
       (getIt.isRegistered<SyncSequenceLogService>()

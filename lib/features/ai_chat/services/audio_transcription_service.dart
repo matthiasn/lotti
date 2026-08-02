@@ -18,7 +18,6 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
-import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 const _kDefaultAudioModel = 'gemini-2.5-flash';
@@ -308,17 +307,6 @@ class AudioTranscriptionService {
     }
   }
 }
-
-/// Test-only access to the batch audio-model selection priority, so its
-/// ordering algebra (Mistral-chat-audio > Mistral-transcription >
-/// Mistral-batch > Melious-chat-audio > Melious-STT > MLX-Qwen >
-/// flash-preferred > first) can be property-tested without driving the
-/// streaming pipeline.
-@visibleForTesting
-AiConfigModel debugSelectBatchAudioModel(
-  List<AiConfigModel> audioModels,
-  Iterable<AiConfigInferenceProvider> providers,
-) => _selectBatchAudioModel(audioModels, providers);
 
 AiConfigModel _selectBatchAudioModel(
   List<AiConfigModel> audioModels,
