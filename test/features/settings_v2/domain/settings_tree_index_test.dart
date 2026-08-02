@@ -403,8 +403,6 @@ void main() {
       final index = SettingsTreeIndex.build(const <SettingsNode>[]);
       expect(index.findById('ai'), isNull);
       expect(index.ancestors('ai'), isNull);
-      expect(index.isValidPath(const []), isTrue);
-      expect(index.isValidPath(const ['ai']), isFalse);
     });
 
     Glados(any.settingsFlags, ExploreConfig(numRuns: 80)).test(
@@ -413,27 +411,10 @@ void main() {
         final tree = flags.buildTree();
         final index = SettingsTreeIndex.build(tree);
         final nodes = _flattenTree(tree);
-        final visibleIds = nodes.map((node) => node.id).toSet();
-
         for (final node in nodes) {
           final expectedPath = _idToPathModel(node.id);
           expect(index.findById(node.id)?.id, node.id, reason: '$flags');
           expect(index.ancestors(node.id), expectedPath, reason: '$flags');
-          expect(index.isValidPath(expectedPath), isTrue, reason: '$flags');
-
-          if (expectedPath.length > 1) {
-            expect(index.isValidPath([node.id]), isFalse, reason: '$flags');
-          }
-        }
-
-        for (final entry in settingsNodeUrls.entries) {
-          expect(
-            index.isValidPath(_idToPathModel(entry.key)),
-            visibleIds.contains(entry.key),
-            reason:
-                'Registered URL visibility should match tree visibility '
-                'for ${entry.key} under $flags',
-          );
         }
       },
       tags: 'glados',
@@ -500,46 +481,6 @@ void main() {
       final a = index.ancestors('sync/backfill');
       final b = index.ancestors('sync/backfill');
       expect(a, equals(b));
-    });
-  });
-
-  group('SettingsTreeIndex.isValidPath', () {
-    test('empty path is always valid', () {
-      final index = SettingsTreeIndex.build(_tree());
-      expect(index.isValidPath(const []), isTrue);
-    });
-
-    test('all-present path is valid', () {
-      final index = SettingsTreeIndex.build(_tree());
-      expect(index.isValidPath(['sync', 'sync/backfill']), isTrue);
-    });
-
-    test('single missing id invalidates the whole path', () {
-      final index = SettingsTreeIndex.build(_tree(enableMatrix: false));
-      // With Matrix off the whole Sync branch (including conflicts)
-      // disappears, so any path that touches a Sync id is invalid.
-      expect(index.isValidPath(['sync', 'sync/backfill']), isFalse);
-      expect(index.isValidPath(['sync/backfill']), isFalse);
-    });
-
-    test('path with one unknown id is invalid even if the rest is valid', () {
-      final index = SettingsTreeIndex.build(_tree());
-      expect(index.isValidPath(['sync', 'sync/nonexistent']), isFalse);
-    });
-
-    test('non-contiguous chain is invalid (missing ancestor)', () {
-      // `sync/backfill` exists, but without its `sync` ancestor the
-      // chain is malformed — install would produce a dangling tree
-      // state.
-      final index = SettingsTreeIndex.build(_tree());
-      expect(index.isValidPath(['sync/backfill']), isFalse);
-    });
-
-    test('chain with wrong parent is invalid', () {
-      // `sync/backfill` is a valid id and `advanced` is a valid id,
-      // but `advanced` is not the parent of `sync/backfill`.
-      final index = SettingsTreeIndex.build(_tree());
-      expect(index.isValidPath(['advanced', 'sync/backfill']), isFalse);
     });
   });
 

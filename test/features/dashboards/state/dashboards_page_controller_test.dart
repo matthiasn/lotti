@@ -120,37 +120,23 @@ void main() {
         expect(state, isEmpty);
       });
 
-      test('toggle adds category id when not present', () {
-        container
-            .read(selectedCategoryIdsProvider.notifier)
-            .toggle('category-1');
+      test('setAll replaces the selection', () {
+        container.read(selectedCategoryIdsProvider.notifier).setAll({
+          'category-1',
+        });
 
         final state = container.read(selectedCategoryIdsProvider);
         expect(state, {'category-1'});
       });
 
-      test('toggle removes category id when already present', () {
-        container.read(selectedCategoryIdsProvider.notifier)
-          ..toggle('category-1')
-          ..toggle('category-1');
+      test('setAll handles multiple categories', () {
+        container.read(selectedCategoryIdsProvider.notifier).setAll({
+          'category-1',
+          'category-2',
+        });
 
         final state = container.read(selectedCategoryIdsProvider);
-        expect(state, isEmpty);
-      });
-
-      test('toggle handles multiple categories', () {
-        container.read(selectedCategoryIdsProvider.notifier)
-          ..toggle('category-1')
-          ..toggle('category-2');
-
-        var state = container.read(selectedCategoryIdsProvider);
         expect(state, {'category-1', 'category-2'});
-
-        container
-            .read(selectedCategoryIdsProvider.notifier)
-            .toggle('category-1');
-        state = container.read(selectedCategoryIdsProvider);
-        expect(state, {'category-2'});
       });
     });
 
@@ -263,9 +249,9 @@ void main() {
           async.flushMicrotasks();
 
           // Select category-1 filter
-          container
-              .read(selectedCategoryIdsProvider.notifier)
-              .toggle('category-1');
+          container.read(selectedCategoryIdsProvider.notifier).setAll({
+            'category-1',
+          });
 
           final state = container.read(filteredSortedDashboardsProvider);
           expect(state.length, 2);
@@ -299,9 +285,10 @@ void main() {
           async.flushMicrotasks();
 
           // Select multiple categories
-          container.read(selectedCategoryIdsProvider.notifier)
-            ..toggle('category-1')
-            ..toggle('category-2');
+          container.read(selectedCategoryIdsProvider.notifier).setAll({
+            'category-1',
+            'category-2',
+          });
 
           final state = container.read(filteredSortedDashboardsProvider);
           expect(state.length, 2);
@@ -338,9 +325,9 @@ void main() {
             async.flushMicrotasks();
 
             // Select category-1 filter
-            container
-                .read(selectedCategoryIdsProvider.notifier)
-                .toggle('category-1');
+            container.read(selectedCategoryIdsProvider.notifier).setAll({
+              'category-1',
+            });
 
             final state = container.read(filteredSortedDashboardsProvider);
             expect(state.length, 1);

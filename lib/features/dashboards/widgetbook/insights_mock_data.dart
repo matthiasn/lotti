@@ -100,9 +100,6 @@ class InsightsMockData {
       'Consider protecting mornings for deep work.';
 
   static const interruptionsData = InterruptionsData(
-    totalThisWeek: 12,
-    perSessionAvg: 1.7,
-    mostInterrupted: 'Design',
     deltaPercent: -29,
   );
 
@@ -187,15 +184,9 @@ class ProductivityScore {
 
 class InterruptionsData {
   const InterruptionsData({
-    required this.totalThisWeek,
-    required this.perSessionAvg,
-    required this.mostInterrupted,
     required this.deltaPercent,
   });
 
-  final int totalThisWeek;
-  final double perSessionAvg;
-  final String mostInterrupted;
   final int deltaPercent;
 }
 

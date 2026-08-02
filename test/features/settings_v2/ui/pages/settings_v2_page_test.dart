@@ -159,7 +159,9 @@ void main() {
         await _pumpPage(tester);
         final element = tester.element(find.byType(SettingsV2Page));
         final container = ProviderScope.containerOf(element, listen: false);
-        container.read(settingsTreeNavWidthProvider.notifier).setTo(400);
+        container
+            .read(settingsTreeNavWidthProvider.notifier)
+            .updateBy(400 - defaultSettingsTreeNavWidth);
         await tester.pump();
 
         final sized = find

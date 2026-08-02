@@ -34,15 +34,6 @@ class SelectedCategoryIds extends Notifier<Set<String>> {
   @override
   Set<String> build() => {};
 
-  /// Adds [categoryId] to the selection if absent, removes it if present.
-  void toggle(String categoryId) {
-    if (state.contains(categoryId)) {
-      state = {...state}..remove(categoryId);
-    } else {
-      state = {...state, categoryId};
-    }
-  }
-
   /// Replaces the whole selection in one write (used by the deferred category
   /// picker, which commits the staged set on Apply).
   void setAll(Set<String> categoryIds) {

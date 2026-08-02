@@ -105,17 +105,6 @@ class SettingsTreeNavWidth extends Notifier<double> {
     _commit(next);
   }
 
-  /// Sets the width to an absolute value (keyboard step, drag end,
-  /// external adjustment). Clamps + persists the same way.
-  void setTo(double width) {
-    if (!width.isFinite) return;
-    final next = width.clamp(
-      minSettingsTreeNavWidth,
-      maxSettingsTreeNavWidth,
-    );
-    _commit(next);
-  }
-
   /// Resets to [defaultSettingsTreeNavWidth] and flushes the debounce
   /// timer — double-click / Home always writes immediately, no
   /// 300 ms lag.

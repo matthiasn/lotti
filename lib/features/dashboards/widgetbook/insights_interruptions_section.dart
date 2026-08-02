@@ -50,21 +50,21 @@ class _InterruptionsSection extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatColumn(
-                  value: '${data.totalThisWeek}',
+                  value: '12',
                   label: 'This week',
                   tokens: tokens,
                 ),
               ),
               Expanded(
                 child: _StatColumn(
-                  value: '${data.perSessionAvg}',
+                  value: '1.7',
                   label: 'Per session avg',
                   tokens: tokens,
                 ),
               ),
               Expanded(
                 child: _StatColumn(
-                  value: data.mostInterrupted,
+                  value: 'Design',
                   label: 'Most interrupted',
                   tokens: tokens,
                 ),
