@@ -858,10 +858,12 @@ void main() {
               ..elapse(const Duration(minutes: 10))
               ..flushMicrotasks();
 
-            // The in-flight pass writes its claim; nothing after it should.
-            // Otherwise a disposed manager keeps re-claiming on a timer stop()
-            // never saw, racing a restarted one for the same digest.
-            verify(() => syncService.upsertEntity(any())).called(1);
+            // Not one claim written, not merely no wake fired: the pass
+            // re-checks its generation before touching each record, so a
+            // manager stopped mid-flight claims nothing at all. A disposed
+            // manager that kept claiming would race its replacement for the
+            // same digest, on a timer the stop never saw.
+            verifyNever(() => syncService.upsertEntity(any()));
             expectNoWake();
           });
         });
@@ -1932,6 +1934,227 @@ void main() {
           ).called(1);
 
           manager.stop();
+        });
+      });
+    });
+
+    group('beforeCheck', () {
+      test('runs before every due-record pass, not just the first', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final calls = <String>[];
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async {
+                calls.add('due');
+                return <AgentStateEntity>[];
+              },
+            );
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () async => calls.add('before'),
+            )..start();
+            async.flushMicrotasks();
+
+            // The immediate check must be preceded by the repair, or a day
+            // agent about to be retired fires on the very pass that retires it.
+            expect(calls, ['before', 'due']);
+
+            async
+              ..elapse(const Duration(minutes: 1))
+              ..flushMicrotasks();
+
+            // And the hourly tick — the boundary a long-running session
+            // crosses — repairs before it fires, too.
+            expect(calls, ['before', 'due', 'before', 'due']);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('an agent it retires does not fire on that same pass', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 14, 9);
+        var retired = false;
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
+            );
+            // The repair flips the identity dormant; the lifecycle guard in the
+            // pass then reads the post-repair value.
+            when(() => repository.getEntity(any())).thenAnswer(
+              (_) async => makeTestIdentity(
+                lifecycle: retired
+                    ? AgentLifecycle.dormant
+                    : AgentLifecycle.active,
+              ),
+            );
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () async => retired = true,
+            )..start();
+            async.flushMicrotasks();
+
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: any(named: 'reason'),
+              ),
+            );
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('repeats the pre-check when it crosses local midnight', () {
+        // The repair keys on the calendar day; the due query below reads the
+        // clock after it. Straddling midnight, those disagree.
+        var currentTime = DateTime(2024, 3, 15, 23, 59, 59);
+        var calls = 0;
+
+        fakeAsync((async) {
+          withClock(Clock(() => currentTime), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => <AgentStateEntity>[]);
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () async {
+                calls++;
+                // The first repair runs long enough to cross the boundary.
+                if (calls == 1) currentTime = DateTime(2024, 3, 16, 0, 0, 1);
+              },
+            )..start();
+            async.flushMicrotasks();
+
+            // Repeated under the new day, so an agent whose handover expired
+            // at midnight is retired before this pass reads what is due.
+            expect(calls, 2);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('does not repeat the pre-check within one local day', () {
+        var currentTime = DateTime(2024, 3, 15, 10, 30);
+        var calls = 0;
+
+        fakeAsync((async) {
+          withClock(Clock(() => currentTime), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => <AgentStateEntity>[]);
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () async {
+                calls++;
+                currentTime = DateTime(2024, 3, 15, 10, 31);
+              },
+            )..start();
+            async.flushMicrotasks();
+
+            expect(calls, 1);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('a stop during the pre-check abandons the pass', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            // Created inside the zone: a Completer from the root zone
+            // resolves outside it, and `flushMicrotasks` would never run the
+            // continuation — the pass would stall before the due query and the
+            // test would pass without proving anything.
+            final gate = Completer<void>();
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [
+                makeTestState(scheduledWakeAt: DateTime(2024, 3, 15, 9)),
+              ],
+            );
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () => gate.future,
+            )..start();
+            async.flushMicrotasks();
+
+            // The stop lands while the repair is still awaiting.
+            manager.stop();
+            gate.complete();
+            async.flushMicrotasks();
+
+            // A disposed pass that carried on would enqueue against the
+            // manager that replaced it.
+            verifyNever(() => repository.getDueScheduledAgentStates(any()));
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+              ),
+            );
+          });
+        });
+      });
+
+      test('a failing pre-check does not strand the due records', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 15, 9);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
+            );
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+              checkInterval: const Duration(minutes: 1),
+              beforeCheck: () async => throw Exception('retirement failed'),
+            )..start();
+            async.flushMicrotasks();
+
+            // Stale retirement costs one wake; skipping the pass would strand
+            // every genuinely due record behind it.
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+              ),
+            ).called(1);
+
+            manager.stop();
+          });
         });
       });
     });

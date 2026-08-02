@@ -27,6 +27,7 @@ class ScheduledWakeManager {
     this.onPersistedStateChanged,
     this.requiresLease,
     this.localHostId,
+    this.beforeCheck,
     this.leaseSettle = const Duration(minutes: 3),
     this.leaseDuration = const Duration(minutes: 30),
   });
@@ -54,6 +55,19 @@ class ScheduledWakeManager {
   /// device with no sync host has no peers to race, so firing is correct and
   /// blocking would mean never running the digest at all.
   final Future<String?> Function()? localHostId;
+
+  /// Repair work that must precede every due-record pass, not just the first.
+  ///
+  /// Retiring finished day agents is the caller this exists for: retirement
+  /// decides which identities may still wake, so running it after a pass would
+  /// let a day agent fire on the very tick that was about to retire it. Wiring
+  /// it here rather than only at start-up is what covers a session left open
+  /// across the handover boundary — the boundary arrives on a tick, and the
+  /// tick now retires before it fires.
+  ///
+  /// A failure is logged and the pass continues: stale retirement costs a
+  /// wake, but skipping the pass would strand every genuinely due record.
+  final Future<void> Function()? beforeCheck;
 
   /// How long a claimant waits before confirming its claim.
   ///
@@ -122,14 +136,38 @@ class ScheduledWakeManager {
     // continuation must not then arm a timer the stop could never cancel.
     final generation = _generation;
     try {
+      final before = beforeCheck;
+      if (before != null) {
+        final startedOn = clock.now();
+        await _runPreCheck(before);
+        // The repair keys on the calendar day — retirement's handover cutoff
+        // does — while the due query below uses a `now` read after it. A pass
+        // that starts just before local midnight and finishes the repair just
+        // after would decide those two on different days, leaving an agent
+        // active for exactly the pass that should have retired it. Repeating
+        // the repair under the new day is cheaper than reasoning about it.
+        if (!_sameLocalDay(startedOn, clock.now())) {
+          await _runPreCheck(before);
+        }
+      }
+      // A `stop()` that landed while the pre-check was awaiting ends this
+      // pass here. Its replacement manager owns the schedule now, and a
+      // disposed pass that kept going would enqueue against it.
+      if (generation != _generation) return;
+      // Read after the pre-check: it can await sync writes, and a `now`
+      // captured before them would age across the pass it is meant to time.
       final now = clock.now();
       final dueStates = await _repository.getDueScheduledAgentStates(now);
+      if (generation != _generation) return;
 
       var enqueued = 0;
       var fastForwarded = 0;
       var skippedArchived = 0;
 
       for (final state in dueStates) {
+        // Re-checked per item: each iteration awaits the identity lookup and
+        // its own writes, so a `stop()` can land mid-loop.
+        if (generation != _generation) return;
         try {
           // Defense-in-depth (ADR 0022): the due query filters on
           // `scheduledWakeAt` only — not lifecycle — so an archived or missing
@@ -181,6 +219,23 @@ class ScheduledWakeManager {
     }
   }
 
+  /// Runs [before], logging a failure rather than aborting the pass: stale
+  /// repair costs a wake, while skipping the pass strands every due record.
+  Future<void> _runPreCheck(Future<void> Function() before) async {
+    try {
+      await before();
+    } catch (e, s) {
+      _logError(
+        'pre-check repair failed; continuing with the due-record pass',
+        error: e,
+        stackTrace: s,
+      );
+    }
+  }
+
+  static bool _sameLocalDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   /// Fire pending [ScheduledWakeEntity] records that are due (ADR 0022).
   ///
   /// Each record carries its own workspace key and trigger tokens, so the
@@ -192,6 +247,9 @@ class ScheduledWakeManager {
     final dueRecords = await _repository.getDueScheduledWakeRecords(now);
     var enqueued = 0;
     for (final record in dueRecords) {
+      // As in the due-states loop: a `stop()` can land while this loop awaits
+      // the identity lookup, the host lookup or the claim write.
+      if (generation != _generation) return enqueued;
       try {
         // Same guard as the due-*states* loop above, and for the same reason:
         // `getDueScheduledWakeRecords` filters on the deadline, not lifecycle.

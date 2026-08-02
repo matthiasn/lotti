@@ -38,6 +38,7 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
@@ -2313,6 +2314,37 @@ void main() {
       );
       expect(manager.requiresLease!(recordOn(null)), isFalse);
       expect(await manager.localHostId!(), 'host-a');
+    });
+
+    test('its pre-check retires finished day agents', () async {
+      final notifications = UpdateNotifications();
+      final dayAgentService = MockDayAgentService();
+      when(dayAgentService.retirePastDayAgents).thenAnswer((_) async => 2);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+          wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
+          agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+          updateNotificationsProvider.overrideWithValue(notifications),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          dayAgentServiceProvider.overrideWithValue(dayAgentService),
+        ],
+      );
+      addTearDown(() {
+        notifications.dispose();
+        container.dispose();
+      });
+
+      final manager = container.read(scheduledWakeManagerProvider);
+
+      // Building the manager must not run a retirement pass: the day-agent
+      // service is only needed when a pass actually runs.
+      verifyNever(dayAgentService.retirePastDayAgents);
+
+      await manager.beforeCheck!();
+
+      verify(dayAgentService.retirePastDayAgents).called(1);
     });
   });
 
