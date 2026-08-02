@@ -22,6 +22,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
+import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
@@ -787,6 +788,45 @@ void main() {
 
       expect(uncaughtErrors, isEmpty);
     });
+
+    test(
+      'first provider snapshot after a bootstrap error resumes recovery',
+      () async {
+        final providerConfigs = StreamController<List<AiConfig>>.broadcast(
+          sync: true,
+        );
+        final agentRepository = MockAgentRepository();
+        var recoveryScanCount = 0;
+        addTearDown(providerConfigs.close);
+        when(
+          () => mockAiConfigRepo.watchConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) => providerConfigs.stream);
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async {
+          recoveryScanCount++;
+          return [];
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        await pumpEventQueue();
+        expect(recoveryScanCount, 1);
+
+        providerConfigs.addError(StateError('AI config bootstrap failed'));
+        await pumpEventQueue();
+        providerConfigs.add(const []);
+        await pumpEventQueue();
+
+        expect(recoveryScanCount, 2);
+      },
+    );
 
     test('contains embedding flag watcher errors', () async {
       final flagChanges = StreamController<bool>.broadcast(sync: true);
@@ -2387,6 +2427,85 @@ void main() {
       });
     });
 
+    test('provider change stops and requeues remaining entity chunks', () {
+      final providerConfigs = StreamController<List<AiConfig>>.broadcast(
+        sync: true,
+      );
+      final longText = List.generate(
+        420,
+        (index) => 'entity-word-$index',
+      ).join(' ');
+      final chunkCount = TextChunker.chunk(longText).length;
+      final attemptedBaseUrls = <String>[];
+      final storedEmbeddingCounts = <int>[];
+      late Completer<Float32List> firstRequest;
+      var currentBaseUrl = 'http://old-ollama:11434';
+      addTearDown(providerConfigs.close);
+      expect(chunkCount, greaterThan(1));
+      when(
+        () => mockAiConfigRepo.watchConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) => providerConfigs.stream);
+      when(
+        mockAiConfigRepo.resolveOllamaBaseUrl,
+      ).thenAnswer((_) async => currentBaseUrl);
+      stubEntity(
+        JournalEntry(
+          meta: _meta(),
+          entryText: EntryText(plainText: longText),
+        ),
+      );
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenAnswer((invocation) {
+        final baseUrl = invocation.namedArguments[#baseUrl]! as String;
+        attemptedBaseUrls.add(baseUrl);
+        if (attemptedBaseUrls.length == 1) return firstRequest.future;
+        return Future.value(_fakeEmbedding());
+      });
+      when(
+        () => mockEmbeddingStore.replaceEntityEmbeddings(
+          entityId: _entityId,
+          entityType: kEntityTypeJournalText,
+          modelId: any(named: 'modelId'),
+          contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
+          categoryId: any(named: 'categoryId'),
+          taskId: any(named: 'taskId'),
+          subtype: any(named: 'subtype'),
+        ),
+      ).thenAnswer((invocation) {
+        final embeddings =
+            invocation.namedArguments[#embeddings]! as List<Float32List>;
+        storedEmbeddingCounts.add(embeddings.length);
+      });
+
+      fakeAsync((async) {
+        firstRequest = Completer<Float32List>();
+        service.start();
+        providerConfigs.add(const []);
+        sendAndProcess(async, {_entityId, textEntryNotification});
+        expect(attemptedBaseUrls, ['http://old-ollama:11434']);
+
+        currentBaseUrl = 'http://new-ollama:11434';
+        providerConfigs.add(const []);
+        firstRequest.complete(_fakeEmbedding());
+        async.flushMicrotasks();
+        stopInZone(async);
+
+        expect(attemptedBaseUrls, [
+          'http://old-ollama:11434',
+          ...List.filled(chunkCount, 'http://new-ollama:11434'),
+        ]);
+        expect(storedEmbeddingCounts, [chunkCount]);
+      });
+    });
+
     test(
       'provider change during failed report recovery uses the new URL now',
       () {
@@ -3442,6 +3561,79 @@ void main() {
           {'$taskNotificationPrefix$syncTaskId'},
           fromSync: true,
         );
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+
+        stopInZone(async);
+        expect(embedCallCount, 2);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: _entityId,
+            entityType: kEntityTypeJournalText,
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        ).called(1);
+      });
+    });
+
+    test('local reconciliation resumes an availability-paused entity', () {
+      fakeAsync((async) {
+        const localTaskId = 'task-local-resumes-entity';
+        final agentRepository = MockAgentRepository();
+        final entry = JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        );
+        var embedCallCount = 0;
+
+        when(agentRepository.getAllAgentIdentities).thenAnswer((_) async => []);
+        when(
+          () => agentRepository.getLinksTo(
+            localTaskId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => []);
+        stubEntity(entry);
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((_) async {
+          embedCallCount++;
+          if (embedCallCount == 1) {
+            throw OllamaEmbeddingUnavailableException(
+              'Ollama transport retries exhausted',
+              retryAt: clock.now().add(
+                OllamaEmbeddingRepository.availabilityCooldown,
+              ),
+            );
+          }
+          return _fakeEmbedding();
+        });
+
+        service = EmbeddingService(
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          journalDb: mockJournalDb,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: mockAiConfigRepo,
+          agentRepository: agentRepository,
+        )..start();
+        async.flushMicrotasks();
+        sendAndProcess(async, {_entityId, textEntryNotification});
+        expect(embedCallCount, 1);
+
+        updateNotifications.notify({
+          '$agentTaskLinkNotificationPrefix$localTaskId',
+        });
         async
           ..elapse(const Duration(seconds: 1))
           ..flushMicrotasks();

@@ -99,12 +99,24 @@ class EmbeddingService {
     _syncSubscription = updateNotifications.syncUpdateStream.listen(
       _onSyncBatch,
     );
+    var shouldSkipInitialProviderSnapshot = true;
     _providerConfigSubscription = aiConfigRepository
         .watchConfigsByType(AiConfigType.inferenceProvider)
-        .skip(1)
         .listen(
-          (_) => _onProviderConfigsChanged(),
-          onError: _onProviderConfigWatchError,
+          (_) {
+            if (shouldSkipInitialProviderSnapshot) {
+              shouldSkipInitialProviderSnapshot = false;
+              return;
+            }
+            _onProviderConfigsChanged();
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            // An error is not an initial provider snapshot. The first data
+            // event after recovery must wake pending work instead of being
+            // discarded by the initial-value suppression.
+            shouldSkipInitialProviderSnapshot = false;
+            _onProviderConfigWatchError(error, stackTrace);
+          },
         );
     _embeddingFlagSubscription = journalDb
         .watchConfigFlag(enableEmbeddingsFlag)
@@ -184,7 +196,10 @@ class EmbeddingService {
     if (hasAgentChange || unlinkedTaskIds.isNotEmpty) {
       _requestAgentReportRecovery(fullScan: hasAgentChange);
     }
-    if (!hasRelevantEntityType) return;
+    if (!hasRelevantEntityType) {
+      _resumePendingEntityBatch();
+      return;
+    }
 
     // Extract entity UUIDs from the batch (filter out type tokens).
     final entityIds = tokens.where(_isEntityId).toSet();
@@ -742,6 +757,7 @@ class EmbeddingService {
   Future<void> _processNext() async {
     if (_isProcessing) return;
     _isProcessing = true;
+    final providerConfigRevision = _providerConfigRevision;
 
     try {
       // Resolve config flag and base URL once per batch to avoid
@@ -761,6 +777,7 @@ class EmbeddingService {
         if (!_entityBatchRerunRequested) _pendingEntityIds.clear();
         return;
       }
+      if (providerConfigRevision != _providerConfigRevision) return;
 
       // Cache label definitions for the batch to avoid one DB query per entity.
       // Best-effort: label resolution failures should not block core embeddings.
@@ -788,7 +805,10 @@ class EmbeddingService {
             embeddingRepository: embeddingRepository,
             baseUrl: baseUrl,
             labelNameResolver: labelResolver,
-            writeGuard: () => _embeddingsEnabled && !_stopped,
+            writeGuard: () =>
+                _embeddingsEnabled &&
+                !_stopped &&
+                providerConfigRevision == _providerConfigRevision,
           );
         } on OllamaEmbeddingAvailabilityException catch (e) {
           developer.log(
@@ -808,6 +828,12 @@ class EmbeddingService {
             name: 'EmbeddingService',
           );
           // Swallow error — don't block other entities.
+        }
+        if (providerConfigRevision != _providerConfigRevision) {
+          if (!_stopped && _embeddingsEnabled) {
+            _pendingEntityIds.add(entityId);
+          }
+          break;
         }
         if (_entityBatchRerunRequested) break;
       }

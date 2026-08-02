@@ -124,14 +124,14 @@ flowchart LR
   endpoint's `retryAt`. A fresh relevant notification joins the pending set and
   immediately re-runs preflight so endpoint recovery or a changed Ollama URL is
   used without waiting for an obsolete timer; an unchanged cooling endpoint
-  still fast-fails before network I/O. Task-keyed sync recovery signals do the
-  same for an already queued entity batch when they cancel its timer, even when
-  the changed task itself needs no provider work. If provider configuration
-  changes while
-  an entity request is still using the old endpoint, the service latches a
-  rerun; completion or failure of that request then cancels any obsolete
-  cooldown timer and resolves the new URL before continuing queued work. Manual
-  backfill loops stop when the
+  still fast-fails before network I/O. Task-keyed sync and local task-link
+  reconciliation signals do the same for an already queued entity batch when
+  they cancel its timer, even when the changed task itself needs no provider
+  work. If provider configuration changes while a multi-chunk entity request is
+  still using the old endpoint, the write guard stops the remaining old-URL
+  chunks and requeues that entity. The latched rerun cancels any obsolete
+  cooldown timer, resolves the new URL, and processes the complete entity there
+  before continuing queued work. Manual backfill loops stop when the
   initial transport budget is exhausted or a known cooldown suppresses the
   call, instead of emitting one stack trace per remaining item.
 - `EmbeddingService` scans durable current task-agent report heads at startup
@@ -154,13 +154,15 @@ flowchart LR
   canonical agent, if any, and rebuilds its current vector. A soft-deleted task
   is likewise a cleanup boundary: recovery confirms its tombstone through the
   including-deleted journal read, deletes every report vector in that task's
-  reverse index, and makes no provider request. Provider
-  and flag streams skip their initial snapshots because startup already
-  requests one pass, and their asynchronous errors remain contained inside the
-  optional service. If the provider repository's initial all-config bootstrap
-  fails, the next observed config save retries it and installs the database
-  watch without a polling loop. Later enablement resumes both pending report
-  recovery and any availability-paused entity batch. Disabling embeddings cancels the retry
+  reverse index, and makes no provider request. Flag streams and a confirmed
+  initial provider snapshot are skipped because startup already requests one
+  pass, and their asynchronous errors remain contained inside the optional
+  service. A provider-watch error consumes that initial-snapshot suppression,
+  so the first successful provider snapshot after recovery wakes pending work.
+  If the provider repository's initial all-config bootstrap fails, the next
+  observed config save retries it and installs the database watch without a
+  polling loop. Later enablement resumes both pending report recovery and any
+  availability-paused entity batch. Disabling embeddings cancels the retry
   timer and drops queued journal entities. Final write guards also reject
   entity or report vectors whose provider request was already in flight, and
   the guard is rechecked between chunks so no further provider calls start
@@ -211,9 +213,11 @@ flowchart LR
   its newly written vector removed; it never deletes the searchable predecessor.
   Coalesced reports carry forward the last predecessor that was actually
   searchable, and a deferred retry whose head advanced through sync is
-  abandoned before provider or storage work. Deferred workflow retries also
-  re-read `enableEmbeddingsFlag` after their wait and stop before provider work
-  when embeddings were disabled during the cooldown.
+  abandoned before provider or storage work. Every initial or deferred workflow
+  attempt reads `enableEmbeddingsFlag` before resolving the provider, and its
+  write guard reads the flag between chunks and before storage. Disabling the
+  feature therefore stops the remaining provider calls without replacing the
+  stored report vectors.
 
 ```mermaid
 stateDiagram-v2

@@ -48,9 +48,10 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
   /// Non-fatal: failures do not affect the wake cycle. Availability failures
   /// defer the latest report per task until the endpoint's retry time. When a
   /// newer report coalesces that work, it inherits the last predecessor known
-  /// to be searchable rather than the unembedded intermediate report. A retry
-  /// rechecks the embeddings flag after its wait and stops if the feature was
-  /// disabled during the cooldown.
+  /// to be searchable rather than the unembedded intermediate report. Every
+  /// attempt checks the embeddings flag before provider work, and the write
+  /// guard rechecks it between chunks so disabling the feature cancels an
+  /// in-flight report without replacing stored vectors.
   /// Called as fire-and-forget via [unawaited] after report persistence.
   Future<void> _embedAgentReport({
     required String reportId,
@@ -79,7 +80,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     }
 
     try {
-      if (isRetry && !await journalDb.getConfigFlag(enableEmbeddingsFlag)) {
+      if (!await journalDb.getConfigFlag(enableEmbeddingsFlag)) {
         _completeAgentReportEmbedding(taskId, reportId);
         return;
       }
@@ -120,12 +121,14 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
         embeddingStore: store,
         embeddingRepository: repo,
         baseUrl: baseUrl,
-        writeGuard: () => _isCurrentAgentReport(
-          agentId: agentId,
-          taskId: taskId,
-          reportId: reportId,
-          categoryId: categoryId,
-        ),
+        writeGuard: () async =>
+            await journalDb.getConfigFlag(enableEmbeddingsFlag) &&
+            await _isCurrentAgentReport(
+              agentId: agentId,
+              taskId: taskId,
+              reportId: reportId,
+              categoryId: categoryId,
+            ),
       );
 
       final isStillCurrent = await _isCurrentAgentReport(

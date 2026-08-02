@@ -3957,6 +3957,241 @@ not describe task configuration or tool activity as progress.
         );
       });
 
+      test('disabled embeddings skip the initial report attempt', () async {
+        final mockEmbeddingStore = MockEmbeddingStore();
+        final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+        final workflowWithEmbeddings = TaskAgentWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          domainLogger: DomainLogger(loggingService: LoggingService())
+            ..enabledDomains.add(LogDomain.agentWorkflow),
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepository,
+        );
+
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+        ).thenAnswer((_) async => false);
+        when(
+          mockAiConfigRepository.resolveOllamaBaseUrl,
+        ).thenAnswer((_) async => 'http://localhost:11434');
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy is TaskAgentStrategy) {
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    const ChatCompletionMessageToolCall(
+                      id: 'disabled-report-call',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: 'update_report',
+                        arguments:
+                            r'{"content":"# Disabled report\nThis report is persisted without semantic indexing.","oneLiner":"Persist only","tldr":"Embedding is disabled."}',
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+              }
+              return null;
+            };
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        final result = await workflowWithEmbeddings.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+        await pumpEventQueue();
+
+        expect(result.success, isTrue);
+        final persisted = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(persisted.whereType<AgentReportEntity>(), hasLength(1));
+        verify(
+          () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+        ).called(1);
+        verifyNever(mockAiConfigRepository.resolveOllamaBaseUrl);
+        verifyNever(
+          () => mockEmbeddingRepository.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        );
+      });
+
+      test('disabling embeddings stops remaining report chunks', () async {
+        final mockEmbeddingStore = MockEmbeddingStore();
+        final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+        final persistedReports = <AgentReportEntity>[];
+        final firstRequestStarted = Completer<void>();
+        final firstRequest = Completer<Float32List>();
+        final storedReportIds = <String>[];
+        final reportContent = List.generate(
+          420,
+          (index) => 'report-word-$index',
+        ).join(' ');
+        var embeddingsEnabled = true;
+        var flagCheckCount = 0;
+        var embeddingCallCount = 0;
+        final workflowWithEmbeddings = TaskAgentWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          domainLogger: DomainLogger(loggingService: LoggingService())
+            ..enabledDomains.add(LogDomain.agentWorkflow),
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepository,
+        );
+
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getLatestReport(
+            agentId,
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer(
+          (_) async => persistedReports.isEmpty ? null : persistedReports.last,
+        );
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final entity = invocation.positionalArguments.first;
+          if (entity is AgentReportEntity) persistedReports.add(entity);
+        });
+        when(
+          () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+        ).thenAnswer((_) async {
+          flagCheckCount++;
+          return embeddingsEnabled;
+        });
+        when(
+          mockAiConfigRepository.resolveOllamaBaseUrl,
+        ).thenAnswer((_) async => 'http://localhost:11434');
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer(
+          (_) async => TestTaskFactory.create(
+            id: taskId,
+            title: 'Stop disabled report chunks',
+            categoryId: 'cat-001',
+          ),
+        );
+        when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
+        when(
+          () => mockEmbeddingRepository.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        ).thenAnswer((_) {
+          embeddingCallCount++;
+          if (embeddingCallCount == 1) {
+            firstRequestStarted.complete();
+            return firstRequest.future;
+          }
+          return Future.value(Float32List(kEmbeddingDimensions));
+        });
+        when(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: any(named: 'entityId'),
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        ).thenAnswer((invocation) {
+          storedReportIds.add(invocation.namedArguments[#entityId] as String);
+        });
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy is TaskAgentStrategy) {
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: 'multi-chunk-report-call',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: 'update_report',
+                        arguments: jsonEncode({
+                          'content': reportContent,
+                          'oneLiner': 'Long report',
+                          'tldr': 'Long report for cancellation coverage.',
+                        }),
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+              }
+              return null;
+            };
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        final result = await workflowWithEmbeddings.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+        await firstRequestStarted.future;
+
+        embeddingsEnabled = false;
+        firstRequest.complete(Float32List(kEmbeddingDimensions));
+        await pumpEventQueue(times: 100);
+
+        expect(result.success, isTrue);
+        expect(flagCheckCount, 2);
+        expect(embeddingCallCount, 1);
+        expect(storedReportIds, isEmpty);
+      });
+
       test(
         'embeds a new report and deletes the previous report embedding',
         () async {
