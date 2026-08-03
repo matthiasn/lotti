@@ -110,8 +110,8 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   /// Begins a batch recording: checks mic permission, records to a temp `.m4a`
   /// file, streams throttled amplitude into [ChatRecorderState.amplitudeHistory],
   /// and arms a [ChatRecorderConfig.maxSeconds] safety timer that auto-calls
-  /// [stopAndTranscribe]. No-op unless idle; sets a `concurrentOperation` error
-  /// if a start is already in flight. On any failure the partial recording is
+  /// [stopAndTranscribe]. No-op unless idle; records an error message if a
+  /// start is already in flight. On any failure the partial recording is
   /// cleaned up.
   Future<void> start() async {
     if (!ref.mounted) return;
