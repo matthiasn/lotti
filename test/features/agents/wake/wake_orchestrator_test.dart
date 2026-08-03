@@ -6339,24 +6339,54 @@ void main() {
 
     group('abort and timeout', () {
       test(
-        'abortRunningWake signals an in-flight executor and marks the run aborted',
+        'pending-work probe tracks queued, running, and detached execution',
         () {
           fakeAsync((async) {
+            const workspaceKey = 'coordinator:digest';
             final gate = Completer<Map<String, VectorClock>?>();
             orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) =>
                 gate.future;
 
-            queue.enqueue(makeJob());
+            queue.enqueue(makeJob(workspaceKey: workspaceKey));
+            expect(
+              orchestrator.hasPendingOrActiveWake(
+                'agent-1',
+                workspaceKey: workspaceKey,
+              ),
+              isTrue,
+            );
+            expect(
+              orchestrator.hasPendingOrActiveWake(
+                'agent-1',
+                workspaceKey: 'another-workspace',
+              ),
+              isFalse,
+            );
             unawaited(orchestrator.processNext());
             async.flushMicrotasks();
 
             expect(runner.isRunning('agent-1'), isTrue);
+            expect(
+              orchestrator.hasPendingOrActiveWake(
+                'agent-1',
+                workspaceKey: workspaceKey,
+              ),
+              isTrue,
+            );
 
             final aborted = orchestrator.abortRunningWake('agent-1');
             async.flushMicrotasks();
 
             expect(aborted, isTrue);
             expect(runner.isRunning('agent-1'), isFalse);
+            expect(
+              orchestrator.hasPendingOrActiveWake(
+                'agent-1',
+                workspaceKey: workspaceKey,
+              ),
+              isTrue,
+              reason: 'the uncancellable executor is still active',
+            );
 
             // The wake-run row was finalised with status `aborted` and the
             // 'cancelled' error message (timeout would set 'timeout').
@@ -6380,6 +6410,14 @@ void main() {
             // suppression state.
             gate.complete(const {});
             async.flushMicrotasks();
+
+            expect(
+              orchestrator.hasPendingOrActiveWake(
+                'agent-1',
+                workspaceKey: workspaceKey,
+              ),
+              isFalse,
+            );
 
             verifyNever(
               () => mockRepository.updateWakeRunStatus(

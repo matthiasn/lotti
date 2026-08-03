@@ -1446,6 +1446,45 @@ void main() {
         });
       });
 
+      test('stamps consumption at the enqueue boundary across midnight', () {
+        var currentTime = DateTime(2024, 3, 15, 23, 59, 59);
+
+        fakeAsync((async) {
+          withClock(Clock(() => currentTime), () {
+            final due = record();
+            var entityReads = 0;
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => []);
+            when(
+              () => repository.getDueScheduledWakeRecords(any()),
+            ).thenAnswer((_) async => [due]);
+            when(() => repository.getEntity(any())).thenAnswer((_) async {
+              entityReads++;
+              if (entityReads == 1) return makeTestIdentity();
+              currentTime = DateTime(2024, 3, 16, 0, 0, 1);
+              return due;
+            });
+            when(
+              () => syncService.upsertEntity(any()),
+            ).thenAnswer((_) async {});
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            final consumed =
+                verify(
+                      () => syncService.upsertEntity(captureAny()),
+                    ).captured.single
+                    as ScheduledWakeEntity;
+            expect(consumed.consumedAt, DateTime(2024, 3, 16, 0, 0, 1));
+            expect(consumed.updatedAt, consumed.consumedAt);
+
+            manager.stop();
+          });
+        });
+      });
+
       test(
         'a failing record is swallowed and the next record still fires',
         () {

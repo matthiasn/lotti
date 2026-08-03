@@ -325,11 +325,12 @@ final scheduledWakeManagerProvider = Provider<ScheduledWakeManager>(
 );
 ScheduledWakeManager scheduledWakeManager(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
+  final domainLogger = ref.watch(domainLoggerProvider);
   final manager = ScheduledWakeManager(
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
-    domainLogger: ref.watch(domainLoggerProvider),
+    domainLogger: domainLogger,
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
     // The coordinator's morning digest is the one scheduled wake whose work
     // is shared rather than device-local: every device firing it means one
@@ -347,13 +348,37 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
       await vectorClock.initialized;
       return vectorClock.getHost();
     },
-    // Retire finished day agents before every pass, including the immediate
-    // one in `start()`. A day agent whose day is over is still `active` until
-    // this runs, so its overdue wake would fire — once per cold start, and
-    // once per hourly tick for a session left open across the handover
-    // boundary. Read lazily: the day-agent service is not needed to build the
-    // manager, only to run a pass.
-    beforeCheck: () => ref.read(dayAgentServiceProvider).retirePastDayAgents(),
+    // Repairs that must land before a pass reads what is due, rather than
+    // after it. Retirement decides which agents may still wake — a day agent
+    // whose day is over is `active` until it runs, so its overdue wake would
+    // fire once per cold start and once per hourly tick thereafter. The digest
+    // bootstrap can arm a record for an already-past slot when a run was
+    // interrupted, which only fires promptly if it exists before the scan.
+    // Read lazily: the day-agent service is not needed to build the manager,
+    // only to run a pass.
+    beforeCheck: () async {
+      final dayAgents = ref.read(dayAgentServiceProvider);
+      try {
+        await dayAgents.retirePastDayAgents();
+      } catch (e, s) {
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message: 'failed to retire past day agents before wake scan',
+          stackTrace: s,
+        );
+      }
+      try {
+        await dayAgents.ensureCoordinatorDigestWake();
+      } catch (e, s) {
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message: 'failed to repair coordinator digest before wake scan',
+          stackTrace: s,
+        );
+      }
+    },
   );
   ref.onDispose(manager.stop);
   return manager;

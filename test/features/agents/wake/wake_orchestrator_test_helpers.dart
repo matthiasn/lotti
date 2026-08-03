@@ -40,6 +40,7 @@ WakeJob makeJob({
   String reason = 'subscription',
   Set<String> triggerTokens = const {'tok-a'},
   String? reasonId,
+  String? workspaceKey,
   DateTime? createdAt,
 }) {
   return WakeJob(
@@ -48,6 +49,7 @@ WakeJob makeJob({
     reason: reason,
     triggerTokens: triggerTokens,
     reasonId: reasonId,
+    workspaceKey: workspaceKey,
     createdAt: createdAt ?? DateTime(2024, 3, 15),
   );
 }

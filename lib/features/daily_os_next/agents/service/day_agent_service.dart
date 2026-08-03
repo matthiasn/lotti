@@ -8,6 +8,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart'
         AgentInferenceSetupMode,
         AgentInferenceSetupOrigin,
         AgentLifecycle,
+        AgentMessageKind,
+        AgentMilestone,
         AgentTemplateKind,
         ScheduledWakeStatus,
         WakeReason;
@@ -36,8 +38,9 @@ class DayAgentService {
     required this.syncService,
     required this.templateService,
     required this.domainLogger,
+    bool Function()? hasCoordinatorWork,
     this.onPersistedStateChanged,
-  });
+  }) : _hasCoordinatorWork = hasCoordinatorWork ?? _noCoordinatorWork;
 
   /// Shared agent lifecycle service.
   final AgentService agentService;
@@ -56,6 +59,10 @@ class DayAgentService {
 
   /// Structured logger.
   final DomainLogger domainLogger;
+
+  /// Live coordinator-work probe used to avoid treating queued, running, or
+  /// detached digest execution as an interrupted run.
+  final bool Function() _hasCoordinatorWork;
 
   /// Callback fired when persisted state changes.
   final void Function(String agentId)? onPersistedStateChanged;
@@ -879,27 +886,72 @@ class DayAgentService {
     );
   }
 
+  /// Repairs a locally interrupted coordinator digest before a wake scan.
+  ///
+  /// Wired into the wake manager's pre-check, so a retry armed for a slot that
+  /// is already past gets scanned by the pass right behind it. Arming it from
+  /// `restoreSubscriptions` alone would not be enough: that runs well after
+  /// the manager's first pass, so the recovered record would sit due until the
+  /// next hourly tick — and a user who opens the app briefly after a crash
+  /// would still get no briefing.
+  ///
+  /// This frequent path deliberately does not bootstrap an absent cadence.
+  /// Startup restoration owns that transition after synced state has had a
+  /// chance to arrive; otherwise an early scan can create a competing row
+  /// while the real record is still syncing. It does advance an existing
+  /// consumed row from an earlier day, because such a row can never re-enter
+  /// the due scan and would otherwise strand the cadence until app restart.
+  ///
+  /// Only an active coordinator participates. A dormant or destroyed identity
+  /// is retained for history, not as authority to resume scheduled work.
+  Future<void> ensureCoordinatorDigestWake() async {
+    final coordinator = await agentService.getAgent(dailyOsPlannerAgentId);
+    if (coordinator?.lifecycle != AgentLifecycle.active) return;
+    final existing = await repository.getEntity(_digestRecordId);
+    final now = clock.now();
+    switch (await _digestRecovery(existing, now)) {
+      case _RetryDigest(:final record):
+        await _retryInterruptedDigest(record);
+      case _AdvanceDigest()
+          when existing is ScheduledWakeEntity &&
+              existing.deletedAt == null &&
+              existing.status == ScheduledWakeStatus.consumed:
+        await _scheduleNextDigest(now);
+      case _AdvanceDigest() || _PreserveDigest():
+        return;
+    }
+  }
+
   /// Cold-start bootstrap for the coordinator's digest cadence (ADR 0032
   /// phase 3): ensure one pending digest `ScheduledWakeEntity` exists. A
   /// completed digest re-arms the next one deterministically; this covers
   /// the first digest ever and any install that missed the re-arm (e.g. the
   /// app was killed mid-digest).
   Future<void> _ensurePendingDigestWake() async {
-    final id = scheduledWakeRecordId(
-      dailyOsPlannerAgentId,
-      workspaceKey: coordinatorDigestWorkspaceKey,
-    );
-    final existing = await repository.getEntity(id);
+    final existing = await repository.getEntity(_digestRecordId);
     final now = clock.now();
     if (existing is ScheduledWakeEntity &&
         existing.deletedAt == null &&
         existing.status == ScheduledWakeStatus.pending) {
       return;
     }
+    switch (await _digestRecovery(existing, now)) {
+      case _RetryDigest(:final record):
+        await _retryInterruptedDigest(record);
+        return;
+      case _PreserveDigest():
+        return;
+      case _AdvanceDigest():
+        break;
+    }
+    await _scheduleNextDigest(now);
+  }
+
+  Future<void> _scheduleNextDigest(DateTime now) async {
     final next = nextDigestTime(now);
     await syncService.upsertEntity(
       AgentDomainEntity.scheduledWake(
-        id: id,
+        id: _digestRecordId,
         agentId: dailyOsPlannerAgentId,
         scheduledAt: next,
         status: ScheduledWakeStatus.pending,
@@ -917,6 +969,147 @@ class DayAgentService {
     );
   }
 
+  /// Classifies the persisted digest record for startup recovery.
+  ///
+  /// A *consumed* record means it fired and neither completion path ran — both
+  /// `_scheduleNextCoordinatorDigest` calls leave a pending record behind, on
+  /// success and on failure alike. So the process died mid-digest, and arming
+  /// `nextDigestTime(now)` would skip to tomorrow: today's briefing lost
+  /// outright rather than retried.
+  ///
+  /// Three conditions bound the retry:
+  ///
+  /// * **This device ran it.** A leased digest records its claimant, and on a
+  ///   peer the consumed row can arrive before the completion milestone that
+  ///   followed it — an absent local watermark there means "not synced yet",
+  ///   not "interrupted". Only the host that held the claim can read its own
+  ///   silence as a crash. An unleased record has no claimant to check.
+  /// * **It ran today.** Judged by `consumedAt` — when the record actually
+  ///   fired — not by `scheduledAt`, which an overdue catch-up keeps from the
+  ///   day it was armed for even though the workflow re-anchors it to today.
+  /// * **No watermark.** See [_digestRanIn].
+  Future<_DigestRecovery> _digestRecovery(
+    AgentDomainEntity? existing,
+    DateTime now,
+  ) async {
+    if (existing is! ScheduledWakeEntity ||
+        existing.deletedAt != null ||
+        existing.status != ScheduledWakeStatus.consumed) {
+      return const _DigestRecovery.advance();
+    }
+    // A consumed row is written before inference starts. While that inference
+    // is still live, its missing completion watermark is expected rather than
+    // evidence of a crash.
+    if (_hasCoordinatorWork()) return const _DigestRecovery.preserve();
+    // Falls back to the slot for a record consumed by a build that predates
+    // `consumedAt`; the day check below is what either answer feeds.
+    final ranAt = existing.consumedAt ?? existing.scheduledAt;
+    // Same-local-day evidence remains valid across a backward wall-clock
+    // adjustment. Comparing the instant itself would strand a run consumed a
+    // few minutes before the clock was corrected.
+    if (localDay(ranAt) != localDay(now)) {
+      return const _DigestRecovery.advance();
+    }
+    if (!await _thisDeviceRan(existing)) {
+      return const _DigestRecovery.preserve();
+    }
+    final ran = await _digestRanIn(ranAt, now);
+    if (ran == null) return const _DigestRecovery.preserve();
+    if (ran) return const _DigestRecovery.advance();
+    return _DigestRecovery.retry(existing);
+  }
+
+  Future<void> _retryInterruptedDigest(ScheduledWakeEntity interrupted) async {
+    final now = clock.now();
+    // Re-armed by `copyWith`, not rebuilt: the retry keeps the consumed
+    // record's `scheduledAt`, and `agent_concurrent_resolver` makes
+    // consumption *terminal* for a wake window. A row stamped from a null
+    // clock would be concurrent with the consumed version on peers and lose
+    // to it — the retry would be rejected everywhere but here. Carrying the
+    // existing clock forward makes the pending row causally dominate, so it
+    // never reaches the concurrent path at all.
+    await syncService.upsertEntity(
+      interrupted.copyWith(
+        status: ScheduledWakeStatus.pending,
+        updatedAt: now,
+        consumedAt: null,
+        // The claim belonged to the run that died. Clearing it lets the retry
+        // re-elect rather than inherit a lease no device now holds.
+        leaseHostId: null,
+        leaseUntil: null,
+      ),
+    );
+    domainLogger.log(
+      LogDomain.agentRuntime,
+      'retrying interrupted coordinator digest for '
+      '${interrupted.scheduledAt.toIso8601String()}',
+      subDomain: 'restore',
+    );
+  }
+
+  /// Whether this device was the claimant of [record], or nobody was.
+  ///
+  /// Fail-soft to `false`: an unreadable host id cannot establish that the
+  /// silent watermark is this device's own, and guessing costs a duplicate
+  /// briefing on every peer that guessed the same way.
+  Future<bool> _thisDeviceRan(ScheduledWakeEntity record) async {
+    final claimant = record.leaseHostId;
+    if (claimant == null) return true;
+    try {
+      return await syncService.localHost() == claimant;
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'failed to read local host; skipping the digest retry',
+        stackTrace: s,
+      );
+      return false;
+    }
+  }
+
+  /// Whether a digest committed its watermark between [ranAt] and [now].
+  ///
+  /// The crash can land *between* the milestone and the re-arm, and that run
+  /// did digest the day — retrying it would bill a second inference for a
+  /// briefing the user already has.
+  ///
+  /// Bounded at both ends. Synced history can carry a *future-dated*
+  /// `dailyWakeCompleted` from a peer with a skewed clock, which an open-ended
+  /// "at or after" test would read as proof that today's run finished — and
+  /// suppress the very retry this exists for. Only a watermark inside the
+  /// window the interrupted run occupied is evidence about that run.
+  ///
+  /// An unreadable log returns `null`: the caller preserves the consumed row,
+  /// because neither retrying nor advancing shared evidence is justified.
+  Future<bool?> _digestRanIn(DateTime ranAt, DateTime now) async {
+    try {
+      final milestones = await repository.getMessagesByKind(
+        dailyOsPlannerAgentId,
+        AgentMessageKind.system,
+      );
+      return milestones.any(
+        (m) =>
+            m.metadata.milestone == AgentMilestone.dailyWakeCompleted &&
+            !m.createdAt.isBefore(ranAt) &&
+            !m.createdAt.isAfter(now),
+      );
+    } catch (e, s) {
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'failed to read digest watermark; skipping the retry',
+        stackTrace: s,
+      );
+      return null;
+    }
+  }
+
+  static final String _digestRecordId = scheduledWakeRecordId(
+    dailyOsPlannerAgentId,
+    workspaceKey: coordinatorDigestWorkspaceKey,
+  );
+
   void _hydrateThrottleDeadlineFromState(
     String agentId,
     AgentStateEntity? state,
@@ -926,4 +1119,29 @@ class DayAgentService {
       orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);
     }
   }
+}
+
+bool _noCoordinatorWork() => false;
+
+sealed class _DigestRecovery {
+  const _DigestRecovery();
+
+  const factory _DigestRecovery.advance() = _AdvanceDigest;
+  const factory _DigestRecovery.preserve() = _PreserveDigest;
+  const factory _DigestRecovery.retry(ScheduledWakeEntity record) =
+      _RetryDigest;
+}
+
+final class _AdvanceDigest extends _DigestRecovery {
+  const _AdvanceDigest();
+}
+
+final class _PreserveDigest extends _DigestRecovery {
+  const _PreserveDigest();
+}
+
+final class _RetryDigest extends _DigestRecovery {
+  const _RetryDigest(this.record);
+
+  final ScheduledWakeEntity record;
 }

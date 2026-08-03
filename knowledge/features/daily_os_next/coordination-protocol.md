@@ -5,7 +5,7 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-03T12:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-03T12:35:33Z }
 stale_after: 2026-11-01
 sources:
   - id: agents
@@ -61,9 +61,10 @@ agent active for exactly the pass that should have retired it.
 
 `restoreSubscriptions` retires as well, before it takes its snapshot of active
 agents — otherwise start-up would re-hydrate runtime state for agents it is
-about to retire. A pre-check failure is logged and the pass continues: stale
-retirement costs one wake, while skipping the pass would strand every genuinely
-due record behind it.
+about to retire. Retirement and digest repair are isolated pre-checks: either
+failure is logged without suppressing the other repair or the due-record scan.
+Stale retirement costs one wake, while skipping the pass would strand every
+genuinely due record behind it.
 
 Without this the active set grew by one per day of use and
 `restoreSubscriptions` re-hydrated every one of them on each launch — model
@@ -246,10 +247,65 @@ due until its asynchronous state update lands, and forgetting it at the
 generation boundary would bill the restarted scan twice. The set crosses only
 this in-flight handoff; an independent later scan starts clean.
 
-The lease recovers the **claim**, not the run. A crash after the `consumed` flip
-but before the job finishes still loses that day's briefing, because
-`_ensurePendingDigestWake` sees a consumed record and arms tomorrow's slot. That
-follows from consuming before running and is older than the lease.
+The lease recovers the **claim**, not the run — the run is recovered separately.
+Both completion paths re-arm a *pending* record, on success and on failure
+alike, so a **consumed** record means the process died mid-digest.
+`ensureCoordinatorDigestWake` then re-arms the slot it already passed rather
+than tomorrow's, which makes the record due immediately.
+
+It runs from the wake manager's `beforeCheck`, not only from
+`restoreSubscriptions`. The restore pass happens well after the manager's first
+scan, so a record armed there would sit due until the next hourly tick — and a
+user who opens the app briefly after a crash would still get no briefing.
+That frequent pre-check is **repair-only**: it never creates an absent cadence.
+Startup restoration owns first bootstrap after synced state has had time to
+arrive, so an early local absence cannot race a real row that is still syncing.
+An existing consumed row from an older local day is different: it can never
+surface in the due query again, so the periodic repair advances it to the next
+slot. Otherwise one peer's preserved consumed row would disable every later
+digest until that app restarted.
+
+Five bounds keep the retry from costing more than it saves:
+
+- **The coordinator is active.** A retained dormant or destroyed identity is
+  history, not authority to restart scheduled work.
+- **No digest work is live locally.** The consumed row is written before
+  inference begins, so its missing completion watermark is expected while the
+  digest is queued, holds the runner lock, or continues as an uncancellable
+  executor after an abort released that lock. The workspace-scoped
+  `WakeOrchestrator.hasPendingOrActiveWake` probe covers all three states.
+- **This device ran it.** On a peer, the consumed row can arrive before the
+  milestone that followed it, so an absent local watermark there means "not
+  synced yet", not "interrupted". Only the host in `leaseHostId` may read its
+  own silence as a crash; an unleased record has no claimant to check.
+- **It ran today**, judged by `consumedAt` rather than `scheduledAt` — an
+  overdue catch-up keeps the slot it was armed for even though the workflow
+  re-anchors it to today. The manager stamps `consumedAt` at the record's
+  enqueue boundary, not from the pass-level clock captured before due-state and
+  lease work, so a long pass crossing midnight records the day the digest
+  actually fires. This is a local-calendar comparison only; a backward
+  wall-clock adjustment within that day does not invalidate the evidence.
+- **No `dailyWakeCompleted` watermark inside `[consumedAt, now]`.** The crash
+  can land between the milestone and the re-arm, and that run did digest the
+  day. The window is bounded at *both* ends because synced history can carry a
+  future-dated milestone from a skewed peer clock, which an open-ended test
+  would read as proof today's run finished.
+
+The retry is the consumed record carried forward by `copyWith`, not a fresh
+row. It keeps the same `scheduledAt`, and consumption is **terminal** for a
+wake window (see the resolver above) — a row stamped from a null clock would be
+*concurrent* with the consumed version and lose to it on every peer. Carrying
+the clock forward makes the pending row causally dominate, so it never reaches
+the concurrent path. The lease fields are cleared: the claim belonged to the run
+that died, and the retry re-elects.
+
+Every ambiguous same-day consumed row is preserved, not overwritten. Queued,
+running, or detached local work, another host's claim, an unreadable message
+log, or an unreadable local host all answer "leave it alone" — because of the
+two failure modes, the duplicate digest is the one that bills. A proven
+completion advances during startup restoration; a record from an older local
+day also advances during the periodic repair so a long-running session does not
+lose the cadence.
 
 **The lease bounds cost, not correctness.** Devices partitioned from sync while
 their model providers stay reachable can each hold a locally-consistent claim and

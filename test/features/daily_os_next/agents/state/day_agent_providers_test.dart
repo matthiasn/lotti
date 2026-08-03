@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,11 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/wake/wake_queue.dart';
+import 'package:lotti/features/agents/wake/wake_runner.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
@@ -88,6 +94,85 @@ void main() {
         notifications: notifications,
         agentId: 'day-agent-001',
       );
+    });
+
+    test('wires the orchestrator coordinator-work probe', () async {
+      final agentService = MockAgentService();
+      final repository = MockAgentRepository();
+      final syncService = MockAgentSyncService();
+      final queue = WakeQueue();
+      final runner = WakeRunner();
+      final orchestrator = WakeOrchestrator(
+        repository: repository,
+        queue: queue,
+        runner: runner,
+      );
+      final digestRecordId = scheduledWakeRecordId(
+        dailyOsPlannerAgentId,
+        workspaceKey: coordinatorDigestWorkspaceKey,
+      );
+      when(
+        () => agentService.getAgent(dailyOsPlannerAgentId),
+      ).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: dailyOsPlannerAgentId,
+          agentId: dailyOsPlannerAgentId,
+          kind: AgentKinds.dayAgent,
+        ),
+      );
+      when(() => repository.getEntity(digestRecordId)).thenAnswer(
+        (_) async => AgentDomainEntity.scheduledWake(
+          id: digestRecordId,
+          agentId: dailyOsPlannerAgentId,
+          scheduledAt: DateTime(2026, 8, 3, 6),
+          status: ScheduledWakeStatus.consumed,
+          reason: dayAgentDigestReason,
+          updatedAt: DateTime(2026, 8, 3, 6),
+          vectorClock: null,
+          workspaceKey: coordinatorDigestWorkspaceKey,
+        ),
+      );
+      when(
+        () => repository.getMessagesByKind(
+          dailyOsPlannerAgentId,
+          AgentMessageKind.system,
+        ),
+      ).thenAnswer((_) async => []);
+      when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+      queue.enqueue(
+        WakeJob(
+          runKey: 'digest-run',
+          agentId: dailyOsPlannerAgentId,
+          reason: dayAgentDigestReason,
+          triggerTokens: const {'digest'},
+          createdAt: DateTime(2026, 8, 3, 6),
+          workspaceKey: coordinatorDigestWorkspaceKey,
+        ),
+      );
+      addTearDown(() async {
+        await orchestrator.stop();
+        runner.dispose();
+      });
+      final container = buildContainer([
+        agentServiceProvider.overrideWithValue(agentService),
+        agentRepositoryProvider.overrideWithValue(repository),
+        wakeOrchestratorProvider.overrideWithValue(orchestrator),
+        agentSyncServiceProvider.overrideWithValue(syncService),
+        agentTemplateServiceProvider.overrideWithValue(
+          MockAgentTemplateService(),
+        ),
+        domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+        updateNotificationsProvider.overrideWithValue(
+          MockUpdateNotifications(),
+        ),
+      ]);
+
+      await withClock(
+        Clock.fixed(DateTime(2026, 8, 3, 8)),
+        container.read(dayAgentServiceProvider).ensureCoordinatorDigestWake,
+      );
+
+      verifyNever(() => syncService.upsertEntity(any()));
     });
   });
 
