@@ -88,7 +88,7 @@ class _RefineModalContentState extends ConsumerState<RefineModalContent> {
             next.phase == RefinePhase.accepted) {
           Navigator.of(
             context,
-          ).pop(DayPlanningAdapted(draft: next.currentPlan));
+          ).pop(const DayPlanningAdapted());
         }
       },
     );
@@ -413,7 +413,7 @@ class RefinePage extends ConsumerWidget {
     ref.listen<RefineState>(refineControllerProvider(draft), (previous, next) {
       if (previous?.phase != RefinePhase.accepted &&
           next.phase == RefinePhase.accepted) {
-        Navigator.of(context).pop(DayPlanningAdapted(draft: next.currentPlan));
+        Navigator.of(context).pop(const DayPlanningAdapted());
       }
     });
 

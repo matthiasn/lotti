@@ -1,5 +1,4 @@
 import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
-import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 
 /// The outcome of a `showDayPlanningModal` interaction.
 ///
@@ -16,12 +15,8 @@ sealed class DayPlanningResult {
 /// reached `DraftingPhase.ready` with a non-null draft).
 final class DayPlanningCreated extends DayPlanningResult {
   const DayPlanningCreated({
-    required this.draft,
     this.createdTaskIds = const [],
   });
-
-  /// The persisted drafted plan.
-  final DraftPlan draft;
 
   /// Task ids newly materialized by this drafting run from approved,
   /// previously-unlinked capture items. Empty when nothing new was created or
@@ -32,10 +27,7 @@ final class DayPlanningCreated extends DayPlanningResult {
 /// An existing plan was adapted and persisted via the `DayPlanningAdapt`
 /// (Refine) flow.
 final class DayPlanningAdapted extends DayPlanningResult {
-  const DayPlanningAdapted({required this.draft});
-
-  /// The persisted adapted plan.
-  final DraftPlan draft;
+  const DayPlanningAdapted();
 }
 
 /// Attributes the task ids newly created by a drafting run.

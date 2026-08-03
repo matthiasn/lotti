@@ -18,13 +18,12 @@ import 'package:lotti/services/db_notification.dart';
 
 /// Resolves the [DayAgentInterface] the UI talks to.
 ///
-/// Returns a [RealDayAgent] that delegates seven methods to the real
-/// agent layer: the capture/reconcile tools
+/// Returns a [RealDayAgent] that delegates supported methods to the real
+/// agent layer, including the capture/reconcile tools
 /// (`submitCapture`, `parseCaptureToItems`, `surfacePendingDecisions`,
-/// `applyTriage`, `linkCapturePhraseToTask`, `breakCaptureLink`), day-plan
-/// drafting/refinement/commit calls, and plan summary reads. Shutdown and task
-/// corpus methods still delegate to a held [MockDayAgent] fallback until their
-/// backend tools ship.
+/// `applyTriage`, `breakCaptureLink`), day-plan drafting/refinement/commit
+/// calls, and plan summary reads. Shutdown and task corpus methods still
+/// delegate to a held [MockDayAgent] fallback until their backend tools ship.
 ///
 /// Tests override this provider with their own implementation via
 /// `ProviderScope(overrides: [...])` (typically with a fresh

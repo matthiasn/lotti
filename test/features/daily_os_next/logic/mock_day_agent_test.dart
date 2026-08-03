@@ -1039,69 +1039,44 @@ void main() {
       expect(await agent.currentPlanForDate(DateTime(2026, 5, 25)), isNull);
     });
   });
-  group('debugMatchesFilter — properties', () {
-    const categories = ['cat-a', 'cat-b'];
+  group('surfaceTaskCorpus — properties', () {
+    const categories = [null, 'cat_work', 'cat_health', 'cat_nope'];
     const queries = [null, '', '  ', 'deck', 'DECK', 'zzz'];
 
-    TaskCorpusItem item(int seed) => TaskCorpusItem(
-      title: seed.isEven ? 'Paint the deck $seed' : 'Inbox triage $seed',
-      category: DayAgentCategory(
-        id: categories[seed % categories.length],
-        name: 'Cat',
-        colorHex: '8E8E8E',
-      ),
-      state: TaskCorpusState
-          .values[1 + seed % (TaskCorpusState.values.length - 1)],
-    );
-
     glados.Glados3(
-      glados.any.intInRange(0, 50),
       glados.any.intInRange(0, TaskCorpusState.values.length),
-      glados.any.intInRange(0, 12),
+      glados.any.intInRange(0, categories.length),
+      glados.any.intInRange(0, queries.length),
       glados.ExploreConfig(numRuns: 120),
     ).test(
-      'every item matching a narrowed filter also matches state=all with '
-      'the same category/query (all is a superset)',
-      (seed, stateIndex, filterSeed) {
-        final agent = MockDayAgent();
-        final candidate = item(seed);
+      'returns exactly the corpus rows selected by every filter combination',
+      (stateIndex, categoryIndex, queryIndex) async {
+        final agent = MockDayAgent(pendingLatency: Duration.zero);
         final state =
             TaskCorpusState.values[stateIndex % TaskCorpusState.values.length];
-        final categoryId = filterSeed.isEven
-            ? null
-            : categories[filterSeed % categories.length];
-        final query = queries[filterSeed % queries.length];
+        final categoryId = categories[categoryIndex % categories.length];
+        final query = queries[queryIndex % queries.length];
 
-        final narrowed = agent.debugMatchesFilter(
-          candidate,
-          state,
-          categoryId,
-          query,
+        final corpus = await agent.surfaceTaskCorpus();
+        final actual = await agent.surfaceTaskCorpus(
+          stateFilter: state,
+          categoryId: categoryId,
+          query: query,
         );
-        final broad = agent.debugMatchesFilter(
-          candidate,
-          TaskCorpusState.all,
-          categoryId,
-          query,
+        final normalizedQuery = query?.trim().toLowerCase();
+        final expected = corpus.where((item) {
+          if (state != TaskCorpusState.all && item.state != state) return false;
+          if (categoryId != null && item.category.id != categoryId) return false;
+          return normalizedQuery == null ||
+              normalizedQuery.isEmpty ||
+              item.title.toLowerCase().contains(normalizedQuery);
+        }).map((item) => item.title);
+
+        expect(
+          actual.map((item) => item.title),
+          expected,
+          reason: 'state=$state cat=$categoryId q="$query"',
         );
-
-        if (narrowed) {
-          expect(
-            broad,
-            isTrue,
-            reason: 'state=$state cat=$categoryId q="$query" item=$seed',
-          );
-        }
-
-        // Oracle for the broad filter itself: category and query are the
-        // only remaining predicates under state=all.
-        final q = query?.trim().toLowerCase();
-        final expectedBroad =
-            (categoryId == null || candidate.category.id == categoryId) &&
-            (q == null ||
-                q.isEmpty ||
-                candidate.title.toLowerCase().contains(q));
-        expect(broad, expectedBroad);
       },
       tags: 'glados',
     );

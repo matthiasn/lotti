@@ -11,8 +11,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart'
         AgentMessageKind,
         AgentMilestone,
         AgentTemplateKind,
-        ScheduledWakeStatus,
-        WakeReason;
+        ScheduledWakeStatus;
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -686,31 +685,6 @@ class DayAgentService {
     await syncService.upsertEntity(capture);
     onPersistedStateChanged?.call(captureId);
     return captureId;
-  }
-
-  /// Trigger a manual wake for [agentId].
-  void triggerReanalysis(String agentId) {
-    domainLogger.log(
-      LogDomain.agentRuntime,
-      'manual day-agent reanalysis triggered for '
-      '${DomainLogger.sanitizeId(agentId)}',
-      subDomain: 'lifecycle',
-    );
-    orchestrator.enqueueManualWake(
-      agentId: agentId,
-      reason: WakeReason.reanalysis.name,
-    );
-  }
-
-  /// Cancel a pending or scheduled wake for [agentId].
-  void cancelScheduledWake(String agentId) {
-    domainLogger.log(
-      LogDomain.agentRuntime,
-      'day-agent scheduled wake cancelled for '
-      '${DomainLogger.sanitizeId(agentId)}',
-      subDomain: 'lifecycle',
-    );
-    agentService.cancelPendingWake(agentId);
   }
 
   /// How many calendar days a per-day agent stays active past its own day.

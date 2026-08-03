@@ -575,7 +575,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       expect(popped, isA<DayPlanningAdapted>());
-      expect((popped! as DayPlanningAdapted).draft.scheduledMinutes, 99);
+      expect(agent.capturedDiff, same(singleChangeDiff));
+      expect(agent.acceptIndices, [0]);
       expect(find.byType(RefinePage), findsNothing);
     });
 
@@ -880,7 +881,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
 
       expect(result, isA<DayPlanningAdapted>());
-      expect((result! as DayPlanningAdapted).draft.scheduledMinutes, 42);
+      expect(agent.capturedDiff, same(diff));
+      expect(agent.acceptIndices, [0]);
       expect(find.byType(RefineModalContent), findsNothing);
     });
   });

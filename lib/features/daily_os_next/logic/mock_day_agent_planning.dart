@@ -470,8 +470,7 @@ class MockDayAgentPlanning {
     ];
   }
 
-  /// Pure corpus-filter predicate. Exposed for the facade's
-  /// `debugMatchesFilter` test seam.
+  /// Pure corpus-filter predicate used by [surfaceTaskCorpus].
   bool matchesFilter(
     TaskCorpusItem item,
     TaskCorpusState state,

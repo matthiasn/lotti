@@ -18,7 +18,6 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/util/day_arithmetic.dart';
-import 'package:meta/meta.dart';
 
 part 'real_day_agent_projection.dart';
 
@@ -30,10 +29,9 @@ part 'real_day_agent_projection.dart';
 /// exception) so the UI can render a real error state instead of a
 /// scripted fallback that pretends the call succeeded:
 /// `submitCapture`, `parseCaptureToItems`, `surfacePendingDecisions`,
-/// `applyTriage`, `linkCapturePhraseToTask`, `breakCaptureLink`,
-/// `summarizeRecentPatterns`, `draftDayPlan`, `proposePlanDiff`,
-/// `acceptDiff`, `revertDiff`, `commitDay`, `currentPlanForDate`,
-/// `deletePlanForDate`.
+/// `applyTriage`, `breakCaptureLink`, `summarizeRecentPatterns`,
+/// `draftDayPlan`, `proposePlanDiff`, `acceptDiff`, `revertDiff`, `commitDay`,
+/// `currentPlanForDate`, `deletePlanForDate`.
 ///
 /// **Still mocked** — these methods still delegate to [mockFallback]
 /// because their agent-side tools have not shipped yet. Once each
@@ -182,20 +180,6 @@ class RealDayAgent implements DayAgentInterface {
       deferTo: deferTo,
     );
     return TriageResult(action: action);
-  }
-
-  /// Not part of [DayAgentInterface] but exposed for the Reconcile
-  /// UI to call when the user re-points a parsed item to a different
-  /// task from the "did you mean…" overflow menu.
-  Future<ParsedItem> linkCapturePhraseToTask({
-    required String parsedItemId,
-    required String taskId,
-  }) async {
-    final updated = await captureService.linkCapturePhraseToTask(
-      captureItemId: parsedItemId,
-      taskId: taskId,
-    );
-    return _projectParsedItem(updated);
   }
 
   @override

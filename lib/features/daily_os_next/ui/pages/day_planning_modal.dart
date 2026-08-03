@@ -67,8 +67,8 @@ class DayPlanningAdapt extends DayPlanningIntent {
 /// ready and invalidates [currentDraftPlanProvider] so the day surface
 /// shows the new plan.
 ///
-/// Resolves to a [DayPlanningResult]: a [DayPlanningCreated] (with the drafted
-/// plan and any newly-created task ids) when the create flow lands a plan, a
+/// Resolves to a [DayPlanningResult]: a [DayPlanningCreated] (with any
+/// newly-created task ids) when the create flow lands a plan, a
 /// [DayPlanningAdapted] when the Refine flow accepts one, or `null` when the
 /// user dismisses the modal (barrier tap, close button, or "looks good" with
 /// nothing to adapt). Existing callers that ignore the value are unaffected.
@@ -578,7 +578,7 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
   /// result once Drafting is ready. Attribution of the newly-created task ids
   /// is best-effort: a reparse failure ships an empty list rather than
   /// blocking the close.
-  Future<void> _closeWithCreatedResult(DraftPlan draft) async {
+  Future<void> _closeWithCreatedResult() async {
     if (!mounted) return;
     ref.invalidate(currentDraftPlanProvider(widget.day));
     final createdTaskIds = await _attributeCreatedTaskIds();
@@ -589,7 +589,7 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
     final route = ModalRoute.of(context);
     if (route?.isCurrent ?? false) {
       Navigator.of(context).pop(
-        DayPlanningCreated(draft: draft, createdTaskIds: createdTaskIds),
+        DayPlanningCreated(createdTaskIds: createdTaskIds),
       );
     }
   }
@@ -619,11 +619,10 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
       (previous, next) {
         final value = next.value;
         if (value == null || _advanced) return;
-        final draft = value.draft;
-        if (value.phase == DraftingPhase.ready && draft != null) {
+        if (value.phase == DraftingPhase.ready && value.draft != null) {
           _advanced = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            unawaited(_closeWithCreatedResult(draft));
+            unawaited(_closeWithCreatedResult());
           });
         }
       },

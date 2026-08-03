@@ -88,25 +88,16 @@ void main() {
   });
 
   group('DayPlanningResult variants', () {
-    final draft = DraftPlan.emptyForDay(DateTime(2026, 7, 10));
-
     test('DayPlanningCreated defaults to no created task ids', () {
-      final result = DayPlanningCreated(draft: draft);
+      const result = DayPlanningCreated();
       expect(result.createdTaskIds, isEmpty);
-      expect(result.draft, same(draft));
     });
 
     test('DayPlanningCreated carries the attributed task ids', () {
-      final result = DayPlanningCreated(
-        draft: draft,
-        createdTaskIds: const ['t1', 't2'],
+      const result = DayPlanningCreated(
+        createdTaskIds: ['t1', 't2'],
       );
       expect(result.createdTaskIds, ['t1', 't2']);
-    });
-
-    test('DayPlanningAdapted carries the adapted plan', () {
-      final result = DayPlanningAdapted(draft: draft);
-      expect(result.draft, same(draft));
     });
   });
 }
