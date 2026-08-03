@@ -113,7 +113,7 @@ void main() {
         findsOneWidget,
       );
 
-      // Verify the confirm button label is displayed (uppercased)
+      // Verify the confirm button label is rendered verbatim.
       expect(find.text('Yes, generate'), findsOneWidget);
 
       // Verify cancel button is present

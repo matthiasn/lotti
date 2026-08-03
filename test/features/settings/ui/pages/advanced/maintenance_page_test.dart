@@ -807,7 +807,7 @@ void main() {
         findsOneWidget,
       );
 
-      // The confirm label for Gemini reset is "RESET" (uppercased from "Reset").
+      // The confirm label for Gemini reset renders as "Reset" verbatim.
       await tester.tap(find.text('Reset'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

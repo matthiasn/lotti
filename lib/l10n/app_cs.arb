@@ -1176,7 +1176,7 @@
   "audioRecordingPause": "Pozastavit",
   "audioRecordingResume": "Pokračovat",
   "audioRecordings": "Audiozáznamy",
-  "audioRecordingStop": "STOP",
+  "audioRecordingStop": "Stop",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 akce} few{{count} akce} other{{count} akcí}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {

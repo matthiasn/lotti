@@ -1166,10 +1166,10 @@
   "audioRecordingDiscardDialogCancel": "Continuer l'enregistrement",
   "audioRecordingDiscardDialogConfirm": "Abandonner",
   "audioRecordingDiscardDialogTitle": "Abandonner l'enregistrement ?",
-  "audioRecordingPause": "Pause",
+  "audioRecordingPause": "Mettre en pause",
   "audioRecordingResume": "Reprendre",
   "audioRecordings": "Enregistrements audio",
-  "audioRecordingStop": "ARRÊTER",
+  "audioRecordingStop": "Arrêter",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 action} other{{count} actions}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {

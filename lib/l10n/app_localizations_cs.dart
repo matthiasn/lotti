@@ -2548,7 +2548,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordings => 'Audiozáznamy';
 
   @override
-  String get audioRecordingStop => 'STOP';
+  String get audioRecordingStop => 'Stop';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {

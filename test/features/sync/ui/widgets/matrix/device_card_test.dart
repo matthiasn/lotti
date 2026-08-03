@@ -940,7 +940,7 @@ void main() {
       testWidgets('pressing on regardless opens the ceremony', (tester) async {
         await tapVerify(tester);
 
-        // The confirmation modal upper-cases its confirming label.
+        // The confirmation modal renders its confirm label verbatim.
         await tester.tap(find.text('Verify anyway'));
         await tester.pumpAndSettle();
 

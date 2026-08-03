@@ -1582,7 +1582,7 @@
   "audioRecordingPause": "Pause",
   "audioRecordingResume": "Resume",
   "audioRecordings": "Audio Recordings",
-  "audioRecordingStop": "STOP",
+  "audioRecordingStop": "Stop",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 action} other{{count} actions}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {

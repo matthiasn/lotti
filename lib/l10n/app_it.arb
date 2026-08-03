@@ -1345,7 +1345,7 @@
   "audioRecordingPause": "Pausa",
   "audioRecordingResume": "Riprendi",
   "audioRecordings": "Registrazioni audio",
-  "audioRecordingStop": "ARRESTA",
+  "audioRecordingStop": "Arresta",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 azione} other{{count} azioni}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {

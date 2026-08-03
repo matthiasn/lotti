@@ -2546,7 +2546,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get audioRecordings => 'Grabaciones de audio';
 
   @override
-  String get audioRecordingStop => 'PARAR';
+  String get audioRecordingStop => 'Parar';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {

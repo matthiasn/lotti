@@ -4341,7 +4341,7 @@ abstract class AppLocalizations {
   /// No description provided for @audioRecordingStop.
   ///
   /// In en, this message translates to:
-  /// **'STOP'**
+  /// **'Stop'**
   String get audioRecordingStop;
 
   /// No description provided for @backfillAdvancedRecoveryActions.

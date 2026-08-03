@@ -1169,7 +1169,7 @@
   "audioRecordingPause": "Pausar",
   "audioRecordingResume": "Reanudar",
   "audioRecordings": "Grabaciones de audio",
-  "audioRecordingStop": "PARAR",
+  "audioRecordingStop": "Parar",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 acción} other{{count} acciones}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {

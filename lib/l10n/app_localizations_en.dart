@@ -2512,7 +2512,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get audioRecordings => 'Audio Recordings';
 
   @override
-  String get audioRecordingStop => 'STOP';
+  String get audioRecordingStop => 'Stop';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {

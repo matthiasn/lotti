@@ -2549,7 +2549,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Abandonner l\'enregistrement ?';
 
   @override
-  String get audioRecordingPause => 'Pause';
+  String get audioRecordingPause => 'Mettre en pause';
 
   @override
   String get audioRecordingResume => 'Reprendre';
@@ -2558,7 +2558,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get audioRecordings => 'Enregistrements audio';
 
   @override
-  String get audioRecordingStop => 'ARRÊTER';
+  String get audioRecordingStop => 'Arrêter';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {

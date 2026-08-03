@@ -2559,7 +2559,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordings => 'Înregistrări audio';
 
   @override
-  String get audioRecordingStop => 'OPRIȚI';
+  String get audioRecordingStop => 'Opriți';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -4876,7 +4876,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardDeleteHint => 'Ștergeți tabloul de bord';
 
   @override
-  String get dashboardDeleteQuestion => 'Vrei să ștergi acest tablou de bord?';
+  String get dashboardDeleteQuestion =>
+      'Sigur doriți să ștergeți acest tablou de bord?';
 
   @override
   String get dashboardDescriptionLabel => 'Descriere';
@@ -6439,7 +6440,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalDeleteQuestion =>
-      'Vrei să ștergi această intrare în jurnal?';
+      'Sigur doriți să ștergeți această intrare în jurnal?';
 
   @override
   String get journalDurationLabel => 'Durată';
@@ -6573,11 +6574,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalUnlinkConfirm => 'Da, dezlegați intrarea';
 
   @override
-  String get journalUnlinkHint => 'Despărțiți';
+  String get journalUnlinkHint => 'Dezlegați';
 
   @override
   String get journalUnlinkQuestion =>
-      'Sigur doriți să despărțiți această intrare?';
+      'Sigur doriți să dezlegați această intrare?';
 
   @override
   String get keyboardCommandActivate => 'Activați elementul focalizat';
@@ -7247,7 +7248,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get maintenancePopulateSequenceLog =>
-      'Completează jurnalul de secvență de sincronizare';
+      'Completați jurnalul de secvență de sincronizare';
 
   @override
   String maintenancePopulateSequenceLogComplete(int count) {
@@ -7452,7 +7453,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get matrixStatsTopKpis => 'Indicatori principali';
 
   @override
-  String get measurableDeleteConfirm => 'Da, ștergeți acest element măsurabil';
+  String get measurableDeleteConfirm => 'Da, ștergeți acest tip de măsurătoare';
 
   @override
   String get measurableDeleteQuestion =>

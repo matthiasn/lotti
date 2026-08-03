@@ -1345,7 +1345,7 @@
   "audioRecordingPause": "Pause",
   "audioRecordingResume": "Genoptag",
   "audioRecordings": "Lydoptagelser",
-  "audioRecordingStop": "STOP",
+  "audioRecordingStop": "Stop",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 handling} other{{count} handlinger}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {

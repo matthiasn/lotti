@@ -1344,7 +1344,7 @@
   "audioRecordingPause": "Pausar",
   "audioRecordingResume": "Retomar",
   "audioRecordings": "Gravações de áudio",
-  "audioRecordingStop": "PARAR",
+  "audioRecordingStop": "Parar",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 ação} other{{count} ações}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {

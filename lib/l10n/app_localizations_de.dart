@@ -2543,7 +2543,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get audioRecordings => 'Audioaufnahmen';
 
   @override
-  String get audioRecordingStop => 'STOPP';
+  String get audioRecordingStop => 'Stopp';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {

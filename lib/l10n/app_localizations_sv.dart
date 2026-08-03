@@ -2529,7 +2529,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioRecordings => 'Ljudinspelningar';
 
   @override
-  String get audioRecordingStop => 'STOPP';
+  String get audioRecordingStop => 'Stoppa';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {

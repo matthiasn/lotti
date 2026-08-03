@@ -1345,7 +1345,7 @@
   "audioRecordingPause": "Pausa",
   "audioRecordingResume": "Återuppta",
   "audioRecordings": "Ljudinspelningar",
-  "audioRecordingStop": "STOPP",
+  "audioRecordingStop": "Stoppa",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 åtgärd} other{{count} handlingar}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
