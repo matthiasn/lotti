@@ -15,6 +15,9 @@ restarts and stay consistent across the user's devices.
 - **Retracts itself when it stops being true.** If the agent withdraws its
   suggestions, the alert goes away rather than leading to an empty page.
 - **Survives a restart.** An alert is stored, not just shown.
+- **Stays quiet until asked.** Notifications ship switched off. Until the user
+  turns them on in Settings, Lotti neither delivers anything nor asks the
+  operating system for permission to.
 
 ## What it owns
 

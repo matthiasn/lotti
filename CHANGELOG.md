@@ -127,6 +127,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one arrived the following morning. The interrupted run is now picked up the
   next time you open the app that day. A briefing that did finish is never
   redone, so this costs nothing when nothing went wrong.
+- **Creating your first task no longer asks to send you notifications.**
+  Notifications are switched off until you turn them on in Settings, yet the
+  first task you created on a new Mac or iPhone raised the system "Lotti would
+  like to send you notifications" dialog anyway — asking for a permission the
+  app had no intention of using. Lotti now checks the setting before it asks
+  for anything, so with notifications off the dialog never appears — and when
+  you do switch them on, it asks once, right then. Switching them back off
+  takes the task count off the app icon straight away, instead of leaving it
+  there until you next write something.
 
 ### Changed
 - **The recovery actions on Backfill sync take the standard in-card button

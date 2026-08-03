@@ -5,7 +5,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Entity/dashboard definition and config-flag operations of
 /// [PersistenceLogic].
@@ -70,6 +72,35 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
     }
     if (configFlag.name == 'private') {
       updateNotifications.notify({privateToggleNotification});
+    }
+    if (configFlag.name == enableNotificationsFlag &&
+        previous?.status != configFlag.status) {
+      await _refreshBadgeForNotificationsFlag();
+    }
+  }
+
+  /// Makes the app icon reflect the notifications flag the moment it is
+  /// toggled, rather than at the next journal write.
+  ///
+  /// `updateBadge` is the only thing that reconciles the icon with the flag,
+  /// and nothing else calls it outside entry creation — so without this,
+  /// switching notifications off left the task count sitting on the icon until
+  /// the user happened to write something. Turning them *on* is where the
+  /// permission prompt now surfaces, which is the moment the user asked for it.
+  ///
+  /// Failure is logged and swallowed: the user asked to change a setting, and
+  /// that write has already succeeded. A badge refresh that cannot reach the
+  /// platform is not a reason to report the setting as unsaved.
+  Future<void> _refreshBadgeForNotificationsFlag() async {
+    try {
+      await getIt<NotificationService>().updateBadge();
+    } catch (exception, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.notifications,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'setConfigFlag',
+      );
     }
   }
 

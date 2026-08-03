@@ -150,8 +150,20 @@ down boot.
 
 **`NotificationService` is lazily registered**, and callers receive a thunk
 (`() => getIt<NotificationService>()`) rather than a resolved instance, so
-sandboxed builds such as the Flatpak do not initialise the platform plugin
-until something actually schedules a notification.
+start-up itself never initialises the platform plugin — which is what keeps a
+sandboxed build such as the Flatpak startable when plugin registration fails.
+
+What it does *not* mean is that the plugin waits for a notification to be
+scheduled. The first resolution is normally the **first entry write**, because
+`updateBadge()` runs at the end of every `createDbEntity` — before anything has
+been scheduled and regardless of whether notifications are switched on at all.
+Toggling the notifications config flag resolves it too.
+
+**Construction must therefore be free of user-visible side effects**,
+permission prompts above all: the moment it happens is arbitrary from the
+user's point of view, and delivery is gated separately and later. What the
+plugin may ask the OS for, and when, is in
+[synced notifications](../features/notifications.md#nothing-reaches-the-os-before-the-config-flag-says-so).
 
 # Shutdown
 
