@@ -385,6 +385,18 @@ class BackfillRequestService {
         return 0;
       }
 
+      // A handover receiver installs this durable gate before Matrix login,
+      // closing the window where queue-drain gap detection could dispatch one
+      // automatic batch before the sender's targeted snapshot Begin arrives.
+      // Manual repair deliberately bypasses onboarding suppression.
+      if (!ignoreEnabledFlag && await _hasActiveInboundPreflight()) {
+        _trace(
+          'processBackfillRequests: onboarding preflight active, skipping',
+          subDomain: 'backfill.onboardingPreflight',
+        );
+        return 0;
+      }
+
       // Retire missing/requested rows that have hit the request-count cap.
       // Without this, rows for counters that can never be resolved (e.g.
       // pre-history entries, purged payloads, permanently VC-behind
@@ -406,7 +418,7 @@ class BackfillRequestService {
         amnestyWindow: _amnestyWindow,
       );
 
-      final missing = await _loadNextUnqueuedMissingBatch(
+      var missing = await _loadNextUnqueuedMissingBatch(
         useLimits: useLimits,
         bypassDebounce: bypassDebounce,
       );
@@ -432,23 +444,66 @@ class BackfillRequestService {
         return 0;
       }
 
-      // Build request entries
-      final entries = missing
-          .map(
-            (item) => BackfillRequestEntry(
-              hostId: item.hostId,
-              counter: item.counter,
-            ),
-          )
-          .toList();
+      Future<void> enqueueCurrentBatch() {
+        final entries = missing
+            .map(
+              (item) => BackfillRequestEntry(
+                hostId: item.hostId,
+                counter: item.counter,
+              ),
+            )
+            .toList();
+        return _outboxService.enqueueMessageOrThrow(
+          SyncMessage.backfillRequest(
+            entries: entries,
+            requesterId: requesterId,
+          ),
+        );
+      }
 
-      // Send single backfill request message
-      await _outboxService.enqueueMessageOrThrow(
-        SyncMessage.backfillRequest(
-          entries: entries,
-          requesterId: requesterId,
-        ),
-      );
+      final onboarding = _onboardingSyncService;
+      if (!ignoreEnabledFlag && onboarding != null) {
+        final enqueued = await onboarding.serializeInboundSuppression(
+          () async {
+            // This check and the durable outbox write share the same critical
+            // section as preflight and Begin installation. A Begin therefore
+            // linearizes either before this check or after the row exists;
+            // it can no longer land between the check and persistence.
+            if (await onboarding.hasActiveInboundPreflight()) {
+              _trace(
+                'processBackfillRequests: onboarding preflight became active '
+                'before dispatch, skipping',
+                subDomain: 'backfill.onboardingPreflight',
+              );
+              return false;
+            }
+            final latestCoverage = await onboarding.activeInboundCoverage();
+            if (latestCoverage.isNotEmpty) {
+              final beforeSuppression = missing.length;
+              missing = missing
+                  .where(
+                    (entry) =>
+                        entry.counter > (latestCoverage[entry.hostId] ?? -1),
+                  )
+                  .toList();
+              final suppressed = beforeSuppression - missing.length;
+              if (suppressed > 0) {
+                _trace(
+                  'processBackfillRequests: final onboarding race check '
+                  'suppressed=$suppressed entries',
+                  subDomain: 'backfill.onboardingPreflight',
+                );
+              }
+              if (missing.isEmpty) return false;
+            }
+            await enqueueCurrentBatch();
+            return true;
+          },
+        );
+        if (!enqueued) return 0;
+      } else {
+        await enqueueCurrentBatch();
+      }
 
       // Mark all as requested (increments request count and sets lastRequestedAt)
       await _sequenceLogService.markAsRequested(
@@ -481,6 +536,10 @@ class BackfillRequestService {
 
     _pendingDrainNudge = false;
     nudgeAfterDrain();
+  }
+
+  Future<bool> _hasActiveInboundPreflight() async {
+    return await _onboardingSyncService?.hasActiveInboundPreflight() ?? false;
   }
 
   /// Deletes local files for entries that are about to be re-requested.

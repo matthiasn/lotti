@@ -133,6 +133,72 @@ void main() {
     },
   );
 
+  test('rejects a preflight without a recipient user id', () async {
+    await expectLater(
+      service.beginInboundPreflight(recipientUserId: ''),
+      throwsA(isA<ArgumentError>()),
+    );
+    expect(await db.select(db.onboardingSyncRounds).get(), isEmpty);
+  });
+
+  test('queues an empty range round to release a declined full sync', () async {
+    const target = OnboardingSyncTarget(
+      userId: '@sync:example.org',
+      deviceId: 'PHONE',
+    );
+
+    await service.releaseInboundPreflight(target);
+
+    expect(enqueued, hasLength(2));
+    final begin = enqueued.first as SyncOnboardingSnapshotBegin;
+    final end = enqueued.last as SyncOnboardingSnapshotEnd;
+    expect(begin.coverageUpperBounds, isEmpty);
+    expect(begin.recipientDeviceId, target.deviceId);
+    expect(end.roundId, begin.roundId);
+    expect(end.reason, OnboardingSyncEndReason.complete);
+  });
+
+  test(
+    'Begin installation waits for an automatic enqueue critical section',
+    () async {
+      final beginEntered = Completer<void>();
+      service = OnboardingSyncService(
+        syncDatabase: db,
+        enqueueMessage: (message) async => enqueued.add(message),
+        getHostId: () async {
+          beginEntered.complete();
+          return 'phone-host';
+        },
+        getSnapshotCoverage: () async => const {},
+        getLocalUserId: () => '@sync:example.org',
+        getLocalDeviceId: () => 'PHONE',
+        serviceClock: serviceClock,
+      );
+      final automaticEntered = Completer<void>();
+      final releaseAutomatic = Completer<void>();
+
+      final automatic = service.serializeInboundSuppression(() async {
+        automaticEntered.complete();
+        await releaseAutomatic.future;
+      });
+      await automaticEntered.future;
+
+      final beginHandling = service.handleMessage(_beginMessage());
+      expect(beginEntered.isCompleted, isFalse);
+      expect(await db.onboardingSyncRound('round-1'), isNull);
+
+      releaseAutomatic.complete();
+      await automatic;
+      await beginHandling;
+
+      expect(beginEntered.isCompleted, isTrue);
+      expect(
+        (await db.onboardingSyncRound('round-1'))?.state,
+        'active',
+      );
+    },
+  );
+
   test(
     'target installs a durable bounded lease before acknowledging',
     () async {
@@ -170,6 +236,76 @@ void main() {
       );
     },
   );
+
+  test('preflight survives restart, cancels explicitly, and expires', () async {
+    final roundId = await service.beginInboundPreflight(
+      recipientUserId: '@sync:example.org',
+    );
+
+    final stored = await db.onboardingSyncRound(roundId);
+    expect(stored?.state, 'awaitingBegin');
+    expect(stored?.senderHostId, isEmpty);
+    expect(stored?.recipientDeviceId, isEmpty);
+    expect(stored?.expiresAt, serviceClock.now().add(onboardingSyncLease));
+    expect(await service.hasActiveInboundPreflight(), isTrue);
+
+    final restarted = _phoneService(
+      db,
+      enqueued,
+      Clock.fixed(serviceClock.now().add(const Duration(minutes: 59))),
+    );
+    expect(await restarted.hasActiveInboundPreflight(), isTrue);
+
+    await restarted.cancelInboundPreflight(roundId);
+    expect((await db.onboardingSyncRound(roundId))?.state, 'cancelled');
+    expect(await restarted.hasActiveInboundPreflight(), isFalse);
+
+    await db.updateOnboardingSyncRound(
+      roundId,
+      OnboardingSyncRoundsCompanion(
+        state: const Value('awaitingBegin'),
+        updatedAt: Value(serviceClock.now()),
+      ),
+    );
+    final afterExpiry = _phoneService(
+      db,
+      enqueued,
+      Clock.fixed(serviceClock.now().add(onboardingSyncLease)),
+    );
+    expect(await afterExpiry.hasActiveInboundPreflight(), isFalse);
+  });
+
+  test('target Begin atomically adopts the provisional gate', () async {
+    service = OnboardingSyncService(
+      syncDatabase: db,
+      enqueueMessage: (message) async => enqueued.add(message),
+      getHostId: () async => 'phone-host',
+      getSnapshotCoverage: () async => const {},
+      getLocalUserId: () => '@sync:example.org',
+      getLocalDeviceId: () => 'PHONE',
+      serviceClock: serviceClock,
+      roundIdFactory: () => 'preflight-1',
+    );
+    final preflightRoundId = await service.beginInboundPreflight(
+      recipientUserId: '@sync:example.org',
+    );
+
+    await service.handleMessage(_beginMessage());
+
+    expect(
+      (await db.onboardingSyncRound(preflightRoundId))?.state,
+      'adopted',
+    );
+    expect(await service.hasActiveInboundPreflight(), isFalse);
+    expect(await service.activeInboundCoverage(), {
+      'desktop-host': 12,
+      'older-phone-host': 9,
+    });
+    expect(
+      enqueued.whereType<SyncOnboardingSnapshotAccepted>(),
+      hasLength(1),
+    );
+  });
 
   test(
     'terminal counters close real gaps without replacing received data',
@@ -370,20 +506,21 @@ void main() {
         enqueueMessage: (message) async => enqueued.add(message),
         getHostId: () async => null,
         getSnapshotCoverage: () async => const {},
-        getLocalUserId: () => '@sync:example.org',
+        getLocalUserId: () => null,
         getLocalDeviceId: () => 'DESKTOP',
         serviceClock: serviceClock,
       );
 
+      const target = OnboardingSyncTarget(
+        userId: '@sync:example.org',
+        deviceId: 'PHONE',
+      );
+      await expectLater(service.beginOutbound(target), throwsStateError);
       await expectLater(
-        service.beginOutbound(
-          const OnboardingSyncTarget(
-            userId: '@sync:example.org',
-            deviceId: 'PHONE',
-          ),
-        ),
+        service.releaseInboundPreflight(target),
         throwsStateError,
       );
+      expect(await service.hasActiveInboundPreflight(), isFalse);
       expect(enqueued, isEmpty);
     },
   );

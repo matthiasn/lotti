@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -13,7 +14,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -29,6 +32,15 @@ void main() {
   late MockMaintenance mockMaintenance;
   late MockAgentRepository mockAgentRepository;
   late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
+  late MockDomainLogger mockLogging;
+
+  List<Override> modalOverrides() => [
+    maintenanceProvider.overrideWithValue(mockMaintenance),
+    agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+    syncMaintenanceRepositoryProvider.overrideWithValue(
+      mockSyncMaintenanceRepository,
+    ),
+  ];
 
   Future<void> pumpModal(
     WidgetTester tester, {
@@ -41,16 +53,39 @@ void main() {
           onboardingTarget: onboardingTarget,
           onboardingSyncService: onboardingSyncService,
         ),
-        overrides: [
-          maintenanceProvider.overrideWithValue(mockMaintenance),
-          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
-          syncMaintenanceRepositoryProvider.overrideWithValue(
-            mockSyncMaintenanceRepository,
-          ),
-        ],
+        overrides: modalOverrides(),
       ),
     );
     await tester.pump();
+  }
+
+  Future<void> openOnboardingModal(
+    WidgetTester tester, {
+    required OnboardingSyncTarget target,
+    OnboardingSyncService? onboardingSyncService,
+  }) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => unawaited(
+              ReSyncModal.show(
+                context,
+                onboardingTarget: target,
+                onboardingSyncService: onboardingSyncService,
+              ),
+            ),
+            child: const Text('Open onboarding'),
+          ),
+        ),
+        overrides: modalOverrides(),
+      ),
+    );
+
+    await tester.tap(find.text('Open onboarding'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(ReSyncModalContent), findsOneWidget);
   }
 
   Future<void> selectPreset(
@@ -67,8 +102,23 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
-  setUp(() {
-    ensureDomainLoggerRegistered();
+  setUp(() async {
+    mockLogging = MockDomainLogger();
+    when(
+      () => mockLogging.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) async {});
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockLogging);
+      },
+    );
     mockMaintenance = MockMaintenance();
     mockAgentRepository = MockAgentRepository();
     mockSyncMaintenanceRepository = MockSyncMaintenanceRepository();
@@ -95,6 +145,8 @@ void main() {
       ),
     ).thenAnswer((_) async {});
   });
+
+  tearDown(tearDownTestGetIt);
 
   testWidgets('defaults to Everything and hides custom date fields', (
     tester,
@@ -253,6 +305,9 @@ void main() {
       deviceId: 'PHONE',
     );
     final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.releaseInboundPreflight(target),
+    ).thenAnswer((_) async {});
     await pumpModal(
       tester,
       onboardingTarget: target,
@@ -262,8 +317,8 @@ void main() {
     await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
     await tester.pump();
 
-    verifyNever(() => onboarding.beginOutbound(target));
-    verify(
+    verifyInOrder([
+      () => onboarding.releaseInboundPreflight(target),
       () => mockMaintenance.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
@@ -272,7 +327,135 @@ void main() {
         includeAgentEntities: true,
         onProgress: any(named: 'onProgress'),
       ),
+    ]);
+    verifyNever(() => onboarding.beginOutbound(target));
+  });
+
+  testWidgets('closing onboarding history releases an unused preflight', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.releaseInboundPreflight(target),
+    ).thenAnswer((_) async {});
+    getIt.registerSingleton<OnboardingSyncService>(onboarding);
+
+    await openOnboardingModal(tester, target: target);
+    Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    verify(() => onboarding.releaseInboundPreflight(target)).called(1);
+    expect(find.byType(ReSyncModalContent), findsNothing);
+  });
+
+  testWidgets('started onboarding is not released again on dismissal', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(
+      () => onboarding.completeOutbound(round),
+    ).thenAnswer((_) async {});
+
+    await openOnboardingModal(
+      tester,
+      target: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+    expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
+
+    Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    verify(() => onboarding.beginOutbound(target)).called(1);
+    verify(() => onboarding.completeOutbound(round)).called(1);
+    verifyNever(() => onboarding.releaseInboundPreflight(target));
+    expect(find.byType(ReSyncModalContent), findsNothing);
+  });
+
+  testWidgets('failed onboarding Begin keeps dismissal cleanup armed', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenThrow(StateError('Begin was not queued'));
+    when(
+      () => onboarding.releaseInboundPreflight(target),
+    ).thenAnswer((_) async {});
+
+    await openOnboardingModal(
+      tester,
+      target: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+    expect(find.byKey(const Key('reSyncFailed')), findsOneWidget);
+
+    Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    verify(() => onboarding.beginOutbound(target)).called(1);
+    verify(() => onboarding.releaseInboundPreflight(target)).called(1);
+    expect(find.byType(ReSyncModalContent), findsNothing);
+  });
+
+  testWidgets('logs a failed preflight release when onboarding is dismissed', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.releaseInboundPreflight(target),
+    ).thenThrow(StateError('release failed'));
+
+    await openOnboardingModal(
+      tester,
+      target: target,
+      onboardingSyncService: onboarding,
+    );
+    Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    verify(
+      () => mockLogging.error(
+        LogDomain.sync,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: 'reSyncOnboardingRelease',
+      ),
     ).called(1);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('onboarding failure still attempts the aborted end barrier', (

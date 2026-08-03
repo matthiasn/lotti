@@ -1,5 +1,14 @@
 part of 'sync_db.dart';
 
+const onboardingSyncStateAwaitingBegin = 'awaitingBegin';
+const onboardingSyncStateAwaitingAcceptance = 'awaitingAcceptance';
+const onboardingSyncStateAdopted = 'adopted';
+const onboardingSyncStateActive = 'active';
+const onboardingSyncStateEnding = 'ending';
+const onboardingSyncStateCompleted = 'completed';
+const onboardingSyncStateAborted = 'aborted';
+const onboardingSyncStateCancelled = 'cancelled';
+
 /// Durable onboarding-round leases and authoritative terminal-counter
 /// convergence. Protocol orchestration lives in `OnboardingSyncService`; this
 /// mixin keeps its persistence and sequence mutations atomic.
@@ -50,6 +59,61 @@ mixin _SyncDbOnboarding on _$SyncDatabase, _SyncDbSequenceWatermarks {
     )..where((t) => t.roundId.equals(roundId))).write(changes);
   }
 
+  Future<bool> hasActiveInboundOnboardingSyncPreflight({
+    required DateTime now,
+    required String recipientUserId,
+  }) async {
+    final row =
+        await (select(onboardingSyncRounds)
+              ..where(
+                (t) =>
+                    t.direction.equals('inbound') &
+                    t.state.equals(onboardingSyncStateAwaitingBegin) &
+                    t.recipientUserId.equals(recipientUserId) &
+                    t.expiresAt.isBiggerThanValue(now),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return row != null;
+  }
+
+  Future<int> adoptInboundOnboardingSyncPreflights({
+    required String recipientUserId,
+    required DateTime now,
+  }) {
+    return (update(onboardingSyncRounds)..where(
+          (t) =>
+              t.direction.equals('inbound') &
+              t.state.equals(onboardingSyncStateAwaitingBegin) &
+              t.recipientUserId.equals(recipientUserId) &
+              t.expiresAt.isBiggerThanValue(now),
+        ))
+        .write(
+          OnboardingSyncRoundsCompanion(
+            state: const Value(onboardingSyncStateAdopted),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  /// Installs the sender's bounded range lease and closes any provisional
+  /// receiver gate in one transaction. This prevents a restart between those
+  /// mutations from leaving a blanket preflight active after the range lease
+  /// has already completed.
+  Future<void> installInboundOnboardingSyncRound({
+    required OnboardingSyncRoundsCompanion round,
+    required String recipientUserId,
+    required DateTime now,
+  }) async {
+    await transaction(() async {
+      await into(onboardingSyncRounds).insertOnConflictUpdate(round);
+      await adoptInboundOnboardingSyncPreflights(
+        recipientUserId: recipientUserId,
+        now: now,
+      );
+    });
+  }
+
   Future<List<OnboardingSyncRoundItem>> activeInboundOnboardingSyncRounds({
     DateTime? now,
   }) {
@@ -58,7 +122,10 @@ mixin _SyncDbOnboarding on _$SyncDatabase, _SyncDbSequenceWatermarks {
           ..where(
             (t) =>
                 t.direction.equals('inbound') &
-                t.state.isIn(const ['active', 'aborted']) &
+                t.state.isIn(const [
+                  onboardingSyncStateActive,
+                  onboardingSyncStateAborted,
+                ]) &
                 t.expiresAt.isBiggerThanValue(effectiveNow),
           )
           ..orderBy([(t) => OrderingTerm(expression: t.startedAt)]))
@@ -73,7 +140,11 @@ mixin _SyncDbOnboarding on _$SyncDatabase, _SyncDbSequenceWatermarks {
     return (select(onboardingSyncRounds)..where(
           (t) =>
               t.direction.equals('outbound') &
-              t.state.isIn(const ['active', 'ending', 'aborted']) &
+              t.state.isIn(const [
+                onboardingSyncStateActive,
+                onboardingSyncStateEnding,
+                onboardingSyncStateAborted,
+              ]) &
               t.recipientHostId.equals(recipientHostId) &
               t.expiresAt.isBiggerThanValue(effectiveNow),
         ))

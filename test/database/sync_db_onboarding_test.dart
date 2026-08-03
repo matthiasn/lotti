@@ -70,6 +70,104 @@ void main() {
     expect(active.map((round) => round.roundId), ['active-inbound']);
   });
 
+  test(
+    'preflight remains active until adoption, cancellation, or expiry',
+    () async {
+      final now = DateTime(2024, 3, 15, 12);
+
+      Future<void> insertPreflight({
+        required String roundId,
+        required String userId,
+        required DateTime expiresAt,
+      }) {
+        return db.upsertOnboardingSyncRound(
+          OnboardingSyncRoundsCompanion.insert(
+            roundId: roundId,
+            direction: 'inbound',
+            state: 'awaitingBegin',
+            senderHostId: '',
+            recipientUserId: userId,
+            recipientDeviceId: '',
+            coverageUpperBoundsJson: '{}',
+            startedAt: now,
+            updatedAt: now,
+            expiresAt: expiresAt,
+          ),
+        );
+      }
+
+      await insertPreflight(
+        roundId: 'matching-preflight',
+        userId: '@sync:example.org',
+        expiresAt: now.add(const Duration(hours: 1)),
+      );
+      await insertPreflight(
+        roundId: 'other-user-preflight',
+        userId: '@other:example.org',
+        expiresAt: now.add(const Duration(hours: 1)),
+      );
+      await insertPreflight(
+        roundId: 'expired-preflight',
+        userId: '@sync:example.org',
+        expiresAt: now,
+      );
+
+      expect(
+        await db.hasActiveInboundOnboardingSyncPreflight(
+          now: now,
+          recipientUserId: '@sync:example.org',
+        ),
+        isTrue,
+      );
+
+      await db.adoptInboundOnboardingSyncPreflights(
+        recipientUserId: '@sync:example.org',
+        now: now,
+      );
+
+      expect(
+        (await db.onboardingSyncRound('matching-preflight'))?.state,
+        'adopted',
+      );
+      expect(
+        (await db.onboardingSyncRound('expired-preflight'))?.state,
+        'awaitingBegin',
+        reason: 'an expired historical row does not need mutation',
+      );
+      expect(
+        await db.hasActiveInboundOnboardingSyncPreflight(
+          now: now,
+          recipientUserId: '@sync:example.org',
+        ),
+        isFalse,
+        reason: 'another account cannot gate the active account',
+      );
+      expect(
+        await db.hasActiveInboundOnboardingSyncPreflight(
+          now: now,
+          recipientUserId: '@other:example.org',
+        ),
+        isTrue,
+        reason: 'the other account retains its independent preflight',
+      );
+
+      await db.updateOnboardingSyncRound(
+        'other-user-preflight',
+        OnboardingSyncRoundsCompanion(
+          state: const Value('cancelled'),
+          updatedAt: Value(now),
+        ),
+      );
+      expect(
+        await db.hasActiveInboundOnboardingSyncPreflight(
+          now: now,
+          recipientUserId: '@other:example.org',
+        ),
+        isFalse,
+      );
+    },
+  );
+
   test('bulk burned coverage preserves payload-backed terminal rows', () async {
     final now = DateTime(2024, 3, 15, 12);
     const hostId = 'desktop-host';

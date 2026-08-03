@@ -46,8 +46,12 @@ merge of two users' work.
   (roster order never chooses the target): message history
   defaults to everything, with 30-day and custom ranges available, and shows
   progress until the messages are queued. During that full initial transfer,
-  the new device holds off asking for history that is already on its way; a
-  failed or disconnected transfer releases that hold automatically.
+  the new device starts holding off automatic history requests before it logs
+  in, so even the first queue drain cannot ask for data that is about to arrive;
+  a failed or disconnected transfer releases that hold automatically, and
+  manual recovery stays available. Choosing a partial range, closing the
+  history sheet without starting, or closing Add Device after verification
+  releases the provisional hold without suppressing unrelated repair.
 - **Gives both devices something a person can actually compare.** Before
   anything is configured, the joining device shows which account it is about to
   join and a six-character check code that the inviting device derives

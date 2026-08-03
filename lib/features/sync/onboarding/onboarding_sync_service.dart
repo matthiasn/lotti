@@ -15,11 +15,6 @@ const onboardingTerminalCounterChunkSize = 250;
 
 const _inbound = 'inbound';
 const _outbound = 'outbound';
-const _awaitingAcceptance = 'awaitingAcceptance';
-const _active = 'active';
-const _ending = 'ending';
-const _completed = 'completed';
-const _aborted = 'aborted';
 
 typedef OnboardingAcceptanceWaiter =
     Future<void> Function(Future<void> acceptance, Duration timeout);
@@ -87,11 +82,132 @@ class OnboardingSyncService {
   final int _terminalCounterChunkSize;
   final OnboardingAcceptanceWaiter _acceptanceWaiter;
   final Map<String, Completer<void>> _acceptances = {};
+  Future<void> _inboundSuppressionTail = Future.value();
 
   /// Assigned by the composition root after the backfill requester exists.
   /// A successful end should immediately re-check any residual gaps; aborted
   /// rounds retain their original cooldown until lease expiry.
   void Function()? onInboundSuppressionEnded;
+
+  /// Durably blocks automatic backfill before a newly provisioned receiver
+  /// logs in and starts consuming timeline events. The sender's targeted Begin
+  /// replaces this blanket gate with bounded per-host coverage. If no Begin
+  /// arrives, the gate expires after [_lease]; manual repair remains available.
+  Future<String> beginInboundPreflight({
+    required String recipientUserId,
+  }) => serializeInboundSuppression(() async {
+    if (recipientUserId.isEmpty) {
+      throw ArgumentError.value(recipientUserId, 'recipientUserId');
+    }
+    final now = _clock.now();
+    final roundId = _roundIdFactory();
+    await _syncDatabase.upsertOnboardingSyncRound(
+      OnboardingSyncRoundsCompanion.insert(
+        roundId: roundId,
+        direction: _inbound,
+        state: onboardingSyncStateAwaitingBegin,
+        senderHostId: '',
+        recipientUserId: recipientUserId,
+        recipientDeviceId: '',
+        coverageUpperBoundsJson: _encodeCoverage(const {}),
+        startedAt: now,
+        updatedAt: now,
+        expiresAt: now.add(_lease),
+      ),
+    );
+    _trace('preflight installed round=$roundId');
+    return roundId;
+  });
+
+  /// Cancels a provisioning preflight when login or room setup fails. Errors
+  /// from this method are intentionally surfaced so the caller can log them
+  /// without hiding the original provisioning failure.
+  Future<void> cancelInboundPreflight(String roundId) =>
+      serializeInboundSuppression(() async {
+        final row = await _syncDatabase.onboardingSyncRound(roundId);
+        if (row == null ||
+            row.direction != _inbound ||
+            row.state != onboardingSyncStateAwaitingBegin) {
+          return;
+        }
+        await _syncDatabase.updateOnboardingSyncRound(
+          roundId,
+          OnboardingSyncRoundsCompanion(
+            state: const Value(onboardingSyncStateCancelled),
+            updatedAt: Value(_clock.now()),
+          ),
+        );
+        _trace('preflight cancelled round=$roundId');
+      });
+
+  Future<bool> hasActiveInboundPreflight() {
+    final recipientUserId = _getLocalUserId();
+    if (recipientUserId == null) return Future.value(false);
+    return _syncDatabase.hasActiveInboundOnboardingSyncPreflight(
+      now: _clock.now(),
+      recipientUserId: recipientUserId,
+    );
+  }
+
+  /// Runs [action] in the same process-local critical section used to install
+  /// inbound preflights and targeted Begin ranges. Automatic backfill keeps
+  /// its final suppression check and durable outbox enqueue inside this
+  /// section, giving those operations a single linear order.
+  Future<T> serializeInboundSuppression<T>(Future<T> Function() action) {
+    final previous = _inboundSuppressionTail;
+    final release = Completer<void>();
+    _inboundSuppressionTail = release.future;
+
+    return () async {
+      await previous;
+      try {
+        return await action();
+      } finally {
+        release.complete();
+      }
+    }();
+  }
+
+  /// Releases a newly provisioned receiver when the sender elects not to run
+  /// a full snapshot. An empty-coverage Begin atomically adopts the receiver's
+  /// provisional gate without suppressing any counter range; the matching End
+  /// closes the no-op round once it reaches the peer.
+  Future<void> releaseInboundPreflight(OnboardingSyncTarget target) async {
+    final senderHostId = await _getHostId();
+    final senderUserId = _getLocalUserId();
+    final senderDeviceId = _getLocalDeviceId();
+    if (senderHostId == null ||
+        senderUserId == null ||
+        senderDeviceId == null) {
+      throw StateError('Local sync identity is unavailable');
+    }
+
+    final roundId = _roundIdFactory();
+    await _enqueueMessage(
+      SyncMessage.onboardingSnapshotBegin(
+        protocolVersion: onboardingSyncProtocolVersion,
+        roundId: roundId,
+        senderHostId: senderHostId,
+        senderUserId: senderUserId,
+        senderDeviceId: senderDeviceId,
+        recipientUserId: target.userId,
+        recipientDeviceId: target.deviceId,
+        coverageUpperBounds: const {},
+        leaseSeconds: _lease.inSeconds,
+      ),
+    );
+    await _enqueueMessage(
+      SyncMessage.onboardingSnapshotEnd(
+        protocolVersion: onboardingSyncProtocolVersion,
+        roundId: roundId,
+        senderHostId: senderHostId,
+        recipientUserId: target.userId,
+        recipientDeviceId: target.deviceId,
+        reason: OnboardingSyncEndReason.complete,
+      ),
+    );
+    _trace('preflight release queued round=$roundId');
+  }
 
   Future<OutboundOnboardingRound> beginOutbound(
     OnboardingSyncTarget target,
@@ -123,7 +239,7 @@ class OnboardingSyncService {
       OnboardingSyncRoundsCompanion.insert(
         roundId: roundId,
         direction: _outbound,
-        state: _awaitingAcceptance,
+        state: onboardingSyncStateAwaitingAcceptance,
         senderHostId: senderHostId,
         senderUserId: Value(senderUserId),
         senderDeviceId: Value(senderDeviceId),
@@ -187,7 +303,7 @@ class OnboardingSyncService {
     await _syncDatabase.updateOnboardingSyncRound(
       round.roundId,
       OnboardingSyncRoundsCompanion(
-        state: const Value(_ending),
+        state: const Value(onboardingSyncStateEnding),
         updatedAt: Value(now),
       ),
     );
@@ -258,11 +374,17 @@ class OnboardingSyncService {
     }
   }
 
-  Future<void> _handleBegin(SyncOnboardingSnapshotBegin message) async {
+  Future<void> _handleBegin(SyncOnboardingSnapshotBegin message) {
     if (!_isCurrentProtocol(message.protocolVersion) ||
         !_isLocalTarget(message.recipientUserId, message.recipientDeviceId)) {
-      return;
+      return Future.value();
     }
+    return serializeInboundSuppression(() => _handleTargetedBegin(message));
+  }
+
+  Future<void> _handleTargetedBegin(
+    SyncOnboardingSnapshotBegin message,
+  ) async {
     final recipientHostId = await _getHostId();
     if (recipientHostId == null) return;
 
@@ -271,12 +393,16 @@ class OnboardingSyncService {
     if (existing != null) {
       final isMatchingActiveRound =
           existing.direction == _inbound &&
-          existing.state == _active &&
+          existing.state == onboardingSyncStateActive &&
           existing.senderHostId == message.senderHostId &&
           existing.recipientUserId == message.recipientUserId &&
           existing.recipientDeviceId == message.recipientDeviceId &&
           existing.expiresAt.isAfter(now);
       if (isMatchingActiveRound) {
+        await _syncDatabase.adoptInboundOnboardingSyncPreflights(
+          recipientUserId: message.recipientUserId,
+          now: now,
+        );
         await _enqueueAccepted(message, recipientHostId);
       }
       // A duplicate begin never renews, reopens, or changes a durable round.
@@ -284,11 +410,11 @@ class OnboardingSyncService {
       return;
     }
     final lease = _boundedWireDuration(message.leaseSeconds, _lease);
-    await _syncDatabase.upsertOnboardingSyncRound(
-      OnboardingSyncRoundsCompanion.insert(
+    await _syncDatabase.installInboundOnboardingSyncRound(
+      round: OnboardingSyncRoundsCompanion.insert(
         roundId: message.roundId,
         direction: _inbound,
-        state: _active,
+        state: onboardingSyncStateActive,
         senderHostId: message.senderHostId,
         senderUserId: Value(message.senderUserId),
         senderDeviceId: Value(message.senderDeviceId),
@@ -302,6 +428,8 @@ class OnboardingSyncService {
         updatedAt: now,
         expiresAt: now.add(lease),
       ),
+      recipientUserId: message.recipientUserId,
+      now: now,
     );
     await _enqueueAccepted(message, recipientHostId);
     _trace(
@@ -339,14 +467,14 @@ class OnboardingSyncService {
         row.direction != _outbound ||
         row.senderHostId != message.senderHostId ||
         row.recipientDeviceId != message.recipientDeviceId ||
-        row.state != _awaitingAcceptance) {
+        row.state != onboardingSyncStateAwaitingAcceptance) {
       return;
     }
     final now = _clock.now();
     await _syncDatabase.updateOnboardingSyncRound(
       message.roundId,
       OnboardingSyncRoundsCompanion(
-        state: const Value(_active),
+        state: const Value(onboardingSyncStateActive),
         recipientHostId: Value(message.recipientHostId),
         updatedAt: Value(now),
       ),
@@ -393,7 +521,7 @@ class OnboardingSyncService {
     if (row == null ||
         row.direction != _inbound ||
         row.senderHostId != message.senderHostId ||
-        row.state != _active) {
+        row.state != onboardingSyncStateActive) {
       return;
     }
     final now = _clock.now();
@@ -402,8 +530,8 @@ class OnboardingSyncService {
       OnboardingSyncRoundsCompanion(
         state: Value(
           message.reason == OnboardingSyncEndReason.complete
-              ? _completed
-              : _aborted,
+              ? onboardingSyncStateCompleted
+              : onboardingSyncStateAborted,
         ),
         updatedAt: Value(now),
       ),
@@ -421,7 +549,7 @@ class OnboardingSyncService {
     final row = await _syncDatabase.onboardingSyncRound(message.roundId);
     if (row == null ||
         row.direction != _outbound ||
-        row.state != _ending ||
+        row.state != onboardingSyncStateEnding ||
         row.senderHostId != message.senderHostId ||
         row.recipientUserId != message.recipientUserId ||
         row.recipientDeviceId != message.recipientDeviceId) {
@@ -433,8 +561,8 @@ class OnboardingSyncService {
       OnboardingSyncRoundsCompanion(
         state: Value(
           message.reason == OnboardingSyncEndReason.complete
-              ? _completed
-              : _aborted,
+              ? onboardingSyncStateCompleted
+              : onboardingSyncStateAborted,
         ),
         updatedAt: Value(now),
       ),
@@ -449,7 +577,7 @@ class OnboardingSyncService {
     final now = _clock.now();
     if (row == null ||
         row.direction != _inbound ||
-        row.state != _active ||
+        row.state != onboardingSyncStateActive ||
         row.senderHostId != senderHostId ||
         !row.expiresAt.isAfter(now)) {
       return null;

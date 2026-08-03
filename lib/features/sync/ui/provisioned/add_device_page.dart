@@ -74,6 +74,9 @@ class AddDeviceJoinSignal extends ValueNotifier<AddDeviceJoinState> {
 
   /// Exact Matrix target discovered and verified by this onboarding sheet.
   OnboardingSyncTarget? target;
+
+  /// The history sheet owns provisional-gate cleanup after it is opened.
+  bool onboardingPreflightHandedOff = false;
 }
 
 /// The deliberate "hand this account to another device" act.
@@ -83,22 +86,43 @@ class AddDeviceJoinSignal extends ValueNotifier<AddDeviceJoinState> {
 /// paired device can present it — a surviving phone must be able to onboard a
 /// replacement for a dead desktop.
 class AddDeviceModal {
-  static Future<void> show(BuildContext context) {
-    final joinState = AddDeviceJoinSignal();
-    return ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.syncAddDeviceAction,
-      // Clears the sticky bar, which would otherwise cover the last block.
-      padding:
-          WoltModalConfig.pagePadding +
-          EdgeInsets.only(
-            bottom:
-                context.designTokens.spacing.step13 +
-                context.designTokens.spacing.step10,
-          ),
-      stickyActionBarBuilder: (_) => AddDeviceActionBar(signal: joinState),
-      builder: (_) => AddDeviceView(signal: joinState),
-    ).whenComplete(joinState.dispose);
+  static Future<void> show(
+    BuildContext context, {
+    AddDeviceJoinSignal? signal,
+  }) async {
+    final joinState = signal ?? AddDeviceJoinSignal();
+    try {
+      await ModalUtils.showSinglePageModal<void>(
+        context: context,
+        title: context.messages.syncAddDeviceAction,
+        // Clears the sticky bar, which would otherwise cover the last block.
+        padding:
+            WoltModalConfig.pagePadding +
+            EdgeInsets.only(
+              bottom:
+                  context.designTokens.spacing.step13 +
+                  context.designTokens.spacing.step10,
+            ),
+        stickyActionBarBuilder: (_) => AddDeviceActionBar(signal: joinState),
+        builder: (_) => AddDeviceView(signal: joinState),
+      );
+    } finally {
+      try {
+        final target = joinState.target;
+        if (target != null && !joinState.onboardingPreflightHandedOff) {
+          await getIt<OnboardingSyncService>().releaseInboundPreflight(target);
+        }
+      } catch (error, stackTrace) {
+        getIt<DomainLogger>().error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'addDeviceOnboardingRelease',
+        );
+      } finally {
+        joinState.dispose();
+      }
+    }
   }
 }
 
@@ -165,13 +189,16 @@ class AddDeviceActionBar extends StatelessWidget {
           size: DesignSystemButtonSize.large,
           leadingIcon: enabled ? Icons.history_rounded : Icons.lock_outline,
           onPressed: enabled
-              ? () => unawaited(
-                  onSendMessages?.call(context) ??
-                      ReSyncModal.show(
-                        context,
-                        onboardingTarget: signal.target,
-                      ),
-                )
+              ? () {
+                  signal.onboardingPreflightHandedOff = true;
+                  unawaited(
+                    onSendMessages?.call(context) ??
+                        ReSyncModal.show(
+                          context,
+                          onboardingTarget: signal.target,
+                        ),
+                  );
+                }
               : null,
         );
 

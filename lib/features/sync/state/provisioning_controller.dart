@@ -5,6 +5,8 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/get_it.dart';
@@ -44,6 +46,10 @@ provisioningControllerProvider =
     );
 
 class ProvisioningController extends Notifier<ProvisioningState> {
+  ProvisioningController({OnboardingSyncService? onboardingSyncService})
+    : _injectedOnboardingSyncService = onboardingSyncService;
+
+  final OnboardingSyncService? _injectedOnboardingSyncService;
   SyncProvisioningBundle? _lastBundle;
 
   @override
@@ -142,16 +148,31 @@ class ProvisioningController extends Notifier<ProvisioningState> {
     final link = ref.keepAlive();
     final matrixService = ref.read(matrixServiceProvider);
     final loggingService = getIt<DomainLogger>();
+    final onboardingSyncService = rotatePassword
+        ? null
+        : _injectedOnboardingSyncService ?? getIt<OnboardingSyncService>();
+    String? inboundPreflightRoundId;
 
     try {
       // Step 1: Login
       state = const ProvisioningState.loggingIn();
 
-      // If already logged in, disconnect first so the session manager will
-      // actually attempt credential login instead of silently reusing the
-      // existing session.
       final oldConfig = await matrixService.loadConfig();
       final oldRoomId = await matrixService.getRoom();
+
+      // Persist the gate before changing the current Matrix session. A failed
+      // preflight therefore leaves the existing account connected, while a
+      // successful one is already durable before login can start background
+      // lifecycle processing and gap detection.
+      if (onboardingSyncService != null) {
+        inboundPreflightRoundId = await onboardingSyncService
+            .beginInboundPreflight(
+              recipientUserId: bundle.user,
+            );
+      }
+
+      // If already logged in, disconnect so the session manager actually
+      // attempts credential login instead of silently reusing that session.
       if (matrixService.isLoggedIn()) {
         await matrixService.logout();
       }
@@ -167,17 +188,15 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       await matrixService.setConfig(newConfig);
       final loggedIn = await matrixService.login(waitForLifecycle: false);
       if (!loggedIn) {
+        await _cancelInboundPreflight(
+          onboardingSyncService,
+          inboundPreflightRoundId,
+          loggingService,
+        );
+        inboundPreflightRoundId = null;
         // Restore previous config and reconnect so the user does not end up
         // disconnected after a failed provisioning attempt.
-        if (oldConfig != null) {
-          await matrixService.setConfig(oldConfig);
-          if (oldRoomId != null) {
-            await matrixService.saveRoom(oldRoomId);
-          }
-          await matrixService.login(waitForLifecycle: false);
-        } else {
-          await matrixService.deleteConfig();
-        }
+        await _restorePreviousSession(matrixService, oldConfig, oldRoomId);
         state = const ProvisioningState.error(ProvisioningError.loginFailed);
         return;
       }
@@ -221,12 +240,51 @@ class ProvisioningController extends Notifier<ProvisioningState> {
         stackTrace: stackTrace,
         subDomain: 'configureFromBundle',
       );
+      await _cancelInboundPreflight(
+        onboardingSyncService,
+        inboundPreflightRoundId,
+        loggingService,
+      );
       state = const ProvisioningState.error(
         ProvisioningError.configurationError,
       );
     } finally {
       link.close();
     }
+  }
+
+  Future<void> _cancelInboundPreflight(
+    OnboardingSyncService? service,
+    String? roundId,
+    DomainLogger loggingService,
+  ) async {
+    if (service == null || roundId == null) return;
+    try {
+      await service.cancelInboundPreflight(roundId);
+    } catch (error, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'configureFromBundle.cancelPreflight',
+      );
+    }
+  }
+
+  Future<void> _restorePreviousSession(
+    MatrixService matrixService,
+    MatrixConfig? oldConfig,
+    String? oldRoomId,
+  ) async {
+    if (oldConfig == null) {
+      await matrixService.deleteConfig();
+      return;
+    }
+    await matrixService.setConfig(oldConfig);
+    if (oldRoomId != null) {
+      await matrixService.saveRoom(oldRoomId);
+    }
+    await matrixService.login(waitForLifecycle: false);
   }
 
   /// Resets the controller to its initial state.
