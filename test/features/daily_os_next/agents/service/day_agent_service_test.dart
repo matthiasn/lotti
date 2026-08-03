@@ -462,6 +462,40 @@ void main() {
       }
 
       test(
+        'pre-check leaves the digest cadence absent without a planner',
+        () async {
+          when(
+            () => agentService.getAgent(dailyOsPlannerAgentId),
+          ).thenAnswer((_) async => null);
+
+          await service.ensureCoordinatorDigestWake();
+
+          verify(() => agentService.getAgent(dailyOsPlannerAgentId)).called(1);
+          verifyNever(() => repository.getEntity(digestRecordId));
+          verifyNever(
+            () =>
+                syncService.upsertEntity(any(that: isA<ScheduledWakeEntity>())),
+          );
+        },
+      );
+
+      test(
+        'pre-check restores the digest cadence for an existing planner',
+        () async {
+          await withClock(
+            Clock.fixed(now),
+            service.ensureCoordinatorDigestWake,
+          );
+
+          final record = upsertedWakes().single;
+          expect(record.id, digestRecordId);
+          expect(record.status, ScheduledWakeStatus.pending);
+          expect(record.scheduledAt, DateTime(2026, 5, 26, 6));
+          expect(record.workspaceKey, coordinatorDigestWorkspaceKey);
+        },
+      );
+
+      test(
         'schedules the first digest wake when no record exists',
         () async {
           await restoreWithPlanner();
