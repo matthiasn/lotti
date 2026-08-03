@@ -19,9 +19,8 @@ class QueueMarkerAdvancer {
 
   /// Advances `queue_markers` for [entry]'s room if the candidate
   /// timestamp — clamped against any still-active queue rows for the
-  /// same room — strictly moves the marker forward. Bypasses
-  /// `TimelineEventOrdering.isNewer` because `isNewer` treats a null
-  /// stored event id as "no marker" — but the marker can legitimately
+  /// same room — strictly moves the marker forward. A null stored event id
+  /// cannot be treated as "no marker" because the marker can legitimately
   /// carry a non-zero timestamp with a null event id (right after a
   /// placeholder advance). Guarding on the timestamp directly, with
   /// the durable event id as a tiebreaker only when both sides are

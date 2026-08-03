@@ -26,24 +26,4 @@ class TimelineEventOrdering {
     });
     return [for (final item in indexed) item.event];
   }
-
-  /// Returns whether the candidate event should advance the read marker given
-  /// the latest timestamp and event ID recorded so far.
-  static bool isNewer({
-    required num candidateTimestamp,
-    required String candidateEventId,
-    required num? latestTimestamp,
-    required String? latestEventId,
-  }) {
-    if (latestTimestamp == null || latestEventId == null) {
-      return true;
-    }
-    if (candidateTimestamp > latestTimestamp) {
-      return true;
-    }
-    if (candidateTimestamp < latestTimestamp) {
-      return false;
-    }
-    return candidateEventId.compareTo(latestEventId) > 0;
-  }
 }

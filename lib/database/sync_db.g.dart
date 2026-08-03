@@ -2740,9 +2740,8 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
   /// are never written here; they stay in-memory on the worker.
   final String? lastAppliedEventId;
 
-  /// Highest `originServerTs` we have applied and committed. Guarded
-  /// by `TimelineEventOrdering.isNewer`; writes only accept
-  /// monotonic advancement (F2).
+  /// Highest `originServerTs` we have applied and committed. Writes only
+  /// accept monotonic advancement (F2).
   final int lastAppliedTs;
 
   /// Monotonic counter incremented on every successful

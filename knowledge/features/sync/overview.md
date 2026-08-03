@@ -11,7 +11,7 @@ sources:
   - id: sync-src
     resource: ../../../lib/features/sync
     title: Sync feature source
-    last_modified: 2026-08-02
+    last_modified: 2026-08-03
   - id: get-it
     resource: ../../../lib/get_it.dart
     title: Default bootstrap wiring
@@ -493,9 +493,12 @@ clean it up:
   failed write is followed by an attempt to put the previous config back
   (`deleteDevice.reauthRestore`), so a half-completed replacement cannot
   strand the account with no credentials to reconnect with.
-- **Guards.** The current session can never delete itself (use logout), and
-  the `DeviceKeys`-based wrapper refuses devices of another user. Deletion
-  needs *some* password — stored or typed — and is refused with an
+- **Guards.** Deletion targets account-owned device ids surfaced by
+  `getSyncDevices()`, including deletion-only cached entries for sessions no
+  longer present in the homeserver inventory. Foreign-user entries are
+  verify-only and never offer removal. At the operation boundary,
+  `deleteDeviceById` refuses the current session (use logout instead). Deletion
+  also needs *some* password — stored or typed — and is refused with an
   `UnsupportedError` when neither exists (SSO/token UIA is not implemented).
 - **UI.** `ui/widgets/matrix/sync_devices_list.dart` renders the inventory on
   the provisioned-status page with a warning banner while any unverified

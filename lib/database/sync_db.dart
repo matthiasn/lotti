@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
-import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';

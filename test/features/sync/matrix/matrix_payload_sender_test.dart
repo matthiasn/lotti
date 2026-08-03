@@ -22,8 +22,8 @@ import '../../agents/test_data/entity_factories.dart';
 /// Direct unit coverage for [MatrixPayloadSender]. The owning
 /// `MatrixMessageSender` exercises the higher-level payload methods through its
 /// `*ForTesting` seams; this file targets the leaf upload primitive
-/// ([MatrixPayloadSender.sendFile]) and the standalone path-safety predicate so
-/// the collaborator is covered without going through the sender wrapper.
+/// ([MatrixPayloadSender.sendFile]) and public payload methods directly so the
+/// collaborator is covered without going through the sender wrapper.
 void main() {
   setUpAll(() {
     registerFallbackValue(MatrixFile(bytes: Uint8List(0), name: 'fallback'));
@@ -360,6 +360,59 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'replaces unsafe bundle paths before uploading the manifest',
+      () async {
+        final uploadedPaths = <String>[];
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((invocation) async {
+          final extra =
+              invocation.namedArguments[#extraContent] as Map<String, dynamic>;
+          uploadedPaths.add(extra['relativePath'] as String);
+          return 'manifest-event-${uploadedPaths.length}';
+        });
+
+        const unsafePaths = [
+          '/journal/2026-04-25/evil.entry.json',
+          '/outbox_bundles/../escape.json',
+        ];
+        final returnedPaths = <String>[];
+
+        for (final unsafePath in unsafePaths) {
+          final result = await payloadSender.sendOutboxBundlePayload(
+            room: room,
+            message: SyncOutboxBundle(
+              children: const [SyncMessage.aiConfigDelete(id: 'cfg-1')],
+              jsonPath: unsafePath,
+            ),
+          );
+
+          expect(result, isNotNull, reason: unsafePath);
+          expect(result!.jsonPath, startsWith('/outbox_bundles/'));
+          expect(result.jsonPath, endsWith('.json'));
+          expect(result.jsonPath, isNot(unsafePath));
+          returnedPaths.add(result.jsonPath!);
+        }
+
+        expect(uploadedPaths, returnedPaths);
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: contains(
+                'rejecting outboxBundle jsonPath outside /outbox_bundles/',
+              ),
+            ),
+            subDomain: 'sendMatrixMsg.outboxBundle.write',
+          ),
+        ).called(unsafePaths.length);
+      },
+    );
+
     // Media rows are supposed to be excluded from bundles at claim time
     // (`filePath != null` makes a row travel alone), so this path is defence
     // in depth for rows enqueued by a build that had not yet moved the
@@ -655,32 +708,5 @@ void main() {
         reason: 'The normal path must not start deleting live sidecars.',
       );
     });
-  });
-
-  group('debugIsSafeOutboxBundlePath', () {
-    test('accepts well-formed outbox-bundle paths', () {
-      expect(
-        MatrixPayloadSender.debugIsSafeOutboxBundlePath(
-          '/outbox_bundles/abc.json',
-        ),
-        isTrue,
-      );
-    });
-
-    test(
-      'rejects paths outside the outbox-bundles prefix or with traversal',
-      () {
-        expect(
-          MatrixPayloadSender.debugIsSafeOutboxBundlePath('/elsewhere/x.json'),
-          isFalse,
-        );
-        expect(
-          MatrixPayloadSender.debugIsSafeOutboxBundlePath(
-            '/outbox_bundles/../escape.json',
-          ),
-          isFalse,
-        );
-      },
-    );
   });
 }

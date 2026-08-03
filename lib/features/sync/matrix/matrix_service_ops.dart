@@ -244,28 +244,6 @@ class MatrixServiceOps {
     }
   }
 
-  /// Deletes [deviceKeys]' session from the homeserver after checking it
-  /// belongs to the logged-in account. See [deleteDeviceById].
-  Future<void> deleteDevice(DeviceKeys deviceKeys) async {
-    final deviceId = deviceKeys.deviceId;
-
-    if (deviceId == null) {
-      throw ArgumentError(
-        'Cannot delete device: deviceId is null for device '
-        '${deviceKeys.deviceDisplayName ?? 'unknown'}',
-      );
-    }
-
-    if (deviceKeys.userId != _client.userID) {
-      throw StateError(
-        'Cannot delete device $deviceId: Device belongs to user '
-        '${deviceKeys.userId} but current user is ${_client.userID}',
-      );
-    }
-
-    await deleteDeviceById(deviceId);
-  }
-
   /// Deletes the session [deviceId] from the homeserver, then refreshes the
   /// local device-key cache so the removal unblocks sync immediately.
   ///
