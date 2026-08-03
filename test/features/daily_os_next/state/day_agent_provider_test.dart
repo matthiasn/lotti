@@ -32,52 +32,22 @@ void main() {
   );
 
   group('dayAgentProvider factory', () {
-    test(
-      'constructs a RealDayAgent wired to the upstream service providers',
-      () {
-        final captureService = MockDayAgentCaptureService();
-        final planService = MockDayAgentPlanService();
-        final dayAgentService = MockDayAgentService();
-        final journalDb = MockJournalDb();
-        final outbox = MockDayProcessingOutboxRepository();
-        final runtime = MockDayProcessingRuntime();
-
-        final container = ProviderContainer(
-          overrides: [
-            dayAgentCaptureServiceProvider.overrideWithValue(captureService),
-            dayAgentPlanServiceProvider.overrideWithValue(planService),
-            dayAgentServiceProvider.overrideWithValue(dayAgentService),
-            journalDbProvider.overrideWithValue(journalDb),
-            dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
-            dayProcessingRuntimeProvider.overrideWithValue(runtime),
-            silenceAgentUpdates,
-          ],
-        );
-        addTearDown(container.dispose);
-
-        final agent = container.read(dayAgentProvider);
-        expect(agent, isA<RealDayAgent>());
-        final real = agent as RealDayAgent;
-        expect(real.captureService, same(captureService));
-        expect(real.planService, same(planService));
-        expect(real.dayAgentService, same(dayAgentService));
-        expect(real.journalDb, same(journalDb));
-        expect(real.mockFallback, isA<MockDayAgent>());
-        expect(real.outbox, same(outbox));
-      },
-    );
-
-    test('wires the durable outbox and nudges the processing runtime '
-        '(ADR 0032 phase 1)', () {
+    ({
+      RealDayAgent agent,
+      MockDayAgentCaptureService captureService,
+      MockDayAgentPlanService planService,
+      MockDayAgentService dayAgentService,
+      MockJournalDb journalDb,
+      MockDayProcessingOutboxRepository outbox,
+      MockDayProcessingRuntime runtime,
+    })
+    makeAgent() {
       final captureService = MockDayAgentCaptureService();
       final planService = MockDayAgentPlanService();
       final dayAgentService = MockDayAgentService();
       final journalDb = MockJournalDb();
       final outbox = MockDayProcessingOutboxRepository();
       final runtime = MockDayProcessingRuntime();
-      // ignore: unnecessary_lambdas
-      when(() => runtime.nudge()).thenAnswer((_) async {});
-
       final container = ProviderContainer(
         overrides: [
           dayAgentCaptureServiceProvider.overrideWithValue(captureService),
@@ -91,14 +61,41 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final agent = container.read(dayAgentProvider);
-      expect(agent, isA<RealDayAgent>());
-      final real = agent as RealDayAgent;
-      expect(real.outbox, same(outbox));
+      return (
+        agent: container.read(dayAgentProvider) as RealDayAgent,
+        captureService: captureService,
+        planService: planService,
+        dayAgentService: dayAgentService,
+        journalDb: journalDb,
+        outbox: outbox,
+        runtime: runtime,
+      );
+    }
 
-      real.nudgeProcessing();
+    test(
+      'constructs a RealDayAgent wired to the upstream service providers',
+      () {
+        final fixture = makeAgent();
+
+        expect(fixture.agent.captureService, same(fixture.captureService));
+        expect(fixture.agent.planService, same(fixture.planService));
+        expect(fixture.agent.dayAgentService, same(fixture.dayAgentService));
+        expect(fixture.agent.journalDb, same(fixture.journalDb));
+        expect(fixture.agent.mockFallback, isA<MockDayAgent>());
+        expect(fixture.agent.outbox, same(fixture.outbox));
+      },
+    );
+
+    test('wires the durable outbox and nudges the processing runtime '
+        '(ADR 0032 phase 1)', () {
+      final fixture = makeAgent();
       // ignore: unnecessary_lambdas
-      verify(() => runtime.nudge()).called(1);
+      when(() => fixture.runtime.nudge()).thenAnswer((_) async {});
+      expect(fixture.agent.outbox, same(fixture.outbox));
+
+      fixture.agent.nudgeProcessing();
+      // ignore: unnecessary_lambdas
+      verify(() => fixture.runtime.nudge()).called(1);
     });
   });
 
