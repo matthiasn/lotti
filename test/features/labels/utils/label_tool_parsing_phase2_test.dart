@@ -165,7 +165,7 @@ void main() {
   });
 
   // Focused property tests pinning the private `_confidenceToRank` /
-  // `_normalizeConfidence` contract through the public parser, per TEST_REVIEW.
+  // `_normalizeConfidence` contract through the public parser.
   group('confidence normalization / rank contract', () {
     bool isCanonical(String s) => hCanonicalConfidenceRanks.containsKey(s);
 
