@@ -252,6 +252,13 @@ class AttentionEvidenceRef {
   /// Optional short human-readable label captured at request time.
   final String? label;
 
+  /// Converts this evidence reference to JSON.
+  Map<String, Object?> toJson() => {
+    'kind': kind.name,
+    'id': id,
+    'label': label,
+  };
+
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
