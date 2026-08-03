@@ -10,28 +10,31 @@
 | File | Lines | Has test? | Top issue |
 |---|---|---|---|
 | `lib/features/categories/domain/category_icon.dart` | 306 | Yes (425) | No active issue; unused suggestion logic is removed and serialization remains covered |
-| `lib/features/categories/repository/categories_repository.dart` | 114 | Yes (663) | **[MED]** Repository test uses inline getIt boilerplate instead of `setUpTestGetIt()` |
-| `lib/features/categories/state/category_details_controller.dart` | 376 | Yes (1108) | Shared helpers and deterministic event-queue coordination are implemented |
-| `lib/features/categories/state/category_details_controller.freezed.dart` | 283 | n/a — generated | — |
-| `lib/features/categories/state/category_task_count_provider.dart` | 40 | Yes (178) | No active issue; six delayed futures were replaced with deterministic event-queue drains |
+| `lib/features/categories/domain/category_icon_data.dart` | 117 | No | **[MED]** Missing path-mirroring test file; behavior is covered indirectly by `category_icon_test.dart` |
+| `lib/features/categories/domain/category_icon_names.dart` | 97 | No | **[MED]** Missing path-mirroring test file; behavior is covered indirectly by `category_icon_test.dart` |
+| `lib/features/categories/repository/categories_repository.dart` | 176 | Yes (737) | No active issue; shared GetIt setup is used |
 | `lib/features/categories/state/categories_list_controller.dart` | 14 | Yes (69) | Repository stream values and errors are covered |
+| `lib/features/categories/state/category_details_controller.dart` | 376 | Yes (1110) | Shared helpers and deterministic event-queue coordination are implemented |
+| `lib/features/categories/state/category_details_controller.freezed.dart` | 283 | n/a — generated | — |
+| `lib/features/categories/state/category_task_count_provider.dart` | 40 | Yes (175) | No active issue; six delayed futures were replaced with deterministic event-queue drains |
+| `lib/features/categories/ui/pages/categories_list_page.dart` | 151 | Yes (851) | **[MED]** Five `pumpAndSettle` calls remain to review |
+| `lib/features/categories/ui/pages/category_details_form_sections.dart` | 228 | Yes (564) | Extracted form sections have a path-mirroring test |
 | `lib/features/categories/ui/pages/category_details_page.dart` | 521 | Yes (1718) | Shared page-pump helper is implemented; the mirror test remains long |
-| `lib/features/categories/ui/pages/categories_list_page.dart` | 370 | Yes (in ui/pages/) | **[MED]** Tests use `pumpAndSettle` throughout |
-| `lib/features/categories/ui/widgets/category_color_icon.dart` | 51 | No | Missing test file |
-| `lib/features/categories/ui/widgets/category_color_picker.dart` | 107 | Yes | **[MED]** 10 `pumpAndSettle` calls |
-| `lib/features/categories/ui/widgets/category_correction_examples.dart` | 257 | Yes | **[MED]** 2 `pumpAndSettle` calls |
-| `lib/features/categories/ui/widgets/category_create_modal.dart` | 300 | Yes | **[MED]** 20 `pumpAndSettle` calls |
-| `lib/features/categories/ui/widgets/category_field.dart` | 90 | Yes | **[LOW]** 8 `pumpAndSettle` calls |
+| `lib/features/categories/ui/widgets/category_color_icon.dart` | 26 | No | **[HIGH]** Missing path-mirroring test file |
+| `lib/features/categories/ui/widgets/category_color_picker.dart` | 30 | Yes (154) | No `pumpAndSettle` calls remain |
+| `lib/features/categories/ui/widgets/category_correction_examples.dart` | 245 | Yes (434) | Two `pumpAndSettle` calls remain |
+| `lib/features/categories/ui/widgets/category_create_modal.dart` | 304 | Yes (595) | Twenty modal-transition `pumpAndSettle` calls were reviewed and retained |
+| `lib/features/categories/ui/widgets/category_field.dart` | 91 | Yes (238) | Eight `pumpAndSettle` calls remain |
+| `lib/features/categories/ui/widgets/category_icon_chip.dart` | 181 | Yes (215) | Path-mirroring coverage exists |
 | `lib/features/categories/ui/widgets/category_icon_compact.dart` | 153 | Yes (120) | Icon, fallback, color, size, and definition paths are covered |
-| `lib/features/categories/ui/widgets/category_icon_display.dart` | 76 | Yes | OK |
-| `lib/features/categories/ui/widgets/category_icon_picker.dart` | 164 | Yes | **[MED]** 5 `pumpAndSettle` calls |
-| `lib/features/categories/ui/widgets/category_language_dropdown.dart` | 67 | Yes | OK |
-| `lib/features/categories/ui/widgets/category_name_field.dart` | 41 | Yes | OK |
-| `lib/features/categories/ui/widgets/category_selection_icon_button.dart` | — | Yes | **[MED]** 4 `pumpAndSettle` |
-| `lib/features/categories/ui/widgets/category_selection_modal_content.dart` | 288 | Yes | **[MED]** 22 `pumpAndSettle` calls |
-| `lib/features/categories/ui/widgets/category_speech_dictionary.dart` | 130 | Yes | **[MED]** 9 `pumpAndSettle` calls |
-| `lib/features/categories/ui/widgets/category_switch_tiles.dart` | 71 | Yes | OK |
-| `lib/features/categories/ui/widgets/category_type_card.dart` | 63 | Yes | Selection, tap, and background behavior are covered in the correctly named mirror test |
+| `lib/features/categories/ui/widgets/category_icon_display.dart` | 76 | Yes (218) | Path-mirroring coverage exists |
+| `lib/features/categories/ui/widgets/category_icon_picker.dart` | 172 | Yes (373) | Five `pumpAndSettle` calls remain |
+| `lib/features/categories/ui/widgets/category_language_dropdown.dart` | 44 | Yes (113) | Path-mirroring coverage exists |
+| `lib/features/categories/ui/widgets/category_name_field.dart` | 35 | Yes (155) | Path-mirroring coverage exists |
+| `lib/features/categories/ui/widgets/category_picker_sheet.dart` | 399 | Yes (804) | Thirteen route/modal `pumpAndSettle` calls remain |
+| `lib/features/categories/ui/widgets/category_selection_icon_button.dart` | 51 | Yes (135) | Four `pumpAndSettle` calls remain |
+| `lib/features/categories/ui/widgets/category_speech_dictionary.dart` | 126 | Yes (474) | Nine `pumpAndSettle` calls remain |
+| `lib/features/categories/ui/widgets/category_switch_tiles.dart` | 90 | Yes (194) | Path-mirroring coverage exists |
 
 ---
 
@@ -93,12 +96,12 @@
 - [x] **[HIGH]** `lib/features/categories/state/categories_list_controller.dart` (10 lines) — no test file exists. The file is small but it's the Riverpod provider that feeds the categories list page; its absence from the test suite means list-watching behavior (e.g., stream subscription lifecycle, error propagation) is untested at the unit level.
   **RESOLVED:** `categories_list_controller_test.dart` verifies initial and subsequent repository stream values plus error propagation into `AsyncError`.
 
-- [x] **[HIGH]** `lib/features/categories/ui/widgets/category_color_icon.dart` (51 lines) — no test file exists. This widget renders the colored circle icon used throughout the app. Missing coverage of: rendering with valid hex color, fallback for null/empty color, luminance-based text color selection (dark vs. light background).
+- [ ] **[HIGH]** `lib/features/categories/ui/widgets/category_color_icon.dart` (26 lines) — no path-mirroring test exists. Cover rendering with a valid color, fallback behavior, and luminance-based foreground selection.
+
+- [ ] **[MED]** `lib/features/categories/domain/category_icon_data.dart` and `category_icon_names.dart` — their generated-style part tables are exercised indirectly by `category_icon_test.dart`, but the two source files still lack the path-mirroring test files required by the repository convention.
 
 - [x] **[HIGH]** `lib/features/categories/ui/widgets/category_icon_compact.dart` (153 lines) — no test file exists. This widget is used in several places (task items, journal entries). Missing coverage of: rendering with icon set, rendering without icon (fallback character), different size variants, color application.
   **RESOLVED:** `category_icon_compact_test.dart` covers icon/color rendering, dark and light fallback text, missing-category fallback, sizing, and direct-definition rendering.
-
-- [x] **[MED]** `lib/features/categories/ui/widgets/category_type_card.dart` (63 lines) — **RESOLVED (adapted):** the existing misnamed test was renamed to the proper mirror `category_type_card_test.dart`. It now covers tap forwarding and the selected/unselected background matrix; the stray `CategoryIconCompact` test moved to its own mirror.
 
 - [x] **[MED]** `category_details_controller_test.dart` does not test the `updateFormField(icon:)` branch. The `CategoryDetailsController.updateFormField` accepts an `icon` named parameter but no controller test exercises it (icon change → `hasChanges = true`, icon reflected in pending state). This is exercised only indirectly in the UI tests.
   **RESOLVED:** the form-field change test now also drives `updateFormField(icon: CategoryIcon.fitness)` and asserts `hasChanges` plus the icon landing in pending state.
@@ -112,7 +115,7 @@
 
 - [x] **[HIGH]** `test/features/categories/state/category_details_controller_test.dart` — **RESOLVED:** the 21 real-time timeout guards were replaced by the shared `loadCategory(container)` helper, removing their wall-clock dependency.
 
-- [x] **[HIGH]** `test/features/categories/ui/pages/category_details_page_test.dart` — 86 `pumpAndSettle()` calls. Each `pumpAndSettle` drives the frame scheduler until all animations settle (default 10-second timeout). Many of these are used after a single `tester.pump()` or after a stream emit where no animation is pending; substituting `tester.pump()` (or `tester.pump(const Duration(milliseconds: 50))`) would suffice and remove the risk of a 10s hang if an animation never settles. In particular, the tests at lines 168, 194, 221, 337, 368 all use `pumpAndSettle()` after a simple `Stream.value()` emission where a single `pump()` would suffice. **Estimated saving: 2–5s per shard + eliminates potential 10s hang on animation-related regressions.**
+- [x] **[HIGH]** `test/features/categories/ui/pages/category_details_page_test.dart` — **RESOLVED:** the former 86 `pumpAndSettle()` calls were replaced with targeted pumps; the file now contains none.
 
 - [x] **[MED]** `test/features/categories/state/category_task_count_provider_test.dart` — **RESOLVED:** `pumpEventQueue()` replaces the six delayed futures; fake time is unnecessary because the provider uses no timers.
 
@@ -129,5 +132,5 @@
 - **1 oversized impl file**: `category_details_page.dart` is now 521 lines after form-section extraction. `category_icon.dart` is down to 306 lines after table extraction and unused-code removal.
 - **2 long test files**: `category_details_page_test.dart` is 1718 lines and `category_details_controller_test.dart` is 1108 lines. Their shared pump/container helpers are implemented; further file splitting is constrained by the one-test-file-per-source rule.
 - **1 prime Glados candidate**: `fromJson`/`toJson` roundtrip on arbitrary strings, a pure function on structured input.
-- **1 missing test file**: `category_color_icon.dart`. `category_type_card.dart`, `categories_list_controller.dart`, and `category_icon_compact.dart` now have mirror tests.
-- **1 remaining speed opportunity**: review the 86 `pumpAndSettle` calls in `category_details_page_test.dart`; the timeout-backed controller waits and six delayed futures are resolved.
+- **3 missing path-mirroring test files**: `category_icon_data.dart`, `category_icon_names.dart`, and `category_color_icon.dart`; the two icon-table parts do have indirect behavioral coverage in `category_icon_test.dart`.
+- **Remaining speed review is outside `category_details_page_test.dart`**: that file has zero `pumpAndSettle` calls. The current calls are in the list page and smaller widget/modal mirrors enumerated above.
