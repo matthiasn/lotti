@@ -29,10 +29,9 @@ part 'real_day_agent_projection.dart';
 /// exception) so the UI can render a real error state instead of a
 /// scripted fallback that pretends the call succeeded:
 /// `submitCapture`, `parseCaptureToItems`, `surfacePendingDecisions`,
-/// `applyTriage`, `linkCapturePhraseToTask`, `breakCaptureLink`,
-/// `summarizeRecentPatterns`, `draftDayPlan`, `proposePlanDiff`,
-/// `acceptDiff`, `revertDiff`, `commitDay`, `currentPlanForDate`,
-/// `deletePlanForDate`.
+/// `applyTriage`, `breakCaptureLink`, `summarizeRecentPatterns`,
+/// `draftDayPlan`, `proposePlanDiff`, `acceptDiff`, `revertDiff`, `commitDay`,
+/// `currentPlanForDate`, `deletePlanForDate`.
 ///
 /// **Still mocked** — these methods still delegate to [mockFallback]
 /// because their agent-side tools have not shipped yet. Once each

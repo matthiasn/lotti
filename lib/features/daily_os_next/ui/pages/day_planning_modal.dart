@@ -578,7 +578,7 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
   /// result once Drafting is ready. Attribution of the newly-created task ids
   /// is best-effort: a reparse failure ships an empty list rather than
   /// blocking the close.
-  Future<void> _closeWithCreatedResult(DraftPlan draft) async {
+  Future<void> _closeWithCreatedResult() async {
     if (!mounted) return;
     ref.invalidate(currentDraftPlanProvider(widget.day));
     final createdTaskIds = await _attributeCreatedTaskIds();
@@ -619,11 +619,10 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
       (previous, next) {
         final value = next.value;
         if (value == null || _advanced) return;
-        final draft = value.draft;
-        if (value.phase == DraftingPhase.ready && draft != null) {
+        if (value.phase == DraftingPhase.ready && value.draft != null) {
           _advanced = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            unawaited(_closeWithCreatedResult(draft));
+            unawaited(_closeWithCreatedResult());
           });
         }
       },

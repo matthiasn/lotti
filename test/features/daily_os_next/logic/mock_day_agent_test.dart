@@ -1049,8 +1049,7 @@ void main() {
       glados.any.intInRange(0, queries.length),
       glados.ExploreConfig(numRuns: 120),
     ).test(
-      'every item matching a narrowed filter also matches state=all with '
-      'the same category/query (all is a superset)',
+      'returns exactly the corpus rows selected by every filter combination',
       (stateIndex, categoryIndex, queryIndex) async {
         final agent = MockDayAgent(pendingLatency: Duration.zero);
         final state =
@@ -1058,19 +1057,24 @@ void main() {
         final categoryId = categories[categoryIndex % categories.length];
         final query = queries[queryIndex % queries.length];
 
-        final narrowed = await agent.surfaceTaskCorpus(
+        final corpus = await agent.surfaceTaskCorpus();
+        final actual = await agent.surfaceTaskCorpus(
           stateFilter: state,
           categoryId: categoryId,
           query: query,
         );
-        final broad = await agent.surfaceTaskCorpus(
-          categoryId: categoryId,
-          query: query,
-        );
+        final normalizedQuery = query?.trim().toLowerCase();
+        final expected = corpus.where((item) {
+          if (state != TaskCorpusState.all && item.state != state) return false;
+          if (categoryId != null && item.category.id != categoryId) return false;
+          return normalizedQuery == null ||
+              normalizedQuery.isEmpty ||
+              item.title.toLowerCase().contains(normalizedQuery);
+        }).map((item) => item.title);
 
         expect(
-          narrowed.toSet().difference(broad.toSet()),
-          isEmpty,
+          actual.map((item) => item.title),
+          expected,
           reason: 'state=$state cat=$categoryId q="$query"',
         );
       },
