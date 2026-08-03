@@ -52,7 +52,6 @@ void main() {
         WidgetTestBench(
           child: AiResponseSummary(
             aiResponse,
-            linkedFromId: 'test-id',
             fadeOut: false,
           ),
         ),
@@ -85,7 +84,6 @@ The image shows a beautiful landscape with mountains.''';
         WidgetTestBench(
           child: AiResponseSummary(
             aiResponse,
-            linkedFromId: 'test-id',
             fadeOut: false,
           ),
         ),
@@ -114,7 +112,6 @@ The image shows a beautiful landscape with mountains.''';
           WidgetTestBench(
             child: AiResponseSummary(
               aiResponse,
-              linkedFromId: 'test-id',
               fadeOut: true,
             ),
           ),
@@ -146,7 +143,6 @@ The image shows a beautiful landscape with mountains.''';
         WidgetTestBench(
           child: AiResponseSummary(
             aiResponse,
-            linkedFromId: 'test-id',
             fadeOut: false,
           ),
         ),
@@ -186,7 +182,6 @@ Help me implement OAuth 2.0 authentication in my Flutter app.
         WidgetTestBench(
           child: AiResponseSummary(
             aiResponse,
-            linkedFromId: 'test-id',
             fadeOut: false,
           ),
         ),
@@ -229,7 +224,6 @@ Style: isometric digital art. --ar 16:9
           WidgetTestBench(
             child: AiResponseSummary(
               aiResponse,
-              linkedFromId: 'test-id',
               fadeOut: false,
             ),
           ),
@@ -282,7 +276,6 @@ Style: isometric digital art. --ar 16:9
         WidgetTestBench(
           child: AiResponseSummary(
             aiResponse,
-            linkedFromId: 'test-id',
             fadeOut: false,
           ),
         ),
@@ -358,7 +351,6 @@ Style: isometric digital art. --ar 16:9
             child: SingleChildScrollView(
               child: AiResponseSummary(
                 buildResponse(text),
-                linkedFromId: 'test-id',
                 fadeOut: fadeOut,
                 collapsible: collapsible,
               ),
@@ -541,7 +533,6 @@ Style: isometric digital art. --ar 16:9
                 child: SingleChildScrollView(
                   child: AiResponseSummary(
                     entry,
-                    linkedFromId: 'test-id',
                     fadeOut: false,
                     collapsible: true,
                   ),

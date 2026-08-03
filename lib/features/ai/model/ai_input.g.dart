@@ -50,20 +50,6 @@ Map<String, dynamic> _$AiActionItemToJson(_AiActionItem instance) =>
       'checkedAt': instance.checkedAt?.toIso8601String(),
     };
 
-_AiInputLogEntryObject _$AiInputLogEntryObjectFromJson(
-  Map<String, dynamic> json,
-) => _AiInputLogEntryObject(
-  creationTimestamp: DateTime.parse(json['creationTimestamp'] as String),
-  loggedDuration: json['loggedDuration'] as String,
-  text: json['text'] as String,
-  audioTranscript: json['audioTranscript'] as String?,
-  transcriptLanguage: json['transcriptLanguage'] as String?,
-  entryType: json['entryType'] as String?,
-  aiResponses: (json['aiResponses'] as List<dynamic>?)
-      ?.map((e) => AiInputAiResponseObject.fromJson(e as Map<String, dynamic>))
-      .toList(),
-);
-
 Map<String, dynamic> _$AiInputLogEntryObjectToJson(
   _AiInputLogEntryObject instance,
 ) => <String, dynamic>{

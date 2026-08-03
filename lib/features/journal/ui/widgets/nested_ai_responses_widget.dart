@@ -339,7 +339,6 @@ class _NestedAiResponsesWidgetState
         key: ValueKey('nested-ai-response-size-${response.meta.id}'),
         child: AiResponseSummary(
           response,
-          linkedFromId: widget.linkedFromEntity.meta.id,
           fadeOut: false,
           // Long analyses (e.g. a full OCR extraction) start collapsed to a
           // faded preview so one card cannot dominate the nested thread.
