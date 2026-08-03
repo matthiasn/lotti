@@ -37,8 +37,6 @@ class LottiBatchChecklistHandler extends FunctionHandler {
     if (call.function.name != functionName) {
       return FunctionCallResult(
         success: false,
-        functionName: functionName,
-        arguments: call.function.arguments,
         data: {'toolCallId': call.id},
         error:
             'Function name mismatch: expected "$functionName", got "${call.function.name}"',
@@ -52,8 +50,6 @@ class LottiBatchChecklistHandler extends FunctionHandler {
       if (raw is! List) {
         return FunctionCallResult(
           success: false,
-          functionName: functionName,
-          arguments: call.function.arguments,
           data: {
             'toolCallId': call.id,
             'taskId': task.id,
@@ -70,8 +66,6 @@ class LottiBatchChecklistHandler extends FunctionHandler {
           // Special case: reject arrays of strings with helpful message
           return FunctionCallResult(
             success: false,
-            functionName: functionName,
-            arguments: call.function.arguments,
             data: {
               'toolCallId': call.id,
               'taskId': task.id,
@@ -99,8 +93,6 @@ class LottiBatchChecklistHandler extends FunctionHandler {
       if (!ChecklistValidation.isValidBatchSize(sanitized.length)) {
         return FunctionCallResult(
           success: false,
-          functionName: functionName,
-          arguments: call.function.arguments,
           data: {
             'toolCallId': call.id,
             'taskId': task.id,
@@ -111,8 +103,6 @@ class LottiBatchChecklistHandler extends FunctionHandler {
 
       return FunctionCallResult(
         success: true,
-        functionName: functionName,
-        arguments: call.function.arguments,
         data: {
           'items': sanitized,
           'toolCallId': call.id,
@@ -122,8 +112,6 @@ class LottiBatchChecklistHandler extends FunctionHandler {
     } catch (e) {
       return FunctionCallResult(
         success: false,
-        functionName: functionName,
-        arguments: call.function.arguments,
         data: {
           'toolCallId': call.id,
           'taskId': task.id,

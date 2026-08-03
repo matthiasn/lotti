@@ -28,20 +28,15 @@ abstract class FunctionHandler {
 ///
 /// [success] flags whether the action was applied; on failure [error] holds a
 /// human-readable reason and [data] carries error context, while on success
-/// [data] holds the parsed outcome. [arguments] is the raw JSON argument string
-/// the model emitted (kept verbatim for dedup and retry-prompt construction).
+/// [data] holds the parsed outcome.
 class FunctionCallResult {
   const FunctionCallResult({
     required this.success,
-    required this.functionName,
-    required this.arguments,
     required this.data,
     this.error,
   });
 
   final bool success;
-  final String functionName;
-  final String arguments; // Raw JSON string
   final Map<String, dynamic> data; // Parsed data or error info
   final String? error;
 }

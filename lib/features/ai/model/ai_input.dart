@@ -9,7 +9,7 @@ part 'ai_input.g.dart';
 /// context the model reasons over (checklist items, time logs, due date, etc.).
 /// Durations are pre-formatted strings, not raw values, so the model sees them
 /// verbatim.
-@freezed
+@Freezed(fromJson: false, toJson: true)
 abstract class AiInputTaskObject with _$AiInputTaskObject {
   const factory AiInputTaskObject({
     required String title,
@@ -23,9 +23,6 @@ abstract class AiInputTaskObject with _$AiInputTaskObject {
     DateTime? dueDate,
     String? languageCode,
   }) = _AiInputTaskObject;
-
-  factory AiInputTaskObject.fromJson(Map<String, dynamic> json) =>
-      _$AiInputTaskObjectFromJson(json);
 }
 
 /// A single checklist item inside an [AiInputTaskObject].
@@ -91,7 +88,7 @@ abstract class AiInputAiResponseObject with _$AiInputAiResponseObject {
 
 /// Context for a linked task (parent or child) to be injected into AI prompts.
 /// Contains distilled information about related work.
-@freezed
+@Freezed(fromJson: false, toJson: true)
 abstract class AiLinkedTaskContext with _$AiLinkedTaskContext {
   const factory AiLinkedTaskContext({
     required String id,
@@ -106,7 +103,4 @@ abstract class AiLinkedTaskContext with _$AiLinkedTaskContext {
     String? languageCode,
     String? latestSummary,
   }) = _AiLinkedTaskContext;
-
-  factory AiLinkedTaskContext.fromJson(Map<String, dynamic> json) =>
-      _$AiLinkedTaskContextFromJson(json);
 }

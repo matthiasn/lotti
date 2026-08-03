@@ -75,50 +75,5 @@ void main() {
       );
       expect(AiInputAiResponseObject.fromJson(_roundTrip(response)), response);
     });
-
-    test('AiInputTaskObject survives a round-trip with nested items', () {
-      final task = AiInputTaskObject(
-        title: 'Ship feature',
-        status: 'IN PROGRESS',
-        priority: 'HIGH',
-        estimatedDuration: '02:00',
-        timeSpent: '01:15',
-        creationDate: DateTime(2024, 3, 10, 12),
-        actionItems: [actionItem],
-        logEntries: [
-          AiInputLogEntryObject(
-            creationTimestamp: DateTime(2024, 3, 11),
-            loggedDuration: '00:30',
-            text: 'progress',
-          ),
-        ],
-        dueDate: DateTime(2024, 3, 25),
-        languageCode: 'en',
-      );
-
-      final decoded = AiInputTaskObject.fromJson(_roundTrip(task));
-      expect(decoded, task);
-      expect(decoded.actionItems.single.id, 'item-1');
-      expect(decoded.logEntries.single.text, 'progress');
-    });
-
-    test('AiLinkedTaskContext survives a round-trip', () {
-      final context = AiLinkedTaskContext(
-        id: 'task-9',
-        title: 'Parent task',
-        status: 'OPEN',
-        statusSince: DateTime(2024, 3),
-        priority: 'LOW',
-        estimate: '03:00',
-        timeSpent: '00:00',
-        createdAt: DateTime(2024, 2, 28),
-        labels: const [
-          {'name': 'backend'},
-        ],
-        languageCode: 'de',
-        latestSummary: 'a summary',
-      );
-      expect(AiLinkedTaskContext.fromJson(_roundTrip(context)), context);
-    });
   });
 }

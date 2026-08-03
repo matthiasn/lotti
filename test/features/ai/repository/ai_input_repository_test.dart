@@ -4,7 +4,6 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -108,107 +107,6 @@ class TestAiInputRepo extends AiInputRepository {
       languageCode: 'en',
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// From ai_linked_task_context_test.dart — Glados generators for round-trip
-// property tests (must be at top-level; Dart extensions cannot be inside fns).
-// ---------------------------------------------------------------------------
-
-/// Wraps the combination of variant choices for a generated AiLinkedTaskContext.
-class _GeneratedLinkedTaskContextScenario {
-  const _GeneratedLinkedTaskContextScenario({
-    required this.idIndex,
-    required this.titleIndex,
-    required this.statusIndex,
-    required this.priorityIndex,
-    required this.estimateIndex,
-    required this.langIndex,
-    required this.summaryIndex,
-  });
-
-  final int idIndex;
-  final int titleIndex;
-  final int statusIndex;
-  final int priorityIndex;
-  final int estimateIndex;
-  final int langIndex;
-  final int summaryIndex;
-
-  static const List<String> _ids = [
-    'task-001',
-    'task-abc',
-    'epic-42',
-    'subtask-x',
-  ];
-  static const List<String> _titles = [
-    'Fix login bug',
-    'Implement search',
-    'Write tests',
-    'Deploy to prod',
-  ];
-  static const List<String> _statuses = [
-    'OPEN',
-    'GROOMED',
-    'IN PROGRESS',
-    'DONE',
-    'REJECTED',
-  ];
-  static const List<String> _priorities = ['P0', 'P1', 'P2', 'P3'];
-  static const List<String> _times = ['00:00', '01:30', '10:00', '40:00'];
-  // null encodes as index 0, non-null values at 1+
-  static const List<String?> _langs = [null, 'en', 'de', 'fr'];
-  static const List<String?> _summaries = [
-    null,
-    '',
-    'Completed the auth flow.',
-    'Blocked by external API.',
-  ];
-
-  String get id => _ids[idIndex % _ids.length];
-  String get title => _titles[titleIndex % _titles.length];
-  String get status => _statuses[statusIndex % _statuses.length];
-  String get priority => _priorities[priorityIndex % _priorities.length];
-  String get estimate => _times[estimateIndex % _times.length];
-  String get timeSpent => _times[(estimateIndex + 1) % _times.length];
-  String? get languageCode => _langs[langIndex % _langs.length];
-  String? get latestSummary => _summaries[summaryIndex % _summaries.length];
-
-  @override
-  String toString() =>
-      '_GeneratedLinkedTaskContextScenario(id: $id, title: $title, '
-      'status: $status, priority: $priority, estimate: $estimate, '
-      'lang: $languageCode, summary: $latestSummary)';
-}
-
-extension _AnyLinkedTaskContext on glados.Any {
-  glados.Generator<_GeneratedLinkedTaskContextScenario>
-  get linkedTaskContextScenario => glados.CombinableAny(this).combine7(
-    glados.IntAnys(this).intInRange(0, 3),
-    glados.IntAnys(this).intInRange(0, 3),
-    glados.IntAnys(this).intInRange(0, 4),
-    glados.IntAnys(this).intInRange(0, 3),
-    glados.IntAnys(this).intInRange(0, 3),
-    glados.IntAnys(this).intInRange(0, 3),
-    glados.IntAnys(this).intInRange(0, 3),
-    (
-      int idIdx,
-      int titleIdx,
-      int statusIdx,
-      int priorityIdx,
-      int estimateIdx,
-      int langIdx,
-      int summaryIdx,
-    ) => _GeneratedLinkedTaskContextScenario(
-      idIndex: idIdx,
-      titleIndex: titleIdx,
-      statusIndex: statusIdx,
-      priorityIndex: priorityIdx,
-      estimateIndex: estimateIdx,
-      langIndex: langIdx,
-      summaryIndex: summaryIdx,
-    ),
-  );
 }
 
 /// Test helper to build a ProviderContainer with task progress overrides
@@ -2604,39 +2502,6 @@ void main() {
       );
     });
 
-    test('deserializes from JSON correctly', () {
-      final json = {
-        'id': 'task-456',
-        'title': 'Authentication Epic',
-        'status': 'IN PROGRESS',
-        'statusSince': testDate.toIso8601String(),
-        'priority': 'P0',
-        'estimate': '40:00',
-        'timeSpent': '12:30',
-        'createdAt': createdDate.toIso8601String(),
-        'labels': [
-          {'id': 'l2', 'name': 'auth'},
-          {'id': 'l3', 'name': 'epic'},
-        ],
-        'languageCode': 'en',
-        'latestSummary': 'Parent epic for authentication.',
-      };
-
-      final context = AiLinkedTaskContext.fromJson(json);
-
-      expect(context.id, equals('task-456'));
-      expect(context.title, equals('Authentication Epic'));
-      expect(context.status, equals('IN PROGRESS'));
-      expect(context.statusSince, equals(testDate));
-      expect(context.priority, equals('P0'));
-      expect(context.estimate, equals('40:00'));
-      expect(context.timeSpent, equals('12:30'));
-      expect(context.createdAt, equals(createdDate));
-      expect(context.labels.length, equals(2));
-      expect(context.languageCode, equals('en'));
-      expect(context.latestSummary, equals('Parent epic for authentication.'));
-    });
-
     test('handles null latestSummary', () {
       final context = AiLinkedTaskContext(
         id: 'task-789',
@@ -2653,10 +2518,6 @@ void main() {
       final json = context.toJson();
 
       expect(json['latestSummary'], isNull);
-
-      // Round-trip test
-      final restored = AiLinkedTaskContext.fromJson(json);
-      expect(restored.latestSummary, isNull);
     });
 
     test('handles null languageCode', () {
@@ -2675,10 +2536,6 @@ void main() {
       final json = context.toJson();
 
       expect(json['languageCode'], isNull);
-
-      // Round-trip test
-      final restored = AiLinkedTaskContext.fromJson(json);
-      expect(restored.languageCode, isNull);
     });
 
     test('handles empty labels list', () {
@@ -2798,9 +2655,6 @@ void main() {
 
         final json = context.toJson();
         expect(json['status'], equals(status));
-
-        final restored = AiLinkedTaskContext.fromJson(json);
-        expect(restored.status, equals(status));
       }
     });
 
@@ -2822,95 +2676,8 @@ void main() {
 
         final json = context.toJson();
         expect(json['priority'], equals(priority));
-
-        final restored = AiLinkedTaskContext.fromJson(json);
-        expect(restored.priority, equals(priority));
       }
     });
-  });
-
-  // -------------------------------------------------------------------------
-  // Glados round-trip property — toJson → jsonEncode → jsonDecode → fromJson
-  // must preserve every field value.
-  // -------------------------------------------------------------------------
-  group('AiLinkedTaskContext — Glados JSON round-trip', () {
-    // Deterministic dates to avoid DateTime.now() in tests.
-    final fixedStatusSince = DateTime(2025, 6, 1, 12);
-    final fixedCreatedAt = DateTime(2024, 1, 10, 8, 30);
-
-    glados.Glados(
-      glados.any.linkedTaskContextScenario,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'toJson → jsonDecode(jsonEncode) → fromJson preserves all fields',
-      (scenario) {
-        final original = AiLinkedTaskContext(
-          id: scenario.id,
-          title: scenario.title,
-          status: scenario.status,
-          statusSince: fixedStatusSince,
-          priority: scenario.priority,
-          estimate: scenario.estimate,
-          timeSpent: scenario.timeSpent,
-          createdAt: fixedCreatedAt,
-          labels: const [],
-          languageCode: scenario.languageCode,
-          latestSummary: scenario.latestSummary,
-        );
-
-        final roundTripped = AiLinkedTaskContext.fromJson(
-          jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
-        );
-
-        expect(roundTripped.id, equals(original.id), reason: 'id — $scenario');
-        expect(
-          roundTripped.title,
-          equals(original.title),
-          reason: 'title — $scenario',
-        );
-        expect(
-          roundTripped.status,
-          equals(original.status),
-          reason: 'status — $scenario',
-        );
-        expect(
-          roundTripped.statusSince,
-          equals(original.statusSince),
-          reason: 'statusSince — $scenario',
-        );
-        expect(
-          roundTripped.priority,
-          equals(original.priority),
-          reason: 'priority — $scenario',
-        );
-        expect(
-          roundTripped.estimate,
-          equals(original.estimate),
-          reason: 'estimate — $scenario',
-        );
-        expect(
-          roundTripped.timeSpent,
-          equals(original.timeSpent),
-          reason: 'timeSpent — $scenario',
-        );
-        expect(
-          roundTripped.createdAt,
-          equals(original.createdAt),
-          reason: 'createdAt — $scenario',
-        );
-        expect(
-          roundTripped.languageCode,
-          equals(original.languageCode),
-          reason: 'languageCode — $scenario',
-        );
-        expect(
-          roundTripped.latestSummary,
-          equals(original.latestSummary),
-          reason: 'latestSummary — $scenario',
-        );
-      },
-      tags: 'glados',
-    );
   });
 
   group('AiInputRepository - Linked Task Context', () {

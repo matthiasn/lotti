@@ -53,7 +53,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -73,7 +72,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -90,7 +88,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -104,7 +101,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -118,7 +114,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -137,7 +132,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -162,7 +156,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -192,7 +185,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -223,7 +215,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -263,7 +254,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -292,7 +282,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -317,7 +306,6 @@ Please provide step-by-step guidance.
         WidgetTestBench(
           child: GeneratedPromptCard(
             aiResponseNoFormat,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -349,7 +337,6 @@ And more content.
         WidgetTestBench(
           child: GeneratedPromptCard(
             aiResponse,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -404,7 +391,6 @@ Updated prompt content.
         WidgetTestBench(
           child: GeneratedPromptCard(
             firstResponse,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -418,7 +404,6 @@ Updated prompt content.
         WidgetTestBench(
           child: GeneratedPromptCard(
             secondResponse,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -460,7 +445,6 @@ Modified prompt.
           WidgetTestBench(
             child: GeneratedPromptCard(
               firstResponse,
-              linkedFromId: 'test-id',
             ),
           ),
         );
@@ -472,7 +456,6 @@ Modified prompt.
           WidgetTestBench(
             child: GeneratedPromptCard(
               updatedResponse,
-              linkedFromId: 'test-id',
             ),
           ),
         );
@@ -486,7 +469,6 @@ Modified prompt.
         WidgetTestBench(
           child: GeneratedPromptCard(
             testAiResponseEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -540,7 +522,6 @@ Modified prompt.
           WidgetTestBench(
             child: GeneratedPromptCard(
               promptResponseWithSkill(skillDesignPromptId),
-              linkedFromId: 'test-id',
             ),
           ),
         );
@@ -559,7 +540,6 @@ Modified prompt.
           WidgetTestBench(
             child: GeneratedPromptCard(
               promptResponseWithSkill(skillResearchPromptId),
-              linkedFromId: 'test-id',
             ),
           ),
         );
@@ -577,7 +557,6 @@ Modified prompt.
           WidgetTestBench(
             child: GeneratedPromptCard(
               promptResponseWithSkill(null),
-              linkedFromId: 'test-id',
             ),
           ),
         );
@@ -594,7 +573,6 @@ Modified prompt.
           WidgetTestBench(
             child: GeneratedPromptCard(
               promptResponseWithSkill('unknown-skill-id-xyz'),
-              linkedFromId: 'test-id',
             ),
           ),
         );
@@ -639,7 +617,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -659,7 +636,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -676,7 +652,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -690,7 +665,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -704,7 +678,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -723,7 +696,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -768,7 +740,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -798,7 +769,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -817,7 +787,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -843,7 +812,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -865,7 +833,6 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
         WidgetTestBench(
           child: GeneratedPromptCard(
             testImagePromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -898,7 +865,6 @@ Implement OAuth 2.0 in Flutter.
         WidgetTestBench(
           child: GeneratedPromptCard(
             codingPromptEntry,
-            linkedFromId: 'test-id',
           ),
         ),
       );
@@ -933,7 +899,6 @@ Implement OAuth 2.0 in Flutter.
           WidgetTestBench(
             child: GeneratedPromptCard(
               codingPromptEntry,
-              linkedFromId: 'test-id',
             ),
           ),
         );
@@ -951,7 +916,6 @@ Implement OAuth 2.0 in Flutter.
           WidgetTestBench(
             child: GeneratedPromptCard(
               testImagePromptEntry,
-              linkedFromId: 'test-id',
             ),
           ),
         );

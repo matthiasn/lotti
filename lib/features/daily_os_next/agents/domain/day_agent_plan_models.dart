@@ -90,14 +90,6 @@ class DayAgentLearningBullet {
     required this.tone,
   });
 
-  /// Creates a bullet from JSON.
-  factory DayAgentLearningBullet.fromJson(Map<String, dynamic> json) {
-    return DayAgentLearningBullet(
-      text: json['text'] as String,
-      tone: DayAgentLearningBulletTone.values.byName(json['tone'] as String),
-    );
-  }
-
   /// Bullet text.
   final String text;
 

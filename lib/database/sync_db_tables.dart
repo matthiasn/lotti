@@ -1,3 +1,8 @@
+// Drift consumes these declarative column getters during code generation.
+// DCM cannot follow those generated references and otherwise reports every
+// schema column as unused.
+// ignore_for_file: unused-code
+
 part of 'sync_db.dart';
 
 @DataClassName('OutboxItem')

@@ -490,8 +490,6 @@ void main() {
         PendingCorrection(
           before: 'old text',
           after: 'new text',
-          categoryId: 'cat-1',
-          categoryName: 'Test Category',
           createdAt: _now,
         ),
       );
@@ -737,8 +735,6 @@ void main() {
         PendingCorrection(
           before: 'wrong',
           after: 'right',
-          categoryId: 'cat-1',
-          categoryName: 'Category',
           createdAt: DateTime(2025, 3, 15),
         ),
       );

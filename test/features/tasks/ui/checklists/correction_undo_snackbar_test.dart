@@ -14,8 +14,6 @@ void main() {
       final pending = PendingCorrection(
         before: 'test flight',
         after: 'TestFlight',
-        categoryId: 'cat-1',
-        categoryName: 'iOS Dev',
         createdAt: expiredDate,
       );
 
@@ -49,8 +47,6 @@ void main() {
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: expiredDate,
       );
 
@@ -79,8 +75,6 @@ void main() {
         final pending = PendingCorrection(
           before: 'old',
           after: 'new',
-          categoryId: 'cat-1',
-          categoryName: 'Test',
           createdAt: DateTime(2024, 3, 15),
         );
 
@@ -110,8 +104,6 @@ void main() {
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: expiredDate,
       );
 
@@ -151,8 +143,6 @@ void main() {
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15, 10, 30),
       );
 
@@ -178,8 +168,6 @@ void main() {
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15, 10, 27),
       );
 

@@ -27,8 +27,6 @@ class _TestPriorityHandler extends FunctionHandler {
       if (priority == null || priority.isEmpty) {
         return FunctionCallResult(
           success: false,
-          functionName: functionName,
-          arguments: call.function.arguments,
           data: {'toolCallId': call.id},
           error: 'Missing required field "priority"',
         );
@@ -36,8 +34,6 @@ class _TestPriorityHandler extends FunctionHandler {
 
       return FunctionCallResult(
         success: true,
-        functionName: functionName,
-        arguments: call.function.arguments,
         data: {
           'priority': priority,
           'toolCallId': call.id,
@@ -46,8 +42,6 @@ class _TestPriorityHandler extends FunctionHandler {
     } catch (e) {
       return FunctionCallResult(
         success: false,
-        functionName: functionName,
-        arguments: call.function.arguments,
         data: {'toolCallId': call.id},
         error: 'Invalid JSON: $e',
       );
@@ -117,15 +111,11 @@ void main() {
     test('stores all fields correctly', () {
       const result = FunctionCallResult(
         success: true,
-        functionName: 'set_priority',
-        arguments: '{"priority": "P1"}',
         data: {'priority': 'P1', 'toolCallId': 'call-1'},
         error: 'some error',
       );
 
       expect(result.success, isTrue);
-      expect(result.functionName, 'set_priority');
-      expect(result.arguments, '{"priority": "P1"}');
       expect(result.data, {'priority': 'P1', 'toolCallId': 'call-1'});
       expect(result.error, 'some error');
     });
@@ -133,8 +123,6 @@ void main() {
     test('error defaults to null when not provided', () {
       const result = FunctionCallResult(
         success: true,
-        functionName: 'set_priority',
-        arguments: '{}',
         data: <String, dynamic>{},
       );
 
@@ -144,8 +132,6 @@ void main() {
     test('success result has null error', () {
       const result = FunctionCallResult(
         success: true,
-        functionName: 'set_priority',
-        arguments: '{"priority": "P1"}',
         data: {'priority': 'P1'},
       );
 
@@ -156,8 +142,6 @@ void main() {
     test('failed result has error message', () {
       const result = FunctionCallResult(
         success: false,
-        functionName: 'set_priority',
-        arguments: '{"bad": "input"}',
         data: <String, dynamic>{},
         error: 'Missing required field "priority"',
       );
@@ -184,8 +168,6 @@ void main() {
       final result = handler.processFunctionCall(call);
 
       expect(result.success, isTrue);
-      expect(result.functionName, 'set_priority');
-      expect(result.arguments, '{"priority": "P1"}');
       expect(result.data['priority'], 'P1');
       expect(result.data['toolCallId'], 'call-1');
       expect(result.error, isNull);
@@ -197,7 +179,6 @@ void main() {
       final result = handler.processFunctionCall(call);
 
       expect(result.success, isFalse);
-      expect(result.functionName, 'set_priority');
       expect(result.error, contains('Invalid JSON'));
     });
 
@@ -247,8 +228,6 @@ void main() {
       test('returns false for failed results', () {
         const failedResult = FunctionCallResult(
           success: false,
-          functionName: 'set_priority',
-          arguments: '{}',
           data: <String, dynamic>{},
           error: 'some error',
         );
@@ -310,15 +289,11 @@ void main() {
       () {
         const failedResult1 = FunctionCallResult(
           success: false,
-          functionName: 'set_priority',
-          arguments: '{}',
           data: <String, dynamic>{},
           error: 'Missing required field "priority"',
         );
         const failedResult2 = FunctionCallResult(
           success: false,
-          functionName: 'set_priority',
-          arguments: '{"priority": "INVALID"}',
           data: <String, dynamic>{},
           error: 'Unknown priority value',
         );
