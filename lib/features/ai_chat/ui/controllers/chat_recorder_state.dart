@@ -4,17 +4,6 @@
 /// transcription.
 enum ChatRecorderStatus { idle, recording, processing }
 
-/// Classifies a recorder failure so the UI can map it to a localized message
-/// or recovery action. `concurrentOperation` flags a start attempt while
-/// another start/stop is mid-flight (see [ChatRecorderState.error]).
-enum ChatRecorderErrorType {
-  permissionDenied,
-  startFailed,
-  noAudioFile,
-  transcriptionFailed,
-  concurrentOperation,
-}
-
 /// Immutable snapshot of the shared voice recorder for the UI.
 ///
 /// Carries the [status], the rolling dBFS [amplitudeHistory] for the waveform,
@@ -29,7 +18,6 @@ class ChatRecorderState {
     this.transcript,
     this.partialTranscript,
     this.error,
-    this.errorType,
   });
 
   const ChatRecorderState.initial()
@@ -37,8 +25,7 @@ class ChatRecorderState {
       amplitudeHistory = const <double>[],
       transcript = null,
       partialTranscript = null,
-      error = null,
-      errorType = null;
+      error = null;
 
   // Fields
   final ChatRecorderStatus status;
@@ -46,10 +33,9 @@ class ChatRecorderState {
   final String? transcript; // last finished transcript waiting to be consumed
   final String? partialTranscript; // in-progress transcript during streaming
   final String? error;
-  final ChatRecorderErrorType? errorType;
 
   // Methods
-  /// Footgun: [transcript], [partialTranscript], [error], and [errorType] are
+  /// Footgun: [transcript], [partialTranscript], and [error] are
   /// NOT preserved when omitted — passing nothing resets them to null. This is
   /// deliberate (each new status implies a fresh result), so callers that want
   /// to keep a value must pass it explicitly (e.g. re-passing
@@ -61,7 +47,6 @@ class ChatRecorderState {
     String? transcript,
     String? partialTranscript,
     String? error,
-    ChatRecorderErrorType? errorType,
   }) {
     return ChatRecorderState(
       status: status ?? this.status,
@@ -69,7 +54,6 @@ class ChatRecorderState {
       transcript: transcript,
       partialTranscript: partialTranscript,
       error: error,
-      errorType: errorType,
     );
   }
 }

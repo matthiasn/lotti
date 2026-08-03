@@ -5,7 +5,7 @@ part 'classified_feedback.freezed.dart';
 part 'classified_feedback.g.dart';
 
 /// A single classified feedback item extracted from agent data.
-@freezed
+@Freezed(fromJson: false, toJson: true)
 abstract class ClassifiedFeedbackItem with _$ClassifiedFeedbackItem {
   const factory ClassifiedFeedbackItem({
     required FeedbackSentiment sentiment,
@@ -32,9 +32,6 @@ abstract class ClassifiedFeedbackItem with _$ClassifiedFeedbackItem {
     @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
     ObservationPriority? observationPriority,
   }) = _ClassifiedFeedbackItem;
-
-  factory ClassifiedFeedbackItem.fromJson(Map<String, dynamic> json) =>
-      _$ClassifiedFeedbackItemFromJson(json);
 }
 
 /// Aggregated feedback for a time window.

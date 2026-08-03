@@ -155,7 +155,7 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  test('start() without permission sets errorType and message', () async {
+  test('start() without permission sets an actionable message', () async {
     final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => false);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
@@ -177,7 +177,6 @@ void main() {
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
     final state = container.read(chatRecorderControllerProvider);
-    expect(state.errorType, ChatRecorderErrorType.permissionDenied);
     expect(state.error, contains('Microphone permission denied'));
   });
 
@@ -223,7 +222,7 @@ void main() {
       controller.start();
       async.flushMicrotasks();
       final state = container.read(chatRecorderControllerProvider);
-      expect(state.errorType, ChatRecorderErrorType.concurrentOperation);
+      expect(state.error, 'Another operation is in progress');
       gate.complete();
       // Allow the first start() to complete deterministically
       async.elapse(const Duration(milliseconds: 10));
@@ -412,7 +411,6 @@ void main() {
     await controller.start();
     await controller.stopAndTranscribe();
     final state = container.read(chatRecorderControllerProvider);
-    expect(state.errorType, ChatRecorderErrorType.transcriptionFailed);
     expect(state.error, contains('network down'));
     sub.close();
     container.dispose();
@@ -649,8 +647,8 @@ void main() {
 
     final mockSvc = MockAudioTranscriptionService();
     when(
-      () => mockSvc.transcribe(any()),
-    ).thenThrow(TimeoutException('timeout'));
+      () => mockSvc.transcribeStream(any()),
+    ).thenAnswer((_) => Stream.error(TimeoutException('timeout')));
 
     final container = ProviderContainer(
       overrides: [
@@ -671,7 +669,7 @@ void main() {
     await controller.stopAndTranscribe();
 
     final state = container.read(chatRecorderControllerProvider);
-    expect(state.errorType, ChatRecorderErrorType.transcriptionFailed);
+    expect(state.error, contains('timeout'));
     expect(
       await Directory('${baseTemp.path}/lotti_chat_rec').exists(),
       isFalse,
@@ -702,7 +700,6 @@ void main() {
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
     final state = container.read(chatRecorderControllerProvider);
-    expect(state.errorType, ChatRecorderErrorType.startFailed);
     expect(state.error, contains('Failed to start recording'));
 
     sub.close();
@@ -1756,10 +1753,10 @@ void main() {
         // Call start() so the default tempDirectoryProvider lambda is actually
         // invoked. Permission is denied so it never reaches tempDir lookup,
         // but the lambda was created (covering the constructor branch on line
-        // 91). The permission denial sets errorType without crashing.
+        // 91). The permission denial surfaces without crashing.
         await container.read(chatRecorderControllerProvider.notifier).start();
         final afterState = container.read(chatRecorderControllerProvider);
-        expect(afterState.errorType, ChatRecorderErrorType.permissionDenied);
+        expect(afterState.error, contains('Microphone permission denied'));
       },
     );
   });
@@ -2180,7 +2177,6 @@ void main() {
           transcript: 'hello',
           partialTranscript: 'part',
           error: 'err',
-          errorType: ChatRecorderErrorType.permissionDenied,
         );
         final updated = original.copyWith(status: newStatus);
         expect(updated.status, newStatus);
@@ -2212,14 +2208,13 @@ void main() {
       glados.any.chatRecorderState,
       glados.ExploreConfig(numRuns: 120),
     ).test(
-      'copyWith with no nullable overrides always resets transcript/error/errorType to null',
+      'copyWith with no nullable overrides resets transcript and error to null',
       (state) {
         // copyWith without optional field arguments always resets them to null
         // (they have no ?? fallback in the constructor call).
         final updated = state.copyWith();
         expect(updated.transcript, isNull);
         expect(updated.error, isNull);
-        expect(updated.errorType, isNull);
         // Non-nullable fields are preserved
         expect(updated.status, state.status);
         expect(updated.amplitudeHistory, state.amplitudeHistory);
@@ -2235,11 +2230,10 @@ void main() {
       expect(s.amplitudeHistory, isEmpty);
       expect(s.transcript, isNull);
       expect(s.error, isNull);
-      expect(s.errorType, isNull);
     });
 
     test('copyWith without arguments preserves status and history', () {
-      // Note: transcript/error/errorType/partialTranscript are ALWAYS reset to
+      // Note: transcript/error/partialTranscript are ALWAYS reset to
       // null by copyWith unless explicitly provided — this is by design in the
       // state class (nullable fields are positional-null by default).
       const original = ChatRecorderState(
@@ -2252,33 +2246,6 @@ void main() {
       // Optional nullable fields default to null when not supplied.
       expect(copy.transcript, isNull);
       expect(copy.error, isNull);
-      expect(copy.errorType, isNull);
-    });
-
-    test('copyWith(status:) does not bleed into errorType', () {
-      const original = ChatRecorderState(
-        status: ChatRecorderStatus.idle,
-        amplitudeHistory: <double>[],
-        errorType: ChatRecorderErrorType.startFailed,
-      );
-      final updated = original.copyWith(status: ChatRecorderStatus.recording);
-      expect(updated.status, ChatRecorderStatus.recording);
-      expect(
-        updated.errorType,
-        isNull,
-        reason: 'copyWith always sets errorType to null unless overridden',
-      );
-    });
-
-    test('errorType variants are all settable', () {
-      for (final kind in ChatRecorderErrorType.values) {
-        const base = ChatRecorderState(
-          status: ChatRecorderStatus.idle,
-          amplitudeHistory: <double>[],
-        );
-        final updated = base.copyWith(errorType: kind);
-        expect(updated.errorType, kind);
-      }
     });
 
     test('transcript and error can be set independently', () {

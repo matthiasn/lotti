@@ -103,7 +103,6 @@ class NodeInspectorPanel extends StatelessWidget {
                       createdLabel: createdLabel,
                       categoryLabel:
                           categoryNames[node.categoryId] ?? node.categoryId,
-                      categoryNames: categoryNames,
                       style: style,
                       tokens: tokens,
                       cat: cat,
@@ -235,7 +234,6 @@ class _InspectorContent extends StatelessWidget {
     required this.now,
     required this.createdLabel,
     required this.categoryLabel,
-    required this.categoryNames,
     required this.style,
     required this.tokens,
     required this.cat,
@@ -248,7 +246,6 @@ class _InspectorContent extends StatelessWidget {
   final DateTime now;
   final String createdLabel;
   final String categoryLabel;
-  final Map<String, String> categoryNames;
   final GraphStyle style;
   final DsTokens tokens;
   final Color cat;

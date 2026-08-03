@@ -11,7 +11,6 @@ part of 'classified_feedback.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-
 /// @nodoc
 mixin _$ClassifiedFeedbackItem {
 
@@ -221,11 +220,11 @@ return $default(_that.sentiment,_that.category,_that.source,_that.detail,_that.a
 }
 
 /// @nodoc
-@JsonSerializable()
+@JsonSerializable(createFactory: false)
 
 class _ClassifiedFeedbackItem implements ClassifiedFeedbackItem {
   const _ClassifiedFeedbackItem({required this.sentiment, required this.category, required this.source, required this.detail, required this.agentId, this.sourceEntityId, this.confidence, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.observationPriority});
-  factory _ClassifiedFeedbackItem.fromJson(Map<String, dynamic> json) => _$ClassifiedFeedbackItemFromJson(json);
+
 
 @override final  FeedbackSentiment sentiment;
 @override final  FeedbackCategory category;

@@ -596,7 +596,6 @@ as DateTime?,
 
 }
 
-
 /// @nodoc
 mixin _$AiInputLogEntryObject {
 
@@ -799,11 +798,11 @@ return $default(_that.creationTimestamp,_that.loggedDuration,_that.text,_that.au
 }
 
 /// @nodoc
-@JsonSerializable()
+@JsonSerializable(createFactory: false)
 
 class _AiInputLogEntryObject implements AiInputLogEntryObject {
   const _AiInputLogEntryObject({required this.creationTimestamp, required this.loggedDuration, required this.text, this.audioTranscript, this.transcriptLanguage, this.entryType, @JsonKey(includeIfNull: false) final  List<AiInputAiResponseObject>? aiResponses}): _aiResponses = aiResponses;
-  factory _AiInputLogEntryObject.fromJson(Map<String, dynamic> json) => _$AiInputLogEntryObjectFromJson(json);
+
 
 @override final  DateTime creationTimestamp;
 @override final  String loggedDuration;

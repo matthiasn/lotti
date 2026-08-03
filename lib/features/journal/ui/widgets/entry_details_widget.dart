@@ -340,7 +340,6 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       HabitCompletionEntry() => HabitSummary(item, showText: false),
       AiResponseEntry() => AiResponseSummary(
         item,
-        linkedFromId: linkedFrom?.id,
         fadeOut: true,
       ),
       Checklist() => ChecklistCardWrapper(

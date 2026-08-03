@@ -118,7 +118,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     if (_isStarting) {
       state = state.copyWith(
         error: 'Another operation is in progress',
-        errorType: ChatRecorderErrorType.concurrentOperation,
       );
       return;
     }
@@ -135,7 +134,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       if (!hasPerm) {
         state = state.copyWith(
           error: 'Microphone permission denied. Please enable it in Settings.',
-          errorType: ChatRecorderErrorType.permissionDenied,
         );
         await recorder.dispose();
         return;
@@ -222,7 +220,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       if (ref.mounted) {
         state = state.copyWith(
           error: 'Failed to start recording: $e',
-          errorType: ChatRecorderErrorType.startFailed,
         );
       }
       await _cleanupInternal();
@@ -266,7 +263,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         state = state.copyWith(
           status: ChatRecorderStatus.idle,
           error: 'No audio file available',
-          errorType: ChatRecorderErrorType.noAudioFile,
         );
       }
       return;
@@ -299,7 +295,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
             TranscriptionException(:final message) => message,
             _ => e.toString(),
           },
-          errorType: ChatRecorderErrorType.transcriptionFailed,
         );
       }
     } finally {

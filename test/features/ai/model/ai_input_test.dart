@@ -25,7 +25,7 @@ void main() {
       expect(AiActionItem.fromJson(_roundTrip(actionItem)), actionItem);
     });
 
-    test('AiInputLogEntryObject survives a round-trip', () {
+    test('AiInputLogEntryObject emits the prompt transport shape', () {
       final entry = AiInputLogEntryObject(
         creationTimestamp: DateTime(2024, 3, 15, 8, 30),
         loggedDuration: '00:45',
@@ -34,10 +34,17 @@ void main() {
         transcriptLanguage: 'en',
         entryType: 'text',
       );
-      expect(AiInputLogEntryObject.fromJson(_roundTrip(entry)), entry);
+      expect(_roundTrip(entry), {
+        'creationTimestamp': '2024-03-15T08:30:00.000',
+        'loggedDuration': '00:45',
+        'text': 'Did some work',
+        'audioTranscript': 'transcript',
+        'transcriptLanguage': 'en',
+        'entryType': 'text',
+      });
     });
 
-    test('AiInputLogEntryObject round-trips nested image AI analyses and '
+    test('AiInputLogEntryObject serializes nested image AI analyses and '
         'omits the key entirely when there are none', () {
       final imageEntry = AiInputLogEntryObject(
         creationTimestamp: DateTime(2026, 7, 23, 17, 5),
@@ -52,10 +59,14 @@ void main() {
           ),
         ],
       );
-      expect(
-        AiInputLogEntryObject.fromJson(_roundTrip(imageEntry)),
-        imageEntry,
-      );
+      final imageJson = _roundTrip(imageEntry);
+      expect(imageJson['aiResponses'], [
+        {
+          'model': 'mistral-ocr-latest',
+          'generatedAt': '2026-07-23T17:09:00.000',
+          'text': 'Datum: 05.10.26',
+        },
+      ]);
 
       // Prompt-size guard: entries without analyses must not render an
       // `aiResponses: null` key on every log line.

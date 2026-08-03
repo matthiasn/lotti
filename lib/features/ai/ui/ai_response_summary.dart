@@ -50,7 +50,6 @@ const _fadeOutPreviewMaxHeight = 200.0;
 class AiResponseSummary extends StatefulWidget {
   const AiResponseSummary(
     this.aiResponse, {
-    required this.linkedFromId,
     required this.fadeOut,
     this.collapsible = false,
     super.key,
@@ -60,7 +59,6 @@ class AiResponseSummary extends StatefulWidget {
   static const collapseToggleKey = Key('ai_response_summary_collapse_toggle');
 
   final AiResponseEntry aiResponse;
-  final String? linkedFromId;
   final bool fadeOut;
   final bool collapsible;
 

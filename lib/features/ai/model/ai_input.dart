@@ -52,7 +52,7 @@ abstract class AiActionItem with _$AiActionItem {
 /// audio transcript so the prompt can reference past activity. Image entries
 /// additionally nest their AI analysis results (summary, OCR, …) in
 /// [aiResponses] so the model can reason over extracted image content.
-@freezed
+@Freezed(fromJson: false, toJson: true)
 abstract class AiInputLogEntryObject with _$AiInputLogEntryObject {
   const factory AiInputLogEntryObject({
     required DateTime creationTimestamp,
@@ -65,9 +65,6 @@ abstract class AiInputLogEntryObject with _$AiInputLogEntryObject {
     // key on every prompt; only image entries with analyses carry it.
     @JsonKey(includeIfNull: false) List<AiInputAiResponseObject>? aiResponses,
   }) = _AiInputLogEntryObject;
-
-  factory AiInputLogEntryObject.fromJson(Map<String, dynamic> json) =>
-      _$AiInputLogEntryObjectFromJson(json);
 }
 
 /// One AI analysis response nested under an [AiInputLogEntryObject] — e.g. an
