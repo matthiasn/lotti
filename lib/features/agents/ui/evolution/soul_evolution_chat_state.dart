@@ -342,42 +342,6 @@ class SoulEvolutionChatState extends AsyncNotifier<EvolutionChatData> {
     );
   }
 
-  /// End the session without approving changes.
-  Future<void> endSession() async {
-    final data = state.value;
-    if (data == null || data.sessionId == null) return;
-
-    final workflow = ref.read(templateEvolutionWorkflowProvider);
-    try {
-      await workflow.abandonSession(sessionId: data.sessionId!);
-    } catch (e, s) {
-      developer.log(
-        'abandonSession failed',
-        name: _logTag,
-        error: e.runtimeType,
-        stackTrace: s,
-      );
-    }
-
-    final current = state.value;
-    if (current != null) {
-      state = AsyncData(
-        current.copyWith(
-          sessionId: () => null,
-          processor: () => null,
-          messages: [
-            ...current.messages,
-            EvolutionChatMessage.system(
-              text: 'session_abandoned',
-              timestamp: clock.now(),
-            ),
-          ],
-          isWaiting: false,
-        ),
-      );
-    }
-  }
-
   static final _implicitApprovalPattern = RegExp(
     r'^[\s\p{P}\p{S}]*(ok|okay|yes|yep|approve|approved|lgtm|sounds good|looks good|ship it)[\s\p{P}\p{S}]*$',
     caseSensitive: false,

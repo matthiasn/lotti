@@ -136,19 +136,4 @@ class AgentRetentionPolicy {
     // resolves by id — never by age of its own.
     agentMessagePayload: (_) => AgentRetentionClass.keptDerived,
   );
-
-  /// The age horizon for [entity], or null when age does not bound it.
-  ///
-  /// Read by the sweep only. There is deliberately **no inbound guard**: no
-  /// retention rule here is a pure per-row age test — status events keep each
-  /// day's newest, and an observation's fate depends on whether its ancestors
-  /// may go — so a single arriving row cannot be judged against what is really
-  /// a per-day or per-thread property. A guard that ignored those rules would
-  /// drop the one event an old day is presented by on a fresh device or a
-  /// backfill, and would delete an observation out of the middle of a chain.
-  Duration? horizonFor(AgentDomainEntity entity) => switch (classify(entity)) {
-    AgentRetentionClass.ageBounded => dayStatusEvents,
-    AgentRetentionClass.observation => observations,
-    AgentRetentionClass.userAuthored || AgentRetentionClass.keptDerived => null,
-  };
 }

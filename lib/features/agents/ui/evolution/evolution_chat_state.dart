@@ -529,31 +529,4 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
       ),
     );
   }
-
-  /// End the session without approving changes.
-  Future<void> endSession() async {
-    final data = state.value;
-    if (data == null || data.sessionId == null) return;
-
-    final workflow = ref.read(templateEvolutionWorkflowProvider);
-    await workflow.abandonSession(sessionId: data.sessionId!);
-
-    final current = state.value;
-    if (current != null) {
-      state = AsyncData(
-        current.copyWith(
-          sessionId: () => null,
-          processor: () => null,
-          messages: [
-            ...current.messages,
-            EvolutionChatMessage.system(
-              text: 'session_abandoned',
-              timestamp: clock.now(),
-            ),
-          ],
-          isWaiting: false,
-        ),
-      );
-    }
-  }
 }

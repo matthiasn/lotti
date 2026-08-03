@@ -26,7 +26,6 @@ void main() {
           AgentRetentionClass.userAuthored,
           reason: "${entity.runtimeType} is the user's own material.",
         );
-        expect(policy.horizonFor(entity), isNull);
       }
     });
 
@@ -42,7 +41,6 @@ void main() {
 
       for (final entity in kept) {
         expect(policy.classify(entity), AgentRetentionClass.keptDerived);
-        expect(policy.horizonFor(entity), isNull);
       }
     });
 
@@ -53,13 +51,6 @@ void main() {
       );
 
       expect(policy.classify(summary), AgentRetentionClass.keptDerived);
-      expect(
-        policy.horizonFor(summary),
-        isNull,
-        reason:
-            'Compaction summaries are what the agent remembers after its raw '
-            'log is folded away; ageing them out would erase that memory.',
-      );
     });
   });
 
@@ -69,13 +60,6 @@ void main() {
 
       expect(policy.classify(observation), AgentRetentionClass.observation);
       expect(
-        policy.horizonFor(observation),
-        policy.observations,
-        reason:
-            'Observations are swept, but on their own horizon — they are the '
-            'agent working notes a wake may still summarise months later.',
-      );
-      expect(
         policy.observations,
         greaterThan(policy.dayStatusEvents),
         reason:
@@ -84,19 +68,10 @@ void main() {
       );
     });
 
-    test('a summary is never bounded, however old', () {
-      // The horizon applies to observations alone; every other message kind
-      // is the agent durable memory.
-      expect(
-        policy.horizonFor(makeTestMessage(kind: AgentMessageKind.summary)),
-        isNull,
-      );
-    });
-
     test('a day-status event is bounded by age', () {
       expect(
-        policy.horizonFor(makeTestDayStatusEvent()),
-        policy.dayStatusEvents,
+        policy.classify(makeTestDayStatusEvent()),
+        AgentRetentionClass.ageBounded,
       );
     });
   });

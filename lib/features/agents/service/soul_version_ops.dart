@@ -113,38 +113,6 @@ class SoulVersionOps {
     return repository.getSoulDocument(soulId);
   }
 
-  /// Update mutable fields on a soul document (currently just display name).
-  ///
-  /// Rejects blank display names and skips the write when nothing changed.
-  Future<SoulDocumentEntity> updateSoul({
-    required String soulId,
-    String? displayName,
-  }) async {
-    final trimmed = displayName?.trim();
-    if (trimmed != null && trimmed.isEmpty) {
-      throw ArgumentError('displayName must not be blank');
-    }
-
-    final now = clock.now();
-
-    return syncService.runInTransaction(() async {
-      final soul = await getSoul(soulId);
-      if (soul == null) {
-        throw StateError('Soul document $soulId not found');
-      }
-
-      final newName = trimmed ?? soul.displayName;
-      if (newName == soul.displayName) return soul;
-
-      final updated = soul.copyWith(
-        displayName: newName,
-        updatedAt: now,
-      );
-      await syncService.upsertEntity(updated);
-      return updated;
-    });
-  }
-
   /// List all non-deleted soul documents.
   Future<List<SoulDocumentEntity>> getAllSouls() async {
     return repository.getAllSoulDocuments();

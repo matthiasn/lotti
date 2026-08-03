@@ -466,10 +466,8 @@ ImproverAgentService improverAgentService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return ImproverAgentService(
     agentService: ref.watch(agentServiceProvider),
-    agentTemplateService: ref.watch(agentTemplateServiceProvider),
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
-    orchestrator: ref.watch(wakeOrchestratorProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }

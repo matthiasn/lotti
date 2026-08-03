@@ -47,9 +47,6 @@ abstract class ClassifiedFeedback with _$ClassifiedFeedback {
     required int totalObservationsScanned,
     required int totalDecisionsScanned,
   }) = _ClassifiedFeedback;
-
-  factory ClassifiedFeedback.fromJson(Map<String, dynamic> json) =>
-      _$ClassifiedFeedbackFromJson(json);
 }
 
 /// Extension methods for filtering and grouping feedback.

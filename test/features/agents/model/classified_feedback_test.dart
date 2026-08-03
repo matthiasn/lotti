@@ -246,7 +246,7 @@ void main() {
       expect(restored, item);
     });
 
-    test('ClassifiedFeedback roundtrips through JSON', () {
+    test('ClassifiedFeedback encodes aggregate fields to JSON', () {
       final feedback = ClassifiedFeedback(
         items: [
           makeItem(sentiment: FeedbackSentiment.positive),
@@ -257,15 +257,11 @@ void main() {
         totalDecisionsScanned: 3,
       );
 
-      final json = jsonDecode(jsonEncode(feedback.toJson()));
-      final restored = ClassifiedFeedback.fromJson(
-        json as Map<String, dynamic>,
-      );
+      final json = feedback.toJson();
 
-      expect(restored.items, hasLength(1));
-      expect(restored.items.first.sentiment, FeedbackSentiment.positive);
-      expect(restored.totalObservationsScanned, 5);
-      expect(restored.totalDecisionsScanned, 3);
+      expect(json['items'], hasLength(1));
+      expect(json['totalObservationsScanned'], 5);
+      expect(json['totalDecisionsScanned'], 3);
     });
   });
 }

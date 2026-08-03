@@ -38,7 +38,7 @@ void main() {
   });
 
   test('worked examples preserve every instruction in a dense capture', () {
-    final normalized = dayAgentPlanningExamples.replaceAll(RegExp(r'\s+'), ' ');
+    final normalized = dayAgentCaptureExample.replaceAll(RegExp(r'\s+'), ' ');
 
     expect(
       normalized,
@@ -57,22 +57,23 @@ void main() {
   test(
     'worked examples account explicitly for overcommitted selected work',
     () {
-      expect(dayAgentPlanningExamples, contains('105 minutes remain'));
-      expect(dayAgentPlanningExamples, contains('150 minutes'));
-      expect(dayAgentPlanningExamples, contains('overCommitted'));
+      expect(dayAgentDraftExample, contains('105 minutes remain'));
+      expect(dayAgentDraftExample, contains('150 minutes'));
+      expect(dayAgentDraftExample, contains('overCommitted'));
       expect(
-        dayAgentPlanningExamples,
+        dayAgentDraftExample,
         contains('name the\n  45-minute repair call as omitted'),
       );
       expect(
-        dayAgentPlanningExamples,
+        dayAgentDraftExample,
         contains('Never make an instruction disappear'),
       );
     },
   );
 
   test('worked examples are held out from the live evaluation fixtures', () {
-    final normalizedExamples = dayAgentPlanningExamples.toLowerCase();
+    final normalizedExamples = '$dayAgentCaptureExample\n$dayAgentDraftExample'
+        .toLowerCase();
     for (final scenario in realisticDayPlanningScenarios) {
       for (final task in scenario.tasks) {
         expect(
