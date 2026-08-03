@@ -2208,16 +2208,22 @@ void main() {
       glados.any.chatRecorderState,
       glados.ExploreConfig(numRuns: 120),
     ).test(
-      'copyWith with no nullable overrides resets transcript and error to null',
+      'copyWith with no nullable overrides resets result fields to null',
       (state) {
         // copyWith without optional field arguments always resets them to null
         // (they have no ?? fallback in the constructor call).
-        final updated = state.copyWith();
+        final seeded = state.copyWith(
+          transcript: 'transcript',
+          partialTranscript: 'partial',
+          error: 'error',
+        );
+        final updated = seeded.copyWith();
         expect(updated.transcript, isNull);
+        expect(updated.partialTranscript, isNull);
         expect(updated.error, isNull);
         // Non-nullable fields are preserved
-        expect(updated.status, state.status);
-        expect(updated.amplitudeHistory, state.amplitudeHistory);
+        expect(updated.status, seeded.status);
+        expect(updated.amplitudeHistory, seeded.amplitudeHistory);
       },
       tags: 'glados',
     );
@@ -2239,12 +2245,16 @@ void main() {
       const original = ChatRecorderState(
         status: ChatRecorderStatus.processing,
         amplitudeHistory: <double>[-20, -15],
+        transcript: 'transcript',
+        partialTranscript: 'partial',
+        error: 'error',
       );
       final copy = original.copyWith();
       expect(copy.status, original.status);
       expect(copy.amplitudeHistory, original.amplitudeHistory);
       // Optional nullable fields default to null when not supplied.
       expect(copy.transcript, isNull);
+      expect(copy.partialTranscript, isNull);
       expect(copy.error, isNull);
     });
 
