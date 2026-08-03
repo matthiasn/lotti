@@ -161,7 +161,11 @@ re-request remains available throughout.
 
 The inviting device captures the exact verified Matrix user/device pair,
 persists an outbound round, queues `onboardingSnapshotBegin`, and waits for that
-device's durable `onboardingSnapshotAccepted` before staging history.
+device's durable `onboardingSnapshotAccepted` before staging history. If the
+inviter chooses a partial transfer or dismisses the history sheet, it instead
+queues an empty-range Begin followed by a complete End. That Begin atomically
+adopts the provisional gate but claims no covered counters, so automatic
+backfill is no longer blocked while the partial or declined flow continues.
 
 ```mermaid
 stateDiagram-v2
@@ -183,6 +187,7 @@ stateDiagram-v2
   note right of AwaitingBegin: Receiver-side preflight lifecycle
   [*] --> AwaitingBegin: handover persists gate before login
   AwaitingBegin --> Adopted: targeted Begin atomically installs range lease
+  AwaitingBegin --> Adopted: empty Begin releases declined or partial transfer
   AwaitingBegin --> Cancelled: login or room setup fails
   AwaitingBegin --> [*]: fixed one-hour expiry
   Adopted --> [*]
@@ -196,8 +201,10 @@ The persisted state strings also include receiver preflight states
 coverage. The targeted Begin installs its bounded range row and marks every
 unexpired matching-user preflight `adopted` in one database transaction. A
 restart therefore preserves the gate, while a failed provisioning attempt
-cancels its own gate before restoring any previous Matrix session. If no Begin
-ever arrives, expiry releases automatic repair after one hour.
+cancels its own gate before restoring any previous Matrix session. A failure
+while creating the preflight also restores that previous session before the
+configuration attempt reports its error. If no Begin or explicit empty-range
+release ever arrives, expiry releases automatic repair after one hour.
 
 `ending` keeps sender-side filtering alive while the
 low-priority end barrier drains; the sender terminalizes it only when Matrix
@@ -209,8 +216,9 @@ receiver, an inbound round is
 only `active` and transitions directly to `completed` or `aborted` when its
 matching End arrives. A completed round stops suppressing immediately. An
 aborted round deliberately remains suppressive until its original lease
-expires, giving a failed partial transfer the same hour-scale cooldown as a
-disconnected sender. Expiry is not another stored state:
+expires, giving a failed full transfer the same hour-scale cooldown as a
+disconnected sender. Partial transfers use the empty-range release instead.
+Expiry is not another stored state:
 suppression queries require `expiresAt` to remain in the future. The fixed,
 non-renewing lease is one hour.
 A duplicate begin can re-acknowledge a still-active round, but never renews its
@@ -228,9 +236,13 @@ applying the response cap. Requests from other devices, unknown origin hosts
 and counters above the snapshot remain actionable.
 
 Automatic request processing checks the blanket preflight before reading
-missing rows and again before enqueue. The final check also reloads range
-coverage, so a preflight installed or adopted while a pass was already reading
-cannot leak a stale batch into the outbox. Once acceptance is durable,
+missing rows. Its authoritative final preflight/range check and the durable
+outbox enqueue run inside the same process-local serialization gate used by
+preflight and targeted-Begin installation. Begin therefore linearizes either
+before that final check or after the outbox row exists; it cannot land between
+the check and persistence. The final check also reloads range coverage, so a
+pass that started reading before Begin filters the newly covered counters
+before it can enqueue. Once acceptance is durable,
 sender-side processing also filters any older request from the target host that
 reached the room just before Begin.
 

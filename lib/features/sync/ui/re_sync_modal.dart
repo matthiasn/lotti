@@ -35,10 +35,12 @@ class ReSyncModalContent extends ConsumerStatefulWidget {
     super.key,
     this.onboardingTarget,
     this.onboardingSyncService,
+    this.onOnboardingPreflightHandled,
   });
 
   final OnboardingSyncTarget? onboardingTarget;
   final OnboardingSyncService? onboardingSyncService;
+  final VoidCallback? onOnboardingPreflightHandled;
 
   @override
   ConsumerState<ReSyncModalContent> createState() => _ReSyncModalContentState();
@@ -112,9 +114,13 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     OutboundOnboardingRound? onboardingRound;
     try {
       if (_isFullOnboarding) {
+        widget.onOnboardingPreflightHandled?.call();
         onboardingRound = await _onboardingService.beginOutbound(
           widget.onboardingTarget!,
         );
+      } else if (widget.onboardingTarget case final target?) {
+        await _onboardingService.releaseInboundPreflight(target);
+        widget.onOnboardingPreflightHandled?.call();
       }
       await ref
           .read(maintenanceProvider)
@@ -473,13 +479,33 @@ class ReSyncModal {
   static Future<void> show(
     BuildContext context, {
     OnboardingSyncTarget? onboardingTarget,
+    OnboardingSyncService? onboardingSyncService,
   }) async {
-    await ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.maintenanceReSync,
-      builder: (_) => ReSyncModalContent(
-        onboardingTarget: onboardingTarget,
-      ),
-    );
+    var preflightHandled = onboardingTarget == null;
+    try {
+      await ModalUtils.showSinglePageModal<void>(
+        context: context,
+        title: context.messages.maintenanceReSync,
+        builder: (_) => ReSyncModalContent(
+          onboardingTarget: onboardingTarget,
+          onboardingSyncService: onboardingSyncService,
+          onOnboardingPreflightHandled: () => preflightHandled = true,
+        ),
+      );
+    } finally {
+      if (!preflightHandled && onboardingTarget != null) {
+        try {
+          await (onboardingSyncService ?? getIt<OnboardingSyncService>())
+              .releaseInboundPreflight(onboardingTarget);
+        } catch (error, stackTrace) {
+          getIt<DomainLogger>().error(
+            LogDomain.sync,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'reSyncOnboardingRelease',
+          );
+        }
+      }
+    }
   }
 }

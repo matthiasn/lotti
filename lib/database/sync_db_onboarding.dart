@@ -50,15 +50,16 @@ mixin _SyncDbOnboarding on _$SyncDatabase, _SyncDbSequenceWatermarks {
     )..where((t) => t.roundId.equals(roundId))).write(changes);
   }
 
-  Future<bool> hasActiveInboundOnboardingSyncPreflight({DateTime? now}) async {
-    final effectiveNow = now ?? DateTime.now();
+  Future<bool> hasActiveInboundOnboardingSyncPreflight({
+    required DateTime now,
+  }) async {
     final row =
         await (select(onboardingSyncRounds)
               ..where(
                 (t) =>
                     t.direction.equals('inbound') &
                     t.state.equals('awaitingBegin') &
-                    t.expiresAt.isBiggerThanValue(effectiveNow),
+                    t.expiresAt.isBiggerThanValue(now),
               )
               ..limit(1))
             .getSingleOrNull();

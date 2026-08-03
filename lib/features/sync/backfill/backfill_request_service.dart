@@ -435,40 +435,6 @@ class BackfillRequestService {
         return 0;
       }
 
-      if (!ignoreEnabledFlag) {
-        // Close the time-of-check/time-of-use window: provisioning or Begin
-        // can install/change suppression while this pass is reading missing
-        // rows. Re-check immediately before constructing the outbox message.
-        if (await _hasActiveInboundPreflight()) {
-          _trace(
-            'processBackfillRequests: onboarding preflight became active '
-            'before dispatch, skipping',
-            subDomain: 'backfill.onboardingPreflight',
-          );
-          return 0;
-        }
-        final latestCoverage =
-            await _onboardingSyncService?.activeInboundCoverage() ??
-            const <String, int>{};
-        if (latestCoverage.isNotEmpty) {
-          final beforeSuppression = missing.length;
-          missing = missing
-              .where(
-                (entry) => entry.counter > (latestCoverage[entry.hostId] ?? -1),
-              )
-              .toList();
-          final suppressed = beforeSuppression - missing.length;
-          if (suppressed > 0) {
-            _trace(
-              'processBackfillRequests: final onboarding race check '
-              'suppressed=$suppressed entries',
-              subDomain: 'backfill.onboardingPreflight',
-            );
-          }
-          if (missing.isEmpty) return 0;
-        }
-      }
-
       final requesterId = await _vectorClockService.getHost();
       if (requesterId == null) {
         _trace(
@@ -478,23 +444,66 @@ class BackfillRequestService {
         return 0;
       }
 
-      // Build request entries
-      final entries = missing
-          .map(
-            (item) => BackfillRequestEntry(
-              hostId: item.hostId,
-              counter: item.counter,
-            ),
-          )
-          .toList();
+      Future<void> enqueueCurrentBatch() {
+        final entries = missing
+            .map(
+              (item) => BackfillRequestEntry(
+                hostId: item.hostId,
+                counter: item.counter,
+              ),
+            )
+            .toList();
+        return _outboxService.enqueueMessageOrThrow(
+          SyncMessage.backfillRequest(
+            entries: entries,
+            requesterId: requesterId,
+          ),
+        );
+      }
 
-      // Send single backfill request message
-      await _outboxService.enqueueMessageOrThrow(
-        SyncMessage.backfillRequest(
-          entries: entries,
-          requesterId: requesterId,
-        ),
-      );
+      final onboarding = _onboardingSyncService;
+      if (!ignoreEnabledFlag && onboarding != null) {
+        final enqueued = await onboarding.serializeInboundSuppression(
+          () async {
+            // This check and the durable outbox write share the same critical
+            // section as preflight and Begin installation. A Begin therefore
+            // linearizes either before this check or after the row exists;
+            // it can no longer land between the check and persistence.
+            if (await onboarding.hasActiveInboundPreflight()) {
+              _trace(
+                'processBackfillRequests: onboarding preflight became active '
+                'before dispatch, skipping',
+                subDomain: 'backfill.onboardingPreflight',
+              );
+              return false;
+            }
+            final latestCoverage = await onboarding.activeInboundCoverage();
+            if (latestCoverage.isNotEmpty) {
+              final beforeSuppression = missing.length;
+              missing = missing
+                  .where(
+                    (entry) =>
+                        entry.counter > (latestCoverage[entry.hostId] ?? -1),
+                  )
+                  .toList();
+              final suppressed = beforeSuppression - missing.length;
+              if (suppressed > 0) {
+                _trace(
+                  'processBackfillRequests: final onboarding race check '
+                  'suppressed=$suppressed entries',
+                  subDomain: 'backfill.onboardingPreflight',
+                );
+              }
+              if (missing.isEmpty) return false;
+            }
+            await enqueueCurrentBatch();
+            return true;
+          },
+        );
+        if (!enqueued) return 0;
+      } else {
+        await enqueueCurrentBatch();
+      }
 
       // Mark all as requested (increments request count and sets lastRequestedAt)
       await _sequenceLogService.markAsRequested(

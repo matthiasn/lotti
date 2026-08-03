@@ -49,7 +49,9 @@ merge of two users' work.
   the new device starts holding off automatic history requests before it logs
   in, so even the first queue drain cannot ask for data that is about to arrive;
   a failed or disconnected transfer releases that hold automatically, and
-  manual recovery stays available.
+  manual recovery stays available. Choosing a partial range, or closing the
+  history sheet without starting, releases the provisional hold without
+  suppressing unrelated repair.
 - **Gives both devices something a person can actually compare.** Before
   anything is configured, the joining device shows which account it is about to
   join and a six-character check code that the inviting device derives

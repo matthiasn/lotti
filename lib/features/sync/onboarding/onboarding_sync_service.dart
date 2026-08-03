@@ -89,6 +89,7 @@ class OnboardingSyncService {
   final int _terminalCounterChunkSize;
   final OnboardingAcceptanceWaiter _acceptanceWaiter;
   final Map<String, Completer<void>> _acceptances = {};
+  Future<void> _inboundSuppressionTail = Future.value();
 
   /// Assigned by the composition root after the backfill requester exists.
   /// A successful end should immediately re-check any residual gaps; aborted
@@ -101,7 +102,7 @@ class OnboardingSyncService {
   /// arrives, the gate expires after [_lease]; manual repair remains available.
   Future<String> beginInboundPreflight({
     required String recipientUserId,
-  }) async {
+  }) => serializeInboundSuppression(() async {
     if (recipientUserId.isEmpty) {
       throw ArgumentError.value(recipientUserId, 'recipientUserId');
     }
@@ -123,32 +124,93 @@ class OnboardingSyncService {
     );
     _trace('preflight installed round=$roundId');
     return roundId;
-  }
+  });
 
   /// Cancels a provisioning preflight when login or room setup fails. Errors
   /// from this method are intentionally surfaced so the caller can log them
   /// without hiding the original provisioning failure.
-  Future<void> cancelInboundPreflight(String roundId) async {
-    final row = await _syncDatabase.onboardingSyncRound(roundId);
-    if (row == null ||
-        row.direction != _inbound ||
-        row.state != _awaitingBegin) {
-      return;
-    }
-    await _syncDatabase.updateOnboardingSyncRound(
-      roundId,
-      OnboardingSyncRoundsCompanion(
-        state: const Value(_cancelled),
-        updatedAt: Value(_clock.now()),
-      ),
-    );
-    _trace('preflight cancelled round=$roundId');
-  }
+  Future<void> cancelInboundPreflight(String roundId) =>
+      serializeInboundSuppression(() async {
+        final row = await _syncDatabase.onboardingSyncRound(roundId);
+        if (row == null ||
+            row.direction != _inbound ||
+            row.state != _awaitingBegin) {
+          return;
+        }
+        await _syncDatabase.updateOnboardingSyncRound(
+          roundId,
+          OnboardingSyncRoundsCompanion(
+            state: const Value(_cancelled),
+            updatedAt: Value(_clock.now()),
+          ),
+        );
+        _trace('preflight cancelled round=$roundId');
+      });
 
   Future<bool> hasActiveInboundPreflight() {
     return _syncDatabase.hasActiveInboundOnboardingSyncPreflight(
       now: _clock.now(),
     );
+  }
+
+  /// Runs [action] in the same process-local critical section used to install
+  /// inbound preflights and targeted Begin ranges. Automatic backfill keeps
+  /// its final suppression check and durable outbox enqueue inside this
+  /// section, giving those operations a single linear order.
+  Future<T> serializeInboundSuppression<T>(Future<T> Function() action) {
+    final previous = _inboundSuppressionTail;
+    final release = Completer<void>();
+    _inboundSuppressionTail = release.future;
+
+    return () async {
+      await previous;
+      try {
+        return await action();
+      } finally {
+        release.complete();
+      }
+    }();
+  }
+
+  /// Releases a newly provisioned receiver when the sender elects not to run
+  /// a full snapshot. An empty-coverage Begin atomically adopts the receiver's
+  /// provisional gate without suppressing any counter range; the matching End
+  /// closes the no-op round once it reaches the peer.
+  Future<void> releaseInboundPreflight(OnboardingSyncTarget target) async {
+    final senderHostId = await _getHostId();
+    final senderUserId = _getLocalUserId();
+    final senderDeviceId = _getLocalDeviceId();
+    if (senderHostId == null ||
+        senderUserId == null ||
+        senderDeviceId == null) {
+      throw StateError('Local sync identity is unavailable');
+    }
+
+    final roundId = _roundIdFactory();
+    await _enqueueMessage(
+      SyncMessage.onboardingSnapshotBegin(
+        protocolVersion: onboardingSyncProtocolVersion,
+        roundId: roundId,
+        senderHostId: senderHostId,
+        senderUserId: senderUserId,
+        senderDeviceId: senderDeviceId,
+        recipientUserId: target.userId,
+        recipientDeviceId: target.deviceId,
+        coverageUpperBounds: const {},
+        leaseSeconds: _lease.inSeconds,
+      ),
+    );
+    await _enqueueMessage(
+      SyncMessage.onboardingSnapshotEnd(
+        protocolVersion: onboardingSyncProtocolVersion,
+        roundId: roundId,
+        senderHostId: senderHostId,
+        recipientUserId: target.userId,
+        recipientDeviceId: target.deviceId,
+        reason: OnboardingSyncEndReason.complete,
+      ),
+    );
+    _trace('preflight release queued round=$roundId');
   }
 
   Future<OutboundOnboardingRound> beginOutbound(
@@ -316,11 +378,17 @@ class OnboardingSyncService {
     }
   }
 
-  Future<void> _handleBegin(SyncOnboardingSnapshotBegin message) async {
+  Future<void> _handleBegin(SyncOnboardingSnapshotBegin message) {
     if (!_isCurrentProtocol(message.protocolVersion) ||
         !_isLocalTarget(message.recipientUserId, message.recipientDeviceId)) {
-      return;
+      return Future.value();
     }
+    return serializeInboundSuppression(() => _handleTargetedBegin(message));
+  }
+
+  Future<void> _handleTargetedBegin(
+    SyncOnboardingSnapshotBegin message,
+  ) async {
     final recipientHostId = await _getHostId();
     if (recipientHostId == null) return;
 

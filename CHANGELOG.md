@@ -37,9 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   adding substantial duplicate work on slower phones. The two devices now
   coordinate that first full transfer before the new device logs in: automatic
   gap repair sends no early batch while the snapshot announcement is still on
-  its way, resumes immediately when the transfer finishes, and releases itself
-  after a bounded hour if the sending device disconnects or fails. Manual
-  recovery remains available throughout.
+  its way, and the final suppression check cannot race the durable request
+  enqueue. Repair resumes immediately when the transfer finishes; choosing a
+  partial transfer or closing the history sheet releases the provisional hold,
+  while a failed full transfer remains bounded to an hour. Manual recovery
+  remains available throughout.
 - **Stepping through days in Daily OS no longer moves the arrow you are
   clicking.** The date between the arrows was only as wide as the day it
   showed, so a shorter or longer date moved the forward arrow out from under

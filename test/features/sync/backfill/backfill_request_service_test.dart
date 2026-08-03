@@ -285,6 +285,7 @@ void main() {
       ),
     );
     registerFallbackValue(<({String hostId, int counter})>[]);
+    registerFallbackValue(() async => false);
     registerFallbackValue(Duration.zero);
   });
 
@@ -377,6 +378,8 @@ void main() {
       () async {
         final onboarding = MockOnboardingSyncService();
         final requestSent = Completer<SyncBackfillRequest>();
+        final markedRequested =
+            Completer<List<({String hostId, int counter})>>();
         final service = buildService(
           maxBatchSize: 2,
           domainLogger: mockLogging,
@@ -385,6 +388,13 @@ void main() {
         when(
           onboarding.hasActiveInboundPreflight,
         ).thenAnswer((_) async => false);
+        when(
+          () => onboarding.serializeInboundSuppression<bool>(any()),
+        ).thenAnswer(
+          (invocation) =>
+              (invocation.positionalArguments.single as Future<bool> Function())
+                  .call(),
+        );
         when(onboarding.activeInboundCoverage).thenAnswer(
           (_) async => {aliceHostId: 10},
         );
@@ -416,15 +426,22 @@ void main() {
         });
         when(
           () => mockSequenceService.markAsRequested(any()),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((invocation) async {
+          markedRequested.complete(
+            invocation.positionalArguments.single
+                as List<({String hostId, int counter})>,
+          );
+        });
 
         service.nudgeAfterDrain();
         final request = await requestSent.future;
+        final marked = await markedRequested.future;
 
         expect(
           request.entries,
           const [BackfillRequestEntry(hostId: bobHostId, counter: 5)],
         );
+        expect(marked, [(hostId: bobHostId, counter: 5)]);
         verify(onboarding.activeInboundCoverage).called(2);
         verify(
           () => mockLogging.log(
@@ -510,6 +527,13 @@ void main() {
         when(onboarding.hasActiveInboundPreflight).thenAnswer(
           (_) async => preflightChecks++ > 0,
         );
+        when(
+          () => onboarding.serializeInboundSuppression<bool>(any()),
+        ).thenAnswer(
+          (invocation) =>
+              (invocation.positionalArguments.single as Future<bool> Function())
+                  .call(),
+        );
         when(onboarding.activeInboundCoverage).thenAnswer((_) async => {});
         when(
           () => mockSequenceService.getMissingEntriesWithLimits(
@@ -547,6 +571,84 @@ void main() {
           () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
         );
         verifyNever(() => mockSequenceService.markAsRequested(any()));
+      },
+    );
+
+    test(
+      'serialized final check removes coverage installed during the load',
+      () async {
+        final onboarding = MockOnboardingSyncService();
+        final requestSent = Completer<SyncBackfillRequest>();
+        final markedRequested =
+            Completer<List<({String hostId, int counter})>>();
+        final service = buildService(
+          maxBatchSize: 2,
+          domainLogger: mockLogging,
+          onboardingSyncService: onboarding,
+        );
+        var coverageReads = 0;
+        when(
+          onboarding.hasActiveInboundPreflight,
+        ).thenAnswer((_) async => false);
+        when(onboarding.activeInboundCoverage).thenAnswer(
+          (_) async => coverageReads++ == 0 ? {} : {aliceHostId: 10},
+        );
+        when(
+          () => onboarding.serializeInboundSuppression<bool>(any()),
+        ).thenAnswer(
+          (invocation) =>
+              (invocation.positionalArguments.single as Future<bool> Function())
+                  .call(),
+        );
+        when(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createMissingLogItem(aliceHostId, 5),
+            _createMissingLogItem(bobHostId, 5),
+          ],
+        );
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+        ).thenAnswer((invocation) async {
+          requestSent.complete(
+            invocation.positionalArguments.single as SyncBackfillRequest,
+          );
+        });
+        when(
+          () => mockSequenceService.markAsRequested(any()),
+        ).thenAnswer((invocation) async {
+          markedRequested.complete(
+            invocation.positionalArguments.single
+                as List<({String hostId, int counter})>,
+          );
+        });
+
+        service.nudgeAfterDrain();
+        final request = await requestSent.future;
+        final marked = await markedRequested.future;
+
+        expect(
+          request.entries,
+          const [BackfillRequestEntry(hostId: bobHostId, counter: 5)],
+        );
+        verify(
+          () => mockLogging.log(
+            LogDomain.sync,
+            'processBackfillRequests: final onboarding race check '
+            'suppressed=1 entries',
+            subDomain: 'backfill.onboardingPreflight',
+          ),
+        ).called(1);
+        expect(marked, [(hostId: bobHostId, counter: 5)]);
       },
     );
 
