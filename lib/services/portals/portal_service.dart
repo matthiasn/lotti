@@ -26,7 +26,6 @@ class PortalConstants {
   static const String screenshotServiceName = 'ScreenshotPortalService';
 
   // Domain names for logging
-  static const String portalServiceDomain = 'PortalService';
   static const String initializationSubdomain = 'initialization';
   static const String availabilitySubdomain = 'isAvailable';
 
@@ -77,8 +76,6 @@ abstract class PortalService {
       _initialized = false;
     }
   }
-
-  bool get isInitialized => _initialized;
 
   DBusClient get client {
     if (!_initialized) {
@@ -182,17 +179,16 @@ abstract class PortalService {
     PortalService service,
     String serviceName,
   ) async {
-    if (!shouldUsePortal) {
-      // Handle non-Flatpak environments
-      switch (serviceName) {
-        case PortalConstants.screenshotServiceName:
-          return false; // Screenshots require portal
-        default:
-          return false;
-      }
-    }
-
     try {
+      if (!shouldUsePortal) {
+        // Handle non-Flatpak environments
+        switch (serviceName) {
+          case PortalConstants.screenshotServiceName:
+            return false; // Screenshots require portal
+          default:
+            return false;
+        }
+      }
       await service.initialize();
       final object = service.createPortalObject();
       final introspection = await object.introspect().timeout(
@@ -215,6 +211,8 @@ abstract class PortalService {
         );
       }
       return false;
+    } finally {
+      await service.dispose();
     }
   }
 }

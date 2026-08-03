@@ -12,19 +12,6 @@ import 'package:mocktail/mocktail.dart';
 import '../mocks/mocks.dart';
 import 'test_utils.dart';
 
-/// The names of every flag [initConfigFlags] seeds **on**, derived from
-/// [expectedFlags] rather than restated.
-///
-/// Both sets describe the same seeded rows, so restating the active names by
-/// hand made a seed-default flip a two-place edit -- and missing the second
-/// place failed here rather than at the flag's own test. Deriving keeps the
-/// active-names expectation correct by construction: updating a `status:` in
-/// [expectedFlags] is now the whole edit.
-final Set<String> expectedActiveFlagNames = {
-  for (final flag in expectedFlags)
-    if (flag.status) flag.name,
-};
-
 final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: privateFlag,
@@ -217,7 +204,8 @@ void main() {
           ),
         );
 
-        await db?.toggleConfigFlag(recordLocationFlag);
+        final flag = await db?.getConfigFlagByName(recordLocationFlag);
+        await db?.upsertConfigFlag(flag!.copyWith(status: !flag.status));
 
         expect(
           await db?.getConfigFlagByName(recordLocationFlag),
@@ -242,7 +230,7 @@ void main() {
             .watchConfigFlag(recordLocationFlag)
             .take(2)
             .toList();
-        await db!.toggleConfigFlag(recordLocationFlag);
+        await db!.upsertConfigFlag(existingFlag.copyWith(status: true));
 
         expect(await emittedValuesFuture, [false, true]);
       },
@@ -255,55 +243,23 @@ void main() {
         await db!.upsertConfigFlag(existingFlag!.copyWith(status: false));
 
         final emittedFlagsFuture = db!.watchConfigFlags().take(2).toList();
-        await db!.toggleConfigFlag(recordLocationFlag);
+        await db!.upsertConfigFlag(existingFlag.copyWith(status: true));
         final emittedFlags = await emittedFlagsFuture;
         final initialFlags = emittedFlags.first;
         expect(
-          db!.findConfigFlag(recordLocationFlag, initialFlags.toList()),
+          initialFlags
+              .singleWhere((flag) => flag.name == recordLocationFlag)
+              .status,
           false,
         );
         final updatedFlags = emittedFlags.last;
 
         expect(
-          db!.findConfigFlag(recordLocationFlag, updatedFlags.toList()),
+          updatedFlags
+              .singleWhere((flag) => flag.name == recordLocationFlag)
+              .status,
           true,
         );
-      },
-    );
-
-    test(
-      'watchActiveConfigFlagNames returns active flag names correctly',
-      () async {
-        final existingFlag = await db!.getConfigFlagByName(recordLocationFlag);
-        await db!.upsertConfigFlag(existingFlag!.copyWith(status: false));
-
-        final emittedFlagsFuture = db!
-            .watchActiveConfigFlagNames()
-            .take(2)
-            .toList();
-        await db!.toggleConfigFlag(recordLocationFlag);
-        final emittedFlags = await emittedFlagsFuture;
-        final activeFlags = emittedFlags.first;
-        expect(activeFlags, expectedActiveFlagNames);
-        final updatedFlags = emittedFlags.last;
-        expect(updatedFlags, {...expectedActiveFlagNames, recordLocationFlag});
-      },
-    );
-
-    test(
-      'findConfigFlag finds config flag status correctly',
-      () async {
-        final flags = await db?.listConfigFlags().get();
-        expect(flags, isNotNull);
-
-        final result = db?.findConfigFlag(privateFlag, flags!);
-        expect(result, true);
-
-        final result2 = db?.findConfigFlag(recordLocationFlag, flags!);
-        expect(result2, false);
-
-        final result3 = db?.findConfigFlag('non-existent-flag', flags!);
-        expect(result3, false);
       },
     );
 

@@ -460,7 +460,8 @@ void main() {
           expect((await db!.getLabelUsageCounts())['lbl-usage-priv'], 2);
 
           // With the flag off, the private entry's label no longer counts.
-          await db!.toggleConfigFlag(privateFlag);
+          final flag = await db!.getConfigFlagByName(privateFlag);
+          await db!.upsertConfigFlag(flag!.copyWith(status: false));
           expect((await db!.getLabelUsageCounts())['lbl-usage-priv'], 1);
         },
       );

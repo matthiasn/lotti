@@ -136,7 +136,8 @@ void main() {
       await initConfigFlags(db, inMemoryDatabase: true);
       // An existing install enabled Daily OS before the rollout flag was
       // temporarily removed from the app's seed list.
-      await db.toggleConfigFlag(enableDailyOsPageFlag);
+      final flag = await db.getConfigFlagByName(enableDailyOsPageFlag);
+      await db.upsertConfigFlag(flag!.copyWith(status: !flag.status));
       expect(await getStatus(enableDailyOsPageFlag), isTrue);
 
       // Re-running init should not reset their toggle.

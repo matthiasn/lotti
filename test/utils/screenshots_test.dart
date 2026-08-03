@@ -1034,10 +1034,7 @@ void main() {
         final portalService = ScreenshotPortalService();
 
         await portalService.initialize();
-        expect(portalService.isInitialized, isTrue);
-
         await portalService.dispose();
-        expect(portalService.isInitialized, isFalse);
 
         // Should not leak resources after disposal
         expect(() => portalService.client, throwsStateError);
@@ -1216,14 +1213,11 @@ void main() {
 
         final portalService = ScreenshotPortalService();
 
-        // Test initialization - should succeed even outside Flatpak
-        expect(portalService.isInitialized, isFalse);
-        await portalService.initialize();
-        expect(portalService.isInitialized, isTrue);
+        // Initialization should succeed even outside Flatpak.
+        await expectLater(portalService.initialize(), completes);
 
-        // Test disposal
-        await portalService.dispose();
-        expect(portalService.isInitialized, isFalse);
+        await expectLater(portalService.dispose(), completes);
+        expect(() => portalService.client, throwsStateError);
       });
 
       test('portal service client access should fail outside Flatpak', () {
@@ -1268,20 +1262,16 @@ void main() {
     group('Portal Service Lifecycle', () {
       test('should initialize portal service correctly', () async {
         final portalService = ScreenshotPortalService();
-        expect(portalService.isInitialized, isFalse);
-
-        await portalService.initialize();
-        expect(portalService.isInitialized, isTrue);
-
-        await portalService.dispose();
-        expect(portalService.isInitialized, isFalse);
+        await expectLater(portalService.initialize(), completes);
+        await expectLater(portalService.dispose(), completes);
+        expect(() => portalService.client, throwsStateError);
       });
 
       test('should handle portal service disposal', () async {
         final portalService = ScreenshotPortalService();
         await portalService.initialize();
-        await portalService.dispose();
-        expect(portalService.isInitialized, isFalse);
+        await expectLater(portalService.dispose(), completes);
+        expect(() => portalService.client, throwsStateError);
       });
     });
   });

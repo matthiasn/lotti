@@ -3,44 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 
 void main() {
-  group('NodeBadge', () {
-    test('two badges with identical label and tone are equal', () {
-      const a = NodeBadge(label: 'Live', tone: NodeTone.teal);
-      const b = NodeBadge(label: 'Live', tone: NodeTone.teal);
-      expect(a, equals(b));
-      expect(a.hashCode, equals(b.hashCode));
-    });
-
-    test('badges differing only in label are not equal', () {
-      const a = NodeBadge(label: 'Live', tone: NodeTone.teal);
-      const b = NodeBadge(label: 'Beta', tone: NodeTone.teal);
-      expect(a, isNot(equals(b)));
-    });
-
-    test('badges differing only in tone are not equal', () {
-      const a = NodeBadge(label: 'v2.4', tone: NodeTone.info);
-      const b = NodeBadge(label: 'v2.4', tone: NodeTone.error);
-      expect(a, isNot(equals(b)));
-    });
-
-    test('a badge is not equal to an unrelated value', () {
-      const badge = NodeBadge(label: 'Live', tone: NodeTone.teal);
-      // ignore: unrelated_type_equality_checks
-      expect(badge == 'Live', isFalse);
-    });
-
-    test('identity short-circuit: a badge equals itself', () {
-      const badge = NodeBadge(label: 'Live', tone: NodeTone.teal);
-      expect(badge == badge, isTrue);
-    });
-  });
-
-  group('NodeTone', () {
-    test('exposes exactly info, teal and error values', () {
-      expect(NodeTone.values, [NodeTone.info, NodeTone.teal, NodeTone.error]);
-    });
-  });
-
   group('SettingsNode.hasChildren', () {
     test('is true when children is a non-empty list', () {
       const node = SettingsNode(
@@ -93,7 +55,6 @@ void main() {
       title: 'Backfill',
       desc: 'Fill gaps',
       panel: 'sync-backfill',
-      badge: NodeBadge(label: 'Live', tone: NodeTone.teal),
     );
 
     test('structurally identical leaves compare equal', () {
@@ -108,7 +69,6 @@ void main() {
         title: base().title,
         desc: base().desc,
         panel: base().panel,
-        badge: base().badge,
       );
       expect(base(), isNot(equals(other)));
     });
@@ -120,7 +80,6 @@ void main() {
         title: base().title,
         desc: base().desc,
         panel: base().panel,
-        badge: base().badge,
       );
       expect(base(), isNot(equals(other)));
     });
@@ -132,7 +91,6 @@ void main() {
         title: 'Other',
         desc: base().desc,
         panel: base().panel,
-        badge: base().badge,
       );
       expect(base(), isNot(equals(other)));
     });
@@ -144,7 +102,6 @@ void main() {
         title: base().title,
         desc: 'Other desc',
         panel: base().panel,
-        badge: base().badge,
       );
       expect(base(), isNot(equals(other)));
     });
@@ -156,19 +113,6 @@ void main() {
         title: base().title,
         desc: base().desc,
         panel: 'other-panel',
-        badge: base().badge,
-      );
-      expect(base(), isNot(equals(other)));
-    });
-
-    test('differing only in badge is not equal', () {
-      final other = SettingsNode(
-        id: base().id,
-        icon: base().icon,
-        title: base().title,
-        desc: base().desc,
-        panel: base().panel,
-        badge: const NodeBadge(label: 'Beta', tone: NodeTone.info),
       );
       expect(base(), isNot(equals(other)));
     });

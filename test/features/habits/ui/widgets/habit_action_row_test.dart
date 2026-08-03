@@ -451,7 +451,6 @@ void main() {
     testWidgets('a combine selection layers a distinct second variant', (
       tester,
     ) async {
-      debugResetCelebrationSeed();
       await pumpRow(
         tester,
         extraOverrides: [

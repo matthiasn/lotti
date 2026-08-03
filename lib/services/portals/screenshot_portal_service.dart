@@ -37,9 +37,8 @@ class ScreenshotPortalService extends PortalService {
       );
     }
 
-    await initialize();
-
     try {
+      await initialize();
       final object = createPortalObject();
 
       // Options for the screenshot
@@ -155,6 +154,8 @@ class ScreenshotPortalService extends PortalService {
         subDomain: 'takeScreenshot',
       );
       rethrow;
+    } finally {
+      await dispose();
     }
   }
 

@@ -99,14 +99,20 @@ final GetIt getIt = GetIt.instance;
 Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
-    ..registerSingleton<UserActivityService>(UserActivityService())
+    ..registerSingleton<UserActivityService>(
+      UserActivityService(),
+      dispose: (service) => service.dispose(),
+    )
     ..registerSingleton<UserActivityGate>(
       UserActivityGate(
         activityService: getIt<UserActivityService>(),
         idleThreshold: SyncTuning.outboxIdleThreshold,
       ),
     )
-    ..registerSingleton<UpdateNotifications>(UpdateNotifications())
+    ..registerSingleton<UpdateNotifications>(
+      UpdateNotifications(),
+      dispose: (notifications) => notifications.dispose(),
+    )
     ..registerSingleton<SyncActivitySignaler>(
       SyncActivitySignaler(),
       dispose: (signaler) => signaler.dispose(),
@@ -153,7 +159,10 @@ Future<void> registerSingletons() async {
     updateNotifications: getIt<UpdateNotifications>(),
   );
   await entitiesCacheService.init();
-  getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
+  getIt.registerSingleton<EntitiesCacheService>(
+    entitiesCacheService,
+    dispose: (service) => service.dispose(),
+  );
 
   final aiConfigRepository = AiConfigRepository(AiConfigDb());
   getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
@@ -739,7 +748,10 @@ Future<void> registerSingletons() async {
     )
     ..registerSingleton<LinkService>(LinkService())
     ..registerSingleton<Maintenance>(Maintenance())
-    ..registerSingleton<NavService>(NavService());
+    ..registerSingleton<NavService>(
+      NavService(),
+      dispose: (service) => service.dispose(),
+    );
 
   await _registerLateAndOptionalServices();
 }

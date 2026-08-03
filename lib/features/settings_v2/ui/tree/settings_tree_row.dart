@@ -4,7 +4,7 @@ import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 
 /// Renders one tree row per spec §3 "Row anatomy": left active rail,
-/// icon tile, title + description column, optional badge, chevron.
+/// icon tile, title + description column, optional live indicator, chevron.
 ///
 /// Stateless on purpose — visibility of the rail + chevron rotation
 /// + selected styling are all derived from the props so parents can
@@ -35,7 +35,7 @@ class SettingsTreeRow extends StatelessWidget {
   final bool accentIcon;
 
   /// Optional live trailing widget (e.g. the `sync/outbox` pending count),
-  /// rendered between the static [NodeBadge] and the chevron. Supplied by
+  /// rendered before the chevron. Supplied by
   /// the build sites via `settingsNodeIndicatorFor(node.id)` so the row
   /// stays presentational and the indicator owns its own (reactive) state.
   final Widget? trailing;
@@ -185,11 +185,6 @@ class SettingsTreeRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Optional badge
-                if (node.badge case final badge?) ...[
-                  SizedBox(width: tokens.spacing.step3),
-                  _NodeBadgeChip(badge: badge, tokens: tokens),
-                ],
                 // Optional live indicator (e.g. outbox pending count).
                 if (trailing case final trailing?) ...[
                   SizedBox(width: tokens.spacing.step3),
@@ -214,48 +209,6 @@ class SettingsTreeRow extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NodeBadgeChip extends StatelessWidget {
-  const _NodeBadgeChip({required this.badge, required this.tokens});
-
-  final NodeBadge badge;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    const bgAlpha = SettingsV2Constants.badgeBackgroundAlpha;
-    final (bg, fg) = switch (badge.tone) {
-      NodeTone.info => (
-        tokens.colors.alert.info.defaultColor.withValues(alpha: bgAlpha),
-        tokens.colors.alert.info.ink,
-      ),
-      NodeTone.teal => (
-        tokens.colors.interactive.enabled.withValues(alpha: bgAlpha),
-        tokens.colors.interactive.enabled,
-      ),
-      NodeTone.error => (
-        tokens.colors.alert.error.defaultColor.withValues(alpha: bgAlpha),
-        tokens.colors.alert.error.ink,
-      ),
-    };
-    return Container(
-      height: SettingsV2Constants.badgeHeight,
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(tokens.radii.xl),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        badge.label,
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: fg,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );

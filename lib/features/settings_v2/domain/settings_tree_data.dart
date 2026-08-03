@@ -34,7 +34,6 @@ List<SettingsNode> buildSettingsTree({
     String id,
     IconData icon, {
     String? panel,
-    NodeBadge? badge,
     SettingsNodeAction? action,
     bool sectionBreakBefore = false,
   }) {
@@ -45,7 +44,6 @@ List<SettingsNode> buildSettingsTree({
       title: l.title,
       desc: l.desc,
       panel: panel,
-      badge: badge,
       action: action,
       sectionBreakBefore: sectionBreakBefore,
     );
@@ -55,7 +53,6 @@ List<SettingsNode> buildSettingsTree({
     String id,
     IconData icon, {
     required List<SettingsNode> children,
-    NodeBadge? badge,
     String? panel,
   }) {
     final l = labels(id);
@@ -65,15 +62,9 @@ List<SettingsNode> buildSettingsTree({
       title: l.title,
       desc: l.desc,
       children: children,
-      badge: badge,
       panel: panel,
     );
   }
-
-  // Badges carry localized marketing copy (e.g. "v2.4", "Live") and
-  // stay off the tree until the i18n sweep lands. The [NodeBadge]
-  // type and rendering path remain in place so re-introducing them
-  // later is a one-liner per node.
 
   return [
     if (enableWhatsNew)

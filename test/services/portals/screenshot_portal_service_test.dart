@@ -51,9 +51,7 @@ void main() {
     });
 
     tearDown(() async {
-      if (service.isInitialized) {
-        await service.dispose();
-      }
+      await service.dispose();
       await getIt.reset();
     });
 
@@ -75,16 +73,6 @@ void main() {
       final hasFlatpakId = Platform.environment['FLATPAK_ID'] != null;
 
       expect(shouldUse, equals(isLinux && hasFlatpakId));
-    });
-
-    test('should initialize and dispose properly', () async {
-      expect(service.isInitialized, isFalse);
-
-      await service.initialize();
-      expect(service.isInitialized, isTrue);
-
-      await service.dispose();
-      expect(service.isInitialized, isFalse);
     });
 
     test('should throw when using uninitialized client', () {

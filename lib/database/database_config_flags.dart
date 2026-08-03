@@ -58,30 +58,6 @@ mixin _JournalDbConfigFlags on _$JournalDb {
     }, isBroadcast: true);
   }
 
-  Stream<Set<String>> watchActiveConfigFlagNames() {
-    return watchConfigFlags().map((configFlags) {
-      final activeFlags = <String>{};
-      for (final flag in configFlags) {
-        if (flag.status) {
-          activeFlags.add(flag.name);
-        }
-      }
-      return activeFlags;
-    });
-  }
-
-  bool findConfigFlag(String flagName, List<ConfigFlag> flags) {
-    var flag = false;
-
-    for (final configFlag in flags) {
-      if (configFlag.name == flagName) {
-        flag = configFlag.status;
-      }
-    }
-
-    return flag;
-  }
-
   Future<bool> getConfigFlag(String flagName) async {
     await _ensureConfigFlagsLoaded();
     return _configFlagsByName[flagName]?.status ?? false;
@@ -136,14 +112,6 @@ mixin _JournalDbConfigFlags on _$JournalDb {
     final result = await into(configFlags).insertOnConflictUpdate(configFlag);
     _setConfigFlag(configFlag);
     return result;
-  }
-
-  Future<void> toggleConfigFlag(String flagName) async {
-    final configFlag = await getConfigFlagByName(flagName);
-
-    if (configFlag != null) {
-      await upsertConfigFlag(configFlag.copyWith(status: !configFlag.status));
-    }
   }
 
   Future<List<bool>> _visiblePrivateStatuses() async {
