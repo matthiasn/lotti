@@ -6759,8 +6759,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedTasksEmptyAction => 'Link a task…';
 
   @override
-  String get linkedTasksEmptyHint =>
-      'Connect this task to another — a blocker, a follow-up, a duplicate.';
+  String get linkedTasksEmptyHint => 'Connect this task to another task.';
 
   @override
   String get linkedTasksMenuTooltip => 'Linked tasks options';
@@ -10462,6 +10461,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskActionBarTrackTime => 'Track time';
 
   @override
+  String get taskAgentAssignHint => 'Let an agent draft steps and summaries.';
+
+  @override
   String get taskAgentAttributionUnavailable => 'Attribution unavailable';
 
   @override
@@ -10695,7 +10697,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskCategoryLabel => 'Category:';
 
   @override
-  String get taskCategoryUnassignedLabel => 'unassigned';
+  String get taskCategoryUnassignedLabel => 'Unassigned';
 
   @override
   String get taskDueDateLabel => 'Due Date';
@@ -10743,6 +10745,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String taskEstimateTooltip(String tracked, String estimate) {
     return 'Time tracked: $tracked of $estimate estimated';
   }
+
+  @override
+  String get taskFirstRunAddChecklist => 'Add a checklist';
+
+  @override
+  String get taskFirstRunAssignAgent => 'Assign an agent';
+
+  @override
+  String get taskFirstRunRecordAudio => 'Record a voice note';
+
+  @override
+  String get taskFirstRunWriteNote => 'Write a note';
 
   @override
   String get taskHeaderNoCategoryLabel => 'No category';
@@ -10920,7 +10934,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskPriorityUrgent => 'Urgent';
 
   @override
-  String get tasksAddLabelButton => 'Add Label';
+  String get tasksAddLabelButton => 'Add label';
 
   @override
   String get tasksAgentFilterAll => 'All';
@@ -10952,6 +10966,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '“$query”';
   }
+
+  @override
+  String get taskSetDueDateLabel => 'Set due date';
+
+  @override
+  String get taskSetEstimateLabel => 'Add estimate';
 
   @override
   String get tasksFilterApplyTitle => 'Apply filter';
@@ -11288,6 +11308,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'No title';
+
+  @override
+  String get taskTitlePrompt => 'Name this task';
 
   @override
   String get taskUntitled => '(untitled)';

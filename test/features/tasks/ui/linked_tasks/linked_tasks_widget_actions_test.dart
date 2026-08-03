@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
@@ -132,6 +133,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          linkableTasksOverride('task-main', exists: true),
           linkedTasksControllerProvider('task-main').overrideWith(
             manageMode
                 ? () => MockLinkedTasksControllerManageMode('task-main')
@@ -1078,3 +1080,21 @@ void main() {
     );
   });
 }
+
+/// Serves a fixed answer to "does any other task exist to link to?", so a
+/// test can state which world it is in instead of depending on a JournalDb
+/// stub three layers down. The card renders nothing at all when this is
+/// false — see `LinkedTasksWidget.build`.
+class _StaticLinkableTasks extends LinkableTasksController {
+  _StaticLinkableTasks({required this.exists});
+
+  final bool exists;
+
+  @override
+  Future<bool> build() async => exists;
+}
+
+Override linkableTasksOverride(String taskId, {required bool exists}) =>
+    linkableTasksExistProvider(
+      taskId,
+    ).overrideWith(() => _StaticLinkableTasks(exists: exists));

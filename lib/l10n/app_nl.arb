@@ -4767,6 +4767,7 @@
   "taskActionBarOpenRunningTimer": "Openen van de lopende timer",
   "taskActionBarStopTracking": "Stop tijd volgen",
   "taskActionBarTrackTime": "Tracktijd",
+  "taskAgentAssignHint": "Laat een agent stappen en samenvattingen opstellen.",
   "taskAgentAttributionUnavailable": "Naamsvermelding niet beschikbaar",
   "taskAgentAutomaticUpdatesLabel": "Automatische updates",
   "taskAgentAutomaticUpdatesNeedsSetup": "Kies een AI-configuratie voordat u automatisch updates aan zet.",
@@ -4922,6 +4923,10 @@
       }
     }
   },
+  "taskFirstRunAddChecklist": "Een checklist toevoegen",
+  "taskFirstRunAssignAgent": "Een agent toewijzen",
+  "taskFirstRunRecordAudio": "Een spraaknotitie opnemen",
+  "taskFirstRunWriteNote": "Een notitie schrijven",
   "taskHeaderNoCategoryLabel": "Geen categorie",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
@@ -5002,6 +5007,8 @@
   "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filters}}",
   "tasksCompactHeaderExpandHint": "Zoeken en filters tonen",
   "tasksCompactSearchContext": "‘{query}’",
+  "taskSetDueDateLabel": "Vervaldatum instellen",
+  "taskSetEstimateLabel": "Schatting toevoegen",
   "tasksFilterApplyTitle": "Filter toepassen",
   "tasksFilterClearAll": "Alles wissen",
   "tasksFilterTitle": "Filtertaken",
@@ -5183,6 +5190,7 @@
   "taskStatusOpen": "Openen",
   "taskStatusRejected": "Afgewezen",
   "taskTitleEmpty": "Geen titel",
+  "taskTitlePrompt": "Geef deze taak een naam",
   "taskUntitled": "(zonder titel)",
   "thinkingDisclosureCopied": "Redeneren gekopieerd",
   "thinkingDisclosureCopy": "Beredenering kopiëren",

@@ -6917,7 +6917,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get linkedTasksEmptyHint =>
-      'Conectați această sarcină cu alta — un blocaj, o continuare sau un duplicat.';
+      'Conectați această sarcină cu o altă sarcină.';
 
   @override
   String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
@@ -10745,6 +10745,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskActionBarTrackTime => 'Înregistrați timpul';
 
   @override
+  String get taskAgentAssignHint =>
+      'Lăsați un agent să schițeze pași și rezumate.';
+
+  @override
   String get taskAgentAttributionUnavailable =>
       'Atribuirea nu este disponibilă';
 
@@ -11037,6 +11041,18 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get taskFirstRunAddChecklist => 'Adăugați o listă de verificare';
+
+  @override
+  String get taskFirstRunAssignAgent => 'Atribuiți un agent';
+
+  @override
+  String get taskFirstRunRecordAudio => 'Înregistrați o notă vocală';
+
+  @override
+  String get taskFirstRunWriteNote => 'Scrieți o notă';
+
+  @override
   String get taskHeaderNoCategoryLabel => 'Fără categorie';
 
   @override
@@ -11245,6 +11261,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '„$query”';
   }
+
+  @override
+  String get taskSetDueDateLabel => 'Stabiliți termenul';
+
+  @override
+  String get taskSetEstimateLabel => 'Adăugați o estimare';
 
   @override
   String get tasksFilterApplyTitle => 'Aplicați filtrul';
@@ -11588,6 +11610,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Fără titlu';
+
+  @override
+  String get taskTitlePrompt => 'Denumiți această sarcină';
 
   @override
   String get taskUntitled => '(fără titlu)';

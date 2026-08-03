@@ -25,8 +25,12 @@ import 'package:lotti/utils/color.dart';
 /// Status leads the attribute lane (rather than being pinned to a trailing
 /// edge) so it has one stable, predictable home that never opens a horizontal
 /// dead zone next to a short chip cluster and never gets marooned when the row
-/// wraps. The due date and time-estimate are bonded into one wrap unit so the
-/// optional estimate can never strand alone on its own near-empty wrap row.
+/// wraps. Every attribute is its own wrap unit — the due date and the estimate
+/// used to be bonded into one, which on a phone was wide enough that the pair
+/// broke to a second row while half of the first row sat empty, burying the
+/// due date (the lane's second-most decision-relevant chip) below the fold of
+/// the block. Unbonded, status / priority / due fill the first row and only
+/// the estimate wraps.
 /// Beyond a small cap the free-form labels collapse behind a tappable "+N"
 /// affordance so a long taxonomy never floods the lane. Separating attributes
 /// from labels gives the eye an
@@ -101,12 +105,18 @@ class _MetaRowState extends State<MetaRow> {
     // own internal horizontal padding (step3 = 8) so the chips read as one
     // anchored cluster rather than scattered tokens.
     final chipGap = tokens.spacing.step2;
+    // Run spacing is a step LOOSER than the inter-chip gutter. At the same
+    // step2 the wrapped rows sat closer to each other than the chips within a
+    // row did, so a two-row lane read as one crowded slab; step3 lets the eye
+    // find the row break while the lane still holds together as one block.
+    final laneRunGap = tokens.spacing.step3;
     final labels = widget.labels;
     final attributes = <Widget>[
       TaskHeaderStatusPill(status: widget.status, onTap: widget.onStatusTap),
       if (widget.blockedBySlot != null) widget.blockedBySlot!,
       _PriorityPill(priority: widget.priority, onTap: widget.onPriorityTap),
-      _timeGroup(chipGap),
+      _DuePill(dueDate: widget.dueDate, onTap: widget.onDueDateTap),
+      if (widget.estimateSlot != null) widget.estimateSlot!,
       if (widget.consumptionSlot != null) widget.consumptionSlot!,
       // With no labels yet, the "Add Label" affordance rides the END of the
       // attribute lane rather than orphaning on its own near-empty second
@@ -120,7 +130,7 @@ class _MetaRowState extends State<MetaRow> {
     ];
     final attributeLane = Wrap(
       spacing: chipGap,
-      runSpacing: chipGap,
+      runSpacing: laneRunGap,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: attributes,
     );
@@ -138,7 +148,7 @@ class _MetaRowState extends State<MetaRow> {
         // it (rather than leaning only on the chips' colour dots), without
         // needing a divider.
         SizedBox(height: tokens.spacing.step4),
-        _buildLabelLane(context, chipGap, labels),
+        _buildLabelLane(context, chipGap, laneRunGap, labels),
       ],
     );
   }
@@ -149,6 +159,7 @@ class _MetaRowState extends State<MetaRow> {
   Widget _buildLabelLane(
     BuildContext context,
     double chipGap,
+    double runGap,
     List<LabelDefinition> labels,
   ) {
     final hasOverflow = labels.length > _maxVisibleLabels;
@@ -156,7 +167,7 @@ class _MetaRowState extends State<MetaRow> {
     final visible = collapsed ? labels.take(_maxVisibleLabels) : labels;
     return Wrap(
       spacing: chipGap,
-      runSpacing: chipGap,
+      runSpacing: runGap,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         for (final label in visible)
@@ -179,27 +190,6 @@ class _MetaRowState extends State<MetaRow> {
             onTap: () => setState(() => _labelsExpanded = false),
           ),
       ],
-    );
-  }
-
-  /// Bonds the two *time* attributes — the due date (**when**) and the optional
-  /// time estimate (**how big**) — into a single wrap unit. When the attribute
-  /// lane wraps on a narrow viewport this keeps the estimate travelling with
-  /// the due chip instead of stranding it alone on a near-empty second row
-  /// beneath a full row (a lone orphaned chip). The inner [Wrap] reuses the
-  /// same chip gap, so the pair looks identical to two adjacent chips on wide
-  /// screens, and only ever breaks apart internally at extreme widths — it
-  /// never overflows. With no estimate the group collapses to the bare due
-  /// chip.
-  Widget _timeGroup(double chipGap) {
-    final due = _DuePill(dueDate: widget.dueDate, onTap: widget.onDueDateTap);
-    final slot = widget.estimateSlot;
-    if (slot == null) return due;
-    return Wrap(
-      spacing: chipGap,
-      runSpacing: chipGap,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [due, slot],
     );
   }
 }
@@ -258,7 +248,11 @@ class _PriorityPill extends StatelessWidget {
       // Spelled-out priority (Urgent / High / Medium / Low) instead of the
       // opaque "P2" code, so the urgency direction reads without decoding.
       label: priority.localizedLabel(context),
-      labelColor: TaskShowcasePalette.mediumText(context),
+      // High emphasis, like the due chip. At medium it inked identically to
+      // the *unset* chips beside it, so a value the user had chosen looked no
+      // different from one they had not — and the lane's two shells stopped
+      // meaning "set" and "unset" at all.
+      labelColor: TaskShowcasePalette.highText(context),
       leading: TaskShowcasePriorityGlyph(priority: priority, size: 14),
       onTap: onTap,
     );
@@ -277,7 +271,11 @@ class _DuePill extends StatelessWidget {
     if (dueDate == null) {
       return DsPill(
         variant: DsPillVariant.muted,
-        label: context.messages.taskNoDueDateLabel,
+        // A verb, not a report. "No due date" is a statement of fact, and
+        // reviewers read it as one — a label describing the task rather than a
+        // control offering to fix it — so they never tapped it. The unset
+        // chips now speak the same imperative "Add label" always did.
+        label: context.messages.taskSetDueDateLabel,
         leading: Icon(
           Icons.calendar_today_outlined,
           size: 12,

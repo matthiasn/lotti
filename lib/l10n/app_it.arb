@@ -4768,6 +4768,7 @@
   "taskActionBarOpenRunningTimer": "Apri il timer in esecuzione",
   "taskActionBarStopTracking": "Smettere di rintracciare il tempo",
   "taskActionBarTrackTime": "Tempo di tracciamento",
+  "taskAgentAssignHint": "Lascia che un agente abbozzi passaggi e riepiloghi.",
   "taskAgentAttributionUnavailable": "Attribuzione non disponibile",
   "taskAgentAutomaticUpdatesLabel": "Aggiornamenti automatici",
   "taskAgentAutomaticUpdatesNeedsSetup": "Scegli una configurazione AI prima di attivare aggiornamenti automatici.",
@@ -4923,6 +4924,10 @@
       }
     }
   },
+  "taskFirstRunAddChecklist": "Aggiungi una checklist",
+  "taskFirstRunAssignAgent": "Assegna un agente",
+  "taskFirstRunRecordAudio": "Registra una nota vocale",
+  "taskFirstRunWriteNote": "Scrivi una nota",
   "taskHeaderNoCategoryLabel": "Nessuna categoria",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
@@ -5003,6 +5008,8 @@
   "tasksCompactFilterCount": "{count, plural, one {{count} filtro} other {{count} filtri}}",
   "tasksCompactHeaderExpandHint": "Mostra la ricerca e i filtri",
   "tasksCompactSearchContext": "“{query}”",
+  "taskSetDueDateLabel": "Imposta scadenza",
+  "taskSetEstimateLabel": "Aggiungi stima",
   "tasksFilterApplyTitle": "Applica il filtro",
   "tasksFilterClearAll": "Cancella tutto",
   "tasksFilterTitle": "Filtra le attività",
@@ -5184,6 +5191,7 @@
   "taskStatusOpen": "Aprire",
   "taskStatusRejected": "Rifiuti",
   "taskTitleEmpty": "Nessun titolo",
+  "taskTitlePrompt": "Dai un nome a questa attività",
   "taskUntitled": "(non legato)",
   "thinkingDisclosureCopied": "Ragione copiata",
   "thinkingDisclosureCopy": "Copia ragionamento",

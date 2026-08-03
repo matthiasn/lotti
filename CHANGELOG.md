@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.1]
 ### Added
+- **A new task now tells you what to do next.** Opening a task you have just
+  created used to leave you with a "No title" label, a row of chips, and half a
+  screen of nothing. The title is now a field you land in with the cursor
+  already blinking, asking you to name the task — press Return to save it —
+  and below it a short card offers the four things a task usually needs next:
+  write a note, add a checklist, record a voice note, assign an agent. They are
+  worded rows rather than unlabelled glyphs in the bottom bar, and while the
+  card is up the bar drops the buttons that would say the same thing twice. The
+  card disappears the moment the task has any content, and the whole page is
+  composed in the window rather than stacked at the top of an empty one. The agent row also points out that a category can assign an agent to
+  every task it creates, so you can answer that question once instead of per
+  task.
 - **Daily OS has a Today button.** Once you step off today, a Today button
   appears beside the date arrows and takes you straight back. Returning
   previously meant either opening the date picker or knowing that a long press
@@ -31,6 +43,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   was narrow enough that the outer QR modules looked almost clipped against the
   surrounding card. The code now has four more pixels of white space on every
   side, making its boundary easier for a camera to distinguish.
+- **The task page no longer offers to link a task when there is nothing to link
+  to.** On a fresh install the Linked Tasks card explained blockers, follow-ups
+  and duplicates to someone who had exactly one task and could not link it to
+  anything. It now stays away until a second task exists, and its explanation
+  is one short line rather than three.
+- **Task detail buttons are visible again.** The action bar's Track time,
+  microphone and menu buttons rendered as heavy dark slabs in light mode; they
+  now read as light chips on the glass strip, with Track time carrying the
+  accent as the bar's single primary. The overflow menu at the top of the page
+  was near-invisible in both themes and is now legible. The knowledge-graph
+  icon beside it is desktop-only — the graph needs a wide window to be usable.
+- **Unset task chips ask for what they need.** They were set in italics, which
+  read as unavailable rather than empty and was hard to read at large text
+  sizes, and they were worded as statements — "No due date" describes the task
+  rather than offering to fix it. They now read "Set due date" and "Add
+  estimate", upright, and a value you have actually chosen is inked more
+  strongly than one you have not. On a phone the due date also dropped to a
+  second row while half the first row sat empty; status, priority and due date
+  now share the first row.
+- **Task priority icons use the right colours in light mode.** The priority
+  glyph carried the dark theme's palette regardless of theme, and the Open
+  status ring was drawn at a third of its intended strength.
 - **Adding a device no longer sends the same history over and over.** During a
   full initial message transfer, the new device could mistake queued or
   in-flight history for missing data and repeatedly ask for it in batches,

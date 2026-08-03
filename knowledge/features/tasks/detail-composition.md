@@ -5,17 +5,21 @@ description: The band order on the detail page, the header's two lanes and edit 
 resource: ../../../lib/features/tasks/ui/header
 tags: [tasks, detail, header, scroll-stability, design-tokens]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-25
+generated: { by: claude-code/opus-5, at: 2026-08-03T14:00:00Z }
+stale_after: 2027-02-02
 sources:
   - id: header
     resource: ../../../lib/features/tasks/ui/header
     title: Desktop task header
-    last_modified: 2026-07-25
+    last_modified: 2026-08-03
   - id: pages
     resource: ../../../lib/features/tasks/ui/pages
     title: TaskDetailsPage and TaskForm
-    last_modified: 2026-07-25
+    last_modified: 2026-08-03
+  - id: first-run
+    resource: ../../../lib/features/tasks/ui/widgets/task_first_run_actions.dart
+    title: First-run actions block
+    last_modified: 2026-08-03
   - id: tokens
     resource: ../../../assets/design_system/tokens.json
     title: aiCard and proposalKind tokens
@@ -30,6 +34,71 @@ user's **own work** (`ChecklistsWidget`, `LinkedTasksWidget`), and finally the
 `AiSummaryCard`.
 
 The AI card renders **below** the checklists so the user's work comes first.
+
+## The first-run band
+
+A task with **no content at all** — no checklists, no body text, no agent, as
+decided by `TaskFirstRunActions.isBlank` — gains one more band below the AI card:
+`TaskFirstRunActions`, a single card of worded rows a `sectionGap` beneath the
+header.
+
+Order is **Write a note → Add a checklist → Record a voice note → Assign an
+agent**. Writing leads because it is what a journaling app's user came to do, and
+because it was the one path an empty task did not offer: `EditorWidget` renders
+only for a task that *already* has entry text, so the plain-text route existed
+solely behind the action bar's unlabelled overflow glyph.
+
+Two rows are conditional, both by the same rule — **a section must not offer what
+cannot happen**:
+
+- The agent row appears only when `taskAgentTemplatesExistProvider` resolves true.
+  Without a single task-agent template the picker it opens dead-ends on a warning
+  toast, which is the fresh-install path.
+- The whole band disappears the moment the task has any content, so a returning
+  user never meets it twice on the same task.
+
+While this band renders, `TaskForm` passes `showAssignCta: false` to
+`AiSummaryCard`: the band carries the same offer, and two "assign agent"
+affordances on one screen is one too many. The AI card's own band padding also
+collapses to zero in that state, so a card that renders nothing does not still
+charge the page for the gaps around it.
+
+Two composition rules follow from the block, and both live on the *page*:
+
+- **`TaskDetailsPage` adopts the block's 520 pt measure** for the whole content
+  column while it renders, so the title field, the chip lane and the block share
+  one right edge. At the full reading width the three disagreed by hundreds of
+  points and the only card on the page floated far left of the window's centre.
+- **The first content sliver grows to at least the remaining viewport** and
+  settles the group slightly above centre, so the space below reads as margin
+  rather than as a page that stopped rendering. Deliberately *not*
+  `SliverFillRemaining(hasScrollBody: false)`: that measures the child's
+  intrinsic height, and the subtree contains `LayoutBuilder`s that cannot answer
+  an intrinsic query. A `minHeight` constraint plus an `Align` composes the same
+  way without ever asking, and being a floor rather than a fixed height it still
+  scrolls normally at large text scales.
+
+Row affordances say what the tap does: **`+` where the row creates something in
+place** (note, checklist), **a chevron where it opens a picker** (voice note,
+agent). Four identical chevrons over four different behaviours told the user
+nothing — and two of those rows retire the whole card from under the finger.
+
+**"Write a note" publishes a `TaskFocusIntent`** so the new note scrolls into
+view. `EntryCreationService.createTextEntry` navigates only for an *unlinked*
+entry; linked to a task it writes a row into the linked entries below and
+returns, which left the row looking like a dead button that silently made an
+empty note per tap.
+
+While the block renders, `TaskActionBar` is passed `compact: true` and drops the
+mic, checklist and image glyphs: those actions already have a worded home a few
+centimetres higher, and two surfaces with overlapping-but-unequal membership
+left users unable to tell which was the real list. An *active* recording
+overrides it — the mic is the only way to stop a session in progress.
+
+**`TaskDetailsPage` owns the content gutter, once** (`spacing.step5` on both
+slivers). The header, its breadcrumb segments and the sliver each used to add a
+little of their own, which put five different left edges in the top hundred
+points of the page. The header now contributes vertical padding only.
 
 `TaskDetailsPage` composes `TaskSliverAppBar`, `TaskConsumptionChip` — the AI
 consumption pill in the header's meta row showing lifetime cost, energy and CO₂e
@@ -51,11 +120,19 @@ the task to an immutable `DesktopTaskHeaderData` plus a Riverpod-aware
 
 ```mermaid
 stateDiagram-v2
-  [*] --> ReadOnly
-  ReadOnly --> Editing: tap title
+  [*] --> ReadOnly: title set
+  [*] --> Editing: title blank (connector passes initialEditing)
+  ReadOnly --> Editing: tap title / keyboard activate
   Editing --> ReadOnly: check button / Primary+S / Primary+Enter → onTitleSaved
+  Editing --> ReadOnly: Enter (touch platforms) → onTitleSaved
+  Editing --> ReadOnly: focus lost → commit (deferred one frame)
   Editing --> ReadOnly: close button / Esc → revert
 ```
+
+**A blank title opens straight into the editor.** The connector passes
+`initialEditing: data.title.trim().isEmpty`, keyed by task id so the decision is
+re-made per task. Naming the task is the one thing every new task needs, and the
+title was previously a read-only label whose only affordance was a hover cursor.
 
 **ReadOnly** renders as plain text in Heading 2 Bold at 1.15 line-height, so a
 wrapping multi-line title reads as one cohesive block. **The whole title is the
@@ -65,11 +142,38 @@ affordance is carried by the hover click-cursor, an "Edit title" `Semantics`
 button, and keyboard activation. The title spans the full content width and wraps
 freely; no control rides this line.
 
-**Editing** becomes a capsule-shaped inline `TextField` with a teal border and
-external check and close buttons. Its nearest `AppCommandScope` owns
-catalog-driven Primary+S save and Escape cancel, so the command palette sees the
-same actions and platform binding as the rest of the app. **Enter inserts a
-newline**; Primary+Enter is a control-local commit gesture.
+A **blank** title is the exception: it renders an imperative prompt ("Name this
+task") at `text.lowEmphasis` and `w400` inside real field chrome — a
+`decorative.level01` hairline on `surface.enabled`, `step4`/`step3` padding. It
+used to show the same "No title" *report* the task list shows, in italic, with no
+box: the largest mark on a new task's page announced an absence and offered
+nothing. The lighter weight matters as much as the paler ink — at the title's own
+weight, readers took the prompt for the task's actual name.
+
+**Editing** uses the identical box with the border escalated to
+`interactive.enabled`, so focusing changes colour and nothing else — no text jumps
+under the caret. Its nearest `AppCommandScope` owns catalog-driven Primary+S save
+and Escape cancel, so the command palette sees the same actions and platform
+binding as the rest of the app.
+
+Three rules govern getting *out* of edit mode:
+
+- **Enter commits on touch, inserts a newline on desktop.** A phone keyboard has
+  no Cmd/Ctrl to pair with Enter and no hint that Return is not the commit key, so
+  a thumb's reflex Enter used to bury a newline in the title. A hardware keyboard
+  keeps the newline, with Primary+Enter as the control-local commit.
+- **Losing focus commits**, deferred one frame and re-checked. Tapping the ✕ takes
+  focus away *before* the cancel handler runs, so a synchronous commit would save
+  the very text the user asked to discard; by the next frame `_cancelEdit` has
+  cleared the flag and the listener backs off. Committing rather than discarding
+  is the less surprising of the two outcomes — the text is in front of the user
+  and they typed it.
+- **The ✓/✕ pair stays hidden until the field differs from the title it opened
+  on.** On an auto-opened blank task both would be no-ops, and an enabled-looking
+  ✕ on a task the user just created reads as "delete it". The check uses
+  `interactive.enabled`, not `alert.success` — that hue is the app's own *Done*
+  status, and spending it here put two unrelated greens in one small box. Both
+  targets are `step9` (48 pt).
 
 ## The two-lane meta row
 
@@ -97,10 +201,13 @@ cluster and never gets marooned when the row wraps. Separating structured
 attributes from the free-form label taxonomy keeps the "what state / when / how
 big" read distinct from the user's tags.
 
-**Due date and estimate are bonded into one inner wrap**, so a narrow viewport
-breaks the lane as `status+priority` / `due+estimate` instead of stranding the
-lone estimate on its own near-empty row. The inner wrap reuses the same chip gap,
-so the pair looks identical to two adjacent chips on wide screens.
+**Every attribute is its own wrap unit.** The due date and estimate used to be
+bonded into one inner wrap so the estimate could not strand alone — but the pair
+was wide enough on a phone that *both* dropped to a second row while half the
+first row sat empty, burying the due date, which is the lane's second-most
+decision-relevant chip after status. Unbonded, a narrow viewport breaks the lane
+as `status+priority+due` / `estimate…`, and the estimate travels with whatever
+follows it rather than alone.
 
 Chip treatment carries real accessibility decisions:
 
@@ -110,12 +217,31 @@ Chip treatment carries real accessibility decisions:
 - Every neutral filled chip carries a quiet 1 px `decorative.level02` border, so
   its boundary is legible against the near-same-tone surface for low-vision users.
   The status pill and an urgent due chip skip it — their fill already reads.
+- **Unset chips are not italicised.** `DsPillVariant.muted`'s dashed border and
+  low-emphasis ink already say "unset" twice; the slant added a third signal that
+  read as *disabled* rather than *empty*, on exactly the chips a user most needs
+  to fill in — and a 12 pt italic caption is a real legibility failure at large
+  accessibility text sizes. The unset breadcrumb dropped its italics for the same
+  reason.
+- **The priority glyph is tinted from the palette**, like the status glyph. The
+  SVG assets bake the *dark* theme's alert hues, so an untinted glyph painted the
+  dark palette onto the light screen — the only un-themed ink on the page, and a
+  hue collision with the Groomed status.
 - **The status pill's label text stays at the high-emphasis text colour, not the
   accent** — accent-on-accent-tint fails WCAG. Its colour identity is carried by
   the translucent tinted fill plus a per-status glyph.
 - **Priority spells the level out** (Urgent / High / Medium / Low) rather than the
   opaque `P2` code, so urgency direction reads at a glance. The compact `P{n}`
   form is retained only for picker rows and AI-context strings.
+- **Set reads at high emphasis, unset at medium.** A set priority used to ink
+  identically to the unset chips beside it, so the lane's two shells stopped
+  meaning "set" and "unset" at all.
+- **Unset chips speak verbs** — *Set due date*, *Add estimate*, *Add label* —
+  not statements of fact. "No due date" was read as a label describing the task
+  rather than a control offering to fix it, so it was never tapped.
+- **An unset category swatch is a hollow ring**, not a solid fill. A grey square
+  asserted a colour the task did not have, and it was the first and loudest ink
+  on the page standing for an absence.
 - **The estimate reads `{tracked} of {estimate}`** in plain duration units
   (`1h 30m of 2h`), not a clock-like `01:30 / 02:00`, which users misread as a
   time-of-day range. A tooltip spells it out.
@@ -125,9 +251,16 @@ Chip treatment carries real accessibility decisions:
 
 Spacing encodes grouping: inter-chip gaps (`step2`) are tighter than each pill's
 internal padding (`step3`) so the chips read as one anchored cluster, while a full
-`step4` context break sets the two lanes apart. Vertically, `step4` separates the
-breadcrumb from the title and a tighter `step3` bonds the title to its metadata,
-so title plus chips read as one unit.
+`step4` context break sets the two lanes apart. **Run spacing is a step looser
+than the inter-chip gutter** (`step3` against `step2`): reusing one value for both
+axes put wrapped rows closer together than the chips inside a row, so a two-row
+lane read as one crowded slab. Vertically, `step4` separates the breadcrumb from
+the title and a tighter `step3` bonds the title to its metadata, so title plus
+chips read as one unit; the header's own bottom padding is only `step2`, because
+whatever section follows brings its own leading padding.
+
+**Nothing in the header adds horizontal inset** — not the outer padding, not the
+crumb segments. The page owns the gutter (see above).
 
 `TaskCompactAppBar` and `TaskExpandableAppBar` surface the task title in
 `subtitle2` once the scroll offset passes a threshold, so the title stays visible

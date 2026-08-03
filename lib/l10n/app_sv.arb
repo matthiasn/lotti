@@ -4768,6 +4768,7 @@
   "taskActionBarOpenRunningTimer": "Öppen löptimer",
   "taskActionBarStopTracking": "Stopptidsspårning",
   "taskActionBarTrackTime": "Bantid",
+  "taskAgentAssignHint": "Låt en agent utkasta steg och sammanfattningar.",
   "taskAgentAttributionUnavailable": "Källa otillgänglig",
   "taskAgentAutomaticUpdatesLabel": "Automatiska uppdateringar",
   "taskAgentAutomaticUpdatesNeedsSetup": "Välj en AI-lösning innan du slår på automatiska uppdateringar.",
@@ -4923,6 +4924,10 @@
       }
     }
   },
+  "taskFirstRunAddChecklist": "Lägg till en checklista",
+  "taskFirstRunAssignAgent": "Tilldela en agent",
+  "taskFirstRunRecordAudio": "Spela in en röstanteckning",
+  "taskFirstRunWriteNote": "Skriv en anteckning",
   "taskHeaderNoCategoryLabel": "Ingen kategori",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
@@ -5003,6 +5008,8 @@
   "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filter}}",
   "tasksCompactHeaderExpandHint": "Visa sökfält och filter",
   "tasksCompactSearchContext": "”{query}”",
+  "taskSetDueDateLabel": "Ange förfallodatum",
+  "taskSetEstimateLabel": "Lägg till uppskattning",
   "tasksFilterApplyTitle": "Använd filter",
   "tasksFilterClearAll": "Rensa allt",
   "tasksFilterTitle": "Filtrera uppgifter",
@@ -5184,6 +5191,7 @@
   "taskStatusOpen": "Öppet",
   "taskStatusRejected": "Avvisad",
   "taskTitleEmpty": "Ingen titel",
+  "taskTitlePrompt": "Ge uppgiften ett namn",
   "taskUntitled": "(utan titel)",
   "thinkingDisclosureCopied": "Motivering kopierad",
   "thinkingDisclosureCopy": "Kopiera resonemang",

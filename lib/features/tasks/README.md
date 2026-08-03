@@ -9,6 +9,11 @@ project, and relationships to other tasks.
 
 - **Tracks a piece of work end to end.** Title, status, priority, due date and
   time estimate, with tracked time compared against the estimate as work happens.
+- **Starts a new task with somewhere to go.** A task you have just created opens
+  with the cursor in its title field, and offers the four things a task usually
+  needs next — write a note, add a checklist, record a voice note, assign an
+  agent — as worded rows rather than unlabelled glyphs. That block retires the
+  moment the task has any content.
 - **Breaks work into checklists.** Multiple checklists per task, with items that
   can be reordered, dragged between checklists, and checked off — with a small
   celebration when a list or a task is finished.

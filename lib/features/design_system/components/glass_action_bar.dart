@@ -14,11 +14,23 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// arbitrary underlying content", so the alpha bumps below are
 /// intentionally defined here once rather than fragmenting across widgets.
 
-/// Alpha applied to the chip fill on top of `surface.focusPressed`. Sits
-/// above any `surface.*` token so the chip silhouette stays opaque enough
-/// to contrast the foreground against bright content (e.g. white chat
-/// bubbles or embedded screenshots bleeding through the glass blur).
-const double kDsGlassFillAlpha = 0.55;
+/// Alpha applied to the chip's `background.level03` fill.
+///
+/// The fill has to be a *surface* colour, not an overlay tint. It used to be
+/// `surface.focusPressed` with its alpha overridden from 0x29 to 0.55 — but
+/// `surface.*` tokens are translucent black (light) / white (dark) washes
+/// meant to sit at ~16% on top of a surface, and forcing them to 55% is not
+/// "more of the same wash", it is a different colour: in light theme the
+/// chips came out as near-black slabs on a white strip, reading as heavy
+/// filled buttons rather than glass. `background.level03` is the neutral
+/// surface one step above the bar itself in both themes, so the chip reads as
+/// a raised piece of the same material.
+///
+/// Kept below 1.0 so the strip still behaves like glass — content scrolling
+/// underneath tints it faintly — while staying opaque enough to hold
+/// `text.highEmphasis` legible over bright content (white chat bubbles,
+/// embedded screenshots) bleeding through the blur.
+const double kDsGlassFillAlpha = 0.86;
 
 /// Alpha for the hairline outline drawn over the chip fill. Painted via
 /// `foregroundDecoration` so it doesn't widen the chip and trip
@@ -32,7 +44,7 @@ const double kDsGlassDisabledFillFactor = 0.45;
 /// Translucent fill used by glass chips when the caller supplies no solid
 /// background colour.
 Color dsGlassChipFill(DsTokens tokens) =>
-    tokens.colors.surface.focusPressed.withValues(alpha: kDsGlassFillAlpha);
+    tokens.colors.background.level03.withValues(alpha: kDsGlassFillAlpha);
 
 /// Hairline outline drawn over a translucent glass chip.
 Border dsGlassChipBorder(DsTokens tokens) => Border.all(
@@ -81,40 +93,46 @@ class DsGlassRoundButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final isTranslucent = backgroundColor == null;
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      excludeSemantics: true,
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        // Background lives on [Ink] (not the inner Container) so the InkWell
-        // splash/highlight renders above it instead of being obscured.
-        child: Ink(
-          width: diameter,
-          height: diameter,
-          decoration: BoxDecoration(
-            color: backgroundColor ?? dsGlassChipFill(tokens),
-            shape: BoxShape.circle,
-          ),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onPressed,
-            child: Container(
-              width: diameter,
-              height: diameter,
-              // foregroundDecoration so the hairline outline doesn't eat
-              // into the icon's content rect — keeps the glyph centred.
-              foregroundDecoration: isTranslucent
-                  ? BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: dsGlassChipBorder(tokens),
-                    )
-                  : null,
-              child: Icon(
-                icon,
-                size: iconSize,
-                color: iconColor ?? tokens.colors.text.highEmphasis,
+    return Tooltip(
+      // The label is already required for assistive tech; surfacing it on
+      // hover/long-press costs nothing and makes an icon-only bar
+      // self-describing.
+      message: semanticLabel,
+      child: Semantics(
+        button: true,
+        label: semanticLabel,
+        excludeSemantics: true,
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          // Background lives on [Ink] (not the inner Container) so the InkWell
+          // splash/highlight renders above it instead of being obscured.
+          child: Ink(
+            width: diameter,
+            height: diameter,
+            decoration: BoxDecoration(
+              color: backgroundColor ?? dsGlassChipFill(tokens),
+              shape: BoxShape.circle,
+            ),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onPressed,
+              child: Container(
+                width: diameter,
+                height: diameter,
+                // foregroundDecoration so the hairline outline doesn't eat
+                // into the icon's content rect — keeps the glyph centred.
+                foregroundDecoration: isTranslucent
+                    ? BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: dsGlassChipBorder(tokens),
+                      )
+                    : null,
+                child: Icon(
+                  icon,
+                  size: iconSize,
+                  color: iconColor ?? tokens.colors.text.highEmphasis,
+                ),
               ),
             ),
           ),

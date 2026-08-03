@@ -6829,7 +6829,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get linkedTasksEmptyHint =>
-      'Verknüpfe diese Aufgabe mit einer anderen — Blocker, Folgeaufgabe oder Duplikat.';
+      'Verknüpfe diese Aufgabe mit einer anderen Aufgabe.';
 
   @override
   String get linkedTasksMenuTooltip => 'Optionen für verknüpfte Aufgaben';
@@ -10603,6 +10603,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskActionBarTrackTime => 'Zeit erfassen';
 
   @override
+  String get taskAgentAssignHint =>
+      'Ein Agent entwirft Schritte und Zusammenfassungen.';
+
+  @override
   String get taskAgentAttributionUnavailable => 'Zuordnung nicht verfügbar';
 
   @override
@@ -10893,6 +10897,18 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get taskFirstRunAddChecklist => 'Checkliste hinzufügen';
+
+  @override
+  String get taskFirstRunAssignAgent => 'Agent zuweisen';
+
+  @override
+  String get taskFirstRunRecordAudio => 'Sprachnotiz aufnehmen';
+
+  @override
+  String get taskFirstRunWriteNote => 'Notiz schreiben';
+
+  @override
   String get taskHeaderNoCategoryLabel => 'Keine Kategorie';
 
   @override
@@ -11100,6 +11116,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '„$query“';
   }
+
+  @override
+  String get taskSetDueDateLabel => 'Fälligkeit setzen';
+
+  @override
+  String get taskSetEstimateLabel => 'Aufwand schätzen';
 
   @override
   String get tasksFilterApplyTitle => 'Filter anwenden';
@@ -11444,6 +11466,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Kein Titel';
+
+  @override
+  String get taskTitlePrompt => 'Aufgabe benennen';
 
   @override
   String get taskUntitled => '(ohne Titel)';

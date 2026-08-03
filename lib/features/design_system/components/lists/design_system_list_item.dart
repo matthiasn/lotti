@@ -166,6 +166,17 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spec = _ListItemSpec.fromTokens(tokens, widget.size);
+    // "Can this row wrap?" — not "does it right now". A row whose caps allow a
+    // second line has to reserve the aligned-slot geometry, or the icon rail
+    // would shift the moment a longer locale wrapped a string that fits in
+    // English.
+    final multiLine = widget.subtitle != null || widget.subtitleSpans != null
+        ? (widget.subtitleMaxLines == null || widget.subtitleMaxLines! > 1) ||
+              (widget.titleMaxLines == null || widget.titleMaxLines! > 1)
+        : (widget.titleMaxLines == null || widget.titleMaxLines! > 1);
+    final titleLineHeight =
+        (spec.titleStyle.fontSize ?? tokens.typography.size.subtitle2) *
+        (spec.titleStyle.height ?? 1.4);
     final enabled = widget.onTap != null;
     final visualState = _resolveVisualState(enabled);
 
@@ -245,11 +256,31 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                     vertical: spec.verticalPadding,
                   ),
                   child: Row(
+                    // A row whose text can wrap aligns its leading and
+                    // trailing slots to the TITLE's first line rather than to
+                    // the row's vertical centre: with a two-line subtitle the
+                    // centred glyph dropped beside the description and fell
+                    // out of the icon rail its single-line neighbours share.
+                    // Single-line rows keep centring, where the two are the
+                    // same thing anyway.
+                    crossAxisAlignment: multiLine
+                        ? CrossAxisAlignment.start
+                        : CrossAxisAlignment.center,
                     children: [
-                      if (widget.leadingExtra != null) widget.leadingExtra!,
+                      if (widget.leadingExtra != null)
+                        _SlotAlign(
+                          lineHeight: titleLineHeight,
+                          multiLine: multiLine,
+                          child: widget.leadingExtra!,
+                        ),
                       if (widget.leadingExtra != null && widget.leading != null)
                         SizedBox(width: spec.itemGap),
-                      if (widget.leading != null) widget.leading!,
+                      if (widget.leading != null)
+                        _SlotAlign(
+                          lineHeight: titleLineHeight,
+                          multiLine: multiLine,
+                          child: widget.leading!,
+                        ),
                       if (widget.leadingExtra != null || widget.leading != null)
                         SizedBox(width: spec.itemGap),
                       Expanded(
@@ -267,11 +298,21 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                       if (widget.trailing != null ||
                           widget.trailingExtra != null)
                         SizedBox(width: spec.itemGap),
-                      if (widget.trailing != null) widget.trailing!,
+                      if (widget.trailing != null)
+                        _SlotAlign(
+                          lineHeight: titleLineHeight,
+                          multiLine: multiLine,
+                          child: widget.trailing!,
+                        ),
                       if (widget.trailing != null &&
                           widget.trailingExtra != null)
                         SizedBox(width: spec.itemGap),
-                      if (widget.trailingExtra != null) widget.trailingExtra!,
+                      if (widget.trailingExtra != null)
+                        _SlotAlign(
+                          lineHeight: titleLineHeight,
+                          multiLine: multiLine,
+                          child: widget.trailingExtra!,
+                        ),
                     ],
                   ),
                 ),
@@ -296,6 +337,34 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
     return semanticItem.withDisabledOpacity(
       enabled: enabled || widget.forcedState != null,
       disabledOpacity: tokens.colors.text.lowEmphasis.a,
+    );
+  }
+}
+
+/// Pins a leading/trailing slot to the height of the title's first line, so a
+/// glyph beside a wrapping row sits on the same rail as its single-line
+/// neighbours. A pass-through when the row cannot wrap.
+class _SlotAlign extends StatelessWidget {
+  const _SlotAlign({
+    required this.child,
+    required this.lineHeight,
+    required this.multiLine,
+  });
+
+  final Widget child;
+  final double lineHeight;
+  final bool multiLine;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!multiLine) return child;
+    // `minHeight`, never a fixed height: a slot holding a real 48pt action
+    // button has to keep its 48pt target. A small glyph gets centred in a
+    // line-tall box and so lands on the title's rail; anything taller than the
+    // line keeps its own height and simply starts at the top of the row.
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: lineHeight),
+      child: Center(heightFactor: 1, child: child),
     );
   }
 }
@@ -387,11 +456,17 @@ class _ListItemSpec {
         horizontalPadding: tokens.spacing.step5,
         verticalPadding: tokens.spacing.step4,
         itemGap: tokens.spacing.step3,
-        textGap: tokens.spacing.step1,
+        // step2, not step1. At 2pt the title/subtitle gap was smaller than the
+        // subtitle's own line leading, so a two-line row read as one
+        // paragraph rather than a labelled action.
+        textGap: tokens.spacing.step2,
         titleStyle: tokens.typography.styles.subtitle.subtitle2.copyWith(
           color: tokens.colors.text.highEmphasis,
         ),
-        subtitleStyle: tokens.typography.styles.body.bodySmall.copyWith(
+        // `caption` (12), not `bodySmall` (14): subtitle2 is also 14, so the
+        // two lines differed only in weight and the row had no size ramp at
+        // all.
+        subtitleStyle: tokens.typography.styles.others.caption.copyWith(
           color: tokens.colors.text.mediumEmphasis,
         ),
       ),

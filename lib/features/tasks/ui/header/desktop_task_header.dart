@@ -122,8 +122,11 @@ class DesktopTaskHeader extends StatefulWidget {
   /// Optional "Blocked by" chip forwarded into [MetaRow].
   final Widget? blockedBySlot;
 
-  /// Force the inline editor open on first build. Used by Widgetbook / tests
-  /// to pin the editing state without simulating a tap.
+  /// Force the inline editor open on first build.
+  ///
+  /// The connector passes `true` for a task whose title is still blank, so a
+  /// freshly created task lands with the cursor in the field. Widgetbook and
+  /// tests also use it to pin the editing state without simulating a tap.
   final bool initialEditing;
 
   @override
@@ -139,11 +142,34 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.data.title);
+    // Losing focus resolves the editor back to the read-only title. Without
+    // this the editor stayed open forever once auto-opened: tapping anywhere
+    // else dismissed the keyboard but left the field, its border and its
+    // buttons on screen, so "edit mode" had exactly one exit — the ✕ users
+    // were most afraid to press.
+    _titleFocusNode.addListener(_onFocusChanged);
     if (_isEditing) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _titleFocusNode.requestFocus();
       });
     }
+  }
+
+  void _onFocusChanged() {
+    if (_titleFocusNode.hasFocus || !_isEditing || !mounted) return;
+    // Deferred by a frame, and re-checked. A tap on the editor's own ✕ first
+    // takes focus away from the field and only then runs the cancel handler —
+    // committing synchronously here would save the very text the user asked
+    // to discard. By the next frame `_cancelEdit` has cleared `_isEditing`
+    // and this backs off.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_isEditing || _titleFocusNode.hasFocus) return;
+      // Commit rather than discard: the text is in front of the user, they
+      // typed it, and throwing it away because they tapped elsewhere is the
+      // more surprising of the two outcomes. `_commitEdit` already no-ops on
+      // an empty or unchanged value.
+      _commitEdit();
+    });
   }
 
   @override
@@ -157,7 +183,9 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
   @override
   void dispose() {
     _titleController.dispose();
-    _titleFocusNode.dispose();
+    _titleFocusNode
+      ..removeListener(_onFocusChanged)
+      ..dispose();
     super.dispose();
   }
 
@@ -194,7 +222,6 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final isMobile = MediaQuery.sizeOf(context).width < 600;
     // Proximity grouping: the breadcrumb is a separate ancestor-context unit,
     // so it sits a full step (step4) above the title; the title then bonds
     // DOWN to its own metadata with a tighter step (step3), matching the
@@ -202,11 +229,19 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
     // one identity unit rather than the title floating up toward the crumb.
     final crumbGap = tokens.spacing.step4;
     final metaGap = tokens.spacing.step3;
-    final outerPadding = EdgeInsets.fromLTRB(
-      isMobile ? tokens.spacing.step3 : tokens.spacing.step1,
-      tokens.spacing.step2,
-      isMobile ? tokens.spacing.step3 : tokens.spacing.step1,
-      tokens.spacing.step3,
+    // No horizontal inset: the page owns the content gutter (see
+    // `TaskDetailsPage`'s sliver padding) so the crumb, the title and the
+    // chips share one left rail with everything below them. The header used
+    // to add its own step3/step1 on top of the page's, which is how the top
+    // of the page ended up with five different left edges.
+    final outerPadding = EdgeInsets.only(
+      top: tokens.spacing.step2,
+      // step2, not step3: whatever section follows brings its own leading
+      // padding (LinkedTasks and the checklists card both add step3), so a
+      // step3 here stacked into a gap wider than the one separating the
+      // header's own internal tiers — the metadata block floated free of the
+      // title it belongs to and bonded to the card below instead.
+      bottom: tokens.spacing.step2,
     );
 
     return Padding(
@@ -261,6 +296,7 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
         controller: _titleController,
         focusNode: _titleFocusNode,
         style: style,
+        originalTitle: widget.data.title,
         onCommit: _commitEdit,
         onCancel: _cancelEdit,
       );
@@ -335,11 +371,19 @@ class _HeroCrumb extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Filled when the task HAS a category; a hollow ring when it
+                // does not. A solid grey square asserted a colour the task
+                // never had, and it was the loudest mark in an otherwise quiet
+                // breadcrumb — the first ink on the page standing for an
+                // absence.
                 Container(
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: categoryColor,
+                    color: category == null ? null : categoryColor,
+                    border: category == null
+                        ? Border.all(color: tokens.colors.decorative.level02)
+                        : null,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -352,12 +396,12 @@ class _HeroCrumb extends StatelessWidget {
                     style: crumbStyle.copyWith(
                       // The breadcrumb is quiet ancestor context, so even a
                       // set category sits at medium (not high) emphasis — a
-                      // tier below the metadata chips — while an unset one adds
-                      // italics. Both stay comfortably legible (~7:1).
+                      // tier below the metadata chips, and comfortably legible
+                      // (~7:1). An unset one no longer adds italics: the page
+                      // already signals "empty" on the dashed chips below, and
+                      // slanting a 12pt caption for it cost legibility without
+                      // adding meaning.
                       color: TaskShowcasePalette.mediumText(context),
-                      fontStyle: category == null
-                          ? FontStyle.italic
-                          : FontStyle.normal,
                     ),
                   ),
                 ),
@@ -407,10 +451,10 @@ class _CrumbSegment extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final radius = BorderRadius.circular(tokens.radii.s);
-    final padding = EdgeInsets.symmetric(
-      horizontal: tokens.spacing.step2,
-      vertical: tokens.spacing.step1,
-    );
+    // Vertical only. A horizontal inset here pushed the category dot — the
+    // page's first ink — inside the rail every other element starts on, so
+    // the breadcrumb read as indented from the title above nothing.
+    final padding = EdgeInsets.symmetric(vertical: tokens.spacing.step1);
     if (onTap == null) {
       return Padding(padding: padding, child: child);
     }

@@ -473,7 +473,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('No estimate'), findsOneWidget);
+      expect(find.text('Add estimate'), findsOneWidget);
     });
 
     testWidgets(
@@ -684,7 +684,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('Add Label'));
+        await tester.tap(find.text('Add label'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -734,7 +734,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('No estimate'));
+        await tester.tap(find.text('Add estimate'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -873,7 +873,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('No estimate'));
+        await tester.tap(find.text('Add estimate'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -904,7 +904,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('No due date'));
+        await tester.tap(find.text('Set due date'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1043,6 +1043,9 @@ void main() {
         await tester.pump();
 
         await tester.enterText(find.byType(TextField), 'New Title');
+        // A frame, so the confirm control (hidden while the field still
+        // matches the title it opened on) is in the tree to tap.
+        await tester.pump();
         await tester.tap(find.byIcon(Icons.check_rounded));
         await tester.pump();
 
@@ -1463,7 +1466,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 300));
 
           // Open the estimate picker (initial duration is zero).
-          await tester.tap(find.text('No estimate'));
+          await tester.tap(find.text('Add estimate'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 

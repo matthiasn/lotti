@@ -70,7 +70,15 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     final categoryId = task.meta.categoryId;
 
     return DesktopTaskHeader(
+      key: ValueKey('task-header-$taskId'),
       data: data,
+      // A task with no title yet opens straight into the title editor, cursor
+      // in the field. Naming the task is the one thing every new task needs
+      // and the one thing the page could not previously offer — the title was
+      // a read-only label whose only affordance was a hover cursor. Keyed by
+      // task id so the decision is re-made per task rather than inherited from
+      // whichever task the header last rendered.
+      initialEditing: data.title.trim().isEmpty,
       estimateSlot: _TaskEstimateChip(taskId: task.meta.id),
       consumptionSlot: TaskConsumptionChip(taskId: task.meta.id),
       blockedBySlot: _TaskBlockedByChip(taskId: task.meta.id),
@@ -348,7 +356,8 @@ class _TaskEstimateChip extends ConsumerWidget {
     if (!hasEstimate) {
       return DsPill(
         variant: DsPillVariant.muted,
-        label: context.messages.taskNoEstimateLabel,
+        // Verb form, matching the other unset chips — see `_DuePill`.
+        label: context.messages.taskSetEstimateLabel,
         leading: Icon(
           Icons.timer_outlined,
           size: 12,

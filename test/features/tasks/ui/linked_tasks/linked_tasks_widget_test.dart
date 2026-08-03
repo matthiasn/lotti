@@ -11,7 +11,9 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
@@ -167,6 +169,10 @@ void main() {
     List<Override> extraOverrides = const [],
     List<EntryLink> extraTypedLinks = const [],
     List<Task> extraTypedTasks = const [],
+    // Defaults to "the app has other tasks", the world every case below the
+    // first-run ones lives in. False is the fresh-install state where the
+    // card must not render at all.
+    bool linkableTasksExist = true,
   }) async {
     final journalRepo = stubLinkGroupsRepository(
       taskId: 'task-main',
@@ -179,6 +185,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          linkableTasksOverride('task-main', exists: linkableTasksExist),
           linkedTasksControllerProvider('task-main').overrideWith(
             manageMode
                 ? () => MockLinkedTasksControllerManageMode('task-main')
@@ -315,8 +322,7 @@ void main() {
         expect(find.text('Link a task…'), findsOneWidget);
         expect(
           find.text(
-            'Connect this task to another — a blocker, a follow-up, a '
-            'duplicate.',
+            'Connect this task to another task.',
           ),
           findsOneWidget,
         );
@@ -325,6 +331,54 @@ void main() {
         expect(find.text('0'), findsNothing);
         expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
         expect(find.byType(LinkedTaskRow), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'with no links AND no other task to link to, the card renders nothing '
+      'at all — the first-run install has no linkable candidate',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [],
+          linkableTasksExist: false,
+        );
+
+        // Not merely a smaller card: no header, no border, no explanation.
+        // On the app's very first task this was the loudest block on the
+        // screen and it taught blockers and duplicates to someone who had
+        // exactly one task and could not link it to anything.
+        expect(find.byType(DesignSystemListItem), findsNothing);
+        expect(find.text('Linked Tasks'), findsNothing);
+        expect(find.text('Link a task…'), findsNothing);
+        expect(find.byIcon(Icons.add_link), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(LinkedTasksWidget),
+            matching: find.byType(DecoratedBox),
+          ),
+          findsNothing,
+          reason:
+              'not even the card chrome — a bordered box with nothing in it '
+              'is what made the first task screen read as a failed load',
+        );
+      },
+    );
+
+    testWidgets(
+      'a task that already HAS links keeps its card even when the linkable '
+      'lookup says no — hiding it would hide real content',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'task-2', title: 'Already linked')],
+          linkableTasksExist: false,
+        );
+
+        expect(find.text('Linked Tasks'), findsOneWidget);
+        expect(find.text('Already linked'), findsOneWidget);
       },
     );
 
@@ -602,6 +656,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            linkableTasksOverride('task-a', exists: true),
+            linkableTasksOverride('task-b', exists: true),
             linkedTasksControllerProvider('task-a').overrideWith(
               LinkedTasksController.new,
             ),
@@ -629,6 +685,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            linkableTasksOverride('task-a', exists: true),
+            linkableTasksOverride('task-b', exists: true),
             linkedTasksControllerProvider('task-a').overrideWith(
               LinkedTasksController.new,
             ),
@@ -838,3 +896,21 @@ void main() {
     );
   });
 }
+
+/// Serves a fixed answer to "does any other task exist to link to?", so a
+/// test can state which world it is in instead of depending on a JournalDb
+/// stub three layers down. The card renders nothing at all when this is
+/// false — see `LinkedTasksWidget.build`.
+class _StaticLinkableTasks extends LinkableTasksController {
+  _StaticLinkableTasks({required this.exists});
+
+  final bool exists;
+
+  @override
+  Future<bool> build() async => exists;
+}
+
+Override linkableTasksOverride(String taskId, {required bool exists}) =>
+    linkableTasksExistProvider(
+      taskId,
+    ).overrideWith(() => _StaticLinkableTasks(exists: exists));

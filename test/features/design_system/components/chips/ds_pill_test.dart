@@ -213,7 +213,11 @@ void main() {
           matching: find.byType(RichText),
         ),
       );
-      expect(richText.text.style?.fontStyle, FontStyle.italic);
+      // Upright, deliberately. The dashed border and the low ink already say
+      // "unset"; the slant added a third signal that read as *disabled*, and
+      // a 12pt italic caption is a legibility failure at large accessibility
+      // text sizes — on exactly the chips a user most needs to fill in.
+      expect(richText.text.style?.fontStyle, isNot(FontStyle.italic));
     });
 
     testWidgets('fires onTap when tapped', (tester) async {

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph_poc/state/task_graph_provider.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/task_knowledge_graph_page.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
@@ -83,6 +84,33 @@ void main() {
     );
   }
 
+  /// Widens the surface past `kDesktopBreakpoint` (960). The knowledge-graph
+  /// entry point is desktop-only — the graph is a pan-and-zoom canvas a
+  /// phone-width window cannot render usefully — so any test that expects the
+  /// hub glyph has to say which window it is in.
+  ///
+  /// Desktop also swaps the leading widget for `TaskDetailDesktopBackLeading`,
+  /// which resolves `NavService` from getIt, so the stub goes in here too.
+  void useDesktopSurface(WidgetTester tester) {
+    tester.view
+      ..physicalSize = const Size(1280, 800)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final nav = MockNavService();
+    when(
+      () => nav.desktopTaskDetailStack,
+    ).thenReturn(ValueNotifier<List<String>>(<String>['task-1']));
+    if (getIt.isRegistered<NavService>()) {
+      getIt.unregister<NavService>();
+    }
+    getIt.registerSingleton<NavService>(nav);
+    addTearDown(() {
+      if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>();
+    });
+  }
+
   group('TaskCompactAppBar', () {
     testWidgets('renders SliverAppBar', (tester) async {
       final task = buildTask();
@@ -128,10 +156,55 @@ void main() {
       expect(find.byIcon(Icons.hub_outlined), findsNothing);
     });
 
-    testWidgets('shows the knowledge-graph hub button on task surfaces', (
+    testWidgets(
+      'a phone-width window drops the hub glyph but keeps the overflow — the '
+      'graph canvas is unusable at that width and the bar has two slots',
+      (tester) async {
+        final task = buildTask();
+        await tester.binding.setSurfaceSize(const Size(390, 844));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(buildTestWidget(task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byIcon(Icons.hub_outlined), findsNothing);
+        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'both toolbar glyphs sit at medium emphasis, not the divider colour '
+      'that made them near-invisible against the app bar',
+      (tester) async {
+        final task = buildTask();
+        useDesktopSurface(tester);
+
+        await tester.pumpWidget(buildTestWidget(task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final context = tester.element(find.byIcon(Icons.more_horiz));
+        final tokens = context.designTokens;
+        for (final glyph in [Icons.more_horiz, Icons.hub_outlined]) {
+          expect(
+            tester.widget<Icon>(find.byIcon(glyph)).color,
+            tokens.colors.text.mediumEmphasis,
+            reason: 'toolbar glyphs must be legible against the app bar',
+          );
+          expect(
+            tester.widget<Icon>(find.byIcon(glyph)).color,
+            isNot(Theme.of(context).colorScheme.outline),
+          );
+        }
+      },
+    );
+
+    testWidgets('shows the knowledge-graph hub button on desktop windows', (
       tester,
     ) async {
       final task = buildTask();
+      useDesktopSurface(tester);
 
       await tester.pumpWidget(buildTestWidget(task));
       await tester.pump();
@@ -144,6 +217,7 @@ void main() {
       'tapping the knowledge-graph hub button navigates to the graph page',
       (tester) async {
         final task = buildTask();
+        useDesktopSurface(tester);
 
         await tester.pumpWidget(
           buildTestWidget(

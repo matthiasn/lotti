@@ -34,7 +34,11 @@ class TaskExpandableAppBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final offset = ref.watch(taskAppBarControllerProvider(task.id)).value ?? 0;
-    final showGraph = ref.watch(knowledgeGraphEntryPointEnabledProvider);
+    // Desktop only, matching `TaskCompactAppBar`: the graph canvas needs a
+    // wide window to be readable, so a phone never spends a toolbar slot on it.
+    final showGraph =
+        isDesktopLayout(context) &&
+        ref.watch(knowledgeGraphEntryPointEnabledProvider);
     return SliverLayoutBuilder(
       builder: (context, constraints) {
         // Use the actual available width (not MediaQuery) so that in

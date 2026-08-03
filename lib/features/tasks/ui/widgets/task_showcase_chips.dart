@@ -138,10 +138,29 @@ class TaskShowcasePriorityGlyph extends StatelessWidget {
       TaskPriority.p3Low => 'assets/design_system/task_priority_low.svg',
     };
 
+    // Tinted from the palette, exactly as the status glyph is. The assets
+    // themselves bake the *dark* theme's alert hues (#D65E5C / #FBA337 /
+    // #4AB6E8 / #7AB889), so an untinted glyph painted the dark palette onto
+    // the light screen — the only un-themed ink on the page, and a direct
+    // hue collision with the Groomed status. The per-bar `opacity` in the
+    // assets is shape, not colour, and survives `srcIn` as alpha.
+    // Only urgency earns colour, and only upwards — the same escalation the
+    // due chip uses. Painting all four levels from the `alert.*` ramp meant a
+    // task nobody had prioritised wore the brightest mark on the page, in the
+    // very hue that means *In Progress* one chip to its left. Medium and Low
+    // now read from the bar count alone, at neutral ink.
+    final color = switch (priority) {
+      TaskPriority.p0Urgent => TaskShowcasePalette.error(context),
+      TaskPriority.p1High => TaskShowcasePalette.warning(context),
+      TaskPriority.p2Medium ||
+      TaskPriority.p3Low => TaskShowcasePalette.mediumText(context),
+    };
+
     return SvgPicture.asset(
       asset,
       width: size,
       height: size,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     );
   }
 }

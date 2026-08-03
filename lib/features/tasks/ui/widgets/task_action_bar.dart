@@ -42,11 +42,26 @@ class TaskActionBar extends ConsumerStatefulWidget {
   const TaskActionBar({
     required this.task,
     this.topSlot,
+    this.compact = false,
     super.key,
   });
 
   final Task task;
   final Widget? topSlot;
+
+  /// Drops the checklist, image and microphone affordances from the visible
+  /// row.
+  ///
+  /// True while the task page shows its first-run block, which offers the same
+  /// actions as worded rows a few centimetres higher. Two action surfaces with
+  /// overlapping-but-unequal membership left users unable to tell which one
+  /// was the real list. All three stay reachable through the row's own "more
+  /// actions" menu, which is where the width-based drop already sends the
+  /// last two on a narrow window.
+  ///
+  /// An *active* recording overrides this: the mic is the only way to see and
+  /// stop a session in progress, so a live one is never hidden.
+  final bool compact;
 
   /// Stable test key for the Track time pill body — the outer tap zone.
   /// Idle: tapping starts a timer. Tracking-this-task: tapping
@@ -310,11 +325,13 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                 // so the five-control row needs 416 px and the four-control
                 // row needs 374 px.
                 final showImage =
+                    !widget.compact &&
                     constraints.maxWidth >=
-                    TaskActionBar.minWidthForImageButton;
+                        TaskActionBar.minWidthForImageButton;
                 final showChecklist =
+                    !widget.compact &&
                     constraints.maxWidth >=
-                    TaskActionBar.minWidthForChecklistButton;
+                        TaskActionBar.minWidthForChecklistButton;
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -330,19 +347,21 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                       onNavigateToRunningEntry: _onNavigateToRunningEntry,
                       onStop: _onStopTimer,
                     ),
-                    SizedBox(width: spacing.step4),
-                    DsGlassRoundButton(
-                      key: TaskActionBar.audioKey,
-                      icon: Icons.mic_rounded,
-                      semanticLabel: isRecordingAudio
-                          ? messages.taskActionBarAudioRecordingActive
-                          : messages.addActionAddAudioRecording,
-                      onPressed: _onAudioPressed,
-                      backgroundColor: isRecordingAudio
-                          ? tokens.colors.alert.error.defaultColor
-                          : null,
-                      iconColor: isRecordingAudio ? Colors.white : null,
-                    ),
+                    if (!widget.compact || isRecordingAudio) ...[
+                      SizedBox(width: spacing.step4),
+                      DsGlassRoundButton(
+                        key: TaskActionBar.audioKey,
+                        icon: Icons.mic_rounded,
+                        semanticLabel: isRecordingAudio
+                            ? messages.taskActionBarAudioRecordingActive
+                            : messages.addActionAddAudioRecording,
+                        onPressed: _onAudioPressed,
+                        backgroundColor: isRecordingAudio
+                            ? tokens.colors.alert.error.defaultColor
+                            : null,
+                        iconColor: isRecordingAudio ? Colors.white : null,
+                      ),
+                    ],
                     if (showChecklist) ...[
                       SizedBox(width: spacing.step4),
                       DsGlassRoundButton(
