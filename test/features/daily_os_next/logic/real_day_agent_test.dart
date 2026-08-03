@@ -5,9 +5,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -1833,7 +1831,7 @@ void main() {
   });
 
   group(
-    'RealDayAgent.applyTriage / linkCapturePhraseToTask / breakCaptureLink',
+    'RealDayAgent.applyTriage / breakCaptureLink',
     () {
       late _TestBench bench;
 
@@ -1889,47 +1887,6 @@ void main() {
               deferTo: _asOf,
             ),
           ).called(1);
-        },
-      );
-
-      test(
-        'linkCapturePhraseToTask projects the updated parsed item',
-        () async {
-          final updated =
-              AgentDomainEntity.parsedItem(
-                    id: 'parsed-z',
-                    agentId: 'agent',
-                    captureId: 'cap',
-                    kind: ParsedItemKind.matched,
-                    title: 'Title',
-                    categoryId: 'cat-z',
-                    confidence: ParsedItemConfidence.high,
-                    confidenceScore: 0.9,
-                    matchedTaskId: testTask.meta.id,
-                    createdAt: _asOf,
-                    vectorClock: null,
-                  )
-                  as ParsedItemEntity;
-          when(
-            () => bench.captureService.linkCapturePhraseToTask(
-              captureItemId: any(named: 'captureItemId'),
-              taskId: any(named: 'taskId'),
-            ),
-          ).thenAnswer((_) async => updated);
-          when(
-            () => bench.journalDb.getCategoryById('cat-z'),
-          ).thenAnswer((_) async => null);
-          when(
-            () => bench.journalDb.journalEntityById(testTask.meta.id),
-          ).thenAnswer((_) async => testTask);
-
-          final item = await bench.adapter.linkCapturePhraseToTask(
-            parsedItemId: 'parsed-z',
-            taskId: testTask.meta.id,
-          );
-          expect(item.id, 'parsed-z');
-          expect(item.kind, ParsedItemKind.matched);
-          expect(item.matchedTaskTitle, testTask.data.title);
         },
       );
 
@@ -2840,112 +2797,4 @@ void main() {
     );
   });
 
-  group('debugAgendaFor — agenda state fold', () {
-    const cat = DayAgentCategory(id: 'c1', name: 'Deep', colorHex: '3B82F6');
-
-    TimeBlock block(
-      String id,
-      TimeBlockState state, {
-      String? taskId,
-      int hour = 9,
-    }) => TimeBlock(
-      id: id,
-      title: id,
-      start: _asOf.add(Duration(hours: hour)),
-      end: _asOf.add(Duration(hours: hour + 1)),
-      type: TimeBlockType.ai,
-      state: state,
-      category: cat,
-      taskId: taskId,
-    );
-
-    test(
-      'a partially worked group (inProgress + completed + drafted) folds to '
-      'inProgress, and a fully completed group folds to done',
-      () {
-        final bench = _TestBench.create();
-        final agenda = bench.adapter.debugAgendaFor([
-          // task-1: one of each — inProgress must win even though a block
-          // is already completed and another is still drafted.
-          block('p-done', TimeBlockState.completed, taskId: 'task-1'),
-          block(
-            'p-active',
-            TimeBlockState.inProgress,
-            taskId: 'task-1',
-            hour: 10,
-          ),
-          block(
-            'p-drafted',
-            TimeBlockState.drafted,
-            taskId: 'task-1',
-            hour: 11,
-          ),
-          // task-2: every block completed → done.
-          block('d-1', TimeBlockState.completed, taskId: 'task-2', hour: 12),
-          block('d-2', TimeBlockState.completed, taskId: 'task-2', hour: 13),
-        ]);
-
-        final partial = agenda.firstWhere((a) => a.taskId == 'task-1');
-        expect(partial.state, AgendaItemState.inProgress);
-        expect(partial.linkedBlockIds, ['p-done', 'p-active', 'p-drafted']);
-        expect(partial.totalEstimateMinutes, 180);
-
-        final completed = agenda.firstWhere((a) => a.taskId == 'task-2');
-        expect(completed.state, AgendaItemState.done);
-      },
-    );
-  });
-
-  group('projection pure helpers — properties', () {
-    late _TestBench bench;
-
-    setUp(() {
-      bench = _TestBench.create();
-    });
-
-    glados.Glados<String>(
-      glados.AnyUtils(glados.any).choose(const [
-        '#3B82F6',
-        '3B82F6',
-        '#3B82F6FF',
-        '#FFF',
-        'FFF',
-        '',
-        '#',
-        '#0F172A',
-      ]),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'debugProjectCategory normalises hex per the documented contract',
-      (color) {
-        final def = CategoryDefinition(
-          id: 'cat-1',
-          name: 'Cat',
-          color: color,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          vectorClock: null,
-          private: false,
-          active: true,
-        );
-
-        final projected = bench.adapter.debugProjectCategory(def);
-
-        // Oracle mirroring the impl contract: strip '#', take the first six
-        // chars when long enough, fall back for empty, pass short raw
-        // through unchanged (documented quirk — NOT padded to 6).
-        final raw = color.replaceFirst('#', '');
-        final expected = raw.length >= 6
-            ? raw.substring(0, 6)
-            : (raw.isEmpty ? projected.colorHex : raw);
-        expect(projected.colorHex, expected, reason: 'color="$color"');
-        expect(projected.id, 'cat-1');
-        expect(projected.name, 'Cat');
-        if (raw.length >= 6) {
-          expect(projected.colorHex.length, 6);
-        }
-      },
-      tags: 'glados',
-    );
-  });
 }

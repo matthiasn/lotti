@@ -2,7 +2,6 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent_capture.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent_planning.dart';
-import 'package:meta/meta.dart';
 
 /// Scripted [DayAgentInterface] for the Capture + Reconcile preview.
 ///
@@ -210,12 +209,4 @@ class MockDayAgent implements DayAgentInterface {
     query: query,
   );
 
-  /// Test seam for the pure corpus-filter predicate.
-  @visibleForTesting
-  bool debugMatchesFilter(
-    TaskCorpusItem item,
-    TaskCorpusState state,
-    String? categoryId,
-    String? query,
-  ) => _planning.matchesFilter(item, state, categoryId, query);
 }

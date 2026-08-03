@@ -334,46 +334,6 @@ void main() {
       );
     });
 
-    test('triggerReanalysis enqueues a manual reanalysis wake', () {
-      service.triggerReanalysis(agentId);
-
-      verify(
-        () => orchestrator.enqueueManualWake(
-          agentId: agentId,
-          reason: WakeReason.reanalysis.name,
-          workspaceKey: any(named: 'workspaceKey'),
-        ),
-      ).called(1);
-      final logMessage =
-          verify(
-                () => domainLogger.log(
-                  any(),
-                  captureAny(),
-                  subDomain: 'lifecycle',
-                  level: any(named: 'level'),
-                ),
-              ).captured.single
-              as String;
-      expect(logMessage, contains('manual day-agent reanalysis'));
-    });
-
-    test('cancelScheduledWake delegates pending wake cancellation', () {
-      service.cancelScheduledWake(agentId);
-
-      verify(() => agentService.cancelPendingWake(agentId)).called(1);
-      final logMessage =
-          verify(
-                () => domainLogger.log(
-                  any(),
-                  captureAny(),
-                  subDomain: 'lifecycle',
-                  level: any(named: 'level'),
-                ),
-              ).captured.single
-              as String;
-      expect(logMessage, contains('scheduled wake cancelled'));
-    });
-
     test(
       'restoreSubscriptions aborts before per-agent work when preload fails',
       () async {

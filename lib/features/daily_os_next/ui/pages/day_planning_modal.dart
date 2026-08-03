@@ -67,8 +67,8 @@ class DayPlanningAdapt extends DayPlanningIntent {
 /// ready and invalidates [currentDraftPlanProvider] so the day surface
 /// shows the new plan.
 ///
-/// Resolves to a [DayPlanningResult]: a [DayPlanningCreated] (with the drafted
-/// plan and any newly-created task ids) when the create flow lands a plan, a
+/// Resolves to a [DayPlanningResult]: a [DayPlanningCreated] (with any
+/// newly-created task ids) when the create flow lands a plan, a
 /// [DayPlanningAdapted] when the Refine flow accepts one, or `null` when the
 /// user dismisses the modal (barrier tap, close button, or "looks good" with
 /// nothing to adapt). Existing callers that ignore the value are unaffected.
@@ -589,7 +589,7 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
     final route = ModalRoute.of(context);
     if (route?.isCurrent ?? false) {
       Navigator.of(context).pop(
-        DayPlanningCreated(draft: draft, createdTaskIds: createdTaskIds),
+        DayPlanningCreated(createdTaskIds: createdTaskIds),
       );
     }
   }

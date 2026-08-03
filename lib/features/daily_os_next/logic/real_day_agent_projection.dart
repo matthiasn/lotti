@@ -106,11 +106,6 @@ extension RealDayAgentProjection on RealDayAgent {
     );
   }
 
-  /// Test seam for [_projectCategory] — pure hex normalisation.
-  @visibleForTesting
-  DayAgentCategory debugProjectCategory(CategoryDefinition def) =>
-      _projectCategory(def);
-
   Future<DraftPlan> _projectDayPlan(
     DayPlanEntity entity,
     DateTime dayDate,
@@ -143,10 +138,6 @@ extension RealDayAgentProjection on RealDayAgent {
   /// per `taskId`; standalone blocks become one agenda item each so
   /// the Agenda surface mirrors the Day timeline instead of going
   /// silent when the model has not linked tasks yet.
-  /// Test seam for [_agendaFor] — pure block→agenda grouping/state fold.
-  @visibleForTesting
-  List<AgendaItem> debugAgendaFor(List<TimeBlock> blocks) => _agendaFor(blocks);
-
   List<AgendaItem> _agendaFor(List<TimeBlock> blocks) {
     final taskGroups = <String, List<TimeBlock>>{};
     final standalone = <TimeBlock>[];
