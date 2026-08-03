@@ -1,4 +1,6 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -16,17 +18,23 @@ import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
 import '../widget_test_utils.dart';
 
-/// Fake platform implementation registered as
-/// [FlutterLocalNotificationsPlatform.instance] so the plugin's static
-/// `instance` field is initialised. Without this, accessing `instance` inside
-/// the plugin throws a `LateInitializationError` and constructing
-/// [NotificationService] (which eagerly calls `initialize`) fails.
+/// The plugin's single method channel.
 ///
-/// Combined with `debugDefaultTargetPlatformOverride = TargetPlatform.linux`
-/// this makes `initialize`/`cancel`/`show` no-op cleanly in tests: the plugin's
+/// Mocking it is what makes the Darwin code paths testable at all:
+/// [NotificationService] reaches the OS only through this channel, so the
+/// recorded call list *is* the contract this suite is about — above all,
+/// whether `requestPermissions` ever crosses it.
+const _pluginChannel = MethodChannel(
+  'dexterous.com/flutter/local_notifications',
+);
+
+/// Fake platform implementation used for the non-Darwin platforms, so the
+/// plugin's `late` static `instance` field is initialised.
+///
 /// `resolvePlatformSpecificImplementation<LinuxFlutterLocalNotificationsPlugin>`
 /// returns null for this fake (it is not the concrete Linux type), so the
-/// plugin short-circuits without touching native channels.
+/// plugin short-circuits without touching native channels — which is exactly
+/// the shape of a platform Lotti does not notify on.
 class _FakeNotificationsPlatform extends FlutterLocalNotificationsPlatform
     with MockPlatformInterfaceMixin {
   @override
@@ -41,10 +49,74 @@ class _FakeNotificationsPlatform extends FlutterLocalNotificationsPlatform
   }) async {}
 }
 
+/// Records every method call the plugin sends to the platform.
+class _ChannelRecorder {
+  final List<MethodCall> calls = [];
+
+  /// When set, the recorder throws for this method instead of answering,
+  /// standing in for a plugin that failed to register (the flatpak case).
+  String? failingMethod;
+
+  List<String> get methods => [for (final call in calls) call.method];
+
+  int countOf(String method) => methods.where((m) => m == method).length;
+
+  /// Arguments of the only call to [method]. Deliberately strict: a second
+  /// call would mean the production code did something twice, and silently
+  /// reading the first would hide it.
+  Map<Object?, Object?> argsOf(String method) {
+    final matching = calls.where((call) => call.method == method);
+    expect(matching, hasLength(1), reason: 'expected exactly one $method call');
+    return matching.single.arguments as Map<Object?, Object?>;
+  }
+
+  Map<Object?, Object?>? platformSpecificsOf(String method) =>
+      argsOf(method)['platformSpecifics'] as Map<Object?, Object?>?;
+
+  void install() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_pluginChannel, (call) async {
+          calls.add(call);
+          if (call.method == failingMethod) {
+            throw PlatformException(code: 'unavailable');
+          }
+          return switch (call.method) {
+            'initialize' || 'requestPermissions' => true,
+            _ => null,
+          };
+        });
+  }
+
+  void remove() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_pluginChannel, null);
+  }
+}
+
+/// Points `defaultTargetPlatform` **and** the plugin's platform instance at
+/// [platform].
+///
+/// `resolvePlatformSpecificImplementation` requires the two to agree — it
+/// returns null unless the registered instance is the concrete type matching
+/// the current platform — so overriding either alone leaves the Darwin
+/// branches unreachable. That is why they had gone untested, and why the
+/// permission prompt could regress unnoticed.
+void _usePlatform(TargetPlatform platform) {
+  debugDefaultTargetPlatformOverride = platform;
+  FlutterLocalNotificationsPlatform.instance = switch (platform) {
+    TargetPlatform.iOS => IOSFlutterLocalNotificationsPlugin(),
+    TargetPlatform.macOS => MacOSFlutterLocalNotificationsPlugin(),
+    _ => _FakeNotificationsPlatform(),
+  };
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(registerAllFallbackValues);
+  setUpAll(() {
+    registerAllFallbackValues();
+    tzdata.initializeTimeZones();
+  });
 
   // A single, stable JournalDb mock. The production file holds the database in
   // a top-level `final JournalDb _db = getIt<JournalDb>();` that is lazily read
@@ -53,10 +125,28 @@ void main() {
   // method call, so we reuse one mock and only re-stub it each time.
   final sharedDb = MockJournalDb();
   late MockDomainLogger domainLogger;
+  late _ChannelRecorder channel;
+
+  /// Stubs the notifications config flag. Defaults to **off**, matching what a
+  /// fresh install actually has — the state the prompt bug appeared in.
+  void setNotificationsEnabled({required bool enabled}) {
+    when(
+      () => sharedDb.getConfigFlag(enableNotificationsFlag),
+    ).thenAnswer((_) async => enabled);
+  }
+
+  /// Stubs the in-progress task count the badge is derived from.
+  void setWipCount(int count) {
+    // ignore: unnecessary_lambdas
+    when(() => sharedDb.getWipCount()).thenAnswer((_) async => count);
+  }
 
   setUp(() async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
-    FlutterLocalNotificationsPlatform.instance = _FakeNotificationsPlatform();
+    channel = _ChannelRecorder()..install();
+    _usePlatform(TargetPlatform.linux);
+    // Pinned so a scheduled notification's resolved zone does not depend on
+    // the machine running the suite.
+    tz.setLocalLocation(tz.UTC);
     domainLogger = MockDomainLogger();
 
     await setUpTestGetIt(
@@ -73,16 +163,24 @@ void main() {
     }
     getIt.registerSingleton<JournalDb>(sharedDb);
 
-    when(() => sharedDb.getConfigFlag(any())).thenAnswer((_) async => true);
-    // ignore: unnecessary_lambdas
-    when(() => sharedDb.getWipCount()).thenAnswer((_) async => 0);
+    setNotificationsEnabled(enabled: false);
+    setWipCount(0);
   });
 
   tearDown(() async {
+    channel.remove();
     debugDefaultTargetPlatformOverride = null;
     reset(sharedDb);
     await tearDownTestGetIt();
   });
+
+  /// Builds the service and waits for the constructor's fire-and-forget
+  /// `initialize` to finish, so channel assertions are not racing it.
+  Future<NotificationService> buildService() async {
+    final service = NotificationService();
+    await service.initialized;
+    return service;
+  }
 
   group('NotificationConstants', () {
     test('exposes the documented badge/encouragement values', () {
@@ -101,15 +199,7 @@ void main() {
   });
 
   group('NotificationLocationResolver', () {
-    late tz.Location originalLocation;
-
-    setUp(() {
-      tzdata.initializeTimeZones();
-      originalLocation = tz.local;
-      tz.setLocalLocation(tz.getLocation('Europe/Berlin'));
-    });
-
-    tearDown(() => tz.setLocalLocation(originalLocation));
+    setUp(() => tz.setLocalLocation(tz.getLocation('Europe/Berlin')));
 
     test('returns a named location without logging', () {
       final resolver = NotificationLocationResolver();
@@ -142,126 +232,627 @@ void main() {
     });
   });
 
-  group('construction', () {
-    test('constructing the service runs initialize without throwing', () {
-      // Construction eagerly calls flutterLocalNotificationsPlugin.initialize.
-      // It must succeed (no unhandled async error) with the fake platform.
-      final service = NotificationService();
-      expect(service.badgeCount, 0);
-      expect(service.flutterLocalNotificationsPlugin, isNotNull);
-    });
-  });
-
-  group('updateBadge', () {
-    test(
-      'queries the notifications config flag then returns on Linux',
-      () async {
-        final service = NotificationService();
-
-        await service.updateBadge();
-
-        // On Linux the method reads the flag, then hits the platform early
-        // return before requesting permissions or touching the WIP count.
-        verify(() => sharedDb.getConfigFlag(enableNotificationsFlag)).called(1);
-        // ignore: unnecessary_lambdas
-        verifyNever(() => sharedDb.getWipCount());
-        // badgeCount is untouched because the badge-update branch is unreachable
-        // on Linux.
-        expect(service.badgeCount, 0);
-      },
-    );
-  });
-
-  group('scheduleNotification / scheduleNotificationAt / showNotificationNow', () {
-    // All three share the same Linux-reachable surface: read the config flag,
-    // then return early. They differ only in which production method is
-    // invoked, so drive them through a parameterised table.
-    final notifyAt = DateTime(2024, 3, 15, 9, 30);
-
-    Future<void> invokeSchedule(NotificationService service) =>
-        service.scheduleNotification(
-          title: 'title',
-          body: 'body',
-          notifyAt: notifyAt,
-          notificationId: 42,
-          showOnMobile: true,
-          showOnDesktop: false,
-        );
-
-    Future<void> invokeScheduleAt(NotificationService service) =>
-        service.scheduleNotificationAt(
-          title: 'title',
-          body: 'body',
-          notifyAt: notifyAt,
-          notificationId: 42,
-          showOnMobile: true,
-          showOnDesktop: false,
-        );
-
-    Future<void> invokeShowNow(NotificationService service) =>
-        service.showNotificationNow(
-          title: 'title',
-          body: 'body',
-          notificationId: 42,
-          showOnMobile: true,
-          showOnDesktop: false,
-        );
-
-    final cases = <String, Future<void> Function(NotificationService)>{
-      'scheduleNotification': invokeSchedule,
-      'scheduleNotificationAt': invokeScheduleAt,
-      'showNotificationNow': invokeShowNow,
-    };
-
-    for (final entry in cases.entries) {
+  // Root cause #1. `DarwinInitializationSettings` defaults all three
+  // permission requests to true, and the native `initialize` forwards them to
+  // `UNUserNotificationCenter.requestAuthorization` — so merely constructing
+  // the service raised the system prompt. macOS previously overrode only
+  // `requestSoundPermission`.
+  group('plugin initialization', () {
+    for (final platform in [TargetPlatform.macOS, TargetPlatform.iOS]) {
       test(
-        '${entry.key} reads the config flag then returns on Linux',
+        '$platform initialize asks the OS for no permission at all',
         () async {
-          final service = NotificationService();
+          _usePlatform(platform);
 
-          await entry.value(service);
+          await buildService();
 
-          verify(
-            () => sharedDb.getConfigFlag(enableNotificationsFlag),
-          ).called(1);
+          final args = channel.argsOf('initialize');
+          expect(args['requestAlertPermission'], isFalse);
+          expect(args['requestBadgePermission'], isFalse);
+          expect(args['requestSoundPermission'], isFalse);
+          // With every option false the native side returns without calling
+          // requestAuthorization, so construction cannot prompt.
+          expect(
+            args.entries.where((e) => e.key.toString().startsWith('request')),
+            everyElement(
+              isA<MapEntry<Object?, Object?>>().having(
+                (e) => e.value,
+                'value',
+                isFalse,
+              ),
+            ),
+          );
         },
       );
     }
 
+    test('constructing the service never requests permissions', () async {
+      _usePlatform(TargetPlatform.macOS);
+
+      await buildService();
+
+      expect(channel.methods, isNot(contains('requestPermissions')));
+    });
+
+    test('a platform that is not notified on stays off the channel', () async {
+      await buildService();
+
+      expect(channel.calls, isEmpty);
+    });
+
+    test('an initialize that fails is logged, not thrown', () async {
+      _usePlatform(TargetPlatform.macOS);
+      channel.failingMethod = 'initialize';
+
+      // The failure arrives asynchronously — the plugin completes the returned
+      // future with an error rather than throwing — so this only passes
+      // because the catch wraps the await, not the call.
+      await expectLater(buildService(), completes);
+
+      verify(
+        () => domainLogger.error(
+          LogDomain.notifications,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'initialization',
+        ),
+      ).called(1);
+    });
+  });
+
+  // Root cause #2. Every entry point now consults the config flag *before*
+  // anything can request permission.
+  group('permission gate', () {
+    final entryPoints = <String, Future<void> Function(NotificationService)>{
+      'updateBadge': (service) => service.updateBadge(),
+      'scheduleNotification': (service) => service.scheduleNotification(
+        title: 'title',
+        body: 'body',
+        notifyAt: DateTime(2024, 3, 15, 9, 30),
+        notificationId: 42,
+        showOnMobile: true,
+        showOnDesktop: true,
+        repeat: true,
+      ),
+      'scheduleNotificationAt': (service) => service.scheduleNotificationAt(
+        title: 'title',
+        body: 'body',
+        notifyAt: DateTime.utc(2030, 5, 4, 9, 30),
+        notificationId: 42,
+        showOnMobile: true,
+        showOnDesktop: true,
+      ),
+      'showNotificationNow': (service) => service.showNotificationNow(
+        title: 'title',
+        body: 'body',
+        notificationId: 42,
+        showOnMobile: true,
+        showOnDesktop: true,
+      ),
+    };
+
+    for (final platform in [TargetPlatform.macOS, TargetPlatform.iOS]) {
+      group('$platform', () {
+        for (final entry in entryPoints.entries) {
+          test('${entry.key} never prompts while the flag is off', () async {
+            _usePlatform(platform);
+            setNotificationsEnabled(enabled: false);
+            final service = await buildService();
+            channel.calls.clear();
+
+            await entry.value(service);
+
+            expect(channel.methods, isNot(contains('requestPermissions')));
+            verify(
+              () => sharedDb.getConfigFlag(enableNotificationsFlag),
+            ).called(1);
+          });
+
+          test('${entry.key} prompts once the flag is on', () async {
+            _usePlatform(platform);
+            setNotificationsEnabled(enabled: true);
+            final service = await buildService();
+            channel.calls.clear();
+
+            await withClock(Clock.fixed(DateTime.utc(2000)), () async {
+              await entry.value(service);
+            });
+
+            expect(channel.methods, contains('requestPermissions'));
+            final args = channel.argsOf('requestPermissions');
+            expect(args['alert'], isTrue);
+            expect(args['badge'], isTrue);
+          });
+        }
+      });
+    }
+
+    for (final platform in [TargetPlatform.linux, TargetPlatform.windows]) {
+      test('$platform is short-circuited before the flag is read', () async {
+        _usePlatform(platform);
+        setNotificationsEnabled(enabled: true);
+        final service = await buildService();
+        channel.calls.clear();
+
+        for (final entry in entryPoints.values) {
+          await entry(service);
+        }
+
+        // Cheapest check first: a platform Lotti does not notify on is not
+        // worth a database read either.
+        verifyNever(() => sharedDb.getConfigFlag(any()));
+        expect(channel.calls, isEmpty);
+      });
+    }
+
+    test('permission is requested once per process, not per call', () async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+      final service = await buildService();
+
+      await service.updateBadge();
+      await service.showNotificationNow(
+        title: 'title',
+        body: 'body',
+        notificationId: 42,
+        showOnMobile: true,
+        showOnDesktop: true,
+      );
+
+      expect(channel.countOf('requestPermissions'), 1);
+    });
+
+    test('a failing request neither propagates nor sticks', () async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+      setWipCount(3);
+      final service = await buildService();
+      channel
+        ..calls.clear()
+        ..failingMethod = 'requestPermissions';
+
+      // Asking is best-effort; the callers are not. NotificationRepository
+      // schedules inside a vector-clock scope that commits only when its body
+      // returns, so an error escaping here would abort notification creation.
+      await expectLater(service.updateBadge(), completes);
+
+      // And the work it guards still happens — a permission Lotti could not
+      // ask for is the OS's problem to enforce, not a reason to skip the post.
+      expect(channel.methods, ['requestPermissions', 'cancel', 'show']);
+      verify(
+        () => domainLogger.error(
+          LogDomain.notifications,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'requestPermissions',
+        ),
+      ).called(1);
+
+      // The rejection must not be what got memoized, or one transient channel
+      // failure would disable notifications for the rest of the process.
+      channel
+        ..failingMethod = null
+        ..calls.clear();
+      setWipCount(4);
+      await service.updateBadge();
+
+      expect(channel.methods, contains('requestPermissions'));
+    });
+
+    test('the request is memoized, not globally suppressed', () async {
+      // Guards the test above from passing vacuously: if the channel simply
+      // stopped recording repeats, this would still read 1.
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+
+      await (await buildService()).updateBadge();
+      await (await buildService()).updateBadge();
+
+      expect(channel.countOf('requestPermissions'), 2);
+    });
+  });
+
+  group('updateBadge while notifications are off', () {
+    test('zeroes an icon badge inherited from a previous run', () async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: false);
+      final service = await buildService();
+      channel.calls.clear();
+
+      await service.updateBadge();
+
+      // The badge outlives the process that set it, so a fresh run cannot
+      // assume the icon is clean. Quitting with three tasks showing and
+      // returning with notifications off has to still take the number down.
+      expect(channel.methods, ['cancel', 'show']);
+      expect(channel.platformSpecificsOf('show')!['badgeNumber'], 0);
+      expect(service.badgeCount, 0);
+      // ignore: unnecessary_lambdas
+      verifyNever(() => sharedDb.getWipCount());
+    });
+
+    test('clears a badge posted while they were on', () async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+      setWipCount(3);
+      final service = await buildService();
+      await service.updateBadge();
+      expect(service.badgeCount, 3, reason: 'badge posted while enabled');
+
+      setNotificationsEnabled(enabled: false);
+      channel.calls.clear();
+      await service.updateBadge();
+
+      // Cancelling alone would not do it: `removeDeliveredNotifications` drops
+      // the record but leaves the number on the icon, which is carried by the
+      // notification's own `badge` field. Only a zero post clears it.
+      expect(channel.methods, ['cancel', 'show']);
+      final specifics = channel.platformSpecificsOf('show')!;
+      expect(specifics['badgeNumber'], 0);
+      expect(specifics['presentAlert'], isFalse);
+      expect(service.badgeCount, 0);
+    });
+
+    test('does nothing more once the icon already reads zero', () async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+      final service = await buildService();
+      setWipCount(3);
+      await service.updateBadge();
+      setWipCount(0);
+      await service.updateBadge();
+
+      setNotificationsEnabled(enabled: false);
+      channel.calls.clear();
+      await service.updateBadge();
+
+      // The task count reaching zero already posted the zero badge, so
+      // switching notifications off has nothing left to take down.
+      expect(channel.calls, isEmpty);
+    });
+
+    test('clears once, not on every entry write', () async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+      setWipCount(3);
+      final service = await buildService();
+      await service.updateBadge();
+
+      setNotificationsEnabled(enabled: false);
+      channel.calls.clear();
+      await service.updateBadge();
+      await service.updateBadge();
+      await service.updateBadge();
+
+      // updateBadge runs after every entry write; repeating the pair would put
+      // two platform round trips on each one forever after.
+      expect(channel.countOf('cancel'), 1);
+      expect(channel.countOf('show'), 1);
+    });
+
+    test('re-enabling posts the current count again', () async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+      setWipCount(3);
+      final service = await buildService();
+      await service.updateBadge();
+
+      setNotificationsEnabled(enabled: false);
+      await service.updateBadge();
+
+      setNotificationsEnabled(enabled: true);
+      channel.calls.clear();
+      await service.updateBadge();
+
+      // badgeCount was reset on the way down, so the unchanged-count
+      // short-circuit must not swallow the restore.
+      expect(channel.argsOf('show')['title'], '3 tasks in progress');
+      expect(service.badgeCount, 3);
+    });
+  });
+
+  group('updateBadge while notifications are on', () {
+    late NotificationService service;
+
+    Future<void> withWipCount(int count) async {
+      setWipCount(count);
+      await service.updateBadge();
+    }
+
+    setUp(() async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+      service = await buildService();
+    });
+
     test(
-      'returns early without reading the flag when notifications disabled',
+      'an unchanged count short-circuits before any platform call',
       () async {
-        // Even with the flag disabled the methods complete normally. The flag is
-        // still read (it is checked before the platform guard short-circuits).
-        when(
-          () => sharedDb.getConfigFlag(any()),
-        ).thenAnswer((_) async => false);
-        final service = NotificationService();
+        await withWipCount(2);
+        channel.calls.clear();
 
-        await invokeSchedule(service);
+        await withWipCount(2);
 
-        verify(() => sharedDb.getConfigFlag(enableNotificationsFlag)).called(1);
+        expect(channel.calls, isEmpty);
+        expect(service.badgeCount, 2);
       },
     );
+
+    test(
+      'a zero count posts a silent badge rather than only cancelling',
+      () async {
+        await withWipCount(4);
+        channel.calls.clear();
+
+        await withWipCount(0);
+
+        // `badgeNumber: 0` is how the icon is cleared, so the count reaching
+        // zero still has to cross the channel.
+        expect(channel.methods, ['cancel', 'show']);
+        final specifics = channel.platformSpecificsOf('show')!;
+        expect(specifics['badgeNumber'], 0);
+        expect(specifics['presentAlert'], isFalse);
+        expect(channel.argsOf('show')['title'], '');
+        expect(channel.argsOf('show')['body'], '');
+      },
+    );
+
+    test('one task reads as singular and encourages', () async {
+      await withWipCount(1);
+
+      expect(channel.argsOf('show')['title'], '1 task in progress');
+      expect(channel.argsOf('show')['body'], 'Nice');
+    });
+
+    test('below the threshold reads as plural and still encourages', () async {
+      await withWipCount(4);
+
+      expect(channel.argsOf('show')['title'], '4 tasks in progress');
+      expect(channel.argsOf('show')['body'], 'Nice');
+    });
+
+    test('at the threshold the message turns into a nudge', () async {
+      await withWipCount(NotificationConstants.taskThreshold);
+
+      expect(channel.argsOf('show')['title'], '5 tasks in progress');
+      expect(channel.argsOf('show')['body'], "Let's get that number down");
+    });
+
+    test('macOS alerts for a non-zero badge and carries the count', () async {
+      await withWipCount(3);
+
+      final specifics = channel.platformSpecificsOf('show')!;
+      expect(specifics['presentAlert'], isTrue);
+      expect(specifics['presentBadge'], isTrue);
+      expect(specifics['badgeNumber'], 3);
+    });
+
+    test('iOS shows the number without ever alerting', () async {
+      _usePlatform(TargetPlatform.iOS);
+      service = await buildService();
+      channel.calls.clear();
+
+      await withWipCount(3);
+
+      // On the phone the number on the icon is the whole message; an alert
+      // for it would be noise.
+      final specifics = channel.platformSpecificsOf('show')!;
+      expect(specifics['presentAlert'], isFalse);
+      expect(specifics['presentBadge'], isTrue);
+      expect(specifics['badgeNumber'], 3);
+    });
+  });
+
+  group('scheduleNotification', () {
+    setUp(() async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+    });
+
+    test('schedules today at the requested wall-clock time', () async {
+      final service = await buildService();
+
+      // The fixed clock does not control the scheduled date — production builds
+      // that from `DateTime.now()`. It only relaxes the plugin's
+      // `validateDateIsInTheFuture`, which otherwise throws whenever the suite
+      // runs later in the day than the time under test. That throw is real in
+      // production too: `scheduleNotification` with `repeat: false` and a
+      // time-of-day already past raises `ArgumentError`.
+      await withClock(Clock.fixed(DateTime.utc(2000)), () async {
+        await service.scheduleNotification(
+          title: 'Meditate',
+          body: 'Daily meditation',
+          notifyAt: DateTime(2024, 3, 15, 7, 45, 12),
+          notificationId: 42,
+          showOnMobile: false,
+          showOnDesktop: true,
+        );
+      });
+
+      // The date component is "today"; only the time of day comes from
+      // notifyAt, which is what makes this the daily-habit entry point.
+      final args = channel.argsOf('zonedSchedule');
+      expect(args['id'], 42);
+      expect(args['scheduledDateTime'], endsWith('T07:45:12'));
+      expect(args['matchDateTimeComponents'], isNull);
+      expect(channel.countOf('cancel'), 1);
+    });
+
+    test('repeat asks the OS to match on time of day', () async {
+      final service = await buildService();
+
+      await service.scheduleNotification(
+        title: 'Meditate',
+        body: 'Daily meditation',
+        notifyAt: DateTime(2024, 3, 15, 7, 45),
+        notificationId: 42,
+        showOnMobile: true,
+        showOnDesktop: false,
+        repeat: true,
+      );
+
+      expect(
+        channel.argsOf('zonedSchedule')['matchDateTimeComponents'],
+        DateTimeComponents.time.index,
+      );
+    });
+
+    test('a desktop-only alert carries no mobile presentation', () async {
+      _usePlatform(TargetPlatform.iOS);
+      final service = await buildService();
+
+      await service.scheduleNotification(
+        title: 'Meditate',
+        body: 'Daily meditation',
+        notifyAt: DateTime(2024, 3, 15, 7, 45),
+        notificationId: 42,
+        showOnMobile: false,
+        showOnDesktop: true,
+        repeat: true,
+      );
+
+      // iOS reads `NotificationDetails.iOS`, which is null when the caller
+      // did not opt into mobile — this is what keeps a desktop reminder off
+      // the phone.
+      expect(channel.platformSpecificsOf('zonedSchedule'), isEmpty);
+    });
+  });
+
+  group('scheduleNotificationAt', () {
+    setUp(() async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+    });
+
+    test('fires at the requested instant and carries the deep link', () async {
+      final service = await buildService();
+      final notifyAt = DateTime.utc(2030, 5, 4, 9, 30);
+
+      await service.scheduleNotificationAt(
+        title: 'Review',
+        body: 'Time to review',
+        notifyAt: notifyAt,
+        notificationId: 7,
+        showOnMobile: true,
+        showOnDesktop: true,
+        deepLink: '/tasks/abc',
+      );
+
+      final args = channel.argsOf('zonedSchedule');
+      expect(args['id'], 7);
+      expect(args['title'], 'Review');
+      expect(args['payload'], '/tasks/abc');
+      // Asserted as an instant, not as wall clock: converting into the
+      // resolved zone must not move when the alert fires.
+      expect(
+        DateTime.parse(args['scheduledDateTimeISO8601']! as String).toUtc(),
+        notifyAt,
+      );
+      final specifics = channel.platformSpecificsOf('zonedSchedule')!;
+      expect(specifics['subtitle'], 'Review');
+      expect(
+        specifics['interruptionLevel'],
+        InterruptionLevel.timeSensitive.index,
+      );
+    });
+
+    test('cancels the previous alert for the same id first', () async {
+      final service = await buildService();
+      channel.calls.clear();
+
+      await service.scheduleNotificationAt(
+        title: 'Review',
+        body: 'Time to review',
+        notifyAt: DateTime.utc(2030, 5, 4, 9, 30),
+        notificationId: 7,
+        showOnMobile: true,
+        showOnDesktop: true,
+      );
+
+      // Rescheduling must replace, not duplicate — so the cancel has to name
+      // the same id, and land before the replacement is scheduled.
+      expect(channel.methods, [
+        'requestPermissions',
+        'cancel',
+        'zonedSchedule',
+      ]);
+      expect(
+        channel.calls.firstWhere((call) => call.method == 'cancel').arguments,
+        7,
+      );
+    });
+  });
+
+  group('showNotificationNow', () {
+    setUp(() async {
+      _usePlatform(TargetPlatform.macOS);
+      setNotificationsEnabled(enabled: true);
+    });
+
+    test('shows immediately with the deep link attached', () async {
+      final service = await buildService();
+      channel.calls.clear();
+
+      await service.showNotificationNow(
+        title: 'Overdue',
+        body: 'A task needs you',
+        notificationId: 9,
+        showOnMobile: true,
+        showOnDesktop: true,
+        deepLink: '/tasks/xyz',
+      );
+
+      expect(channel.methods, ['requestPermissions', 'cancel', 'show']);
+      final args = channel.argsOf('show');
+      expect(args['id'], 9);
+      expect(args['title'], 'Overdue');
+      expect(args['body'], 'A task needs you');
+      expect(args['payload'], '/tasks/xyz');
+      expect(channel.platformSpecificsOf('show')!['presentAlert'], isTrue);
+    });
+
+    test('a mobile-only alert carries no desktop presentation', () async {
+      final service = await buildService();
+
+      await service.showNotificationNow(
+        title: 'Overdue',
+        body: 'A task needs you',
+        notificationId: 9,
+        showOnMobile: true,
+        showOnDesktop: false,
+      );
+
+      // macOS reads `NotificationDetails.macOS`, null here, so nothing is
+      // presented on the desktop.
+      expect(channel.platformSpecificsOf('show'), isNull);
+    });
   });
 
   group('cancelNotification', () {
-    test('returns normally on Linux without reading the database', () async {
-      final service = NotificationService();
+    test('cancels through the channel on a Darwin platform', () async {
+      _usePlatform(TargetPlatform.macOS);
+      final service = await buildService();
+      channel.calls.clear();
 
-      // cancelNotification hits the platform guard before any db / plugin call,
-      // so it must complete without throwing and without touching the db.
-      await expectLater(service.cancelNotification(7), completes);
-      verifyNever(() => sharedDb.getConfigFlag(any()));
+      await service.cancelNotification(7);
+
+      expect(channel.methods, ['cancel']);
+      expect(channel.calls.single.arguments, 7);
     });
 
-    test('returns normally on Windows without reading the database', () async {
-      final service = NotificationService();
-      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    for (final platform in [TargetPlatform.linux, TargetPlatform.windows]) {
+      test('$platform returns without reading the database', () async {
+        _usePlatform(platform);
+        final service = await buildService();
 
-      await expectLater(service.cancelNotification(7), completes);
-      verifyNever(() => sharedDb.getConfigFlag(any()));
-    });
+        // Cancelling is unconditional elsewhere — no flag read — because
+        // removing an alert must work even after notifications are switched
+        // off. Here the platform guard is reached first.
+        await expectLater(service.cancelNotification(7), completes);
+        verifyNever(() => sharedDb.getConfigFlag(any()));
+        expect(channel.calls, isEmpty);
+      });
+    }
   });
 
   group('scheduleHabitNotification', () {
@@ -308,7 +899,7 @@ void main() {
           ),
         );
 
-        final service = NotificationService();
+        final service = await buildService();
         await service.scheduleHabitNotification(definition, daysToAdd: 2);
 
         final captured = verify(
@@ -335,7 +926,7 @@ void main() {
         schedule: const HabitSchedule.daily(requiredCompletions: 1),
       );
 
-      final service = NotificationService();
+      final service = await buildService();
       await service.scheduleHabitNotification(definition);
 
       verifyNever(
@@ -357,7 +948,7 @@ void main() {
           schedule: const HabitSchedule.weekly(requiredCompletions: 1),
         );
 
-        final service = NotificationService();
+        final service = await buildService();
         await service.scheduleHabitNotification(definition);
 
         verifyNever(
