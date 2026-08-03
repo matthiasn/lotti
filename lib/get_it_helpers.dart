@@ -82,16 +82,6 @@ void _safeLog(String message, {required bool isError}) {
   }
 }
 
-@visibleForTesting
-void registerLazyServiceForTesting<T extends Object>(
-  T Function() factory,
-  String serviceName,
-) => _registerLazyServiceSafely(factory, serviceName);
-
-@visibleForTesting
-void safeLogForTesting(String message, {required bool isError}) =>
-    _safeLog(message, isError: isError);
-
 /// Registers late-loaded, sandbox-fragile and optional services (audio
 /// waveform, the label pipeline, the local embedding pipeline) plus the
 /// one-time sequence-log backfill. Split from [registerSingletons] for file

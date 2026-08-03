@@ -81,8 +81,6 @@ void main() {
   FunctionCallResult makeUpdateResult(List<Map<String, dynamic>> items) =>
       FunctionCallResult(
         success: true,
-        functionName: 'update_checklist_items',
-        arguments: '',
         data: {
           'items': items,
           'taskId': testTask.id,
@@ -688,8 +686,6 @@ void main() {
       test('should return 0 for unsuccessful result', () async {
         const result = FunctionCallResult(
           success: false,
-          functionName: 'update_checklist_items',
-          arguments: '',
           data: {},
           error: 'Some error',
         );
@@ -711,8 +707,6 @@ void main() {
 
         final result = FunctionCallResult(
           success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'id': 'item-1', 'isChecked': true},
@@ -839,8 +833,6 @@ void main() {
       test('should return item count for successful result', () {
         const result = FunctionCallResult(
           success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'id': 'item-1', 'isChecked': true},
@@ -855,8 +847,6 @@ void main() {
       test('should return null for unsuccessful result', () {
         const result = FunctionCallResult(
           success: false,
-          functionName: 'update_checklist_items',
-          arguments: '',
           data: {},
           error: 'Error',
         );
@@ -867,8 +857,6 @@ void main() {
       test('should return null for empty items', () {
         const result = FunctionCallResult(
           success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
           data: {'items': <Map<String, dynamic>>[]},
         );
 
@@ -905,8 +893,6 @@ void main() {
       test('should create error response for failure', () {
         const result = FunctionCallResult(
           success: false,
-          functionName: 'update_checklist_items',
-          arguments: '',
           data: {},
           error: 'Invalid format',
         );
@@ -1422,8 +1408,6 @@ void main() {
         final failedItems = [
           const FunctionCallResult(
             success: false,
-            functionName: 'update_checklist_items',
-            arguments: '',
             data: {},
             error: 'Missing id field',
           ),

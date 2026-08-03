@@ -9,10 +9,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tok
 class DailyOsPlannerWakeContext {
   /// Creates a wake context for an already-resolved [dayId] workspace.
   DailyOsPlannerWakeContext({
-    required this.plannerAgentId,
     required this.dayId,
-    required this.runKey,
-    required this.threadId,
     required this.triggerTokens,
     this.captureIds = const [],
     this.decidedTaskIds = const [],
@@ -26,17 +23,11 @@ class DailyOsPlannerWakeContext {
   /// Payload IDs are extracted with the deterministic helpers from
   /// `day_agent_trigger_tokens.dart`.
   factory DailyOsPlannerWakeContext.fromTokens({
-    required String plannerAgentId,
     required String dayId,
-    required String runKey,
-    required String threadId,
     required Set<String> triggerTokens,
   }) {
     return DailyOsPlannerWakeContext(
-      plannerAgentId: plannerAgentId,
       dayId: dayId,
-      runKey: runKey,
-      threadId: threadId,
       triggerTokens: Set.unmodifiable(triggerTokens),
       captureIds: captureIdsFromTriggerTokens(triggerTokens),
       decidedTaskIds: decidedTaskIdsFromTriggerTokens(triggerTokens),
@@ -47,17 +38,8 @@ class DailyOsPlannerWakeContext {
     );
   }
 
-  /// Identity of the planner executing this wake.
-  final String plannerAgentId;
-
   /// Day workspace this wake operates on (`dayplan-YYYY-MM-DD`).
   final String dayId;
-
-  /// Deterministic run key of this wake.
-  final String runKey;
-
-  /// Thread the wake's messages are recorded under.
-  final String threadId;
 
   /// Raw trigger tokens the wake was enqueued with.
   final Set<String> triggerTokens;
@@ -73,9 +55,8 @@ class DailyOsPlannerWakeContext {
 
   /// Durable outbox job whose attempt opened this wake, when present.
   ///
-  /// Retries of the same job carry the same id while each wake has a new
-  /// [runKey]. Side effects that can occur before the terminal artifact use
-  /// this as their idempotency scope.
+  /// Retries of the same job carry the same id. Side effects that can occur
+  /// before the terminal artifact use this as their idempotency scope.
   final String? processingJobId;
 
   /// Whether the wake requests drafting for this context's day workspace.
@@ -87,15 +68,4 @@ class DailyOsPlannerWakeContext {
   /// Whether this is a coordinator digest wake anchored to this context's
   /// day (ADR 0032 phase 3).
   bool get isDigestWake => triggerTokens.contains(dayAgentDigestToken(dayId));
-
-  /// Validates that a tool call targeting [toolDayId] stays inside this
-  /// wake's workspace.
-  ///
-  /// Day-scoped tool calls must be rejected when the requested day differs
-  /// from the wake workspace (ADR 0022 Decision 4). A `null`/empty
-  /// [toolDayId] is treated as "inherit the wake's day" and passes.
-  bool allowsToolDayId(String? toolDayId) {
-    if (toolDayId == null || toolDayId.trim().isEmpty) return true;
-    return toolDayId.trim() == dayId;
-  }
 }

@@ -96,8 +96,6 @@ class PendingCorrection {
   PendingCorrection({
     required this.before,
     required this.after,
-    required this.categoryId,
-    required this.categoryName,
     required this.createdAt,
   }) : id = _nextId++;
 
@@ -111,12 +109,6 @@ class PendingCorrection {
 
   /// Normalized title after the user's edit.
   final String after;
-
-  /// ID of the category the corrected checklist item belongs to.
-  final String categoryId;
-
-  /// Display name of [categoryId], shown in the undo snackbar.
-  final String categoryName;
 
   /// Wall-clock time the correction was captured; anchors [remainingTime].
   final DateTime createdAt;
@@ -217,8 +209,6 @@ class CorrectionCaptureService {
     final pending = PendingCorrection(
       before: normalizedBefore,
       after: normalizedAfter,
-      categoryId: categoryId,
-      categoryName: category.name,
       createdAt: clock.now(),
     );
 

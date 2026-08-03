@@ -332,10 +332,7 @@ class DayAgentWorkflow {
     }
 
     final wakeContext = DailyOsPlannerWakeContext.fromTokens(
-      plannerAgentId: agentId,
       dayId: resolvedDayId,
-      runKey: runKey,
-      threadId: threadId,
       triggerTokens: triggerTokens,
     );
 

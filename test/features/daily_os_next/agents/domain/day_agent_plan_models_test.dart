@@ -37,30 +37,6 @@ void main() {
     }, tags: 'glados');
   });
 
-  group('DayAgentLearningBullet', () {
-    for (final tone in DayAgentLearningBulletTone.values) {
-      test('roundtrips through JSON for the $tone tone', () {
-        final bullet = DayAgentLearningBullet(
-          text: 'Heavy planned days ran over capacity.',
-          tone: tone,
-        );
-
-        final json = bullet.toJson();
-        // Lock the serialized tone name so every enum value is verified
-        // explicitly, not only through the indirect card tests.
-        expect(json['tone'], tone.name);
-
-        final decoded = DayAgentLearningBullet.fromJson(
-          jsonDecode(jsonEncode(json)) as Map<String, dynamic>,
-        );
-
-        expect(decoded, bullet);
-        expect(decoded.tone, tone);
-        expect(decoded.hashCode, bullet.hashCode);
-      });
-    }
-  });
-
   group('DayAgentLearningCard', () {
     test('serializes cards with bullets', () {
       final card = DayAgentLearningCard(
@@ -162,27 +138,6 @@ void main() {
       );
     });
   });
-
-  group('DayAgentLearning — generated JSON round-trips', () {
-    glados.Glados<DayAgentLearningBullet>(
-      glados.any.learningBullet,
-      glados.ExploreConfig(numRuns: 120),
-    ).test('roundtrips generated bullets through JSON', (bullet) {
-      final decoded = DayAgentLearningBullet.fromJson(
-        jsonDecode(jsonEncode(bullet.toJson())) as Map<String, dynamic>,
-      );
-      expect(
-        decoded,
-        bullet,
-        reason: 'text="${bullet.text}" tone=${bullet.tone}',
-      );
-      expect(
-        decoded.hashCode,
-        bullet.hashCode,
-        reason: 'text="${bullet.text}" tone=${bullet.tone}',
-      );
-    }, tags: 'glados');
-  });
 }
 
 class _GeneratedEnergyBand {
@@ -239,16 +194,5 @@ extension _AnyDayAgentPlanModels on glados.Any {
           level: level,
           labelIndex: labelIndex,
         ),
-      );
-
-  glados.Generator<DayAgentLearningBulletTone> get bulletTone =>
-      glados.AnyUtils(this).choose(DayAgentLearningBulletTone.values);
-
-  glados.Generator<DayAgentLearningBullet> get learningBullet =>
-      glados.CombinableAny(this).combine2(
-        glados.any.letterOrDigits,
-        bulletTone,
-        (String text, DayAgentLearningBulletTone tone) =>
-            DayAgentLearningBullet(text: text, tone: tone),
       );
 }

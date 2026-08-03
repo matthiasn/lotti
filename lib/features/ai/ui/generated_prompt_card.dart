@@ -23,14 +23,9 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 /// - Read-only (no editing)
 /// - Supports both promptGeneration and imagePromptGeneration types
 class GeneratedPromptCard extends StatefulWidget {
-  const GeneratedPromptCard(
-    this.aiResponse, {
-    required this.linkedFromId,
-    super.key,
-  });
+  const GeneratedPromptCard(this.aiResponse, {super.key});
 
   final AiResponseEntry aiResponse;
-  final String? linkedFromId;
 
   // Static regex patterns compiled once for performance.
   // Public so they can be reused by other widgets (e.g., UnifiedAiProgressView).

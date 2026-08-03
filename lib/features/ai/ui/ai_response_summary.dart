@@ -160,7 +160,6 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
     if (aiResponse.data.type?.isPromptGenerationType ?? false) {
       return GeneratedPromptCard(
         aiResponse,
-        linkedFromId: widget.linkedFromId,
       );
     }
 

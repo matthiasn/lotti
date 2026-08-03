@@ -171,7 +171,6 @@ void main() {
         expect(capturedPending, isNotNull);
         expect(capturedPending?.before, equals('Original Title'));
         expect(capturedPending?.after, equals('Updated Title'));
-        expect(capturedPending?.categoryName, equals('Test Category'));
       });
 
       test('does not notify when capture returns non-success', () async {

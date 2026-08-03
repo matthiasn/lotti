@@ -111,8 +111,6 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
   }) {
     return FunctionCallResult(
       success: false,
-      functionName: functionName,
-      arguments: call.function.arguments,
       data: {'toolCallId': call.id, if (includeTaskId) 'taskId': task.id},
       error: error,
     );
@@ -167,8 +165,6 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
 
       return FunctionCallResult(
         success: true,
-        functionName: functionName,
-        arguments: call.function.arguments,
         data: {
           'items': validatedItems,
           'toolCallId': call.id,

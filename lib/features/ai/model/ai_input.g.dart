@@ -6,26 +6,6 @@ part of 'ai_input.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_AiInputTaskObject _$AiInputTaskObjectFromJson(Map<String, dynamic> json) =>
-    _AiInputTaskObject(
-      title: json['title'] as String,
-      status: json['status'] as String,
-      priority: json['priority'] as String,
-      estimatedDuration: json['estimatedDuration'] as String,
-      timeSpent: json['timeSpent'] as String,
-      creationDate: DateTime.parse(json['creationDate'] as String),
-      actionItems: (json['actionItems'] as List<dynamic>)
-          .map((e) => AiActionItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      logEntries: (json['logEntries'] as List<dynamic>)
-          .map((e) => AiInputLogEntryObject.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      dueDate: json['dueDate'] == null
-          ? null
-          : DateTime.parse(json['dueDate'] as String),
-      languageCode: json['languageCode'] as String?,
-    );
-
 Map<String, dynamic> _$AiInputTaskObjectToJson(_AiInputTaskObject instance) =>
     <String, dynamic>{
       'title': instance.title,
@@ -111,23 +91,6 @@ Map<String, dynamic> _$AiInputAiResponseObjectToJson(
   'generatedAt': instance.generatedAt.toIso8601String(),
   'text': instance.text,
 };
-
-_AiLinkedTaskContext _$AiLinkedTaskContextFromJson(Map<String, dynamic> json) =>
-    _AiLinkedTaskContext(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      status: json['status'] as String,
-      statusSince: DateTime.parse(json['statusSince'] as String),
-      priority: json['priority'] as String,
-      estimate: json['estimate'] as String,
-      timeSpent: json['timeSpent'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      labels: (json['labels'] as List<dynamic>)
-          .map((e) => Map<String, String>.from(e as Map))
-          .toList(),
-      languageCode: json['languageCode'] as String?,
-      latestSummary: json['latestSummary'] as String?,
-    );
 
 Map<String, dynamic> _$AiLinkedTaskContextToJson(
   _AiLinkedTaskContext instance,

@@ -11,7 +11,6 @@ part of 'ai_input.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-
 /// @nodoc
 mixin _$AiInputTaskObject {
 
@@ -215,11 +214,11 @@ return $default(_that.title,_that.status,_that.priority,_that.estimatedDuration,
 }
 
 /// @nodoc
-@JsonSerializable()
+@JsonSerializable(createFactory: false)
 
 class _AiInputTaskObject implements AiInputTaskObject {
   const _AiInputTaskObject({required this.title, required this.status, required this.priority, required this.estimatedDuration, required this.timeSpent, required this.creationDate, required final  List<AiActionItem> actionItems, required final  List<AiInputLogEntryObject> logEntries, this.dueDate, this.languageCode}): _actionItems = actionItems,_logEntries = logEntries;
-  factory _AiInputTaskObject.fromJson(Map<String, dynamic> json) => _$AiInputTaskObjectFromJson(json);
+
 
 @override final  String title;
 @override final  String status;
@@ -1161,7 +1160,6 @@ as String,
 
 }
 
-
 /// @nodoc
 mixin _$AiLinkedTaskContext {
 
@@ -1366,11 +1364,11 @@ return $default(_that.id,_that.title,_that.status,_that.statusSince,_that.priori
 }
 
 /// @nodoc
-@JsonSerializable()
+@JsonSerializable(createFactory: false)
 
 class _AiLinkedTaskContext implements AiLinkedTaskContext {
   const _AiLinkedTaskContext({required this.id, required this.title, required this.status, required this.statusSince, required this.priority, required this.estimate, required this.timeSpent, required this.createdAt, required final  List<Map<String, String>> labels, this.languageCode, this.latestSummary}): _labels = labels;
-  factory _AiLinkedTaskContext.fromJson(Map<String, dynamic> json) => _$AiLinkedTaskContextFromJson(json);
+
 
 @override final  String id;
 @override final  String title;

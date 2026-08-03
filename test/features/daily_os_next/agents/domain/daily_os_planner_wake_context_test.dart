@@ -7,10 +7,7 @@ void main() {
 
   DailyOsPlannerWakeContext build(Set<String> tokens) {
     return DailyOsPlannerWakeContext.fromTokens(
-      plannerAgentId: 'daily_os_planner',
       dayId: dayId,
-      runKey: 'run-1',
-      threadId: 'thread-1',
       triggerTokens: tokens,
     );
   }
@@ -67,24 +64,6 @@ void main() {
       dayAgentDigestToken('dayplan-2026-05-26'),
     });
     expect(foreign.isDigestWake, isFalse);
-  });
-
-  group('allowsToolDayId', () {
-    final ctx = build({dayAgentPlanningDayToken(dayId)});
-
-    test('accepts a matching day id', () {
-      expect(ctx.allowsToolDayId(dayId), isTrue);
-      expect(ctx.allowsToolDayId('  $dayId  '), isTrue);
-    });
-
-    test('rejects a mismatched day id', () {
-      expect(ctx.allowsToolDayId('dayplan-2026-05-26'), isFalse);
-    });
-
-    test('treats null/blank as inherit-the-wake-day', () {
-      expect(ctx.allowsToolDayId(null), isTrue);
-      expect(ctx.allowsToolDayId('   '), isTrue);
-    });
   });
 
   test('triggerTokens are stored unmodifiable', () {

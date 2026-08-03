@@ -192,8 +192,6 @@ void main() {
         expect(capturedPending, isNotNull);
         expect(capturedPending?.before, equals('test flight'));
         expect(capturedPending?.after, equals('TestFlight'));
-        expect(capturedPending?.categoryName, equals('Test Category'));
-        expect(capturedPending?.categoryId, equals('category-1'));
       });
 
       test('does not set pending when no notifier provided', () {
@@ -258,7 +256,6 @@ void main() {
         expect(pending, isNotNull);
         expect(pending!.before, equals('test flight'));
         expect(pending.after, equals('TestFlight'));
-        expect(pending.categoryName, equals('Test Category'));
       });
 
       test('normalizes whitespace when setting pending', () async {
@@ -320,15 +317,11 @@ void main() {
       final pending = PendingCorrection(
         before: 'test flight',
         after: 'TestFlight',
-        categoryId: 'cat-1',
-        categoryName: 'iOS Development',
         createdAt: createdAt,
       );
 
       expect(pending.before, equals('test flight'));
       expect(pending.after, equals('TestFlight'));
-      expect(pending.categoryId, equals('cat-1'));
-      expect(pending.categoryName, equals('iOS Development'));
       expect(pending.createdAt, equals(createdAt));
     });
 
@@ -340,8 +333,6 @@ void main() {
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: createdAt,
       );
 
@@ -358,8 +349,6 @@ void main() {
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: createdAt,
       );
 
@@ -386,8 +375,6 @@ void main() {
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15, 10, 30),
       );
 
@@ -407,8 +394,6 @@ void main() {
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15, 10, 31),
       );
 
@@ -449,8 +434,6 @@ void main() {
       final pending1 = PendingCorrection(
         before: 'first',
         after: 'event',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15, 10, 32),
       );
 
@@ -464,8 +447,6 @@ void main() {
       final pending2 = PendingCorrection(
         before: 'second',
         after: 'event',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15, 10, 33),
       );
 
@@ -491,8 +472,6 @@ void main() {
         final pending = PendingCorrection(
           before: 'before',
           after: 'after',
-          categoryId: 'cat-1',
-          categoryName: 'Test',
           createdAt: DateTime(2024, 3, 15),
         );
 
@@ -523,8 +502,6 @@ void main() {
         final pending = PendingCorrection(
           before: 'before',
           after: 'after',
-          categoryId: 'cat-1',
-          categoryName: 'Test',
           createdAt: DateTime(2024, 3, 15, 10, 35),
         );
 
@@ -566,8 +543,6 @@ void main() {
       final pending1 = PendingCorrection(
         before: 'first',
         after: 'after1',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15, 10, 36),
       );
 
@@ -583,8 +558,6 @@ void main() {
       final pending2 = PendingCorrection(
         before: 'second',
         after: 'after2',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15, 10, 37),
       );
 
@@ -650,8 +623,6 @@ void main() {
         final pending = PendingCorrection(
           before: 'before',
           after: 'after',
-          categoryId: 'cat-1',
-          categoryName: 'Test',
           createdAt: DateTime(2024, 3, 15),
         );
 
@@ -693,8 +664,6 @@ void main() {
           final pending = PendingCorrection(
             before: 'before',
             after: 'after',
-            categoryId: 'cat-1',
-            categoryName: 'Test',
             createdAt: DateTime(2024, 3, 15),
           );
 
@@ -743,8 +712,6 @@ void main() {
           final pending1 = PendingCorrection(
             before: 'first',
             after: 'after1',
-            categoryId: 'cat-1',
-            categoryName: 'Test',
             createdAt: DateTime(2024, 3, 15, 10),
           );
 
@@ -760,8 +727,6 @@ void main() {
           final pending2 = PendingCorrection(
             before: 'second',
             after: 'after2',
-            categoryId: 'cat-1',
-            categoryName: 'Test',
             createdAt: DateTime(2024, 3, 15, 11),
           );
 
@@ -793,15 +758,11 @@ void main() {
       final a = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15),
       );
       final b = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15),
       );
 
@@ -814,8 +775,6 @@ void main() {
       final a = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15),
       );
 
@@ -827,8 +786,6 @@ void main() {
       final a = PendingCorrection(
         before: 'before',
         after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
         createdAt: DateTime(2024, 3, 15),
       );
 

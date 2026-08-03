@@ -132,8 +132,6 @@ void main() {
 
         // Assert
         expect(result.success, false);
-        expect(result.functionName, 'add_multiple_checklist_items');
-        expect(result.arguments, '{"items": [{"title": "item1"}]}');
         expect(result.data, {'toolCallId': 'mismatch-call'});
         expect(
           result.error,
@@ -344,8 +342,6 @@ void main() {
         // Arrange
         final result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'cheese'},
@@ -437,8 +433,6 @@ void main() {
         () async {
           final result = FunctionCallResult(
             success: true,
-            functionName: 'add_multiple_checklist_items',
-            arguments: '',
             data: {
               'items': [
                 {'title': 'cheese'},
@@ -488,8 +482,6 @@ void main() {
 
         final result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'cheese'},
@@ -587,8 +579,6 @@ void main() {
 
           final result = FunctionCallResult(
             success: true,
-            functionName: 'add_multiple_checklist_items',
-            arguments: '',
             data: {
               'items': [
                 {'title': 'done', 'isChecked': true},
@@ -646,8 +636,6 @@ void main() {
         // Arrange
         final result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'cheese'},
@@ -696,8 +684,6 @@ void main() {
         // Arrange - batch contains "cheese", "Cheese", and "tomatoes"
         final result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'cheese'},
@@ -741,8 +727,6 @@ void main() {
         // Arrange
         final result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'Cheese'},
@@ -770,8 +754,6 @@ void main() {
         // Arrange
         const result = FunctionCallResult(
           success: false,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {},
           error: 'Some error',
         );
@@ -801,8 +783,6 @@ void main() {
 
         final result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'cheese'},
@@ -882,8 +862,6 @@ void main() {
 
           final result = FunctionCallResult(
             success: true,
-            functionName: 'add_multiple_checklist_items',
-            arguments: '',
             data: {
               'items': [
                 {'title': 'cheese'},
@@ -949,8 +927,6 @@ void main() {
         // catch block which logs and returns the partial success count (0).
         final result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'cheese'},
@@ -984,8 +960,6 @@ void main() {
         // Arrange
         const result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'cheese'},
@@ -1006,8 +980,6 @@ void main() {
         // Arrange
         const result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'cheese'},
@@ -1028,8 +1000,6 @@ void main() {
         // Arrange
         const result = FunctionCallResult(
           success: false,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {},
           error: 'Some error',
         );
@@ -1047,8 +1017,6 @@ void main() {
         // Arrange
         final result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'cheese'},
@@ -1075,8 +1043,6 @@ void main() {
         // Arrange
         const result = FunctionCallResult(
           success: false,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {},
           error: 'Invalid format',
         );
@@ -1098,8 +1064,6 @@ void main() {
 
         final result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'succeeds'},
@@ -1158,8 +1122,6 @@ void main() {
         // Task with no checklists → uses autoCreateChecklist path
         final result = FunctionCallResult(
           success: true,
-          functionName: 'add_multiple_checklist_items',
-          arguments: '',
           data: {
             'items': [
               {'title': 'item A'},
@@ -1205,8 +1167,6 @@ void main() {
 
           final result = FunctionCallResult(
             success: true,
-            functionName: 'add_multiple_checklist_items',
-            arguments: '',
             data: {
               'items': [
                 {'title': 'succeeds'},
@@ -1268,8 +1228,6 @@ void main() {
           // autoCreateChecklist failure path → all items fail
           final result = FunctionCallResult(
             success: true,
-            functionName: 'add_multiple_checklist_items',
-            arguments: '',
             data: {
               'items': [
                 {'title': 'item A'},
@@ -1313,8 +1271,6 @@ void main() {
         final failedItems = [
           const FunctionCallResult(
             success: false,
-            functionName: 'add_multiple_checklist_items',
-            arguments: '',
             data: {},
             error: 'Invalid JSON',
           ),
