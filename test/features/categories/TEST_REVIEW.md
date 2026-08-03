@@ -11,18 +11,18 @@
 |---|---|---|---|
 | `lib/features/categories/domain/category_icon.dart` | 306 | Yes (425) | No active issue; unused suggestion logic is removed and serialization remains covered |
 | `lib/features/categories/repository/categories_repository.dart` | 114 | Yes (663) | **[MED]** Repository test uses inline getIt boilerplate instead of `setUpTestGetIt()` |
-| `lib/features/categories/state/category_details_controller.dart` | 290 | Yes (1350) | **[HIGH]** 21 real-time `completer.future.timeout(100ms)` calls; test massively oversized |
+| `lib/features/categories/state/category_details_controller.dart` | 376 | Yes (1108) | Shared container/load helpers are implemented; no wall-clock timeout remains |
 | `lib/features/categories/state/category_details_controller.freezed.dart` | 283 | n/a — generated | — |
 | `lib/features/categories/state/category_task_count_provider.dart` | 40 | Yes (178) | **[MED]** 6 `Future<void>.delayed(Duration.zero)` violations |
-| `lib/features/categories/state/categories_list_controller.dart` | 10 | — | No test file exists |
-| `lib/features/categories/ui/pages/category_details_page.dart` | 753 | Yes (1955) | **[HIGH]** 1955-line test, 86 `pumpAndSettle` calls, massive repetitive `RiverpodWidgetTestBench` boilerplate |
+| `lib/features/categories/state/categories_list_controller.dart` | 14 | Yes (69) | Repository stream values and errors are covered |
+| `lib/features/categories/ui/pages/category_details_page.dart` | 521 | Yes (1718) | Shared page-pump helper is implemented; the mirror test remains long |
 | `lib/features/categories/ui/pages/categories_list_page.dart` | 370 | Yes (in ui/pages/) | **[MED]** Tests use `pumpAndSettle` throughout |
 | `lib/features/categories/ui/widgets/category_color_icon.dart` | 51 | No | Missing test file |
 | `lib/features/categories/ui/widgets/category_color_picker.dart` | 107 | Yes | **[MED]** 10 `pumpAndSettle` calls |
 | `lib/features/categories/ui/widgets/category_correction_examples.dart` | 257 | Yes | **[MED]** 2 `pumpAndSettle` calls |
 | `lib/features/categories/ui/widgets/category_create_modal.dart` | 300 | Yes | **[MED]** 20 `pumpAndSettle` calls |
 | `lib/features/categories/ui/widgets/category_field.dart` | 90 | Yes | **[LOW]** 8 `pumpAndSettle` calls |
-| `lib/features/categories/ui/widgets/category_icon_compact.dart` | 153 | No | Missing test file |
+| `lib/features/categories/ui/widgets/category_icon_compact.dart` | 153 | Yes (120) | Icon, fallback, color, size, and definition paths are covered |
 | `lib/features/categories/ui/widgets/category_icon_display.dart` | 76 | Yes | OK |
 | `lib/features/categories/ui/widgets/category_icon_picker.dart` | 164 | Yes | **[MED]** 5 `pumpAndSettle` calls |
 | `lib/features/categories/ui/widgets/category_language_dropdown.dart` | 67 | Yes | OK |
@@ -39,12 +39,12 @@
 
 - [x] **[HIGH]** `lib/features/categories/domain/category_icon.dart` was approaching 1000 lines. **RESOLVED:** the `iconData`/`displayName` tables live in `category_icon_data.dart` / `category_icon_names.dart` part files, and the unused name-suggestion algorithm and keyword table were removed. The main file is now 306 lines. Map exhaustiveness remains guarded by the existing all-values tests.
 
-- [x] **[HIGH]** `test/features/categories/ui/pages/category_details_page_test.dart` is **1955 lines** — the largest test file in this feature and one of the largest in the repo. It tests a single page across 47 test cases in deeply nested groups, each test body repeating ~10 lines of `RiverpodWidgetTestBench(overrides: [...], child: CategoryDetailsPage(...))` setup and `pumpAndSettle` boilerplate. This file should be split by group, e.g., `category_details_page_navigation_test.dart`, `category_details_page_form_test.dart`, `category_details_page_state_test.dart`, and a shared `_pumpCategoryDetailsPage` helper should eliminate the 48 repeated pump/override blocks. The mirror impl `category_details_page.dart` is itself 753 lines and candidates for widget extraction. **RESOLVED (partially):** the boilerplate is extracted — a `pumpCategoryDetailsPage(tester, {extraOverrides})` helper replaces all 35 standard bench/override pump blocks. The by-group file split is rejected: AGENTS.md forbids splitting one source file's tests across multiple files; group nesting provides the organisation.
+- [x] **[HIGH]** `test/features/categories/ui/pages/category_details_page_test.dart` was **1955 lines** and is now 1718 lines. **RESOLVED (partially):** repeated setup moved into `pumpCategoryDetailsPage`, and the source page dropped from 753 to 521 lines through form-section extraction. The remaining by-group file split is rejected because AGENTS.md requires one mirror test file per source file; group nesting provides the organisation.
 
-- [x] **[HIGH]** `test/features/categories/state/category_details_controller_test.dart` is **1350 lines**. Each of the 20 tests repeats a 30-line setup pattern: create a `ProviderContainer`, `.listen` to fire a `Completer`, await `completer.future.timeout(100ms)`, read state. This should use a `_TestBench` class or a shared `_loadCategory(container, id)` async helper. **RESOLVED:** `makeContainer()` (22 sites) and `loadCategory(container)` (18 sites — instantiates the controller, waits for the loaded state via listener+Completer, returns the notifier) now replace the repeated 30-line setup. The three remaining inline listeners differ legitimately (error-message predicate; a custom per-test category id).
+- [x] **[HIGH]** `test/features/categories/state/category_details_controller_test.dart` was **1350 lines** and is now 1108 lines. **RESOLVED:** `makeContainer()` and `loadCategory(container)` replace the repeated setup, and no wall-clock `.timeout(...)` remains. The remaining inline listeners differ legitimately.
 
-- [x] **[MED]** `lib/features/categories/ui/pages/category_details_page.dart` is 753 lines. The AI/inference sections (`CategoryProjectsSection`, `InferenceProfileSection`, agent-template wiring) could be extracted into sub-widgets or a separate file without splitting the route.
-  **RESOLVED (adapted):** the setState-free form-section builders (name field, switch tiles, language dropdown + selector modal, AI default profile/template pickers, speech dictionary, correction examples) moved to a `_CategoryDetailsFormSections` extension in the part file `category_details_form_sections.dart` (155 ln); the page is down to 607 lines. `CategoryProjectsSection` was already an external widget. setState-writing builders (color/icon pickers) cannot leave the State class per the extension-split rule.
+- [x] **[MED]** `lib/features/categories/ui/pages/category_details_page.dart` was 753 lines.
+  **RESOLVED (adapted):** setState-free form-section builders moved to the 228-line `category_details_form_sections.dart` part, and the page is down to 521 lines. `CategoryProjectsSection` was already external; setState-writing builders remain on the State class.
 
 ---
 
@@ -94,10 +94,12 @@
 ## Coverage / Missing-Behavior Gaps
 
 - [x] **[HIGH]** `lib/features/categories/state/categories_list_controller.dart` (10 lines) — no test file exists. The file is small but it's the Riverpod provider that feeds the categories list page; its absence from the test suite means list-watching behavior (e.g., stream subscription lifecycle, error propagation) is untested at the unit level.
+  **RESOLVED:** `categories_list_controller_test.dart` verifies initial and subsequent repository stream values plus error propagation into `AsyncError`.
 
 - [x] **[HIGH]** `lib/features/categories/ui/widgets/category_color_icon.dart` (51 lines) — no test file exists. This widget renders the colored circle icon used throughout the app. Missing coverage of: rendering with valid hex color, fallback for null/empty color, luminance-based text color selection (dark vs. light background).
 
 - [x] **[HIGH]** `lib/features/categories/ui/widgets/category_icon_compact.dart` (153 lines) — no test file exists. This widget is used in several places (task items, journal entries). Missing coverage of: rendering with icon set, rendering without icon (fallback character), different size variants, color application.
+  **RESOLVED:** `category_icon_compact_test.dart` covers icon/color rendering, dark and light fallback text, missing-category fallback, sizing, and direct-definition rendering.
 
 - [x] **[MED]** `lib/features/categories/ui/widgets/category_type_card.dart` (63 lines) — no test file exists. A small widget but used as the selection tile in the category picker; behaviors (selection state, tap callback) are untested.
   **RESOLVED (adapted):** a test file existed but was misnamed (`categories_type_card_test.dart`) — renamed to the proper mirror `category_type_card_test.dart`. Added the missing behaviors: tap forwarding via callback counter and the selected/unselected background matrix; moved out the stray `CategoryIconCompact` test (already covered in its own mirror).
