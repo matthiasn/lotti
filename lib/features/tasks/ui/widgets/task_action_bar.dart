@@ -359,7 +359,19 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                         backgroundColor: isRecordingAudio
                             ? tokens.colors.alert.error.defaultColor
                             : null,
-                        iconColor: isRecordingAudio ? Colors.white : null,
+                        // Idle, the mic wears the accent as a ring and an
+                        // accent glyph — a peer of Track time rather than one
+                        // of the quiet utilities beside it. Tracked time and
+                        // captured thoughts are equally load-bearing for a
+                        // task, so the bar carries two lead actions; the mic
+                        // stays outlined rather than filled so the strip still
+                        // holds only one filled shape.
+                        outlineColor: isRecordingAudio
+                            ? null
+                            : tokens.colors.interactive.enabled,
+                        iconColor: isRecordingAudio
+                            ? Colors.white
+                            : tokens.colors.interactive.enabled,
                       ),
                     ],
                     if (showChecklist) ...[

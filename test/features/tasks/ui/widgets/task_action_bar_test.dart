@@ -546,6 +546,52 @@ void main() {
   );
 
   testWidgets(
+    'the idle mic is a peer of Track time — an accent ring and accent glyph, '
+    'not a second filled shape',
+    (tester) async {
+      await pumpBar(tester);
+
+      final tokens = tester
+          .element(find.byKey(TaskActionBar.audioKey))
+          .designTokens;
+      final button = tester.widget<DsGlassRoundButton>(
+        find.byKey(TaskActionBar.audioKey),
+      );
+
+      // Tracked time and captured thoughts are equally load-bearing for a
+      // task, so audio is not one of the bar's quiet utilities. It stays
+      // outlined rather than filled so the strip still has one filled shape.
+      expect(button.outlineColor, tokens.colors.interactive.enabled);
+      expect(button.iconColor, tokens.colors.interactive.enabled);
+      expect(button.backgroundColor, isNull);
+      expect(audioButtonFill(tester), dsGlassChipFill(tokens));
+
+      // The genuine utilities beside it keep the hairline and neutral glyph.
+      final more = tester.widget<DsGlassRoundButton>(
+        find.byKey(TaskActionBar.moreKey),
+      );
+      expect(more.outlineColor, isNull);
+      expect(more.iconColor, isNull);
+    },
+  );
+
+  testWidgets(
+    'a live recording still overrides the accent with the alert fill',
+    (tester) async {
+      await pumpBar(
+        tester,
+        recorderState: _recordingRecorderState(linkedId: testTask.meta.id),
+      );
+
+      final button = tester.widget<DsGlassRoundButton>(
+        find.byKey(TaskActionBar.audioKey),
+      );
+      expect(button.outlineColor, isNull);
+      expect(button.iconColor, Colors.white);
+    },
+  );
+
+  testWidgets(
     'the bar has exactly one primary: Track time carries the solid '
     'interactive accent while every round affordance stays on the glass chip',
     (tester) async {

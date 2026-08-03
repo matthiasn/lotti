@@ -61,6 +61,11 @@ Border dsGlassChipBorder(DsTokens tokens) => Border.all(
 /// regardless of what's behind the bar. Callers that pass a solid
 /// [backgroundColor] (e.g. an active/alert state) bring their own
 /// contrast, so no hairline outline is drawn in that case.
+///
+/// [outlineColor] replaces the hairline with a full-strength ring. It is how
+/// a round affordance reads as a **peer of the bar's primary pill** without
+/// becoming a second filled shape competing with it: same glass fill as its
+/// neighbours, but an accent edge and an accent glyph.
 class DsGlassRoundButton extends StatelessWidget {
   const DsGlassRoundButton({
     required this.icon,
@@ -68,6 +73,7 @@ class DsGlassRoundButton extends StatelessWidget {
     required this.onPressed,
     this.backgroundColor,
     this.iconColor,
+    this.outlineColor,
     this.diameter = defaultDiameter,
     this.iconSize = defaultIconSize,
     super.key,
@@ -86,6 +92,11 @@ class DsGlassRoundButton extends StatelessWidget {
   final VoidCallback onPressed;
   final Color? backgroundColor;
   final Color? iconColor;
+
+  /// Full-strength ring drawn instead of the hairline, marking this button as
+  /// a peer of the bar's primary rather than one of its quiet utilities.
+  final Color? outlineColor;
+
   final double diameter;
   final double iconSize;
 
@@ -125,7 +136,9 @@ class DsGlassRoundButton extends StatelessWidget {
                 foregroundDecoration: isTranslucent
                     ? BoxDecoration(
                         shape: BoxShape.circle,
-                        border: dsGlassChipBorder(tokens),
+                        border: outlineColor == null
+                            ? dsGlassChipBorder(tokens)
+                            : Border.all(color: outlineColor!),
                       )
                     : null,
                 child: Icon(
