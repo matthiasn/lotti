@@ -2534,7 +2534,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get apiKeyShowTooltip => 'Afișați cheia API';
 
   @override
-  String get audioRecordingCancel => 'ANULARE';
+  String get audioRecordingCancel => 'Anulați';
 
   @override
   String get audioRecordingDiscardDialogBody =>
@@ -2550,16 +2550,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Renunțați la înregistrare?';
 
   @override
-  String get audioRecordingPause => 'PAUZĂ';
+  String get audioRecordingPause => 'Pauză';
 
   @override
-  String get audioRecordingResume => 'RELUARE';
+  String get audioRecordingResume => 'Reluare';
 
   @override
   String get audioRecordings => 'Înregistrări audio';
 
   @override
-  String get audioRecordingStop => 'OPRIȚI';
+  String get audioRecordingStop => 'Opriți';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -2863,7 +2863,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get categoryDefaultTemplateLabel => 'Șablon de agent implicit';
 
   @override
-  String get categoryDeleteConfirm => 'DA, ȘTERGE ACEASTĂ CATEGORIE';
+  String get categoryDeleteConfirm => 'Da, ștergeți această categorie';
 
   @override
   String get categoryDeleteConfirmation =>
@@ -3554,7 +3554,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get copyAsText => 'Copiați ca text';
 
   @override
-  String get correctionExampleCancel => 'ANULEAZĂ';
+  String get correctionExampleCancel => 'Anulați';
 
   @override
   String correctionExamplePending(int seconds) {
@@ -4870,13 +4870,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardCurrentChartsTitle => 'Grafice pe acest tablou de bord';
 
   @override
-  String get dashboardDeleteConfirm => 'DA, ȘTERGE ACEST TABLOU DE BORD';
+  String get dashboardDeleteConfirm => 'Da, ștergeți acest tablou de bord';
 
   @override
   String get dashboardDeleteHint => 'Ștergeți tabloul de bord';
 
   @override
-  String get dashboardDeleteQuestion => 'Vrei să ștergi acest tablou de bord?';
+  String get dashboardDeleteQuestion =>
+      'Sigur doriți să ștergeți acest tablou de bord?';
 
   @override
   String get dashboardDescriptionLabel => 'Descriere';
@@ -5807,7 +5808,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get habitDeleteConfirm => 'DA, ȘTERGEȚI ACEST OBICEI';
+  String get habitDeleteConfirm => 'Da, ștergeți acest obicei';
 
   @override
   String get habitDeleteQuestion => 'Doriți să ștergeți acest obicei?';
@@ -6432,14 +6433,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalDateToLabel => 'Până la:';
 
   @override
-  String get journalDeleteConfirm => 'DA, ȘTERGE ACEASTĂ INTRARE';
+  String get journalDeleteConfirm => 'Da, ștergeți această intrare';
 
   @override
   String get journalDeleteHint => 'Ștergeți intrarea';
 
   @override
   String get journalDeleteQuestion =>
-      'Vrei să ștergi această intrare în jurnal?';
+      'Sigur doriți să ștergeți această intrare în jurnal?';
 
   @override
   String get journalDurationLabel => 'Durată';
@@ -6570,14 +6571,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalToggleStarredTitle => 'Favorite';
 
   @override
-  String get journalUnlinkConfirm => 'DA, DESPĂRȚIȚI INTRAREA';
+  String get journalUnlinkConfirm => 'Da, dezlegați intrarea';
 
   @override
-  String get journalUnlinkHint => 'Despărțiți';
+  String get journalUnlinkHint => 'Dezlegați';
 
   @override
   String get journalUnlinkQuestion =>
-      'Sigur doriți să despărțiți această intrare?';
+      'Sigur doriți să dezlegați această intrare?';
 
   @override
   String get keyboardCommandActivate => 'Activați elementul focalizat';
@@ -7167,7 +7168,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ștergeți baza de date a agenților și reporniți aplicația';
 
   @override
-  String get maintenanceDeleteDatabaseConfirm => 'DA, ȘTERGE BAZA DE DATE';
+  String get maintenanceDeleteDatabaseConfirm => 'Da, ștergeți baza de date';
 
   @override
   String maintenanceDeleteDatabaseQuestion(String databaseName) {
@@ -7192,7 +7193,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Generare încorporări';
 
   @override
-  String get maintenanceGenerateEmbeddingsConfirm => 'DA, GENEREAZĂ';
+  String get maintenanceGenerateEmbeddingsConfirm => 'Da, generați';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
@@ -7247,7 +7248,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get maintenancePopulateSequenceLog =>
-      'Completează jurnalul de secvență de sincronizare';
+      'Completați jurnalul de secvență de sincronizare';
 
   @override
   String maintenancePopulateSequenceLogComplete(int count) {
@@ -7255,7 +7256,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get maintenancePopulateSequenceLogConfirm => 'DA, COMPLETEAZĂ';
+  String get maintenancePopulateSequenceLogConfirm => 'Da, completați';
 
   @override
   String get maintenancePopulateSequenceLogDescription =>
@@ -7284,7 +7285,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Eliminați elementele vechi trimise din coada de ieșire';
 
   @override
-  String get maintenancePurgeSentOutboxConfirm => 'DA, ELIMINAȚI';
+  String get maintenancePurgeSentOutboxConfirm => 'Da, eliminați';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>
@@ -7298,7 +7299,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenanceRecreateFts5 => 'Recreați indexul full-text';
 
   @override
-  String get maintenanceRecreateFts5Confirm => 'DA, RECREEAZĂ INDEXUL';
+  String get maintenanceRecreateFts5Confirm => 'Da, recreați indexul';
 
   @override
   String get maintenanceRecreateFts5Description =>
@@ -7452,7 +7453,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get matrixStatsTopKpis => 'Indicatori principali';
 
   @override
-  String get measurableDeleteConfirm => 'DA, CONFIRM STERGEREA';
+  String get measurableDeleteConfirm => 'Da, ștergeți acest tip de măsurătoare';
 
   @override
   String get measurableDeleteQuestion =>

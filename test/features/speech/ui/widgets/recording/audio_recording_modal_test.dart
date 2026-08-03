@@ -660,7 +660,7 @@ void main() {
             isEmpty,
           );
 
-          await tester.tap(find.text('STOP'));
+          await tester.tap(find.text('Stop'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
@@ -786,7 +786,7 @@ void main() {
             const ValueKey('stop_controls'),
           );
           expect(stopControlsFinder, findsOneWidget);
-          expect(find.text('STOP'), findsOneWidget);
+          expect(find.text('Stop'), findsOneWidget);
           expect(
             find.descendant(
               of: stopControlsFinder,
@@ -830,7 +830,7 @@ void main() {
             const ValueKey('stop_controls'),
           );
           expect(stopControlsFinder, findsOneWidget);
-          expect(find.text('STOP'), findsOneWidget);
+          expect(find.text('Stop'), findsOneWidget);
         },
       );
     });
@@ -941,7 +941,7 @@ void main() {
             findsOneWidget,
           );
           expect(find.byIcon(Icons.close), findsOneWidget);
-          expect(find.text('STOP'), findsOneWidget);
+          expect(find.text('Stop'), findsOneWidget);
         },
       );
 
@@ -993,7 +993,7 @@ void main() {
         expect(stopCalled, isFalse);
 
         await tester.tap(
-          find.widgetWithText(DesignSystemButton, 'DISCARD'),
+          find.widgetWithText(DesignSystemButton, 'Discard'),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1041,13 +1041,13 @@ void main() {
         expect(find.text('Discard recording?'), findsOneWidget);
 
         await tester.tap(
-          find.widgetWithText(DesignSystemButton, 'Keep Recording'),
+          find.widgetWithText(DesignSystemButton, 'Keep recording'),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(cancelCalled, isFalse);
-        expect(find.text('STOP'), findsOneWidget);
+        expect(find.text('Stop'), findsOneWidget);
       });
     });
 
@@ -1086,7 +1086,7 @@ void main() {
         expect(find.byIcon(Icons.pause), findsOneWidget);
         // Cancel and stop stay alongside it.
         expect(find.byKey(const ValueKey('cancel_recording')), findsOneWidget);
-        expect(find.text('STOP'), findsOneWidget);
+        expect(find.text('Stop'), findsOneWidget);
       });
 
       testWidgets(
@@ -1158,7 +1158,7 @@ void main() {
           // Paused → shows the play (resume) glyph.
           expect(find.byIcon(Icons.play_arrow), findsOneWidget);
           // Stop controls remain visible while paused.
-          expect(find.text('STOP'), findsOneWidget);
+          expect(find.text('Stop'), findsOneWidget);
 
           await tester.tap(find.byKey(const ValueKey('pause_resume_button')));
           await tester.pump();

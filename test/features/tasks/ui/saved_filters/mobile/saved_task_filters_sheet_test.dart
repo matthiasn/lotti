@@ -553,8 +553,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    // Confirmation modal — the primary action is the upper-cased confirm label.
-    await tester.tap(find.text('DELETE'));
+    // Confirmation modal — the primary action renders the confirm label verbatim.
+    await tester.tap(find.text('Delete'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -583,7 +583,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      await tester.tap(find.text('DELETE'));
+      await tester.tap(find.text('Delete'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 

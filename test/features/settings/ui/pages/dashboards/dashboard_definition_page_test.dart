@@ -528,7 +528,7 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.tap(find.text('YES, DELETE THIS DASHBOARD'));
+        await tester.tap(find.text('Yes, delete this dashboard'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

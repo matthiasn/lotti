@@ -31,7 +31,7 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('Keep Recording'));
+      await tester.tap(find.text('Keep recording'));
       await tester.pumpAndSettle();
       expect(find.text('Discard recording?'), findsNothing);
     });

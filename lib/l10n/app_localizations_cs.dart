@@ -2523,7 +2523,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get apiKeyShowTooltip => 'Zobrazit API klíč';
 
   @override
-  String get audioRecordingCancel => 'ZRUŠIT';
+  String get audioRecordingCancel => 'Zrušit';
 
   @override
   String get audioRecordingDiscardDialogBody =>
@@ -2539,16 +2539,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Zahodit nahrávku?';
 
   @override
-  String get audioRecordingPause => 'POZASTAVIT';
+  String get audioRecordingPause => 'Pozastavit';
 
   @override
-  String get audioRecordingResume => 'POKRAČOVAT';
+  String get audioRecordingResume => 'Pokračovat';
 
   @override
   String get audioRecordings => 'Audiozáznamy';
 
   @override
-  String get audioRecordingStop => 'STOP';
+  String get audioRecordingStop => 'Stop';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -2850,7 +2850,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryDefaultTemplateLabel => 'Výchozí šablona agenta';
 
   @override
-  String get categoryDeleteConfirm => 'ANO, SMAŽ TUTO KATEGORII';
+  String get categoryDeleteConfirm => 'Ano, smazat tuto kategorii';
 
   @override
   String get categoryDeleteConfirmation =>
@@ -3547,7 +3547,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get copyAsText => 'Kopírovat jako text';
 
   @override
-  String get correctionExampleCancel => 'ZRUŠIT';
+  String get correctionExampleCancel => 'Zrušit';
 
   @override
   String correctionExamplePending(int seconds) {
@@ -4844,7 +4844,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardCurrentChartsTitle => 'Grafy na tomto panelu';
 
   @override
-  String get dashboardDeleteConfirm => 'ANO, SMAZAT TENTO PANEL';
+  String get dashboardDeleteConfirm => 'Ano, smazat tento panel';
 
   @override
   String get dashboardDeleteHint => 'Smazat panel';
@@ -5778,7 +5778,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get habitDeleteConfirm => 'ANO, SMAŽ TENTO NÁVYK';
+  String get habitDeleteConfirm => 'Ano, smazat tento návyk';
 
   @override
   String get habitDeleteQuestion => 'Chceš tento návyk smazat?';
@@ -6390,7 +6390,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalDateToLabel => 'Datum do:';
 
   @override
-  String get journalDeleteConfirm => 'ANO, SMAZAT TENTO ZÁZNAM';
+  String get journalDeleteConfirm => 'Ano, smazat tento záznam';
 
   @override
   String get journalDeleteHint => 'Smazat záznam';
@@ -6528,7 +6528,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalToggleStarredTitle => 'Oblíbené';
 
   @override
-  String get journalUnlinkConfirm => 'ANO, ODEPNOUT ZÁZNAM';
+  String get journalUnlinkConfirm => 'Ano, odepnout záznam';
 
   @override
   String get journalUnlinkHint => 'Odepnout';
@@ -7120,7 +7120,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Smazat databázi agentů a restartovat aplikaci';
 
   @override
-  String get maintenanceDeleteDatabaseConfirm => 'ANO, SMAZAT DATABÁZI';
+  String get maintenanceDeleteDatabaseConfirm => 'Ano, smazat databázi';
 
   @override
   String maintenanceDeleteDatabaseQuestion(String databaseName) {
@@ -7145,7 +7145,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Generovat vektory';
 
   @override
-  String get maintenanceGenerateEmbeddingsConfirm => 'ANO, GENEROVAT';
+  String get maintenanceGenerateEmbeddingsConfirm => 'Ano, generovat';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
@@ -7216,7 +7216,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get maintenancePopulateSequenceLogConfirm => 'ANO, NAPLNIT';
+  String get maintenancePopulateSequenceLogConfirm => 'Ano, naplnit';
 
   @override
   String get maintenancePopulateSequenceLogDescription =>
@@ -7245,7 +7245,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyčistit staré odeslané položky odchozí pošty';
 
   @override
-  String get maintenancePurgeSentOutboxConfirm => 'ANO, VYČISTIT';
+  String get maintenancePurgeSentOutboxConfirm => 'Ano, vyčistit';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>
@@ -7259,7 +7259,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get maintenanceRecreateFts5 => 'Znovu vytvořit index plného textu';
 
   @override
-  String get maintenanceRecreateFts5Confirm => 'ANO, ZNOVU VYTVOŘIT INDEX';
+  String get maintenanceRecreateFts5Confirm => 'Ano, znovu vytvořit index';
 
   @override
   String get maintenanceRecreateFts5Description =>
@@ -7410,7 +7410,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get matrixStatsTopKpis => 'Hlavní ukazatele';
 
   @override
-  String get measurableDeleteConfirm => 'ANO, SMAŽ TUTO MĚŘITELNOU';
+  String get measurableDeleteConfirm => 'Ano, smazat tuto měřitelnou veličinu';
 
   @override
   String get measurableDeleteQuestion =>

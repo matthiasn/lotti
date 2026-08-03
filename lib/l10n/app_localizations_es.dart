@@ -2521,7 +2521,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get apiKeyShowTooltip => 'Mostrar clave API';
 
   @override
-  String get audioRecordingCancel => 'CANCELAR';
+  String get audioRecordingCancel => 'Cancelar';
 
   @override
   String get audioRecordingDiscardDialogBody =>
@@ -2537,16 +2537,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => '¿Descartar grabación?';
 
   @override
-  String get audioRecordingPause => 'PAUSAR';
+  String get audioRecordingPause => 'Pausar';
 
   @override
-  String get audioRecordingResume => 'REANUDAR';
+  String get audioRecordingResume => 'Reanudar';
 
   @override
   String get audioRecordings => 'Grabaciones de audio';
 
   @override
-  String get audioRecordingStop => 'PARAR';
+  String get audioRecordingStop => 'Parar';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -2846,7 +2846,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Plantilla de agente predeterminada';
 
   @override
-  String get categoryDeleteConfirm => 'SÍ, ELIMINAR ESTA CATEGORÍA';
+  String get categoryDeleteConfirm => 'Sí, eliminar esta categoría';
 
   @override
   String get categoryDeleteConfirmation =>
@@ -3542,7 +3542,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get copyAsText => 'Copiar como texto';
 
   @override
-  String get correctionExampleCancel => 'CANCELAR';
+  String get correctionExampleCancel => 'Cancelar';
 
   @override
   String correctionExamplePending(int seconds) {
@@ -4854,7 +4854,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardCurrentChartsTitle => 'Gráficos de este panel';
 
   @override
-  String get dashboardDeleteConfirm => 'SÍ, BORRAR ESTE PANEL';
+  String get dashboardDeleteConfirm => 'Sí, borrar este panel';
 
   @override
   String get dashboardDeleteHint => 'Borrar panel';
@@ -5790,7 +5790,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get habitDeleteConfirm => 'SÍ, BORRAR ESTE HÁBITO';
+  String get habitDeleteConfirm => 'Sí, borrar este hábito';
 
   @override
   String get habitDeleteQuestion => '¿Quieres borrar este hábito?';
@@ -6413,7 +6413,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalDateToLabel => 'Fecha hasta:';
 
   @override
-  String get journalDeleteConfirm => 'SÍ, BORRAR ESTA ENTRADA';
+  String get journalDeleteConfirm => 'Sí, borrar esta entrada';
 
   @override
   String get journalDeleteHint => 'Borrar entrada';
@@ -6551,7 +6551,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalToggleStarredTitle => 'Favorito';
 
   @override
-  String get journalUnlinkConfirm => 'SÍ, DESVINCULAR ENTRADA';
+  String get journalUnlinkConfirm => 'Sí, desvincular entrada';
 
   @override
   String get journalUnlinkHint => 'Desvincular';
@@ -7131,7 +7131,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Eliminar la base de datos de agentes y reiniciar la app';
 
   @override
-  String get maintenanceDeleteDatabaseConfirm => 'SÍ, ELIMINAR BASE DE DATOS';
+  String get maintenanceDeleteDatabaseConfirm => 'Sí, eliminar base de datos';
 
   @override
   String maintenanceDeleteDatabaseQuestion(String databaseName) {
@@ -7158,7 +7158,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Generar embeddings';
 
   @override
-  String get maintenanceGenerateEmbeddingsConfirm => 'SÍ, GENERAR';
+  String get maintenanceGenerateEmbeddingsConfirm => 'Sí, generar';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
@@ -7221,7 +7221,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get maintenancePopulateSequenceLogConfirm => 'SÍ, LLENAR';
+  String get maintenancePopulateSequenceLogConfirm => 'Sí, llenar';
 
   @override
   String get maintenancePopulateSequenceLogDescription =>
@@ -7250,7 +7250,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Purgar elementos enviados antiguos de la bandeja de salida';
 
   @override
-  String get maintenancePurgeSentOutboxConfirm => 'SÍ, PURGAR';
+  String get maintenancePurgeSentOutboxConfirm => 'Sí, purgar';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>
@@ -7264,7 +7264,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get maintenanceRecreateFts5 => 'Recrear el índice de texto completo';
 
   @override
-  String get maintenanceRecreateFts5Confirm => 'SÍ, RECREAR ÍNDICE';
+  String get maintenanceRecreateFts5Confirm => 'Sí, recrear índice';
 
   @override
   String get maintenanceRecreateFts5Description =>
@@ -7417,7 +7417,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matrixStatsTopKpis => 'Indicadores principales';
 
   @override
-  String get measurableDeleteConfirm => 'SÍ, ELIMINAR ESTE VALOR MEDIBLE';
+  String get measurableDeleteConfirm => 'Sí, eliminar este valor medible';
 
   @override
   String get measurableDeleteQuestion =>

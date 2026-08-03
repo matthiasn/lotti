@@ -2827,7 +2827,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get categoryDefaultTemplateLabel => 'Standaard agent template';
 
   @override
-  String get categoryDeleteConfirm => 'Ja, delete deze CATEGORIE';
+  String get categoryDeleteConfirm => 'Ja, verwijder deze categorie';
 
   @override
   String get categoryDeleteConfirmation =>
@@ -3511,7 +3511,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get copyAsText => 'Als tekst kopiëren';
 
   @override
-  String get correctionExampleCancel => 'AFWIJKEN';
+  String get correctionExampleCancel => 'Annuleren';
 
   @override
   String correctionExamplePending(int seconds) {
@@ -4802,7 +4802,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dashboardCurrentChartsTitle => 'Grafieken op dit dashboard';
 
   @override
-  String get dashboardDeleteConfirm => 'Ja, delete dit DASHBOARD';
+  String get dashboardDeleteConfirm => 'Ja, verwijder dit dashboard';
 
   @override
   String get dashboardDeleteHint => 'Dashboard verwijderen';
@@ -5734,7 +5734,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get habitDeleteConfirm => 'Ja, delete dit habit';
+  String get habitDeleteConfirm => 'Ja, verwijder deze gewoonte';
 
   @override
   String get habitDeleteQuestion => 'Wilt u deze gewoonte verwijderen?';
@@ -6336,7 +6336,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get journalDateToLabel => 'Datum tot:';
 
   @override
-  String get journalDeleteConfirm => 'Ja, trek deze inzending in.';
+  String get journalDeleteConfirm => 'Ja, verwijder dit item';
 
   @override
   String get journalDeleteHint => 'item verwijderen';
@@ -6473,7 +6473,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get journalToggleStarredTitle => 'Favoriet';
 
   @override
-  String get journalUnlinkConfirm => 'Ja, onvindbare inval.';
+  String get journalUnlinkConfirm => 'Ja, ontkoppel dit item';
 
   @override
   String get journalUnlinkHint => 'Verbinding verbreken';
@@ -7063,7 +7063,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Database verwijderen en app herstarten';
 
   @override
-  String get maintenanceDeleteDatabaseConfirm => 'Ja, DELETE DATABASE';
+  String get maintenanceDeleteDatabaseConfirm => 'Ja, database verwijderen';
 
   @override
   String maintenanceDeleteDatabaseQuestion(String databaseName) {
@@ -7087,7 +7087,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Inbeddingen genereren';
 
   @override
-  String get maintenanceGenerateEmbeddingsConfirm => 'Ja, Generate.';
+  String get maintenanceGenerateEmbeddingsConfirm => 'Ja, genereren';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
@@ -7135,7 +7135,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get maintenancePopulateSequenceLogConfirm => 'Ja, populaat';
+  String get maintenancePopulateSequenceLogConfirm => 'Ja, vullen';
 
   @override
   String get maintenancePopulateSequenceLogDescription =>
@@ -7164,7 +7164,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Oude verzonden postvak UIT verwijderen';
 
   @override
-  String get maintenancePurgeSentOutboxConfirm => 'Ja, schat.';
+  String get maintenancePurgeSentOutboxConfirm => 'Ja, opschonen';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>
@@ -7179,7 +7179,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Volledige tekst-index opnieuw aanmaken';
 
   @override
-  String get maintenanceRecreateFts5Confirm => 'Ja, RECREATE INDEX';
+  String get maintenanceRecreateFts5Confirm => 'Ja, index opnieuw aanmaken';
 
   @override
   String get maintenanceRecreateFts5Description =>
@@ -7330,7 +7330,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get matrixStatsTopKpis => 'Top KPI\'s';
 
   @override
-  String get measurableDeleteConfirm => 'Ja, delete dit metasurable';
+  String get measurableDeleteConfirm =>
+      'Ja, verwijder dit meetbare gegevenstype';
 
   @override
   String get measurableDeleteQuestion =>

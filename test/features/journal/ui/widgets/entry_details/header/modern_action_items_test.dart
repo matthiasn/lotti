@@ -1280,8 +1280,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // The confirmation modal is visible.
-        expect(find.text('YES, DELETE THIS ENTRY'), findsOneWidget);
-        await tester.tap(find.text('YES, DELETE THIS ENTRY'));
+        expect(find.text('Yes, delete this entry'), findsOneWidget);
+        await tester.tap(find.text('Yes, delete this entry'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1351,8 +1351,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Confirmation modal is shown.
-        expect(find.text('YES, UNLINK ENTRY'), findsOneWidget);
-        await tester.tap(find.text('YES, UNLINK ENTRY'));
+        expect(find.text('Yes, unlink entry'), findsOneWidget);
+        await tester.tap(find.text('Yes, unlink entry'));
         await tester.pumpAndSettle();
 
         expect(controller.removeLinkCalls, contains('entry-1'));

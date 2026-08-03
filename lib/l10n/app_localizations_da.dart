@@ -2497,7 +2497,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get apiKeyShowTooltip => 'Vis API-nøgle';
 
   @override
-  String get audioRecordingCancel => 'AFLYS';
+  String get audioRecordingCancel => 'Annuller';
 
   @override
   String get audioRecordingDiscardDialogBody =>
@@ -2513,16 +2513,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Kassere optagelse?';
 
   @override
-  String get audioRecordingPause => 'PAS';
+  String get audioRecordingPause => 'Pause';
 
   @override
-  String get audioRecordingResume => 'CV';
+  String get audioRecordingResume => 'Genoptag';
 
   @override
   String get audioRecordings => 'Lydoptagelser';
 
   @override
-  String get audioRecordingStop => 'STOP';
+  String get audioRecordingStop => 'Stop';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -2818,7 +2818,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get categoryDefaultTemplateLabel => 'Standardagent-skabelon';
 
   @override
-  String get categoryDeleteConfirm => 'JA, SLET DENNE KATEGORI';
+  String get categoryDeleteConfirm => 'Ja, slet denne kategori';
 
   @override
   String get categoryDeleteConfirmation =>
@@ -3499,7 +3499,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get copyAsText => 'Kopier som tekst';
 
   @override
-  String get correctionExampleCancel => 'AFLYS';
+  String get correctionExampleCancel => 'Annuller';
 
   @override
   String correctionExamplePending(int seconds) {
@@ -4789,7 +4789,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dashboardCurrentChartsTitle => 'Diagrammer på dette dashboard';
 
   @override
-  String get dashboardDeleteConfirm => 'JA, SLET DETTE DASHBOARD';
+  String get dashboardDeleteConfirm => 'Ja, slet dette dashboard';
 
   @override
   String get dashboardDeleteHint => 'Slet dashboardet';
@@ -5717,7 +5717,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get habitDeleteConfirm => 'JA, SLET DENNE VANE';
+  String get habitDeleteConfirm => 'Ja, slet denne vane';
 
   @override
   String get habitDeleteQuestion => 'Vil du slette denne vane?';
@@ -6319,7 +6319,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get journalDateToLabel => 'Dato til:';
 
   @override
-  String get journalDeleteConfirm => 'JA, SLET DENNE POST';
+  String get journalDeleteConfirm => 'Ja, slet denne post';
 
   @override
   String get journalDeleteHint => 'Slet post';
@@ -6456,7 +6456,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get journalToggleStarredTitle => 'Favorit';
 
   @override
-  String get journalUnlinkConfirm => 'JA, FRAKOBLE INDGANGEN';
+  String get journalUnlinkConfirm => 'Ja, frakobl posten';
 
   @override
   String get journalUnlinkHint => 'Afbryd forbindelsen';
@@ -7044,7 +7044,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Slet agenternes database og genstart appen';
 
   @override
-  String get maintenanceDeleteDatabaseConfirm => 'JA, SLET DATABASEN';
+  String get maintenanceDeleteDatabaseConfirm => 'Ja, slet databasen';
 
   @override
   String maintenanceDeleteDatabaseQuestion(String databaseName) {
@@ -7069,7 +7069,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Generer indlejringer';
 
   @override
-  String get maintenanceGenerateEmbeddingsConfirm => 'JA, GENERER';
+  String get maintenanceGenerateEmbeddingsConfirm => 'Ja, generer';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
@@ -7119,7 +7119,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get maintenancePopulateSequenceLogConfirm => 'JA, POPULER';
+  String get maintenancePopulateSequenceLogConfirm => 'Ja, udfyld';
 
   @override
   String get maintenancePopulateSequenceLogDescription =>
@@ -7147,7 +7147,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get maintenancePurgeSentOutbox => 'Rens gamle udsendte udbakke-varer';
 
   @override
-  String get maintenancePurgeSentOutboxConfirm => 'JA, UDRENSNING';
+  String get maintenancePurgeSentOutboxConfirm => 'Ja, ryd op';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>
@@ -7161,7 +7161,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get maintenanceRecreateFts5 => 'Genskab fuldtekstindeks';
 
   @override
-  String get maintenanceRecreateFts5Confirm => 'JA, GENSKAB INDEKSET';
+  String get maintenanceRecreateFts5Confirm => 'Ja, genskab indekset';
 
   @override
   String get maintenanceRecreateFts5Description =>
@@ -7309,7 +7309,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get matrixStatsTopKpis => 'Top KPI\'er';
 
   @override
-  String get measurableDeleteConfirm => 'JA, SLET DENNE MÅLBARE';
+  String get measurableDeleteConfirm => 'Ja, slet denne målbare værdi';
 
   @override
   String get measurableDeleteQuestion =>

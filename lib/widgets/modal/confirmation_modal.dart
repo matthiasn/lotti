@@ -6,12 +6,19 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Shows a design-system confirmation modal with optional title, message, and
 /// customizable action labels.
+///
+/// [confirmLabel] is rendered exactly as passed — no case transform. A
+/// programmatic `toUpperCase()` is not locale-safe (Turkish dotted i, German
+/// sharp s), and nothing else in the app uppercases its actions.
+///
+/// [cancelLabel] falls back to the localized [MaterialLocalizations]
+/// cancel label when not provided.
 Future<bool> showConfirmationModal({
   required BuildContext context,
   required String message,
+  required String confirmLabel,
   String? title,
-  String confirmLabel = 'YES, DELETE DATABASE',
-  String cancelLabel = 'CANCEL',
+  String? cancelLabel,
   bool isDestructive = true,
 }) async {
   bool? result;
@@ -38,6 +45,7 @@ Future<bool> showConfirmationModal({
 
           if (title != null) ...[
             Text(
+              key: const Key('confirmation_modal_title'),
               title,
               style: tokens.typography.styles.heading.heading3.copyWith(
                 color: theme.colorScheme.onSurface,
@@ -66,7 +74,9 @@ Future<bool> showConfirmationModal({
                   result = false;
                   Navigator.of(context).pop();
                 },
-                label: cancelLabel,
+                label:
+                    cancelLabel ??
+                    MaterialLocalizations.of(context).cancelButtonLabel,
                 variant: DesignSystemButtonVariant.secondary,
                 size: DesignSystemButtonSize.large,
               ),
@@ -76,7 +86,7 @@ Future<bool> showConfirmationModal({
                 result = true;
                 Navigator.of(context).pop();
               },
-              label: confirmLabel.toUpperCase(),
+              label: confirmLabel,
               variant: isDestructive
                   ? DesignSystemButtonVariant.danger
                   : DesignSystemButtonVariant.primary,

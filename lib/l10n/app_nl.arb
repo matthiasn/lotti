@@ -1456,7 +1456,7 @@
   "categoryDefaultProfileHint": "Selecteer een profiel",
   "categoryDefaultTemplateHint": "Selecteer een sjabloon",
   "categoryDefaultTemplateLabel": "Standaard agent template",
-  "categoryDeleteConfirm": "Ja, delete deze CATEGORIE",
+  "categoryDeleteConfirm": "Ja, verwijder deze categorie",
   "categoryDeleteConfirmation": "Deze actie kan niet ongedaan worden gemaakt. Alle items in deze categorie blijven behouden maar zullen niet langer worden gecategoriseerd.",
   "categoryDeleteTitle": "Categorie verwijderen?",
   "categoryFavoriteBadgeLabel": "Favoriet",
@@ -1796,7 +1796,7 @@
   },
   "copyAsMarkdown": "Kopiëren als markdown",
   "copyAsText": "Als tekst kopiëren",
-  "correctionExampleCancel": "AFWIJKEN",
+  "correctionExampleCancel": "Annuleren",
   "correctionExamplePending": "Correctie opslaan in {seconds}S...",
   "@correctionExamplePending": {
     "placeholders": {
@@ -2360,7 +2360,7 @@
   "dashboardCopyLabel": "JSON opslaan en kopiëren",
   "dashboardCurrentChartsDescription": "Sleep naar herschikken. Meetkaarten kunnen worden geselecteerd om hun aggregatie te wijzigen.",
   "dashboardCurrentChartsTitle": "Grafieken op dit dashboard",
-  "dashboardDeleteConfirm": "Ja, delete dit DASHBOARD",
+  "dashboardDeleteConfirm": "Ja, verwijder dit dashboard",
   "dashboardDeleteHint": "Dashboard verwijderen",
   "dashboardDeleteQuestion": "Wilt u dit dashboard verwijderen?",
   "dashboardDescriptionLabel": "Beschrijving (facultatief)",
@@ -2721,7 +2721,7 @@
       }
     }
   },
-  "habitDeleteConfirm": "Ja, delete dit habit",
+  "habitDeleteConfirm": "Ja, verwijder deze gewoonte",
   "habitDeleteQuestion": "Wilt u deze gewoonte verwijderen?",
   "habitHeatmapDaySemantic": "{date}, {done} van {total} klaar",
   "@habitHeatmapDaySemantic": {
@@ -3031,7 +3031,7 @@
   "journalDateSaveButton": "Opslaan",
   "journalDateTimeRangeTitle": "Datum & tijd",
   "journalDateToLabel": "Datum tot:",
-  "journalDeleteConfirm": "Ja, trek deze inzending in.",
+  "journalDeleteConfirm": "Ja, verwijder dit item",
   "journalDeleteHint": "item verwijderen",
   "journalDeleteQuestion": "Wilt u dit journaal item verwijderen?",
   "journalDurationLabel": "Duur",
@@ -3084,7 +3084,7 @@
   "journalToggleFlaggedTitle": "Gevlagd",
   "journalTogglePrivateTitle": "Privé",
   "journalToggleStarredTitle": "Favoriet",
-  "journalUnlinkConfirm": "Ja, onvindbare inval.",
+  "journalUnlinkConfirm": "Ja, ontkoppel dit item",
   "journalUnlinkHint": "Verbinding verbreken",
   "journalUnlinkQuestion": "Weet u zeker dat u dit item wilt losmaken?",
   "keyboardCommandActivate": "Gericht item activeren",
@@ -3285,7 +3285,7 @@
   "loggingDomainWhatsNew": "Wat is er nieuw?",
   "maintenanceDeleteAgentDb": "Database verwijderen",
   "maintenanceDeleteAgentDbDescription": "Database verwijderen en app herstarten",
-  "maintenanceDeleteDatabaseConfirm": "Ja, DELETE DATABASE",
+  "maintenanceDeleteDatabaseConfirm": "Ja, database verwijderen",
   "maintenanceDeleteDatabaseQuestion": "Weet u zeker dat u wilt verwijderen {databaseName} Database?",
   "@maintenanceDeleteDatabaseQuestion": {
     "placeholders": {
@@ -3299,7 +3299,7 @@
   "maintenanceDeleteSyncDb": "Synchronisatiedatabase verwijderen",
   "maintenanceDeleteSyncDbDescription": "Sync-database verwijderen",
   "maintenanceGenerateEmbeddings": "Inbeddingen genereren",
-  "maintenanceGenerateEmbeddingsConfirm": "Ja, Generate.",
+  "maintenanceGenerateEmbeddingsConfirm": "Ja, genereren",
   "maintenanceGenerateEmbeddingsDescription": "Inbeddingen voor items in geselecteerde categorieën genereren",
   "maintenanceGenerateEmbeddingsMessage": "Selecteer categorieën om inbeddingen voor te genereren.",
   "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} ' {total} vermelding ({embedded} ingesloten)} other{{processed} ' {total} vermeldingen ({embedded} ingesloten)}}",
@@ -3329,7 +3329,7 @@
       }
     }
   },
-  "maintenancePopulateSequenceLogConfirm": "Ja, populaat",
+  "maintenancePopulateSequenceLogConfirm": "Ja, vullen",
   "maintenancePopulateSequenceLogDescription": "Bestaande items indexeren voor backfill ondersteuning",
   "maintenancePopulateSequenceLogMessage": "Dit zal alle journaal-items scannen en ze toevoegen aan het sync-sequentielogboek. Dit maakt backfill-responsen mogelijk voor items die zijn gemaakt voordat deze functie is toegevoegd.",
   "maintenancePurgeDeleted": "Verwijderde items verwijderen",
@@ -3337,11 +3337,11 @@
   "maintenancePurgeDeletedDescription": "Alle verwijderde items permanent verwijderen",
   "maintenancePurgeDeletedMessage": "Weet u zeker dat u alle verwijderde items wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
   "maintenancePurgeSentOutbox": "Oude verzonden postvak UIT verwijderen",
-  "maintenancePurgeSentOutboxConfirm": "Ja, schat.",
+  "maintenancePurgeSentOutboxConfirm": "Ja, opschonen",
   "maintenancePurgeSentOutboxDescription": "Verwijder verzonden outbox rijen ouder dan 7 dagen en recupereer schijf",
   "maintenancePurgeSentOutboxQuestion": "Verwijder verzonden postvak UIT items ouder dan 7 dagen? Dit verwijdert reeds verzonden rijen in blokken en draait VACUUM om schijf terug te vorderen. In afwachting en fout items worden bewaard.",
   "maintenanceRecreateFts5": "Volledige tekst-index opnieuw aanmaken",
-  "maintenanceRecreateFts5Confirm": "Ja, RECREATE INDEX",
+  "maintenanceRecreateFts5Confirm": "Ja, index opnieuw aanmaken",
   "maintenanceRecreateFts5Description": "Volledige-tekstzoekindex opnieuw aanmaken",
   "maintenanceRecreateFts5Message": "Weet u zeker dat u de volledige tekstindex wilt namaken? Dit kan enige tijd duren.",
   "maintenanceReSync": "Berichtgeschiedenis",
@@ -3396,7 +3396,7 @@
   "matrixStatsSignals": "Signalen",
   "matrixStatsSignalsConnectivity": "Signalen (connectiviteit)",
   "matrixStatsTopKpis": "Top KPI's",
-  "measurableDeleteConfirm": "Ja, delete dit metasurable",
+  "measurableDeleteConfirm": "Ja, verwijder dit meetbare gegevenstype",
   "measurableDeleteQuestion": "Wilt u dit meetbare gegevenstype verwijderen?",
   "measurableNotFound": "Maattabel niet gevonden",
   "measurementCommentHint": "Nota toevoegen (facultatief)",

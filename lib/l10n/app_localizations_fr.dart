@@ -2532,7 +2532,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get apiKeyShowTooltip => 'Afficher la clé API';
 
   @override
-  String get audioRecordingCancel => 'ANNULER';
+  String get audioRecordingCancel => 'Annuler';
 
   @override
   String get audioRecordingDiscardDialogBody =>
@@ -2549,16 +2549,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Abandonner l\'enregistrement ?';
 
   @override
-  String get audioRecordingPause => 'PAUSE';
+  String get audioRecordingPause => 'Mettre en pause';
 
   @override
-  String get audioRecordingResume => 'REPRENDRE';
+  String get audioRecordingResume => 'Reprendre';
 
   @override
   String get audioRecordings => 'Enregistrements audio';
 
   @override
-  String get audioRecordingStop => 'ARRÊTER';
+  String get audioRecordingStop => 'Arrêter';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -2857,7 +2857,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get categoryDefaultTemplateLabel => 'Modèle d\'agent par défaut';
 
   @override
-  String get categoryDeleteConfirm => 'OUI, SUPPRIMER CETTE CATÉGORIE';
+  String get categoryDeleteConfirm => 'Oui, supprimer cette catégorie';
 
   @override
   String get categoryDeleteConfirmation =>
@@ -3546,7 +3546,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get copyAsText => 'Copier en texte';
 
   @override
-  String get correctionExampleCancel => 'ANNULER';
+  String get correctionExampleCancel => 'Annuler';
 
   @override
   String correctionExamplePending(int seconds) {
@@ -4868,7 +4868,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardCurrentChartsTitle => 'Graphiques de ce tableau de bord';
 
   @override
-  String get dashboardDeleteConfirm => 'OUI, SUPPRIMER CE TABLEAU DE BORD';
+  String get dashboardDeleteConfirm => 'Oui, supprimer ce tableau de bord';
 
   @override
   String get dashboardDeleteHint => 'Supprimer tableau de bord';
@@ -5806,7 +5806,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get habitDeleteConfirm => 'OUI, SUPPRIMER CETTE HABITUDE';
+  String get habitDeleteConfirm => 'Oui, supprimer cette habitude';
 
   @override
   String get habitDeleteQuestion => 'Veux-tu supprimer cette habitude ?';
@@ -6426,7 +6426,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalDateToLabel => 'Date de fin :';
 
   @override
-  String get journalDeleteConfirm => 'OUI, SUPPRIMER CETTE ENTRÉE';
+  String get journalDeleteConfirm => 'Oui, supprimer cette entrée';
 
   @override
   String get journalDeleteHint => 'Supprimer l\'entrée';
@@ -6564,7 +6564,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalToggleStarredTitle => 'Favori';
 
   @override
-  String get journalUnlinkConfirm => 'OUI, DISSOCIER L\'ENTRÉE';
+  String get journalUnlinkConfirm => 'Oui, dissocier l\'entrée';
 
   @override
   String get journalUnlinkHint => 'Dissocier';
@@ -7159,7 +7159,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get maintenanceDeleteDatabaseConfirm =>
-      'OUI, SUPPRIMER LA BASE DE DONNÉES';
+      'Oui, supprimer la base de données';
 
   @override
   String maintenanceDeleteDatabaseQuestion(String databaseName) {
@@ -7186,7 +7186,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Générer les embeddings';
 
   @override
-  String get maintenanceGenerateEmbeddingsConfirm => 'OUI, GÉNÉRER';
+  String get maintenanceGenerateEmbeddingsConfirm => 'Oui, générer';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
@@ -7249,7 +7249,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get maintenancePopulateSequenceLogConfirm => 'OUI, REMPLIR';
+  String get maintenancePopulateSequenceLogConfirm => 'Oui, remplir';
 
   @override
   String get maintenancePopulateSequenceLogDescription =>
@@ -7278,7 +7278,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Purger les anciens éléments envoyés de la boîte d\'envoi';
 
   @override
-  String get maintenancePurgeSentOutboxConfirm => 'OUI, PURGER';
+  String get maintenancePurgeSentOutboxConfirm => 'Oui, purger';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>
@@ -7292,7 +7292,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get maintenanceRecreateFts5 => 'Recréer l\'index de texte intégral';
 
   @override
-  String get maintenanceRecreateFts5Confirm => 'OUI, RECRÉER L\'INDEX';
+  String get maintenanceRecreateFts5Confirm => 'Oui, recréer l\'index';
 
   @override
   String get maintenanceRecreateFts5Description =>
@@ -7445,7 +7445,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get matrixStatsTopKpis => 'Indicateurs clés';
 
   @override
-  String get measurableDeleteConfirm => 'OUI, SUPPRIMER CET ÉLÉMENT MESURABLE';
+  String get measurableDeleteConfirm => 'Oui, supprimer cet élément mesurable';
 
   @override
   String get measurableDeleteQuestion =>

@@ -119,7 +119,7 @@ void main() {
 
       // Tap the confirm button
       await tester.tap(
-        find.text(context.messages.syncDeleteConfigConfirm.toUpperCase()),
+        find.text(context.messages.syncDeleteConfigConfirm),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -168,7 +168,7 @@ void main() {
       await tester.tap(disconnectFinder);
       await tester.pumpAndSettle();
       await tester.tap(
-        find.text(context.messages.syncDeleteConfigConfirm.toUpperCase()),
+        find.text(context.messages.syncDeleteConfigConfirm),
       );
       await tester.pumpAndSettle();
 

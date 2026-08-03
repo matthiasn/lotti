@@ -2518,7 +2518,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get apiKeyShowTooltip => 'API-Schlüssel anzeigen';
 
   @override
-  String get audioRecordingCancel => 'ABBRECHEN';
+  String get audioRecordingCancel => 'Abbrechen';
 
   @override
   String get audioRecordingDiscardDialogBody =>
@@ -2534,16 +2534,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Aufnahme verwerfen?';
 
   @override
-  String get audioRecordingPause => 'PAUSE';
+  String get audioRecordingPause => 'Pause';
 
   @override
-  String get audioRecordingResume => 'FORTSETZEN';
+  String get audioRecordingResume => 'Fortsetzen';
 
   @override
   String get audioRecordings => 'Audioaufnahmen';
 
   @override
-  String get audioRecordingStop => 'STOPP';
+  String get audioRecordingStop => 'Stopp';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -2839,7 +2839,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryDefaultTemplateLabel => 'Standard-Agenten-Vorlage';
 
   @override
-  String get categoryDeleteConfirm => 'JA, DIESE KATEGORIE LÖSCHEN';
+  String get categoryDeleteConfirm => 'Ja, diese Kategorie löschen';
 
   @override
   String get categoryDeleteConfirmation =>
@@ -3525,7 +3525,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get copyAsText => 'Als Text kopieren';
 
   @override
-  String get correctionExampleCancel => 'ABBRECHEN';
+  String get correctionExampleCancel => 'Abbrechen';
 
   @override
   String correctionExamplePending(int seconds) {
@@ -4822,7 +4822,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardCurrentChartsTitle => 'Diagramme auf diesem Dashboard';
 
   @override
-  String get dashboardDeleteConfirm => 'JA, DIESES DASHBOARD LÖSCHEN';
+  String get dashboardDeleteConfirm => 'Ja, dieses Dashboard löschen';
 
   @override
   String get dashboardDeleteHint => 'Dashboard löschen';
@@ -5754,7 +5754,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get habitDeleteConfirm => 'JA, DIESE GEWOHNHEIT LÖSCHEN';
+  String get habitDeleteConfirm => 'Ja, diese Gewohnheit löschen';
 
   @override
   String get habitDeleteQuestion => 'Möchtest du diese Gewohnheit löschen?';
@@ -6359,7 +6359,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalDateToLabel => 'Datum bis:';
 
   @override
-  String get journalDeleteConfirm => 'JA, DIESEN EINTRAG LÖSCHEN';
+  String get journalDeleteConfirm => 'Ja, diesen Eintrag löschen';
 
   @override
   String get journalDeleteHint => 'Eintrag löschen';
@@ -6497,7 +6497,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalToggleStarredTitle => 'Favorit';
 
   @override
-  String get journalUnlinkConfirm => 'JA, EINTRAG TRENNEN';
+  String get journalUnlinkConfirm => 'Ja, Eintrag trennen';
 
   @override
   String get journalUnlinkHint => 'Trennen';
@@ -7080,7 +7080,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Agenten-Datenbank löschen und App neu starten';
 
   @override
-  String get maintenanceDeleteDatabaseConfirm => 'JA, DATENBANK LÖSCHEN';
+  String get maintenanceDeleteDatabaseConfirm => 'Ja, Datenbank löschen';
 
   @override
   String maintenanceDeleteDatabaseQuestion(String databaseName) {
@@ -7105,7 +7105,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Embeddings generieren';
 
   @override
-  String get maintenanceGenerateEmbeddingsConfirm => 'JA, GENERIEREN';
+  String get maintenanceGenerateEmbeddingsConfirm => 'Ja, generieren';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
@@ -7155,7 +7155,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get maintenancePopulateSequenceLogConfirm => 'JA, BEFÜLLEN';
+  String get maintenancePopulateSequenceLogConfirm => 'Ja, befüllen';
 
   @override
   String get maintenancePopulateSequenceLogDescription =>
@@ -7184,7 +7184,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Alte gesendete Outbox-Einträge löschen';
 
   @override
-  String get maintenancePurgeSentOutboxConfirm => 'JA, LÖSCHEN';
+  String get maintenancePurgeSentOutboxConfirm => 'Ja, löschen';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>
@@ -7198,7 +7198,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maintenanceRecreateFts5 => 'Volltextindex neu erstellen';
 
   @override
-  String get maintenanceRecreateFts5Confirm => 'JA, INDEX NEU ERSTELLEN';
+  String get maintenanceRecreateFts5Confirm => 'Ja, Index neu erstellen';
 
   @override
   String get maintenanceRecreateFts5Description =>
@@ -7351,7 +7351,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get matrixStatsTopKpis => 'Wichtigste KPIs';
 
   @override
-  String get measurableDeleteConfirm => 'JA, DIESE MESSGRÖSSE LÖSCHEN';
+  String get measurableDeleteConfirm => 'Ja, diese Messgröße löschen';
 
   @override
   String get measurableDeleteQuestion =>

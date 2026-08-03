@@ -38,7 +38,7 @@ class _ConfirmationModalOverviewPage extends StatelessWidget {
                 title: 'Discard recording?',
                 message:
                     'This recording will be deleted. No audio entry, transcript, or task summary will be created.',
-                cancelLabel: 'Keep Recording',
+                cancelLabel: 'Keep recording',
                 confirmLabel: 'Discard',
               ),
             ),
