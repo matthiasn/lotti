@@ -5,7 +5,7 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-02T16:09:19Z }
+generated: { by: codex/gpt-5, at: 2026-08-03T14:38:02Z }
 stale_after: 2026-11-02
 sources:
   - id: sequence
@@ -19,15 +19,15 @@ sources:
   - id: backfill
     resource: ../../../lib/features/sync/backfill
     title: Backfill request and response services
-    last_modified: 2026-08-02
+    last_modified: 2026-08-03
   - id: onboarding-sync
     resource: ../../../lib/features/sync/onboarding/onboarding_sync_service.dart
     title: OnboardingSyncService
-    last_modified: 2026-08-02
+    last_modified: 2026-08-03
   - id: onboarding-db
     resource: ../../../lib/database/sync_db_onboarding.dart
     title: Durable onboarding suppression storage
-    last_modified: 2026-08-02
+    last_modified: 2026-08-03
 ---
 
 # The accounting layer
@@ -152,9 +152,16 @@ line for every timer or drain nudge.
 
 The full *Everything* transfer opened from the Add Device sheet coordinates a
 target-specific suppression round. Other re-sync ranges and manual backfill do
-not use it. The inviting device captures the exact verified Matrix user/device
-pair, persists an outbound round, queues `onboardingSnapshotBegin`, and waits
-for that device's durable `onboardingSnapshotAccepted` before staging history.
+not use it. When the joining device consumes a peer handover, it persists an
+inbound `awaitingBegin` preflight **before Matrix login starts background
+timeline processing**. Automatic backfill is blanket-blocked during this short
+phase, closing the queue-drain race that previously allowed one 250-counter
+request before the sender's Begin arrived. A user-triggered full backfill or
+re-request remains available throughout.
+
+The inviting device captures the exact verified Matrix user/device pair,
+persists an outbound round, queues `onboardingSnapshotBegin`, and waits for that
+device's durable `onboardingSnapshotAccepted` before staging history.
 
 ```mermaid
 stateDiagram-v2
@@ -171,8 +178,28 @@ stateDiagram-v2
   Aborted --> [*]: original lease expires
 ```
 
-The persisted state strings are `awaitingAcceptance`, `active`, `ending`,
-`completed` and `aborted`. `ending` keeps sender-side filtering alive while the
+```mermaid
+stateDiagram-v2
+  note right of AwaitingBegin: Receiver-side preflight lifecycle
+  [*] --> AwaitingBegin: handover persists gate before login
+  AwaitingBegin --> Adopted: targeted Begin atomically installs range lease
+  AwaitingBegin --> Cancelled: login or room setup fails
+  AwaitingBegin --> [*]: fixed one-hour expiry
+  Adopted --> [*]
+  Cancelled --> [*]
+```
+
+The persisted state strings also include receiver preflight states
+`awaitingBegin`, `adopted`, and `cancelled`, alongside round states
+`awaitingAcceptance`, `active`, `ending`, `completed`, and `aborted`.
+`awaitingBegin` is a durable blanket gate with no claimed sender host or
+coverage. The targeted Begin installs its bounded range row and marks every
+unexpired matching-user preflight `adopted` in one database transaction. A
+restart therefore preserves the gate, while a failed provisioning attempt
+cancels its own gate before restoring any previous Matrix session. If no Begin
+ever arrives, expiry releases automatic repair after one hour.
+
+`ending` keeps sender-side filtering alive while the
 low-priority end barrier drains; the sender terminalizes it only when Matrix
 confirms that event was sent. If End shares an outbox bundle, the transport
 callback receives the original logical bundle and inspects its children; the
@@ -200,12 +227,12 @@ backfill requests from that exact device for every covered origin range before
 applying the response cap. Requests from other devices, unknown origin hosts
 and counters above the snapshot remain actionable.
 
-A begin cannot retract a backfill event the sender already processed before
-the handshake reached the room. That small pre-handshake window can still
-produce bounded duplicate work. Once acceptance is durable, later processing
-of requests from the target host is filtered even when those requests were
-emitted just before begin; the protocol prevents the repeated amplification,
-not time travel.
+Automatic request processing checks the blanket preflight before reading
+missing rows and again before enqueue. The final check also reloads range
+coverage, so a preflight installed or adopted while a pass was already reading
+cannot leak a stale batch into the outbox. Once acceptance is durable,
+sender-side processing also filters any older request from the target host that
+reached the room just before Begin.
 
 Begin and Accepted use a dedicated negative priority ahead of the normal
 high-priority queue. Negative-priority rows are standalone dequeue boundaries,

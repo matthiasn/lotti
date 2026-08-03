@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/get_it.dart';
@@ -44,6 +45,10 @@ provisioningControllerProvider =
     );
 
 class ProvisioningController extends Notifier<ProvisioningState> {
+  ProvisioningController({OnboardingSyncService? onboardingSyncService})
+    : _injectedOnboardingSyncService = onboardingSyncService;
+
+  final OnboardingSyncService? _injectedOnboardingSyncService;
   SyncProvisioningBundle? _lastBundle;
 
   @override
@@ -142,6 +147,10 @@ class ProvisioningController extends Notifier<ProvisioningState> {
     final link = ref.keepAlive();
     final matrixService = ref.read(matrixServiceProvider);
     final loggingService = getIt<DomainLogger>();
+    final onboardingSyncService = rotatePassword
+        ? null
+        : _injectedOnboardingSyncService ?? getIt<OnboardingSyncService>();
+    String? inboundPreflightRoundId;
 
     try {
       // Step 1: Login
@@ -159,6 +168,16 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       // eager auto-join attempt against a room from a previous account.
       await matrixService.clearPersistedRoom();
 
+      // A peer handover is the only flow that immediately receives an
+      // existing history snapshot. Persist its automatic-backfill gate before
+      // login can start background lifecycle processing and gap detection.
+      if (onboardingSyncService != null) {
+        inboundPreflightRoundId = await onboardingSyncService
+            .beginInboundPreflight(
+              recipientUserId: bundle.user,
+            );
+      }
+
       final newConfig = MatrixConfig(
         homeServer: bundle.homeServer,
         user: bundle.user,
@@ -167,6 +186,12 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       await matrixService.setConfig(newConfig);
       final loggedIn = await matrixService.login(waitForLifecycle: false);
       if (!loggedIn) {
+        await _cancelInboundPreflight(
+          onboardingSyncService,
+          inboundPreflightRoundId,
+          loggingService,
+        );
+        inboundPreflightRoundId = null;
         // Restore previous config and reconnect so the user does not end up
         // disconnected after a failed provisioning attempt.
         if (oldConfig != null) {
@@ -221,11 +246,34 @@ class ProvisioningController extends Notifier<ProvisioningState> {
         stackTrace: stackTrace,
         subDomain: 'configureFromBundle',
       );
+      await _cancelInboundPreflight(
+        onboardingSyncService,
+        inboundPreflightRoundId,
+        loggingService,
+      );
       state = const ProvisioningState.error(
         ProvisioningError.configurationError,
       );
     } finally {
       link.close();
+    }
+  }
+
+  Future<void> _cancelInboundPreflight(
+    OnboardingSyncService? service,
+    String? roundId,
+    DomainLogger loggingService,
+  ) async {
+    if (service == null || roundId == null) return;
+    try {
+      await service.cancelInboundPreflight(roundId);
+    } catch (error, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'configureFromBundle.cancelPreflight',
+      );
     }
   }
 

@@ -20,6 +20,7 @@ void main() {
 
   late ProviderContainer container;
   late MockMatrixService mockMatrixService;
+  late MockOnboardingSyncService mockOnboardingSyncService;
 
   const provisionedBundle = SyncProvisioningBundle(
     v: 2,
@@ -59,6 +60,7 @@ void main() {
 
   setUp(() async {
     mockMatrixService = MockMatrixService();
+    mockOnboardingSyncService = MockOnboardingSyncService();
 
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
     when(
@@ -90,6 +92,14 @@ void main() {
         newPassword: any(named: 'newPassword'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => mockOnboardingSyncService.beginInboundPreflight(
+        recipientUserId: any(named: 'recipientUserId'),
+      ),
+    ).thenAnswer((_) async => 'preflight-1');
+    when(
+      () => mockOnboardingSyncService.cancelInboundPreflight(any()),
+    ).thenAnswer((_) async {});
 
     final mockLoggingService = MockDomainLogger();
     when(
@@ -111,6 +121,11 @@ void main() {
     container = ProviderContainer(
       overrides: [
         matrixServiceProvider.overrideWithValue(mockMatrixService),
+        provisioningControllerProvider.overrideWith(
+          () => ProvisioningController(
+            onboardingSyncService: mockOnboardingSyncService,
+          ),
+        ),
       ],
     );
   });
@@ -547,6 +562,11 @@ void main() {
             newPassword: any(named: 'newPassword'),
           ),
         ).called(1);
+        verifyNever(
+          () => mockOnboardingSyncService.beginInboundPreflight(
+            recipientUserId: any(named: 'recipientUserId'),
+          ),
+        );
 
         container
             .read(provisioningControllerProvider)
@@ -750,10 +770,14 @@ void main() {
         expect(states[1], const ProvisioningState.joiningRoom());
         expect(states[2], const ProvisioningState.done());
 
-        verify(() => mockMatrixService.setConfig(any())).called(1);
-        verify(
+        verifyInOrder([
+          () => mockMatrixService.clearPersistedRoom(),
+          () => mockOnboardingSyncService.beginInboundPreflight(
+            recipientUserId: handoverBundle.user,
+          ),
+          () => mockMatrixService.setConfig(any()),
           () => mockMatrixService.login(waitForLifecycle: false),
-        ).called(1);
+        ]);
         verify(
           () => mockMatrixService.joinRoom(handoverBundle.roomId),
         ).called(1);
@@ -762,6 +786,9 @@ void main() {
             oldPassword: any(named: 'oldPassword'),
             newPassword: any(named: 'newPassword'),
           ),
+        );
+        verifyNever(
+          () => mockOnboardingSyncService.cancelInboundPreflight(any()),
         );
 
         container
@@ -775,6 +802,65 @@ void main() {
               ready: (_) => fail('Expected done'),
               done: () {},
               error: (_) => fail('Expected done'),
+            );
+      });
+
+      test('cancels the gate before restoring a failed login', () async {
+        const oldConfig = MatrixConfig(
+          homeServer: 'https://old.example.com',
+          user: '@old:example.com',
+          password: 'old-secret',
+        );
+        when(
+          () => mockMatrixService.loadConfig(),
+        ).thenAnswer((_) async => oldConfig);
+        when(
+          () => mockMatrixService.getRoom(),
+        ).thenAnswer((_) async => '!old-room:example.com');
+        var loginCalls = 0;
+        when(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).thenAnswer((_) async => loginCalls++ > 0);
+
+        await container
+            .read(provisioningControllerProvider.notifier)
+            .configureFromBundle(handoverBundle);
+
+        verifyInOrder([
+          () => mockOnboardingSyncService.beginInboundPreflight(
+            recipientUserId: handoverBundle.user,
+          ),
+          () => mockMatrixService.login(waitForLifecycle: false),
+          () => mockOnboardingSyncService.cancelInboundPreflight('preflight-1'),
+          () => mockMatrixService.setConfig(oldConfig),
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ]);
+        container
+            .read(provisioningControllerProvider)
+            .maybeWhen(
+              error: (error) => expect(error, ProvisioningError.loginFailed),
+              orElse: () => fail('Expected error state'),
+            );
+      });
+
+      test('cancels the gate when room setup throws', () async {
+        when(
+          () => mockMatrixService.joinRoom(any()),
+        ).thenThrow(StateError('join failed'));
+
+        await container
+            .read(provisioningControllerProvider.notifier)
+            .configureFromBundle(handoverBundle);
+
+        verify(
+          () => mockOnboardingSyncService.cancelInboundPreflight('preflight-1'),
+        ).called(1);
+        container
+            .read(provisioningControllerProvider)
+            .maybeWhen(
+              error: (error) =>
+                  expect(error, ProvisioningError.configurationError),
+              orElse: () => fail('Expected error state'),
             );
       });
     });

@@ -385,6 +385,18 @@ class BackfillRequestService {
         return 0;
       }
 
+      // A handover receiver installs this durable gate before Matrix login,
+      // closing the window where queue-drain gap detection could dispatch one
+      // automatic batch before the sender's targeted snapshot Begin arrives.
+      // Manual repair deliberately bypasses onboarding suppression.
+      if (!ignoreEnabledFlag && await _hasActiveInboundPreflight()) {
+        _trace(
+          'processBackfillRequests: onboarding preflight active, skipping',
+          subDomain: 'backfill.onboardingPreflight',
+        );
+        return 0;
+      }
+
       // Retire missing/requested rows that have hit the request-count cap.
       // Without this, rows for counters that can never be resolved (e.g.
       // pre-history entries, purged payloads, permanently VC-behind
@@ -406,7 +418,7 @@ class BackfillRequestService {
         amnestyWindow: _amnestyWindow,
       );
 
-      final missing = await _loadNextUnqueuedMissingBatch(
+      var missing = await _loadNextUnqueuedMissingBatch(
         useLimits: useLimits,
         bypassDebounce: bypassDebounce,
       );
@@ -421,6 +433,40 @@ class BackfillRequestService {
           subDomain: 'backfill.process',
         );
         return 0;
+      }
+
+      if (!ignoreEnabledFlag) {
+        // Close the time-of-check/time-of-use window: provisioning or Begin
+        // can install/change suppression while this pass is reading missing
+        // rows. Re-check immediately before constructing the outbox message.
+        if (await _hasActiveInboundPreflight()) {
+          _trace(
+            'processBackfillRequests: onboarding preflight became active '
+            'before dispatch, skipping',
+            subDomain: 'backfill.onboardingPreflight',
+          );
+          return 0;
+        }
+        final latestCoverage =
+            await _onboardingSyncService?.activeInboundCoverage() ??
+            const <String, int>{};
+        if (latestCoverage.isNotEmpty) {
+          final beforeSuppression = missing.length;
+          missing = missing
+              .where(
+                (entry) => entry.counter > (latestCoverage[entry.hostId] ?? -1),
+              )
+              .toList();
+          final suppressed = beforeSuppression - missing.length;
+          if (suppressed > 0) {
+            _trace(
+              'processBackfillRequests: final onboarding race check '
+              'suppressed=$suppressed entries',
+              subDomain: 'backfill.onboardingPreflight',
+            );
+          }
+          if (missing.isEmpty) return 0;
+        }
       }
 
       final requesterId = await _vectorClockService.getHost();
@@ -481,6 +527,10 @@ class BackfillRequestService {
 
     _pendingDrainNudge = false;
     nudgeAfterDrain();
+  }
+
+  Future<bool> _hasActiveInboundPreflight() async {
+    return await _onboardingSyncService?.hasActiveInboundPreflight() ?? false;
   }
 
   /// Deletes local files for entries that are about to be re-requested.

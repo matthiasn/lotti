@@ -15,11 +15,13 @@ const onboardingTerminalCounterChunkSize = 250;
 
 const _inbound = 'inbound';
 const _outbound = 'outbound';
+const _awaitingBegin = 'awaitingBegin';
 const _awaitingAcceptance = 'awaitingAcceptance';
 const _active = 'active';
 const _ending = 'ending';
 const _completed = 'completed';
 const _aborted = 'aborted';
+const _cancelled = 'cancelled';
 
 typedef OnboardingAcceptanceWaiter =
     Future<void> Function(Future<void> acceptance, Duration timeout);
@@ -92,6 +94,62 @@ class OnboardingSyncService {
   /// A successful end should immediately re-check any residual gaps; aborted
   /// rounds retain their original cooldown until lease expiry.
   void Function()? onInboundSuppressionEnded;
+
+  /// Durably blocks automatic backfill before a newly provisioned receiver
+  /// logs in and starts consuming timeline events. The sender's targeted Begin
+  /// replaces this blanket gate with bounded per-host coverage. If no Begin
+  /// arrives, the gate expires after [_lease]; manual repair remains available.
+  Future<String> beginInboundPreflight({
+    required String recipientUserId,
+  }) async {
+    if (recipientUserId.isEmpty) {
+      throw ArgumentError.value(recipientUserId, 'recipientUserId');
+    }
+    final now = _clock.now();
+    final roundId = _roundIdFactory();
+    await _syncDatabase.upsertOnboardingSyncRound(
+      OnboardingSyncRoundsCompanion.insert(
+        roundId: roundId,
+        direction: _inbound,
+        state: _awaitingBegin,
+        senderHostId: '',
+        recipientUserId: recipientUserId,
+        recipientDeviceId: '',
+        coverageUpperBoundsJson: _encodeCoverage(const {}),
+        startedAt: now,
+        updatedAt: now,
+        expiresAt: now.add(_lease),
+      ),
+    );
+    _trace('preflight installed round=$roundId');
+    return roundId;
+  }
+
+  /// Cancels a provisioning preflight when login or room setup fails. Errors
+  /// from this method are intentionally surfaced so the caller can log them
+  /// without hiding the original provisioning failure.
+  Future<void> cancelInboundPreflight(String roundId) async {
+    final row = await _syncDatabase.onboardingSyncRound(roundId);
+    if (row == null ||
+        row.direction != _inbound ||
+        row.state != _awaitingBegin) {
+      return;
+    }
+    await _syncDatabase.updateOnboardingSyncRound(
+      roundId,
+      OnboardingSyncRoundsCompanion(
+        state: const Value(_cancelled),
+        updatedAt: Value(_clock.now()),
+      ),
+    );
+    _trace('preflight cancelled round=$roundId');
+  }
+
+  Future<bool> hasActiveInboundPreflight() {
+    return _syncDatabase.hasActiveInboundOnboardingSyncPreflight(
+      now: _clock.now(),
+    );
+  }
 
   Future<OutboundOnboardingRound> beginOutbound(
     OnboardingSyncTarget target,
@@ -277,6 +335,10 @@ class OnboardingSyncService {
           existing.recipientDeviceId == message.recipientDeviceId &&
           existing.expiresAt.isAfter(now);
       if (isMatchingActiveRound) {
+        await _syncDatabase.adoptInboundOnboardingSyncPreflights(
+          recipientUserId: message.recipientUserId,
+          now: now,
+        );
         await _enqueueAccepted(message, recipientHostId);
       }
       // A duplicate begin never renews, reopens, or changes a durable round.
@@ -284,8 +346,8 @@ class OnboardingSyncService {
       return;
     }
     final lease = _boundedWireDuration(message.leaseSeconds, _lease);
-    await _syncDatabase.upsertOnboardingSyncRound(
-      OnboardingSyncRoundsCompanion.insert(
+    await _syncDatabase.installInboundOnboardingSyncRound(
+      round: OnboardingSyncRoundsCompanion.insert(
         roundId: message.roundId,
         direction: _inbound,
         state: _active,
@@ -302,6 +364,8 @@ class OnboardingSyncService {
         updatedAt: now,
         expiresAt: now.add(lease),
       ),
+      recipientUserId: message.recipientUserId,
+      now: now,
     );
     await _enqueueAccepted(message, recipientHostId);
     _trace(

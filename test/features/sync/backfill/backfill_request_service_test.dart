@@ -382,6 +382,9 @@ void main() {
           domainLogger: mockLogging,
           onboardingSyncService: onboarding,
         );
+        when(
+          onboarding.hasActiveInboundPreflight,
+        ).thenAnswer((_) async => false);
         when(onboarding.activeInboundCoverage).thenAnswer(
           (_) async => {aliceHostId: 10},
         );
@@ -422,7 +425,7 @@ void main() {
           request.entries,
           const [BackfillRequestEntry(hostId: bobHostId, counter: 5)],
         );
-        verify(onboarding.activeInboundCoverage).called(1);
+        verify(onboarding.activeInboundCoverage).called(2);
         verify(
           () => mockLogging.log(
             LogDomain.sync,
@@ -431,6 +434,119 @@ void main() {
             subDomain: 'backfill.process',
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'automatic queue-drain sends zero batches before onboarding Begin',
+      () async {
+        final onboarding = MockOnboardingSyncService();
+        final outcome = Completer<String>();
+        final service = buildService(
+          domainLogger: mockLogging,
+          onboardingSyncService: onboarding,
+        );
+        var missingLoadStarted = false;
+        when(
+          onboarding.hasActiveInboundPreflight,
+        ).thenAnswer((_) async => !missingLoadStarted);
+        when(onboarding.activeInboundCoverage).thenAnswer((_) async {
+          missingLoadStarted = true;
+          return {};
+        });
+        when(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => [_createMissingLogItem(aliceHostId, 5)]);
+        when(
+          () => mockLogging.log(
+            LogDomain.sync,
+            'processBackfillRequests: onboarding preflight active, skipping',
+            subDomain: 'backfill.onboardingPreflight',
+          ),
+        ).thenAnswer((_) {
+          if (!outcome.isCompleted) outcome.complete('skipped');
+        });
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+        ).thenAnswer((_) async {
+          if (!outcome.isCompleted) outcome.complete('sent');
+        });
+
+        service.nudgeAfterDrain();
+        expect(await outcome.future, 'skipped');
+
+        verify(onboarding.hasActiveInboundPreflight).called(1);
+        verifyNever(onboarding.activeInboundCoverage);
+        verifyNever(
+          () => mockSequenceService.retireExhaustedRequestedEntries(
+            maxRequestCount: any(named: 'maxRequestCount'),
+          ),
+        );
+        verifyNever(
+          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+        );
+        verifyNever(() => mockSequenceService.markAsRequested(any()));
+      },
+    );
+
+    test(
+      'automatic pass rechecks a preflight installed while loading gaps',
+      () async {
+        final onboarding = MockOnboardingSyncService();
+        final outcome = Completer<String>();
+        final service = buildService(
+          domainLogger: mockLogging,
+          onboardingSyncService: onboarding,
+        );
+        var preflightChecks = 0;
+        when(onboarding.hasActiveInboundPreflight).thenAnswer(
+          (_) async => preflightChecks++ > 0,
+        );
+        when(onboarding.activeInboundCoverage).thenAnswer((_) async => {});
+        when(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => [_createMissingLogItem(aliceHostId, 5)]);
+        when(
+          () => mockLogging.log(
+            LogDomain.sync,
+            'processBackfillRequests: onboarding preflight became active '
+            'before dispatch, skipping',
+            subDomain: 'backfill.onboardingPreflight',
+          ),
+        ).thenAnswer((_) {
+          if (!outcome.isCompleted) outcome.complete('skipped');
+        });
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+        ).thenAnswer((_) async {
+          if (!outcome.isCompleted) outcome.complete('sent');
+        });
+
+        service.nudgeAfterDrain();
+        expect(await outcome.future, 'skipped');
+
+        verify(onboarding.hasActiveInboundPreflight).called(2);
+        verify(onboarding.activeInboundCoverage).called(1);
+        verifyNever(
+          () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
+        );
+        verifyNever(() => mockSequenceService.markAsRequested(any()));
       },
     );
 
@@ -471,6 +587,7 @@ void main() {
 
         await service.processFullBackfill();
 
+        verifyNever(onboarding.hasActiveInboundPreflight);
         verifyNever(onboarding.activeInboundCoverage);
       },
     );

@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-02T16:09:19Z }
+generated: { by: codex/gpt-5, at: 2026-08-03T14:38:02Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-src
@@ -260,9 +260,11 @@ the inviting device exposes both follow-up transfers in the sticky action bar:
 and re-enqueues that device's local history. The latter defaults to
 *Everything*, with *Last 30 days* and a validated custom interval available,
 and reports the journal, agent-entity and agent-link enqueue phases before
-confirming that the messages are queued. The full *Everything* action first
-coordinates a bounded suppression round with that exact new device, so it does
-not request snapshot rows that are merely queued or in flight; partial and
+confirming that the messages are queued. A device consuming the handover
+persists an automatic-backfill preflight before its Matrix login can start
+timeline processing. The full *Everything* action then replaces that blanket,
+one-hour-bounded gate with an exact suppression range for the new device, so it
+does not request snapshot rows that are merely queued or in flight; partial and
 manual repair flows remain unchanged. The runtime contract is in
 [sequence and backfill](sequence-and-backfill.md#initial-onboarding-suppression).
 

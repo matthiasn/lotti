@@ -50,6 +50,58 @@ mixin _SyncDbOnboarding on _$SyncDatabase, _SyncDbSequenceWatermarks {
     )..where((t) => t.roundId.equals(roundId))).write(changes);
   }
 
+  Future<bool> hasActiveInboundOnboardingSyncPreflight({DateTime? now}) async {
+    final effectiveNow = now ?? DateTime.now();
+    final row =
+        await (select(onboardingSyncRounds)
+              ..where(
+                (t) =>
+                    t.direction.equals('inbound') &
+                    t.state.equals('awaitingBegin') &
+                    t.expiresAt.isBiggerThanValue(effectiveNow),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return row != null;
+  }
+
+  Future<int> adoptInboundOnboardingSyncPreflights({
+    required String recipientUserId,
+    required DateTime now,
+  }) {
+    return (update(onboardingSyncRounds)..where(
+          (t) =>
+              t.direction.equals('inbound') &
+              t.state.equals('awaitingBegin') &
+              t.recipientUserId.equals(recipientUserId) &
+              t.expiresAt.isBiggerThanValue(now),
+        ))
+        .write(
+          OnboardingSyncRoundsCompanion(
+            state: const Value('adopted'),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  /// Installs the sender's bounded range lease and closes any provisional
+  /// receiver gate in one transaction. This prevents a restart between those
+  /// mutations from leaving a blanket preflight active after the range lease
+  /// has already completed.
+  Future<void> installInboundOnboardingSyncRound({
+    required OnboardingSyncRoundsCompanion round,
+    required String recipientUserId,
+    required DateTime now,
+  }) async {
+    await transaction(() async {
+      await into(onboardingSyncRounds).insertOnConflictUpdate(round);
+      await adoptInboundOnboardingSyncPreflights(
+        recipientUserId: recipientUserId,
+        now: now,
+      );
+    });
+  }
+
   Future<List<OnboardingSyncRoundItem>> activeInboundOnboardingSyncRounds({
     DateTime? now,
   }) {

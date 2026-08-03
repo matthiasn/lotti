@@ -171,6 +171,76 @@ void main() {
     },
   );
 
+  test('preflight survives restart, cancels explicitly, and expires', () async {
+    final roundId = await service.beginInboundPreflight(
+      recipientUserId: '@sync:example.org',
+    );
+
+    final stored = await db.onboardingSyncRound(roundId);
+    expect(stored?.state, 'awaitingBegin');
+    expect(stored?.senderHostId, isEmpty);
+    expect(stored?.recipientDeviceId, isEmpty);
+    expect(stored?.expiresAt, serviceClock.now().add(onboardingSyncLease));
+    expect(await service.hasActiveInboundPreflight(), isTrue);
+
+    final restarted = _phoneService(
+      db,
+      enqueued,
+      Clock.fixed(serviceClock.now().add(const Duration(minutes: 59))),
+    );
+    expect(await restarted.hasActiveInboundPreflight(), isTrue);
+
+    await restarted.cancelInboundPreflight(roundId);
+    expect((await db.onboardingSyncRound(roundId))?.state, 'cancelled');
+    expect(await restarted.hasActiveInboundPreflight(), isFalse);
+
+    await db.updateOnboardingSyncRound(
+      roundId,
+      OnboardingSyncRoundsCompanion(
+        state: const Value('awaitingBegin'),
+        updatedAt: Value(serviceClock.now()),
+      ),
+    );
+    final afterExpiry = _phoneService(
+      db,
+      enqueued,
+      Clock.fixed(serviceClock.now().add(onboardingSyncLease)),
+    );
+    expect(await afterExpiry.hasActiveInboundPreflight(), isFalse);
+  });
+
+  test('target Begin atomically adopts the provisional gate', () async {
+    service = OnboardingSyncService(
+      syncDatabase: db,
+      enqueueMessage: (message) async => enqueued.add(message),
+      getHostId: () async => 'phone-host',
+      getSnapshotCoverage: () async => const {},
+      getLocalUserId: () => '@sync:example.org',
+      getLocalDeviceId: () => 'PHONE',
+      serviceClock: serviceClock,
+      roundIdFactory: () => 'preflight-1',
+    );
+    final preflightRoundId = await service.beginInboundPreflight(
+      recipientUserId: '@sync:example.org',
+    );
+
+    await service.handleMessage(_beginMessage());
+
+    expect(
+      (await db.onboardingSyncRound(preflightRoundId))?.state,
+      'adopted',
+    );
+    expect(await service.hasActiveInboundPreflight(), isFalse);
+    expect(await service.activeInboundCoverage(), {
+      'desktop-host': 12,
+      'older-phone-host': 9,
+    });
+    expect(
+      enqueued.whereType<SyncOnboardingSnapshotAccepted>(),
+      hasLength(1),
+    );
+  });
+
   test(
     'terminal counters close real gaps without replacing received data',
     () async {

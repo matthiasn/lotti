@@ -35,9 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   full initial message transfer, the new device could mistake queued or
   in-flight history for missing data and repeatedly ask for it in batches,
   adding substantial duplicate work on slower phones. The two devices now
-  coordinate that first full transfer: automatic gap repair waits for the
-  announced snapshot, resumes immediately when it finishes, and releases
-  itself after a bounded hour if the sending device disconnects or fails.
+  coordinate that first full transfer before the new device logs in: automatic
+  gap repair sends no early batch while the snapshot announcement is still on
+  its way, resumes immediately when the transfer finishes, and releases itself
+  after a bounded hour if the sending device disconnects or fails. Manual
+  recovery remains available throughout.
 - **Stepping through days in Daily OS no longer moves the arrow you are
   clicking.** The date between the arrows was only as wide as the day it
   showed, so a shorter or longer date moved the forward arrow out from under
