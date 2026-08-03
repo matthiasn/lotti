@@ -265,7 +265,6 @@ void main() {
       tester,
     ) async {
       // Deterministic seed so the resolved pair is reproducible.
-      debugResetCelebrationSeed();
       Widget tree({required bool completed}) => makeTestableWidget(
         CompletionCelebration(
           completed: completed,

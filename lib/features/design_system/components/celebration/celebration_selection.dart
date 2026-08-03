@@ -132,10 +132,7 @@ class CombineSelection extends CelebrationSelection {
 /// A process-wide monotonic counter that feeds [CelebrationSelection.resolve],
 /// so Random / Combine roll a new look on *every* completion across the app
 /// (rather than per build). Not for security — just to advance the deterministic
-/// resolve seed. Reset between tests via [debugResetCelebrationSeed].
+/// resolve seed.
 int _celebrationSeed = 0;
 
 int nextCelebrationSeed() => _celebrationSeed++;
-
-@visibleForTesting
-void debugResetCelebrationSeed() => _celebrationSeed = 0;

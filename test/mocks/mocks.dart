@@ -214,7 +214,6 @@ class MockJournalDb extends Mock implements JournalDb {
     bool requireNew = false,
   }) => action();
 
-  @override
   Stream<Set<String>> watchActiveConfigFlagNames() {
     try {
       final result = super.noSuchMethod(

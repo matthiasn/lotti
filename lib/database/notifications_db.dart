@@ -61,22 +61,6 @@ class NotificationsDb extends _$NotificationsDb {
     return rows.map(notificationFromDbEntity).toList();
   }
 
-  Future<int> unseenCount(DateTime now) async {
-    final row = await customSelect(
-      '''
-          SELECT COUNT(*) AS amount
-          FROM notifications
-          WHERE scheduled_for <= ?
-            AND seen_at IS NULL
-            AND acted_on_at IS NULL
-            AND deleted_at IS NULL
-          ''',
-      variables: [Variable<DateTime>(now)],
-      readsFrom: {notifications},
-    ).getSingle();
-    return row.read<int>('amount');
-  }
-
   // Read-modify-write under a Drift transaction so concurrent callers cannot
   // interleave and overwrite each other's vector-clock or lifecycle updates.
   Future<NotificationEntity?> upsertNotification(

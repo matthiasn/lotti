@@ -40,19 +40,20 @@ class TestPortalService extends PortalService {
       return;
     }
     await super.initialize();
+    _isInitialized = true;
   }
 
-  @override
-  bool get isInitialized =>
-      mockClient != null ? _isInitialized : super.isInitialized;
+  bool get initializedForTesting => _isInitialized;
 
   @override
   Future<void> dispose() async {
-    if (mockClient != null) {
+    try {
+      if (mockClient == null) {
+        await super.dispose();
+      }
+    } finally {
       _isInitialized = false;
-      return;
     }
-    await super.dispose();
   }
 
   // ignore_for_file: use_setters_to_change_properties
@@ -99,9 +100,7 @@ void main() {
     });
 
     tearDown(() async {
-      if (service.isInitialized) {
-        await service.dispose();
-      }
+      await service.dispose();
       await getIt.reset();
     });
 
@@ -132,25 +131,25 @@ void main() {
         'should handle initialization when shouldUsePortal is false',
         () async {
           // Test in non-Flatpak environment
-          expect(service.isInitialized, isFalse);
+          expect(service.initializedForTesting, isFalse);
 
           await service.initialize();
 
-          expect(service.isInitialized, isTrue);
+          expect(service.initializedForTesting, isTrue);
           // Should throw StateError when accessing client in non-Flatpak mode
           expect(() => service.client, throwsStateError);
         },
       );
 
       test('should handle multiple initializations safely', () async {
-        expect(service.isInitialized, isFalse);
+        expect(service.initializedForTesting, isFalse);
 
         await service.initialize();
-        expect(service.isInitialized, isTrue);
+        expect(service.initializedForTesting, isTrue);
 
         // Second initialization should not cause issues
         await service.initialize();
-        expect(service.isInitialized, isTrue);
+        expect(service.initializedForTesting, isTrue);
       });
 
       test(
@@ -167,7 +166,7 @@ void main() {
 
           // Service should still initialize even if logging fails
           await failingService.initialize();
-          expect(failingService.isInitialized, isTrue);
+          expect(failingService.initializedForTesting, isTrue);
         },
       );
 
@@ -201,30 +200,30 @@ void main() {
 
     group('Disposal', () {
       test('should dispose successfully when initialized', () async {
-        expect(service.isInitialized, isFalse);
+        expect(service.initializedForTesting, isFalse);
 
         await service.initialize();
-        expect(service.isInitialized, isTrue);
+        expect(service.initializedForTesting, isTrue);
 
         await service.dispose();
-        expect(service.isInitialized, isFalse);
+        expect(service.initializedForTesting, isFalse);
       });
 
       test('should handle disposal when not initialized', () async {
-        expect(service.isInitialized, isFalse);
+        expect(service.initializedForTesting, isFalse);
 
         await expectLater(service.dispose(), completes);
-        expect(service.isInitialized, isFalse);
+        expect(service.initializedForTesting, isFalse);
       });
 
       test('should handle multiple disposals safely', () async {
         await service.initialize();
         await service.dispose();
-        expect(service.isInitialized, isFalse);
+        expect(service.initializedForTesting, isFalse);
 
         // Second disposal should not cause issues
         await service.dispose();
-        expect(service.isInitialized, isFalse);
+        expect(service.initializedForTesting, isFalse);
       });
     });
 
@@ -309,6 +308,9 @@ void main() {
       test(
         'should return false for ScreenshotPortalService when not in Flatpak',
         () async {
+          await service.initialize();
+          expect(service.initializedForTesting, isTrue);
+
           final available = await PortalService.isInterfaceAvailable(
             'org.freedesktop.portal.Screenshot',
             service,
@@ -316,6 +318,7 @@ void main() {
           );
 
           expect(available, isFalse);
+          expect(service.initializedForTesting, isFalse);
         },
       );
 

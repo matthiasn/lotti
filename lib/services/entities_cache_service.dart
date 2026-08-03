@@ -21,8 +21,6 @@ class EntitiesCacheService {
   Map<String, HabitDefinition> habitsById = {};
   Map<String, DashboardDefinition> dashboardsById = {};
   Map<String, LabelDefinition> labelsById = {};
-  Map<String, List<LabelDefinition>> labelsByCategoryId = {};
-  final List<LabelDefinition> _globalLabels = [];
   bool _showPrivateEntries = false;
 
   // Per-type fetch serialization flags
@@ -118,10 +116,6 @@ class EntitiesCacheService {
       for (final item in items) {
         categoriesById[item.id] = item;
       }
-      // Prune stale category keys from label lookup when categories change
-      labelsByCategoryId.removeWhere(
-        (catId, _) => !categoriesById.containsKey(catId),
-      );
     } finally {
       _categoriesLoading = false;
       if (_categoriesPending) {
@@ -191,31 +185,6 @@ class EntitiesCacheService {
         labelsById[label.id] = label;
       }
 
-      // Rebuild label lookup buckets
-      labelsByCategoryId.clear();
-      _globalLabels.clear();
-      for (final label in labels) {
-        if (label.deletedAt != null) continue;
-        final cats = label.applicableCategoryIds;
-        if (cats == null || cats.isEmpty) {
-          _globalLabels.add(label);
-        } else {
-          for (final catId in cats) {
-            labelsByCategoryId
-                .putIfAbsent(catId, () => <LabelDefinition>[])
-                .add(label);
-          }
-        }
-      }
-      // Sort buckets by label name (case-insensitive)
-      _globalLabels.sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
-      for (final entry in labelsByCategoryId.entries) {
-        entry.value.sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
-      }
     } finally {
       _labelsLoading = false;
       if (_labelsPending) {
@@ -270,34 +239,6 @@ class EntitiesCacheService {
             .where((label) => _showPrivateEntries || !(label.private ?? false))
             .toList()
           ..sortBy((label) => label.name.toLowerCase());
-    return res;
-  }
-
-  List<LabelDefinition> get globalLabels => List.unmodifiable(_globalLabels);
-
-  /// Returns union of global labels and labels scoped to [categoryId],
-  /// optionally filtering private entries based on [includePrivate].
-  List<LabelDefinition> availableLabelsForCategory(
-    String? categoryId, {
-    bool? includePrivate,
-  }) {
-    final allowPrivate = includePrivate ?? _showPrivateEntries;
-    final dedup = <String, LabelDefinition>{};
-    bool isVisible(LabelDefinition l) =>
-        l.deletedAt == null && (allowPrivate || !(l.private ?? false));
-
-    for (final l in _globalLabels.where(isVisible)) {
-      dedup[l.id] = l;
-    }
-    if (categoryId != null) {
-      final bucket =
-          labelsByCategoryId[categoryId] ?? const <LabelDefinition>[];
-      for (final l in bucket.where(isVisible)) {
-        dedup[l.id] = l;
-      }
-    }
-    final res = dedup.values.toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return res;
   }
 

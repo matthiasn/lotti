@@ -1,32 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-/// Visual tone of a [NodeBadge]. Each tone resolves to a background /
-/// text pair in the design-system palette when the badge renders.
-enum NodeTone { info, teal, error }
-
 /// An immediate action a Settings tree row can perform without opening a
 /// settings detail panel.
 enum SettingsNodeAction { openManual }
-
-/// Small pill rendered to the right of a tree-row title — used for the
-/// "v2.4" (info), "Live" (teal) and "Retry" (error) cases seen in the
-/// Figma reference.
-@immutable
-class NodeBadge {
-  const NodeBadge({required this.label, required this.tone});
-
-  final String label;
-  final NodeTone tone;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is NodeBadge && other.label == label && other.tone == tone;
-
-  @override
-  int get hashCode => Object.hash(label, tone);
-}
 
 /// One node in the Settings tree. Branch nodes carry [children]; internal
 /// leaves carry [panel] (the id of the widget to render in the detail pane),
@@ -45,7 +22,6 @@ class SettingsNode {
     required this.desc,
     this.children,
     this.panel,
-    this.badge,
     this.action,
     this.sectionBreakBefore = false,
   });
@@ -73,9 +49,6 @@ class SettingsNode {
   /// should set this; action leaves and most branches leave it `null`.
   final String? panel;
 
-  /// Optional trailing pill.
-  final NodeBadge? badge;
-
   /// Immediate behavior for a non-navigational leaf, such as opening an
   /// external support resource. Action leaves intentionally have no panel.
   final SettingsNodeAction? action;
@@ -99,7 +72,6 @@ class SettingsNode {
           other.title == title &&
           other.desc == desc &&
           other.panel == panel &&
-          other.badge == badge &&
           other.action == action &&
           other.sectionBreakBefore == sectionBreakBefore &&
           listEquals(other.children, children);
@@ -111,7 +83,6 @@ class SettingsNode {
     title,
     desc,
     panel,
-    badge,
     action,
     sectionBreakBefore,
     children == null ? null : Object.hashAll(children!),

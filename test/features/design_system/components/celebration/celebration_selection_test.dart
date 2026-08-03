@@ -125,7 +125,6 @@ void main() {
 
   group('nextCelebrationSeed', () {
     test('advances on every call so surprise modes re-roll', () {
-      debugResetCelebrationSeed();
       final a = nextCelebrationSeed();
       final b = nextCelebrationSeed();
       final c = nextCelebrationSeed();

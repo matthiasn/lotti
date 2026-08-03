@@ -28,9 +28,6 @@ class SettingsV2Constants {
   /// Chevron glyph size.
   static const double chevronSize = 18;
 
-  /// Badge chip.
-  static const double badgeHeight = 20;
-
   /// Nested-children indent rail.
   static const double childrenRailWidth = 1.5;
   static const double childrenRailAlpha = 0.28;
@@ -46,10 +43,6 @@ class SettingsV2Constants {
   /// mobile Sync list used before it was folded into the shared tree, so
   /// the Sync rows keep their teal-on-tinted-tile look.
   static const double accentTileFillAlpha = 0.12;
-
-  /// Badge background alpha (all tones share the same fill-to-text
-  /// contrast ratio).
-  static const double badgeBackgroundAlpha = 0.16;
 
   /// Animation durations (spec §3 "Motion").
   static const Duration rowFillTransition = Duration(milliseconds: 180);

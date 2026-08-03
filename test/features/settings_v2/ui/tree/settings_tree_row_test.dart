@@ -9,13 +9,12 @@ import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
 
 import '../../../../widget_test_utils.dart';
 
-SettingsNode _branch({NodeBadge? badge}) => SettingsNode(
+SettingsNode _branch() => const SettingsNode(
   id: 'sync',
   icon: Icons.sync_rounded,
   title: 'Sync',
   desc: 'Configure sync and view stats',
-  badge: badge,
-  children: const [
+  children: [
     SettingsNode(
       id: 'sync/backfill',
       icon: Icons.cloud_download_outlined,
@@ -26,14 +25,13 @@ SettingsNode _branch({NodeBadge? badge}) => SettingsNode(
   ],
 );
 
-SettingsNode _leaf({NodeBadge? badge, String desc = 'Feature flags'}) =>
+SettingsNode _leaf({String desc = 'Feature flags'}) =>
     SettingsNode(
       id: 'flags',
       icon: Icons.flag_outlined,
       title: 'Flags',
       desc: desc,
       panel: 'flags',
-      badge: badge,
     );
 
 Future<void> _pumpRow(
@@ -217,36 +215,6 @@ void main() {
       // Minimum (not fixed) height: a single-line row sits at the floor;
       // a wrapped 2-line row would be taller, never clipped.
       expect(size.height, greaterThanOrEqualTo(SettingsV2Constants.rowHeight));
-    });
-  });
-
-  group('SettingsTreeRow — badge', () {
-    testWidgets('renders a badge label when present', (tester) async {
-      await _pumpRow(
-        tester,
-        node: _leaf(
-          badge: const NodeBadge(label: 'v2.4', tone: NodeTone.info),
-        ),
-      );
-      expect(find.text('v2.4'), findsOneWidget);
-    });
-
-    testWidgets('omits the badge chip when no badge is set', (tester) async {
-      await _pumpRow(tester, node: _leaf());
-      expect(find.text('v2.4'), findsNothing);
-      expect(find.text('Live'), findsNothing);
-    });
-
-    testWidgets('renders each NodeTone without throwing', (tester) async {
-      for (final tone in NodeTone.values) {
-        await _pumpRow(
-          tester,
-          node: _leaf(
-            badge: NodeBadge(label: tone.name, tone: tone),
-          ),
-        );
-        expect(find.text(tone.name), findsOneWidget);
-      }
     });
   });
 

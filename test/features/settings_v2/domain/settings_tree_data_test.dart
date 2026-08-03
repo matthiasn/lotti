@@ -237,9 +237,9 @@ void main() {
       expect(_ids(_tree(enableWhatsNew: false)), isNot(contains('whats-new')));
     });
 
-    test('includes whats-new with no badge when on', () {
+    test('includes whats-new when on', () {
       final whatsNew = _tree().firstWhere((n) => n.id == 'whats-new');
-      expect(whatsNew.badge, isNull);
+      expect(whatsNew.panel, 'whats-new');
     });
   });
 
@@ -256,7 +256,6 @@ void main() {
         'agents/souls',
         'agents/pending-wakes',
       ]);
-      expect(agents.badge, isNull);
     });
   });
 

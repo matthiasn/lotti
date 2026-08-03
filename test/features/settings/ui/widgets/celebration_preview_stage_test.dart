@@ -110,7 +110,6 @@ void main() {
   testWidgets('a combine selection fires a layered (two-variant) burst', (
     tester,
   ) async {
-    debugResetCelebrationSeed();
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const CelebrationPreviewStage(),

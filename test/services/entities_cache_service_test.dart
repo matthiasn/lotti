@@ -25,12 +25,6 @@ enum _GeneratedLabelScope {
   cat2AndOrphan,
 }
 
-enum _GeneratedIncludePrivateOverride {
-  useConfig,
-  include,
-  exclude,
-}
-
 class _GeneratedLabelSpec {
   const _GeneratedLabelSpec({
     required this.seed,
@@ -88,13 +82,11 @@ class _GeneratedEntitiesCacheScenario {
   const _GeneratedEntitiesCacheScenario({
     required this.labelSpecs,
     required this.privateFlag,
-    required this.includePrivateOverride,
     required this.categorySlot,
   });
 
   final List<_GeneratedLabelSpec> labelSpecs;
   final bool privateFlag;
-  final _GeneratedIncludePrivateOverride includePrivateOverride;
   final int categorySlot;
 
   List<CategoryDefinition> get categories {
@@ -128,29 +120,6 @@ class _GeneratedEntitiesCacheScenario {
       4 => 'cat-2',
       _ => 'cat-3',
     };
-  }
-
-  bool? get includePrivate {
-    return switch (includePrivateOverride) {
-      _GeneratedIncludePrivateOverride.useConfig => null,
-      _GeneratedIncludePrivateOverride.include => true,
-      _GeneratedIncludePrivateOverride.exclude => false,
-    };
-  }
-
-  bool get effectiveIncludePrivate => includePrivate ?? privateFlag;
-
-  List<String> expectedAvailableIds() {
-    final scoped =
-        labels
-            .where((label) => _isVisible(label, includePrivate: true))
-            .where(_appliesToCategory)
-            .where(
-              (label) => effectiveIncludePrivate || !(label.private ?? false),
-            )
-            .toList()
-          ..sort(_compareLabelsByName);
-    return scoped.map((label) => label.id).toList();
   }
 
   List<String> expectedFilteredIds() {
@@ -195,7 +164,6 @@ class _GeneratedEntitiesCacheScenario {
   String toString() {
     return '_GeneratedEntitiesCacheScenario('
         'labelSpecs: $labelSpecs, privateFlag: $privateFlag, '
-        'includePrivateOverride: $includePrivateOverride, '
         'categorySlot: $categorySlot)';
   }
 }
@@ -203,10 +171,6 @@ class _GeneratedEntitiesCacheScenario {
 extension _AnyGeneratedEntitiesCacheScenario on glados.Any {
   glados.Generator<_GeneratedLabelScope> get entitiesCacheLabelScope =>
       glados.AnyUtils(this).choose(_GeneratedLabelScope.values);
-
-  glados.Generator<_GeneratedIncludePrivateOverride>
-  get entitiesCacheIncludePrivateOverride =>
-      glados.AnyUtils(this).choose(_GeneratedIncludePrivateOverride.values);
 
   glados.Generator<_GeneratedLabelSpec> get entitiesCacheLabelSpec =>
       glados.CombinableAny(this).combine4(
@@ -228,22 +192,19 @@ extension _AnyGeneratedEntitiesCacheScenario on glados.Any {
       );
 
   glados.Generator<_GeneratedEntitiesCacheScenario> get entitiesCacheScenario =>
-      glados.CombinableAny(this).combine4(
+      glados.CombinableAny(this).combine3(
         glados.ListAnys(
           this,
         ).listWithLengthInRange(0, 30, entitiesCacheLabelSpec),
         glados.AnyUtils(this).choose([false, true]),
-        entitiesCacheIncludePrivateOverride,
         glados.IntAnys(this).intInRange(0, 1000),
         (
           List<_GeneratedLabelSpec> labelSpecs,
           bool privateFlag,
-          _GeneratedIncludePrivateOverride includePrivateOverride,
           int categorySlot,
         ) => _GeneratedEntitiesCacheScenario(
           labelSpecs: labelSpecs,
           privateFlag: privateFlag,
-          includePrivateOverride: includePrivateOverride,
           categorySlot: categorySlot,
         ),
       );
@@ -351,20 +312,11 @@ void main() {
         privateFlag: scenario.privateFlag,
       );
 
-      final available = cache.availableLabelsForCategory(
-        scenario.categoryId,
-        includePrivate: scenario.includePrivate,
-      );
       final filtered = cache.filterLabelsForCategory(
         scenario.labels,
         scenario.categoryId,
       );
 
-      expect(
-        available.map((label) => label.id).toList(),
-        scenario.expectedAvailableIds(),
-        reason: scenario.toString(),
-      );
       expect(
         filtered.map((label) => label.id).toList(),
         scenario.expectedFilteredIds(),
@@ -375,66 +327,8 @@ void main() {
         scenario.expectedSortedLabelIds(),
         reason: scenario.toString(),
       );
-      expect(
-        available.map((label) => label.id).toSet(),
-        hasLength(available.length),
-        reason: 'availableLabelsForCategory must not duplicate label IDs',
-      );
     });
   }, tags: 'glados');
-
-  test('availableLabelsForCategory returns union of global + bucket', () async {
-    final work = CategoryDefinition(
-      id: 'work',
-      name: 'Work',
-      color: '#0000FF',
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      active: true,
-      private: false,
-    );
-    final home = CategoryDefinition(
-      id: 'home',
-      name: 'Home',
-      color: '#00FF00',
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      active: true,
-      private: false,
-    );
-
-    final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
-    final scopedWork = testLabelDefinition1.copyWith(
-      id: 'w',
-      name: 'WorkOnly',
-      applicableCategoryIds: const ['work'],
-    );
-    final scopedHome = testLabelDefinition1.copyWith(
-      id: 'h',
-      name: 'HomeOnly',
-      applicableCategoryIds: const ['home'],
-    );
-    final privateLabel = testLabelDefinition1.copyWith(
-      id: 'p',
-      name: 'Private',
-      private: true,
-    );
-
-    final cache = await createCache(
-      categories: [work, home],
-      labels: [global, scopedWork, scopedHome, privateLabel],
-    );
-
-    final forWork = cache.availableLabelsForCategory('work');
-    final forHome = cache.availableLabelsForCategory('home');
-    final forNull = cache.availableLabelsForCategory(null);
-
-    expect(forWork.map((e) => e.id).toSet(), {'g', 'w'});
-    expect(forHome.map((e) => e.id).toSet(), {'g', 'h'});
-    expect(forNull.map((e) => e.id).toSet(), {'g'});
-  });
 
   test('filterLabelsForCategory filters by category scope', () async {
     final cache = await createCache();
@@ -457,312 +351,11 @@ void main() {
     expect(result.map((e) => e.id).toSet(), {'g', 'w', 'p'});
   });
 
-  test('prunes orphan category keys on categories update', () {
-    fakeAsync((async) {
-      final work = CategoryDefinition(
-        id: 'work',
-        name: 'Work',
-        color: '#0000FF',
-        createdAt: testEpochDateTime,
-        updatedAt: testEpochDateTime,
-        vectorClock: null,
-        active: true,
-        private: false,
-      );
-
-      final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
-      final ghost = testLabelDefinition1.copyWith(
-        id: 'x',
-        name: 'Ghosted',
-        applicableCategoryIds: const ['ghost'],
-      );
-
-      final cache = createCacheSync(
-        async,
-        categories: [work],
-        labels: [global, ghost],
-        privateFlag: true,
-      );
-
-      // Before prune, ghost bucket exists
-      expect(
-        cache.availableLabelsForCategory('ghost').map((e) => e.id).toSet(),
-        {'g', 'x'},
-      );
-
-      // Trigger categories update (still only 'work') → prune removes 'ghost' key
-      when(() => journalDb.getAllCategories()).thenAnswer((_) async => [work]);
-      notifications.emit({categoriesNotification});
-      async.flushMicrotasks();
-
-      expect(
-        cache.availableLabelsForCategory('ghost').map((e) => e.id).toSet(),
-        {'g'},
-      );
-    });
-  });
-
-  test('availableLabelsForCategory respects private config flag', () {
-    fakeAsync((async) {
-      final cat = CategoryDefinition(
-        id: 'work',
-        name: 'Work',
-        color: '#0000FF',
-        createdAt: testEpochDateTime,
-        updatedAt: testEpochDateTime,
-        vectorClock: null,
-        active: true,
-        private: false,
-      );
-      final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
-      final privGlobal = testLabelDefinition1.copyWith(
-        id: 'p',
-        name: 'Priv',
-        private: true,
-      );
-      final workPub = testLabelDefinition1.copyWith(
-        id: 'w',
-        name: 'WorkPub',
-        applicableCategoryIds: const ['work'],
-      );
-      final workPriv = testLabelDefinition1.copyWith(
-        id: 'wp',
-        name: 'WorkPriv',
-        private: true,
-        applicableCategoryIds: const ['work'],
-      );
-
-      // Start with private=false
-      final cache = createCacheSync(
-        async,
-        categories: [cat],
-        labels: [global, privGlobal, workPub, workPriv],
-      );
-
-      expect(
-        cache.availableLabelsForCategory('work').map((e) => e.id).toList(),
-        containsAllInOrder(['g', 'w']),
-      );
-      expect(
-        cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
-        isNot(containsAll(['p', 'wp'])),
-      );
-
-      // Flip to private=true via notification
-      when(
-        () => journalDb.getConfigFlag('private'),
-      ).thenAnswer((_) async => true);
-      notifications.emit({privateToggleNotification});
-      async.flushMicrotasks();
-
-      expect(
-        cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
-        containsAll(['g', 'p', 'w', 'wp']),
-      );
-    });
-  });
-
-  test(
-    'availableLabelsForCategory returns labels sorted case-insensitively',
-    () async {
-      final work = CategoryDefinition(
-        id: 'work',
-        name: 'Work',
-        color: '#0000FF',
-        createdAt: testEpochDateTime,
-        updatedAt: testEpochDateTime,
-        vectorClock: null,
-        active: true,
-        private: false,
-      );
-      final cache = await createCache(
-        categories: [work],
-        labels: [
-          testLabelDefinition1.copyWith(id: 'a', name: 'apple'),
-          testLabelDefinition1.copyWith(
-            id: 'b',
-            name: 'Banana',
-            applicableCategoryIds: const ['work'],
-          ),
-          testLabelDefinition1.copyWith(id: 'c', name: 'cherry'),
-        ],
-        privateFlag: true,
-      );
-
-      final res = cache.availableLabelsForCategory('work');
-      expect(res.map((l) => l.name).toList(), ['apple', 'Banana', 'cherry']);
-    },
-  );
-
-  test('availableLabelsForCategory handles deleted categories gracefully', () {
-    fakeAsync((async) {
-      final work = CategoryDefinition(
-        id: 'work',
-        name: 'Work',
-        color: '#0000FF',
-        createdAt: testEpochDateTime,
-        updatedAt: testEpochDateTime,
-        vectorClock: null,
-        active: true,
-        private: false,
-      );
-      final personal = CategoryDefinition(
-        id: 'personal',
-        name: 'Personal',
-        color: '#00FF00',
-        createdAt: testEpochDateTime,
-        updatedAt: testEpochDateTime,
-        vectorClock: null,
-        active: true,
-        private: false,
-      );
-      final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
-      final scopedWork = testLabelDefinition1.copyWith(
-        id: 'w',
-        name: 'WorkOnly',
-        applicableCategoryIds: const ['work'],
-      );
-
-      final cache = createCacheSync(
-        async,
-        categories: [work, personal],
-        labels: [global, scopedWork],
-        privateFlag: true,
-      );
-
-      expect(
-        cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
-        {'g', 'w'},
-      );
-
-      // Simulate deleting the 'work' category
-      when(
-        () => journalDb.getAllCategories(),
-      ).thenAnswer((_) async => [personal]);
-      notifications.emit({categoriesNotification});
-      async.flushMicrotasks();
-
-      expect(
-        cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
-        {'g'},
-      );
-    });
-  });
-
   test('filterLabelsForCategory handles empty input list', () async {
     final cache = await createCache();
     final res = cache.filterLabelsForCategory(const [], 'any');
     expect(res, isEmpty);
   });
-
-  test('pruning cleans up multiple orphaned categories at once', () {
-    fakeAsync((async) {
-      CategoryDefinition makeCat(String id) => CategoryDefinition(
-        id: id,
-        name: id.toUpperCase(),
-        color: '#000000',
-        createdAt: testEpochDateTime,
-        updatedAt: testEpochDateTime,
-        vectorClock: null,
-        active: true,
-        private: false,
-      );
-
-      final a = makeCat('a');
-      final b = makeCat('b');
-      final c = makeCat('c');
-      final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
-      final la = testLabelDefinition1.copyWith(
-        id: 'la',
-        name: 'A',
-        applicableCategoryIds: const ['a'],
-      );
-      final lb = testLabelDefinition1.copyWith(
-        id: 'lb',
-        name: 'B',
-        applicableCategoryIds: const ['b'],
-      );
-
-      final cache = createCacheSync(
-        async,
-        categories: [a, b, c],
-        labels: [global, la, lb],
-        privateFlag: true,
-      );
-
-      expect(
-        cache.availableLabelsForCategory('a').map((e) => e.id).toSet(),
-        {'g', 'la'},
-      );
-      expect(
-        cache.availableLabelsForCategory('b').map((e) => e.id).toSet(),
-        {'g', 'lb'},
-      );
-
-      // Drop both a and b at once
-      when(() => journalDb.getAllCategories()).thenAnswer((_) async => [c]);
-      notifications.emit({categoriesNotification});
-      async.flushMicrotasks();
-
-      expect(
-        cache.availableLabelsForCategory('a').map((e) => e.id).toSet(),
-        {'g'},
-      );
-      expect(
-        cache.availableLabelsForCategory('b').map((e) => e.id).toSet(),
-        {'g'},
-      );
-    });
-  });
-
-  test(
-    'availableLabelsForCategory de-duplicates labels present in multiple categories',
-    () async {
-      final cache = await createCache(
-        categories: [
-          CategoryDefinition(
-            id: 'a',
-            name: 'A',
-            color: '#000000',
-            createdAt: testEpochDateTime,
-            updatedAt: testEpochDateTime,
-            vectorClock: null,
-            active: true,
-            private: false,
-          ),
-          CategoryDefinition(
-            id: 'b',
-            name: 'B',
-            color: '#000000',
-            createdAt: testEpochDateTime,
-            updatedAt: testEpochDateTime,
-            vectorClock: null,
-            active: true,
-            private: false,
-          ),
-        ],
-        labels: [
-          testLabelDefinition1.copyWith(
-            id: 'multi',
-            name: 'Multi',
-            applicableCategoryIds: const ['a', 'b'],
-          ),
-          testLabelDefinition1.copyWith(id: 'g', name: 'Global'),
-        ],
-        privateFlag: true,
-      );
-
-      final ids = cache
-          .availableLabelsForCategory('a')
-          .map((e) => e.id)
-          .toList();
-      expect(
-        ids.where((id) => id == 'multi').length,
-        1,
-        reason: 'Label should not be duplicated in union',
-      );
-    },
-  );
 
   test('getDataTypeById returns data type when found', () async {
     final cache = await createCache(
@@ -898,30 +491,6 @@ void main() {
     },
   );
 
-  test('globalLabels returns only global labels sorted by name', () async {
-    final global1 = testLabelDefinition1.copyWith(id: 'g1', name: 'Zebra');
-    final global2 = testLabelDefinition1.copyWith(id: 'g2', name: 'Apple');
-    final scoped = testLabelDefinition1.copyWith(
-      id: 's',
-      name: 'Scoped',
-      applicableCategoryIds: const ['work'],
-    );
-    final deleted = testLabelDefinition1.copyWith(
-      id: 'd',
-      name: 'Deleted',
-      deletedAt: testEpochDateTime,
-    );
-
-    final cache = await createCache(
-      labels: [global1, global2, scoped, deleted],
-      privateFlag: true,
-    );
-
-    final globals = cache.globalLabels;
-    expect(globals.length, 2);
-    expect(globals.map((l) => l.name).toList(), ['Apple', 'Zebra']);
-  });
-
   test('showPrivateEntries reflects config flag', () {
     fakeAsync((async) {
       final cache = createCacheSync(async);
@@ -944,34 +513,6 @@ void main() {
       expect(cache.showPrivateEntries, false);
     });
   });
-
-  test(
-    'availableLabelsForCategory with includePrivate override ignores config flag',
-    () async {
-      final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
-      final privateLabel = testLabelDefinition1.copyWith(
-        id: 'p',
-        name: 'Private',
-        private: true,
-      );
-
-      final cache = await createCache(labels: [global, privateLabel]);
-
-      // Config is false, but override to include private
-      final withPrivate = cache.availableLabelsForCategory(
-        null,
-        includePrivate: true,
-      );
-      expect(withPrivate.map((l) => l.id).toSet(), {'g', 'p'});
-
-      // Config is false, explicit override to exclude private
-      final withoutPrivate = cache.availableLabelsForCategory(
-        null,
-        includePrivate: false,
-      );
-      expect(withoutPrivate.map((l) => l.id).toSet(), {'g'});
-    },
-  );
 
   test('filterLabelsForCategory excludes deleted labels', () async {
     final cache = await createCache();

@@ -438,7 +438,8 @@ void main() {
           // Toggle explicitly to guarantee [false].
           final showPrivate = await db!.getConfigFlag('private');
           if (showPrivate) {
-            await db!.toggleConfigFlag('private');
+            final flag = await db!.getConfigFlagByName('private');
+            await db!.upsertConfigFlag(flag!.copyWith(status: false));
           }
 
           final results = await db!.getTasksSortedByDueDate(

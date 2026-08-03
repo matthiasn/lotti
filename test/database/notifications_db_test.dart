@@ -68,7 +68,6 @@ void main() {
         (await db.upcoming(now)).map((entity) => entity.id),
         ['upcoming'],
       );
-      expect(await db.unseenCount(now), 1);
       expect(
         (await db.forLinkedEntity('task-1')).map((entity) => entity.id),
         ['upcoming', 'due'],
