@@ -5,13 +5,13 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-02T20:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-03T12:00:00Z }
 stale_after: 2026-11-01
 sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Directive, status and digest services
-    last_modified: 2026-08-02
+    last_modified: 2026-08-03
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination
@@ -211,6 +211,40 @@ The lease expires. A device that claims and then crashes or goes offline
 *before consuming the record* delays the window rather than dropping it: past
 `leaseUntil` any device takes over. A device with no sync host fires unleased —
 it has no peers to race.
+
+Takeover is timely because every "not yet" branch arms its own one-shot
+re-check: the periodic tick is hourly, so a lease expiring at 06:34 would
+otherwise wait until 07:00. Those re-checks are timers that fire once, so
+`_checkAndEnqueue` **coalesces** a trigger arriving during an in-flight pass and
+re-runs once when that pass finishes, rather than dropping it on the
+already-running guard — which would lose the trigger outright, not delay it.
+
+The re-run re-reads everything and skips only the rows this invocation already
+acted on. Both halves are load-bearing. It must re-read, because a state that
+became due *during* a long pass is exactly what the re-run is for. And it must
+skip what it handled, because neither write is guaranteed to have landed — the
+wake clears `scheduledWakeAt` asynchronously, and a record's consume-write can
+fail outright and leave it pending. `enqueueManualWake` supersedes only work
+still *queued*, so firing a row twice bills twice. Rows are marked handled
+before the work, not after: a partial failure waits for the next invocation
+rather than being retried microseconds later.
+
+A record the lease *deferred* is deliberately left unmarked. It armed the very
+one-shot re-check the coalesced re-run is answering, so treating it as handled
+would make the re-run skip the record it was woken for — and confirmation or
+takeover would wait for the next hourly tick, which is the delay this whole
+mechanism exists to remove. Only records actually fired, or consumed as stale,
+are marked.
+
+Generations bound the loop at both ends. A `stop()` mid-pass cancels the queued
+re-run, since the schedule it belonged to is gone. A trigger raised by a
+*restart* — `start()`'s immediate check landing while the old pass winds down —
+is handed to a fresh invocation instead of being dropped, or the restarted
+manager would wait a full interval for its first scan. That handoff inherits
+the old pass's handled rows: work enqueued just before `stop()` can still look
+due until its asynchronous state update lands, and forgetting it at the
+generation boundary would bill the restarted scan twice. The set crosses only
+this in-flight handoff; an independent later scan starts clean.
 
 The lease recovers the **claim**, not the run. A crash after the `consumed` flip
 but before the job finishes still loses that day's briefing, because

@@ -9,6 +9,17 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+/// What one logical check sequence has already acted on, so its coalesced
+/// re-runs and an in-flight restart handoff do not act on the same row twice.
+///
+/// Scoped to the sequence, not the manager: later independent checks must
+/// re-read genuinely due rows, while a restart arriving before the old pass
+/// releases the single-flight guard is still part of that pass's handoff.
+class _HandledCheckSequence {
+  final agentIds = <String>{};
+  final recordIds = <String>{};
+}
+
 /// Manages scheduled wakes for agents that need to wake on a time-based
 /// schedule (e.g., daily project digests, weekly one-on-one rituals).
 ///
@@ -91,6 +102,14 @@ class ScheduledWakeManager {
   int _generation = 0;
   bool _isChecking = false;
 
+  /// Set when a trigger arrives while a pass is already running, so that pass
+  /// runs once more instead of the trigger being lost. See [_checkAndEnqueue].
+  bool _rerunRequested = false;
+
+  /// The generation [_rerunRequested] was raised under. A request from a newer
+  /// generation belongs to a restarted manager, not to the pass in flight.
+  int _rerunGeneration = 0;
+
   /// Start periodic checking. Also immediately checks for missed wakes.
   void start() {
     unawaited(_checkAndEnqueue());
@@ -128,9 +147,53 @@ class ScheduledWakeManager {
     });
   }
 
-  Future<void> _checkAndEnqueue() async {
-    if (_isChecking) return;
+  /// Runs a due-record pass, coalescing any trigger that arrives during it.
+  ///
+  /// Dropping the overlapping trigger would lose it outright: the re-checks
+  /// armed by [_scheduleRecheck] are one-shot timers, so a foreign lease
+  /// expiring while another pass is in flight would wait for the next hourly
+  /// tick before any device could take it over. Re-running once afterwards
+  /// costs one extra query and answers every trigger, however many arrived.
+  ///
+  /// The re-run re-reads everything and skips only what this invocation has
+  /// already acted on. It has to re-read: the wake clears `scheduledWakeAt`
+  /// and the record flips to `consumed`, and neither has necessarily landed
+  /// when the re-run starts — a consume-write can even have failed outright.
+  /// Acting twice would be billed twice, because `enqueueManualWake`
+  /// supersedes only work still queued, not a run already under way. Skipping
+  /// the whole path instead of the handled rows would lose a state that became
+  /// due *during* a long pass, which is the case the re-run exists for.
+  Future<void> _checkAndEnqueue([
+    _HandledCheckSequence? inheritedHandled,
+  ]) async {
+    if (_isChecking) {
+      _rerunRequested = true;
+      _rerunGeneration = _generation;
+      return;
+    }
     _isChecking = true;
+    final entryGeneration = _generation;
+    final handled = inheritedHandled ?? _HandledCheckSequence();
+    try {
+      do {
+        _rerunRequested = false;
+        await _runPass(handled);
+        // A `stop()` during the pass ends the schedule this loop belongs to;
+        // anything raised since then is the next generation's business.
+      } while (_rerunRequested && _generation == entryGeneration);
+    } finally {
+      _isChecking = false;
+      // A trigger from a *newer* generation is a restart's immediate check
+      // arriving while this pass was still winding down. Dropping it would
+      // leave the restarted manager waiting a full interval for its first
+      // scan, so hand it to a fresh invocation now that the guard is clear.
+      final restarted = _rerunRequested && _rerunGeneration == _generation;
+      _rerunRequested = false;
+      if (restarted) unawaited(_checkAndEnqueue(handled));
+    }
+  }
+
+  Future<void> _runPass(_HandledCheckSequence handled) async {
     // Captured before the first await: `stop()` may land while this pass is
     // waiting on the repository, the host lookup or the claim write, and the
     // continuation must not then arm a timer the stop could never cancel.
@@ -168,6 +231,12 @@ class ScheduledWakeManager {
         // Re-checked per item: each iteration awaits the identity lookup and
         // its own writes, so a `stop()` can land mid-loop.
         if (generation != _generation) return;
+        // Already acted on by an earlier pass of this same invocation; the
+        // wake it enqueued has not necessarily cleared `scheduledWakeAt` yet.
+        // Marked before the work, not after: a partial failure must not let a
+        // re-run enqueue the same agent again. It stays due for the next
+        // invocation.
+        if (!handled.agentIds.add(state.agentId)) continue;
         try {
           // Defense-in-depth (ADR 0022): the due query filters on
           // `scheduledWakeAt` only — not lifecycle — so an archived or missing
@@ -202,7 +271,11 @@ class ScheduledWakeManager {
         }
       }
 
-      final recordsEnqueued = await _processDueRecords(now, generation);
+      final recordsEnqueued = await _processDueRecords(
+        now,
+        generation,
+        handled,
+      );
 
       if (dueStates.isNotEmpty || recordsEnqueued > 0) {
         _log(
@@ -214,8 +287,6 @@ class ScheduledWakeManager {
       }
     } catch (e, s) {
       _logError('error checking scheduled wakes', error: e, stackTrace: s);
-    } finally {
-      _isChecking = false;
     }
   }
 
@@ -243,13 +314,23 @@ class ScheduledWakeManager {
   /// `scheduledWakeAt` path. After enqueuing, the record is flipped to
   /// [ScheduledWakeStatus.consumed] in place (not hard-deleted) so a
   /// concurrent device's flip converges via LWW instead of resurrecting it.
-  Future<int> _processDueRecords(DateTime now, int generation) async {
+  Future<int> _processDueRecords(
+    DateTime now,
+    int generation,
+    _HandledCheckSequence handled,
+  ) async {
     final dueRecords = await _repository.getDueScheduledWakeRecords(now);
     var enqueued = 0;
     for (final record in dueRecords) {
       // As in the due-states loop: a `stop()` can land while this loop awaits
       // the identity lookup, the host lookup or the claim write.
       if (generation != _generation) return enqueued;
+      // Skipped only once this invocation has *acted* on it. A record the
+      // lease deferred armed a one-shot re-check, and that timer is precisely
+      // what the coalesced re-run is answering — marking it here would make
+      // the re-run skip the record it was woken for, so confirmation or
+      // takeover would wait for the next hourly tick.
+      if (handled.recordIds.contains(record.id)) continue;
       try {
         // Same guard as the due-*states* loop above, and for the same reason:
         // `getDueScheduledWakeRecords` filters on the deadline, not lifecycle.
@@ -266,6 +347,7 @@ class ScheduledWakeManager {
         }
         final lifecycle = identity.mapOrNull(agent: (e) => e.lifecycle);
         if (lifecycle != AgentLifecycle.active) {
+          handled.recordIds.add(record.id);
           await _consumeStaleWakeRecord(record, now);
           continue;
         }
@@ -293,6 +375,11 @@ class ScheduledWakeManager {
                 !current.scheduledAt.isAtSameMomentAs(approved.scheduledAt))) {
           continue;
         }
+        // Marked before the enqueue, not after: if the consume-write below
+        // fails the record is still pending, and a re-run microseconds later
+        // would fire it a second time — a transient write error must not
+        // become a second billed wake. It stays due for the next invocation.
+        handled.recordIds.add(record.id);
         _orchestrator.enqueueManualWake(
           agentId: record.agentId,
           reason: record.reason,
