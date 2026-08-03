@@ -44,7 +44,7 @@
 
 - [x] **[HIGH]** `test/features/categories/ui/pages/category_details_page_test.dart` was **1955 lines** and is now 1718 lines. **RESOLVED (partially):** repeated setup moved into `pumpCategoryDetailsPage`, and the source page dropped from 753 to 521 lines through form-section extraction. The remaining by-group file split is rejected because AGENTS.md requires one mirror test file per source file; group nesting provides the organisation.
 
-- [x] **[HIGH]** `test/features/categories/state/category_details_controller_test.dart` was **1350 lines** and is now 1108 lines. **RESOLVED:** `makeContainer()` and `loadCategory(container)` replace the repeated setup, and no wall-clock `.timeout(...)` remains. The remaining inline listeners differ legitimately.
+- [x] **[HIGH]** `test/features/categories/state/category_details_controller_test.dart` was **1350 lines** and is now 1110 lines. **RESOLVED:** `makeContainer()` and `loadCategory(container)` replace the repeated setup, and no wall-clock `.timeout(...)` remains. The remaining inline listeners differ legitimately.
 
 - [x] **[MED]** `lib/features/categories/ui/pages/category_details_page.dart` was 753 lines.
   **RESOLVED (adapted):** setState-free form-section builders moved to the 228-line `category_details_form_sections.dart` part, and the page is down to 521 lines. `CategoryProjectsSection` was already external; setState-writing builders remain on the State class.
@@ -93,7 +93,7 @@
 
 ## Coverage / Missing-Behavior Gaps
 
-- [x] **[HIGH]** `lib/features/categories/state/categories_list_controller.dart` (10 lines) — no test file exists. The file is small but it's the Riverpod provider that feeds the categories list page; its absence from the test suite means list-watching behavior (e.g., stream subscription lifecycle, error propagation) is untested at the unit level.
+- [x] **[HIGH]** `lib/features/categories/state/categories_list_controller.dart` (14 lines) — no test file existed. The file is small but it's the Riverpod provider that feeds the categories list page; its former absence from the test suite meant list-watching behavior (e.g. stream subscription lifecycle and error propagation) was untested at the unit level.
   **RESOLVED:** `categories_list_controller_test.dart` verifies initial and subsequent repository stream values plus error propagation into `AsyncError`.
 
 - [ ] **[HIGH]** `lib/features/categories/ui/widgets/category_color_icon.dart` (26 lines) — no path-mirroring test exists. Cover rendering with a valid color, fallback behavior, and luminance-based foreground selection.
@@ -130,7 +130,7 @@
 ## Summary
 
 - **1 oversized impl file**: `category_details_page.dart` is now 521 lines after form-section extraction. `category_icon.dart` is down to 306 lines after table extraction and unused-code removal.
-- **2 long test files**: `category_details_page_test.dart` is 1718 lines and `category_details_controller_test.dart` is 1108 lines. Their shared pump/container helpers are implemented; further file splitting is constrained by the one-test-file-per-source rule.
+- **2 long test files**: `category_details_page_test.dart` is 1718 lines and `category_details_controller_test.dart` is 1110 lines. Their shared pump/container helpers are implemented; further file splitting is constrained by the one-test-file-per-source rule.
 - **1 prime Glados candidate**: `fromJson`/`toJson` roundtrip on arbitrary strings, a pure function on structured input.
 - **3 missing path-mirroring test files**: `category_icon_data.dart`, `category_icon_names.dart`, and `category_color_icon.dart`; the two icon-table parts do have indirect behavioral coverage in `category_icon_test.dart`.
 - **Remaining speed review is outside `category_details_page_test.dart`**: that file has zero `pumpAndSettle` calls. The current calls are in the list page and smaller widget/modal mirrors enumerated above.
