@@ -9,12 +9,13 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
 
-/// What one [ScheduledWakeManager._checkAndEnqueue] invocation has already
-/// acted on, so its coalesced re-runs do not act on the same row twice.
+/// What one logical check sequence has already acted on, so its coalesced
+/// re-runs and an in-flight restart handoff do not act on the same row twice.
 ///
-/// Scoped to the invocation, not the manager: across invocations the rows are
-/// genuinely due again, and a long-lived set would suppress real work.
-class _HandledThisInvocation {
+/// Scoped to the sequence, not the manager: later independent checks must
+/// re-read genuinely due rows, while a restart arriving before the old pass
+/// releases the single-flight guard is still part of that pass's handoff.
+class _HandledCheckSequence {
   final agentIds = <String>{};
   final recordIds = <String>{};
 }
@@ -162,7 +163,9 @@ class ScheduledWakeManager {
   /// supersedes only work still queued, not a run already under way. Skipping
   /// the whole path instead of the handled rows would lose a state that became
   /// due *during* a long pass, which is the case the re-run exists for.
-  Future<void> _checkAndEnqueue() async {
+  Future<void> _checkAndEnqueue([
+    _HandledCheckSequence? inheritedHandled,
+  ]) async {
     if (_isChecking) {
       _rerunRequested = true;
       _rerunGeneration = _generation;
@@ -170,7 +173,7 @@ class ScheduledWakeManager {
     }
     _isChecking = true;
     final entryGeneration = _generation;
-    final handled = _HandledThisInvocation();
+    final handled = inheritedHandled ?? _HandledCheckSequence();
     try {
       do {
         _rerunRequested = false;
@@ -186,11 +189,11 @@ class ScheduledWakeManager {
       // scan, so hand it to a fresh invocation now that the guard is clear.
       final restarted = _rerunRequested && _rerunGeneration == _generation;
       _rerunRequested = false;
-      if (restarted) unawaited(_checkAndEnqueue());
+      if (restarted) unawaited(_checkAndEnqueue(handled));
     }
   }
 
-  Future<void> _runPass(_HandledThisInvocation handled) async {
+  Future<void> _runPass(_HandledCheckSequence handled) async {
     // Captured before the first await: `stop()` may land while this pass is
     // waiting on the repository, the host lookup or the claim write, and the
     // continuation must not then arm a timer the stop could never cancel.
@@ -314,7 +317,7 @@ class ScheduledWakeManager {
   Future<int> _processDueRecords(
     DateTime now,
     int generation,
-    _HandledThisInvocation handled,
+    _HandledCheckSequence handled,
   ) async {
     final dueRecords = await _repository.getDueScheduledWakeRecords(now);
     var enqueued = 0;

@@ -2239,6 +2239,51 @@ void main() {
         });
       });
 
+      test('a restart handoff does not enqueue an already-handled row', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 15, 9);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final gate = Completer<void>();
+            final passes = gatedDueQuery(gate, [0]);
+            // The wake has been enqueued but has not yet cleared this row, so
+            // the restart's immediate scan still sees it as due.
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
+            );
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+              ),
+            ).called(1);
+
+            // The old pass is now waiting on its due-record query. The
+            // restart must get an immediate scan without forgetting what that
+            // still-in-flight pass already enqueued.
+            manager
+              ..stop()
+              ..start();
+            gate.complete();
+            async.flushMicrotasks();
+
+            expect(passes(), 2, reason: 'the restart still scans immediately');
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+              ),
+            );
+
+            manager.stop();
+          });
+        });
+      });
+
       test('a stop during the pass cancels the queued re-run', () {
         final now = DateTime(2024, 3, 15, 10, 30);
 

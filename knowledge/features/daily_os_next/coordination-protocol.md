@@ -5,13 +5,13 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-02T22:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-03T12:00:00Z }
 stale_after: 2026-11-01
 sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Directive, status and digest services
-    last_modified: 2026-08-02
+    last_modified: 2026-08-03
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination
@@ -240,7 +240,11 @@ Generations bound the loop at both ends. A `stop()` mid-pass cancels the queued
 re-run, since the schedule it belonged to is gone. A trigger raised by a
 *restart* — `start()`'s immediate check landing while the old pass winds down —
 is handed to a fresh invocation instead of being dropped, or the restarted
-manager would wait a full interval for its first scan.
+manager would wait a full interval for its first scan. That handoff inherits
+the old pass's handled rows: work enqueued just before `stop()` can still look
+due until its asynchronous state update lands, and forgetting it at the
+generation boundary would bill the restarted scan twice. The set crosses only
+this in-flight handoff; an independent later scan starts clean.
 
 The lease recovers the **claim**, not the run. A crash after the `consumed` flip
 but before the job finishes still loses that day's briefing, because
