@@ -50,25 +50,6 @@ void main() {
     expect(restored.resultTranscript, 'Gym first, then the proposal.');
   });
 
-  test('running work becomes due only after its persisted lease', () {
-    final running = job(
-      status: DayProcessingJobStatus.running,
-      leaseUntil: createdAt.add(const Duration(minutes: 3)),
-    );
-
-    expect(running.isDue(createdAt.add(const Duration(minutes: 2))), isFalse);
-    expect(running.isDue(createdAt.add(const Duration(minutes: 3))), isTrue);
-  });
-
-  test('hard retry boundary wins over an otherwise due job', () {
-    final busy = job(
-      retryNotBefore: createdAt.add(const Duration(minutes: 5)),
-    );
-
-    expect(busy.isDue(createdAt.add(const Duration(minutes: 4))), isFalse);
-    expect(busy.isDue(createdAt.add(const Duration(minutes: 5))), isTrue);
-  });
-
   group('schema v1 → v2 tolerant parsing', () {
     test('a v1 transcription file (no payload envelope) parses correctly', () {
       final v1Json = <String, Object?>{
@@ -93,7 +74,10 @@ void main() {
 
       expect(restored.kind, DayProcessingJobKind.transcribeAudio);
       expect(restored.activityEntryId, 'activity-legacy');
-      expect(restored.recordingSessionId, 'session-legacy');
+      expect(
+        (restored.payload as TranscribeAudioPayload).recordingSessionId,
+        'session-legacy',
+      );
       expect(restored.audioId, 'audio-legacy');
       expect(restored.audioPath, '/audio/legacy.wav');
       // v1 files carry no requestedAt; it falls back to createdAt.
@@ -146,7 +130,6 @@ void main() {
     test('audio fields are null for non-transcription payloads', () {
       final parse = job(payload: const ParseCapturePayload(captureId: 'c1'));
       expect(parse.activityEntryId, isNull);
-      expect(parse.recordingSessionId, isNull);
       expect(parse.audioId, isNull);
       expect(parse.audioPath, isNull);
     });

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_spotlight.dart';
@@ -15,10 +14,12 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 class _CountingCadence extends DailyOsOnboardingCadence {
-  int recordShownCount = 0;
+  _CountingCadence(this.onRecordShown);
+
+  final void Function() onRecordShown;
 
   @override
-  Future<void> recordShown() async => recordShownCount++;
+  Future<void> recordShown() async => onRecordShown();
 }
 
 void main() {
@@ -30,11 +31,11 @@ void main() {
   });
 
   late MockOnboardingMetricsRepository repo;
-  late _CountingCadence cadence;
+  late int cadenceRecordShownCount;
 
   setUp(() async {
     repo = MockOnboardingMetricsRepository();
-    cadence = _CountingCadence();
+    cadenceRecordShownCount = 0;
     when(
       () => repo.recordEvent(
         any(),
@@ -61,7 +62,9 @@ void main() {
   }) async {
     final container = ProviderContainer(
       overrides: [
-        dailyOsOnboardingCadenceProvider.overrideWith(() => cadence),
+        dailyOsOnboardingCadenceProvider.overrideWith(
+          () => _CountingCadence(() => cadenceRecordShownCount++),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -70,7 +73,6 @@ void main() {
     );
     if (withSession) {
       controller.start(
-        origin: DailyOsOnboardingOrigin.auto,
         targetDate: targetDate,
       );
     }
@@ -158,7 +160,7 @@ void main() {
           valueBucket: any(named: 'valueBucket'),
         ),
       ).called(1);
-      expect(cadence.recordShownCount, 1);
+      expect(cadenceRecordShownCount, 1);
     });
 
     testWidgets('records no Shown event when there is no active session', (
@@ -176,7 +178,7 @@ void main() {
     });
 
     testWidgets(
-      'a replay session started after dismissal records its own Shown event',
+      'a new session after dismissal records its own Shown event',
       (tester) async {
         final controller = await pumpHost(tester, withSession: true);
 
@@ -185,9 +187,8 @@ void main() {
         await tester.pump();
         expect(controller.state, isNull);
 
-        // A replay starts a fresh session on the still-mounted host.
+        // A fresh session starts on the still-mounted host.
         controller.start(
-          origin: DailyOsOnboardingOrigin.replay,
           targetDate: targetDate,
         );
         await tester.pump();
@@ -203,9 +204,9 @@ void main() {
           ),
         ).called(2);
         expect(
-          cadence.recordShownCount,
-          1,
-          reason: 'manual replay must not consume the auto-show budget',
+          cadenceRecordShownCount,
+          2,
+          reason: 'each auto-shown session consumes the auto-show budget',
         );
       },
     );
@@ -216,14 +217,15 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
-            dailyOsOnboardingCadenceProvider.overrideWith(() => cadence),
+            dailyOsOnboardingCadenceProvider.overrideWith(
+              () => _CountingCadence(() => cadenceRecordShownCount++),
+            ),
           ],
         );
         addTearDown(container.dispose);
         container
             .read(dailyOsOnboardingSessionControllerProvider.notifier)
             .start(
-              origin: DailyOsOnboardingOrigin.auto,
               targetDate: targetDate,
             );
 

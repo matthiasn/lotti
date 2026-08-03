@@ -76,66 +76,23 @@ void main() {
     expect(command.workType, AiWorkType.audioTranscription);
   });
 
-  test(
-    'records transcript digests and prepares the output attribution',
-    () async {
-      final running = runningSession();
-
-      await coordinator.recordInteraction(
-        session: running,
-        audioEntryId: 'audio-1',
-        transcript: 'hello world',
-        usage: const {'total_tokens': 12},
-      );
-      final prepared = await coordinator.prepareOutput(
-        session: running,
-        audioEntryId: 'audio-1',
-      );
-
-      expect(prepared.transcriptId, 'transcript-1');
-      final event =
-          verify(
-                () => service.recordInteraction(
-                  attributionId: session.id,
-                  event: captureAny(named: 'event'),
-                ),
-              ).captured.single
-              as AiConsumptionEvent;
-      expect(event.totalTokens, 12);
-      expect(event.requestDigest, isNotNull);
-      expect(event.responseDigest, isNotNull);
-      final outputs =
-          verify(
-                () => service.prepareCompletion(
-                  attributionId: session.id,
-                  outputs: captureAny(named: 'outputs'),
-                ),
-              ).captured.single
-              as List<AiArtifactReference>;
-      expect(outputs.single.id, 'audio-1');
-      expect(outputs.single.subId, 'transcript-1');
-    },
-  );
-
-  test('records realtime fallback interactions as partial', () async {
-    await coordinator.recordInteraction(
+  test('prepares the transcript output attribution', () async {
+    final prepared = await coordinator.prepareOutput(
       session: runningSession(),
       audioEntryId: 'audio-1',
-      transcript: 'verified fallback',
-      interactionStatus: AiInteractionStatus.partial,
-      errorCode: 'realtime_completion_fallback',
     );
 
-    final event =
+    expect(prepared.transcriptId, 'transcript-1');
+    final outputs =
         verify(
-              () => service.recordInteraction(
+              () => service.prepareCompletion(
                 attributionId: session.id,
-                event: captureAny(named: 'event'),
+                outputs: captureAny(named: 'outputs'),
               ),
             ).captured.single
-            as AiConsumptionEvent;
-    expect(event.interactionStatus, AiInteractionStatus.partial);
-    expect(event.errorCode, 'realtime_completion_fallback');
+            as List<AiArtifactReference>;
+    expect(outputs.single.id, 'audio-1');
+    expect(outputs.single.subId, 'transcript-1');
   });
 
   test('failure records and finalizes without a carrier', () async {

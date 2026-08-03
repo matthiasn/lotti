@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
@@ -53,17 +52,15 @@ void main() {
       );
     });
 
-    test('start makes a session with the given origin the active session', () {
+    test('start makes a session active', () {
       final container = makeContainer();
       final session =
           controllerOf(
             container,
           ).start(
-            origin: DailyOsOnboardingOrigin.replay,
             targetDate: targetDate,
           );
 
-      expect(session.origin, DailyOsOnboardingOrigin.replay);
       expect(session.targetDate, targetDate);
       expect(
         container.read(dailyOsOnboardingSessionControllerProvider),
@@ -74,7 +71,6 @@ void main() {
     test('start honours an explicit session id', () {
       final container = makeContainer();
       final session = controllerOf(container).start(
-        origin: DailyOsOnboardingOrigin.auto,
         targetDate: targetDate,
         sessionId: 'fixed-id',
       );
@@ -88,7 +84,6 @@ void main() {
           controllerOf(
             container,
           ).start(
-            origin: DailyOsOnboardingOrigin.auto,
             targetDate: targetDate,
           );
 
@@ -99,7 +94,6 @@ void main() {
       final container = makeContainer();
       final controller = controllerOf(container)
         ..start(
-          origin: DailyOsOnboardingOrigin.auto,
           targetDate: targetDate,
         )
         ..end();
@@ -134,11 +128,10 @@ void main() {
       getIt.registerSingleton<OnboardingMetricsRepository>(repo);
     });
 
-    test('records a stage event tagged with the session origin', () {
+    test('records a stage event tagged as auto-shown', () {
       final container = makeContainer();
       controllerOf(container)
           .start(
-            origin: DailyOsOnboardingOrigin.auto,
             targetDate: targetDate,
           )
           .recordStageOnce(OnboardingEventName.dailyOsReconcileReached);
@@ -153,32 +146,10 @@ void main() {
       ).called(1);
     });
 
-    test('uses the replay origin as the reason for a replay session', () {
-      final container = makeContainer();
-      controllerOf(
-            container,
-          )
-          .start(
-            origin: DailyOsOnboardingOrigin.replay,
-            targetDate: targetDate,
-          )
-          .recordSkippedOnce();
-
-      verify(
-        () => repo.recordEvent(
-          OnboardingEventName.dailyOsWalkthroughSkipped,
-          reason: 'replay',
-          // ignore: avoid_redundant_argument_values
-          valueBucket: null,
-        ),
-      ).called(1);
-    });
-
-    test('a per-event reason overrides the origin', () {
+    test('a per-event reason overrides the auto-show reason', () {
       final container = makeContainer();
       controllerOf(container)
           .start(
-            origin: DailyOsOnboardingOrigin.auto,
             targetDate: targetDate,
           )
           .recordStageOnce(
@@ -200,7 +171,6 @@ void main() {
       final container = makeContainer();
       controllerOf(container)
           .start(
-            origin: DailyOsOnboardingOrigin.auto,
             targetDate: targetDate,
           )
           .recordStageOnce(
@@ -223,7 +193,6 @@ void main() {
           controllerOf(
               container,
             ).start(
-              origin: DailyOsOnboardingOrigin.auto,
               targetDate: targetDate,
             )
             ..recordStageOnce(OnboardingEventName.dailyOsReconcileReached)
@@ -258,7 +227,6 @@ void main() {
           final container = makeContainer();
           controllerOf(container)
               .start(
-                origin: DailyOsOnboardingOrigin.auto,
                 targetDate: targetDate,
               )
               .recordStageOnce(OnboardingEventName.dailyOsReconcileReached);
@@ -302,7 +270,6 @@ void main() {
         final container = completingContainer();
         final controller = controllerOf(container)
           ..start(
-            origin: DailyOsOnboardingOrigin.auto,
             targetDate: targetDate,
           );
 
@@ -333,7 +300,6 @@ void main() {
     test('clamps the materialized-task bucket to 5', () async {
       final container = completingContainer();
       await (controllerOf(container)..start(
-            origin: DailyOsOnboardingOrigin.auto,
             targetDate: targetDate,
           ))
           .complete(createdTaskIds: List.generate(9, (i) => 't$i'));
@@ -352,7 +318,6 @@ void main() {
       await (controllerOf(
             container,
           )..start(
-            origin: DailyOsOnboardingOrigin.auto,
             targetDate: targetDate,
           ))
           .complete();
@@ -391,7 +356,6 @@ void main() {
       final container = completingContainer();
       controllerOf(container)
         ..start(
-          origin: DailyOsOnboardingOrigin.auto,
           targetDate: targetDate,
         )
         ..dismiss();
@@ -429,7 +393,6 @@ void main() {
     expect(
       () => controllerOf(container)
           .start(
-            origin: DailyOsOnboardingOrigin.auto,
             targetDate: targetDate,
           )
           .recordStageOnce(OnboardingEventName.dailyOsReconcileReached),

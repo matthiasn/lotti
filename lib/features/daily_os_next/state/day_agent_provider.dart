@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -121,33 +119,18 @@ final dayAgentIsRunningProvider = Provider.autoDispose.family<bool, DateTime>((
   return perDayRunning || coordinatorRunning;
 });
 
-/// One row in the Captures panel — a persisted capture paired with the
-/// `JournalAudio` it references (if any). Audio may be `null` when the
-/// capture was typed instead of spoken or when the journal entry has
-/// been deleted out from under the capture.
-@immutable
-class CaptureWithAudio {
-  const CaptureWithAudio({required this.capture, this.audio});
-
-  final CaptureEntity capture;
-  final JournalAudio? audio;
-}
-
-/// Captures persisted under the day-agent for the given date, newest
-/// first. Each entry is paired with the linked `JournalAudio` so the
-/// UI can drop the existing `AudioPlayerWidget` straight in.
+/// Captures persisted under the day-agent for the given date, newest first.
 // ignore: specify_nonobvious_property_types
 final capturesForDateProvider = FutureProvider.autoDispose
-    .family<List<CaptureWithAudio>, DateTime>((ref, date) async {
+    .family<List<CaptureEntity>, DateTime>((ref, date) async {
       final dayAgentService = ref.watch(dayAgentServiceProvider);
-      final journalDb = ref.watch(journalDbProvider);
       final agentRepository = ref.watch(agentRepositoryProvider);
       ref
         ..watch(agentUpdateStreamProvider(dayAgentIdForDate(date)))
         ..watch(agentUpdateStreamProvider(agentNotification));
 
       final agent = await dayAgentService.getDayAgentForDate(date);
-      if (agent == null) return const <CaptureWithAudio>[];
+      if (agent == null) return const <CaptureEntity>[];
       final dayId = dayAgentIdForDate(date);
       // Union the resolved owner with the coordinator (ADR 0032): a
       // pre-cutover capture can sync in from an old-build peer after the
@@ -166,7 +149,7 @@ final capturesForDateProvider = FutureProvider.autoDispose
       // dayId land on the right day too). captureDayId stays as a belt-and-
       // braces check against a row whose subtype predates the backfill.
       final seenIds = <String>{};
-      final captures = rows
+      return rows
           .whereType<CaptureEntity>()
           .where(
             (c) =>
@@ -175,17 +158,4 @@ final capturesForDateProvider = FutureProvider.autoDispose
                 seenIds.add(c.id),
           )
           .toList();
-      final out = <CaptureWithAudio>[];
-      for (final capture in captures) {
-        JournalAudio? audio;
-        final audioRef = capture.audioRef;
-        if (audioRef != null && audioRef.isNotEmpty) {
-          final entity = await journalDb.journalEntityById(audioRef);
-          if (entity is JournalAudio && entity.meta.deletedAt == null) {
-            audio = entity;
-          }
-        }
-        out.add(CaptureWithAudio(capture: capture, audio: audio));
-      }
-      return out;
     });

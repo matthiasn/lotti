@@ -247,7 +247,6 @@ void main() {
         id: 'reviewed',
         kind: DayActivityEntryKind.recording,
         createdAt: capturedAt,
-        activityEntryId: 'reviewed',
         audio: reviewed,
       ).transcript,
       'Reviewed text',
@@ -257,7 +256,6 @@ void main() {
         id: 'receipt',
         kind: DayActivityEntryKind.recording,
         createdAt: capturedAt,
-        activityEntryId: 'receipt',
         audio: receipt,
       ).transcript,
       'Receipt text',
@@ -267,7 +265,6 @@ void main() {
         id: 'empty',
         kind: DayActivityEntryKind.recording,
         createdAt: capturedAt,
-        activityEntryId: 'empty',
         audio: emptyReceipt,
       ).transcript,
       isNull,
@@ -282,7 +279,6 @@ void main() {
           id: 'asset-$expected',
           kind: DayActivityEntryKind.recording,
           createdAt: capturedAt,
-          activityEntryId: 'asset-$expected',
           audioPath: audioPath,
         ).audioAvailableLocally,
         expected,
@@ -310,7 +306,7 @@ void main() {
 
     final entries = await repository.load(dayId: dayId);
 
-    expect(entries.map((entry) => entry.activityEntryId), [
+    expect(entries.map((entry) => entry.id), [
       'saved',
       'outbox-only',
     ]);
@@ -363,7 +359,7 @@ void main() {
     final entries = await repository.load(dayId: dayId);
 
     expect(
-      entries.map((entry) => entry.activityEntryId),
+      entries.map((entry) => entry.id),
       ['still-pending'],
     );
   });

@@ -38,7 +38,6 @@ class DayActivityEntry {
     required this.id,
     required this.kind,
     required this.createdAt,
-    required this.activityEntryId,
     this.audio,
     this.audioPath,
     this.processingJob,
@@ -50,7 +49,6 @@ class DayActivityEntry {
   final String id;
   final DayActivityEntryKind kind;
   final DateTime createdAt;
-  final String activityEntryId;
   final JournalAudio? audio;
   final String? audioPath;
   final DayProcessingJob? processingJob;
@@ -167,7 +165,6 @@ class DayActivityRepository {
             DayActivityEntry(
               id: activityId,
               kind: DayActivityEntryKind.recording,
-              activityEntryId: activityId,
               createdAt:
                   audioByActivity[activityId]?.data.dayContext?.capturedAt ??
                   jobsByActivity[activityId]!.createdAt,
@@ -189,7 +186,6 @@ class DayActivityRepository {
             DayActivityEntry(
               id: capture.id,
               kind: DayActivityEntryKind.checkIn,
-              activityEntryId: capture.id,
               createdAt: capture.capturedAt,
               capture: capture,
             ),
@@ -201,7 +197,6 @@ class DayActivityRepository {
             DayActivityEntry(
               id: capture.id,
               kind: DayActivityEntryKind.checkIn,
-              activityEntryId: capture.id,
               createdAt: capture.capturedAt,
               capture: capture,
             ),
@@ -210,14 +205,12 @@ class DayActivityRepository {
               id: plan.id,
               kind: DayActivityEntryKind.plan,
               createdAt: plan.createdAt,
-              activityEntryId: plan.id,
               plan: plan,
             ),
           for (final job in stalledAgentJobs)
             DayActivityEntry(
               id: job.id,
               kind: DayActivityEntryKind.agentJob,
-              activityEntryId: job.id,
               // The request time, not `updatedAt`. While the device is
               // offline the runtime probes each waiting job on a timer,
               // re-queuing and re-parking it, and both transitions rewrite
@@ -233,7 +226,6 @@ class DayActivityRepository {
               id: summary.id,
               kind: DayActivityEntryKind.summary,
               createdAt: summary.createdAt,
-              activityEntryId: summary.id,
               summary: summary,
             ),
         ]..sort((a, b) {

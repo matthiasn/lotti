@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_spotlight.dart';
@@ -61,8 +60,8 @@ class _DayCheckInSpotlightHostState
   String? _sessionEndScheduledFor;
 
   /// The session id whose `Shown` funnel event has already been scheduled from
-  /// this mount. Tracked by id (not a plain bool) so a replay that starts a new
-  /// session while this host stays mounted still records its own `Shown` event.
+  /// this mount. Tracked by id (not a plain bool) so a new session while this
+  /// host stays mounted still records its own `Shown` event.
   /// The session's own once-guard keeps it exactly-once per session; this only
   /// avoids re-scheduling a post-frame callback on every rebuild.
   String? _recordedSessionId;
@@ -111,7 +110,7 @@ class _DayCheckInSpotlightHostState
     // measured), so this is the moment to record the funnel's top-of-funnel
     // `Shown` event — recorded here, not by the arming layer, so it reflects a
     // spotlight the user genuinely saw. `recordStageOnce` is idempotent per
-    // session; tracking the session id keeps a replay's new session from being
+    // session; tracking the id keeps a subsequent session from being
     // suppressed while this host stays mounted.
     if (_recordedSessionId != session.sessionId) {
       _recordedSessionId = session.sessionId;
@@ -124,11 +123,9 @@ class _DayCheckInSpotlightHostState
         activeSession?.recordStageOnce(
           OnboardingEventName.dailyOsWalkthroughShown,
         );
-        if (activeSession?.origin == DailyOsOnboardingOrigin.auto) {
-          unawaited(
-            ref.read(dailyOsOnboardingCadenceProvider.notifier).recordShown(),
-          );
-        }
+        unawaited(
+          ref.read(dailyOsOnboardingCadenceProvider.notifier).recordShown(),
+        );
       });
     }
 

@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_coach_slot.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_coach_strip.dart';
@@ -51,7 +50,6 @@ void main() {
       container
           .read(dailyOsOnboardingSessionControllerProvider.notifier)
           .start(
-            origin: DailyOsOnboardingOrigin.auto,
             targetDate: targetDate,
           );
     }

@@ -108,12 +108,18 @@ void main() {
       expect(jobs, hasLength(2));
       expect(
         jobs
-            .singleWhere((job) => job.recordingSessionId == 'session-pending')
+            .singleWhere(
+              (job) =>
+                  (job.payload as TranscribeAudioPayload).recordingSessionId ==
+                  'session-pending',
+            )
             .status,
         DayProcessingJobStatus.queued,
       );
       final completed = jobs.singleWhere(
-        (job) => job.recordingSessionId == 'session-complete',
+        (job) =>
+            (job.payload as TranscribeAudioPayload).recordingSessionId ==
+            'session-complete',
       );
       expect(completed.status, DayProcessingJobStatus.succeeded);
       expect(completed.resultTranscript, 'Completed text');
