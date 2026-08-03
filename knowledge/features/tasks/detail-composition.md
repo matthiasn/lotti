@@ -75,10 +75,17 @@ newline**; Primary+Enter is a control-local commit gesture.
 
 The header body is Crumb → Title → Meta:
 
-1. **Crumb** — `[category | unassigned] / [project | No project]` separated by a
-   literal `/`. No label chips here.
+1. **Crumb** — `category / [project | No project]` separated by a literal `/`.
+   No label chips here.
 2. **Title** — full width, tap to edit.
 3. **Meta** — a two-lane column.
+
+**Without a category the crumb is one segment: `No category`.** A project is
+scoped to a category — `ProjectRepository.linkTaskToProject` refuses a
+cross-category link — so an uncategorized task cannot acquire one, and the
+connector passes a null `onProjectTap`. Rendering the separator and a
+`No project` placeholder there offered a choice that could not be made; the
+separator and the project segment appear only once a category is set.
 
 The **attribute lane** is a left-aligned wrap led by the status pill:
 `[status] → [priority] → [due | No due date] + [estimate]`. The **label lane**

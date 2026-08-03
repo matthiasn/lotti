@@ -4364,6 +4364,7 @@
       }
     }
   },
+  "taskHeaderNoCategoryLabel": "Aucune catégorie",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

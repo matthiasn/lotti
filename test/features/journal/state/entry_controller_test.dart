@@ -24,6 +24,7 @@ import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/utils.dart';
@@ -44,6 +45,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../projects/test_utils.dart';
 
 class Listener<T> extends Mock {
   void call(T? previous, T next);
@@ -218,12 +220,28 @@ void main() {
   var vcMockNext =
       '1'; // This was used by secureStorageMock for vector clock testing
 
+  // Shared across every container: `updateCategoryId` consults the project
+  // repository on any Task, so it must never fall through to the real one.
+  // Defaults are "this task is in no project"; the cross-category tests
+  // re-stub it.
+  final mockProjectRepository = MockProjectRepository();
+
+  void stubProjectRepositoryDefaults() {
+    when(
+      () => mockProjectRepository.getLinkedProjectForTask(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockProjectRepository.unlinkTaskFromProject(any()),
+    ).thenAnswer((_) async => true);
+  }
+
   ProviderContainer makeProviderContainer({
     List<Override> overrides = const [],
   }) {
     final container = ProviderContainer(
       overrides: [
         agentInitializationProvider.overrideWith((ref) async {}),
+        projectRepositoryProvider.overrideWithValue(mockProjectRepository),
         ...overrides,
       ],
     );
@@ -247,6 +265,8 @@ void main() {
     registerFallbackValue(DateTime(2024, 3, 15, 10, 30));
     registerFallbackValue(FakeQuillController());
     registerFallbackValue(EntryLinkType.basic);
+
+    stubProjectRepositoryDefaults();
 
     when(
       () => mockUpdateNotifications.updateStream,
@@ -356,6 +376,13 @@ void main() {
         data: any(named: 'data'),
       ),
     ).thenAnswer((_) async => true);
+  });
+
+  setUp(() {
+    // Stubs and recorded calls on the shared project repository must not leak
+    // between tests — several of them assert on exact call counts.
+    reset(mockProjectRepository);
+    stubProjectRepositoryDefaults();
   });
 
   tearDownAll(() async {
@@ -1265,6 +1292,446 @@ void main() {
         ).called(
           1,
         ); // Should be called even if updateCategoryId returns false
+      });
+
+      // A task's project membership is only valid inside the project's own
+      // category — `linkTaskToProject` refuses to create a cross-category link.
+      // Nothing re-checked that once the link existed, so moving the task to
+      // another category used to leave the old project attached and rendered.
+      group('cross-category project link', () {
+        const projectCategoryId = 'cat_lotti';
+        const otherCategoryId = 'cat_one_point_five';
+
+        late MockJournalRepository journalRepository;
+
+        /// A task sitting in [projectCategoryId], which is where its project
+        /// lives too — the starting point for every case below.
+        Task taskInProjectCategory() => testTask.copyWith(
+          meta: testTask.meta.copyWith(categoryId: projectCategoryId),
+        );
+
+        ProviderContainer containerFor(
+          JournalEntity entry, {
+          List<JournalEntity> linkedEntries = const [],
+        }) {
+          when(
+            () => mockJournalDb.journalEntityById(entry.meta.id),
+          ).thenAnswer((_) async => entry);
+          when(
+            () => journalRepository.updateCategoryId(
+              any(),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => journalRepository.getLinkedEntities(
+              linkedTo: any(named: 'linkedTo'),
+            ),
+          ).thenAnswer((_) async => linkedEntries);
+          return makeProviderContainer(
+            overrides: [
+              journalRepositoryProvider.overrideWithValue(journalRepository),
+            ],
+          );
+        }
+
+        setUp(() {
+          journalRepository = MockJournalRepository();
+        });
+
+        test(
+          'unlinks the project when the task moves to another category',
+          () async {
+            final task = taskInProjectCategory();
+            when(
+              () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+            ).thenAnswer(
+              (_) async => makeTestProject(
+                id: 'project_1',
+                categoryId: projectCategoryId,
+              ),
+            );
+
+            final container = containerFor(task);
+            final notifier = container.read(
+              entryControllerProvider(task.meta.id).notifier,
+            );
+            await container.read(entryControllerProvider(task.meta.id).future);
+
+            await notifier.updateCategoryId(otherCategoryId);
+
+            verify(
+              () => mockProjectRepository.unlinkTaskFromProject(task.meta.id),
+            ).called(1);
+          },
+        );
+
+        test('unlinks the project when the category is cleared', () async {
+          final task = taskInProjectCategory();
+          when(
+            () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+          ).thenAnswer(
+            (_) async => makeTestProject(
+              id: 'project_1',
+              categoryId: projectCategoryId,
+            ),
+          );
+
+          final container = containerFor(task);
+          final notifier = container.read(
+            entryControllerProvider(task.meta.id).notifier,
+          );
+          await container.read(entryControllerProvider(task.meta.id).future);
+
+          await notifier.updateCategoryId(null);
+
+          verify(
+            () => mockProjectRepository.unlinkTaskFromProject(task.meta.id),
+          ).called(1);
+        });
+
+        test(
+          'keeps the project when the picked category is the one it is in',
+          () async {
+            final task = taskInProjectCategory();
+            when(
+              () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+            ).thenAnswer(
+              (_) async => makeTestProject(
+                id: 'project_1',
+                categoryId: projectCategoryId,
+              ),
+            );
+
+            final container = containerFor(task);
+            final notifier = container.read(
+              entryControllerProvider(task.meta.id).notifier,
+            );
+            await container.read(entryControllerProvider(task.meta.id).future);
+
+            // Re-picking the same category is a no-op for membership: the
+            // project still lives where the task does.
+            await notifier.updateCategoryId(projectCategoryId);
+
+            verifyNever(
+              () => mockProjectRepository.unlinkTaskFromProject(any()),
+            );
+          },
+        );
+
+        test(
+          'keeps an uncategorized project when the category is cleared',
+          () async {
+            final task = taskInProjectCategory();
+            when(
+              () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+            ).thenAnswer(
+              (_) async => makeTestProject(id: 'project_1'),
+            );
+
+            final container = containerFor(task);
+            final notifier = container.read(
+              entryControllerProvider(task.meta.id).notifier,
+            );
+            await container.read(entryControllerProvider(task.meta.id).future);
+
+            // Both sides are now uncategorized, so they still match — the
+            // null case must compare equal rather than always unlink.
+            await notifier.updateCategoryId(null);
+
+            verifyNever(
+              () => mockProjectRepository.unlinkTaskFromProject(any()),
+            );
+          },
+        );
+
+        // `getLinkedEntities` is not filtered by link type, so the propagation
+        // loop rewrites the category of linked *tasks* too — and those carry
+        // project links of their own.
+        test(
+          'unlinks a linked task the same call dragged into the new category',
+          () async {
+            final task = taskInProjectCategory();
+            final linkedTask = testTask.copyWith(
+              meta: testTask.meta.copyWith(
+                id: 'linked_task',
+                categoryId: projectCategoryId,
+              ),
+            );
+            when(
+              () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProjectRepository.getLinkedProjectForTask(
+                linkedTask.meta.id,
+              ),
+            ).thenAnswer(
+              (_) async => makeTestProject(
+                id: 'project_1',
+                categoryId: projectCategoryId,
+              ),
+            );
+
+            final container = containerFor(task, linkedEntries: [linkedTask]);
+            final notifier = container.read(
+              entryControllerProvider(task.meta.id).notifier,
+            );
+            await container.read(entryControllerProvider(task.meta.id).future);
+
+            await notifier.updateCategoryId(otherCategoryId);
+
+            verify(
+              () => mockProjectRepository.unlinkTaskFromProject(
+                linkedTask.meta.id,
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'ignores linked entries that are not tasks',
+          () async {
+            final task = taskInProjectCategory();
+            final linkedText = testTextEntry.copyWith(
+              meta: testTextEntry.meta.copyWith(id: 'linked_text'),
+            );
+            when(
+              () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+            ).thenAnswer((_) async => null);
+
+            final container = containerFor(task, linkedEntries: [linkedText]);
+            final notifier = container.read(
+              entryControllerProvider(task.meta.id).notifier,
+            );
+            await container.read(entryControllerProvider(task.meta.id).future);
+
+            await notifier.updateCategoryId(otherCategoryId);
+
+            // A timer or image carries no project, so it must not cost a
+            // lookup — only the task itself is queried.
+            verify(
+              () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+            ).called(1);
+            verifyNoMoreInteractions(mockProjectRepository);
+          },
+        );
+
+        test(
+          'a failing project lookup does not escape updateCategoryId',
+          () async {
+            final task = taskInProjectCategory();
+            when(
+              () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+            ).thenThrow(Exception('db unavailable'));
+
+            final container = containerFor(task);
+            final notifier = container.read(
+              entryControllerProvider(task.meta.id).notifier,
+            );
+            await container.read(entryControllerProvider(task.meta.id).future);
+
+            // The category write has already committed; every other step of
+            // updateCategoryId swallows failure, and the picker callback that
+            // invokes it never awaits the future, so throwing here would only
+            // surface as an unhandled async error.
+            await expectLater(
+              notifier.updateCategoryId(otherCategoryId),
+              completion(isTrue),
+            );
+            verifyNever(
+              () => mockProjectRepository.unlinkTaskFromProject(any()),
+            );
+          },
+        );
+
+        test(
+          'does not sweep an entry whose category write did not land',
+          () async {
+            final task = taskInProjectCategory();
+            when(
+              () => mockProjectRepository.getLinkedProjectForTask(any()),
+            ).thenAnswer(
+              (_) async => makeTestProject(
+                id: 'project_1',
+                categoryId: projectCategoryId,
+              ),
+            );
+
+            final container = containerFor(task);
+            // A false result means the entity was not found, so its category
+            // never moved — the project it holds is still the right one.
+            when(
+              () => journalRepository.updateCategoryId(
+                task.meta.id,
+                categoryId: otherCategoryId,
+              ),
+            ).thenAnswer((_) async => false);
+
+            final notifier = container.read(
+              entryControllerProvider(task.meta.id).notifier,
+            );
+            await container.read(entryControllerProvider(task.meta.id).future);
+
+            await notifier.updateCategoryId(otherCategoryId);
+
+            verifyNever(
+              () => mockProjectRepository.unlinkTaskFromProject(any()),
+            );
+          },
+        );
+
+        test(
+          'does not sweep a linked entry whose category write did not land',
+          () async {
+            final task = taskInProjectCategory();
+            final linkedTask = testTask.copyWith(
+              meta: testTask.meta.copyWith(
+                id: 'linked_task',
+                categoryId: projectCategoryId,
+              ),
+            );
+            when(
+              () => mockProjectRepository.getLinkedProjectForTask(any()),
+            ).thenAnswer(
+              (_) async => makeTestProject(
+                id: 'project_1',
+                categoryId: projectCategoryId,
+              ),
+            );
+
+            final container = containerFor(task, linkedEntries: [linkedTask]);
+            when(
+              () => journalRepository.updateCategoryId(
+                linkedTask.meta.id,
+                categoryId: otherCategoryId,
+              ),
+            ).thenAnswer((_) async => false);
+
+            final notifier = container.read(
+              entryControllerProvider(task.meta.id).notifier,
+            );
+            await container.read(entryControllerProvider(task.meta.id).future);
+
+            await notifier.updateCategoryId(otherCategoryId);
+
+            // The edited task moved and gives up its project; the linked one
+            // did not and keeps its own.
+            verify(
+              () => mockProjectRepository.unlinkTaskFromProject(task.meta.id),
+            ).called(1);
+            verifyNever(
+              () => mockProjectRepository.unlinkTaskFromProject(
+                linkedTask.meta.id,
+              ),
+            );
+          },
+        );
+
+        test('does not unlink a task that has no project', () async {
+          final task = taskInProjectCategory();
+          when(
+            () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+          ).thenAnswer((_) async => null);
+
+          final container = containerFor(task);
+          final notifier = container.read(
+            entryControllerProvider(task.meta.id).notifier,
+          );
+          await container.read(entryControllerProvider(task.meta.id).future);
+
+          await notifier.updateCategoryId(otherCategoryId);
+
+          verifyNever(() => mockProjectRepository.unlinkTaskFromProject(any()));
+        });
+
+        test('never consults the project repository for a non-task', () async {
+          final container = containerFor(testTextEntry);
+          final notifier = container.read(
+            entryControllerProvider(testTextEntry.meta.id).notifier,
+          );
+          await container.read(
+            entryControllerProvider(testTextEntry.meta.id).future,
+          );
+
+          await notifier.updateCategoryId(otherCategoryId);
+
+          verifyNever(
+            () => mockProjectRepository.getLinkedProjectForTask(any()),
+          );
+          verifyNever(() => mockProjectRepository.unlinkTaskFromProject(any()));
+        });
+
+        test(
+          'resolves the entry from the database when state has not loaded yet',
+          () async {
+            final task = taskInProjectCategory();
+            when(
+              () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+            ).thenAnswer(
+              (_) async => makeTestProject(
+                id: 'project_1',
+                categoryId: projectCategoryId,
+              ),
+            );
+
+            final container = containerFor(task);
+            final notifier = container.read(
+              entryControllerProvider(task.meta.id).notifier,
+            );
+
+            // Deliberately not awaiting the controller's build: the entry type
+            // then has to come from the database rather than from state.
+            await notifier.updateCategoryId(otherCategoryId);
+
+            verify(
+              () => mockProjectRepository.unlinkTaskFromProject(task.meta.id),
+            ).called(1);
+          },
+        );
+
+        test('unlinks only after the category write has landed', () async {
+          final task = taskInProjectCategory();
+          final calls = <String>[];
+          when(
+            () => mockProjectRepository.getLinkedProjectForTask(task.meta.id),
+          ).thenAnswer(
+            (_) async => makeTestProject(
+              id: 'project_1',
+              categoryId: projectCategoryId,
+            ),
+          );
+
+          final container = containerFor(task);
+          // Stubbed after `containerFor`, whose catch-all `any()` stub would
+          // otherwise shadow this narrower recording one.
+          when(
+            () => journalRepository.updateCategoryId(
+              task.meta.id,
+              categoryId: otherCategoryId,
+            ),
+          ).thenAnswer((_) async {
+            calls.add('updateCategoryId');
+            return true;
+          });
+          when(
+            () => mockProjectRepository.unlinkTaskFromProject(task.meta.id),
+          ).thenAnswer((_) async {
+            calls.add('unlinkTaskFromProject');
+            return true;
+          });
+
+          final notifier = container.read(
+            entryControllerProvider(task.meta.id).notifier,
+          );
+          await container.read(entryControllerProvider(task.meta.id).future);
+
+          await notifier.updateCategoryId(otherCategoryId);
+
+          // The task must already be in its new category before the link is
+          // dropped, so a mid-flight reader never sees the old category with
+          // no project.
+          expect(calls, ['updateCategoryId', 'unlinkTaskFromProject']);
+        });
       });
     });
 

@@ -4922,6 +4922,7 @@
       }
     }
   },
+  "taskHeaderNoCategoryLabel": "Geen categorie",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

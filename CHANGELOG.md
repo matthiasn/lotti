@@ -136,6 +136,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   you do switch them on, it asks once, right then. Switching them back off
   takes the task count off the app icon straight away, instead of leaving it
   there until you next write something.
+- **A task's header says which of the two things above it is missing.** The
+  line above a task's title names its category and its project, and with
+  neither set it read "unassigned / No project" — a lowercase word that never
+  said *what* was unassigned, in a different capitalization from the words
+  beside it. It now reads "No category". A project belongs to a category, so
+  until one is picked there is no project to choose either: the separator and
+  the "No project" placeholder now stay away until the category is set,
+  instead of offering a choice that could not be made.
+- **Moving a task to another category no longer leaves its old project on
+  it.** A project belongs to one category, and a task can only be put into a
+  project from its own — but changing the task's category afterwards left the
+  old project attached, so the task went on showing a project from a category
+  it was no longer in. Changing the category now takes the task out of a
+  project that does not belong to it. Re-picking the category it is already in
+  changes nothing, and clearing the category removes the project too, since
+  there is no way to pick one without a category.
 
 ### Changed
 - **The recovery actions on Backfill sync take the standard in-card button

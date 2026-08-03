@@ -25,6 +25,7 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -167,6 +168,12 @@ class EntryController extends AsyncNotifier<EntryState?> {
   /// Sets this entry's category and propagates it to every entry linked from
   /// this one, so a task and its linked timer/audio/image entries stay in the
   /// same category. Pass null to clear the category.
+  ///
+  /// A task's project membership is scoped to its category
+  /// (`ProjectRepository.linkTaskToProject` refuses a cross-category link), so
+  /// every task this call moves — this entry and any linked task it propagated
+  /// to — also gives up a project that is no longer in its category. See
+  /// [_dropCrossCategoryProjectLinks].
   Future<bool> updateCategoryId(String? categoryId) async {
     final res = await ref
         .read(journalRepositoryProvider)
@@ -176,12 +183,86 @@ class EntryController extends AsyncNotifier<EntryState?> {
         .read(journalRepositoryProvider)
         .getLinkedEntities(linkedTo: id);
 
+    // Only entries whose category write actually landed are swept below. A
+    // failed write means the entity was not found — deleted since
+    // `getLinkedEntities` read it, or never there — and such an entry keeps
+    // the category it had, so its project is still the right one for it.
+    final moved = <JournalEntity>[];
     for (final entry in linkedEntries) {
-      await ref
+      final updated = await ref
           .read(journalRepositoryProvider)
           .updateCategoryId(entry.id, categoryId: categoryId);
+      if (updated) moved.add(entry);
     }
+
+    await _dropCrossCategoryProjectLinks(
+      categoryId,
+      propagatedTo: moved,
+      includeThisEntry: res,
+    );
     return res;
+  }
+
+  /// Unlinks every task this call just moved from a project that is no longer
+  /// in [categoryId].
+  ///
+  /// The same-category rule is enforced when the link is *created* but nothing
+  /// re-checked it afterwards, so moving a task from the category holding its
+  /// project into another one left the stale membership in place — the task
+  /// then read as belonging to a project from a category it is not in, and the
+  /// header kept rendering that project.
+  ///
+  /// **[propagatedTo] is covered as well as this entry.** The loop above
+  /// rewrites the category of everything linked *from* here, and
+  /// [JournalRepository.getLinkedEntities] is not filtered by link type — a
+  /// linked task is re-categorized right along with the timers and images the
+  /// propagation is aimed at, and would otherwise keep a project from the
+  /// category it just left. A `ProjectLink` runs project → task, so a task's
+  /// own project is never in that list and cannot be re-categorized by it.
+  ///
+  /// Comparing against the project's category rather than the task's previous
+  /// one makes a no-op re-pick of the same category keep the project: the
+  /// categories still match, so there is nothing to drop. That is a comparison,
+  /// not a null check — clearing the category drops a project that *has* one,
+  /// and keeps an uncategorized project, which is exactly the pairing
+  /// `linkTaskToProject` would still accept.
+  ///
+  /// The lookup goes through [ProjectRepository.getLinkedProjectForTask] rather
+  /// than the privacy-filtered `getProjectForTask`: a private project resolves
+  /// to null there while private entries are hidden, and reading that as "no
+  /// link" would skip the stale row and let it reappear once they are shown.
+  ///
+  /// Failure is logged and swallowed, like every other step of
+  /// [updateCategoryId] — the category write has already committed by now, and
+  /// an unhandled error from a fire-and-forget picker callback would not undo
+  /// it. One guard covers the whole sweep: what makes these reads fail is the
+  /// database being unavailable, which the next task in the list would hit too.
+  Future<void> _dropCrossCategoryProjectLinks(
+    String? categoryId, {
+    required List<JournalEntity> propagatedTo,
+    required bool includeThisEntry,
+  }) async {
+    try {
+      final self = includeThisEntry
+          ? state.value?.entry ?? await _fetch()
+          : null;
+      final moved = <JournalEntity>[?self, ...propagatedTo].whereType<Task>();
+      if (moved.isEmpty) return;
+
+      final repository = ref.read(projectRepositoryProvider);
+      for (final task in moved) {
+        final project = await repository.getLinkedProjectForTask(task.id);
+        if (project == null || project.meta.categoryId == categoryId) continue;
+        await repository.unlinkTaskFromProject(task.id);
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to drop cross-category project links for entry $id: $e',
+        name: 'EntryController',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<JournalEntity?> _fetch() async {

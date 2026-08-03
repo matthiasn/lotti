@@ -18453,6 +18453,12 @@ abstract class AppLocalizations {
   /// **'Time tracked: {tracked} of {estimate} estimated'**
   String taskEstimateTooltip(String tracked, String estimate);
 
+  /// No description provided for @taskHeaderNoCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No category'**
+  String get taskHeaderNoCategoryLabel;
+
   /// No description provided for @taskLabelsMoreCount.
   ///
   /// In en, this message translates to:

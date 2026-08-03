@@ -5489,6 +5489,7 @@
       }
     }
   },
+  "taskHeaderNoCategoryLabel": "No category",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

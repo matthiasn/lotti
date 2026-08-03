@@ -237,6 +237,65 @@ void main() {
     });
   });
 
+  group('getLinkedProjectForTask', () {
+    EntryLink projectLink() => EntryLink.project(
+      id: 'link-001',
+      fromId: 'project-001',
+      toId: 'task-001',
+      createdAt: testDate,
+      updatedAt: testDate,
+      vectorClock: null,
+    );
+
+    test('resolves the project behind the live ProjectLink', () async {
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => projectLink());
+      when(
+        () => mockDb.journalEntityById('project-001'),
+      ).thenAnswer((_) async => projectEntry);
+
+      final result = await repository.getLinkedProjectForTask('task-001');
+
+      expect(result?.meta.id, 'project-001');
+      // Never the privacy-filtered denormalized read: that resolves a private
+      // project to null while private entries are hidden, and an integrity
+      // caller reading that as "no link" would skip the row it must remove.
+      verifyNever(() => mockDb.getProjectForTask(any()));
+    });
+
+    test('returns null when the task holds no project link', () async {
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => null);
+
+      expect(await repository.getLinkedProjectForTask('task-001'), isNull);
+      verifyNever(() => mockDb.journalEntityById(any()));
+    });
+
+    test('returns null when the link points at a missing project', () async {
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => projectLink());
+      when(
+        () => mockDb.journalEntityById('project-001'),
+      ).thenAnswer((_) async => null);
+
+      expect(await repository.getLinkedProjectForTask('task-001'), isNull);
+    });
+
+    test('returns null when the link points at a non-project', () async {
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => projectLink());
+      when(
+        () => mockDb.journalEntityById('project-001'),
+      ).thenAnswer((_) async => taskEntry);
+
+      expect(await repository.getLinkedProjectForTask('task-001'), isNull);
+    });
+  });
+
   group('getProjectsOverview', () {
     test(
       'groups visible projects by category and maps batch task rollups',

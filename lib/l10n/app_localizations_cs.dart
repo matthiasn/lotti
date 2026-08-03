@@ -10957,6 +10957,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get taskHeaderNoCategoryLabel => 'Žádná kategorie';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

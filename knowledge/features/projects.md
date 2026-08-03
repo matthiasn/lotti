@@ -69,6 +69,65 @@ the latest non-hidden `ProjectLink` on every link and entity write**, so the
 result is identical to the old join without its
 `USE TEMP B-TREE FOR ORDER BY` sort.
 
+## Membership is scoped to a category — from the task's side
+
+`linkTaskToProject` refuses a link whose two sides disagree on category, which
+covers the moment the link is created. But a category can move afterwards, and
+that write is nowhere near the link, so the rule has to be re-checked there too.
+
+**`EntryController.updateCategoryId` does that for the task side**: it drops the
+project link of every task it moves when the new category is not the project's
+own.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Unlinked
+  Unlinked --> Linked: linkTaskToProject (same category only)
+  Linked --> Linked: task category re-picked unchanged
+  Linked --> Unlinked: task category changed or cleared
+  Linked --> Mismatched: project moved to another category
+  note right of Mismatched
+    Not reconciled — see below
+  end note
+```
+
+The comparison is against **the project's** category, not the task's previous
+one — re-picking the category the task is already in leaves the two in
+agreement, so there is nothing to drop. It stays a comparison when the category
+is cleared: a project that carries a category is dropped, and an uncategorized
+project is kept, since `null == null` is exactly the pairing
+`linkTaskToProject` would still accept. Uncategorized projects are real —
+`createProject` takes a nullable category, and `createTask(projectId:)` copies
+the project's category onto the new task, `null` included.
+
+The lookup deliberately does **not** go through `getProjectForTask`. That read
+honors the private gate, so a private project resolves to null while private
+entries are hidden; a cleanup reading that as "no link" would skip the stale row
+and let it reappear the moment they are shown. `getLinkedProjectForTask`
+resolves the live `ProjectLink` and its project entity directly, neither of
+which is privacy-filtered.
+
+A task whose category write did not land is not swept. A failed write means the
+entity was not found — deleted since it was read, or never there — so it keeps
+the category it had, and its project is still correct for it.
+
+The sweep covers the entries the same call re-categorized, not just the edited
+one. `getLinkedEntities` is **not filtered by link type**, so the propagation
+loop rewrites the category of linked *tasks* along with the timers and images it
+is aimed at; each of those gives up a now-foreign project too. A `ProjectLink`
+runs project → task, so a task's own project never appears in that list.
+
+Only the task detail header changes a task's category
+(`CategorySelectionIconButton` excludes tasks and events explicitly), so the
+controller is the single funnel this rule has to sit in.
+
+**The project side is not reconciled.** `ProjectDetailController.updateCategoryId`
+persists a project's new category through `ProjectRepository.updateProject`
+without touching its member tasks, so moving a *project* between categories
+leaves every linked task behind in the old one and reproduces exactly the
+mismatch the task side now prevents. Nothing repairs pre-existing mismatches
+either — only a subsequent task-side category change clears one.
+
 # Two hot reads are shaped for bursts
 
 **`getProjectForTask` is microtask-coalesced.** `projectForTaskProvider` is an
