@@ -676,14 +676,14 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
                 // and ellipsising the very control the joining device names.
                 //
                 // The quiet zone counts. `side` is the image; _QrCard pads it
-                // by step3 on each side, so the card occupies `side + 2·step3`
+                // by step4 on each side, so the card occupies `side + 2·step4`
                 // and budgeting as though it were `side` overspent by exactly
                 // that much.
                 final widthBudget =
                     (constraints.maxWidth -
                             kAddDeviceDetailsMin -
                             tokens.spacing.step5 -
-                            tokens.spacing.step3 * 2)
+                            tokens.spacing.step4 * 2)
                         .clamp(180.0, 300.0);
                 // The height budget is what stops the pinned bar slicing the
                 // code on a short window: the width formula alone sized the
@@ -945,7 +945,7 @@ class _QrCard extends StatelessWidget {
             child: ColoredBox(
               color: Colors.white,
               child: Padding(
-                padding: EdgeInsets.all(tokens.spacing.step3),
+                padding: EdgeInsets.all(tokens.spacing.step4),
                 child: QrImageView(
                   data: data,
                   padding: EdgeInsets.zero,

@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
@@ -296,6 +297,17 @@ void main() {
 
       expect(find.byType(QrImageView), findsOneWidget);
       expect(find.byKey(const Key('addDeviceQrImage')), findsOneWidget);
+      final quietZone = tester.widget<Padding>(
+        find.byWidgetPredicate(
+          (widget) => widget is Padding && widget.child is QrImageView,
+          description: 'QR quiet-zone padding',
+        ),
+      );
+      expect(
+        quietZone.padding,
+        EdgeInsets.all(context.designTokens.spacing.step4),
+        reason: 'the scanner needs a full 12px white quiet zone on every edge',
+      );
       expect(find.text(context.messages.syncAddDeviceIntro), findsOneWidget);
       expect(
         find.byKey(const Key('add_device_security_note')),
