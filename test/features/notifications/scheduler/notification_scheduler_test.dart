@@ -198,7 +198,6 @@ void main() {
       tags: 'glados',
     );
 
-    // HIGH coverage gap from TEST_REVIEW.md:
     // `!entity.meta.scheduledFor.isAfter(effectiveNow)` is true when equal,
     // so scheduledFor == now must route to showNotificationNow, not scheduleNotificationAt.
     test(

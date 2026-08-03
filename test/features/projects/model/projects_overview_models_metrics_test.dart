@@ -310,11 +310,10 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  // Glados property tests — additive HIGH/LOW/MED items from TEST_REVIEW.md
+  // Glados property tests
   // -------------------------------------------------------------------------
 
   group('ProjectsQuery.matchesCategory — properties', () {
-    // LOW item: "if categoryIds is empty, always returns true"
     // Tested for both string and null inputs via worked examples.
     test('empty categoryIds matches any non-null string', () {
       const query = ProjectsQuery();
