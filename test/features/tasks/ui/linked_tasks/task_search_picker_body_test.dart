@@ -8,6 +8,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
@@ -90,33 +91,40 @@ void main() {
 
   Finder createRow() => find.byKey(const ValueKey('link-picker-create'));
 
+  /// The tree under test. Re-pumping it rebuilds the body without resetting
+  /// its state, which is how a test observes damage that a write left behind
+  /// without scheduling a frame of its own.
+  Widget bodyTree({
+    Future<Task?> Function(String title)? onCreateTask,
+    void Function(Task task)? onTaskSelected,
+  }) => makeTestableWidget(
+    // makeTestableWidget hosts its child in a SingleChildScrollView, so the
+    // body needs a bounded height of its own to lay its list out against, and
+    // a Material ancestor for the search field.
+    _Host(
+      child: TaskSearchPickerBody(
+        excludeIds: const {},
+        onTaskSelected: onTaskSelected ?? (_) {},
+        onCreateTask: onCreateTask,
+      ),
+    ),
+  );
+
   Future<void> pumpBody(
     WidgetTester tester, {
     Future<Task?> Function(String title)? onCreateTask,
   }) async {
-    await tester.pumpWidget(
-      makeTestableWidget(
-        // makeTestableWidget hosts its child in a SingleChildScrollView, so
-        // the body needs a bounded height of its own to lay its list out
-        // against, and a Material ancestor for the search field.
-        _Host(
-          child: TaskSearchPickerBody(
-            excludeIds: const {},
-            onTaskSelected: (_) {},
-            onCreateTask: onCreateTask,
-          ),
-        ),
-      ),
-    );
+    await tester.pumpWidget(bodyTree(onCreateTask: onCreateTask));
     await tester.pump();
     await tester.pump();
   }
 
-  /// Two pumps: the create row is withheld until the query's full-text lookup
-  /// resolves, so the pool it checks for an exact-title match is complete.
+  /// Types [query] and lets the picker settle on it: past the debounce, then a
+  /// frame for the full-text lookup to land and be committed. Results only
+  /// move once, at the end of this, which is the point.
   Future<void> search(WidgetTester tester, String query) async {
     await tester.enterText(find.byType(TextField), query);
-    await tester.pump();
+    await tester.pump(entityPickerSearchDebounce);
     await tester.pump();
   }
 
@@ -174,11 +182,12 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Write the guide');
       await tester.pump();
 
-      // One pump in, the lookup has not resolved. The pool does not yet hold
-      // the match, so an unguarded exact-title check would offer to create a
-      // duplicate of a task that already exists.
+      // Mid-debounce the pool does not yet hold the match, so an unguarded
+      // exact-title check would offer to create a duplicate of a task that
+      // already exists.
       expect(createRow(), findsNothing);
 
+      await tester.pump(entityPickerSearchDebounce);
       await tester.pump();
 
       // Resolved: the match is in the pool and the create row stays withheld
@@ -301,6 +310,215 @@ void main() {
     await tester.pump();
 
     expect(selected, isNull);
+  });
+
+  // The picker owns *when* a query is resolved; this body owns what a resolved
+  // query costs and which results it is allowed to keep.
+  group('full-text lookups', () {
+    testWidgets('a burst of keystrokes costs one lookup, for the last query', (
+      tester,
+    ) async {
+      stubTasks([buildTask(id: 'a', title: 'Apple Task')]);
+      await pumpBody(tester);
+
+      // Four characters inside one debounce window.
+      for (final query in ['A', 'Ap', 'App', 'Appl']) {
+        await tester.enterText(find.byType(TextField), query);
+        await tester.pump(const Duration(milliseconds: 40));
+      }
+      verifyNever(() => fts5Db.watchFullTextMatches(any()));
+
+      await tester.pump(entityPickerSearchDebounce);
+      await tester.pump();
+
+      // One query hits the index, not one per character. Typing used to open a
+      // fresh Drift subscription per keystroke.
+      verify(() => fts5Db.watchFullTextMatches('Appl')).called(1);
+      verifyNoMoreInteractions(fts5Db);
+    });
+
+    testWidgets('the lookup is given the trimmed query', (tester) async {
+      stubTasks([]);
+      await pumpBody(tester);
+
+      await search(tester, '  apple  ');
+
+      // Surrounding whitespace is not part of what the user searched for, and
+      // the exact-title check downstream compares trimmed titles.
+      verify(() => fts5Db.watchFullTextMatches('apple')).called(1);
+    });
+
+    testWidgets(
+      'clearing the search drops the out-of-window hits the last query found',
+      (tester) async {
+        final beyondWindow = buildTask(id: 'beyond', title: 'Past the window');
+        stubTasks([buildTask(id: 'in-window', title: 'Prefetched task')]);
+        stubFullTextHitsOutsideWindow([beyondWindow]);
+
+        await pumpBody(tester);
+        await search(tester, 'window');
+        expect(find.text('Past the window'), findsOneWidget);
+
+        await tester.enterText(find.byType(TextField), '');
+        await tester.pump();
+
+        // A cleared field shows what a freshly opened picker shows. Leaving
+        // the last query's hits in the pool made the two disagree.
+        expect(find.text('Past the window'), findsNothing);
+        expect(find.text('Prefetched task'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a stale lookup landing last does not overwrite a newer one', (
+      tester,
+    ) async {
+      stubTasks([
+        buildTask(id: 'apple', title: 'Apple Task'),
+        buildTask(id: 'banana', title: 'Banana Task'),
+      ]);
+
+      // Created here, not in setUp: a completer built in setUp belongs to
+      // another zone and never resolves inside the test's fake async.
+      final stale = Completer<List<String>>();
+      when(
+        () => fts5Db.watchFullTextMatches('stale'),
+      ).thenAnswer((_) => Stream.fromFuture(stale.future));
+      when(
+        () => fts5Db.watchFullTextMatches('fresh'),
+      ).thenAnswer((_) => Stream.value(<String>['banana']));
+
+      await pumpBody(tester);
+
+      // Settle on the query whose lookup never answers, so it is genuinely in
+      // flight rather than cancelled by the debounce...
+      await search(tester, 'stale');
+      // ...then settle on a newer one that answers at once.
+      await search(tester, 'fresh');
+      expect(find.text('Banana Task'), findsOneWidget);
+
+      stale.complete(<String>['apple']);
+      await tester.pumpAndSettle();
+
+      // The abandoned query's hits must not reappear under the newer query.
+      expect(find.text('Banana Task'), findsOneWidget);
+      expect(find.text('Apple Task'), findsNothing);
+
+      // A stale write schedules no frame of its own, so it does no visible
+      // damage until the list is next built for some other reason. Rebuild and
+      // check again: an ungated write leaves the matches describing the
+      // abandoned query, which silently drops the current query's results.
+      await tester.pumpWidget(bodyTree());
+      await tester.pump();
+      expect(find.text('Banana Task'), findsOneWidget);
+      expect(find.text('Apple Task'), findsNothing);
+    });
+
+    testWidgets('a stale lookup that fails last does not clear a newer one', (
+      tester,
+    ) async {
+      // Titled so it can only be found through the index — a row that also
+      // matched by title would survive the matches being wiped and prove
+      // nothing.
+      stubTasks([buildTask(id: 'banana', title: 'Banana Task')]);
+
+      final stale = Completer<List<String>>();
+      when(
+        () => fts5Db.watchFullTextMatches('stale'),
+      ).thenAnswer((_) => Stream.fromFuture(stale.future));
+      when(
+        () => fts5Db.watchFullTextMatches('fresh'),
+      ).thenAnswer((_) => Stream.value(<String>['banana']));
+
+      await pumpBody(tester);
+      await search(tester, 'stale');
+      await search(tester, 'fresh');
+      expect(find.text('Banana Task'), findsOneWidget);
+
+      // The abandoned lookup errors rather than answering. Its failure handler
+      // resets the matches too, so it needs the same generation guard the
+      // success path has — without one it wipes the newer query's only route
+      // to its results.
+      stale.completeError(Exception('fts unavailable'));
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(bodyTree());
+      await tester.pump();
+
+      expect(find.text('Banana Task'), findsOneWidget);
+    });
+
+    testWidgets(
+      'a row still on screen from the previous query can be picked after a '
+      'newer lookup has replaced the matches',
+      (tester) async {
+        final first = buildTask(id: 'first', title: 'Past the window one');
+        final second = buildTask(id: 'second', title: 'Past the window two');
+        stubTasks([]);
+        when(
+          () => fts5Db.watchFullTextMatches('one'),
+        ).thenAnswer((_) => Stream.value(<String>['first']));
+        when(
+          () => fts5Db.watchFullTextMatches('two'),
+        ).thenAnswer((_) => Stream.value(<String>['second']));
+        when(() => journalDb.getJournalEntitiesForIds({'first'})).thenAnswer(
+          (_) async => [first],
+        );
+        when(() => journalDb.getJournalEntitiesForIds({'second'})).thenAnswer(
+          (_) async => [second],
+        );
+
+        Task? selected;
+        await tester.pumpWidget(
+          bodyTree(onTaskSelected: (task) => selected = task),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        await search(tester, 'one');
+        expect(find.text('Past the window one'), findsOneWidget);
+
+        // The second lookup lands and overwrites the resolved matches.
+        await search(tester, 'two');
+        expect(find.text('Past the window two'), findsOneWidget);
+
+        // The real window is sub-frame — `setState` only schedules the
+        // repaint, so the first query's row stays mounted and hit-testable
+        // until it lands, and a tap there arrives with the matches already
+        // replaced. A tap cannot be driven into that window (tapping requires
+        // pumping, which closes it), so the pick contract is exercised
+        // directly: an id the picker rendered must still resolve.
+        final sheet = tester.widget<EntityPickerSheet>(
+          find.byType(EntityPickerSheet),
+        );
+        await sheet.onPick!('first');
+
+        // Resolving from the latest lookup alone dropped this on the floor.
+        expect(selected?.meta.id, 'first');
+      },
+    );
+
+    testWidgets('a task only the lookup found can still be picked', (
+      tester,
+    ) async {
+      final beyondWindow = buildTask(id: 'beyond', title: 'Past the window');
+      stubTasks([buildTask(id: 'in-window', title: 'Prefetched task')]);
+      stubFullTextHitsOutsideWindow([beyondWindow]);
+
+      Task? selected;
+      await tester.pumpWidget(
+        bodyTree(onTaskSelected: (task) => selected = task),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await search(tester, 'window');
+      await tester.tap(find.text('Past the window'));
+      await tester.pump();
+
+      // Rendering a row the pick handler cannot resolve is what let the picker
+      // surface a task and then throw on the tap.
+      expect(tester.takeException(), isNull);
+      expect(selected?.meta.id, 'beyond');
+    });
   });
 }
 

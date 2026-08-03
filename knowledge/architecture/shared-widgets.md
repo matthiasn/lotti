@@ -1,9 +1,9 @@
 ---
 type: Architecture
 title: Shared widgets
-description: "The widgets that belong to no single feature — app-bar chrome, modal presentation, selection primitives and settings scaffolding."
+description: "The widgets that belong to no single feature — app-bar chrome, modal presentation, selection primitives, the entity picker and settings scaffolding."
 resource: ../../lib/widgets
-tags: [widgets, shared, modals, selection]
+tags: [widgets, shared, modals, selection, picker]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
 stale_after: 2027-01-11
@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/widgets
     title: Shared widgets source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-03
 ---
 
 `lib/widgets/` holds the reusable widgets that belong to no single feature.
@@ -27,7 +27,7 @@ composition and app-shell chrome.
 | `modal/` | `ModalUtils` over `wolt_modal_sheet`, the confirmation modal, and small list/card animation widgets |
 | `selection/` | Reusable selection-modal primitives and the unified toggle family |
 | `settings/` | The settings page grid and detail scaffold every editor sits on |
-| `picker/` | `EntityPickerSheet`, shared by categories and labels |
+| `picker/` | `EntityPickerSheet`, shared by categories, labels and the task link pickers |
 | `nav_bar/` | The bottom navigation shell and its FAB clearance wrapper |
 | `misc/` | The sidebar activity summary and similar cross-feature pieces |
 
@@ -72,6 +72,65 @@ option row with slightly different padding, selection markers and semantics.
 They now share one option anatomy, which is also what
 `DesignSystemSelectionRow` builds on. See
 [component contracts](../features/design_system/component-contracts.md).
+
+# The entity picker shows one query's answer at a time
+
+`EntityPickerSheet` is the search-and-pick body behind the category, label and
+task-link modals. Its rows, its "create from search" row, its empty message and
+what Enter acts on are all derived from **one** query — the *settled* query,
+which is not necessarily what is in the field right now.
+
+That distinction only matters for a picker whose results need loading. Category
+and label pickers filter a list already in memory, pass no
+`onQueryResolve`, and apply every keystroke immediately. The task pickers
+(`TaskSearchPickerBody`) need a full-text lookup, supply the hook, and get this
+instead:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Settled
+    Settled --> Debouncing: keystroke
+    Debouncing --> Debouncing: another keystroke (timer restarts)
+    Debouncing --> Resolving: idle for searchDebounce
+    Debouncing --> Resolving: Enter (flush)
+    Debouncing --> Settled: field emptied
+    Resolving --> Settled: onQueryResolve completes or throws
+    Resolving --> Superseded: a newer keystroke supersedes it
+    Superseded --> [*]: result discarded, never committed
+    note right of Debouncing
+        Screen still shows the SETTLED query's
+        rows — no recompute, no resize.
+    end note
+```
+
+Enter does not shortcut to `Settled`: it cancels the timer and resolves the
+typed query immediately, then acts only if the sheet settled on exactly that
+query. An emptied field is the one transition that skips `Resolving` outright,
+because there is nothing to look up.
+
+The rule the diagram encodes: **for a non-empty query on an asynchronous
+picker, nothing on screen moves until the next answer is complete.** An empty
+query and a picker with no `onQueryResolve` both apply at once and are outside
+the rule. Recomputing on each keystroke against results still in flight is what
+made the link modal claim "No tasks found" mid-word, withhold the create row,
+and then repopulate a frame later — resizing the sheet twice per character. It
+also opened a fresh Drift subscription per keystroke.
+
+Two consequences worth knowing before changing this:
+
+* **The create row is labelled from the settled query too.** Its label, its
+  eligibility, and the rows beside it must describe the same query, or the sheet
+  offers to create a name nothing has checked for duplicates.
+* **Enter flushes rather than waits.** It resolves the typed query first and
+  then acts, and does nothing at all if a further keystroke overtook the flush —
+  acting on the older answer would commit the wrong entity.
+
+Both the sheet and `TaskSearchPickerBody` carry their own generation counter, so
+a lookup for an abandoned query cannot commit over a newer one that landed
+first. The body's counter is not redundant with the sheet's: without it a stale
+lookup still writes its matches into the body's fields, and the next rebuild —
+for any unrelated reason — then finds them describing the wrong query and drops
+the current query's results.
 
 # The bottom-nav shell is app-level
 

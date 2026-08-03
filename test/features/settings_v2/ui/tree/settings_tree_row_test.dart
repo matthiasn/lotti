@@ -25,14 +25,13 @@ SettingsNode _branch() => const SettingsNode(
   ],
 );
 
-SettingsNode _leaf({String desc = 'Feature flags'}) =>
-    SettingsNode(
-      id: 'flags',
-      icon: Icons.flag_outlined,
-      title: 'Flags',
-      desc: desc,
-      panel: 'flags',
-    );
+SettingsNode _leaf({String desc = 'Feature flags'}) => SettingsNode(
+  id: 'flags',
+  icon: Icons.flag_outlined,
+  title: 'Flags',
+  desc: desc,
+  panel: 'flags',
+);
 
 Future<void> _pumpRow(
   WidgetTester tester, {

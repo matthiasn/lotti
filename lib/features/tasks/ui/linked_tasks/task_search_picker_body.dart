@@ -73,10 +73,13 @@ class TaskSearchPickerBody extends StatefulWidget {
 
 class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   List<Task> _tasks = [];
-  Set<String> _fts5Matches = {};
+
+  /// The ids that matched [_matchedQuery] in the full-text index.
+  Set<String> _fts5Matches = const {};
 
   /// Full-text hits that fall outside the prefetched window, fetched by id.
-  /// Kept separate from [_tasks] so clearing the query drops them again.
+  /// Kept separate from [_tasks] so they only ever count for the query that
+  /// found them.
   List<Task> _resolvedMatches = const [];
 
   /// Tasks created from a search miss during this session. Held so the pick
@@ -84,29 +87,51 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   /// task is in neither the prefetch nor the full-text results.
   List<Task> _createdTasks = const [];
 
-  /// The query [_resolvedMatches] and [_fts5Matches] currently describe, or
-  /// null before the first lookup resolves. Anything reading the pool to
-  /// decide a task does *not* exist has to know the pool is current.
-  String? _resolvedQuery;
+  /// The trimmed query [_fts5Matches] and [_resolvedMatches] describe, or null
+  /// before any lookup has run.
+  ///
+  /// Results for a *different* query are ignored rather than cleared, so a
+  /// cleared search shows the same list a freshly opened picker does without
+  /// anything having to be mutated mid-build to make that true.
+  String? _matchedQuery;
 
-  /// Every task a row can be built from. Both the row builder and the pick
-  /// handler must read this same list: building rows from a wider set than
-  /// picks are resolved against is what let a rendered row throw on tap.
-  List<Task> get _candidatePool => [
-    ..._tasks,
-    ..._resolvedMatches,
-    ..._createdTasks,
-  ];
   bool _isLoading = true;
-  String? _lastFetchedQuery;
 
   final JournalDb _db = getIt<JournalDb>();
   final Fts5Db _fts5Db = getIt<Fts5Db>();
 
-  // Guards against out-of-order FTS5 resolution: typing isn't debounced, so
-  // an older keystroke's lookup can resolve after a newer one's and overwrite
-  // fresh matches with stale ones.
+  /// Guards against out-of-order resolution: a lookup for a query the user has
+  /// already left can still land after a newer one, and must not overwrite the
+  /// fresher matches.
   int _searchGeneration = 0;
+
+  /// The tasks a row may be built from for [query], and the same set
+  /// [_shouldShowCreate] weighs before offering to create a duplicate.
+  List<Task> _candidatePool(String query) => [
+    ..._tasks,
+    if (query.isNotEmpty && query == _matchedQuery) ..._resolvedMatches,
+    ..._createdTasks,
+  ];
+
+  /// Every task this picker has *ever* been able to show, by id.
+  ///
+  /// Accumulates rather than mirroring the latest lookup, because `setState`
+  /// only schedules a repaint: rows built for the previous query stay mounted
+  /// and hit-testable for a frame after a newer lookup has already replaced
+  /// [_resolvedMatches]. A tap landing in that window has to resolve against
+  /// something that still knows the old row, or it is silently dropped —
+  /// reading the live lists here made the invariant this exists for
+  /// ("a pick can always resolve a row that was on screen") false.
+  ///
+  /// Bounded by the tasks one picker session surfaces: the prefetch window
+  /// plus a handful of full-text hits per query.
+  final Map<String, Task> _pickable = {};
+
+  void _registerPickable(Iterable<Task> tasks) {
+    for (final task in tasks) {
+      _pickable[task.meta.id] = task;
+    }
+  }
 
   @override
   void initState() {
@@ -138,6 +163,7 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       if (mounted) {
         setState(() {
           _tasks = tasks.whereType<Task>().toList();
+          _registerPickable(_tasks);
           _isLoading = false;
         });
       }
@@ -148,11 +174,21 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
     }
   }
 
-  Future<void> _fetchFts5(String query) async {
+  /// Loads the full-text hits for [query] into the fields the row builder and
+  /// the create-row check read.
+  ///
+  /// The picker awaits this *before* it advances to [query], which is why this
+  /// deliberately does not `setState`: the picker's own commit is the rebuild,
+  /// and it happens in the frame that starts using these results. Rebuilding
+  /// here would paint one frame of the previous query's rows filtered by this
+  /// query's matches — the flicker this indirection exists to remove.
+  Future<void> _resolveQuery(String query) async {
     final generation = ++_searchGeneration;
+    final trimmed = query.trim();
 
     try {
-      final matches = (await _fts5Db.watchFullTextMatches(query).first).toSet();
+      final matches = (await _fts5Db.watchFullTextMatches(trimmed).first)
+          .toSet();
 
       // Resolve the hits the prefetch never loaded. Intersecting matches
       // against the preloaded window instead meant that on a backlog larger
@@ -172,52 +208,36 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
                 )
                 .toList();
 
-      if (mounted && generation == _searchGeneration) {
-        setState(() {
-          _fts5Matches = matches;
-          _resolvedMatches = resolved;
-          _resolvedQuery = query.trim();
-        });
-      }
+      if (generation != _searchGeneration) return;
+      _fts5Matches = matches;
+      _resolvedMatches = resolved;
+      _registerPickable(resolved);
+      _matchedQuery = trimmed;
     } catch (e) {
-      if (mounted && generation == _searchGeneration) {
-        setState(() {
-          _fts5Matches = {};
-          _resolvedMatches = const [];
-          // A failed lookup still resolves the query: the pool is as complete
-          // as it is going to get, so the create row must not stay withheld
-          // forever on a database that is simply unavailable.
-          _resolvedQuery = query.trim();
-        });
-      }
+      if (generation != _searchGeneration) return;
+      // A failed lookup still counts as resolved: the pool is as complete as
+      // it is going to get, so the create row must not stay withheld forever
+      // on a database that is simply unavailable.
+      _fts5Matches = const {};
+      _resolvedMatches = const [];
+      _matchedQuery = trimmed;
     }
   }
 
-  /// [EntityPickerSheet] calls this synchronously on every keystroke (and
-  /// every rebuild); a distinct query kicks off the async FTS5 lookup exactly
-  /// once (guarded by [_lastFetchedQuery]) and its result arrives later via
-  /// [_fetchFts5]'s own `setState`, well outside this build pass.
+  /// Builds the rows for [query], which the picker only ever passes once
+  /// [_resolveQuery] has finished for it. Pure: no lookup is started here, so
+  /// a rebuild for any other reason cannot kick off database work.
   List<PickerItem> _entriesBuilder(String query) {
-    if (query != _lastFetchedQuery) {
-      _lastFetchedQuery = query;
-      if (query.isEmpty) {
-        _fts5Matches = {};
-        _resolvedMatches = const [];
-        _resolvedQuery = null;
-      } else {
-        unawaited(_fetchFts5(query));
-      }
-    }
-
-    final candidates = _candidatePool.where(
-      (task) => !widget.excludeIds.contains(task.meta.id),
-    );
+    final candidates = _candidatePool(
+      query,
+    ).where((task) => !widget.excludeIds.contains(task.meta.id));
     final queryLower = query.toLowerCase();
+    final matches = query == _matchedQuery ? _fts5Matches : const <String>{};
     final filtered = query.isEmpty
         ? candidates
         : candidates.where(
             (task) =>
-                _fts5Matches.contains(task.meta.id) ||
+                matches.contains(task.meta.id) ||
                 task.data.title.toLowerCase().contains(queryLower),
           );
 
@@ -262,7 +282,10 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   Future<String?> _createFromQuery(String query) async {
     final created = await widget.onCreateTask!(query.trim());
     if (created == null || !mounted) return null;
-    setState(() => _createdTasks = [..._createdTasks, created]);
+    setState(() {
+      _createdTasks = [..._createdTasks, created];
+      _registerPickable([created]);
+    });
     return created.meta.id;
   }
 
@@ -271,22 +294,21 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   /// "Migrate the database" already exists, because the shorter title is a
   /// legitimately different task.
   ///
-  /// Withheld until the query's full-text lookup has resolved. On a backlog
-  /// larger than the 200-row prefetch an exact-title match can live outside
-  /// the window, so [_candidatePool] does not contain it yet — offering the
-  /// create row in that gap invites a duplicate of a task that already
-  /// exists, which is precisely what the exact-title check exists to prevent.
+  /// The picker only asks this for a query whose full-text lookup has already
+  /// landed, which is what makes the check safe: on a backlog larger than the
+  /// 200-row prefetch an exact-title match can live outside the window, and
+  /// offering the create row before that hit is in the pool would invite a
+  /// duplicate of a task that already exists.
   bool _shouldShowCreate(String query) {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return false;
-    if (trimmed != _resolvedQuery) return false;
     final lowered = trimmed.toLowerCase();
     // Against the same filtered set the rows are built from. Checked against
     // the raw pool, a query exactly matching an *excluded* task — the anchor
     // itself, or one already holding this relation — hid every row (excluded)
     // and suppressed the create row too (the excluded task counted as an
     // existing duplicate), leaving a dead end with neither.
-    return !_candidatePool
+    return !_candidatePool(trimmed)
         .where((task) => !widget.excludeIds.contains(task.meta.id))
         .any((task) => task.data.title.trim().toLowerCase() == lowered);
   }
@@ -304,6 +326,10 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
     return EntityPickerSheet(
       mode: PickerMode.single,
       entriesBuilder: _entriesBuilder,
+      // The rows for a query depend on a database lookup, so the picker waits
+      // for it: one settled result set per pause in typing, instead of a
+      // recompute per keystroke against results still in flight.
+      onQueryResolve: _resolveQuery,
       // Task titles are sentences, not short entity names — one line truncates
       // real words away on the row whose tap immediately commits the link.
       titleMaxLines: 2,
@@ -320,9 +346,7 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       // the prefetch window — the picker rendered the task, then died on the
       // tap.
       onPick: (id) async {
-        final picked = _candidatePool
-            .where((task) => task.meta.id == id)
-            .firstOrNull;
+        final picked = _pickable[id];
         if (picked != null) await widget.onTaskSelected(picked);
       },
       createFromQuery: widget.onCreateTask == null ? null : _createFromQuery,

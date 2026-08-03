@@ -43,6 +43,7 @@ void main() {
     Future<String?> Function(String query)? createFromQuery,
     bool Function(String query)? shouldShowCreate,
     int titleMaxLines = 1,
+    Future<void> Function(String query)? onQueryResolve,
   }) async {
     await tester.pumpWidget(
       WidgetTestBench(
@@ -61,6 +62,7 @@ void main() {
             createFromQuery: createFromQuery,
             shouldShowCreate: shouldShowCreate,
             createRowKey: const ValueKey('create'),
+            onQueryResolve: onQueryResolve,
           ),
         ),
       ),
@@ -620,4 +622,446 @@ void main() {
       handle.dispose();
     });
   });
+
+  // A picker whose rows depend on a database lookup used to recompute on every
+  // keystroke against results that had not caught up, so a query mid-flight
+  // rendered as "nothing found" with no create row and the sheet resized twice
+  // per character. These pin the settling contract that replaced it: the sheet
+  // holds the last complete answer until the next one is ready.
+  group('async query settling', () {
+    /// What each query is worth, so "which query is the sheet showing" reads
+    /// straight off the tree.
+    const catalog = <String, List<String>>{
+      '': ['alpha', 'beta'],
+      'al': ['alpha'],
+      'zz': <String>[],
+    };
+
+    List<PickerItem> catalogBuilder(String query) => [
+      for (final id in catalog[query] ?? const <String>[]) item(id),
+    ];
+
+    Finder row(String id) => find.byKey(ValueKey('row-$id'));
+    Finder emptyState() => find.text('Nothing here');
+
+    /// Types [query] without letting the debounce elapse.
+    Future<void> type(WidgetTester tester, String query) =>
+        tester.enterText(find.byType(TextField), query);
+
+    /// Types [query] and lets the debounce fire, leaving the resolve in
+    /// flight for the test to release.
+    Future<void> typeAndDebounce(WidgetTester tester, String query) async {
+      await type(tester, query);
+      await tester.pump(entityPickerSearchDebounce);
+    }
+
+    testWidgets(
+      'holds the last complete result set on screen while the next query '
+      'resolves, instead of flashing the empty state',
+      (tester) async {
+        final gate = _ResolveGate();
+        await pumpSheet(
+          tester,
+          mode: PickerMode.single,
+          entriesBuilder: catalogBuilder,
+          onQueryResolve: gate.call,
+        );
+        expect(row('alpha'), findsOneWidget);
+
+        await typeAndDebounce(tester, 'zz');
+
+        // The lookup for "zz" is out. Recomputing here is what produced the
+        // false "nothing found" — the sheet has no answer for "zz" yet, so it
+        // must keep showing the one it does have.
+        expect(gate.queries, ['zz']);
+        expect(row('alpha'), findsOneWidget);
+        expect(row('beta'), findsOneWidget);
+        expect(emptyState(), findsNothing);
+
+        gate.release();
+        await tester.pump();
+
+        // Resolved: now the empty state is the truth rather than a gap.
+        expect(row('alpha'), findsNothing);
+        expect(emptyState(), findsOneWidget);
+      },
+    );
+
+    testWidgets('a burst of keystrokes resolves once, for the final query', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onQueryResolve: gate.call,
+      );
+
+      // Three characters inside one debounce window.
+      await type(tester, 'a');
+      await tester.pump(const Duration(milliseconds: 60));
+      await type(tester, 'al');
+      await tester.pump(const Duration(milliseconds: 60));
+      await type(tester, 'zz');
+      expect(gate.queries, isEmpty);
+
+      await tester.pump(entityPickerSearchDebounce);
+
+      // One lookup for the query that survived, not one per character.
+      expect(gate.queries, ['zz']);
+    });
+
+    testWidgets('an emptied field applies at once, with no lookup at all', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onQueryResolve: gate.call,
+      );
+
+      await typeAndDebounce(tester, 'al');
+      gate.release();
+      await tester.pump();
+      expect(row('beta'), findsNothing);
+
+      await type(tester, '');
+      await tester.pump();
+
+      // Clearing is not a search: there is nothing to look up, so the full
+      // list snaps back in the same frame rather than after a debounce.
+      expect(gate.queries, ['al']);
+      expect(row('beta'), findsOneWidget);
+    });
+
+    testWidgets('clearing the field strands the lookup it interrupted', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onQueryResolve: gate.call,
+      );
+
+      await typeAndDebounce(tester, 'al');
+      await type(tester, '');
+      await tester.pump();
+      expect(row('beta'), findsOneWidget);
+
+      gate.release();
+      await tester.pump();
+
+      // The abandoned query must not reassert itself over the cleared field.
+      expect(row('beta'), findsOneWidget);
+    });
+
+    testWidgets('a lookup that throws still advances the query', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onQueryResolve: gate.call,
+      );
+
+      await typeAndDebounce(tester, 'zz');
+      gate.fail();
+      await tester.pump();
+
+      // An index that is simply unavailable must not freeze the list on a
+      // query the user has already left.
+      expect(row('alpha'), findsNothing);
+      expect(emptyState(), findsOneWidget);
+    });
+
+    testWidgets('a keystroke supersedes an in-flight lookup immediately', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onQueryResolve: gate.call,
+      );
+
+      // "al" gets far enough to start its lookup...
+      await typeAndDebounce(tester, 'al');
+      expect(gate.queries, ['al']);
+
+      // ...then the user types on, while that lookup is still out. The next
+      // debounce has not fired yet, so nothing new has started.
+      await type(tester, 'alp');
+      gate.release(0);
+      await tester.pump();
+
+      // Superseding only when the *next* resolve started left the old lookup
+      // holding the current generation for the whole debounce window, so it
+      // committed and the sheet showed "al" rows while the field read "alp".
+      //
+      // "beta" is the discriminator: it belongs to the settled "" and not to
+      // "al", so its presence is what says the abandoned query never landed.
+      // ("alpha" is in both catalogs and would prove nothing either way.)
+      expect(row('beta'), findsOneWidget, reason: 'still the settled ""');
+      expect(row('alpha'), findsOneWidget, reason: '"" lists both');
+    });
+
+    testWidgets('a superseded lookup never commits over a newer one', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onQueryResolve: gate.call,
+      );
+
+      await typeAndDebounce(tester, 'al');
+      await typeAndDebounce(tester, 'zz');
+      expect(gate.queries, ['al', 'zz']);
+
+      // The older lookup lands last.
+      gate.release(0);
+      await tester.pump();
+      expect(row('alpha'), findsOneWidget, reason: 'still the settled ""');
+      expect(row('beta'), findsOneWidget);
+
+      gate.release(1);
+      await tester.pumpAndSettle();
+      expect(emptyState(), findsOneWidget);
+    });
+
+    testWidgets('without a resolve hook every keystroke applies at once', (
+      tester,
+    ) async {
+      // The category and label pickers filter a list they already hold; making
+      // them wait would add latency and buy nothing.
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+      );
+
+      await type(tester, 'al');
+      await tester.pump();
+
+      expect(row('alpha'), findsOneWidget);
+      expect(row('beta'), findsNothing);
+    });
+
+    testWidgets('the create row shows the settled query, not the typed one', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        createFromQuery: (query) async => 'created-$query',
+        shouldShowCreate: (query) => query.isNotEmpty,
+        onQueryResolve: gate.call,
+      );
+
+      Finder createRowText(String text) => find.descendant(
+        of: find.byKey(const ValueKey('create')),
+        matching: find.text(text),
+      );
+
+      await typeAndDebounce(tester, 'al');
+      gate.release();
+      await tester.pump();
+      expect(createRowText('al'), findsOneWidget);
+
+      await typeAndDebounce(tester, 'zz');
+
+      // Its label, its eligibility and the rows beside it all describe one
+      // query. Labelling it from the live field while its eligibility came
+      // from the settled one would offer to create a name nothing had checked.
+      expect(createRowText('al'), findsOneWidget);
+      expect(createRowText('zz'), findsNothing);
+    });
+
+    testWidgets('Enter flushes a pending debounce and acts on what was typed', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      String? picked;
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onPick: (id) => picked = id,
+        onQueryResolve: gate.call,
+      );
+
+      // Enter lands inside the debounce window, before any lookup has run.
+      await type(tester, 'al');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      expect(gate.queries, ['al']);
+
+      gate.release();
+      await tester.pumpAndSettle();
+
+      // Not "alpha, beta" — Enter waited for its own query's answer rather
+      // than applying the first row of the previous one.
+      expect(picked, 'alpha');
+    });
+
+    testWidgets('Enter does nothing when a keystroke overtakes its flush', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      String? picked;
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onPick: (id) => picked = id,
+        onQueryResolve: gate.call,
+      );
+
+      await type(tester, 'al');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+
+      // The user keeps typing while the flush is still out.
+      await type(tester, 'zz');
+      gate.release();
+      await tester.pumpAndSettle();
+
+      // Applying "al"'s first row now would commit a task the user had already
+      // typed past.
+      expect(picked, isNull);
+    });
+
+    testWidgets('Enter does nothing when the field is emptied mid-flush', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      String? picked;
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onPick: (id) => picked = id,
+        onQueryResolve: gate.call,
+      );
+
+      await type(tester, 'al');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+
+      // Clearing moves the typed query *and* the settled query to '', so a
+      // guard that re-read the typed value would find them equal and fall
+      // through — applying the first row of the unfiltered list and linking a
+      // task the user never picked.
+      await type(tester, '');
+      gate.release();
+      await tester.pumpAndSettle();
+
+      expect(picked, isNull);
+      // The cleared field is what the sheet ended up showing, not "al".
+      expect(row('beta'), findsOneWidget);
+    });
+
+    testWidgets('Enter stays a no-op in multi mode after the flush', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      final staged = ValueNotifier<Set<String>>({});
+      addTearDown(staged.dispose);
+
+      await pumpSheet(
+        tester,
+        mode: PickerMode.multi,
+        staged: staged,
+        entriesBuilder: catalogBuilder,
+        onQueryResolve: gate.call,
+      );
+
+      await type(tester, 'al');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      gate.release();
+      await tester.pumpAndSettle();
+
+      // There is no single submit target in multi mode; selection is toggled
+      // per row and committed via the Apply footer. Flushing must not turn
+      // Enter into a silent selection of the first match.
+      expect(staged.value, isEmpty);
+      expect(row('alpha'), findsOneWidget);
+    });
+
+    testWidgets('disposing cancels a pending debounce', (tester) async {
+      final gate = _ResolveGate();
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onQueryResolve: gate.call,
+      );
+
+      await type(tester, 'al');
+      // Torn down mid-window. An uncancelled timer fails the test at teardown,
+      // which is the whole assertion here.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(entityPickerSearchDebounce);
+
+      expect(gate.queries, isEmpty);
+    });
+
+    testWidgets('a lookup landing after disposal is dropped quietly', (
+      tester,
+    ) async {
+      final gate = _ResolveGate();
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: catalogBuilder,
+        onQueryResolve: gate.call,
+      );
+
+      await typeAndDebounce(tester, 'al');
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      gate.release();
+      await tester.pump();
+
+      // setState on a disposed State throws; the commit has to notice.
+      expect(tester.takeException(), isNull);
+    });
+  });
+}
+
+/// A controllable [EntityPickerSheet.onQueryResolve].
+///
+/// Records the queries it is asked to resolve and holds each one open until
+/// the test releases it, so the window between a keystroke and its answer —
+/// invisible in production, and where the flicker lived — can be asserted on.
+///
+/// Instantiated inside a test body, never in `setUp`: a completer created
+/// outside the test's fake-async zone never resolves inside it.
+class _ResolveGate {
+  final List<String> queries = [];
+  final List<Completer<void>> _gates = [];
+
+  Future<void> call(String query) {
+    queries.add(query);
+    final gate = Completer<void>();
+    _gates.add(gate);
+    return gate.future;
+  }
+
+  /// Releases the resolve for `queries[index]`, or the most recent one.
+  void release([int? index]) => _gates[index ?? _gates.length - 1].complete();
+
+  /// Fails the resolve for `queries[index]`, or the most recent one.
+  void fail([int? index]) => _gates[index ?? _gates.length - 1].completeError(
+    Exception('lookup unavailable'),
+  );
 }

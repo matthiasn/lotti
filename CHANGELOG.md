@@ -37,6 +37,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now raise the notification they were always meant to.
 
 ### Fixed
+- **Searching for a task to link no longer flickers as you type.** Every
+  keystroke in the Link existing task modal used to rebuild the list against a
+  search that had not finished, so the modal briefly claimed "No tasks found",
+  hid the offer to create the task you were describing, and then repopulated a
+  moment later — resizing itself twice per character. The search now settles
+  once, shortly after you stop typing: the results, the create row and the
+  empty message appear together and describe the same search, and the last
+  complete set of results stays on screen while the next one loads. A word
+  typed quickly now costs a single database lookup rather than one per letter.
+  Clearing the field still snaps back to the full list immediately, and
+  pressing Enter waits for its own search rather than acting on the previous
+  one.
 - **The Add device QR code has a clearer edge for scanners.** Its white margin
   was narrow enough that the outer QR modules looked almost clipped against the
   surrounding card. The code now has four more pixels of white space on every

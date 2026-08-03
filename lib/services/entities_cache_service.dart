@@ -184,7 +184,6 @@ class EntitiesCacheService {
       for (final label in labels) {
         labelsById[label.id] = label;
       }
-
     } finally {
       _labelsLoading = false;
       if (_labelsPending) {

@@ -208,5 +208,4 @@ class MockDayAgent implements DayAgentInterface {
     categoryId: categoryId,
     query: query,
   );
-
 }
