@@ -1094,9 +1094,9 @@ void main() {
             categoryDetailsControllerProvider(testCategoryId).notifier,
           );
 
-      // Add a value and yield once to ensure subscription is active (no real wait)
+      // Add a value and drain the event queue so the subscription is active.
       streamController.add(CategoryTestUtils.createTestCategory());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // Dispose the controller
       container.dispose();

@@ -11,7 +11,7 @@
 |---|---|---|---|
 | `lib/features/categories/domain/category_icon.dart` | 306 | Yes (425) | No active issue; unused suggestion logic is removed and serialization remains covered |
 | `lib/features/categories/repository/categories_repository.dart` | 114 | Yes (663) | **[MED]** Repository test uses inline getIt boilerplate instead of `setUpTestGetIt()` |
-| `lib/features/categories/state/category_details_controller.dart` | 376 | Yes (1108) | Shared container/load helpers are implemented; no wall-clock timeout remains |
+| `lib/features/categories/state/category_details_controller.dart` | 376 | Yes (1108) | Shared helpers and deterministic event-queue coordination are implemented |
 | `lib/features/categories/state/category_details_controller.freezed.dart` | 283 | n/a — generated | — |
 | `lib/features/categories/state/category_task_count_provider.dart` | 40 | Yes (178) | **[MED]** 6 `Future<void>.delayed(Duration.zero)` violations |
 | `lib/features/categories/state/categories_list_controller.dart` | 14 | Yes (69) | Repository stream values and errors are covered |
