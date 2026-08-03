@@ -19,39 +19,42 @@ checkas aldrig in i applikationsträdet.
 4. Uppdatera `docs-site/metadata/features.json` när täckningen ändras.
 5. Uppdatera matchande poster i
    `docs-site/metadata/surface-inventory.json`. En yta blir **verifierad**
-   endast när dess nuvarande produktionsgränssnitt, prosa och skärmdumpstäckning har
-   Alla har granskats.
+   först när dess nuvarande produktionsgränssnitt, prosa och
+   skärmdumpstäckning alla har granskats.
 6. Kör `make manual_check`.
 7. Granska produktionsbygget lokalt med `make manual_serve`, inklusive
-   Språkväljare och varje lokaliserad rutt.
+   språkväljaren och varje lokaliserad rutt.
 
-Validering kräver att varje publicerat översättningsträd innehåller samma sida
-stigar som det engelska källträdet. Den avvisar också översatta sidtexter som
-är identiska med engelska, så nya sidor kan inte tyst skickas som oöversatta
-kopior. De offentliga engelska URL:erna förblir oförändrade; Andra språk är
-publicerade under sitt eget versionerade platsprefix.
+Valideringen kräver att varje publicerat översättningsträd innehåller samma
+sidsökvägar som det engelska källträdet. Den avvisar också översatta
+sidtexter som är identiska med engelskan, så nya sidor kan inte tyst skickas
+som oöversatta kopior. De offentliga engelska URL:erna förblir oförändrade;
+andra språk publiceras under sitt eget versionerade språkprefix.
 
 ## Håll täckningsinventariet auktoritativt
 
-Inventariet definierar V1:s engelska-manualgräns: varje Beamer-sida, varje
-Inställningar V2 blad eller editor, och alla större arbetsflöden som skapar eller material
-ändrar data eller tvärskärande konfiguration. Varje post registrerar sitt ägande
-källfil och ett källtextankare. Validering misslyckas om någon av dem försvinner,
-vilket tvingar fram en rutt- eller UI-ändring för att uppdatera den manuella revisionen istället för att lämna
-En osynlig, gammal bråk.
+Inventariet definierar V1-gränsen för den engelska manualen: varje
+Beamer-sida, varje blad eller redigerare i Inställningar V2, och varje större
+arbetsflöde som skapar eller väsentligt ändrar data eller tvärgående
+konfiguration. Varje post registrerar sin ägande källfil och ett
+källtextankare. Valideringen misslyckas om någotdera försvinner, vilket
+tvingar en rutt- eller UI-ändring att uppdatera manualrevisionen i stället
+för att lämna en osynlig inaktuell rad.
 
-Täckningsstater har medvetet strikta betydelser:
+Täckningsstatusarna har medvetet strikta betydelser:
 
-- **Planerad** betyder att ytan är känd men fortfarande saknar fullständig täckning.
-- **Dokumenterat** betyder att användbar prosa finns, men skärmdumpar från nuvarande produktion
-  eller så saknas en noggrannhet från början till slut.
-- **Verifierad** betyder att den relevanta funktionssidan är verifierad och stödd av
-  registrerade produktionsskärmdumpar.
+- **Planerad** betyder att ytan är känd men fortfarande saknar fullständig
+  täckning.
+- **Dokumenterad** betyder att användbar prosa finns, men att aktuella
+  produktionsskärmdumpar eller en fullständig korrekthetsgranskning
+  fortfarande saknas.
+- **Verifierad** betyder att den relevanta funktionssidan är verifierad och
+  stödd av registrerade produktionsskärmdumpar.
 
-Kör `npm --prefix docs-site run coverage:complete` som utgivningsgrind. Det
+Kör `npm --prefix docs-site run coverage:complete` som utgåvegrind. Den
 misslyckas tills varje inventerad yta är verifierad; vanliga inkrementella
-manualbyggen fortsätter att rapportera de återstående räkningarna utan att blockera
-ämnesändringar.
+manualbyggen fortsätter att rapportera de återstående antalen utan att
+blockera ämnesstora commits.
 
 ## Lägg till ett skärmdumpsfall
 
@@ -76,7 +79,7 @@ och desktop-dark-varianter för varje publicerat språk. Manualkomponenten välj
 det matchande språket och temat. När Mobile/Desktop ändras på en bild uppdateras
 alla skärmdumpar direkt, och valet bevaras mellan sidor och öppna manualflikar.
 
-## Publish a release
+## Publicera en utgåva
 
 Manualkällan kopieras inte för varje appversion. Appens utgåvetagg bevarar
 redan exakt källa. Publicering är en manuellt startad workflow-körning med

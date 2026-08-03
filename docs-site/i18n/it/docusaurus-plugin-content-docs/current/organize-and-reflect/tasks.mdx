@@ -1,58 +1,63 @@
 ---
-title: Lavorare con i compiti
-description: Utilizza lo stato, la priorità, le liste di controllo e il contesto allegato per spostare i risultati in avanti.
+title: Lavora con le attività
+description: Usa stato, priorità, liste di controllo e contesto allegato per far avanzare i risultati.
 ---
 
-# Lavorare con i compiti
+# Lavora con le attività
 
-Le attività raggruppano un risultato con il contesto e i passaggi necessari per finirlo.
-titoli orientati al risultato e mettere note di supporto, immagini, registrazioni e tempo
-registra all'interno del compito.
+Le attività raggruppano un risultato con il contesto e i passi necessari per
+finirlo. Mantieni i titoli orientati al risultato e metti note di supporto,
+immagini, registrazioni e registrazioni del tempo dentro l'attività.
 
 <ManualScreenshot
   caseId="tasks/workspace"
-  alt="Spazio di lavoro di produzione che mostra vere e proprie file di compito con miniature di copertina dall'Interplanetary Penguin Logistics dati demo"
+  alt="Spazio di lavoro delle attività di produzione con righe di attività reali e miniature di copertina dai dati demo di Intergalactic Penguin Logistics"
 />
 
-Sul desktop, l'elenco delle attività rimane visibile accanto all'attività selezionata in modo da poter
-passare attraverso il lavoro senza perdere contesto. Su mobile, selezionare un'attività apre la sua
-dettaglio vista a schermo intero. L'arte di copertura segue il compito ovunque appare,
-incluso l'elenco delle attività e gli elementi dell'ordine del giorno del sistema operativo giornaliero collegati.
+Sul desktop, l'elenco delle attività resta visibile accanto all'attività
+selezionata, così puoi muoverti nel lavoro senza perdere il contesto. Su
+mobile, selezionare un'attività apre la sua vista di dettaglio a schermo
+intero. La copertina segue l'attività ovunque appaia, incluso l'elenco delle
+attività e gli elementi collegati nell'agenda del Daily OS.
 
-L'arte di copertura è facoltativa, ma può rendere uno spazio di lavoro denso molto più facile da scansionare.
-Usalo per una cue visiva utile, un riferimento di prodotto, o una metafora memorabile
-per il lavoro. Le illustrazioni del progetto Waddle in questo manuale sono solo un
-esempio: una copertura può essere come pratico, giocoso, o meravigliosamente strano come voi
-Voglio. Vedi [Genera la copertura dell'attività](./task-cover-art.mdx) per crearne una a
-partire dal contesto e dalle immagini di riferimento del compito stesso.
+La copertina è opzionale, ma può rendere uno spazio di lavoro denso molto più
+facile da scorrere. Usala per un segnale visivo utile, un riferimento di
+prodotto o una metafora memorabile del lavoro. Le illustrazioni di Project
+Waddle in questo manuale sono solo un esempio: una copertina può essere
+pratica, giocosa o meravigliosamente strana quanto vuoi. Vedi [Genera la
+copertina dell'attività](./task-cover-art.mdx) per crearne una a partire dal
+contesto e dalle immagini di riferimento dell'attività stessa.
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Pagina dettagliata del compito di produzione per ispezionare l'habitat del pinguino orbitale, con la stessa arte di copertina utilizzata dalle miniature delle attività"
+  alt="Pagina di dettaglio dell'attività di produzione per ispezionare l'habitat orbitale dei pinguini, con la stessa copertina usata dalle miniature delle attività"
 />
 
-Lo stesso compito può contenere una descrizione, categoria, etichette, data di scadenza, record di tempo,
-elementi della lista di controllo, immagini, link e registrazioni audio. Può anche avere un
-assistente AI persistente con un proprio riepilogo, uno stato di veglia e modifiche proposte —
-vedi [Assegnare un agente di attività](./task-agents.mdx).
+La stessa attività può contenere una descrizione, categoria, etichette, data di
+scadenza, registrazioni del tempo, elementi della lista di controllo, immagini,
+collegamenti e registrazioni audio. Può anche avere un assistente AI
+persistente con un proprio riepilogo, uno stato di sveglia e modifiche
+proposte — vedi [Assegna un agente all'attività](./task-agents.mdx).
 
 ## Priorità
 
-Lotti utilizza quattro livelli di priorità compatti:
+Lotti usa quattro livelli di priorità compatti:
 
-| Priorità | Significato | Usalo per |
+| Priorità | Significato | Usala per |
 | --- | --- | --- |
-| P0 | Urgente | Lavoro che veramente ha bisogno di attenzione prossima |
-| P1 | Alto. | Importante lavoro che dovrebbe accadere presto |
-| P2 | Mezzo | Il normale default |
-| P3-3 | Basso | Lavoro che può aspettare |
+| P0 | Urgente | Lavoro che ha davvero bisogno di attenzione subito |
+| P1 | Alta | Lavoro importante che dovrebbe avvenire presto |
+| P2 | Media | Il valore predefinito normale |
+| P3 | Bassa | Lavoro che può aspettare |
 
-Aprire un compito e utilizzare il controllo prioritario nella sua intestazione per cambiare il livello.
-I compiti esistenti senza una priorità esplicita si comportano come P2.
+Apri un'attività e usa il controllo della priorità nella sua intestazione per
+cambiare livello. Le attività esistenti senza priorità esplicita si comportano
+come P2.
 
-Il raccoglitore precisa i codici compatti, mentre i glifi prioritari aggiungono una visuale
-trattare i codici P0–P3 come il significato; colore
-aiuta la scansione, ma non dovrebbe mai essere l'unico segnale su cui si basa.
+Il selettore spiega per esteso i codici compatti, mentre i glifi di priorità
+aggiungono un segnale visivo sia nel tema chiaro sia in quello scuro. Tratta i
+codici P0–P3 come il significato; il colore aiuta a scorrere, ma non dovrebbe
+mai essere l'unico segnale su cui fai affidamento.
 
 ## Filtra e ordina l'elenco delle attività
 
@@ -62,79 +67,88 @@ aiuta la scansione, ma non dovrebbe mai essere l'unico segnale su cui si basa.
   caption="Video commentato: filtrare l'elenco delle attività per stato e categoria, poi salvare la vista."
 />
 
-Utilizzare il controllo filtro accanto al campo di ricerca attività per focalizzare l'elenco.
-uno o più stati, priorità, categorie, etichette, e—quando i progetti sono
-I selettori di categoria e di etichette offrono anche **Unassigned** per
-il lavoro che ha ancora bisogno di quel dettaglio organizzatore. La scelta **Agent** distingue
-compiti con un agente assegnato da compiti senza uno.
+Usa il controllo dei filtri accanto al campo di ricerca delle attività per
+mettere a fuoco l'elenco. Scegli uno o più stati, priorità, categorie,
+etichette e — quando i Progetti sono abilitati — progetti. I selettori di
+categoria ed etichetta offrono anche **Non firmata** per il lavoro a cui manca
+ancora quel dettaglio organizzativo. La scelta **Agente** distingue le attività
+con un agente assegnato da quelle senza.
 
 <ManualScreenshot
   caseId="tasks/filters"
-  alt="Scheda di filtro attività con controllo di tipo, stato, priorità, categoria e etichetta"
+  alt="Foglio dei filtri delle attività con i controlli di ordinamento, stato, priorità, categoria ed etichetta"
 />
 
-Le scelte all'interno di un filtro sono alternative: selezionare gli spettacoli P0 e P1
-priorità. Diversi filtri restringono il risultato insieme: selezionando P0 o P1
-* e * Penguin Operations mostra solo lavoro corrispondente. Utilizzare **Clear all** per tornare
-a una vista non ostacolata piuttosto che cercare di annullare ogni scelta individualmente.
+Le scelte dentro un singolo filtro sono alternative: selezionare P0 e P1 mostra
+entrambe le priorità. Filtri diversi restringono il risultato insieme:
+selezionare P0 o P1 *e* Penguin Operations mostra solo il lavoro che
+corrisponde a entrambi. Usa **Cancella tutto** per tornare a una vista senza
+vincoli invece di annullare ogni scelta una per una.
 
-Scelga **Due Date**, **Created**, o **Priority** nello stesso foglio per cambiare
-l'ordine. L'ordine prioritario è P0 attraverso P3, con compiti più recenti prima all'interno di un
-priorità a meno che non sia attiva un altro tipo. Sul desktop, una ricerca vettoriale abilitata
-la configurazione può anche offrire una ricerca semantica insieme alla normale ricerca full-text.
+Scegli **Data di scadenza**, **Creato** o **Priorità** nello stesso foglio per
+cambiare l'ordinamento. L'ordine di priorità va da P0 a P3, con le attività più
+recenti prima all'interno di una priorità, a meno che non sia attivo un altro
+ordinamento. Sul desktop, una configurazione con ricerca vettoriale abilitata
+può offrire anche la ricerca semantica accanto alla normale ricerca nel testo.
 
-Quando si ritorna regolarmente alla stessa vista focalizzata, salvare il filtro attivo
-dal foglio e dare un nome chiaro. Riaprirlo dalla lista delle attività, quindi
-aggiornare il filtro salvato quando i suoi criteri cambiano.
+Quando torni regolarmente alla stessa vista mirata, salva il filtro attivo dal
+foglio e dagli un nome chiaro. Riaprilo dall'elenco delle attività, poi
+aggiorna il filtro salvato quando i suoi criteri cambiano.
 
-## Utilizzare le liste di controllo per il prossimo strato in basso
+## Usa le liste di controllo per il livello successivo
 
-Un elemento della lista di controllo dovrebbe essere più piccolo e più concreto del suo compito.
-il manuale” è un compito; “verificare ogni link di navigazione” è una voce della lista di controllo.
-Le liste di controllo possono essere modificate direttamente e possono anche essere proposte da AI configurato
-competenze dal contesto di attività.
+Un elemento della lista di controllo dovrebbe essere più piccolo e più concreto
+della sua attività. “Pubblicare il manuale” è un'attività; “verificare ogni
+link di navigazione” è un elemento della lista di controllo. Le liste di
+controllo possono essere modificate direttamente e possono anche essere
+proposte dalle competenze AI configurate a partire dal contesto dell'attività.
 
-## Aggiungere il contesto delle attività
+## Aggiungi contesto all'attività
 
-Utilizzare l'azione **Add** per allegare una lista di controllo, un'altra attività, un audio
-registrazione, un timer, una voce di testo, o un'immagine senza lasciare l'attività.
-le azioni disponibili dipendono dalla piattaforma attuale e dal contesto.
+Usa l'azione **Aggiungi** dell'attività per allegare una lista di controllo,
+un'altra attività, una registrazione audio, un timer, una voce di testo o
+un'immagine senza lasciare l'attività. Le azioni disponibili dipendono dalla
+piattaforma e dal contesto correnti.
 
 <ManualScreenshot
   caseId="entries/create-menu"
-  alt="Aggiungi menu sopra l'attività dell'habitat orbitale con azioni di cattura task-aware"
+  alt="Menu Aggiungi sopra l'attività dell'habitat orbitale con azioni di cattura consapevoli dell'attività"
 />
 
-Vedere [Aggiungi le voci e il contesto](../plan-and-capture/entries.mdx) per quando usare
-ogni tipo di entrata.
+Vedi [Aggiungi voci e contesto](../plan-and-capture/entries.mdx) per quando
+usare ogni tipo di voce.
 
-## Link attività correlate
+## Collega attività correlate
 
-Aprire la sezione **Linked** dell'attività e scegliere di collegare un'attività esistente.
-il raccoglitore, quindi selezionare l'esito relativo. Lotti esclude l'attività corrente
-e compiti che sono già collegati in quella direzione.
+Apri la sezione **Collegamento** dell'attività e scegli di collegare
+un'attività esistente. Cerca nel selettore, poi seleziona il risultato
+correlato. Lotti esclude l'attività corrente e le attività già collegate in
+quella direzione.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Selezione task-link di produzione relativi compiti di progetto Waddle e il loro stato, priorità, categoria e contesto di due date"
+  alt="Selettore di collegamento attività di produzione che elenca attività correlate di Project Waddle con stato, priorità, categoria e contesto della data di scadenza"
 />
 
-I link di attività sono direzionali: i punti di attività attuali per l'attività che si sceglie.
-Entrambi i lati rimangono raggiungibili attraverso le loro sezioni di ingresso collegate, mentre ogni
-il compito mantiene il proprio stato, il programma e gli allegati.
+I collegamenti tra attività sono direzionali: l'attività corrente punta
+all'attività che scegli. Entrambi i lati restano raggiungibili dalle rispettive
+sezioni delle voci collegate, mentre ogni attività mantiene stato, programma e
+allegati propri.
 
-## Utilizzare la voce senza perdere il controllo
+## Usa la voce senza perdere il controllo
 
-Registra una nota all'interno del compito quando è più veloce per spiegare la situazione ad alta voce.
-Con le abilità di trascrizione e di attività configurate, Lotti può trasformare quel contesto in
-testo e le modifiche proposte della lista di controllo.
-date, e cambiamenti distruttivi. Vedi [Registrazione audio](../plan-and-capture/recordings.mdx)
-per i controlli di registrazione e le opzioni di elaborazione. [Crea la tua prima
-attività](../getting-started/first-task.mdx) include un video commentato dello stesso flusso di
-dettatura, revisione e conferma.
+Registra una nota dentro l'attività quando è più veloce spiegare la situazione
+a voce. Con le competenze di trascrizione e attività configurate, Lotti può
+trasformare quel contesto in testo e in modifiche proposte alla lista di
+controllo. Rivedi il risultato, in particolare nomi, date e modifiche
+distruttive. Vedi [Registra audio](../plan-and-capture/recordings.mdx) per i
+controlli di registrazione e le opzioni di elaborazione. [Crea la tua prima
+attività](../getting-started/first-task.mdx) include un video commentato dello
+stesso flusso di dettatura, revisione e conferma.
 
 :::tip
 
-Se tutto è urgente, l'etichetta smette di portare informazioni.
+Usa P0 con parsimonia. Se tutto è urgente, l'etichetta smette di trasmettere
+informazione.
 
 :::

@@ -5,174 +5,178 @@ description: Hitta anteckningar, foton, inspelningar, händelser och AI-resultat
 
 # För en användbar dagbok
 
-Dagboken är Lottis blandade inlägg. Den innehåller anteckningar, foton, inspelningar,
-händelser, checklistor, mätningar och AI-svar tillsammans utan att vända på
-dem till uppgifter. Använd den när du vill minnas, inspektera eller koppla ihop vad
-hände; använd **Tasks** när posten i sig är arbete du fortfarande behöver göra.
+Dagboken är Lottis blandade postflöde. Den samlar anteckningar, foton,
+inspelningar, händelser, checklistor, mätningar och AI-svar utan att göra dem
+till uppgifter. Använd den när du vill minnas, inspektera eller koppla ihop
+det som hände; använd **Uppgifter** när posten i sig är arbete du fortfarande
+behöver göra.
 
 <ManualScreenshot
   caseId="journal/overview"
-  alt="Journal feed containing a Project Waddle launch photo, mission log, Europa sardine voice memo, summit event, and cargo telemetry summary"
-  caption="Type glyphs make the mixed feed scannable, while category colours, labels, stars, flags, durations, and status chips keep the useful context close to each entry."
+  alt="Dagboksflöde med ett Project Waddle-uppskjutningsfoto, en uppdragslogg, ett Europa-sardinröstmeddelande, ett toppmötesevenemang och en lasttelemetrisammanfattning"
+  caption="Typglyfer gör det blandade flödet lätt att skumma, medan kategorifärger, etiketter, stjärnor, flaggor, varaktigheter och statuschips håller den användbara kontexten nära varje post."
 />
 
 ## Läs det blandade flödet
 
-Varje kort leder med sitt innehåll och använder en färgad glyf för att identifiera
-Inträdestyp. Färgen kommer från bidragets kategori, så **Penguin
-Operationer**, **Mission Control** och **Fiskdiplomati** är fortfarande igenkännbara
-även när flera inträdestyper dyker upp samtidigt.
+Varje kort leder med sitt innehåll och använder en färgad glyf för att
+identifiera posttypen. Färgen kommer från postens kategori, så
+**Penguin-operationer**, **Uppdragskontroll** och **Fiskdiplomati** förblir
+igenkännbara även när flera posttyper visas samtidigt.
 
 Korten lägger till den metadata som är viktig för deras typ. Till exempel:
 
--  ett ljudmeddelande visar dess varaktighet och flagga;
-- en händelse visar dess status, datum, betyg och notering;
--  en checklista visar färdigställande framsteg;
--  en mätning visar dess värde och enhet; och
--  ett AI-svar markeras som AI-genererat.
+- ett ljudmeddelande visar sin varaktighet och flagga;
+- ett evenemang visar sin status, sitt datum, betyg och sin anteckning;
+- en checklista visar slutförandeframsteg;
+- en mätning visar sitt värde och sin enhet; och
+- ett AI-svar markeras som AI-genererat.
 
-Flödet laddas in sidor, så en lång dagbok behöver inte rendera hela sin journal
-historia på en gång.
+Flödet laddas i sidor, så en lång dagbok behöver inte rendera hela sin
+historik på en gång.
 
 ## Sök efter ord eller betydelse
 
-Använd **Full Text** för att hitta orden som lagrats i en post. När vektorsökning är
-aktiverat, byt till **Vector** för att leta efter poster med liknande betydelse även
-när de använder olika formuleringar. Vektorresultat returneras som en rankad mängd
-istället för som ett oändligt paget flöde.
+Använd **Fulltext** för att hitta orden som lagrats i en post. När
+vektorsökning är aktiverad, byt till **Vektor** för att leta efter poster med
+liknande betydelse även när de använder andra formuleringar. Vektorresultat
+returneras som en rankad mängd i stället för som ett oändligt sidindelat
+flöde.
 
-Om vektorsökning inte är tillgänglig eller senare inaktiveras, returnerar Lotti journalen
-till fulltextläge istället för att lämna söket i ett oanvändbart tillstånd.
+Om vektorsökning inte är tillgänglig eller senare inaktiveras, återgår Lottis
+dagbok till fulltextläge i stället för att lämna sökningen i ett oanvändbart
+tillstånd.
 
 ## Filtrera vad som visas
 
 <ManualScreenshot
   caseId="journal/filters"
-  alt="Journal filter dialog with starred, flagged, private, entry-type, and category controls over the penguin logistics feed"
-  caption="Combine entry properties, types, and categories to turn the mixed feed into the slice you need."
+  alt="Dagbokens filterdialog med kontroller för stjärnmärkt, flaggat, privat, posttyp och kategori ovanpå pingvinlogistikflödet"
+  caption="Kombinera postegenskaper, typer och kategorier för att göra det blandade flödet till precis den skiva du behöver."
 />
 
-Öppna filterknappen bredvid Sök. Du kan begränsa dagboken till:
+Öppna filterknappen bredvid sökningen. Du kan begränsa dagboken till:
 
--  stjärnmärkta, flaggade eller privata inlägg;
--  en eller flera typer av inträden, inklusive Text, Händelse, Ljud, Foto, Checklista,
-  Att göra, och AI-respons; och
--  en eller flera kategorier.
+- stjärnmärkta, flaggade eller privata poster;
+- en eller flera posttyper, inklusive Text, Evenemang, Ljud, Foto,
+  Checklista, Att göra och AI-respons; och
+- en eller flera kategorier.
 
-Lotti sparar dessa val till Journalen. Uppgiftsfilter lagras
-separat, så att ändra journalvyn inte oväntat omarrangerar
-Uppgiftssidan.
+Lotti sparar dessa val för dagboken. Uppgiftsfilter lagras separat, så att en
+ändrad dagboksvy inte oväntat arrangerar om uppgiftssidan.
 
 ## Lägg till en post
 
 <ManualScreenshot
   caseId="journal/create"
-  alt="Add menu offering Event, Task, Audio Recording, Text Entry, Import Image, and Screenshot over the Project Waddle journal"
-  caption="The menu only offers actions supported by the current platform and context."
+  alt="Lägg till-menyn med Evenemang, Uppgift, Ljudinspelning, Textinmatning, Importera bild och Skärmdump ovanpå Project Waddle-dagboken"
+  caption="Menyn erbjuder bara åtgärder som stöds av den aktuella plattformen och kontexten."
 />
 
-Välj **+** för att öppna menyn Lägg till. Från huvudjournalen kan du skapa en text
-Inträde, uppgift, händelse eller ljudinspelning, importera ett foto eller ta en skärmdump.
-En klistra-åtgärd kan visas när urklippet innehåller en bild. Händelseskapande är
-visas när Event-funktionen är aktiverad.
+Välj **+** för att öppna lägg till-menyn. Från huvuddagboken kan du skapa en
+textpost, uppgift, händelse eller ljudinspelning, importera ett foto eller ta
+en skärmdump. En klistra in-åtgärd kan visas när urklippet innehåller en
+bild. Att skapa evenemang visas när evenemangsfunktionen är aktiverad.
 
-Samma meny anpassas i en befintlig ingång. Där kan den också skapa en timer
-redan länkad till posten, och uppgiftsdetaljer kan erbjuda en länkad checklista.
-Importerade, klistrade in, släppta och inspelade bilder kan gå automatiskt
-Bildanalys när den automatiseringen är konfigurerad.
+Samma meny anpassar sig inuti en befintlig post. Där kan den också skapa en
+timer som redan är länkad till posten, och uppgiftsdetaljer kan erbjuda en
+länkad checklista. Importerade, inklistrade, släppta och infångade bilder kan
+gå genom automatisk bildanalys när den automationen är konfigurerad.
 
-## Läs och redigera ett inlägg
+## Läs och redigera en post
 
 <ManualScreenshot
   caseId="journal/detail"
-  alt="Project Waddle mission log detail with category, labels, star, duration, rich text, activity filters, and a linked launch photo"
-  caption="The entry remains the source of truth; supporting photos, timers, prompts, and incoming links stay attached below it."
+  alt="Detaljvy för Project Waddle-uppdragsloggen med kategori, etiketter, stjärna, varaktighet, formaterad text, aktivitetsfilter och ett länkat uppskjutningsfoto"
+  caption="Posten förblir sanningskällan; stödjande foton, timers, prompter och inkommande länkar ligger kvar under den."
 />
 
 Detaljhuvudet samlar postens datum, kategori, etiketter, stjärna, flagga,
-integritet och fler åtgärder. Välj brödtexten för att redigera formaterad text.
-Spara via redigeringskontrollerna eller använd **Ctrl+S** på Windows och Linux
-och **Command+S** på macOS. Osparat innehåll sparas som ett utkast; Kassera
-återställer den senast sparade versionen.
+sekretess och överflödesåtgärder. Välj brödtexten för att redigera formaterad
+text. Spara via redigeringskontrollerna, eller använd **Ctrl+S** på Windows
+och Linux och **Command+S** på macOS. Osparad text behålls som ett utkast;
+att kasta det återställer det senast sparade innehållet.
 
-Överflödesmenyn innehåller de åtgärder som gäller för den aktuella posttypen,
-inklusive kopiera, radera och medieåtgärder. På skrivbordet finns bild- och ljudposter
-kan också visa deras källfil i filhanteraren.
+Överflödesmenyn innehåller de åtgärder som gäller den aktuella posttypen,
+inklusive kopiera, radera och medieåtgärder. På skrivbordet kan bild- och
+ljudposter också visa sin källfil i filhanteraren.
 
-### Ändra en postens datum och längd
+### Ändra en posts datum och varaktighet
 
-Välj datum eller längd i posthuvudet för att öppna **Datum & Tid**. För en
-Samma dags inskrivning, välj ett datum och bestäm start- och sluttid oberoende av varandra.
-Tidsöversikten uppdateras när hjulen rör sig. Slå på **Välj en separat ände
-datum** för en övernattnings- eller flerdagarsinträdet, och använd antingen **Nu**-åtgärden för att
-Flytta den ändpunkten till nuvarande datum och tid.
+Välj datumet eller varaktigheten i posthuvudet för att öppna **Datum och
+tid**. För en post inom samma dag, välj ett datum och ställ in start- och
+sluttid oberoende av varandra. Varaktighetssammanfattningen uppdateras medan
+hjulen rör sig. Slå på **Välj ett separat slutdatum** för en post över natten
+eller flera dagar, och använd endera **Nu**-åtgärden för att flytta den
+ändpunkten till aktuellt datum och tid.
 
 <ManualScreenshot
   caseId="journal/date-time"
-  alt="Date and Time editor for the Project Waddle mission log with July 17 date, 8:10 AM start, 8:40 AM end, and 30-minute duration"
+  alt="Redigeraren Datum och tid för Project Waddle-uppdragsloggen med datumet 17 juli, start 08:10, slut 08:40 och 30 minuters varaktighet"
 />
 
-Välj datumknappen för att öppna kalendersidan. **Idag** återvänder till
-nuvarande, **Klart** återgår till räckviddsredigeraren, och **Spara** applicerar
-Fullständig start-/slutperiod till ingången.
+Välj datumknappen för att öppna kalendersidan. **Idag** går tillbaka till
+dagens datum, **Klart** går tillbaka till intervallredigeraren, och **Spara**
+tillämpar hela start-/slutintervallet på posten.
 
 <ManualScreenshot
   caseId="journal/date-picker"
-  alt="Start date calendar selecting Friday July 17 2026 for the Project Waddle mission log"
+  alt="Startdatumkalendern som väljer fredag 17 juli 2026 för Project Waddle-uppdragsloggen"
 />
 
-Att ändra tidsstämpeln påverkar var posten visas i kronologisk form
-Vyer. Den skriver inte om inslagstexten eller frigör dess länkade aktivitet.
+Att ändra tidsstämpeln påverkar var posten visas i kronologiska vyer. Det
+skriver inte om postens text och kopplar inte loss dess länkade aktivitet.
 
 ## Följ länkad aktivitet
 
 <ManualScreenshot
   caseId="journal/activity"
-  alt="Linked Project Waddle activity with an AI coding prompt, a 23-minute roll-call rehearsal, and the incoming launch-review task"
-  caption="Outgoing activity answers what this entry contains; Linked from shows which other entry points back to it."
+  alt="Länkad Project Waddle-aktivitet med en AI-kodprompt, en 23 minuter lång uppropsrepetition och den inkommande uppskjutningsgranskningsuppgiften"
+  caption="Utgående aktivitet svarar på vad den här posten innehåller; Länkad från visar vilken annan post som pekar tillbaka på den."
 />
 
-Poster kan länka till foton, timers, ljud, AI-resultat, anteckningar och annat
-Stödalbum. Aktivitetspillen låter dig visa eller dölja **Timer**,
-**Ljud**, **Bilder** och **Kod**-poster. Öppna sorteringskontrollen för att växla
-Mellan nyast-först och äldsta-först-ordning, inkludera dolda länkar eller visa
-Endast flaggad aktivitet.
+Poster kan länka till foton, timers, ljud, AI-resultat, anteckningar och
+andra stödjande poster. Aktivitetspillren låter dig visa eller dölja
+**Timer**-, **Ljud**-, **Bilder**- och **Kod**-poster. Öppna
+sorteringskontrollen för att växla mellan nyast-först och äldst-först,
+inkludera dolda länkar eller visa endast flaggad aktivitet.
 
 De två riktningarna betyder olika saker:
 
 - aktiviteten under posten är länkad **från denna post**; och
-- **Länkad från** listar poster som pekar **till denna post**.
+- **Länkad från** listar poster som pekar **på denna post**.
 
-Till exempel innehåller Project Waddle-uppdragsloggen dess uppskjutningsfoto,
-diagnostisk prompt och roll-up-timer, medan uppskjutnings-granskningsuppgiften visas
-under **Länkad från** eftersom den uppgiften också refererar till loggen.
+Till exempel innehåller Project Waddle-uppdragsloggen sitt uppskjutningsfoto,
+sin diagnostikprompt och sin uppropstimer, medan uppskjutningsgranskningens
+uppgift visas under **Länkad från** eftersom den uppgiften också refererar
+till loggen.
 
-Öppna sorteringspiller för att tillsammans skapa flera synlighetsförändringar. Välj den
-ordning, om dolda poster ska inkluderas, och om endast flaggade
-Bidragen ska finnas kvar. Aktivitetslistan ändras när du markerar bocken
-för att avsluta arket; Att stänga arket på något annat sätt kastar bort det iscensatta
-val.
+Öppna sorteringspillret för att förbereda flera synlighetsändringar
+tillsammans. Välj ordningen, om dolda poster ska ingå och om endast flaggade
+poster ska vara kvar. Aktivitetslistan ändras när du väljer bocken för att
+avsluta arket; stängs arket på något annat sätt kastas de förberedda valen.
 
 <ManualScreenshot
   caseId="journal/linked-filter"
-  alt="Filter and Sort sheet over Project Waddle linked activity with Oldest first and Show hidden entries selected"
+  alt="Arket Filter & Sort ovanpå länkad Project Waddle-aktivitet med Äldsta första och Visa dolda poster valda"
 />
 
 ## Öppna och spara ett foto
 
-Välj ett inline-foto för att öppna helskärmsvisaren. Nyp eller använd visaren
-Kontroller för att zooma och panorera, och sedan återställa bilden vid behov. Sparande använder
-originalfil istället för den mindre förhandsvisningen: mobilen skriver till fotot
-biblioteket efter att behörighet har beviljats, medan skrivbordet öppnar systemsparningen
-dialog så du väljer destinationen.
+Välj ett foto i flödet för att öppna helskärmsvisaren. Nyp eller använd
+visarens kontroller för att zooma och panorera, och återställ sedan bilden
+vid behov. Sparandet använder originalfilen i stället för den mindre
+förhandsvisningen: mobilen skriver till fotobiblioteket när behörighet har
+beviljats, medan skrivbordet öppnar systemets spardialog så att du väljer
+destinationen.
 
 ## Dagbok eller uppgift?
 
 | Använd dagboken för... | Använd Uppgifter för... |
 | --- | --- |
-| En uppdragslogg, foto, röstmeddelande, mätning, händelseminne eller AI-resultat | En åtgärd med status, prioritet, uppskattning, checklista eller arbetssession |
-| "Europasardiner är kallare än vad diplomatiskt protokoll kräver" | "Kalibrera om gravitationsfria fiskmataren" |
-| Bevis och kontext du kanske vill återbesöka | Arbete du behöver planera, genomföra och slutföra |
+| En uppdragslogg, ett foto, röstmeddelande, en mätning, ett evenemangsminne eller ett AI-resultat | En åtgärd med status, prioritet, uppskattning, checklista eller arbetssession |
+| ”Europasardiner är kallare än vad det diplomatiska protokollet kräver” | ”Kalibrera om fiskmataren med nollgravitation” |
+| Bevis och kontext du kan vilja återvända till | Arbete du behöver planera, genomföra och slutföra |
 
-Koppla dem när en uppgift behöver bevis från tidskriften. Detta håller handlingen vid liv
-fokuserad samtidigt som den bevarade den rikare operativa dokumentationen bakom sig.
+Länka dem när en uppgift behöver underlag från dagboken. Det håller åtgärden
+fokuserad samtidigt som det rikare operativa underlaget bakom den bevaras.

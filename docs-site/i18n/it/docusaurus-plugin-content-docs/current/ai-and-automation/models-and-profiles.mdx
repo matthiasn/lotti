@@ -1,126 +1,134 @@
 ---
-title: Lavoro di percorso con modelli e profili
-description: Descrivere le funzionalità del modello una volta, quindi utilizzare i profili di inferenza per tracciare il pensiero, la visione, l'audio e la generazione di immagini.
+title: Instrada il lavoro con modelli e profili
+description: Descrivi le capacità dei modelli una volta sola, poi usa i profili di inferenza per instradare pensiero, visione, audio e generazione di immagini.
 ---
 
-# Lavoro di percorso con modelli e profili
+# Instrada il lavoro con modelli e profili
 
-Un fornitore dice a Lotti dove connettersi. Un modello registra un ID del modello del fornitore
-e le sue capacità. Un profilo di inferenza assegna quei modelli alla
-Lotti capisce. Questo mantiene “che modello gestisce l’audio?” da ogni
-regola di attività e automazione individuale.
+Un provider dice a Lotti dove connettersi. Un modello registra un ID di modello
+del provider e le sue capacità. Un profilo di inferenza assegna poi quei
+modelli ai lavori che Lotti conosce. Questo tiene la domanda “quale modello
+gestisce l'audio?” fuori da ogni singola attività e regola di automazione.
 
-## Recensione dei modelli salvati
+## Rivedi i modelli salvati
 
-Aprire **Impostazioni → Impostazioni AI → Modelli**. L'elenco raggruppa i modelli per provider
-e espone filtri di funzionalità per testo, visione, audio e ragionamento.
+Apri **Impostazioni → Impostazioni dell'intelligenza → Modelli**. L'elenco
+raggruppa i modelli per provider ed espone filtri di capacità per testo,
+visione, audio e ragionamento.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Elenco dei modelli AI di Lotti con il testo di Project Waddle, il ragionamento, la visione, la trascrizione e i modelli di generazione di immagini"
+  alt="Elenco dei modelli AI di Lotti con i modelli di testo, ragionamento, visione, trascrizione e generazione di immagini di Project Waddle"
   caption="Lo spazio di lavoro di Project Waddle mescola modelli cloud e locali mantenendo esplicite le capacità di ogni modello."
 />
 
-L'agente **Concurrent sveglia** il controllo in cima alle impostazioni dell'AI limita come
-molti agenti diversi possono eseguire l'inferenza contemporaneamente. Un valore superiore può migliorare
-throughput, ma aumenta anche le richieste dei fornitori simultanei e locali
-carico del dispositivo. Mantenere conservatore quando un fornitore ha limiti di velocità rigorosi o un
-server modello locale ha memoria limitata.
+Il controllo **L'agente corrente si sveglia** in cima alle impostazioni AI
+limita quanti agenti diversi possono eseguire inferenza contemporaneamente. Un
+valore più alto può migliorare il throughput, ma aumenta anche le richieste
+simultanee ai provider e il carico del dispositivo locale. Tienilo prudente
+quando un provider ha limiti di frequenza severi o un server di modelli locale
+ha memoria limitata.
 
-## Aggiungere o modificare un modello
+## Aggiungi o modifica un modello
 
-Selezionare una scheda di modello o utilizzare **+** per aggiungerne una.
+Seleziona una scheda di modello, oppure usa **+** per aggiungerne uno. La
+definizione di un modello include:
 
-- la connessione del fornitore;
-- un nome di visualizzazione amichevole e descrizione facoltativa;
-- l'identificativo modello del fornitore;
-- il limite massimo di completamento-token;
-- modalità di input e output; e
-- bandiere di capacità come il ragionamento o la chiamata della funzione.
+- la connessione al provider;
+- un nome visualizzato amichevole e una descrizione facoltativa;
+- l'ID di modello esatto del provider;
+- il limite massimo di token di completamento;
+- le modalità di input e output; e
+- le bandiere di capacità come il ragionamento o la chiamata di funzioni.
 
 <ManualScreenshot
   caseId="ai/model-editor"
-  alt="Editor di modelli Lotti per Waddle Command 70B che mostra il fornitore, il modello di ID del fornitore, il limite di completamento, le modalità e la capacità di ragionamento"
-  caption="Conta i metadati di Capability: Lotti lo usa per decidere quali modelli sono idonei per ogni slot di profilo e picker one-off."
+  alt="Editor dei modelli di Lotti per Comando di corsa 70B con provider, ID di modello del provider, limite di completamento, modalità e capacità di ragionamento"
+  caption="I metadati di capacità contano: Lotti li usa per decidere quali modelli sono idonei per ogni slot di profilo e selettore una tantum."
 />
 
-Utilizzare l'identificatore esatto previsto dal provider. Il nome del display è solo per
-persone; cambiarlo non cambia ciò che il fornitore gestisce. Non rivendicare l'immagine,
-supporto audio, strumento o ragionamento a meno che quel modello e endpoint in realtà
-provvedere.
+Usa l'identificatore esatto atteso dal provider. Il nome visualizzato è solo
+per le persone; cambiarlo non cambia cosa esegue il provider. Non dichiarare
+supporto per immagini, audio, strumenti o ragionamento a meno che quel modello
+e quell'endpoint lo forniscano davvero.
 
-## Costruire un profilo di inferenza
+## Costruisci un profilo di inferenza
 
-Aprire **Impostazioni → Impostazioni AI → Profili di inferenza**. Ogni profilo è riutilizzabile
-Politica di routing. La panoramica mostra quale modello serve ogni slot configurato.
+Apri **Impostazioni → Impostazioni dell'intelligenza → Profili di inferenza**.
+Ogni profilo è una politica di instradamento riutilizzabile. La panoramica
+mostra quale modello serve ogni slot configurato.
 
 <ManualScreenshot
   caseId="ai/profiles"
-  alt="Profili di inferenza Lotti per Project Waddle Command, Habitat Local-First e Fish Diplomacy con i loro modelli percorsi"
-  caption="I profili possono ottimizzare per diversi confini: un ampio profilo cloud, un profilo locale solo per desktop o un profilo di ragionamento specializzato."
+  alt="Profili di inferenza di Lotti per Comando del progetto Waddle, Habitat Local-First e Diplomazia di pesce con i loro modelli instradati"
+  caption="I profili possono ottimizzare per confini diversi: un ampio profilo cloud, un profilo locale solo desktop o un profilo di ragionamento specializzato."
 />
 
-Modificare un profilo per assegnare i modelli per le funzionalità utilizzate:
+Modifica un profilo per assegnare i modelli alle capacità che usi:
 
-- **Thinking** è il modello di testo generale richiesto.
-- **Thinking (High-End)** può gestire il lavoro che richiede esplicitamente di più
-  un percorso ragionato capace.
-- **Image Recognition** analizza le immagini.
-- **Transcription** converte l'audio in testo.
-- **Image Generation** crea opere d'arte e altre immagini generate.
-  corrente percorso di generazione di immagini integrato utilizza un provider remoto configurato, quindi
-  scegliere quel fornitore e i riferimenti che invii con la stessa cura di qualsiasi
-  altro percorso di inferenza cloud.
+- **Pensare** è il modello di testo generale obbligatorio.
+- **Pensare (High-End)** può gestire il lavoro che richiede esplicitamente il
+  percorso di ragionamento più capace.
+- **Riconoscimento delle immagini** analizza le immagini.
+- **Trascrizione** converte l'audio in testo.
+- **Generazione di immagini** crea le copertine delle attività e altre
+  immagini generate. L'attuale percorso integrato di generazione di immagini
+  usa un provider remoto configurato, quindi scegli quel provider e i
+  riferimenti che invii con la stessa cura di ogni altro percorso di inferenza
+  cloud.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Progetto Waddle Comando profilo editor assegnando pensiero, ragionamento di fascia alta, riconoscimento immagine, trascrizione e modelli di generazione di immagini"
-  caption="Un profilo traccia ogni modalità Project Waddle senza ripetere le scelte dei modelli tra i compiti."
+  alt="Editor del profilo Comando del progetto Waddle che assegna i modelli di pensiero, ragionamento di fascia alta, riconoscimento delle immagini, trascrizione e generazione di immagini"
+  caption="Un solo profilo instrada ogni modalità di Project Waddle senza ripetere le scelte dei modelli tra le attività."
 />
 
-**Desktop Only** nasconde un profilo su piattaforme mobili, che è utile quando
+**Solo Desktop** nasconde un profilo sulle piattaforme mobili, utile quando
 dipende da un modello raggiungibile solo da una postazione di lavoro.
-elaborazione audio sincronizzata automatizzata: pin solo quando il dispositivo selezionato pubblicizza
-i fornitori necessari dal profilo. Senza dispositivo pinned, l'audio sincronizzato non è
-automaticamente trascritto da quel profilo.
+L'aggancio a un dispositivo serve per l'elaborazione automatica dell'audio
+sincronizzato: aggancia solo quando il dispositivo selezionato pubblica i
+provider richiesti dal profilo. Senza un dispositivo agganciato, l'audio
+sincronizzato non viene trascritto automaticamente da quel profilo.
 
 ## Scegli un modello senza memorizzare ID
 
-I raccoglitori di modelli iniziano con il fornitore e mostrano solo modelli salvati compatibili.
-Il raccoglitore in una fessura di profilo, per esempio, non offrirà un modello solo audio
-per il ragionamento del testo.
+I selettori di modello partono dal provider e mostrano solo i modelli salvati
+compatibili. Il selettore in uno slot di profilo, per esempio, non offrirà un
+modello solo audio per il ragionamento sul testo.
 
 <ManualScreenshot
   caseId="ai/model-picker"
-  alt="Scegli un modello di elenco modale OpenRouter, Ollama, e Google Gemini fornitori sopra il Project Waddle profilo editor"
-  caption="Scegli il fornitore prima; Lotti poi restringe la pagina successiva a modelli idonei da quella connessione."
+  alt="Finestra Scegli un modello di Lotti che elenca i provider OpenRouter, Ollama e Google Gemini sopra l'editor del profilo di Project Waddle"
+  caption="Scegli prima il provider; Lotti restringe poi la pagina successiva ai modelli idonei di quella connessione."
 />
 
-## Impostare una categoria predefinita
+## Imposta un predefinito di categoria
 
-Una categoria può scegliere un profilo di inferenza predefinito sotto ** Impostazioni →
-Definizioni → Categorie**. Nuovo lavoro in quella categoria può quindi ereditare un
-policy di routing coerente. Selezionare il profilo la cui privacy e funzionalità mix
-corrisponde alla categoria piuttosto che scegliere solo per velocità.
+Una categoria può scegliere un profilo di inferenza predefinito in
+**Impostazioni → Definizioni → Categorie**. Il nuovo lavoro in quella categoria
+può così ereditare una politica di instradamento coerente. Seleziona il profilo
+il cui mix di privacy e capacità corrisponde alla categoria, invece di
+scegliere solo in base alla velocità.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
-  alt="Editor di categoria Operazioni Pinguino con un'offerta modale Project Waddle Command, Habitat Local-First, e Fish Diplomacy profili"
-  caption="Il badge solo per il desktop rende visibili le restrizioni della piattaforma prima che venga selezionata una categoria di default."
+  alt="Editor della categoria Operazioni del Pinguino con una finestra che offre i profili Comando del progetto Waddle, Habitat Local-First e Diplomazia di pesce"
+  caption="Il badge solo desktop rende visibili le restrizioni di piattaforma prima che venga selezionato un predefinito di categoria."
 />
 
-## Itinerario del profilo Legacy
+## Percorso dei profili legacy
 
-Il percorso più vecchio standalone **Inference Profiles** rimane disponibile per
-compatibilità e modifica gli stessi record di profilo memorizzati.
-modello ID e fornisce un contesto di minore dipendenza rispetto alle Impostazioni AI, quindi preferisci
-corrente **AI Impostazioni → Profili di inferenza** pagina per la manutenzione normale.
+Il vecchio percorso autonomo **Profili di inferenza** resta disponibile per
+compatibilità e modifica gli stessi record di profilo memorizzati. Espone gli
+ID interni dei modelli e fornisce meno contesto sulle dipendenze rispetto alle
+impostazioni AI, quindi per la manutenzione normale preferisci l'attuale pagina
+**Impostazioni dell'intelligenza → Profili di inferenza**.
 
 <ManualScreenshot
   caseId="ai/legacy-profiles"
-  alt="La pagina dei profili di inferenza Legacy Lotti mostra le scanalature del profilo di Waddle del progetto come identificatori del modello interno"
-  caption="Utilizzare questa schermata di compatibilità solo quando un link più vecchio ti porta lì; le schede del profilo delle impostazioni AI attuali sono più facili da controllare."
+  alt="Pagina legacy dei profili di inferenza di Lotti che mostra gli slot del profilo di Project Waddle come identificatori interni dei modelli"
+  caption="Usa questa schermata di compatibilità solo quando un link più vecchio ti ci porta; le attuali schede dei profili nelle impostazioni AI sono più facili da verificare."
 />
 
-Continuare con [competenze AI](./skills.mdx) per vedere come il profilo selezionato diventa
-un'azione su un'attività o un'entrata.
+Continua con le [competenze AI](./skills.mdx) per vedere come il profilo
+selezionato diventa un'azione su un'attività o una voce.

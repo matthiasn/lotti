@@ -42,6 +42,26 @@ The production build defaults to `/manual/development/`. Override
 `MANUAL_SITE_URL`, `MANUAL_ROOT_PATH`, `MANUAL_BASE_URL`, and `MANUAL_VERSION`
 when composing a release deployment.
 
+## Translations
+
+Localized page trees live under `i18n/<locale>/docusaurus-plugin-content-docs/current/`
+and must mirror the English tree page for page. Beyond path parity,
+`npm run validate` compares every translated page against its English source
+and fails on structural drift: frontmatter `id`/`slug` that differ from the
+source, missing `title`/`description`/`sidebar_label`, a heading sequence that
+no longer matches (the historical failure mode — a section added in English
+silently never appearing in a locale), screenshot or admonition sequences that
+diverge, and `ManualScreenshot` `alt`/`caption` text left identical to the
+English source. The comparison logic lives in
+`scripts/translation-parity.mjs` with tests in
+`tests/translation-parity.test.mjs`.
+
+Translations address the reader informally, with Romanian as the deliberate
+formal exception, and quote UI labels exactly as the app's ARB catalogs
+(`lib/l10n/app_<locale>.arb`) render them — the register table and
+terminology rules are in
+[`knowledge/conventions/localization.md`](../knowledge/conventions/localization.md).
+
 ## GitHub Pages
 
 The published development manual lives at:

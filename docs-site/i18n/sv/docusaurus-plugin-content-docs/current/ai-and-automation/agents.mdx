@@ -5,70 +5,74 @@ description: Övervaka agentaktivitet, inspektera körande instanser och kontrol
 
 # Driv och övervaka agenter
 
-Agenterna låter Lotti bära ett definierat ansvar över flera vakcykler.
-Varje körande instans kommer från en agentmall, använder en inferensuppsättning,
-och behåller sitt eget tillstånd, rapporter, observationer och aktivitetshistorik. Öppet
-**Inställningar → agenter** för att se systemet som helhet.
+Agenter låter Lotti bära ett definierat ansvar över flera vakningscykler.
+Varje körande instans kommer från en agentmall, använder en
+inferensuppsättning och behåller sitt eget tillstånd, sina rapporter,
+observationer och sin aktivitetshistorik. Öppna **Inställningar → Agenter**
+för att se systemet som helhet.
 
-Agentrapporter, observationer och köade vakor beskriver agentens arbete
-delstat; De skriver inte tyst om den personliga loggboken. När en uppgiftsagent
-vill ändra uppgiftsdata, presenterar Lotti ett förslag för din granskning. Se
+Agentrapporter, observationer och köade vakningar beskriver agentens
+arbetstillstånd; de skriver inte om den personliga loggboken i det tysta. När
+en uppgiftsagent vill ändra uppgiftsdata presenterar Lotti ett förslag för
+din granskning. Se
 [Granska föreslagna ändringar](../organize-and-reflect/task-agents.mdx#granska-föreslagna-ändringar)
-för godkännandekontroller per uppgift och deras snäva initiala titel och språk
-undantag.
+för godkännandekontrollerna per uppgift och deras snäva undantag för första
+titel och språk.
 
 Agenternas tokenanvändning rapporteras tillsammans med allt annat AI-arbete i [Granska AI:s användning och påverkan](./usage.mdx).
 
 ## Inspektera de körande instanserna
 
-Öppna **Instanser** för att se varje agent och evolutionssession. Raderna blottlägger
-agenttyp, livscykel, tilldelad mall och själ. Gruppering efter själ är användbart
-När flera ansvarsområden delar en röst och beslutsstil.
+Öppna **Instanser** för att se varje agent och evolutionssession. Raderna
+visar agenttyp, livscykel, tilldelad mall och själ. Att gruppera efter själ
+är användbart när flera ansvar delar en röst och beslutsstil.
 
 <ManualScreenshot
   caseId="agents/instances"
-  alt="Lotti agent instances grouped by Admiral Pebble, Dr. Flipper, Captain Sardina, and an evolution session"
-  caption="The Habitat Seal Inspector, Project Waddle Planner, and Sardine Cargo Coordinator remain separate instances even when they share system-level resources."
+  alt="Lottis agentinstanser grupperade efter Admiral Pebble, Dr. Flipper, Captain Sardina och en evolutionssession"
+  caption="Habitatsälinspektör, Projekt Waddle Planner och Koordinator för sardinfrakt förblir separata instanser även när de delar resurser på systemnivå."
 />
 
-Välj en instans för att inspektera dess interna delar. **Statistik**-fliken visar modellen
-användning, dess mall, nuvarande inferensrutt, livscykelkontroller, vakna-räkning,
-och schemaläggningstillstånd.
+Välj en instans för att inspektera dess inre. Fliken **Statistik** visar
+modellanvändning, mallen, aktuell inferensrutt, livscykelkontroller, antal
+vakningar och schemaläggningstillstånd.
 
 <ManualScreenshot
   caseId="agents/instance-detail"
-  alt="Habitat Seal Inspector instance detail with token usage, Orbital Habitat Sentinel template, inference route, lifecycle controls, and wake state"
-  caption="The instance keeps enough provenance to explain which template and route produced its work before you pause, re-analyze, or destroy it."
+  alt="Instansdetaljer för Habitatsälinspektör med tokenanvändning, mallen Orbital Habitat Sentinel, inferensrutt, livscykelkontroller och vakningstillstånd"
+  caption="Instansen behåller tillräcklig proveniens för att förklara vilken mall och rutt som skapade dess arbete innan du pausar, omanalyserar eller förstör den."
 />
 
-De övriga instansflikarna innehåller olika bevis:
+De övriga instansflikarna bevarar olika underlag:
 
 - **Rapporter** innehåller agentens sparade rapportögonblicksbilder.
-- **Samtal** grupperar meddelanden efter vakencykel.
-- **Observations** avslöjar infångade fynd utan att blanda in dem i rapporter.
-- **Aktivitet** visar det kronologiska meddelandet och verktygsspåret.
+- **Samtal** grupperar meddelanden efter vakningscykel.
+- **Observationer** visar infångade fynd utan att blanda in dem i rapporter.
+- **Verksamhet** visar det kronologiska meddelande- och verktygsspåret.
 
-**Paus** behåller instansen men stoppar normalt arbete. **Omanalysera** ber om en uppgift
-agent för att ompröva sitt nuvarande ämne. **Förstöra** är destruktivt och bör göra det
-endast användas när instansen själv inte längre är önskad; Att ändra
-Mall för framtida agenter kräver inte att man förstör orelaterade instanser.
+**Paus** behåller instansen men stoppar normalt arbete. **Omanalysera** ber en
+uppgiftsagent att ompröva sitt aktuella ämne. **Förstör** är destruktivt och
+bör bara användas när själva instansen inte längre önskas; att ändra mallen
+för framtida agenter kräver inte att orelaterade instanser förstörs.
 
-## Förstå vakna cykler
+## Förstå vakningscykler
 
-Öppna **Vakningscykler** för att se arbete som körs nu och arbete som ska lämnas in senare. A
-**Vaka väntar** begärdes av agenten. En **inbokad** vaka ordnades av
-Systemet eller planeringsplanen. Varje rad håller den länkade uppgiften, projektet eller dagen synlig
-tillsammans med den ansvariga agenten och en livenedräkning.
+Öppna **Vakningscykler** för att se arbete som körs nu och arbete som väntar
+senare. En vakning märkt **Väntar** begärdes av agenten. En vakning märkt
+**Planerade** lades in av systemet eller planeraren. Varje rad håller den länkade
+uppgiften, projektet eller dagen synlig tillsammans med den ansvariga agenten
+och en nedräkning i realtid.
 
 <ManualScreenshot
   caseId="agents/pending-wakes"
-  alt="Lotti Wake Cycles showing the running habitat inspection and scheduled Project Waddle and sardine logistics wakes"
-  caption="The queue distinguishes an agent-requested habitat follow-up from launch-day and cargo schedules, so a countdown always has a reason and owner."
+  alt="Lottis Vakningscykler med den pågående habitatinspektionen samt planerade vakningar för Project Waddle och sardinlogistik"
+  caption="Kön skiljer en agentbegärd habitatuppföljning från uppskjutningsdagens och lastens scheman, så en nedräkning har alltid ett skäl och en ägare."
 />
 
-Att ta bort en köad vakna tar bort den timern; den raderar inte agenten eller dess
-Kopplad uppgift. Om en vaka omedelbart återvänder, inspektera agentens tillstånd eller
-Automatisering som begärde det istället för att upprepade gånger radera symptomet.
+Att ta bort en köad vakning tar bort den timern; det raderar inte agenten
+eller dess länkade uppgift. Om en vakning genast kommer tillbaka, inspektera
+agentens tillstånd eller automationen som begärde den i stället för att
+upprepade gånger radera symptomet.
 
-Continue with [Agent templates and souls](./agent-blueprints.mdx) to define
-Vad dessa instanser gör och hur de kommunicerar.
+Fortsätt med [Agentmallar och själar](./agent-blueprints.mdx) för att
+definiera vad dessa instanser gör och hur de kommunicerar.

@@ -5,27 +5,27 @@ description: Para enheter, verifiera deras identitet, övervaka leveransen och �
 
 # Synkroniserade enheter
 
-Lotti Sync håller stödd data justerad mellan dina enheter. Varje enhet har
-sin egen lokala databas; Sync flyttar ändringar genom det konfigurerade sync-kontot
-och fångar en enhet efter att den varit offline. Sync flyttar inte
-system of record till ett Lotti-moln: den konfigurerade Matrix-tjänsten reläer
-änd-till-änd-krypterade laster mellan dina enheter medan varje enhet behåller
-sin egen lokala kopia.
+Lotti Sync håller stödd data i linje mellan dina enheter. Varje enhet har sin
+egen lokala databas; synken flyttar ändringar genom det konfigurerade
+synkkontot och kommer ikapp en enhet efter att den varit offline. Synken
+flyttar inte huvudregistret till ett Lotti-moln: den konfigurerade
+Matrix-tjänsten reläar änd-till-änd-krypterade laster mellan dina enheter
+medan varje enhet behåller sin egen lokala kopia.
 
-Öppna **Inställningar → Synk** för att se tillgänglig uppsättning, hälsa och återställning
-sidor. Numret bredvid **Outbox** är ett verk som inte nått synken
-service än.
+Öppna **Inställningar → Synk** för att se de tillgängliga sidorna för
+uppsättning, hälsa och återställning. Siffran bredvid **Utbox** är arbete som
+ännu inte nått synktjänsten.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Lotti Sync settings with Provisioned Sync, device identity, backfill, statistics, outbox, conflicts, and maintenance"
-  caption="The Sync hub keeps everyday status near diagnostics and recovery tools. Project Waddle currently has three outbox items to inspect."
+  alt="Lottis synkinställningar med provisionerad synk, enhetsidentitet, återfyllning, statistik, utbox, konflikter och underhåll"
+  caption="Synknavet håller vardagsstatus nära diagnostik- och återställningsverktyg. Project Waddle har just nu tre utboxobjekt att inspektera."
 />
 
 ## Se dina enheter
 
-**Inställningar → Synkroniseringsinställningar → Enheter** listar varje session på ditt
-synkroniseringskonto — inte bara de overifierade.
+**Inställningar → Synkroniseringsinställningar → Enheter** listar varje
+session på ditt synkkonto — inte bara de overifierade.
 
 <ManualScreenshot
   caseId="sync/status"
@@ -33,9 +33,9 @@ synkroniseringskonto — inte bara de overifierade.
   caption="Varje rad visar om enheten är verifierad och när servern senast såg den. En overifierad enhet kan inte läsa nya anteckningar, och listan säger det."
 />
 
-Sessioner som är inloggade med det här kontot kan tas bort — utom den du sitter
-på. Enheter som parats på det gamla sättet, var och en med eget konto, kan
-verifieras men inte tas bort.
+Sessioner som är inloggade med det här kontot kan tas bort — utom den du
+sitter på. Enheter som parats på det gamla sättet, var och en med eget konto,
+kan verifieras men inte tas bort.
 
 ## Para ihop en annan enhet
 
@@ -43,108 +43,111 @@ Ihopparning är ett eget flöde, med en kod att jämföra och två steg efter
 anslutningen. Den har en egen sida: [Lägg till en enhet](./add-device.mdx).
 
 Kort sagt: på en enhet som redan är ansluten öppnar du **Inställningar →
-Synkroniseringsinställningar → Enheter → Lägg till enhet** och visar koden. På den nya enheten
-öppnar du samma sida och skannar den. Jämför kontrollkoden på båda skärmarna
-innan du ansluter — QR-koden bär inloggningsuppgifterna till ditt
-synkroniseringskonto och går bara till din egen enhet.
+Synkroniseringsinställningar → Enheter → Lägg till enhet** och visar koden.
+På den nya enheten öppnar du samma sida och skannar den. Jämför kontrollkoden
+på båda skärmarna innan du ansluter — QR-koden bär inloggningsuppgifterna
+till ditt synkkonto och går bara till din egen enhet.
 
 ## Verifiera den nya enheten
 
-Parning kopplar ihop enheten; verifiering bekräftar att båda enheterna är
-prata med varandra utan en okänd enhet i mitten.
+Ihopparningen kopplar in enheten; verifieringen bekräftar att båda enheterna
+pratar med varandra utan någon okänd enhet i mitten.
 
 <ManualScreenshot
   caseId="sync/verification"
-  alt="Lotti device verification comparing a sequence of penguin, fish, rocket, ice, Earth, moon, and star emoji"
-  caption="Compare the entire emoji sequence on both devices. Accept only when every image and its order match exactly."
+  alt="Lottis enhetsverifiering som jämför en sekvens av emojier med pingvin, fisk, raket, is, jorden, månen och en stjärna"
+  caption="Jämför hela emojisekvensen på båda enheterna. Acceptera bara när varje bild och dess ordning stämmer exakt."
 />
 
-Jämför emojin personligen eller över ett betrodd samtal. Välj **De stämmer** på båda
-enheter endast när hela sekvensen stämmer. Om ens en emoji skiljer sig åt,
-Avbryt verifieringen och undersök konto- och enhetsnamn innan
-Försöker igen.
+Jämför emojierna personligen eller över ett betrott samtal. Välj **De
+stämmer** på båda enheterna bara när hela sekvensen stämmer. Om ens en emoji
+skiljer sig, avbryt verifieringen och undersök konto- och enhetsnamnen innan
+du försöker igen.
 
-## Namn, enheter och reklammöjligheter
+## Namnge enheter och annonsera förmågor
 
-**Sync node-profil** identifierar den aktuella enheten med resten av synkroniseringen
-grupp. Ge den ett namn som skiljer den fysiska maskinen åt, såsom
-"Mission Control Mac" istället för "Desktop."
+**Synknodprofil** identifierar den aktuella enheten för resten av
+synkgruppen. Ge den ett namn som skiljer den fysiska maskinen åt, som
+”Mission Control Mac” i stället för ”Skrivbord”.
 
 <ManualScreenshot
   caseId="sync/node-profile"
-  alt="Lotti Sync node profile for Mission Control Mac with local inference capabilities and known Project Waddle devices"
-  caption="Clear device names make verification, diagnostics, and device-pinned local inference much easier to audit."
+  alt="Lottis synknodprofil för Mission Control Mac med lokala inferensförmågor och kända Project Waddle-enheter"
+  caption="Tydliga enhetsnamn gör verifiering, diagnostik och enhetsfäst lokal inferens mycket lättare att granska."
 />
 
-Sidan listar också funktioner som enheten kan erbjuda, såsom lokalt ljud
-transkription eller lokal språkmodell-inferens. Kända enheter visar vad
-Andra noder som senast annonserats. De listade kapabiliteterna är beskrivande;
-den relevanta AI-profilen måste fortfarande konfigureras för att använda dem.
+Sidan listar också förmågor enheten kan erbjuda, som lokal ljudtranskription
+eller lokal språkmodellsinferens. Kända enheter visar vad de andra noderna
+senast annonserade. De listade förmågorna är beskrivande; den relevanta
+AI-profilen måste fortfarande konfigureras för att använda dem.
 
-## Förstå att ta igen och fylla ut
+## Förstå ikappkörning och återfyllning
 
-Normal synkronisering ändras när de anländer. **Fyllning** upptäcker luckor i
-sekvens mottagen från kända enheter och begär saknade poster igen.
+Normal synk bearbetar ändringar när de anländer. **Återfyllning** upptäcker
+luckor i sekvensen som tagits emot från kända enheter och begär saknade
+poster igen.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lotti Sync Backfill page showing inbound, missing, and skipped status plus sequence statistics and automatic backfill"
-  caption="Project Waddle has received 2,868 sequence records and currently knows about four missing records across two device IDs."
+  alt="Lottis sida för synkåterfyllning med status för inkommande, saknade och överhoppade poster samt sekvensstatistik och automatisk återfyllning"
+  caption="Project Waddle har tagit emot 2 868 sekvensposter och känner just nu till fyra saknade poster fördelade på två enhets-ID:n."
 />
 
-- **Incoming** är arbete som för närvarande väntar i inkommande kön.
-- ** saknas** är antalet kända sekvensgap.
-- **Hoppade över** är att arbeta med inkommande kö som övergavs efter att det inte kunde vara
-  bearbetade normalt.
-- **Automatisk tillfyllning** begär kontinuerligt återställbara luckor och är
-  Höger standard för normal användning.
-- **Avancerad återhämtning** innehåller manuella kontroller för en utredning. Använd den
-  först efter vanlig synkronisering och automatisk påfyllning har hunnit stabilisera sig.
+- **Inkommande kö** är arbete som just nu väntar i den inkommande kön.
+- **Saknad** är antalet kända sekvensluckor.
+- **Hoppade över** är arbete som den inkommande kön gav upp efter att det
+  inte kunde bearbetas normalt.
+- **Automatisk återfyllning** begär kontinuerligt återställbara luckor och är
+  rätt standard för normal användning.
+- **Avancerad återhämtning** innehåller manuella kontroller för en
+  undersökning. Använd den först när vanlig synk och automatisk återfyllning
+  har fått tid att stabilisera sig.
 
-En icke-noll saknad räkning är inte automatiskt dataförlust: en annan enhet kan göra det
-Fortfarande vara offline, eller så kan begäran redan vara på gång. Undersök när
-Antalet förblir oförändrat medan alla förväntade enheter är online.
+Ett saknat antal som inte är noll är inte automatiskt dataförlust: en annan
+enhet kan fortfarande vara offline, eller så kan begäran redan vara på väg.
+Undersök när antalet står stilla trots att alla förväntade enheter är online.
 
-## Läs synkstatistik
+## Läs synkstatistiken
 
-**Sync Statistics** separerar meddelandevolym från bearbetningshälsa. Det är det
-Användbart när data ser föråldrad ut men kontot ändå rapporteras som kopplat.
+**Synkstatistik** skiljer meddelandevolym från bearbetningshälsa. Den är
+användbar när data ser föråldrad ut men kontot ändå rapporteras som anslutet.
 
 <ManualScreenshot
   caseId="sync/stats"
-  alt="Lotti Matrix Sync Statistics with sent message counts, top processing KPIs, message types, failures, retries, and entity totals"
-  caption="Counts establish whether messages are moving; failures and scheduled retries show whether the pipeline is moving cleanly."
+  alt="Lottis Matrix-synkstatistik med antal skickade meddelanden, topp-KPI:er för bearbetning, meddelandetyper, misslyckanden, omförsök och entitetssummor"
+  caption="Räkningarna visar om meddelanden rör sig; misslyckanden och schemalagda omförsök visar om pipelinen rör sig rent."
 />
 
-Skickat-meddelandekortet grupperar Matrix-händelsetyper. **Topp-KPI:er** sammanfattar
-bearbetade meddelanden, misslyckanden och schemalagda omförsök, medan enheten summerar
-visa vilka Lotti-lastfamiljer som bidrog till det arbetet. En uppgångsprocess
-Räkna med stabila fel är hälsosamt. Om misslyckanden upprepas eller om försök aldrig
-Klart, kolla utkorgen och den andra enhetens anslutning.
+Kortet för skickade meddelanden grupperar Matrix-händelsetyper.
+**Topp-KPI:er** sammanfattar bearbetade meddelanden, misslyckanden och
+schemalagda omförsök, medan entitetssummorna visar vilka Lotti-lastfamiljer
+som bidrog till arbetet. Ett stigande bearbetat antal med stabila
+misslyckanden är friskt. Om misslyckanden upprepas eller omförsök aldrig
+klarnar, kontrollera utboxen och den andra enhetens anslutning.
 
 ## Inspektera utboxen
 
-**Outbox** är den lokala köen av ändringar som väntar på att skickas. Filtrera efter
-delstaten för att skilja aktivt arbete från misslyckanden.
+**Utbox** är den lokala kön av ändringar som väntar på att skickas. Filtrera
+den efter status för att skilja aktivt arbete från misslyckanden.
 
 <ManualScreenshot
   caseId="sync/outbox"
-  alt="Lotti Sync Outbox filtered to a failed Project Waddle habitat pressure-seal photo with retry and removal actions"
-  caption="Failed items keep their subject, payload details, retry history, and local attachment path so recovery is specific rather than blind."
+  alt="Lottis synkutbox filtrerad till ett misslyckat Project Waddle-foto av habitatets trycktätning med åtgärder för omförsök och borttagning"
+  caption="Misslyckade objekt behåller sitt ämne, sina lastdetaljer, sin omförsökshistorik och sin lokala bilagesökväg så att återställningen blir specifik i stället för blind."
 />
 
-- ** Väntande** föremål väntar på sin tur.
-- **Skickar**-föremål är för närvarande på flykt.
-- **Misslyckades** föremål har uttömt sitt nuvarande försök och är fortfarande tillgängliga för
-  inspektion.
-- ** Skickade föremål har levererats och behålls tillfälligt för
-  diagnostik.
+- **Väntar**-objekt väntar på sin tur.
+- **Sändning**-objekt är just nu på väg.
+- **Misslyckades**-objekt har uttömt sitt aktuella försök och förblir
+  tillgängliga för inspektion.
+- **Skickat**-objekt har levererats och behålls tillfälligt för diagnostik.
 
-Använd **Försök om alla** efter att problemet med den underliggande anslutningen eller kontot är löst.
-Ta bort ett misslyckat föremål endast när du medvetet inte vill att det ska ändras
-Nå andra enheter. Att ta bort den från utkorgen är inget substitut för
-reparation av motsvarande lokal ingång eller fäste.
+Använd **Försök om alla** när det underliggande anslutnings- eller
+kontoproblemet är löst. Ta bara bort ett misslyckat objekt när du medvetet
+inte vill att den ändringen ska nå andra enheter. Att ta bort det ur utboxen
+ersätter inte reparation av motsvarande lokala post eller bilaga.
 
-Fortsätt med att [lösa synkroniseringskonflikter](./conflicts.mdx) när två enheter
-har redigerat samma post oberoende av varandra, eller med
-[synkroniseringsunderhåll](./maintenance.mdx) för återställningsverktyg på databasnivå.
+Fortsätt med att [lösa synkroniseringskonflikter](./conflicts.mdx) när två
+enheter har redigerat samma post oberoende av varandra, eller med
+[synkroniseringsunderhåll](./maintenance.mdx) för återställningsverktyg på
+databasnivå.

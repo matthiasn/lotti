@@ -5,201 +5,210 @@ description: Lav en mundtlig eller indtastet check-in om til en redigerbar plan,
 
 # Planlæg og afslut en dag med Daily OS
 
-Daily OS omdanner en talt eller indtastet check-in til en plan for én dag. Det gør det ikke
-Erstat opgaver eller tidsregistreringer: opgaver beskriver arbejdet, dagplanen beskriver
-intention og optagede sessioner beskriver, hvad der faktisk skete.
+Daily OS omdanner en talt eller indtastet check-in til en plan for én dag. Det
+erstatter ikke opgaver eller tidsregistreringer: opgaver beskriver arbejdet,
+dagsplanen beskriver intentionen, og registrerede sessioner beskriver, hvad
+der faktisk skete.
 
-Eksemplerne følger direktør Aurora gennem en bevidst travl dag på
-Intergalaktisk Pingvinlogistik. Planlæggeren beskytter en lancering af Project Waddle
-Gennemgang, flytter sardinforhandlinger og holder en nul-tyngdekrafts fiskefoder-demonstration
-Klart. Din pingvinsituation kan variere.
+Eksemplerne følger Director Aurora gennem en bevidst travl dag hos
+Intergalactic Penguin Logistics. Planlæggeren beskytter en Project
+Waddle-opsendelsesgennemgang, flytter sardinforhandlinger og friholder en
+demo af fiskefoderen uden tyngdekraft. Din pingvinsituation kan variere.
 
-## Før dit første tjek
+## Før din første check-in
 
-Åbn **Indstillinger → Daily OS**. Vælg den inferensprofil, der skal planlægges
-dine dage og indtast navnet Daily OS skal bruge, når det adresserer dig. Den
-Privatlivsmeddelelse identificerer den valgte udbyder og om behandlingen er aktiveret
-Denne enhed eller fjernbetjening.
+Åbn **Indstillinger → Daily OS**. Vælg den inferensprofil, der skal planlægge
+dine dage, og indtast det navn, Daily OS skal bruge, når det henvender sig til
+dig. Privatlivsnoten identificerer den valgte udbyder, og om behandlingen sker
+på denne enhed eller fjernt.
 
 <ManualScreenshot
-  alt="Daily OS settings configured for Director Aurora and the Project Waddle inference profile"
+  alt="Daily OS-indstillinger konfigureret til Director Aurora og Project Waddle-inferensprofilen"
   caseId="daily-os/settings"
-  caption="Director Aurora uses the Project Waddle Command profile, Waddle Command 70B, and the Mission Control Router provider."
+  caption="Director Aurora bruger profilen Projekt Waddle-kommando, Waddle Kommando 70B og udbyderen Mission Control Router."
 />
 
-Åbn derefter **Indstillinger → Kategorier** og aktiver **Dagplanlægning** kun for
-Kategorier, som planlæggeren kan bruge. En intentional allow-list holder den uafhængig
-opgaver uden for planlægning og forhindrer Daily OS i at ændre arbejde uden for disse
-kategorier.
+Åbn derefter **Indstillinger → Kategorier**, og aktivér **Dagsplanlægning**
+kun for de kategorier, planlæggeren må bruge. En bevidst tilladelsesliste
+holder uafhængige opgaver ude af planlægningen og forhindrer Daily OS i at
+ændre arbejde uden for disse kategorier.
 
 ## 1. Sig, hvad dagen har brug for
 
-Åbn **Daily OS**, vælg datoen, og vælg **Speak a check-in**. Nævn:
+Åbn **Daily OS**, vælg datoen, og vælg **Tal en check-in**. Nævn:
 
 - faste forpligtelser og deadlines;
 - de resultater, der betyder noget;
--  omtrentlige varigheder og tilgængelig kapacitet;
-- pauser, energibegrænsninger og arbejde, der ikke bør ske for sent;
-- alt der allerede er i gang eller sandsynligvis vil blive overført.
+- omtrentlige varigheder og tilgængelig kapacitet;
+- pauser, energibegrænsninger og arbejde, der ikke bør ligge for sent;
+- alt der allerede er i gang eller sandsynligvis bliver taget med videre.
 
-Vælg **Type i stedet**, når du taler, er besværligt. Efter anerkendelsen,
-Gennemgå hele udskriften og ret navne, numre eller andre fejl
-på plads.
+Vælg **Type i stedet**, når det er besværligt at tale. Efter genkendelsen
+gennemgår du hele transskriptet og retter navne, tal eller andre fejl direkte
+på stedet.
 
 <ManualScreenshot
-  alt="The complete Daily OS check-in transcript ready for review"
+  alt="Det komplette Daily OS-check-in-transskript klar til gennemgang"
   caseId="daily-os/capture-review"
-  caption="Review the recognized text before Daily OS matches it with Project Waddle tasks."
+  caption="Gennemgå den genkendte tekst, før Daily OS matcher den med Project Waddle-opgaver."
 />
 
-Vælg **Genindspil** for at starte forfra eller **Gennemgang** for at fortsætte. Du kan ikke bygge
-dagen indtil matchningspasset er færdigt.
+Vælg **Genindspilning** for at starte forfra eller **Anmeldelse** for at
+fortsætte. Du kan ikke bygge dagen, før matchningsgennemløbet er færdigt.
 
-## 2. Forlig tale med rigtigt arbejde
+## 2. Afstem tale med rigtigt arbejde
 
-Forlig er sikkerhedskontrollen mellem det, assistenten hørte, og hvad Lotti har hørt
-vil ændre sig:
+Afstemningen er sikkerhedstjekket mellem det, assistenten hørte, og det,
+Lotti vil ændre:
 
-- **Matched** peger på en eksisterende opgave. Bekræft, at det er den opgave, du mente.
-- **Ny** er et udtryk, der kan blive til arbejde i dag.
-- **Opdatering** foreslår en ændring af en eksisterende opgave.
-- Selvtillid og tidsanker-etiketter viser, hvor gennemgang er mest nyttig.
+- **MATCHET** peger på en eksisterende opgave. Bekræft, at det er den opgave,
+  du mente.
+- **NYT** er en formulering, der kan blive til arbejde i dag.
+- **OPDATERING** foreslår en ændring af en eksisterende opgave.
+- Konfidens- og tidsanker-etiketter viser, hvor gennemgang er mest nyttig.
 
 <ManualScreenshot
-  alt="Daily OS reconciling a spoken check-in with existing and new Project Waddle work"
+  alt="Daily OS, der afstemmer en talt check-in med eksisterende og nyt Project Waddle-arbejde"
   caseId="daily-os/reconcile"
-  caption="The orbital habitat inspection is matched to real work while new requests stay explicit decisions."
+  caption="Inspektionen af det orbitale habitat matches med rigtigt arbejde, mens nye ønsker forbliver eksplicitte beslutninger."
 />
 
-Daily OS fremhæver også arbejde, der er i gang, forfaldet, afleveres i dag eller
-Nyligt savnet. Beslut hvad der hører til i dag i stedet for at importere hele
-Efterslæb.
+Daily OS fremhæver også arbejde, der er i gang, forfaldent, forfalder i dag
+eller for nylig blev misset. Beslut, hvad der hører til i dag, i stedet for at
+importere hele efterslæbet.
 
-## 3. Døm værnepligten
+## 3. Bedøm udkastet
 
-Vælg **Byg min dag** efter forsoningsbeslutningerne ser rigtige ud. Den
-resultatet åbner på **Agenda**. Kapacitetskortet svarer på "passer det her?" før
-Den nummererede liste svarer "Hvad betyder noget?" Opgavebaserede rækker holder deres ægte
-Kategori, status, estimat og forsideminiature.
+Vælg **Byg min dag**, når afstemningsbeslutningerne ser rigtige ud.
+Resultatet åbner på **Dagsorden**. Kapacitetskortet besvarer "kan det her
+være der?", før den nummererede liste besvarer "hvad betyder noget?"
+Opgavebaserede rækker beholder deres rigtige kategori, status, estimat og
+coverminiature.
 
 <ManualScreenshot
-  alt="A Project Waddle Daily OS agenda with capacity, task thumbnails, priorities, and category totals"
+  alt="En Project Waddle Daily OS-dagsorden med kapacitet, opgaveminiaturer, prioriteter og kategoritotaler"
   caseId="daily-os/agenda"
-  caption="Every task in the agenda keeps its own Project Waddle cover art, including completed work."
+  caption="Hver opgave i dagsordenen beholder sin egen Project Waddle-coverkunst, også fuldført arbejde."
 />
 
 Brug de hurtige justeringer, når formen er forkert:
 
-- **For meget** kræver en mindre plan.
-- **Move lettere** flytter krævende arbejde væk fra lavenergiperioder.
+- **For meget** beder om en mindre plan.
+- **Bevæg dig lettere** flytter krævende arbejde væk fra lavenergiperioder.
 - **Tilføj buffer** skaber luft.
-- ** Forfiner** åbner en fri stemme- eller tekstjustering.
+- **Forfine** åbner en fri stemme- eller tekstjustering.
 
-Vælg **Ser godt ud** kun, når udkastet virkelig er acceptabelt.
+Vælg kun **Ser godt ud**, når udkastet virkelig er acceptabelt.
 
 ## 4. Gennemgå alle foreslåede forbedringer
 
-Refine omskriver aldrig tavst tidsplanen. Beskriv ændringen, og inspicer derefter
-hver tilføjet, flyttet eller fjernet blok med sin gamle og foreslåede tid og den
-planlæggerens grund. Accepter eller afvis forslag individuelt, vælg **Tilbage* til
-Smid det ventende sæt væk, eller bliv ved med at tale for at anmode om et nyt gennemløb.
+Forfine omskriver aldrig tidsplanen i det skjulte. Beskriv ændringen, og
+inspicer derefter hver tilføjet, flyttet eller fjernet blok med dens gamle og
+foreslåede tid og planlæggerens begrundelse. Acceptér eller afvis forslag
+enkeltvis, vælg **Tilbage** for at kassere det ventende sæt, eller fortsæt
+med at tale for at bede om et nyt gennemløb.
 
 <ManualScreenshot
-  alt="Daily OS proposing two reviewed time changes for sardine negotiations and the fish-feeder demo"
+  alt="Daily OS, der foreslår to gennemgåede tidsændringer for sardinforhandlingerne og fiskefoder-demoen"
   caseId="daily-os/refine"
-  caption="Sardine negotiations move later to protect Mission Control's launch review; the fish-feeder demo follows the new buffer."
+  caption="Sardinforhandlingerne flyttes senere for at beskytte Mission Controls opsendelsesgennemgang; fiskefoder-demoen følger efter den nye buffer."
 />
 
 Kun accepterede forslag bliver en del af udkastet. **Ser godt ud** forlader
-Gennemgå det, når planen siger, hvad du har tænkt.
+gennemgangen, når planen siger det, du mener.
 
-## 5. Lås dagen ind
+## 5. Lås dagen fast
 
-**Lås det fast**-siden giver det komplette udkast en sidste gennemlæsning: rækkefølge,
-varighed, resultater og resterende kapacitet. Hold bekræftelseskontrollen for
-et sekund til at flytte planen fra udarbejdet til forpligtet. Tastaturbrugere kan fokusere
-styringen og tryk Enter eller Mellemrum; Aktivering af hjælpemiddel bekræftes
-Det direkte.
+**Lås det fast**-siden giver det komplette udkast en sidste gennemlæsning:
+rækkefølge, varigheder, resultater og resterende kapacitet. Hold
+bekræftelseskontrollen nede i et sekund for at flytte planen fra udkast til
+forpligtet. Tastaturbrugere kan fokusere kontrollen og trykke Enter eller
+mellemrum; aktivering via hjælpeteknologi bekræfter direkte.
 
 <ManualScreenshot
-  alt="The Project Waddle draft and deliberate hold-to-confirm action on the Daily OS commitment page"
+  alt="Project Waddle-udkastet og den bevidste hold-for-at-bekræfte-handling på Daily OS-forpligtelsessiden"
   caseId="daily-os/commit"
-  caption="Eight pieces of work use 8h 45m of a 9h day, leaving a 15-minute margin before Director Aurora signs off."
+  caption="Otte stykker arbejde bruger 8 t 45 m af en 9-timers dag og efterlader en margin på 15 minutter, før Director Aurora skriver under."
 />
 
-At sætte lås i planens knogler, ikke din evne til at tilpasse dig. Du kan stadig
-brug **Forfin** bagefter, men foreslåede ændringer kan stadig gennemgås.
+At forpligte sig låser planens skelet, ikke din evne til at tilpasse dig. Du
+kan stadig bruge **Forfine** bagefter, og foreslåede ændringer kan stadig
+gennemgås.
 
 ## 6. Sammenlign planen med virkeligheden
 
-Skift fra **Agenda** til **Dag** for kalenderprojektionen. På skrivebordet,
-Plan og Actual deler én tidsakse. På en telefon, swipe vandret mellem
-de planlagte og registrerede baner. Planlagte blokke bruger en lettere behandling og
-Optagede sessioner er fyldt op, så drift forbliver synlig uden omskrivning
-Historie.
+Skift fra **Dagsorden** til **Dag** for kalenderprojektionen. På desktop
+deler plan og virkelighed én tidsakse. På en telefon swiper du vandret mellem
+de planlagte og registrerede baner. Planlagte blokke bruger en lettere
+gengivelse, og registrerede sessioner er udfyldte, så afvigelser forbliver
+synlige uden at omskrive historien.
 
 <ManualScreenshot
-  alt="Daily OS timeline comparing Project Waddle planned blocks with recorded time"
+  alt="Daily OS-tidslinje, der sammenligner planlagte Project Waddle-blokke med registreret tid"
   caseId="daily-os/timeline"
-  caption="The phone pages between planned and recorded lanes; desktop shows both on one time axis."
+  caption="Telefonen bladrer mellem den planlagte og den registrerede bane; desktop viser begge på én tidsakse."
 />
 
-Start og stop tidsregistrering fra den tilknyttede opgave som sædvanligt. Daglige OS-læsninger
-de plader som virkelighed; den fremstiller ikke færdigt arbejde ud fra
-plan.
+Start og stop tidsregistrering fra den tilknyttede opgave som sædvanligt.
+Daily OS læser de optegnelser som virkeligheden; det opfinder ikke fuldført
+arbejde ud fra planen.
 
-## 7. Flyt, ændre størrelsen eller rediger en blok
+## 7. Flyt, ændr størrelse på eller rediger en blok
 
-Vælg handlingen med fire pile **Arranger** over tidslinjen. Træk en blokkrop
-for at flytte den, eller trække i dens øverste eller nederste håndtag for at ændre dens start eller slutning.
-Ændringerne springer til 15-minutters intervaller og forbliver inden for den valgte dag. Anvendelse
-**Fortryd** i bekræftelsesbeskeden, da den gamle slot var bedre.
+Vælg firepils-handlingen **Arranger blokke** over tidslinjen. Træk i en bloks
+krop for at flytte den, eller træk i dens øverste eller nederste håndtag for
+at ændre dens start eller slutning. Ændringer snapper til 15-minutters
+intervaller og bliver inden for den valgte dag. Brug **Fortryd** i
+bekræftelsesbeskeden, hvis den gamle placering var bedre.
 
 <ManualScreenshot
-  alt="Daily OS arrange mode with move and resize controls on Project Waddle blocks"
+  alt="Daily OS-arrangér-tilstand med flytte- og størrelseskontroller på Project Waddle-blokke"
   caseId="daily-os/arrange"
-  caption="Arrange mode exposes the same direct move and resize actions on phone and desktop."
+  caption="Arrangér-tilstanden viser de samme direkte flytte- og størrelseshandlinger på telefon og desktop."
 />
 
-Blyanthandlingen åbner blokeditoren. En opgavelinket blok beholder sin
-opgave-ejet titel og kategori kun læsebeskyttet; vælg **Åbn opgave** for at ændre dem
-ved kilden. Dens planlagte start og slutning kan stadig redigeres fra Daily OS.
+Blyanthandlingen åbner blokeditoren. En opgavetilknyttet blok holder sin
+opgave-ejede titel og kategori skrivebeskyttet; vælg **Åben opgave** for at
+ændre dem ved kilden. Dens planlagte start og slutning kan stadig redigeres
+fra Daily OS.
 
 <ManualScreenshot
-  alt="Daily OS block editor for the zero-gravity fish feeder task"
+  alt="Daily OS-blokeditor for opgaven med fiskefoderen uden tyngdekraft"
   caseId="daily-os/block-editor"
-  caption="The linked task owns its title and Penguin Operations category; Daily OS owns the 2:30–4:00 PM slot and planning reason."
+  caption="Den tilknyttede opgave ejer sin titel og Penguin-operationer-kategori; Daily OS ejer tidsrummet 14:30–16:00 og planlægningsbegrundelsen."
 />
 
-Selvstændige planblokke kan redigere deres egen titel og kategori, fordi der ikke er nogen opgave
-ejer den metadata.
+Selvstændige planblokke kan redigere deres egen titel og kategori, fordi
+ingen opgave ejer de metadata.
 
-## 8. Afslutte dagen
+## 8. Afslut dagen
 
-Efter en forpligtende dag, vælg **Wrap up**. Nedlukning adskiller beslutninger, der
-bør ikke forveksles:
+Efter en forpligtet dag vælger du **Afslutning**. Nedlukningen holder
+beslutninger adskilt, som ikke bør blandes sammen:
 
-- **Hvad du gjorde** lister færdige værker med faktisk sporet varighed.
-- **Carries forward** lader dig planlægge ufærdigt arbejde til i morgen, vælg en
-  Date, eller drop det.
-- Målinger opsummerer fokustid, flow-sessioner, kontekstskift og energi.
-- En refleksion på én linje fodrer næste udkast.
-- **Det jeg har lært** lader dig bekræfte eller glemme viden om holdbare planer.
-- **Til i morgen** bevarer den korte overleveringsnot.
+- **HVAD DU GJORDE** lister fuldført arbejde med faktisk registreret
+  varighed.
+- **LØB FREMAD** lader dig planlægge ufærdigt arbejde til i morgen, vælge en
+  dato eller droppe det.
+- Målinger opsummerer fokustid, flowsessioner, kontekstskift og energi.
+- En refleksion på én linje føder næste udkast.
+- **Hvad jeg har lært** lader dig bekræfte eller glemme viden om holdbare
+  præferencer.
+- **TIL I MORGEN** bevarer den korte overleveringsnote.
 
 <ManualScreenshot
-  alt="Daily OS shutdown with completed Project Waddle work, carryover choices, metrics, reflection, and learned preferences"
+  alt="Daily OS-nedlukning med fuldført Project Waddle-arbejde, valg om videreførelse, målinger, refleksion og lærte præferencer"
   caseId="daily-os/shutdown"
-  caption="Director Aurora completed the habitat inspection, launch review, and sardine deal; the fish-feeder demo and passenger question stay explicit carryover decisions."
+  caption="Director Aurora fuldførte habitatinspektionen, opsendelsesgennemgangen og sardinaftalen; fiskefoder-demoen og passagerspørgsmålet forbliver eksplicitte videreførelsesbeslutninger."
 />
 
-Vælg **Gem & luk** for at efterlade anmeldelsen uden at erklære dagen lukket,
-eller **Luk dagen**, når beslutningerne om overførsel og læring er klar.
+Vælg **Gem og luk** for at forlade gennemgangen uden at erklære dagen lukket,
+eller **Luk dagen**, når beslutningerne om videreførelse og læring er klar.
 
 ## Ejerskabsreglen
 
-- Opgaver beskriver arbejdet og metadata for egne opgaver.
-- Dagsplanen beskriver intention og ejer planlagte blokke.
-- Tidsoptegnelser beskriver virkeligheden.
-- Planlæggervidensregistre gennemgik præferencer for fremtidige dage.
-- Assistenten frier; Du bestemmer.
+- Opgaver beskriver arbejdet og ejer opgavens metadata.
+- Dagsplanen beskriver intentionen og ejer planlagte blokke.
+- Tidsregistreringer beskriver virkeligheden.
+- Planlæggerens viden registrerer gennemgåede præferencer for fremtidige dage.
+- Assistenten foreslår; du bestemmer.

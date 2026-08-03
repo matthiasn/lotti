@@ -1,84 +1,87 @@
 ---
-title: Tag-arbete med etiketter
+title: Tagga arbete med etiketter
 description: Använd etiketter för tvärgående kontext som spänner över kategorier och uppgifter.
 ---
 
-# Tag-arbete med etiketter
+# Tagga arbete med etiketter
 
-Etiketter lägger till ett andra, flexibelt organisationslager. En uppgift har en primär
-kategori, men den kan bära flera etiketter för initiativ, brådska, väntan
-delstater, eller annan egendom som går över kategorigränser.
+Etiketter lägger till ett andra, flexibelt organisationslager. En uppgift har
+en primär kategori, men den kan bära flera etiketter för initiativ, brådska,
+väntelägen eller någon annan egenskap som korsar kategorigränserna.
 
 <ManualScreenshot
   caseId="labels/list"
-  alt="Etikettinställningar med Väntar på Mission Control, Habitat kritisk, Project Waddle och Sardinmarknadskänslighet samt antal uppgiftsanvändningar"
+  alt="Etikettinställningar med Väntar på Mission Control, Livsmiljökritisk, Project Waddle och Sardinmarknadskänslig samt antal uppgiftsanvändningar"
   caption="Användningsantal visar vilka etiketter som är aktiva i arbetsytan; låset markerar en privat etikett."
 />
 
-Intergalactic Penguin Logistics arbetsplats använder etiketter medvetet:
+Arbetsytan Intergalactic Penguin Logistics använder etiketter medvetet:
 
-- **Projekt Waddle** kopplar samman uppskjutningsarbetet över Penguin Operations, Mission
-  Kontroll och fiskdiplomati.
-- **Habitat kritisk** identifierar arbete som måste slutföras innan expeditionen
-  går in i den orbitala habitatet.
-- **Väntar på Mission Control** registrerar ett verkligt blockeringstillstånd.
-- **Sardinmarknadskänslighet** håller privat förhandlingsarbete identifierbart.
+- **Project Waddle** kopplar samman uppskjutningsarbetet över
+  Penguin-operationer, Uppdragskontroll och Fiskdiplomati.
+- **Livsmiljökritisk** identifierar arbete som måste bli klart innan
+  expeditionen flyttar in i det orbitala habitatet.
+- **Väntar på Mission Control** registrerar ett verkligt blockeringsläge.
+- **Sardinmarknadskänslig** håller privat förhandlingsarbete
+  identifierbart.
 
 ## Skapa och redigera en etikett
 
-1. Öppna **Inställningar → etiketter**.
+1. Öppna **Inställningar → Etiketter**.
 2. Välj **Skapa etikett**.
 3. Lägg till ett kortfattat namn och en valfri beskrivning.
-4. Välj en färg som skiljer sig från andra etiketter.
+4. Välj en färg som går att skilja från andra etiketter.
 5. Avgör om etiketten är privat och vilka kategorier som får använda den.
 6. Spara.
 
 <ManualScreenshot
   caseId="labels/detail"
-  alt="Project Waddle label editor showing its launch-critical description, blue color, privacy option, and three applicable categories"
+  alt="Etikettredigeraren för Project Waddle med dess uppskjutningskritiska beskrivning, blå färg, sekretessalternativ och tre tillämpliga kategorier"
 />
 
-Beskrivningar är värda att skriva när en etikett kan tolkas i mer än
-Enkelriktat. De ger den operativa betydelsen utan att tvinga fram den förklaringen
-i varje uppgiftstitel.
+Beskrivningar är värda att skriva när en etikett kan tolkas på mer än ett
+sätt. De ger den operativa betydelsen utan att tvinga in den förklaringen i
+varje uppgiftstitel.
 
-**Tillämpliga kategorier** begränsar var etiketten kan väljas. Projekt
-Waddle finns tillgänglig i de tre delarna av expeditionen som ingår i uppskjutningen,
-medan en specialistetikett kan förbli begränsad till en kategori. Detta håller plockarna kvar
-relevant istället för att presentera alla etiketter överallt.
+**Tillämpliga kategorier** begränsar var etiketten kan väljas. Project Waddle
+finns tillgänglig i de tre delar av expeditionen som ingår i uppskjutningen,
+medan en specialistetikett kan förbli begränsad till en kategori. Det håller
+väljarna relevanta i stället för att visa varje etikett överallt.
 
-## Applicera etiketter på uppgifter
+## Sätt etiketter på uppgifter
 
-Öppna en uppgift och använd dess etikettkontroll för att lägga till eller ta bort etiketter. Skivbolagsarbete
-Tillsammans med uppgiftsstatus-, prioriterings- och kategorifilter, så att du kan fråga fokuserat
-frågor som "visa öppet P1-habitatkritiskt arbete" utan att uppfinna något nytt
+Öppna en uppgift och använd dess etikettkontroll för att lägga till eller ta
+bort etiketter. Etiketter fungerar tillsammans med filtren för
+uppgiftsstatus, prioritet och kategori, så att du kan ställa fokuserade
+frågor som ”visa öppet P1-habitatkritiskt arbete” utan att uppfinna en ny
 kategori för den tillfälliga vyn.
 
 ## Låt en uppgiftsagent föreslå etiketter
 
-När en konfigurerad taskagent har tillräckligt med uppgiftskontext kan den föreslå att passa
-etiketter tillsammans med andra uppgiftsändringar. Lotti gör endast aktiva etiketter tillgängliga
-när de är giltiga för uppgiftens kategori, och den avvisar raderad,
-förslag utanför omfattningen, dubbletter eller låg konfidens. Agenten får aldrig ett
-fritt sätt att skapa godtyckliga taggar från en prompt.
+När en konfigurerad uppgiftsagent har tillräcklig uppgiftskontext kan den
+föreslå passande etiketter tillsammans med andra uppgiftsändringar. Lotti gör
+bara aktiva etiketter tillgängliga när de är giltiga för uppgiftens kategori,
+och den avvisar förslag som är raderade, utanför omfånget, dubbletter eller
+har låg konfidens. Agenten får aldrig ett fritt sätt att skapa godtyckliga
+taggar från en prompt.
 
-Granska en agent-initierad etikett i uppgiftens föreslagna förändringar-område precis som du
-Skulle en checklista, datum eller status ändras. Bekräfta när etiketten förbättras
-framtida filtrering; avfärda det när det inte gör det. Detta gör uppgiften synlig
-organisering under din kontroll istället för att behandla en modell-gissning som källa
-Sanningen.
+Granska en agentinitierad etikett i uppgiftens område för föreslagna
+ändringar, precis som du skulle granska en ändring av checklista, datum eller
+status. Bekräfta den när etiketten förbättrar framtida filtrering; avvisa den
+när den inte gör det. Det håller uppgiftens synliga organisering under din
+kontroll i stället för att behandla en modellgissning som sanningskälla.
 
-Att ta bort en etikett från en uppgift behandlas som ett avsiktligt avslag när
-Automatiska etiketteringsförslag är aktiverade. Lotti antecknar det valet, så samma sak
-Förslag återappliceras inte omedelbart utan en ny anledning.
+Att ta bort en etikett från en uppgift behandlas som ett avsiktligt avslag
+när automatiska etikettförslag är aktiverade. Lotti antecknar det valet, så
+att samma förslag inte omedelbart läggs på igen utan ett nytt skäl.
 
 ## Håll etiketter användbara
 
-- Föredra etiketter som ändrar ett beslut, filter eller recension.
-- Återanvänd en stabil etikett istället för att skapa stavningsvarianter.
-- Kontrollera användningssiffrorna innan du raderar eller konsoliderar etiketter.
-- Använd integritet när etikettnamnet i sig avslöjar känslig kontext.
-- Pensionera etiketter som inte längre beskriver live-arbete.
+- Föredra etiketter som ändrar ett beslut, ett filter eller en granskning.
+- Återanvänd en stabil etikett i stället för att skapa stavningsvarianter.
+- Kontrollera användningssiffrorna innan du raderar eller slår ihop etiketter.
+- Använd sekretess när etikettnamnet i sig avslöjar känslig kontext.
+- Pensionera etiketter som inte längre beskriver pågående arbete.
 
-Om något är det primära, hållbara hemmet för arbetet, gör det till en
+Om något är arbetets primära, varaktiga hem, gör det till en
 [kategori](./categories.mdx) i stället.

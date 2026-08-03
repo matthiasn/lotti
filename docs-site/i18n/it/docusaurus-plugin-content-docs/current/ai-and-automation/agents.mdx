@@ -1,76 +1,82 @@
 ---
-title: Eseguire e monitorare gli agenti
-description: Monitorare l'attività dell'agente, ispezionare le istanze in esecuzione e controllare i cicli di sveglia programmati senza perdere il percorso di audit.
+title: Esegui e monitora gli agenti
+description: Monitora l'attività degli agenti, ispeziona le istanze in esecuzione e controlla i cicli di sveglia pianificati senza perdere la traccia di audit.
 ---
 
-# Eseguire e monitorare gli agenti
+# Esegui e monitora gli agenti
 
-Gli agenti consentono a Lotti di eseguire responsabilità definite in diversi
-cicli di risveglio. Ogni istanza in esecuzione deriva da un modello di agente,
-usa una configurazione di inferenza e mantiene il proprio stato, rapporti,
-osservazioni e cronologia dell'attività. Apri **Impostazioni → Agenti** per
-vedere il sistema nel suo complesso.
+Gli agenti permettono a Lotti di portare avanti una responsabilità definita
+attraverso più cicli di sveglia. Ogni istanza in esecuzione deriva da un
+modello di agente, usa una configurazione di inferenza e mantiene stato,
+rapporti, osservazioni e cronologia dell'attività propri. Apri
+**Impostazioni → Agenti** per vedere il sistema nel suo complesso.
 
-Rapporti, osservazioni e sveglia in coda descrivono il lavoro dell'agente.
-stato; non riscrivere silenziosamente il registro personale. Quando un agente di compito
-vuole cambiare i dati delle attività, Lotti presenta una proposta per la tua recensione.
+Rapporti, osservazioni e sveglie in coda descrivono lo stato di lavoro
+dell'agente; non riscrivono in silenzio il registro personale. Quando un agente
+di attività vuole cambiare i dati di un'attività, Lotti presenta una proposta
+per la tua revisione. Vedi
 [Revisione delle modifiche proposte](../organize-and-reflect/task-agents.mdx#revisione-delle-modifiche-proposte)
-per i controlli di approvazione per-task e il loro stretto legame iniziale e la lingua
-eccezioni.
+per i controlli di approvazione per attività e per le loro ristrette eccezioni
+sul titolo iniziale e sulla lingua.
 
-L'utilizzo dei token degli agenti viene registrato insieme a tutto il resto del lavoro dell'IA in [Verifica l'utilizzo e l'impatto dell'AI](./usage.mdx).
+L'uso dei token degli agenti viene riportato insieme a tutto il resto del
+lavoro AI in [Verifica l'utilizzo e l'impatto dell'AI](./usage.mdx).
 
-## Ispezionare le istanze in esecuzione
+## Ispeziona le istanze in esecuzione
 
-Apri **Istanze** per vedere tutti gli agenti e le sessioni di evoluzione,
-insieme al tipo di agente, al ciclo di vita, al modello assegnato e all'anima.
-Raggruppare per anima è utile quando responsabilità diverse condividono una
-voce e uno stile decisionale.
+Apri **Casi** per vedere ogni agente e sessione di evoluzione. Le righe
+espongono il tipo di agente, il ciclo di vita, il modello assegnato e l'anima.
+Raggruppare per anima è utile quando più responsabilità condividono una voce e
+uno stile decisionale.
 
 <ManualScreenshot
   caseId="agents/instances"
-  alt="Le istanze dell'agente Lotti raggruppate dall'ammiraglio Pebble, dal dottor Flipper, dal capitano Sardina, e da una sessione di evoluzione"
-  caption="L'Ispettore del Sigillo Habitat, il Progetto Waddle Planner e il Coordinatore Sardine Cargo rimangono istanze separate anche quando condividono risorse di livello di sistema."
+  alt="Istanze degli agenti di Lotti raggruppate per Admiral Pebble, Dr. Flipper, Captain Sardina e una sessione di evoluzione"
+  caption="L'Ispettore del sigillo di Habitat, il Progetto Waddle Planner e il Sardine Cargo Coordinatore restano istanze separate anche quando condividono risorse a livello di sistema."
 />
 
-Seleziona un'istanza per ispezionare gli interni. La scheda **Stats** mostra il modello
-uso, il suo modello, il percorso di inferenza corrente, i controlli del ciclo di vita, il conteggio della veglia,
-e lo stato di pianificazione.
+Seleziona un'istanza per ispezionarne gli interni. La scheda **Statistiche**
+mostra l'uso del modello, il suo modello di agente, il percorso di inferenza
+corrente, i controlli del ciclo di vita, il conteggio delle sveglie e lo stato
+di pianificazione.
 
 <ManualScreenshot
   caseId="agents/instance-detail"
-  alt="Dettaglio istanza Habitat Seal Inspector con uso token, modello Orbital Habitat Sentinel, percorso di inferenza, controlli del ciclo di vita e sveglia stato"
-  caption="L'istanza mantiene abbastanza provenienza per spiegare quale modello e percorso ha prodotto il suo lavoro prima di fermarsi, ri-analisi, o distruggerlo."
+  alt="Dettaglio dell'istanza Ispettore del sigillo di Habitat con uso dei token, modello Sentinella dell'habitat orbitale, percorso di inferenza, controlli del ciclo di vita e stato di sveglia"
+  caption="L'istanza conserva abbastanza provenienza da spiegare quale modello e percorso ha prodotto il suo lavoro, prima che tu la metta in pausa, la rianalizzi o la distrugga."
 />
 
-Le schede di istanza rimanenti conservano prove diverse:
+Le altre schede dell'istanza conservano prove diverse:
 
-- **Reports** contiene le istantanee salvate dell'agente.
-- **Conversazioni ** gruppi di messaggi per ciclo di veglia.
-- **Observations** espone i risultati catturati senza mescolarli in rapporti.
-- **Attività** mostra il messaggio cronologico e la traccia degli strumenti.
+- **Rapporti** contiene le istantanee salvate dei rapporti dell'agente.
+- **Conversazioni** raggruppa i messaggi per ciclo di sveglia.
+- **Osservazioni** espone i risultati catturati senza mescolarli nei rapporti.
+- **Attività** mostra la traccia cronologica di messaggi e strumenti.
 
-**Pause** mantiene l'istanza ma ferma il lavoro normale. **Ri-analyze** chiede un compito
-l'agente per riconsiderare il suo soggetto attuale. **La distruzione** è distruttiva e dovrebbe
-solo essere usato quando l'istanza stessa non è più ricercata; cambiare il
-modello per gli agenti futuri non richiede la distruzione di istanze non correlate.
+**Pausa.** mantiene l'istanza ma ferma il lavoro normale. **Rianalizzare**
+chiede a un agente di attività di riconsiderare il suo soggetto corrente.
+**Distruggere** è distruttivo e va usato solo quando l'istanza stessa non serve
+più; cambiare il modello per gli agenti futuri non richiede di distruggere
+istanze non correlate.
 
-## Capire i cicli di veglia
+## Capisci i cicli di sveglia
 
-Aprire **Wake Cycles** per vedere il lavoro che sta correndo ora e lavorare per più tardi.
-L'agente ha richiesto una sveglia.
-il sistema o il pianificatore. Ogni riga mantiene l'attività collegata, il progetto o il giorno visibile
-accanto all'agente responsabile e al conto alla rovescia.
+Apri **Cicli di sveglia** per vedere il lavoro in esecuzione ora e quello in
+scadenza più tardi. Una sveglia **Finanziamenti** è stata richiesta
+dall'agente. Una sveglia **Programmato** è stata inserita dal sistema o dal
+pianificatore. Ogni riga tiene visibili l'attività, il progetto o il giorno
+collegati, accanto all'agente responsabile e a un conto alla rovescia dal vivo.
 
 <ManualScreenshot
   caseId="agents/pending-wakes"
-  alt="Lotti Wake Cicli che mostrano l'ispezione dell'habitat in esecuzione e il progetto programmato Waddle e logistica sardine si sveglia"
-  caption="La coda distingue un follow-up dell'habitat recuperato dall'agente dai programmi di lancio e di carico, quindi un conto alla rovescia ha sempre una ragione e un proprietario."
+  alt="Cicli di sveglia di Lotti con l'ispezione dell'habitat in esecuzione e le sveglie pianificate di Project Waddle e della logistica delle sardine"
+  caption="La coda distingue un follow-up dell'habitat richiesto dall'agente dalle pianificazioni del giorno di lancio e del carico, così un conto alla rovescia ha sempre una ragione e un proprietario."
 />
 
-Cancellare una scia in coda rimuove quel timer; non elimina l'agente o la sua
-Se una sveglia ritorna immediatamente, ispezionare lo stato dell'agente o il
-automazione che lo richiedeva invece di eliminare ripetutamente il sintomo.
+Eliminare una sveglia in coda rimuove quel timer; non elimina l'agente né la
+sua attività collegata. Se una sveglia ricompare subito, ispeziona lo stato
+dell'agente o l'automazione che l'ha richiesta, invece di eliminare
+ripetutamente il sintomo.
 
-Continuare con [Agent modelli e anime](./agent-blueprints.mdx) per definire
+Continua con [Modelli di agente e anime](./agent-blueprints.mdx) per definire
 cosa fanno queste istanze e come comunicano.

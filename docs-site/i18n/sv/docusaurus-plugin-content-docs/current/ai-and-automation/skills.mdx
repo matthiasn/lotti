@@ -5,15 +5,15 @@ description: Använd menyn Generera för att köra endast de AI-åtgärder som g
 
 # Kör kontextuella AI-färdigheter
 
-AI-färdigheter är namngivna handlingar med instruktioner och inmatningskrav. Lotti
-filtrerar **Generera...**-menyn till den aktuella enheten, så att en uppgift inte erbjuder
-en ljudbaserad transkriptionsåtgärd och en bild erbjuder inte en handling som
-kräver en inspelning.
+AI-färdigheter är namngivna åtgärder med instruktioner och inmatningskrav.
+Lotti filtrerar menyn **Generera...** till den aktuella entiteten, så att en
+uppgift inte erbjuder en åtgärd som bara transkriberar ljud och en bild inte
+erbjuder en åtgärd som kräver en inspelning.
 
 <ManualScreenshot
   caseId="ai/skills"
-  alt="Project Waddle habitat image with the Generate modal offering Inspect habitat photo"
-  caption="On a habitat image linked to the task, the applicable action looks for pressure-gauge anomalies and visible seal damage."
+  alt="Project Waddle-habitatbild med Generera-modalen som erbjuder Inspektera habitatfoto"
+  caption="På en habitatbild länkad till uppgiften letar den tillämpliga åtgärden efter avvikelser i tryckmätarna och synliga skador på tätningarna."
 />
 
 ## Kör en färdighet
@@ -24,37 +24,38 @@ kräver en inspelning.
   caption="Video med berättarröst: färdigheten Generera kodprompt sätter ihop en uppgifts beskrivning och checklista till en klistra-in-klar prompt."
 />
 
-1. Öppna en uppgift eller stödd dagboksanteckning.
-2. Välj den angivna assistentåtgärden i ingångsrubriken. Detta öppnar
+1. Öppna en uppgift eller en stödd journalpost.
+2. Välj den konturerade assistentåtgärden i postens rubrik. Detta öppnar
    **Generera...**.
-3. Läs färdighetsbeskrivningen och välj den handling du vill ha.
-4. Om Lotti erbjuder en modell- eller tänkarlägesväljare, bekräfta standarden eller
-   Välj en engångsöverskrivning.
-5. Fortsätt arbeta medan slutsatsen pågår; resultatet är kopplat till
-   relevant uppgift eller post när den är klar.
+3. Läs färdighetsbeskrivningen och välj den åtgärd du vill ha.
+4. Om Lotti erbjuder en väljare för modell eller tänkarläge, bekräfta
+   standarden eller välj en engångsöverskrivning.
+5. Fortsätt arbeta medan inferensen pågår; resultatet kopplas till den
+   relevanta uppgiften eller posten när det är klart.
 
-Den tillgängliga menyn ändras med kontext:
+Den tillgängliga menyn ändras med kontexten:
 
-- tasks kan erbjuda text- och uppgiftskontextåtgärder;
+- uppgifter kan erbjuda text- och uppgiftskontextåtgärder;
 - ljudposter kan erbjuda transkription och ljudmedvetna åtgärder;
 - bilder kan erbjuda visuell analys; och
-- textposter kan erbjuda prompt- eller genereringsåtgärder som accepterar text.
+- textposter kan erbjuda prompt- eller genereringsåtgärder som tar emot text.
 
-Vissa färdigheter behöver en länkad uppgift eftersom de läser bredare uppgiftskontext eller skriver
-deras resultat åter till den uppgiften. Om en handling saknas, kontrollera först posten
-typ och uppgiftslänk, kontrollera sedan att den aktiva inferensprofilen har en modell för
-den nödvändiga kapaciteten.
+Vissa färdigheter behöver en länkad uppgift eftersom de läser bredare
+uppgiftskontext eller skriver tillbaka sitt resultat till den uppgiften. Om en
+åtgärd saknas, kontrollera först posttypen och uppgiftslänken, och kontrollera
+sedan att den aktiva inferensprofilen har en modell för den kapacitet som
+krävs.
 
 ## Modellöverskrivningar är tillfälliga
 
-När en färdighet erbjuder en modellplockare gäller det valet för den aktuella
-åkallan. Den skriver inte tyst om kategorin standard eller inferens.
-profil. För att ändra den normala rutten, redigera profilen nedan
-[Models and inference profiles](./models-and-profiles.mdx).
+När en färdighet erbjuder en modellväljare gäller det valet den aktuella
+körningen. Det skriver inte om kategoristandarden eller inferensprofilen i
+det tysta. För att ändra den normala rutten, redigera profilen under
+[Modeller och inferensprofiler](./models-and-profiles.mdx).
 
-## Behandla genererat utdata som ett utkast
+## Behandla genererad utdata som ett utkast
 
-Granska genererade prompts, sammanfattningar, transkriptioner, bildanalys och konstverk
-innan han förlitade sig på dem. Uppgiftskontexten kan vara ofullständig, leverantörer kan returnera
-felaktig utgång, och en kapabel modell kan fortfarande missförstå en mycket allvarlig
-Sardinnödsituation.
+Granska genererade prompter, sammanfattningar, transkriptioner, bildanalyser
+och konstverk innan du förlitar dig på dem. Uppgiftskontexten kan vara
+ofullständig, leverantörer kan returnera felaktig utdata, och en kapabel
+modell kan fortfarande missförstå en mycket allvarlig sardinnödsituation.

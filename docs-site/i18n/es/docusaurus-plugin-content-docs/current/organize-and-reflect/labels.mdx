@@ -42,6 +42,12 @@ Las **Categorías aplicables** limitan dónde se puede seleccionar la etiqueta. 
 
 Abre una tarea y usa su control de etiquetas para añadirlas o quitarlas. Las etiquetas funcionan junto con los filtros de estado, prioridad y categoría de la tarea, por lo que puedes plantear preguntas concretas como «mostrar trabajo abierto de P1 crítico para el hábitat» sin inventar una categoría nueva para esa vista temporal.
 
+## Deja que un agente de tarea sugiera etiquetas
+
+Cuando un agente de tarea configurado tiene suficiente contexto de la tarea, puede sugerir etiquetas adecuadas junto con otros cambios de la tarea. Lotti solo pone a disposición etiquetas activas válidas para la categoría de la tarea, y rechaza sugerencias eliminadas, fuera de alcance, duplicadas o de baja confianza. El agente nunca tiene una vía libre para crear etiquetas arbitrarias a partir de un prompt.
+
+Revisa una etiqueta originada por el agente en el área de cambios propuestos de la tarea, igual que revisarías un cambio de lista de verificación, fecha o estado. Confírmala cuando la etiqueta mejore el filtrado futuro; descártala cuando no. Así la organización visible de la tarea queda bajo tu control, en vez de tratar una suposición del modelo como fuente de verdad.
+
 Quitar una etiqueta de una tarea se trata como un rechazo intencional cuando están activadas las sugerencias automáticas de etiquetas. Lotti registra esa decisión para que la misma sugerencia no se vuelva a aplicar de inmediato sin un motivo nuevo.
 
 ## Mantén las etiquetas útiles

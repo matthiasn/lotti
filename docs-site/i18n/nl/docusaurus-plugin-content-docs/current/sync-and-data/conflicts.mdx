@@ -5,66 +5,69 @@ description: Vergelijk gelijktijdige bewerkingen veld voor veld en behoud of com
 
 # Synchronisatieconflicten oplossen
 
-Er ontstaat een conflict wanneer twee apparaten onafhankelijk van elkaar dezelfde invoer wijzigen en
-geen van beide versies is duidelijk nieuwer. Lotti behoudt beide versies in plaats van
-er in stilte eentje kiezen.
+Een conflict ontstaat wanneer twee apparaten dezelfde invoer onafhankelijk van elkaar
+hebben gewijzigd en geen van beide versies duidelijk nieuwer is. Lotti bewaart beide
+versies in plaats van er stilletjes één te kiezen.
 
-Open **Instellingen → Synchroniseren → Conflicten**. De lijst scheidt onopgeloste en
-opgeloste items en identificeert het entiteitstype en het tijdstip van elk conflict.
+Open **Instellingen → Instellingen synchroniseren → Conflicten synchroniseren**. De
+lijst scheidt onopgeloste en opgeloste items en identificeert het entiteitstype en
+het tijdstip van elk conflict.
 
 <ManualScreenshot
   caseId="sync/conflicts"
-  alt="Lotti Synchroniseren Conflictenlijst met onopgeloste Project Waddle taak en sardine manifest conflicten plus een opgelost taak"
-  caption="Eerst de huidige items oplossen. Opgelost items blijven zichtbaar als een auditspoor van eerdere beslissingen."
+  alt="Lotti-synchronisatieconflictenlijst met onopgeloste Project Waddle-taak- en sardinemanifestconflicten plus een opgeloste taak"
+  caption="Los eerst de actuele items op. Opgeloste items blijven zichtbaar als een auditspoor van eerdere beslissingen."
 />
 
 ## Vergelijk beide versies
 
-Open een conflict om elk verschillend veld te zien. Tekstwijzigingen omvatten woordniveau
-hoogtepunten; ongewijzigde velden worden samengevat, zodat de pagina niet verbergt hoeveel
-van de inzending is het er nog steeds mee eens.
+Open een conflict om elk verschillend veld te zien. Tekstwijzigingen bevatten
+markeringen op woordniveau; ongewijzigde velden worden samengevat, zodat de pagina
+niet verbergt hoeveel van de invoer nog overeenkomt.
 
 <ManualScreenshot
   caseId="sync/conflict-detail"
-  alt="Lotti conflict detail vergelijken lokale en gesynchroniseerde Project Waddle taak titels en beschrijvingen veld per veld"
-  caption="Dit apparaat hield de laatste keizer en vrachtruim; de gesynchroniseerde versie ontruimde alle 37 pinguïns en gepland de sardine release. Beide feiten belangrijk."
+  alt="Lotti-conflictdetail vergelijkt lokale en gesynchroniseerde Project Waddle-taaktitels en -beschrijvingen veld voor veld"
+  caption="Dit apparaat behield de laatste keizerpinguïn en het vrachtruim; de gesynchroniseerde versie telde alle 37 pinguïns af en plande de sardinevrijgave. Beide feiten doen ertoe."
 />
 
 De drie oplossingspaden zijn:
 
 - **Gebruik dit apparaat** behoudt de volledige lokale versie.
-- **Gebruik vanaf synchronisatie** behoudt de volledige inkomende versie.
-- Met **Combineren** kun je een startkant kiezen en vervolgens de winnaar selecteren
-  elk onafhankelijk samenvoegbaar veld.
+- **Gebruik vanuit synchronisatie** behoudt de volledige inkomende versie.
+- Met **Combineer...** kies je een startkant en selecteer je vervolgens de winnaar
+  voor elk onafhankelijk samenvoegbaar veld.
 
-Het is passend om de ene volledige kant te behouden als de andere gewoon oud is.
-**Combineren** is de veiligere keuze wanneer afzonderlijke velden geldig werk bevatten
-beide apparaten; Lotti markeert het als aanbevolen bij meerdere samenvoegbare velden
-verschillen.
+Eén volledige kant behouden is passend wanneer de andere simpelweg verouderd is.
+**Combineer...** is de veiligere keuze wanneer afzonderlijke velden geldig werk van
+beide apparaten bevatten; Lotti markeert het als aanbevolen wanneer meerdere
+samenvoegbare velden verschillen.
 
 ## Combineer velden zonder opnieuw te typen
 
-Selecteer **Combineren**, kies de versie waarmee u wilt beginnen en schakel vervolgens individueel over
-velden naar de andere kant. Velden die niet onafhankelijk kunnen worden samengevoegd, volgen
-de geselecteerde startversie.
+Selecteer **Combineer...**, kies de versie waarmee je wilt beginnen en zet vervolgens
+individuele velden om naar de andere kant. Velden die niet onafhankelijk kunnen
+worden samengevoegd, volgen de geselecteerde startversie.
 
 <ManualScreenshot
   caseId="sync/conflict-combine"
-  alt="Lotti Combineer conflicteditor met start-versie controle en aparte keuzes voor de taaktitel en het lichaam"
-  caption="Begin met één structureel volledige ingang, neem dan de betere titel en body van dit apparaat of synchroniseren."
+  alt="Lotti-combineerconflicteditor met startversiebesturing en aparte keuzes voor de taaktitel en de tekst"
+  caption="Begin met één structureel volledige invoer en neem daarna de betere titel en tekst van dit apparaat of van synchronisatie."
 />
 
-Controleer elk vermeld veld voordat u **Gecombineerd toepassen** selecteert. De
-opgeloste invoer ontvangt een samengevoegde synchronisatiegeschiedenis, zodat dezelfde twee bewerkingen dat niet doen
-meteen weer in conflict.
+Controleer elk vermeld veld voordat je **Samen toepassen** selecteert. De
+opgeloste invoer krijgt een samengevoegde synchronisatiegeschiedenis, zodat dezelfde
+twee bewerkingen niet meteen opnieuw in conflict raken.
 
-:::caution[Een resolutie verandert het gedeelde resultaat]
+:::caution[Een oplossing verandert het gedeelde resultaat]
 
-Het behouden van een kant of het toepassen van een gecombineerde versie schrijft de winnaar lokaal en
-maakt het mogelijk om te synchroniseren met de andere apparaten. Lees het volledige verschil eerder
-bevestigen. Als de ene kant het item verwijderde terwijl de andere het bewerkte, Lotti
-toont de veiligere keuze voor verwijderen versus bewerken in plaats van een normale veldsamenvoeging.
+Een kant behouden of een gecombineerde versie toepassen schrijft de winnaar lokaal en
+laat die naar de andere apparaten synchroniseren. Lees het volledige verschil voordat
+je bevestigt. Als de ene kant de invoer verwijderde terwijl de andere haar bewerkte,
+toont Lotti de veiligere keuze verwijderen-versus-bewerken in plaats van een normale
+veldsamenvoeging.
 
 :::
 
-Keer terug naar [Apparaten synchroniseren](./sync.mdx) om de bezorging en inhaalstatus te inspecteren.
+Keer terug naar [Synchroniseer apparaten](./sync.mdx) om de bezorging en de
+inhaalstatus te inspecteren.

@@ -1,144 +1,152 @@
 ---
-title: Configurare Lotti con l'onboarding
-description: Collega un fornitore IA, scegli lo stile di registrazione e le aree di lavoro, quindi trasforma un primo pensiero in un'attività reale.
+title: Configura Lotti con l'onboarding
+description: Collega un provider AI, scegli lo stile di registrazione e le aree di lavoro, poi trasforma un primo pensiero in un'attività reale.
 ---
 
-# Configurare Lotti con l'onboarding
+# Configura Lotti con l'onboarding
 
-L'onboarding collega gli elementi minimi necessari per il flusso di lavoro assistito da Lotti:
-un fornitore, uno stile di registrazione, almeno una categoria e un primo pensiero trasformato
-in attività. È una configurazione guidata, non un ambiente demo separato: fornitori,
-categorie e attività create qui rimangono nell'app normale.
+L'onboarding collega gli elementi minimi necessari per il flusso di lavoro delle
+attività assistito dall'AI di Lotti: un provider, uno stile di registrazione,
+almeno una categoria e una prima attività reale. È una configurazione guidata,
+non un ambiente demo separato: provider, categorie e attività creati qui
+restano nell'app normale.
 
-Apri **Impostazioni → Onboarding** ogni volta che vuoi avviare o ripetere il flusso.
-La pagina mostra anche se questo profilo ha già creato la sua prima
-attività strutturata dall'IA.
+Apri **Impostazioni → A bordo** ogni volta che vuoi avviare o ripetere il
+flusso. La pagina mostra anche se questo profilo ha già creato la sua prima
+attività strutturata dall'AI.
 
 <ManualScreenshot
   caseId="onboarding/settings"
-  alt="Impostazioni Lotti Onboarding che mostrano uno stato attivato e l'azione Replay onboarding"
-  caption="Questo profilo di Project Waddle ha già creato la sua prima attività IA. Puoi ripetere l'onboarding anche dopo l'attivazione."
+  alt="Impostazioni dell'onboarding di Lotti con lo stato attivato e l'azione Riproduci a bordo"
+  caption="Questo profilo di Project Waddle ha già creato la sua prima attività AI. Ripetere l'onboarding resta possibile anche dopo l'attivazione."
 />
 
 ## Inizia con la promessa di benvenuto
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Pannello di benvenuto Lotti che invita l'utente a collegare un cervello AI e trasformare il discorso in un compito strutturato"
-  caption="Il pannello di benvenuto si apre sopra l'app corrente. Scegli il tuo fornitore IA per continuare oppure esci dal flusso senza modificare la configurazione."
+  alt="Pannello di benvenuto dell'onboarding di Lotti che invita a collegare un cervello AI e a trasformare il parlato in un'attività strutturata"
+  caption="Il pannello di benvenuto si apre sopra l'app corrente. Scegli il tuo cervello AI per continuare, oppure lascia il flusso senza cambiare la configurazione."
 />
 
-Scegli il tuo fornitore IA per iniziare. Toccare l'area fuori dal pannello o usare l'azione
-Indietro del sistema chiude l'onboarding senza modificare la configurazione; puoi tornare
-da Impostazioni più tardi.
+Seleziona **Scegli il tuo cervello AI** per iniziare. Scegliere **Guarda
+prima.**, toccare l'area oscurata fuori dal pannello o usare l'azione Indietro
+di sistema chiude l'onboarding senza collegare nulla. Puoi tornarci più tardi
+dalle Impostazioni.
 
-Lotti può anche offrire questo benvenuto automaticamente a un profilo idoneo.
-il prompt automatico ha una cadenza limitata di riprovazione; l'ingresso Impostazioni non lo fa, quindi
-Tu mantieni sempre una via di ritorno.
+Lotti può anche proporre questo benvenuto automaticamente a un profilo idoneo.
+Il prompt automatico ha una cadenza di ripetizione limitata; la voce nelle
+Impostazioni no, quindi hai sempre una via per tornarci.
 
-## Scegliere dove eseguire la strutturazione delle attività
+## Scegli dove gira la strutturazione delle attività
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Selettore del fornitore durante l'onboarding di Lotti con Melious.ai, Mistral, Gemini, Qwen, OpenAI e Ollama"
-  caption="I principali fornitori ospitati appaiono prima. Espandi più opzioni per OpenAI e il percorso Ollama locale."
+  alt="Selettore del provider nell'onboarding di Lotti con Melious.ai, Mistral, Gemini, Qwen, OpenAI e Ollama"
+  caption="I principali provider ospitati compaiono per primi. Espandi Altre opzioni per OpenAI e per il percorso locale con Ollama."
 />
 
-La pagina del provider identifica le scelte disponibili ospitate e locali:
+La pagina dei provider presenta le scelte disponibili, ospitate e locali:
 
-- **Melious.ai** è l'impostazione predefinita raccomandata dell'UE con il modello dinamico
-  Routing.
-- "Mistral", "Gemini" e "Qwen" espongono il loro corrispondente ospitato.
-  regioni.
-- **OpenAI** è disponibile sotto le opzioni ampliate.
-- **Ollama** si connette a un endpoint locale compatibile e non richiede un
+- **Melious.ai** è l'impostazione predefinita consigliata, ospitata nell'UE,
+  con instradamento dinamico dei modelli.
+- **Mistral**, **Gemini** e **Qwen** espongono le rispettive regioni ospitate.
+- **OpenAI** è disponibile tra le opzioni espanse.
+- **Ollama** si collega a un endpoint locale compatibile e non richiede una
   chiave API ospitata.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
-  alt="Pannello di verifica del fornitore durante l'onboarding di Lotti che mostra una connessione Ollama locale verificata"
-  caption="Lotti verifica il provider prescelto prima di abilitare Connect. I provider ospitati utilizzano lo stesso passo con un campo API-key."
+  alt="Pannello di verifica del provider nell'onboarding di Lotti che mostra una connessione locale Ollama verificata"
+  caption="Lotti verifica il provider scelto prima di abilitare Collegamento. I provider ospitati usano lo stesso passaggio con un campo per la chiave API."
 />
 
-Per un provider ospitato, incollare la chiave API del fornitore. Lotti verifica il
-connessione prima di abilitare **Connect**. Ollama verifica la configurazione locale
-endpoint e report di modelli raggiungibili. Una connessione di successo persiste
-fornitore e semi i modelli e il profilo di inferenza utilizzato dai restanti
-passi.
+Per un provider ospitato, incolla la chiave API del provider. Lotti verifica la
+connessione prima di abilitare **Collegamento**. Ollama verifica l'endpoint
+locale configurato e riporta i modelli raggiungibili. Una connessione riuscita
+salva il provider e inizializza i modelli e il profilo di inferenza usati dai
+passaggi restanti.
 
 <ManualScreenshot
   caseId="onboarding/success"
-  alt="L'onboarding di Lotti conferma che il fornitore IA è collegato e pronto"
-  caption="La conferma della connessione è intenzionalmente calma; il pagamento più grande è riservato per il primo compito reale."
+  alt="Conferma dell'onboarding di Lotti che il provider AI è collegato e pronto"
+  caption="La conferma della connessione è volutamente sobria; la soddisfazione più grande è riservata alla prima attività reale."
 />
 
-Il testo dell'attività acquisita viene inviato al fornitore assegnato alla categoria selezionata
-per la strutturazione. Scegli un fornitore il cui modello di distribuzione e gestione dei dati
-si adatta al materiale che si prevede di catturare. Un endpoint locale raggiungibile Ollama mantiene
-quella richiesta di strutturazione sulla macchina che lo gestisce.
+Il testo dell'attività catturata viene inviato per la strutturazione al
+provider assegnato alla categoria selezionata. Scegli un provider il cui
+modello di distribuzione e di gestione dei dati si adatta al materiale che
+prevedi di catturare. Un endpoint locale Ollama raggiungibile tiene quella
+richiesta di strutturazione sulla macchina che la esegue.
 
-## Scegli la sensazione di registrazione e le aree di lavoro
+## Scegli lo stile di registrazione e le aree di lavoro
 
 <ManualScreenshot
   caseId="onboarding/recording-style"
-  alt="Schermata di onboarding di Lotti per scegliere lo stile di registrazione, con le opzioni Modern energy orb e Analogue VU meter"
-  caption="Scegliere la visualizzazione di registrazione che si sente più chiaro. Entrambe le opzioni utilizzano la stessa pipeline di cattura."
+  alt="Selettore dello stile di registrazione nell'onboarding di Lotti, con le opzioni della sfera di energia moderna e del misuratore VU analogico"
+  caption="Scegli la visualizzazione di registrazione che ti sembra più chiara. Entrambe le opzioni usano la stessa pipeline di cattura."
 />
 
-Dopo che il collegamento ha successo, scegliere lo stile di registrazione utilizzato dal primo-task
-cattura e successiva cattura vocale superfici. È possibile cambiarlo di nuovo sotto
-** Impostazioni → Recording Style**.
+Dopo che la connessione è riuscita, scegli lo stile di registrazione usato
+dalla cattura della prima attività e dalle successive superfici di cattura
+vocale. Puoi cambiarlo di nuovo in **Impostazioni → Stile di registrazione**.
 
 <ManualScreenshot
   caseId="onboarding/categories"
-  alt="Lotti sceglie l'area di lavoro con il lavoro, il fitness, la famiglia, gli amici e aggiungere le proprie scelte"
-  caption="Scegli una o più aree per il nuovo fornitore. Il testo scalato e i layout ristretti utilizzano automaticamente una scelta full-width per riga."
+  alt="Selettore delle aree di lavoro nell'onboarding di Lotti con le scelte Lavoro, Forma fisica, Famiglia, Amici e Aggiungi il tuo"
+  caption="Scegli una o più aree per il nuovo provider. Con testo ingrandito e layout stretti viene usata automaticamente una scelta a tutta larghezza per riga."
 />
 
-Successivamente, selezionare una o più aree di lavoro. Preimpostazioni coprire categorie comuni come
-Lavoro, fitness, famiglia e amici; **Add your own** crea una categoria con una
-nome che corrisponde al tuo spazio di lavoro. Onboarding riutilizza una categoria esistente con
-lo stesso nome invece di creare un duplicato, lo ripristina quando necessario, e
-lo collega al nuovo profilo di inferenza seme.
+Poi seleziona una o più aree di lavoro. Le preimpostazioni coprono categorie
+comuni come Lavoro, Forma fisica, Famiglia e Amici; **Aggiungi il tuo** crea
+una categoria con un nome che corrisponde al tuo spazio di lavoro.
+L'onboarding riusa una categoria esistente con lo stesso nome invece di creare
+un duplicato, la ripristina quando serve e la collega al profilo di inferenza
+appena inizializzato.
 
-L'apparecchio manuale crea due vere destinazioni:**Penguin Operations** e
-**Mission Control**—quindi il passo successivo dimostra la stessa scelta di categoria
-il conto lavorativo vede.
+Il set del manuale crea due destinazioni reali — **Penguin Operations** e
+**Mission Control** — così il passo successivo dimostra la stessa scelta di
+categoria che vede un account di lavoro.
 
-## Cattura il primo compito reale
+## Cattura la prima attività reale
 
 <ManualScreenshot
   caseId="onboarding/first-task"
-  alt="Pannello di onboarding di Lotti con cattura vocale, Penguin Operations e Mission Control, suggerimenti e opzione Rather type"
-  caption="Scegliere dove l'attività deve atterrare, quindi parlare naturalmente, utilizzare un suggerimento di avviamento, o selezionare Rather type."
+  alt="Pannello della prima attività nell'onboarding di Lotti con cattura vocale, le destinazioni Operazioni del Pinguino e Controllo delle missioni, i suggerimenti e l'opzione Piuttosto tipo?"
+  caption="Scegli dove deve atterrare l'attività, poi parla con naturalezza, usa un suggerimento iniziale o seleziona Piuttosto tipo?. Qui è selezionata Operazioni del Pinguino."
 />
 
-Il pannello di prima scelta utilizza la pipeline di cattura normale di Lotti. Scegliere il target
-categoria, quindi utilizzare uno dei tre percorsi:
+Il pannello della prima attività usa la normale pipeline di cattura di Lotti.
+Scegli la categoria di destinazione, poi usa uno dei tre percorsi:
 
-1. Selezionare la registrazione visiva e parlare l'attività in una frase normale.
-2. Scegli un suggerimento di avviamento per provare immediatamente il percorso di strutturazione.
-3. Scegliere **Rather type?** e inserire il pensiero senza usare il microfono.
+1. Seleziona la visualizzazione di registrazione e detta l'attività in una
+   frase normale.
+2. Scegli un suggerimento iniziale per provare subito il percorso di
+   strutturazione.
+3. Scegli **Piuttosto tipo?** e digita il pensiero senza usare il microfono.
 
-Lotti riecheggia le parole catturate mentre le struttura. Il risultato è un vero e proprio
-compito nella categoria prescelta, non solo dati di esempio dell'onboarding.
-Se l'IA produce suggerimenti per la lista di controllo, questi arrivano sull'attività come proposte,
-così puoi confermarli invece di modificare silenziosamente l'attività.
+Lotti ripete le parole catturate mentre le struttura. Il risultato è una vera
+attività nella categoria scelta, non dati di esempio validi solo
+nell'onboarding. Quando la strutturazione produce suggerimenti per la lista di
+controllo, questi arrivano sull'attività come proposte da confermare, invece di
+modificare l'attività in silenzio.
 
 <ManualScreenshot
   caseId="onboarding/task-created"
-  alt="Pannello di successo dell'onboarding di Lotti che mostra l'attività creata Ispezionare il relè Europa sardine"
-  caption="Il progetto di tipo Waddle pensato diventa “Ispezionare il relè sardina Europa”. Il compito rimane nel pannello fino a quando non lo si sceglie."
+  alt="Pannello di successo dell'onboarding di Lotti che mostra l'attività creata Ispezione del relè Europa sardine"
+  caption="Il pensiero digitato di Project Waddle diventa “Ispezione del relè Europa sardine”. L'attività resta nel pannello finché non la scegli."
 />
 
-Scegli la scheda dell'attività creata per completare l'onboarding e aprire la normale pagina dell'attività.
-Da lì puoi rivedere le proposte della lista di controllo, aggiungere copertine o prove, impostare una
-data e una priorità e portare l'attività nel sistema operativo giornaliero.
+Scegli la scheda dell'attività creata per chiudere l'onboarding e aprire la sua
+normale pagina attività. Da lì puoi rivedere le proposte della lista di
+controllo, aggiungere copertina o prove, impostare data di scadenza e priorità
+e portare l'attività nel Daily OS.
 
-Se chiudi il flusso dopo aver collegato un fornitore, Lotti mantiene quel fornitore
-configurato e considera l'onboarding completato. Ripetere l'onboarding in seguito rimane
-sicuro: è un'azione di Impostazioni esplicita piuttosto che un altro prompt automatico.
+Se chiudi il flusso dopo aver collegato un provider, Lotti mantiene quella
+configurazione e considera il benvenuto completato. Ripetere l'onboarding in
+seguito resta sicuro: è un'azione esplicita nelle Impostazioni, non un altro
+prompt automatico.
 
-Continua con [la creazione della tua prima attività](./first-task.mdx), la
-[gestione delle categorie](../organize-and-reflect/categories.mdx) e la
-[configurazione del provider](../ai-and-automation/provider-setup.mdx).
+Continua con [crea la tua prima attività](./first-task.mdx),
+[gestisci le categorie](../organize-and-reflect/categories.mdx) e
+[configura i provider](../ai-and-automation/provider-setup.mdx).

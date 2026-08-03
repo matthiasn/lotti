@@ -1,126 +1,132 @@
 ---
 title: Rutearbejde med modeller og profiler
-description: Beskriv modellens kapaciteter én gang, og brug derefter inferensprofiler til at styre tænkning, vision, lyd og billedgenerering.
+description: Beskriv modellens kapaciteter én gang, og brug derefter inferensprofiler til at rute tænkning, vision, lyd og billedgenerering.
 ---
 
 # Rutearbejde med modeller og profiler
 
-En udbyder fortæller Lotti, hvor hun skal forbinde. En model registrerer én udbydermodel-ID
-og dens kapaciteter. En inferensprofil tildeler derefter disse modeller til
-jobs, forstår Lotti. Dette udelukker "hvilken model håndterer lyd?" fra alle
-Individuelle opgaver og automatiseringsregler.
+En udbyder fortæller Lotti, hvor der skal oprettes forbindelse. En model
+registrerer ét udbydermodel-ID og dets kapaciteter. En inferensprofil tildeler
+derefter disse modeller til de jobs, Lotti forstår. Det holder spørgsmålet
+"hvilken model håndterer lyd?" ude af hver enkelt opgave og
+automatiseringsregel.
 
 ## Gennemgå gemte modeller
 
-Åbn **Indstillinger → AI-indstillinger → modeller**. Listen grupperer modeller efter udbyder
-og eksponerer kapacitetsfiltre for tekst, billede, lyd og ræsonnement.
+Åbn **Indstillinger → AI-indstillinger → Modeller**. Listen grupperer modeller
+efter udbyder og viser kapacitetsfiltre for tekst, vision, lyd og ræsonnement.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Lotti AI model list with Project Waddle text, reasoning, vision, transcription, and image-generation models"
-  caption="The Project Waddle workspace mixes cloud and local models while keeping every model's capabilities explicit."
+  alt="Lottis AI-modelliste med Project Waddle-modeller til tekst, ræsonnement, vision, transskription og billedgenerering"
+  caption="Project Waddle-arbejdsområdet blander cloud- og lokale modeller og holder samtidig hver models kapaciteter eksplicitte."
 />
 
-**Samtidig agent vågner**-kontrollen øverst i AI-indstillinger begrænser hvordan
-Mange forskellige agenter kan lave slutninger på én gang. En højere værdi kan forbedres
-gennemstrømning, men det øger også samtidige udbyderforespørgsler og lokale
-Enhed indlæst. Hold det forsigtigt, når en udbyder har strenge prisbegrænsninger eller en
-Lokal model server har begrænset hukommelse.
+Kontrollen **Samtidig agent vågner** øverst i AI-indstillinger begrænser, hvor
+mange forskellige agenter der må køre inferens på én gang. En højere værdi kan
+forbedre gennemløbet, men den øger også antallet af samtidige
+udbyderforespørgsler og belastningen på den lokale enhed. Hold den
+konservativ, når en udbyder har strenge hastighedsgrænser, eller en lokal
+modelserver har begrænset hukommelse.
 
 ## Tilføj eller rediger en model
 
-Vælg et modelkort, eller brug **+** til at tilføje et. En modeldefinition inkluderer:
+Vælg et modelkort, eller brug **+** til at tilføje et. En modeldefinition
+omfatter:
 
 - udbyderforbindelsen;
--  et venligt visningsnavn og valgfri beskrivelse;
+- et venligt visningsnavn og en valgfri beskrivelse;
 - udbyderens præcise model-ID;
--  den maksimale fuldførelsestoken-grænse;
+- den maksimale grænse for fuldførelsestokens;
 - input- og outputmodaliteter; og
-- kapabilitetsflag såsom ræsonnement eller funktionskald.
+- kapacitetsflag såsom ræsonnement eller funktionskald.
 
 <ManualScreenshot
   caseId="ai/model-editor"
-  alt="Lotti model editor for Waddle Command 70B showing provider, provider model ID, completion limit, modalities, and reasoning capability"
-  caption="Capability metadata matters: Lotti uses it to decide which models are eligible for each profile slot and one-off picker."
+  alt="Lottis modelredigering for Waddle Kommando 70B med udbyder, udbyderens model-ID, fuldførelsesgrænse, modaliteter og ræsonnementskapacitet"
+  caption="Kapacitetsmetadata betyder noget: Lotti bruger dem til at afgøre, hvilke modeller der er kvalificerede til hver profilslot og engangsvælger."
 />
 
-Brug den præcise identifikator, som udbyderen forventer. Visningsnavnet er kun for
-mennesker; At ændre det ændrer ikke, hvad udbyderen kører. Gør ikke krav på image,
-Lyd-, værktøjs- eller ræsonnementstøtte, medmindre modellen og endpointet faktisk er
-Giv det.
+Brug den præcise identifikator, som udbyderen forventer. Visningsnavnet er kun
+til mennesker; at ændre det ændrer ikke, hvad udbyderen kører. Angiv ikke
+understøttelse af billeder, lyd, værktøjer eller ræsonnement, medmindre
+modellen og endpointet faktisk leverer den.
 
 ## Byg en inferensprofil
 
-Åbn **Indstillinger → AI-indstillinger → Inferensprofiler**. Hver profil er genanvendelig
-Rutingpolitik. Oversigten viser, hvilken model der betjener hver konfigureret slot.
+Åbn **Indstillinger → AI-indstillinger → Inferensprofiler**. Hver profil er en
+genanvendelig rutingpolitik. Oversigten viser, hvilken model der betjener hver
+konfigureret slot.
 
 <ManualScreenshot
   caseId="ai/profiles"
-  alt="Lotti inference profiles for Project Waddle Command, Habitat Local-First, and Fish Diplomacy with their routed models"
-  caption="Profiles can optimize for different boundaries: a broad cloud profile, a desktop-only local profile, or a specialist reasoning profile."
+  alt="Lottis inferensprofiler for Projekt Waddle-kommando, Habitat lokal-først og Fiskediplomati med deres rutede modeller"
+  caption="Profiler kan optimere for forskellige grænser: en bred cloudprofil, en lokal profil kun til desktop eller en specialiseret ræsonnementsprofil."
 />
 
-Rediger en profil for at tildele modeller til de funktioner, du bruger:
+Rediger en profil for at tildele modeller til de kapaciteter, du bruger:
 
-- **Tænkning** er den krævede generelle tekstmodel.
-- **Thinking (High-End)** kan håndtere arbejde, der eksplicit kræver mere
-  En kompetent ræsonnementsvej.
-- ** billedgenkendelse** analyserer billeder.
-- **Transskription** konverterer lyd til tekst.
-- **Billedgenerering** skaber opgavekunstværker og andre genererede billeder. Den
-  Den nuværende indbyggede billedgenereringsvej bruger en konfigureret fjernudbyder, så
-  Vælg den udbyder og de referencer, du sender, med samme omhu som enhver anden
-  Anden cloud-inferensrute.
+- **Tænkning** er den påkrævede generelle tekstmodel.
+- **Tænkning (High-End)** kan håndtere arbejde, der eksplicit beder om den
+  mere kapable ræsonnementsvej.
+- **Billedgenkendelse** analyserer billeder.
+- **Udskrift** konverterer lyd til tekst.
+- **Billedgenerering** skaber opgavekunst og andre genererede billeder. Den
+  nuværende indbyggede billedgenereringsvej bruger en konfigureret
+  fjernudbyder, så vælg den udbyder og de referencer, du sender, med samme
+  omhu som enhver anden cloud-inferensrute.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Project Waddle Command profile editor assigning thinking, high-end reasoning, image-recognition, transcription, and image-generation models"
-  caption="One profile routes every Project Waddle modality without repeating model choices across tasks."
+  alt="Profilredigering for Projekt Waddle-kommando, der tildeler modeller til tænkning, high-end-ræsonnement, billedgenkendelse, transskription og billedgenerering"
+  caption="Én profil ruter alle Project Waddle-modaliteter uden at gentage modelvalg på tværs af opgaver."
 />
 
-**Kun for desktop** skjuler en profil på mobile platforme, hvilket er nyttigt, når det er tilfældet
-Det afhænger af en model, der kun kan nås fra en arbejdsstation. Enhedsfastgørelse er til
-Automatisk synkroniseret lydbehandling: Nål kun, når den valgte enhed annoncerer
-De udbydere, der er nødvendige for profilen. Uden en fastgjort enhed er synkroniseret lyd ikke
-automatisk transskriberet af den profil.
+**Kun skrivebord** skjuler en profil på mobile platforme, hvilket er nyttigt,
+når den afhænger af en model, der kun kan nås fra en arbejdsstation.
+Enhedsfastgørelse er til automatisk behandling af synkroniseret lyd: fastgør
+kun, når den valgte enhed annoncerer de udbydere, profilen kræver. Uden en
+fastgjort enhed bliver synkroniseret lyd ikke automatisk transskriberet af den
+profil.
 
 ## Vælg en model uden at huske ID'er
 
-Modeludvælger starter med leverandøren og viser kun kompatible gemte modeller.
-Pickeren i en profilslot vil for eksempel ikke tilbyde en lyd-only model
-Til tekst-ræsonnering.
+Modelvælgere starter med udbyderen og viser kun kompatible gemte modeller.
+Vælgeren i en profilslot vil for eksempel ikke tilbyde en ren lydmodel til
+tekstræsonnement.
 
 <ManualScreenshot
   caseId="ai/model-picker"
-  alt="Lotti Choose a model modal listing OpenRouter, Ollama, and Google Gemini providers over the Project Waddle profile editor"
-  caption="Choose the provider first; Lotti then narrows the next page to eligible models from that connection."
+  alt="Lottis Vælg en model-dialog med udbyderne OpenRouter, Ollama og Google Gemini over Project Waddle-profilredigeringen"
+  caption="Vælg udbyderen først; Lotti indsnævrer derefter næste side til kvalificerede modeller fra den forbindelse."
 />
 
-## Sæt en kategori som standard
+## Sæt en kategoristandard
 
-En kategori kan vælge en standard inferensprofil under **Indstillinger →
-Definitioner → kategorier**. Nyt arbejde i den kategori kan derefter arve en
-Sammenhængende rutepolitik. Vælg den profil, hvis privatliv og kapacitet kombineres
-matcher kategorien i stedet for kun at vælge ud fra hastighed.
+En kategori kan vælge en standard-inferensprofil under **Indstillinger →
+Definitioner → Kategorier**. Nyt arbejde i den kategori kan derefter arve en
+sammenhængende rutingpolitik. Vælg den profil, hvis blanding af privatliv og
+kapacitet matcher kategorien, i stedet for kun at vælge efter hastighed.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
-  alt="Penguin Operations category editor with a modal offering Project Waddle Command, Habitat Local-First, and Fish Diplomacy profiles"
-  caption="The desktop-only badge makes platform restrictions visible before a category default is selected."
+  alt="Kategoriredigering for Penguin-operationer med en dialog, der tilbyder profilerne Projekt Waddle-kommando, Habitat lokal-først og Fiskediplomati"
+  caption="Kun skrivebord-mærket gør platformsbegrænsninger synlige, før en kategoristandard vælges."
 />
 
 ## Legacy-profilrute
 
-Den ældre selvstændige **Inference Profiles**-rute er stadig tilgængelig for
-Kompatibilitet og redigering af de samme gemte profilposter. Det eksponerer indre
-model-IDs og giver mindre afhængighedskontekst end AI-indstillinger, så foretræk
-nuværende **AI-indstillings- → Inferensprofiler**-side til normal vedligeholdelse.
+Den ældre selvstændige **Inferensprofiler**-rute er stadig tilgængelig af
+kompatibilitetshensyn og redigerer de samme gemte profilposter. Den viser
+interne model-ID'er og giver mindre afhængighedskontekst end AI-indstillinger,
+så foretræk den nuværende side **AI-indstillinger → Inferensprofiler** til
+normal vedligeholdelse.
 
 <ManualScreenshot
   caseId="ai/legacy-profiles"
-  alt="Legacy Lotti Inference Profiles page showing Project Waddle profile slots as internal model identifiers"
-  caption="Use this compatibility screen only when an older link takes you there; the current AI Settings profile cards are easier to audit."
+  alt="Lottis ældre Inferensprofiler-side, der viser Project Waddle-profilslots som interne modelidentifikatorer"
+  caption="Brug kun denne kompatibilitetsskærm, når et ældre link fører dig derhen; de nuværende profilkort i AI-indstillinger er lettere at efterse."
 />
 
-Continue with [AI skills](./skills.mdx) to see how the selected profile becomes
-en handling på en opgave eller indtastning.
+Fortsæt med [AI-færdigheder](./skills.mdx) for at se, hvordan den valgte
+profil bliver til en handling på en opgave eller post.

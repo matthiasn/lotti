@@ -1,208 +1,223 @@
 ---
-title: Pianificare e chiudere un giorno con Daily OS
-description: Trasformare un check-in parlato o digitato in un piano modificabile, utilizzarlo accanto al tempo registrato e portare avanti il lavoro giusto.
+title: Pianifica e chiudi la giornata con il Daily OS
+description: Trasforma un check-in parlato o digitato in un piano modificabile, usalo accanto al tempo registrato e porta avanti il lavoro giusto.
 ---
 
-# Pianificare e chiudere un giorno con Daily OS
+# Pianifica e chiudi la giornata con il Daily OS
 
-Daily OS trasforma un check-in parlato o digitato in un piano per un giorno.
-sostituire le attività o i record di tempo: le attività descrivono il lavoro, il piano del giorno descrive
-intento, e le sessioni registrate descrivono ciò che realmente è accaduto.
+Il Daily OS trasforma un check-in parlato o digitato in un piano per un solo
+giorno. Non sostituisce le attività né le registrazioni del tempo: le attività
+descrivono il lavoro, il piano del giorno descrive l'intenzione e le sessioni
+registrate descrivono cosa è successo davvero.
 
-Gli esempi seguono il Direttore Aurora attraverso una giornata deliberatamente intensa
-Interplanetario Penguin Logistics. Il pianificatore protegge un progetto Waddle lancio
-recensione, muove negoziazioni sardine, e mantiene una demo zero-gravity fish-feeder
-La tua situazione dei pinguini potrebbe variare.
+Gli esempi seguono il Direttore Aurora lungo una giornata volutamente piena a
+Intergalactic Penguin Logistics. Il pianificatore protegge una revisione di
+lancio di Project Waddle, sposta le negoziazioni sulle sardine e tiene libera
+una demo del distributore di pesce a gravità zero. La tua situazione
+pinguinesca può variare.
 
 ## Prima del primo check-in
 
-Aprire **Impostazioni → Daily OS**. Scegli il profilo di inferenza che dovrebbe pianificare
-i vostri giorni e inserire il nome Daily OS dovrebbe usare quando si indirizza.
-l'informativa sulla privacy identifica il fornitore selezionato e se l'elaborazione è attiva
-questo dispositivo o remoto.
+Apri **Impostazioni → Sistema operativo giornaliero**. Scegli il profilo di
+inferenza che deve pianificare le tue giornate e inserisci il nome che il Daily
+OS deve usare quando si rivolge a te. L'informativa sulla privacy indica il
+provider selezionato e se l'elaborazione avviene su questo dispositivo o in
+remoto.
 
 <ManualScreenshot
-  alt="Impostazioni del sistema operativo giornaliere configurate per il direttore Aurora e il profilo di inferenza del progetto Waddle"
+  alt="Impostazioni del Daily OS configurate per il Direttore Aurora e il profilo di inferenza di Project Waddle"
   caseId="daily-os/settings"
-  caption="Il direttore Aurora utilizza il profilo di Project Waddle Command, Waddle Command 70B e il provider di Mission Control Router."
+  caption="Il Direttore Aurora usa il profilo Comando del progetto Waddle, Comando di corsa 70B e il provider Router di controllo missione."
 />
 
-Poi aprire **Impostazioni → Categorie** e abilitare **La pianificazione giornaliera** solo per il
-categorie il pianificatore può utilizzare. Una lista di permessi intenzionali mantiene non correlati
-compiti fuori dalla pianificazione e impedisce Daily OS di cambiare lavoro al di fuori di quelli
-categorie.
+Poi apri **Impostazioni → Categorie** e abilita **Pianificazione del giorno**
+solo per le categorie che il pianificatore può usare. Una lista di permessi
+intenzionale tiene le attività non pertinenti fuori dalla pianificazione e
+impedisce al Daily OS di cambiare lavoro fuori da quelle categorie.
 
-## 1. Dire che cosa il giorno ha bisogno
+## 1. Di' di cosa ha bisogno la giornata
 
-Aprire **Daily OS**, scegliere la data e selezionare **Speak a check-in**.
+Apri **Quotidiano**, scegli la data e seleziona **Parlare un check-in**.
+Menziona:
 
 - impegni fissi e scadenze;
-- i risultati che importano;
-- durata approssimativa e capacità disponibile;
-- rotture, vincoli energetici, e lavoro che non dovrebbero accadere troppo tardi;
-- qualsiasi cosa già in corso o probabile portare avanti.
+- i risultati che contano;
+- durate approssimative e capacità disponibile;
+- pause, vincoli di energia e lavoro che non dovrebbe capitare troppo tardi;
+- qualsiasi cosa già in corso o che probabilmente slitterà.
 
-Scegli **Tipo invece** quando parli è scomodo. Dopo il riconoscimento,
-rivedere la trascrizione completa e correggere nomi, numeri o altri errori
-al posto.
+Scegli **Digitare invece** quando parlare è scomodo. Dopo il riconoscimento,
+rivedi la trascrizione completa e correggi direttamente nomi, numeri o altri
+errori.
 
 <ManualScreenshot
-  alt="La trascrizione completa del check-in del Daily OS pronto per la revisione"
+  alt="La trascrizione completa del check-in del Daily OS pronta per la revisione"
   caseId="daily-os/capture-review"
-  caption="Rivedere il testo riconosciuto prima Daily OS corrisponde a esso con i compiti di Project Waddle."
+  caption="Rivedi il testo riconosciuto prima che il Daily OS lo abbini alle attività di Project Waddle."
 />
 
-Scegli **Re-record** per ricominciare da capo o **Review** per continuare.
-rimane indisponibile fino a quando il passaggio corrispondente non è completato.
+Scegli **Registri** per ricominciare da capo o **Recensione** per continuare.
+Non puoi costruire la giornata finché il passaggio di abbinamento non è
+completato.
 
-## 2. Reconcile discorso con lavoro reale
+## 2. Riconcilia il parlato con il lavoro reale
 
-Reconcile è il controllo di sicurezza tra quello che l'assistente ha sentito e quello che Lotti
-cambierà:
+La riconciliazione è il controllo di sicurezza tra ciò che l'assistente ha
+sentito e ciò che Lotti cambierà:
 
-- **Matched** indica un'attività esistente. Confermare che è il compito che intendevi.
-- **New** è una frase che può diventare lavoro per oggi.
-- **Update** propone un cambiamento a un'attività esistente.
-- Le etichette di fiducia e time-anchor mostrano dove la recensione è più utile.
+- **Matched** punta a un'attività esistente. Conferma che sia l'attività che
+  intendevi.
+- **Nuovo** è una frase che può diventare lavoro per oggi.
+- **Aggiornamento** propone una modifica a un'attività esistente.
+- Le etichette di confidenza e di ancoraggio temporale mostrano dove la
+  revisione è più utile.
 
 <ManualScreenshot
-  alt="Daily OS riconciliare un check-in parlato con il lavoro di Project Waddle esistente e nuovo"
+  alt="Il Daily OS riconcilia un check-in parlato con il lavoro esistente e nuovo di Project Waddle"
   caseId="daily-os/reconcile"
-  caption="L'ispezione orbitale dell'habitat è abbinata al lavoro reale mentre le nuove richieste rimangono decisioni esplicite."
+  caption="L'ispezione dell'habitat orbitale viene abbinata a lavoro reale, mentre le nuove richieste restano decisioni esplicite."
 />
 
-Anche il sistema operativo giornaliero supera il lavoro che è in corso, in ritardo, a causa di oggi, o
-di recente mancato. Decidi cosa appartiene oggi invece di importare l'intero
-Backlog.
+Il Daily OS fa emergere anche il lavoro in corso, in ritardo, in scadenza oggi
+o mancato di recente. Decidi cosa appartiene a oggi invece di importare
+l'intero backlog.
 
-## 3. Giudicare il progetto
+## 3. Giudica la bozza
 
-Scelga **Build my day** dopo che le decisioni di riconciliazione sembrano giuste.
-il risultato si apre su **Agenda**. La scheda di capacità risponde “ha questa vestibilità?” prima
-l'elenco numerato risponde “cosa importa?” Le righe sostenute dal task mantengono il loro reale
-categoria, stato, stima e copertura miniatura.
+Scegli **Costruisci la mia giornata** quando le decisioni di riconciliazione ti
+sembrano giuste. Il risultato si apre su **Ordine del giorno**. La scheda della
+capacità risponde a “ci sta?” prima che l'elenco numerato risponda a “cosa
+conta?”. Le righe collegate ad attività mantengono categoria, stato, stima e
+miniatura di copertina reali.
 
 <ManualScreenshot
-  alt="Un progetto Waddle Daily OS agenda con capacità, miniature delle mansioni, priorità e totali di categoria"
+  alt="Un'agenda del Daily OS di Project Waddle con capacità, miniature delle attività, priorità e totali per categoria"
   caseId="daily-os/agenda"
-  caption="Ogni compito nell'ordine del giorno mantiene il proprio progetto Waddle coperti art, compreso il lavoro completato."
+  caption="Ogni attività nell'agenda mantiene la propria copertina di Project Waddle, incluso il lavoro completato."
 />
 
-Utilizzare le regolazioni rapide quando la forma è sbagliata:
+Usa le regolazioni rapide quando la forma è sbagliata:
 
-- **Troppo** richiede un piano più piccolo.
-- **Rendi più leggero** allontana il lavoro impegnativo dai periodi di bassa
+- **Troppo spesso.** chiede un piano più piccolo.
+- **Spostare l'accendino** allontana il lavoro impegnativo dalle fasce a bassa
   energia.
-- **Aggiungi buffer** crea spazio di respirazione.
-- **Affina** apre una regolazione vocale o di testo a forma libera.
+- **Aggiungere buffer** crea spazio per respirare.
+- **Raffinare** apre una regolazione libera, vocale o di testo.
 
-Scelga **Sembra buono** solo quando la bozza è autenticamente accettabile.
+Scegli **Sembra buono.** solo quando la bozza è davvero accettabile.
 
-## 4. Rivedere ogni raffinatezza proposta
+## 4. Rivedi ogni perfezionamento proposto
 
-Non ridefinire mai silenziosamente riscrive il programma. Descrivere il cambiamento, quindi ispezionare
-ogni aggiunto, spostato, o caduto blocco con il suo tempo vecchio e proposto e il
-Accettare o rifiutare proposte individualmente, scegliere **Revert** to
-scartare il set in sospeso, o continuare a parlare per richiedere un altro passaggio.
+Raffinare non riscrive mai il programma in silenzio. Descrivi la modifica, poi
+ispeziona ogni blocco aggiunto, spostato o eliminato con il vecchio orario,
+quello proposto e la motivazione del pianificatore. Accetta o rifiuta le
+proposte una per una, scegli **Torna indietro** per scartare l'insieme in
+sospeso, oppure continua a parlare per chiedere un altro passaggio.
 
 <ManualScreenshot
-  alt="Daily OS propone due cambiamenti di tempo per le trattative con la sardina e la demo dell'alito del pesce"
+  alt="Il Daily OS propone due modifiche di orario per le negoziazioni sulle sardine e la demo del distributore di pesce"
   caseId="daily-os/refine"
-  caption="I negoziati di Sardine si spostano più tardi per proteggere la recensione di lancio di Mission Control; la demo dell'alimentazione dei pesci segue il nuovo buffer."
+  caption="Le negoziazioni sulle sardine si spostano più tardi per proteggere la revisione di lancio di Mission Control; la demo del distributore di pesce segue il nuovo buffer."
 />
 
-Solo le proposte accettate diventano parte del progetto.
-rivedere una volta che il piano dice quello che intendete.
+Solo le proposte accettate entrano nella bozza. **Sembra buono.** chiude la
+revisione quando il piano dice ciò che intendi.
 
-## 5. Bloccare il giorno
+## 5. Blocca la giornata
 
-Il **Lock it in** pagina dà la bozza completa di una lettura finale: ordine,
-durata, risultati e capacità rimanenti. Tenere il controllo di conferma per
-un secondo per spostare il piano da redatto a impegnato. Gli utenti di tastiera possono concentrarsi
-il controllo e premere Invio o Spazio; l'attivazione assistive-tecnologia conferma
-direttamente.
+La pagina **Bloccatelo dentro.** dà alla bozza completa un'ultima lettura:
+ordine, durata, risultati e capacità residua. Tieni premuto il controllo di
+conferma per un secondo per portare il piano da bozza a impegno. Da tastiera
+puoi mettere a fuoco il controllo e premere Invio o Spazio; l'attivazione con
+tecnologie assistive conferma direttamente.
 
 <ManualScreenshot
-  alt="La bozza del progetto Waddle e l'azione in attesa di conferma deliberata sulla pagina d'impegno del Daily OS"
+  alt="La bozza di Project Waddle e l'azione deliberata di tenere premuto per confermare nella pagina di impegno del Daily OS"
   caseId="daily-os/commit"
-  caption="Otto pezzi di lavoro utilizzano 8h 45m di un giorno di 9h, lasciando un margine di 15 minuti prima che il direttore Aurora si dia il segnale."
+  caption="Otto blocchi di lavoro usano 8 h 45 m di una giornata da 9 h, lasciando un margine di 15 minuti prima che il Direttore Aurora dia l'ok."
 />
 
-Commettere serrature nelle ossa del piano, non la vostra capacità di adattarsi.
-utilizzare **Rifinire** in seguito, ma le modifiche proposte rimangono riesaminabili.
+Impegnarsi blocca l'ossatura del piano, non la tua capacità di adattarti. Puoi
+ancora usare **Raffinare** in seguito, ma le modifiche proposte restano da
+rivedere.
 
-## 6. Confrontare il piano con la realtà
+## 6. Confronta il piano con la realtà
 
-Passare da **Agenda** a **Giorno** per la proiezione del calendario.
-Piano e azione un asse di tempo. Su un telefono, scorrere orizzontalmente tra
-le corsie pianificate e registrate. I blocchi pianificati utilizzano un trattamento più leggero e
-sessioni registrate sono riempite, quindi la deriva rimane visibile senza riscrittura
-storia.
+Passa da **Ordine del giorno** a **Giorno** per la proiezione a calendario. Sul
+desktop, piano e reale condividono un unico asse temporale. Su un telefono,
+scorri orizzontalmente tra la corsia pianificata e quella registrata. I blocchi
+pianificati usano un trattamento più leggero e le sessioni registrate sono
+piene, così la deriva resta visibile senza riscrivere la storia.
 
 <ManualScreenshot
-  alt="Timeline del sistema operativo giornaliero che confronta i blocchi programmati del progetto Waddle con il tempo registrato"
+  alt="Timeline del Daily OS che confronta i blocchi pianificati di Project Waddle con il tempo registrato"
   caseId="daily-os/timeline"
-  caption="Le pagine del telefono tra corsie pianificate e registrate; il desktop mostra sia su un asse di tempo."
+  caption="Il telefono sfoglia tra corsia pianificata e registrata; il desktop le mostra entrambe su un unico asse temporale."
 />
 
-Avviare e interrompere la registrazione del tempo dal compito collegato come al solito.
-questi record come realtà; non produce lavori completati da
-Piano.
+Avvia e ferma la registrazione del tempo dall'attività collegata, come al
+solito. Il Daily OS legge quelle registrazioni come realtà; non fabbrica lavoro
+completato a partire dal piano.
 
-## 7. Spostare, ridimensionare o modificare un blocco
+## 7. Sposta, ridimensiona o modifica un blocco
 
-Scegliere l'azione a quattro corde **Arrange** sopra la linea temporale.
-per spostarlo, o trascinare la sua maniglia superiore o inferiore per cambiare il suo inizio o fine.
-Cambia gli incrementi di 15 minuti e rimani all'interno del giorno selezionato.
-Nel messaggio di conferma quando la vecchia slot era migliore.
+Scegli l'azione a quattro frecce **Blocchi d'arrangiamento** sopra la timeline.
+Trascina il corpo di un blocco per spostarlo, o trascina la sua maniglia
+superiore o inferiore per cambiarne l'inizio o la fine. Le modifiche scattano a
+incrementi di 15 minuti e restano dentro il giorno selezionato. Usa **Annulla**
+nel messaggio di conferma quando la vecchia posizione era migliore.
 
 <ManualScreenshot
-  alt="Il sistema operativo giornaliero organizza la modalità con il movimento e ridimensiona i controlli sui blocchi Project Waddle"
+  alt="Modalità di disposizione del Daily OS con i controlli per spostare e ridimensionare sui blocchi di Project Waddle"
   caseId="daily-os/arrange"
-  caption="La modalità Arrange espone lo stesso movimento diretto e ridimensiona le azioni sul telefono e sul desktop."
+  caption="La modalità di disposizione espone le stesse azioni dirette di spostamento e ridimensionamento su telefono e desktop."
 />
 
-L'azione della matita apre l'editor del blocco.
-titolo e categoria di sola lettura; scegliere **Apri task**** per cambiare
-alla fonte. Il suo inizio programmato e la sua fine rimangono modificabili dal sistema operativo giornaliero.
+L'azione della matita apre l'editor del blocco. Un blocco collegato a
+un'attività mantiene in sola lettura il titolo e la categoria posseduti
+dall'attività; scegli **Attività aperte** per cambiarli alla fonte. L'inizio e
+la fine pianificati restano modificabili dal Daily OS.
 
 <ManualScreenshot
-  alt="Editor del blocco del sistema operativo giornaliero per l'attività di alimentazione del pesce zero-gravity"
+  alt="Editor di blocco del Daily OS per l'attività del distributore di pesce a gravità zero"
   caseId="daily-os/block-editor"
-  caption="Il compito collegato possiede il suo titolo e Penguin Operations categoria; Daily OS possiede il 2:30–4:00 PM slot e la ragione di pianificazione."
+  caption="L'attività collegata possiede il titolo e la categoria Operazioni del Pinguino; il Daily OS possiede la fascia 14:30–16:00 e la motivazione di pianificazione."
 />
 
-blocchi di piano standalone possono modificare il proprio titolo e categoria perché nessun compito
-possiede quei metadati.
+I blocchi di piano autonomi possono modificare il proprio titolo e la propria
+categoria, perché nessuna attività possiede quei metadati.
 
-## 8. Chiudere il giorno
+## 8. Chiudi la giornata
 
-Dopo una giornata impegnata, scegliere **Wrap up**. Shutdown separa le decisioni che
-non deve essere gonfiato:
+Dopo aver bloccato la giornata, scegli **# Wrap up #**. La chiusura separa
+decisioni che non vanno confuse:
 
-- **Che cosa hai fatto** liste completato il lavoro con la durata effettiva tracciata.
-- **Porta avanti** ti permette di programmare il lavoro non completato per
-  domani, scegliere una data o passarlo ad altri.
-- **Metriche** riassumono il tempo di messa a fuoco, le sessioni di flusso, i
-  cambi di contesto e l'energia.
-- **Una riflessione su una riga** alimenta la prossima bozza.
-- **Cosa ho imparato** ti permette di confermare o dimenticare le preferenze
-  durature del pianificatore.
-- **Per domani** conserva una nota di consegna concisa.
+- **Quello che hai fatto** elenca il lavoro completato con la durata effettiva
+  tracciata.
+- **CARRIE FORWARD** ti lascia pianificare per domani il lavoro non finito,
+  scegliere una data o lasciarlo andare.
+- Le metriche riassumono tempo di concentrazione, sessioni di flow, cambi di
+  contesto ed energia.
+- Una riflessione di una riga alimenta la bozza successiva.
+- **Quello che ho imparato** ti permette di confermare o dimenticare le
+  conoscenze durature del pianificatore.
+- **allevamento per il TOMORROW** conserva la nota di passaggio sintetica.
 
 <ManualScreenshot
-  alt="Arresto giornaliero del sistema operativo con il lavoro completato del progetto Waddle, scelte di trasporto, metriche, riflessione e preferenze apprese"
+  alt="Chiusura del Daily OS con il lavoro completato di Project Waddle, scelte di riporto, metriche, riflessione e preferenze apprese"
   caseId="daily-os/shutdown"
-  caption="Il direttore Aurora ha completato l'ispezione dell'habitat, la revisione del lancio e l'accordo di sardine; la demo dell'alito del pesce e la domanda del passeggero rimangono decisioni esplicite di trasporto."
+  caption="Il Direttore Aurora ha completato l'ispezione dell'habitat, la revisione di lancio e l'accordo sulle sardine; la demo del distributore di pesce e la domanda del passeggero restano decisioni esplicite di riporto."
 />
 
-Scelga **Salva e chiudi** per lasciare la recensione senza dichiarare il giorno chiuso,
-o **Clodere il giorno** quando le decisioni di trasporto e apprendimento sono pronte.
+Scegli **Salva e chiudi** per uscire dalla revisione senza dichiarare chiusa la
+giornata, oppure **Chiudere il giorno** quando le decisioni su riporti e
+apprendimenti sono pronte.
 
-## La regola di proprietà
+## La regola della proprietà
 
-- I compiti descrivono i metadati del lavoro e del proprio compito.
-- Il piano del giorno descrive l'intento e possiede blocchi programmati.
-- I record del tempo descrivono la realtà.
-- I registri delle conoscenze planner hanno esaminato le preferenze per i giorni futuri.
-- L'assistente propone; si decide.
+- Le attività descrivono il lavoro e possiedono i metadati dell'attività.
+- Il piano del giorno descrive l'intenzione e possiede i blocchi pianificati.
+- Le registrazioni del tempo descrivono la realtà.
+- Le conoscenze del pianificatore registrano preferenze riviste per i giorni
+  futuri.
+- L'assistente propone; tu decidi.
