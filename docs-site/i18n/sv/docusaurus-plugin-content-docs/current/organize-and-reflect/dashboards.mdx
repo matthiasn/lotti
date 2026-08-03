@@ -5,108 +5,113 @@ description: Kombinera vanor, mätningar, hälsa, undersökningar och träningsp
 
 # Bygg användbara dashboards
 
-En instrumentpanel grupperar diagram som besvarar en återkommande fråga. **Koloni
-Operation** medför habitattryck, efterfrågan på sardiner och antalet expeditioner
-tillsammans; **Uppdragsberedskap** håller en privat uppskjutningsgranskning separat. Bygg
-kring ett beslut snarare än att samla in alla tillgängliga siffror.
+En instrumentpanel grupperar diagram som besvarar en återkommande fråga.
+**Kolonioperationer** samlar habitattryck, sardinefterfrågan och antalet i
+besättningen; **Uppdragsberedskap** håller en privat uppskjutningsgranskning
+separat. Bygg kring ett beslut i stället för att samla varje tillgänglig
+siffra.
 
 <ManualScreenshot
   caseId="dashboards/settings-list"
-  alt="Dashboard settings containing Colony operations and the private Mission readiness dashboard"
+  alt="Instrumentpanelsinställningar med Kolonioperationer och den privata instrumentpanelen Uppdragsberedskap"
 />
 
 ## Skapa en instrumentpanel
 
-1. Öppna **Inställningar → Dashboard-hantering**.
+1. Öppna **Inställningar → Instrumentpaneler**.
 2. Välj **Skapa instrumentpanel**.
 3. Lägg till ett tydligt namn och en beskrivning av frågan som ska besvaras.
-4. Eventuellt tilldela en kategori och en sekretessinställning.
-5. Lägg till och arrangera diagram, och spara sedan.
+4. Tilldela eventuellt en kategori och en sekretessinställning.
+5. Lägg till och ordna diagram, och spara sedan.
 
 <ManualScreenshot
   caseId="dashboards/settings-detail"
-  alt="Colony operations dashboard editor assigned to Penguin Operations with privacy and active options"
+  alt="Redigeraren för instrumentpanelen Kolonioperationer tilldelad Penguin-operationer med alternativ för sekretess och aktiv status"
 />
 
-- **Category** gör instrumentpanelen tillgänglig för kategoribaserad filtrering.
-- ** Privat döljer dashboarden om inte privata poster visas.
-- **Active** styr om den visas i dashboards-listan utan
-  Radera definitionen.
+- **Kategori** gör instrumentpanelen tillgänglig för kategoribaserad
+  filtrering.
+- **Privat** döljer instrumentpanelen om inte privata poster visas.
+- **Aktiv** styr om den visas i instrumentpanelslistan, utan att
+  definitionen raderas.
 
-## Komponera och ordna tabeller
+## Komponera och ordna diagram
 
 <ManualScreenshot
   caseId="dashboards/charts"
-  alt="Colony operations chart list with Habitat pressure daily average, Sardines consumed daily sum, and Penguins accounted for daily sum"
-  caption="Drag with the handle to reorder. Select the adjustment control on a measurement chart to change its aggregation, or remove it with ×."
+  alt="Diagramlista för Kolonioperationer med Habitattryck som dagligt genomsnitt samt Konsumerade sardiner och Pingviner räknade som dagliga summor"
+  caption="Dra i handtaget för att ändra ordningen. Välj justeringskontrollen på ett mätdiagram för att ändra dess aggregering, eller ta bort det med ×."
 />
 
-Diagramordningen är instrumentpanelordningen. Sätt signalen som ramar in resten först. För
-Kolonioperationer och habitattryck beror på att en osäker livsmiljö förändrar hur
-varannan siffra bör tolkas.
+Diagramordningen är instrumentpanelens ordning. Sätt signalen som ramar in
+resten först. För Kolonioperationer leder habitattrycket, eftersom ett osäkert
+habitat ändrar hur varje annan siffra bör tolkas.
 
-Mätdiagram har sin egen aggregering på dashboard-objektet. Det låter
-samma mätbara uppträdande med en annan sammanfattning i en annan dashboard
-utan att ändra de underliggande observationerna.
+Mätdiagram har sin egen aggregering på instrumentpanelsobjektet. Det låter
+samma mätvärde visas med en annan sammanfattning i en annan instrumentpanel
+utan att de underliggande observationerna ändras.
 
 ## Lägg till diagram från stödda källor
 
 <ManualScreenshot
   caseId="dashboards/sources"
-  alt="Dashboard editor offering Habits, Measurements, Health, Surveys, and Workouts as chart sources plus JSON export"
+  alt="Instrumentpanelsredigeraren som erbjuder Vanor, Mätningar, Hälsa, Undersökningar och Träningspass som diagramkällor samt JSON-export"
 />
 
-Redaktören kan lägga till:
+Redigeraren kan lägga till:
 
-- **Habits** för slutförandehistorik.
+- **Vanor** för slutförandehistorik.
 - **Mätningar** för användardefinierade numeriska observationer.
-- **Hälsodata** som stöds av den nuvarande plattformen och behörigheter.
-- **Enkäter** för konfigurerade enkätresultat.
-- **Träningspass** importerad från stödda hälsokällor.
+- **Hälsa** för hälsodata som stöds av den aktuella plattformen och dess
+  behörigheter.
+- **Undersökningar** för konfigurerade enkätresultat.
+- **Träningspass** importerade från stödda hälsokällor.
 
-Expandera en källa, välj ett eller flera diagram och lägg till dem. Tillgängligheten beror på
-på de definitioner och plattformsdata som finns; hälsotillståndspromptar och
-Stödda typer varierar beroende på enhet.
+Fäll ut en källa, välj ett eller flera diagram och lägg till dem.
+Tillgängligheten beror på de definitioner och plattformsdata som finns;
+hälsobehörighetsfrågor och stödda typer varierar mellan enheter.
 
 ## Öppna och tolka en instrumentpanel
 
-Öppna **Insights** för att se aktiva dashboards. Listan visar varje dashboards
-Kategoriikon, namn och syfte. Använd filtret i headern för att fokusera på en
-eller fler kategorier.
+Öppna **Insikter** för att se aktiva instrumentpaneler. Listan visar varje
+instrumentpanels kategoriikon, namn och syfte. Använd filtret i rubriken för
+att fokusera på en eller flera kategorier.
 
 <ManualScreenshot
   caseId="dashboards/list"
-  alt="Lotti Insights dashboard list with Colony operations and private Mission readiness dashboards"
-  caption="Desktop reserves the right pane for the selected dashboard; mobile opens the selected dashboard as a separate page."
+  alt="Lottis instrumentpanelslista under Insikter med Kolonioperationer och den privata instrumentpanelen Uppdragsberedskap"
+  caption="Skrivbordet reserverar den högra panelen för den valda instrumentpanelen; mobilen öppnar den valda instrumentpanelen som en egen sida."
 />
 
-Välj **Kolonioperationer** för att öppna dess kartor. På skrivbordet är listan och
-Valda instrumentpaneler ligger sida vid sida. På mobilen öppnas instrumentpanelen som dess
-Egen sida med en tillbaka-knapp.
+Välj **Kolonioperationer** för att öppna dess diagram. På skrivbordet ligger
+listan och den valda instrumentpanelen sida vid sida. På mobilen öppnas
+instrumentpanelen som en egen sida med en tillbaka-knapp.
 
 <ManualScreenshot
   caseId="dashboards/view"
-  alt="Colony operations dashboard showing 90 days of habitat pressure and sardines consumed with the dashboards list beside it on desktop"
-  caption="The fixed header keeps the 30, 90, 180, and 365-day range controls visible while the charts scroll below."
+  alt="Instrumentpanelen Kolonioperationer med 90 dagar av habitattryck och konsumerade sardiner, med instrumentpanelslistan bredvid på skrivbordet"
+  caption="Den fasta rubriken håller intervallkontrollerna för 30, 90, 180 och 365 dagar synliga medan diagrammen rullar nedanför."
 />
 
-Det valda intervallet gäller för varje diagram på sidan. Diagramkorten behåller
-Deras egna enheter och aggregering: habitattrycket använder ett dagligt genomsnitt medan
-Sardinkonsumtion och antal pingviner använder dagliga summor. Välj **+** på en
-Mätkort för att registrera en ny observation av den typen.
+Det valda intervallet gäller varje diagram på sidan. Diagramkorten behåller
+sina egna enheter och sin aggregering: habitattrycket använder ett dagligt
+genomsnitt medan sardinkonsumtionen och pingvinantalet använder dagliga
+summor. Välj **+** på ett mätkort för att registrera en ny observation av den
+typen.
 
 <ManualScreenshot
   caseId="dashboards/view-crew"
-  alt="Colony operations dashboard scrolled to Sardines consumed and Penguins accounted for charts"
-  caption="A brief dip to 36 penguins is visible in the 90-day crew history; the surrounding days return to the expected 37."
+  alt="Instrumentpanelen Kolonioperationer rullad till diagrammen Konsumerade sardiner och Pingviner räknade"
+  caption="En kort dipp till 36 pingviner syns i 90-dagarshistoriken för besättningen; dagarna omkring återgår till förväntade 37."
 />
 
-Behandla ett diagram som bevis, inte som en dom. Kontrollera aggregering, enheter, datum
-Räckvidd, saknade observationer och integritetstillstånd innan slutsatser dras.
+Behandla ett diagram som bevis, inte som en dom. Kontrollera aggregeringen,
+enheterna, datumintervallet, saknade observationer och sekretessläget innan
+du drar slutsatser.
 
-## Exportera dashboardkonfiguration
+## Exportera instrumentpanelskonfiguration
 
-**Spara och kopiera JSON** sparar dashboarden, och kopierar sedan dess konfiguration
-och hänvisade till mätbara definitioner. Detta är användbart för inspektion eller flytt
-en konfiguration, men det är inte en live-synkroniseringslänk: senare redigeringar uppdaterar inte en
-redan kopierad last.
+**Spara och kopiera JSON** sparar instrumentpanelen och kopierar sedan dess
+konfiguration och de mätvärdesdefinitioner den refererar till. Det är
+användbart för att inspektera eller flytta en konfiguration, men det är ingen
+levande synklänk: senare redigeringar uppdaterar inte en redan kopierad last.

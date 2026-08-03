@@ -5,201 +5,210 @@ description: Gör om en muntlig eller inskriven incheckning till en redigerbar p
 
 # Planera och avsluta en dag med Daily OS
 
-Daily OS omvandlar en muntlig eller inskriven incheckning till en plan för en dag. Det gör det inte
-Byt ut uppgifter eller tidsanteckningar: Uppgifter beskriver arbetet, dagplanen beskriver
-avsikt och inspelade sessioner beskriver vad som faktiskt hände.
+Daily OS omvandlar en talad eller skriven incheckning till en plan för en
+dag. Det ersätter inte uppgifter eller tidsposter: uppgifter beskriver
+arbetet, dagsplanen beskriver avsikten och inspelade sessioner beskriver vad
+som faktiskt hände.
 
-Exemplen följer direktör Aurora genom en medvetet hektisk dag på
-Intergalaktisk pingvinlogistik. Planeraren skyddar en lansering av Project Waddle
-Recension, flyttar sardinförhandlingar och håller en gravitationsfri fiskmatningsdemonstration
-Klart. Din pingvinsituation kan variera.
+Exemplen följer Director Aurora genom en medvetet hektisk dag på
+Intergalactic Penguin Logistics. Planeraren skyddar en Project
+Waddle-uppskjutningsgranskning, flyttar sardinförhandlingar och håller en
+demonstration av fiskmataren med nollgravitation fri. Din pingvinsituation
+kan variera.
 
 ## Innan din första incheckning
 
 Öppna **Inställningar → Daily OS**. Välj den inferensprofil som ska planera
 dina dagar och ange namnet som Daily OS ska använda när den tilltalar dig.
-Integritetsmeddelandet anger den valda leverantören och om behandlingen sker på
-den här enheten eller på distans.
+Integritetsmeddelandet anger den valda leverantören och om behandlingen sker
+på den här enheten eller på distans.
 
 <ManualScreenshot
-  alt="Daily OS settings configured for Director Aurora and the Project Waddle inference profile"
+  alt="Daily OS-inställningar konfigurerade för Director Aurora och Project Waddle-inferensprofilen"
   caseId="daily-os/settings"
-  caption="Director Aurora uses the Project Waddle Command profile, Waddle Command 70B, and the Mission Control Router provider."
+  caption="Director Aurora använder profilen Projekt Waddle Command, Waddle Command 70B och leverantören Uppdragskontrollrouter."
 />
 
-Öppna sedan **Inställningar → Kategorier** och aktivera **Dagplanering** endast för
-Kategorier som planeraren kan använda. En avsiktlig tillåtningslista håller orelaterad
-uppgifter utanför planeringen och förhindrar att Daily OS ändrar arbete utanför dessa
-kategorier.
+Öppna sedan **Inställningar → Kategorier** och aktivera **Dagsplanering**
+bara för de kategorier planeraren får använda. En avsiktlig tillåtelselista
+håller orelaterade uppgifter utanför planeringen och hindrar Daily OS från
+att ändra arbete utanför de kategorierna.
 
 ## 1. Säg vad dagen behöver
 
-Öppna **Daily OS**, välj datum och välj **Speak a check-in**. Nämn:
+Öppna **Daily OS**, välj datum och välj **Tala en incheckning**. Nämn:
 
--  fasta åtaganden och tidsfrister;
+- fasta åtaganden och deadlines;
 - de resultat som spelar roll;
--  ungefärliga varaktigheter och tillgänglig kapacitet;
-- avbrott, energibegränsningar och arbete som inte borde ske för sent;
-- något som redan pågår eller sannolikt kommer att föras över.
+- ungefärliga varaktigheter och tillgänglig kapacitet;
+- pauser, energibegränsningar och arbete som inte bör ske för sent;
+- något som redan pågår eller sannolikt förs vidare.
 
-Välj **Skriv istället** när du talar är besvärligt. Efter erkännande,
-Gå igenom hela utskriften och rätta namn, nummer eller andra misstag
-på plats.
+Välj **Typ istället** när det är opraktiskt att tala. Efter igenkänningen,
+gå igenom hela transkriptionen och rätta namn, siffror eller andra misstag
+direkt på plats.
 
 <ManualScreenshot
-  alt="The complete Daily OS check-in transcript ready for review"
+  alt="Den kompletta transkriptionen av Daily OS-incheckningen redo för granskning"
   caseId="daily-os/capture-review"
-  caption="Review the recognized text before Daily OS matches it with Project Waddle tasks."
+  caption="Granska den igenkända texten innan Daily OS matchar den mot Project Waddle-uppgifter."
 />
 
-Välj **Spela in igen** för att börja om eller **Recensera** för att fortsätta. Du kan inte bygga
-dagen tills matchningspasset är klart.
+Välj **Ominspelning** för att börja om eller **Recension** för att fortsätta.
+Du kan inte bygga dagen förrän matchningspasset är klart.
 
-## 2. Förena tal med verkligt arbete
+## 2. Stäm av talet mot verkligt arbete
 
-Försoning är säkerhetskontrollen mellan vad assistenten hörde och vad Lotti har hört
-kommer att förändras:
+Avstämningen är säkerhetskontrollen mellan vad assistenten hörde och vad
+Lotti kommer att ändra:
 
-- ** Matched** pekar på en befintlig uppgift. Bekräfta att det är uppgiften du menade.
-- **Ny** är ett uttryck som kan bli ett verk för idag.
+- **Matchade** pekar på en befintlig uppgift. Bekräfta att det är uppgiften
+  du menade.
+- **Nytt** är en formulering som kan bli arbete för idag.
 - **Uppdatering** föreslår en ändring av en befintlig uppgift.
-- Självförtroende och tidsankaretiketter visar var granskning är mest användbar.
+- Etiketter för konfidens och tidsankare visar var granskning gör mest nytta.
 
 <ManualScreenshot
-  alt="Daily OS reconciling a spoken check-in with existing and new Project Waddle work"
+  alt="Daily OS stämmer av en talad incheckning mot befintligt och nytt Project Waddle-arbete"
   caseId="daily-os/reconcile"
-  caption="The orbital habitat inspection is matched to real work while new requests stay explicit decisions."
+  caption="Den orbitala habitatinspektionen matchas mot verkligt arbete medan nya önskemål förblir uttryckliga beslut."
 />
 
-Daily OS visar också arbete som pågår, är försenat, ska lämnas in idag eller
-Nyligen missad. Bestäm vad som hör hemma idag istället för att importera hela
-Eftersläpning.
+Daily OS lyfter också fram arbete som pågår, är försenat, ska göras idag
+eller nyligen missades. Bestäm vad som hör hemma idag i stället för att
+importera hela backloggen.
 
-## 3. Bedöm värnplikten
+## 3. Bedöm utkastet
 
-Välj **Bygg min dag** efter att försoningsbesluten ser rätt ut. The
-resultatet öppnar på **Agenda**. Kapacitetskortet svarar "passar det här?" innan
-Den numrerade listan svarar "Vad spelar roll?" Uppgiftsbaserade rader håller sig verkliga
-Kategori, status, uppskattning och omslagsminiatyr.
+Välj **Bygg min dag** när avstämningsbesluten ser rätt ut. Resultatet öppnas
+på **Agenda**. Kapacitetskortet svarar på ”får det här plats?” innan den
+numrerade listan svarar på ”vad spelar roll?”. Uppgiftsbaserade rader
+behåller sin verkliga kategori, status, uppskattning och omslagsminiatyr.
 
 <ManualScreenshot
-  alt="A Project Waddle Daily OS agenda with capacity, task thumbnails, priorities, and category totals"
+  alt="En Project Waddle Daily OS-agenda med kapacitet, uppgiftsminiatyrer, prioriteter och kategorisummor"
   caseId="daily-os/agenda"
-  caption="Every task in the agenda keeps its own Project Waddle cover art, including completed work."
+  caption="Varje uppgift i agendan behåller sin egen Project Waddle-omslagskonst, även avslutat arbete."
 />
 
-Använd de snabba justeringarna när formen är fel:
+Använd snabbjusteringarna när formen är fel:
 
-- ** För mycket** kräver en mindre plan.
-- **Flytta lättare** flyttar krävande arbete bort från lågenergiperioder.
+- **För mycket** ber om en mindre plan.
+- **Rör dig lättare** flyttar krävande arbete bort från lågenergiperioder.
 - **Lägg till buffert** skapar andrum.
-- ** Förfina** öppnar en fri röst- eller textjustering.
+- **Förfina** öppnar en fri röst- eller textjustering.
 
 Välj **Ser bra ut** bara när utkastet verkligen är acceptabelt.
 
 ## 4. Granska varje föreslagen förfining
 
-Refine skriver aldrig tyst om schemat. Beskriv förändringen, och inspektera sedan
-varje tilllade, flyttade eller borttagna block med sin gamla och föreslagna tid och
-Planerarens anledning. Acceptera eller avvisa förslag individuellt, välj **Återställ** till
-Släng den väntande setet, eller fortsätt prata för att be om ett nytt pass.
+Förfina skriver aldrig om schemat i det tysta. Beskriv ändringen, och
+inspektera sedan varje tillagt, flyttat eller borttaget block med dess gamla
+och föreslagna tid samt planerarens skäl. Acceptera eller avvisa förslag
+individuellt, välj **Återställ** för att kasta den väntande uppsättningen,
+eller fortsätt prata för att be om ett nytt pass.
 
 <ManualScreenshot
-  alt="Daily OS proposing two reviewed time changes for sardine negotiations and the fish-feeder demo"
+  alt="Daily OS föreslår två granskade tidsändringar för sardinförhandlingarna och fiskmatardemon"
   caseId="daily-os/refine"
-  caption="Sardine negotiations move later to protect Mission Control's launch review; the fish-feeder demo follows the new buffer."
+  caption="Sardinförhandlingarna flyttas senare för att skydda Mission Controls uppskjutningsgranskning; fiskmatardemon följer den nya bufferten."
 />
 
-Endast accepterade förslag ingår i utkastet. **Ser bra ut** lämnar
-Gå igenom när planen visar vad du tänker.
+Bara accepterade förslag blir en del av utkastet. **Ser bra ut** lämnar
+granskningen när planen säger det du avser.
 
 ## 5. Lås in dagen
 
-**Lås in det**-sidan ger hela utkastet en sista läsning: ordning,
-varaktighet, resultat och återstående kapacitet. Håll bekräftelsekontrollen för
-en sekund för att flytta planen från utkast till genomförd. Tangentbordsanvändare kan fokusera
-styra och trycka Enter eller mellanslag; Aktivering av hjälpmedelsteknologi bekräftas
-det direkt.
+Sidan **Lås in det** ger hela utkastet en sista genomläsning: ordning,
+varaktighet, resultat och återstående kapacitet. Håll in
+bekräftelsekontrollen i en sekund för att flytta planen från utkast till
+fastslagen. Tangentbordsanvändare kan fokusera kontrollen och trycka Enter
+eller mellanslag; aktivering via hjälpmedelsteknik bekräftar direkt.
 
 <ManualScreenshot
-  alt="The Project Waddle draft and deliberate hold-to-confirm action on the Daily OS commitment page"
+  alt="Project Waddle-utkastet och den medvetna håll-för-att-bekräfta-åtgärden på Daily OS åtagandesida"
   caseId="daily-os/commit"
-  caption="Eight pieces of work use 8h 45m of a 9h day, leaving a 15-minute margin before Director Aurora signs off."
+  caption="Åtta arbetsuppgifter använder 8 h 45 m av en 9-timmarsdag, vilket lämnar 15 minuters marginal innan Director Aurora skriver på."
 />
 
-Att sätta lås i planens ben, inte din förmåga att anpassa dig. Du kan fortfarande
-använd **Förfina** efteråt, men föreslagna ändringar kan fortfarande granskas.
+Att slå fast planen låser dess stomme, inte din förmåga att anpassa dig. Du
+kan fortfarande använda **Förfina** efteråt, och föreslagna ändringar förblir
+granskningsbara.
 
 ## 6. Jämför planen med verkligheten
 
-Byt från **Agenda** till **Dag** för kalenderprojektionen. På skrivbordet,
-Planera och faktiskt dela en tidsaxel. På en telefon, svep horisontellt mellan dem
-de planerade och inspelade filerna. Planerade block använder en lättare behandling och
-Inspelade sessioner fylls upp, så att driften förblir synlig utan omskrivning
-historia.
+Byt från **Agenda** till **Dag** för kalenderprojektionen. På skrivbordet
+delar Plan och Nutid en tidsaxel. På en telefon sveper du horisontellt mellan
+de planerade och inspelade banorna. Planerade block använder en lättare
+stil och inspelade sessioner är fyllda, så att avvikelsen förblir synlig
+utan att historien skrivs om.
 
 <ManualScreenshot
-  alt="Daily OS timeline comparing Project Waddle planned blocks with recorded time"
+  alt="Daily OS-tidslinjen som jämför planerade Project Waddle-block med inspelad tid"
   caseId="daily-os/timeline"
-  caption="The phone pages between planned and recorded lanes; desktop shows both on one time axis."
+  caption="Telefonen bläddrar mellan planerade och inspelade banor; skrivbordet visar båda på en tidsaxel."
 />
 
-Starta och stoppa tidsregistreringen från den länkade uppgiften som vanligt. Dagliga OS-läsningar
-dessa register som verklighet; den tillverkar inte färdigt arbete från
-planera.
+Starta och stoppa tidsregistreringen från den länkade uppgiften som vanligt.
+Daily OS läser de posterna som verklighet; det fabricerar inte slutfört
+arbete ur planen.
 
-## 7. Flytta, ändra storlek eller redigera ett block
+## 7. Flytta, ändra storlek på eller redigera ett block
 
-Välj den fyrpiliga **Arrangera**-åtgärden ovanför tidslinjen. Dra en blockkropp
-för att flytta den, eller dra dess övre eller nedre handtag för att ändra dess början eller slut.
-Ändringar snabbar upp till 15-minutersintervaller och håller sig inom den valda dagen. Användning
-**ångra** i bekräftelsemeddelandet när den gamla platsen var bättre.
+Välj den fyrpilade åtgärden **Arrangera block** ovanför tidslinjen. Dra i ett
+blocks kropp för att flytta det, eller dra i dess övre eller nedre handtag
+för att ändra dess start eller slut. Ändringar snäpper till
+15-minutersintervall och håller sig inom den valda dagen. Använd **Ångra** i
+bekräftelsemeddelandet när den gamla platsen var bättre.
 
 <ManualScreenshot
-  alt="Daily OS arrange mode with move and resize controls on Project Waddle blocks"
+  alt="Daily OS-arrangeringsläge med kontroller för att flytta och ändra storlek på Project Waddle-block"
   caseId="daily-os/arrange"
-  caption="Arrange mode exposes the same direct move and resize actions on phone and desktop."
+  caption="Arrangeringsläget erbjuder samma direkta flytt- och storleksåtgärder på telefon och skrivbord."
 />
 
-Pennmekanismen öppnar blockredigeraren. Ett uppgiftslänkat block behåller sitt
-uppgiftsägd titel och kategori endast läsbar; välj **Öppna uppgift** för att ändra dessa
-vid källan. Dess planerade start och slut kan fortfarande redigeras från Daily OS.
+Pennåtgärden öppnar blockredigeraren. Ett uppgiftslänkat block håller sin
+uppgiftsägda titel och kategori skrivskyddade; välj **Öppen uppgift** för att
+ändra dem vid källan. Dess planerade start och slut kan fortfarande redigeras
+från Daily OS.
 
 <ManualScreenshot
-  alt="Daily OS block editor for the zero-gravity fish feeder task"
+  alt="Daily OS-blockredigeraren för uppgiften med fiskmataren med nollgravitation"
   caseId="daily-os/block-editor"
-  caption="The linked task owns its title and Penguin Operations category; Daily OS owns the 2:30–4:00 PM slot and planning reason."
+  caption="Den länkade uppgiften äger sin titel och kategorin Penguin-operationer; Daily OS äger tiden 14:30–16:00 och planeringsskälet."
 />
 
-Fristående planblock kan redigera sin egen titel och kategori eftersom det inte finns någon uppgift
-äger den metadatan.
+Fristående planblock kan redigera sin egen titel och kategori, eftersom ingen
+uppgift äger den metadatan.
 
 ## 8. Avsluta dagen
 
-Efter en engagerad dag, välj **Avsluta av**. Nedstängning skiljer beslut som
-bör inte förväxlas:
+Efter en fastslagen dag, välj **Avslutning**. Nedstängningen skiljer på
+beslut som inte bör blandas ihop:
 
-- **Vad du gjorde** listar färdigt arbete med faktisk spårad längd.
-- **Carries forward** låter dig schemalägga ofärdigt arbete till imorgon, välj en
-  Dejta, eller släpp det.
+- **Vad du gjorde** listar slutfört arbete med faktisk spårad varaktighet.
+- **Löpningar framåt** låter dig schemalägga oavslutat arbete till imorgon,
+  välja ett datum eller släppa det.
 - Mätvärden sammanfattar fokustid, flödessessioner, kontextbyten och energi.
-- En enradig reflektion matar nästa utkast.
-- **Det jag har lärt mig** låter dig bekräfta eller glömma kunskap om varaktiga planerare.
-- **Till imorgon** bevarar den kortfattade överlämningsanmärkningen.
+- En enradsreflektion matar nästa utkast.
+- **Vad jag har lärt mig** låter dig bekräfta eller glömma varaktig
+  planerarkunskap.
+- **För morgondagen** bevarar den kortfattade överlämningsanteckningen.
 
 <ManualScreenshot
-  alt="Daily OS shutdown with completed Project Waddle work, carryover choices, metrics, reflection, and learned preferences"
+  alt="Daily OS-nedstängning med slutfört Project Waddle-arbete, överföringsval, mätvärden, reflektion och inlärda preferenser"
   caseId="daily-os/shutdown"
-  caption="Director Aurora completed the habitat inspection, launch review, and sardine deal; the fish-feeder demo and passenger question stay explicit carryover decisions."
+  caption="Director Aurora slutförde habitatinspektionen, uppskjutningsgranskningen och sardinaffären; fiskmatardemon och passagerarfrågan förblir uttryckliga överföringsbeslut."
 />
 
-Välj **Spara & stäng** för att lämna recensionen utan att deklarera dagen stängd,
-eller **Stäng dagen** när besluten om att ta över och lära sig är klara.
+Välj **Spara och stäng** för att lämna genomgången utan att förklara dagen
+stängd, eller **Avsluta dagen** när besluten om överföring och lärdomar är
+klara.
 
 ## Ägarregeln
 
-- Uppgifter beskriver arbetet och metadata för den egen uppgiften.
-- Dagsplanen beskriver avsikt och äger schemalagda block.
-- Tidsregister beskriver verkligheten.
-- Planerarens kunskapsregister granskade preferenser för framtida tider.
-- Assistenten friar; Du bestämmer.
+- Uppgifter beskriver arbetet och äger uppgiftens metadata.
+- Dagsplanen beskriver avsikten och äger schemalagda block.
+- Tidsposter beskriver verkligheten.
+- Planerarkunskapen registrerar granskade preferenser för framtida dagar.
+- Assistenten föreslår; du bestämmer.

@@ -5,36 +5,39 @@ description: Använd Matrix-synkroniseringsreparation och rensningsåtgärder me
 
 # Synkroniseringsunderhåll
 
-Öppna **Inställningar → Synkronisera → Underhåll** för reparation och rensning på databasnivå.
-Dessa åtgärder ingår inte i rutinmässig parning eller daglig synkronisering.
-Innan du använder dem, låt aktiva skrivningar slutföra och behåll en aktuell backup av data
-Du kan inte återskapa.
+Öppna **Inställningar → Synk → Underhåll** för reparation och rensning på
+databasnivå. Dessa åtgärder ingår inte i rutinmässig ihopparning eller daglig
+synkronisering. Innan du använder dem, låt aktiva skrivningar bli klara och
+behåll en aktuell säkerhetskopia av data du inte kan återskapa.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lotti Matrix Sync Maintenance with sync database deletion, definition sync, message re-sync, sequence-log population, and sent-outbox purge"
-  caption="Maintenance groups destructive, replay, and cleanup actions on one page. The confirmation text defines the scope of each operation."
+  alt="Lottis Matrix-synkunderhåll med radering av synkdatabasen, definitionssynk, omsynk av meddelanden, ifyllnad av sekvensloggen och rensning av skickade utboxobjekt"
+  caption="Underhållet samlar destruktiva åtgärder, återuppspelning och rensning på en sida. Bekräftelsetexten definierar varje operations omfång."
 />
 
 ## Välj den smalaste reparationen
 
-- **Ta bort synkroniseringsdatabas** tar bort den lokala synkroniseringsdatabasen. Detta är destruktivt
-  Lokal återställning, inte ett vanligt sätt att koppla bort en enhet.
-- **Sync definitions** skickar de aktuella definitionsposterna igen, såsom
-  kategorier och andra delade konfigurationer.
-- ** Synkronisera om meddelanden** spelar upp utvalda meddelanden när fjärrtillstånd saknas
-  eller så måste en tidigare leverans upprepas.
-- **Fyll sekvenslogg** rekonstruerar den lokala sekvenshistoriken som används för att
-  Upptäck luckor och fyll på driv.
-- **Rensa gamla skickade utkorgsobjekt** raderar redan skickade diagnostiska köhistoriker
-  efter dess bevarandetid. Den tar inte bort väntande eller misslyckat arbete.
+- **Ta bort synkdatabasen** raderar den lokala synkdatabasen. Det är en
+  destruktiv lokal återställning, inte ett vanligt sätt att koppla från en
+  enhet.
+- **Synka definitioner** skickar de aktuella definitionsposterna igen, som
+  kategorier och annan delad konfiguration.
+- **Meddelandehistorik** spelar upp utvalda meddelanden igen när
+  fjärrtillstånd saknas eller en tidigare leverans måste upprepas.
+- **Fyll i synksekvenslogg** rekonstruerar den lokala sekvenshistorik som
+  används för att upptäcka luckor och driva återfyllning.
+- **Rensa gamla ut-ut-varor** raderar redan skickad diagnostisk köhistorik
+  efter dess bevarandetid. Den tar inte bort väntande eller misslyckat
+  arbete.
 
-Börja med den minsta operationen som matchar symtomet. En fastklämd anknytning
-belongs in the [Outbox](./sync.mdx#inspektera-utboxen); persistent sequence gaps
-hör hemma i reserv; två giltiga samtidiga redigeringar hör hemma i
-[Conflicts](./conflicts.mdx). Deleting the sync database should be a last-resort
-Lokal återställning utfördes med en känd kompatibel motpart och backup tillgänglig.
+Börja med den minsta operationen som matchar symptomet. En fastnad bilaga hör
+hemma i [utboxen](./sync.mdx#inspektera-utboxen); ihållande sekvensluckor hör
+hemma i återfyllningen; två giltiga samtidiga redigeringar hör hemma i
+[Konflikter](./conflicts.mdx). Att radera synkdatabasen bör vara en sista
+utvägs lokal återställning, utförd med en känd kompatibel motpart och en
+säkerhetskopia till hands.
 
-Efter en reparation, återgå till **Sync Statistics**, bekräfta att det bearbetade arbetet är
-avancerar utan att antalet misslyckanden ökar, och kontrollera att Utkorgen och
-Kvarfyllningsantalet, sätt sig.
+Efter en reparation, gå tillbaka till **Synkstatistik**, bekräfta att det
+bearbetade arbetet går framåt utan att antalet misslyckanden ökar, och
+kontrollera att utboxen och återfyllningsantalen lägger sig.

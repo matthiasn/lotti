@@ -5,16 +5,16 @@ description: Brug kategorier som meningsfulde grænser for filtrering, planlægn
 
 # Organiser med kategorier
 
-A-kategori er det vigtigste strukturelle hjem for et bidrag. Brug en, når en krop af
-arbejdet har brug for sine egne planlægningsregler, privatlivsgrænser, visuel identitet eller AI
-kontekst. I demo-arbejdsområdet, **Pingvinoperationer**, **Mission Control**,
-**Fiskediplomati** og **Menneskelig vedligeholdelse** adskiller sig reelt forskelligt
-områder af ekspeditionen.
+En kategori er det primære strukturelle hjem for en post. Brug en, når et
+samlet stykke arbejde har brug for sine egne planlægningsregler,
+privatlivsgrænser, visuelle identitet eller AI-kontekst. I demo-arbejdsområdet
+adskiller **Penguin-operationer**, **Mission Control**, **Fiskediplomati** og
+**Menneskelig vedligeholdelse** reelt forskellige områder af ekspeditionen.
 
 <ManualScreenshot
   caseId="categories/list"
-  alt="Category settings containing Penguin Operations, Mission Control, Fish Diplomacy, and Human Maintenance with task counts and status icons"
-  caption="The list is searchable and shows task counts. Icons identify favorite, private, and inactive categories at a glance."
+  alt="Kategoriindstillinger med Penguin-operationer, Mission Control, Fiskediplomati og Menneskelig vedligeholdelse med opgavetal og statusikoner"
+  caption="Listen kan gennemsøges og viser opgavetal. Ikoner udpeger favorit-, private og inaktive kategorier med et enkelt blik."
 />
 
 ## Opret en kategori
@@ -27,59 +27,60 @@ områder af ekspeditionen.
 
 1. Åbn **Indstillinger → Kategorier**.
 2. Vælg **Opret kategori**.
-3. Indtast et særpræget navn, farve og ikon.
+3. Indtast et særpræget navn, en farve og et ikon.
 4. Opret den, og åbn derefter kategorien igen for at konfigurere dens adfærd.
 
-Oprettelsen starter bevidst med de identificerende felter. Planlægning, privatliv,
-Sprog- og automatiseringsmuligheder findes i den fulde editor efter kategorien
-eksisterer.
+Oprettelsen starter bevidst med de identificerende felter. Mulighederne for
+planlægning, privatliv, sprog og automatisering findes i den fulde editor,
+efter at kategorien findes.
 
 ## Konfigurer kategoriadfærd
 
 <ManualScreenshot
   caseId="categories/detail"
-  alt="Penguin Operations category editor showing its name, purple flight identity, and favorite, private, active, and day-planning options"
+  alt="Kategoriredigering for Penguin-operationer med dens navn, lilla flyveidentitet og indstillinger for favorit, privat, aktiv og dagsplanlægning"
 />
 
-Redaktøren styrer mere end blot udseendet:
+Editoren styrer mere end blot udseendet:
 
-- ** Favorit** gør en vigtig kategori lettere at genkende og vælge.
-- ** Private** skjuler sit indhold, medmindre private bidrag vises. Det er det
-  en synlighedsgrænse, ikke separat kryptering for selve kategorien.
-- **Active** styrer, om kategorien kan vælges til nye indgange.
+- **Favorit** gør en vigtig kategori lettere at genkende og vælge.
+- **Privat** skjuler dens indhold, medmindre private poster vises. Det er
+  en synlighedsgrænse, ikke separat kryptering af selve kategorien.
+- **Aktiv** styrer, om kategorien kan vælges til nye poster.
   Deaktivering bevarer eksisterende data.
-- **Dagplanlægning** giver kategorien mulighed for at deltage i Daglig OS-planlægning.
-- **Language** angiver standardsproget for nye opgaver i kategorien.
+- **Dagsplanlægning** lader kategorien deltage i Daily OS-planlægning.
+- **Sprog** angiver standardsproget for nye opgaver i kategorien.
 
-Brug **dagplanlægning** selektivt. At aktivere det for alle kategorier udvider
-planlæggerens kontekst og gør den daglige ritual mere larmende.
+Brug **Dagsplanlægning** selektivt. At aktivere den for alle kategorier
+udvider planlæggerens kontekst og gør det daglige ritual mere støjende.
 
 ## Tilføj kategorispecifik automatiseringskontekst
 
-En kategori kan give standardindstillinger for nye opgaver: en inferensprofil og en
-Agentskabelon. Disse er standardlåse, ikke permanente låse; Opgavevalg kan
-Skifter stadig senere.
+En kategori kan give standardindstillinger for nye opgaver: en inferensprofil
+og en agentskabelon. Det er standarder, ikke permanente låse; valg på
+opgaveniveau kan stadig ændres senere.
 
 <ManualScreenshot
   caseId="categories/automation"
-  alt="Avancerede indstillinger for Pingvinoperationer med Project Waddle-taleordforråd og indlærte tjeklisterettelser for Sir Flaps-a-Lot"
+  alt="Avancerede indstillinger for Penguin-operationer med Project Waddle-taleordforråd og indlærte tjeklisterettelser for Sir Flaps-a-Lot"
   caption="Taleord adskilles med semikolon. Tjeklisterettelser læres af ændringer og kan gennemgås eller slettes her."
 />
 
-**Talegenkendelse**-ordbogen er nyttig til navne, lokationer, forkortelser,
-og domænevokabular, som transskription ofte overser. Pingvinoperationer lærer
+**Tagenkendelse**-ordbogen er nyttig til navne, lokationer, forkortelser og
+domænevokabular, som transskription ofte overser. Penguin-operationer lærer
 for eksempel Lotti `Project Waddle`, `Sir Flaps-a-Lot`, `sardine` og `Europa`.
 
 Når du manuelt retter genererede tjeklistetitler, kan Lotti bevare
-før-og-efter-eksempler til fremtidige AI-forslag. Gennemgå eksemplerne her
+før-og-efter-eksempler til fremtidige AI-forslag. Gennemgå eksemplerne her,
 og fjern enhver rettelse, der ikke burde styre senere output.
 
 ## Kategorier versus etiketter
 
-Brug en kategori som arbejdets primære hjem og en [etiket](./labels.mdx) som en
-tværgående egenskab. **Pingvinoperationer** er en kategori; **Habitatkritisk**
-er en etiket, der også kan gælde for Mission Control-arbejde.
+Brug en kategori som arbejdets primære hjem og en [etiket](./labels.mdx) som
+en tværgående egenskab. **Penguin-operationer** er en kategori;
+**Habitatkritisk** er en etiket, der også kan gælde for Mission
+Control-arbejde.
 
-Hold kategorisystemet lille nok til, at det er åbenlyst at vælge én. Tilføj en ny
-kategori, når det ændrer planlægning, filtrering, privatliv eller automatisering – ikke blot
-fordi et nyt substantiv dukkede op.
+Hold kategorisystemet lille nok til, at det er åbenlyst at vælge én. Tilføj en
+ny kategori, når den ændrer planlægning, filtrering, privatliv eller
+automatisering — ikke blot fordi et nyt substantiv dukkede op.

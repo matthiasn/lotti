@@ -1,40 +1,45 @@
 ---
-title: Onderhoud van synchronisatie
-description: Gebruik bewust Matrix-synchronisatieherstel- en opschoonacties, van het opnieuw verzenden van records tot het opnieuw opbouwen van de sequentiegeschiedenis.
+title: Synchronisatieonderhoud
+description: Gebruik Matrix-synchronisatieherstel- en opschoonacties bewust, van het opnieuw verzenden van records tot het opnieuw opbouwen van de sequentiegeschiedenis.
 ---
 
 # Synchronisatieonderhoud
 
-Open **Instellingen → Synchroniseren → Onderhoud** voor reparatie en opschoning op databaseniveau.
-Deze acties maken geen deel uit van routinematige koppeling of dagelijkse synchronisatie.
-Voordat u ze gebruikt, moet u actieve schrijfbewerkingen voltooien en een actuele back-up van gegevens bewaren
-je kunt niet recreëren.
+Open **Instellingen → Instellingen synchroniseren → Onderhoud** voor reparatie en
+opschoning op databaseniveau. Deze acties maken geen deel uit van routinematig
+koppelen of dagelijkse synchronisatie. Laat actieve schrijfbewerkingen eerst
+afronden en houd een actuele back-up bij van gegevens die je niet opnieuw kunt
+maken voordat je ze gebruikt.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lotti Matrix Synchroniseren Onderhoud met sync database verwijderen, definitie synchroniseren, bericht opnieuw synchroniseren, sequence-log populatie, en verzonden-outbox zuivering"
-  caption="Onderhoudsgroepen vernietigende, replay- en opruimacties op één pagina. De bevestigingstekst definieert de reikwijdte van elke operatie."
+  alt="Lotti Matrix-synchronisatieonderhoud met verwijdering van de synchronisatiedatabase, definitiesynchronisatie, het opnieuw synchroniseren van berichten, het vullen van het sequentielogboek en het opschonen van de verzonden outbox"
+  caption="Onderhoud groepeert destructieve, replay- en opschoonacties op één pagina. De bevestigingstekst definieert de reikwijdte van elke bewerking."
 />
 
 ## Kies de smalste reparatie
 
-- **Synchronisatiedatabase verwijderen** verwijdert de lokale synchronisatiedatabase. Dit is destructief
-  lokaal herstel, geen normale manier om een apparaat los te koppelen.
-- **Synchronisatiedefinities** verzendt de huidige definitierecords opnieuw, zoals
-  categorieën en andere gedeelde configuratie.
-- **Berichten opnieuw synchroniseren** herhaalt geselecteerde berichten wanneer de externe status ontbreekt
-  of een eerdere levering moet worden herhaald.
-- **Populate sequence log** reconstrueert de lokale sequentiegeschiedenis die vroeger werd gebruikt
-  gaten detecteren en opvullen stimuleren.
-- **Oude verzonden items uit het postvak UIT verwijderen** verwijdert de geschiedenis van de reeds verzonden diagnostische wachtrij
-  na de bewaartermijn. Het verwijdert geen wachtend of mislukt werk.
+- **Synchronisatiedatabase verwijderen** verwijdert de lokale synchronisatiedatabase.
+  Dit is destructief lokaal herstel, geen normale manier om een apparaat los te
+  koppelen.
+- **Meetbare gegevens synchroniseren, dashboards, gewoonten, categorieën,
+  AI-instellingen** verzendt de huidige definitierecords opnieuw, zoals categorieën
+  en andere gedeelde configuratie.
+- **Berichtgeschiedenis** speelt geselecteerde berichten opnieuw af wanneer de
+  externe status ontbreekt of een eerdere levering herhaald moet worden.
+- **Sync-sequentielogboek populeren** reconstrueert de lokale sequentiegeschiedenis
+  die wordt gebruikt om gaten te detecteren en backfill aan te sturen.
+- **Oude verzonden postvak UIT verwijderen** verwijdert de geschiedenis van de al
+  verzonden diagnostische wachtrij na de bewaartermijn. Het verwijdert geen wachtend
+  of mislukt werk.
 
-Begin met de kleinste operatie die overeenkomt met het symptoom. Een vastzittende bijlage
-hoort thuis in de [Outbox](./sync.mdx#inspecteer-de-outbox); aanhoudende sequentiehiaten
-horen bij opvulling; er horen twee geldige gelijktijdige bewerkingen in
-[Conflicten](./conflicts.mdx). Het verwijderen van de synchronisatiedatabase moet een laatste redmiddel zijn
-lokale reset uitgevoerd met een bekende goede peer en back-up beschikbaar.
+Begin met de kleinste bewerking die bij het symptoom past. Een vastzittende bijlage
+hoort thuis in het [Postvak UIT](./sync.mdx#inspecteer-de-outbox); aanhoudende
+sequentiegaten horen bij backfill; twee geldige gelijktijdige bewerkingen horen in
+[Conflicten](./conflicts.mdx). Het verwijderen van de synchronisatiedatabase moet
+een laatste-redmiddel-reset zijn, uitgevoerd met een bekend goed werkend ander
+apparaat en een beschikbare back-up.
 
-Ga na een reparatie terug naar **Synchronisatiestatistieken** en bevestig dat het verwerkte werk is uitgevoerd
-verdergaan zonder een groeiend aantal mislukkingen, en controleer of de Outbox en de
-Aanvulling ontbrekende telling vereffenen.
+Keer na een reparatie terug naar **Matrix Stats**, bevestig dat het verwerkte werk
+vordert zonder een groeiend aantal fouten, en controleer of het Postvak UIT en het
+ontbrekende-aantal van backfill tot rust komen.

@@ -5,55 +5,57 @@ description: Jämför AI-förfrågningar efter period, kategori och modell, inkl
 
 # Granska AI:s användning och påverkan
 
-Öppna **Inställningar → AI-inställningar → Användning & Påverkan** för att förstå hur konfigurerat det är
-Molnmodeller används. Samma analys är också tillgänglig från AI:n
-Vägen för att påverka instrumentpanelen.
+Öppna **Inställningar → AI-inställningar → Användning och påverkan** för att
+förstå hur de konfigurerade molnmodellerna används. Samma analys nås också
+via rutten för AI-påverkanspanelen.
 
 <ManualScreenshot
   caseId="ai/usage"
-  alt="Lotti AI Impact dashboard for July 2026 showing cost, energy, carbon dioxide equivalent, tokens, requests, and category bars"
-  caption="Project Waddle's example month separates Mission Control and Penguin Operations while keeping the total request footprint visible."
+  alt="Lottis AI-påverkanspanel för juli 2026 med kostnad, energi, koldioxidekvivalenter, tokens, förfrågningar och kategoristaplar"
+  caption="Project Waddles exempelmånad skiljer Uppdragskontroll från Penguin-operationer och håller samtidigt det totala förfrågningsavtrycket synligt."
 />
 
 ## Läs sammanfattningskorten
 
 De översta korten sammanfattar den valda perioden:
 
-- **Kostnad** uppskattar leverantörens utgifter.
-- **Energi** uppskattar elektricitet som kan tillskrivas uppmätt molninferens.
-- **CO₂e** uttrycker den associerade utsläppsuppskattningen.
-- ** Tokens** räknar bearbetade modelltokens.
-- **Förfrågningar** räknar inferenssamtal.
+- **Kostnad** uppskattar leverantörsutgifterna.
+- **Energi** uppskattar el som kan hänföras till uppmätt molninferens.
+- **CO₂e** uttrycker den tillhörande utsläppsuppskattningen.
+- **Tokens** räknar bearbetade modelltokens.
+- **Förfrågningar** räknar inferensanrop.
 
-Jämförelseindikatorn använder den föregående ekvivalenta perioden när man är
-tillgänglig. En procentuell ökning är kontext, inte automatiskt ett problem: en
-Lanseringsgranskningsveckan bör inte blint jämföras med en idle colony-vecka.
+Jämförelseindikatorn använder den föregående motsvarande perioden när en
+sådan finns. En procentuell ökning är kontext, inte automatiskt ett problem:
+en vecka med uppskjutningsgranskning ska inte blint jämföras med en vecka då
+kolonin legat i vila.
 
-Energi, CO₂e och kostnad mäts endast för molnmodeller. Lokal inferens kan
-förbrukar betydande enhetsenergi utan att synas i dessa molnuppskattningar,
-Så den här sidan är inte en komplett effektmätare för hela systemet.
+Energi, CO₂e och kostnad mäts bara för molnmodeller. Lokal inferens kan
+förbruka betydande energi på enheten utan att synas i dessa molnuppskattningar,
+så den här sidan är inte en komplett effektmätare för hela systemet.
 
 ## Ändra analysen
 
-Använd tidskontroll- och pilknapparna för att röra dig genom tiden, eller hoppa till
-**Den här månaden** och **I år**. Välj sedan **Båda**, **Efter kategori**, eller **Av
-Modell**. Inom ett diagram, växla mellan per-dag-värden, löpande totalsummor och
-Dela där det är möjligt.
+Använd periodkontrollen och pilknapparna för att röra dig genom tiden, eller
+hoppa till **Den här månaden** och **I år**. Välj sedan **Båda**, **Efter
+kategori** eller **Efter modell**. Inuti ett diagram kan du växla mellan
+värden per dag, löpande totalsummor och andel där det finns.
 
-Kategorivisningar svarar "vilket arbetsområde drev användning?" Svar på modellvyer
-"Vilken konfigurerad modell drev användningen?" Använd båda innan du ändrar profil: a
-Högkostnadsmodellen kan motiveras för en specialistkategori men vara slösaktig som en
-Allmän standard.
+Kategorivyerna svarar på ”vilket arbetsområde drev användningen?”.
+Modellvyerna svarar på ”vilken konfigurerad modell drev användningen?”.
+Använd båda innan du ändrar en profil: en dyr modell kan vara motiverad för
+en specialistkategori men slösaktig som allmän standard.
 
 ## Agera på ett överraskande resultat
 
 Om användningen hoppar oväntat:
 
-1.  begränsar perioden till den första drabbade dagen;
-2.  jämför kategori- och modelluppdelningar;
-3. granskningsautomation och agentsamtidighet;
-4.  inspektera inferensprofilen som tilldelats den berörda kategorin; och
-5. verifiera leverantörsbaserad fakturering innan du behandlar Lottis uppskattning som en faktura.
+1. begränsa perioden till den första berörda dagen;
+2. jämför kategori- och modelluppdelningarna;
+3. granska automation och agenternas samtidighet;
+4. inspektera inferensprofilen som är tilldelad den berörda kategorin; och
+5. verifiera faktureringen hos leverantören innan du behandlar Lottis
+   uppskattning som en faktura.
 
-För att ändra rutten som ansvarar för framtida samtal, återgå till
-[Models and inference profiles](./models-and-profiles.mdx).
+För att ändra rutten som ansvarar för framtida anrop, gå tillbaka till
+[Modeller och inferensprofiler](./models-and-profiles.mdx).

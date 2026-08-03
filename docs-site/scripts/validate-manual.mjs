@@ -14,6 +14,10 @@ import {
   validateManualVersion,
   validateScreenshotRegistry,
 } from './manual-lib.mjs';
+import {
+  compareTranslationStructure,
+  findUntranslatedMediaText,
+} from './translation-parity.mjs';
 
 const options = parseNamedArguments(process.argv.slice(2));
 const features = await readJson(resolve(siteDirectory, 'metadata/features.json'));
@@ -323,6 +327,12 @@ for (const locale of screenshotRegistry.locales ?? []) {
     ]);
     if (source.trim() === translation.trim()) {
       errors.push(`${locale} page ${relativePath} is still identical to English.`);
+    }
+    for (const issue of [
+      ...compareTranslationStructure(source, translation),
+      ...findUntranslatedMediaText(source, translation),
+    ]) {
+      errors.push(`${locale} page ${relativePath}: ${issue}`);
     }
   }
   for (const relativePath of translatedByPath.keys()) {

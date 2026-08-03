@@ -103,6 +103,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   everything that happened since the last briefing it finished. If none ever
   finished — a new install, or a run of failures — it reaches back about two
   days rather than to the beginning.
+- **The translated manual catches up with the English one.** Three sections
+  existed only in English — letting a task agent suggest labels, choosing a
+  task agent's AI setup, and dictating useful context into a recording — and
+  now appear in the German, French, Spanish, Czech, Romanian, and Portuguese
+  manuals too. The Romanian welcome page was an outdated copy missing its
+  screenshot, opening section, and address; it is now the current page. The
+  Danish and Swedish manuals had left nearly every screenshot description in
+  English — those are now translated — and the Italian and Dutch manuals lose
+  their machine-translation artifacts: garbled sentences, mistranslations, and
+  formal address where the app speaks informally.
 
 ### Changed
 - **The morning briefing is prepared once, not once per device.** Every device

@@ -1,84 +1,94 @@
 ---
-title: Tag di lavoro con le etichette
-description: Utilizzare le etichette per il contesto trasversale che abbraccia le categorie e le attività.
+title: Etichetta il lavoro con le etichette
+description: Usa le etichette per il contesto trasversale che attraversa categorie e attività.
 ---
 
-# Tag di lavoro con le etichette
+# Etichetta il lavoro con le etichette
 
-Le etichette aggiungono un secondo, flessibile strato di organizzazione. Un compito ha uno primario
-categoria, ma può portare più etichette per iniziative, urgenza, attesa
-Stati, o un'altra proprietà che taglia oltre i confini della categoria.
+Le etichette aggiungono un secondo livello di organizzazione, flessibile.
+Un'attività ha una sola categoria principale, ma può portare più etichette per
+iniziative, urgenza, stati di attesa o un'altra proprietà che attraversa i
+confini delle categorie.
 
 <ManualScreenshot
   caseId="labels/list"
-  alt="Impostazioni di etichette contenenti Awaiting Mission Control, Habitat critico, Project Waddle, e Sardine mercato sensibile con conteggi di utilizzo attività"
-  caption="I conteggi di utilizzo rivelano quali etichette sono attive nello spazio di lavoro; la serratura segna un'etichetta privata."
+  alt="Impostazioni delle etichette con Risveglio del controllo della missione, Habitat critico, Project Waddle e Sardine mercato sensibile, con i conteggi di utilizzo nelle attività"
+  caption="I conteggi di utilizzo rivelano quali etichette sono attive nello spazio di lavoro; il lucchetto segna un'etichetta privata."
 />
 
-Lo spazio di lavoro Intergalactic Penguin Logistics utilizza le etichette deliberatamente:
+Lo spazio di lavoro Intergalactic Penguin Logistics usa le etichette in modo
+deliberato:
 
-- **Progetto Waddle** collega il lavoro di lancio attraverso Penguin Operations, Mission
-  Controllo e Diplomazia del pesce.
-- **Habitat critici** identifica il lavoro che deve finire prima della spedizione
-  entra nell'habitat orbitale.
-- **Il controllo della missione in attesa** registra uno stato di blocco reale.
-- **Sardine market sensitive** mantiene il lavoro di negoziazione privata identificabile.
+- **Project Waddle** collega il lavoro di lancio attraverso Penguin Operations,
+  Mission Control e Fish Diplomacy.
+- **Habitat critical** identifica il lavoro che deve finire prima che la
+  spedizione entri nell'habitat orbitale.
+- **Awaiting Mission Control** registra un vero stato di blocco.
+- **Sardine market sensitive** mantiene identificabile il lavoro di
+  negoziazione privato.
 
-## Creare e modificare un'etichetta
+## Crea e modifica un'etichetta
 
-1. Aprire ** Impostazioni → Etichette**.
-2. Selezionare **Create label**.
+1. Apri **Impostazioni → Etichette**.
+2. Seleziona **Crea etichetta**.
 3. Aggiungi un nome conciso e una descrizione facoltativa.
-4. Scegli un colore che rimane distinguibile accanto ad altre etichette.
+4. Scegli un colore che resti distinguibile accanto alle altre etichette.
 5. Decidi se l'etichetta è privata e quali categorie possono usarla.
 6. Salva.
 
 <ManualScreenshot
   caseId="labels/detail"
-  alt="Progetto Waddle editor di etichette che mostra la sua descrizione critica di lancio, colore blu, opzione privacy e tre categorie applicabili"
+  alt="Editor dell'etichetta Project Waddle con la descrizione critica per il lancio, il colore blu, l'opzione privacy e tre categorie applicabili"
 />
 
-Descrizioni vale la pena scrivere quando un'etichetta potrebbe essere interpretata in più di
-un modo. Essi forniscono il significato operativo senza forzare questa spiegazione
-in ogni titolo di compito.
+Vale la pena scrivere le descrizioni quando un'etichetta potrebbe essere
+interpretata in più di un modo. Forniscono il significato operativo senza
+costringere quella spiegazione dentro ogni titolo di attività.
 
-** Categorie obbligatorie** vincono dove è possibile selezionare l'etichetta. Progetto
-Waddle è disponibile nelle tre parti della spedizione coinvolta nel lancio,
-mentre un'etichetta specializzata può rimanere limitata ad una categoria.
-pertinente invece di presentare ogni etichetta ovunque.
+**Categorie applicabili** vincola dove l'etichetta può essere selezionata.
+Project Waddle è disponibile nelle tre parti della spedizione coinvolte nel
+lancio, mentre un'etichetta specialistica può restare limitata a una sola
+categoria. Questo mantiene pertinenti i selettori invece di presentare ogni
+etichetta ovunque.
 
-## Applicare etichette alle attività
+## Applica le etichette alle attività
 
-Aprire un'attività e utilizzare il controllo delle etichette per aggiungere o rimuovere le etichette.
-accanto allo stato di attività, priorità e filtri di categoria, in modo da poter chiedere concentrato
-domande come “show open P1 habitat-critical work” senza inventare un nuovo
-categoria per quella visione temporanea.
+Apri un'attività e usa il suo controllo delle etichette per aggiungerle o
+rimuoverle. Le etichette lavorano accanto ai filtri di stato, priorità e
+categoria delle attività, così puoi fare domande mirate come “mostra il lavoro
+P1 aperto critico per l'habitat” senza inventare una nuova categoria per quella
+vista temporanea.
 
-## Lasciare che un agente di compito suggerisca etichette
+## Lascia che un agente di attività suggerisca etichette
 
-Quando un agente di attività configurato ha un contesto di attività sufficiente, può suggerire il montaggio
-le etichette accanto ad altri cambiamenti di attività. Lotti rende disponibili solo etichette attive
-quando sono validi per la categoria dell'attività, e rifiuta cancellati,
-out-of-scope, duplicati, o suggerimenti di bassa fiducia. L'agente non ottiene mai
-modo libero di creare tag arbitrari da un prompt.
+Quando un agente di attività configurato ha abbastanza contesto, può suggerire
+etichette adatte accanto ad altre modifiche dell'attività. Lotti rende
+disponibili solo le etichette attive valide per la categoria dell'attività, e
+rifiuta i suggerimenti eliminati, fuori ambito, duplicati o a bassa confidenza.
+L'agente non ottiene mai un modo libero di creare tag arbitrari da un prompt.
 
-Esaminare un'etichetta di agente-originato nell'area di cambiamento proposto del compito proprio come voi
-sarebbe una lista di controllo, una data o un cambiamento di stato. Confermare quando l'etichetta migliora
-filtraggio futuro; respingerlo quando non lo fa. Questo mantiene visibile l'attività
-organizzazione sotto il vostro controllo piuttosto che trattare un modello indovinare come fonte
-La verita'.
+Rivedi un'etichetta proposta dall'agente nell'area delle modifiche proposte
+dell'attività, esattamente come faresti con una lista di controllo, una data o
+un cambio di stato. Confermala quando l'etichetta migliora i filtri futuri;
+scartala quando non lo fa. Così l'organizzazione visibile dell'attività resta
+sotto il tuo controllo, invece di trattare l'ipotesi di un modello come verità
+di origine.
 
-La rimozione di un'etichetta da un compito è trattata come un rifiuto intenzionale quando
-sono abilitati i suggerimenti dell'etichetta automatica. Lotti registra quella scelta così la stessa
-suggerimento non è immediatamente riapplicato senza nuova ragione.
+Rimuovere un'etichetta da un'attività viene trattato come un rifiuto
+intenzionale quando i suggerimenti automatici di etichette sono abilitati.
+Lotti registra quella scelta, così lo stesso suggerimento non viene riapplicato
+subito senza una nuova ragione.
 
-## Mantenere le etichette utili
+## Mantieni utili le etichette
 
-- Preferisci le etichette che cambiano una decisione, un filtro o una recensione.
-- Riutilizzare un'etichetta stabile invece di creare varianti di ortografia.
-- Controllare i conteggi di utilizzo prima di eliminare o consolidare le etichette.
-- Utilizzare la privacy quando il nome dell'etichetta stessa rivela contesto sensibile.
-- Ritirare le etichette che non descrivono più il lavoro dal vivo.
+- Preferisci le etichette che cambiano una decisione, un filtro o una
+  revisione.
+- Riusa un'etichetta stabile invece di creare varianti di ortografia.
+- Controlla i conteggi di utilizzo prima di eliminare o consolidare le
+  etichette.
+- Usa la privacy quando il nome stesso dell'etichetta rivela contesto
+  sensibile.
+- Ritira le etichette che non descrivono più lavoro vivo.
 
-Se qualcosa è la casa primaria e durevole del lavoro, renderlo un
-[categoria](./categories.mdx) invece.
+Se qualcosa è la casa principale e durevole del lavoro, rendila piuttosto una
+[categoria](./categories.mdx).

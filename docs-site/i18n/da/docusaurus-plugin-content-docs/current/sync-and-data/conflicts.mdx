@@ -5,66 +5,69 @@ description: Sammenlign samtidige redigeringer felt for felt og behold eller kom
 
 # Løs synkroniseringskonflikter
 
-En konflikt opstår, når to enheder uafhængigt ændrer samme post og
-Ingen af versionerne er tydeligvis nyere. Lotti bevarer begge versioner i stedet for
-Vælger tavst én.
+En konflikt opstår, når to enheder uafhængigt ændrer den samme post, og ingen
+af versionerne er entydigt nyere. Lotti bevarer begge versioner i stedet for
+at vælge én i det skjulte.
 
-Åbn **Indstillinger → synkroniser → konflikter**. Listen adskiller uafklarede og
-løste punkter og identificerer entitetstypen og tidspunktet for hver konflikt.
+Åbn **Indstillinger → Synkronisering → Konflikter**. Listen adskiller
+uafklarede og løste punkter og identificerer entitetstypen og tidspunktet for
+hver konflikt.
 
 <ManualScreenshot
   caseId="sync/conflicts"
-  alt="Lotti Sync Conflicts list with unresolved Project Waddle task and sardine manifest conflicts plus a resolved task"
-  caption="Resolve current items first. Resolved items remain visible as an audit trail of earlier decisions."
+  alt="Lottis liste over synkroniseringskonflikter med uafklarede konflikter om en Project Waddle-opgave og et sardinmanifest samt en løst opgave"
+  caption="Løs de aktuelle punkter først. Løste punkter forbliver synlige som et revisionsspor over tidligere beslutninger."
 />
 
 ## Sammenlign begge versioner
 
-Åbn en konflikt for at se alle forskellige felter. Tekstændringer inkluderer ordniveau
-højdepunkter; Uændrede felter opsummeres, så siden ikke skjuler, hvor meget
-Af indførslen er stadig enig.
+Åbn en konflikt for at se alle felter, der afviger. Tekstændringer har
+fremhævninger på ordniveau; uændrede felter opsummeres, så siden ikke
+skjuler, hvor meget af posten der stadig stemmer overens.
 
 <ManualScreenshot
   caseId="sync/conflict-detail"
-  alt="Lotti conflict detail comparing local and synced Project Waddle task titles and descriptions field by field"
-  caption="This device kept the final emperor and cargo hold; the synced version cleared all 37 penguins and scheduled the sardine release. Both facts matter."
+  alt="Lottis konfliktdetaljer, der sammenligner lokale og synkroniserede Project Waddle-opgavetitler og -beskrivelser felt for felt"
+  caption="Denne enhed beholdt den sidste kejser og lastrummet; den synkroniserede version klarmeldte alle 37 pingviner og planlagde sardinfrigivelsen. Begge fakta betyder noget."
 />
 
-De tre opløsningsveje er:
+De tre løsningsveje er:
 
 - **Brug denne enhed** beholder den komplette lokale version.
-- **Brug fra synkronisering** beholder den komplette indkommende version.
-- ** Combine** lader dig vælge et starthold og derefter vælge vinderen for
-  hver uafhængigt sammenflettet felt.
+- **Brug fra sync** beholder den komplette indkommende version.
+- **Kombiner...** lader dig vælge en startversion og derefter vælge vinderen
+  for hvert uafhængigt fletbart felt.
 
-At beholde den ene komplette side er passende, når den anden blot er forældet.
-**Combine** er det sikrere valg, når separate felter indeholder gyldigt arbejde fra
-begge enheder; Lotti markerer det som anbefalet, når flere sammenflettbare felter
-Forskellige.
+At beholde den ene komplette side er passende, når den anden blot er
+forældet. **Kombiner...** er det sikrere valg, når separate felter indeholder
+gyldigt arbejde fra begge enheder; Lotti markerer det som anbefalet, når
+flere fletbare felter afviger.
 
-## Kombiner felter uden at skrive om
+## Kombiner felter uden at omskrive
 
-Vælg **Combine**, vælg den version, du vil starte fra, og skift derefter individuel
-marker på den anden side. Felter, der ikke kan sammenlægges uafhængigt, følger,
-den valgte startversion.
+Vælg **Kombiner...**, vælg den version, du vil starte fra, og skift derefter
+de enkelte felter til den anden side. Felter, der ikke kan flettes
+uafhængigt, følger den valgte startversion.
 
 <ManualScreenshot
   caseId="sync/conflict-combine"
-  alt="Lotti Combine conflict editor with starting-version control and separate choices for the task title and body"
-  caption="Start with one structurally complete entry, then take the better title and body from either this device or sync."
+  alt="Lottis Kombiner-konflikteditor med kontrol over startversionen og separate valg for opgavens titel og brødtekst"
+  caption="Start med én strukturelt komplet post, og tag derefter den bedre titel og brødtekst fra enten denne enhed eller synkroniseringen."
 />
 
-Gennemgå alle opførte felter, før du vælger **Anvend samlet**. Den
-Løst post modtager en sammenflettet synkroniseringshistorik, så de samme to redigeringer ikke gør det
-Straks konflikt igen.
+Gennemgå alle viste felter, før du vælger **Ansøg kombineret**. Den løste
+post modtager en flettet synkroniseringshistorik, så de samme to redigeringer
+ikke straks skaber konflikt igen.
 
-:::caution[En resolution ændrer det delte resultat]
+:::caution[En løsning ændrer det delte resultat]
 
-At beholde en side eller anvende en kombineret version skriver vinderen lokalt og
-Gør det muligt at synkronisere med de andre enheder. Læs hele forskellen før
-Bekræfter. Hvis den ene side slettede indlægget, mens den anden redigerede det, Lotti
-viser det sikrere valg mellem slet-mod-rediger i stedet for en normal felt-sammenfletning.
+At beholde en side eller anvende en kombineret version skriver vinderen
+lokalt og lader den synkronisere til de andre enheder. Læs hele forskellen,
+før du bekræfter. Hvis den ene side slettede posten, mens den anden
+redigerede den, viser Lotti det sikrere valg mellem sletning og redigering i
+stedet for en normal feltfletning.
 
 :::
 
-Return to [Sync devices](./sync.mdx) to inspect delivery and catch-up health.
+Vend tilbage til [Synkroniseringsenheder](./sync.mdx) for at inspicere
+leverings- og indhentningstilstanden.

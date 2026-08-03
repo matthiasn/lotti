@@ -42,6 +42,12 @@ Merită să scrieți descrieri atunci când o etichetă poate fi înțeleasă î
 
 Deschideți o sarcină și folosiți controlul etichetelor pentru a adăuga sau elimina etichete. Etichetele funcționează alături de filtrele pentru starea, prioritatea și categoria sarcinii, astfel încât puteți pune întrebări precise, precum „arată munca deschisă P1 critică pentru habitat”, fără a inventa o categorie nouă pentru această perspectivă temporară.
 
+## Lăsați un agent al sarcinii să sugereze etichete
+
+Când un agent al sarcinii configurat are suficient context, poate sugera etichete potrivite alături de alte modificări ale sarcinii. Lotti pune la dispoziție doar etichetele active valabile pentru categoria sarcinii și respinge sugestiile șterse, în afara domeniului, duplicate sau cu încredere scăzută. Agentul nu primește niciodată o cale liberă de a crea etichete arbitrare dintr-un prompt.
+
+Revizuiți o etichetă venită de la agent în zona modificărilor propuse ale sarcinii, exact ca pe o modificare de listă de verificare, de dată sau de stare. Confirmați-o când eticheta îmbunătățește filtrarea viitoare; respingeți-o când nu o face. Astfel, organizarea vizibilă a sarcinii rămâne sub controlul dvs., în loc ca o presupunere a modelului să fie tratată drept adevăr.
+
 Eliminarea unei etichete de pe o sarcină este tratată ca respingere intenționată atunci când sunt active sugestiile automate de etichete. Lotti păstrează alegerea, astfel încât aceeași sugestie să nu fie reaplicată imediat fără un motiv nou.
 
 ## Păstrați etichetele utile

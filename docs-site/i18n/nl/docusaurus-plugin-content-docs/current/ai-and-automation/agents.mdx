@@ -6,18 +6,18 @@ description: Controleer agentactiviteit, inspecteer actieve instanties en beheer
 # Agenten uitvoeren en monitoren
 
 Agenten stellen Lotti in staat een bepaalde verantwoordelijkheid tijdens meerdere wakkercycli te dragen.
-Elke actieve instantie is gebaseerd op een agentsjabloon, gebruikt een gevolgtrekkingsconfiguratie
-en houdt zijn eigen status, rapporten, observaties en activiteitengeschiedenis bij. Open
-**Instellingen → Agenten** om het hele systeem te bekijken.
+Elke actieve instantie is gebaseerd op een agentsjabloon, gebruikt een inferentieconfiguratie
+en houdt zijn eigen status, verslagen, observaties en activiteitengeschiedenis bij. Open
+**Instellingen → Middelen** om het hele systeem te bekijken.
 
-Agentrapporten, observaties en wachtrijen beschrijven het werk van de agent;
+Agentverslagen, observaties en wachtrijen beschrijven het werk van de agent;
 ze herschrijven het persoonlijke logboek niet stilzwijgend. Wanneer een taakagent
 de taakgegevens wil wijzigen, presenteert Lotti een voorstel ter beoordeling.
 [Beoordeel voorgestelde wijzigingen](../organize-and-reflect/task-agents.mdx#beoordeel-voorgestelde-wijzigingen)
-voor de controles van de goedkeuring per taken en de beperkte begintitel en taal ervan
-uitzonderingen.
+beschrijft de goedkeuringscontroles per taak en de beperkte uitzonderingen voor
+de eerste titel en de taal.
 
-Het tokengebruik van agents wordt samen met al het andere AI-werk gerapporteerd in [Bekijk het gebruik en de impact van AI](./usage.mdx).
+Het tokengebruik van agenten wordt samen met al het andere AI-werk gerapporteerd in [Bekijk het gebruik en de impact van AI](./usage.mdx).
 
 ## De actieve instanties controleren
 
@@ -32,43 +32,44 @@ wanneer meerdere verantwoordelijkheden één stem en beslissingsstijl delen.
 />
 
 Selecteer een instantie om de interne werking ervan te inspecteren. Het tabblad **Statistieken** toont
-modelgebruik, het sjabloon, de huidige gevolgtrekkingsroute, levenscycluscontroles, het aantal wakkercycli
+modelgebruik, het sjabloon, de huidige inferentieroute, levenscycluscontroles, het aantal wakkercycli
 en de planningsstatus.
 
 <ManualScreenshot
   caseId="agents/instance-detail"
-  alt="Habitat Seal Inspector Instance detail met token gebruik, Orbital Habitat Sentinel template, gevolggeving route, levenscyclus controles, en wake state"
-  caption="De instantie houdt voldoende herkomst om uit te leggen welke sjabloon en route zijn werk produceerde voordat u pauzeert, opnieuw analyseert of het vernietigd."
+  alt="Detail van de Habitat Seal Inspector-instantie met tokengebruik, het sjabloon Orbital Habitat Sentinel, de inferentieroute, levenscycluscontroles en de wakkerstatus"
+  caption="De instantie bewaart genoeg herkomst om uit te leggen welk sjabloon en welke route zijn werk hebben geproduceerd voordat je hem pauzeert, opnieuw analyseert of vernietigt."
 />
 
 De overige instantietabbladen bewaren verschillende bewijzen:
 
-- **Rapporten** bevat de opgeslagen rapportmomentopnamen van de agent.
+- **Verslagen** bevat de opgeslagen verslagmomentopnamen van de agent.
 - **Gesprekken** groepeert berichten per wakkercyclus.
-- **Observaties** toont vastgelegde bevindingen zonder ze met rapporten te vermengen.
+- **Opmerkingen** toont vastgelegde bevindingen zonder ze met verslagen te vermengen.
 - **Activiteit** toont het chronologische spoor van berichten en hulpmiddelen.
 
-**Pauzeren** behoudt de instantie maar stopt het normale werk. **Opnieuw analyseren** vraagt een taakagent
+**Pauze** behoudt de instantie maar stopt het normale werk. **Heranalyseren** vraagt een taakagent
 om het huidige onderwerp opnieuw te beoordelen. **Vernietigen** is destructief en mag
 alleen worden gebruikt wanneer de instantie zelf niet meer gewenst is; het wijzigen van het
 sjabloon voor toekomstige agenten vereist niet dat niet-gerelateerde instanties worden verwijderd.
 
 ## Begrijp wakkercycli
 
-Open **Wakkercycli** om werk te bekijken dat nu wordt uitgevoerd en later gepland staat. Een
-wakkercyclus **In afwachting** is door de agent aangevraagd. Een **Geplande** wakkercyclus is ingesteld door
+Open **Wake Cycles** om werk te bekijken dat nu wordt uitgevoerd en later gepland staat. Een
+wakkercyclus **In afwachting** is door de agent aangevraagd. Een wakkercyclus **Gepland** is ingesteld door
 het systeem of de planner. Elke rij houdt de gekoppelde taak, het project of de dag zichtbaar
 naast de verantwoordelijke agent en een live countdown.
 
 <ManualScreenshot
   caseId="agents/pending-wakes"
-  alt="Lotti Wake Cycles toont de lopende habitat inspectie en gepland Project Waddle en sardine logistiek wakes"
-  caption="De wachtrij onderscheidt een op verzoek van een agent gevraagde habitat follow-up van lanceer-dag en vracht schema's, dus een aftelling heeft altijd een reden en eigenaar."
+  alt="Lotti Wake Cycles toont de lopende habitatinspectie en geplande wakkercycli voor Project Waddle en sardienenlogistiek"
+  caption="De wachtrij onderscheidt een door een agent aangevraagde habitat-follow-up van lanceerdag- en vrachtschema's, dus een aftelling heeft altijd een reden en een eigenaar."
 />
 
-Het verwijderen van een wakkercyclus uit de wachtrij verwijdert alleen die timer, niet de gekoppelde
-taak. Als een wakkercyclus onmiddellijk terugkeert, inspecteer dan de agentstatus of de
-automatisering die hem heeft aangevraagd in plaats van herhaaldelijk het symptoom te verwijderen.
+Het verwijderen van een wakkercyclus uit de wachtrij verwijdert alleen die timer, niet de
+agent of de gekoppelde taak. Als een wakkercyclus onmiddellijk terugkeert, inspecteer dan de
+agentstatus of de automatisering die hem heeft aangevraagd in plaats van herhaaldelijk het
+symptoom te verwijderen.
 
 Ga verder met [Agentsjablonen en zielen](./agent-blueprints.mdx) om te definiëren
 wat deze instanties doen en hoe ze communiceren.

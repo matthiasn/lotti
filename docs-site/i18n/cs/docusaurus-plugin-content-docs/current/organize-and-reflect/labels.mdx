@@ -52,6 +52,19 @@ Otevři úkol a ovládáním štítků je přidávej nebo odebírej. Štítky fu
 filtrů stavu, priority a kategorie, takže můžeš položit otázku „ukaž otevřenou
 P1 práci kritickou pro obydlí“ bez vytváření nové kategorie pro dočasný pohled.
 
+## Nech agenta úkolu navrhovat štítky
+
+Když má nastavený agent úkolu dost kontextu, může vedle dalších změn úkolu
+navrhnout vhodné štítky. Lotti zpřístupní jen aktivní štítky platné pro
+kategorii úkolu a odmítne smazané, nepatřičné, duplicitní nebo málo jisté
+návrhy. Agent nikdy nedostane volnou možnost vytvářet z promptu libovolné
+štítky.
+
+Štítek pocházející od agenta zkontroluj v oblasti navržených změn úkolu stejně
+jako změnu kontrolního seznamu, termínu nebo stavu. Potvrď ho, když zlepší
+budoucí filtrování; zamítni ho, když ne. Viditelná organizace úkolu tak
+zůstává pod tvou kontrolou, místo aby se odhad modelu bral jako pravda.
+
 Odebrání štítku z úkolu se při zapnutých automatických návrzích považuje za
 záměrné odmítnutí. Lotti tuto volbu zaznamená, aby stejný návrh bez nového
 důvodu hned nepoužilo znovu.

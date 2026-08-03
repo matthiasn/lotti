@@ -1,40 +1,44 @@
 ---
 title: Synkroniseringsvedligeholdelse
-description: Brug Matrix-synkronisering, reparation og oprydningshandlinger bevidst, fra genudsendelse af poster til genopbygning af sekvenshistorik.
+description: Brug Matrix-synkroniseringens reparations- og oprydningshandlinger bevidst, fra genudsendelse af poster til genopbygning af sekvenshistorik.
 ---
 
 # Synkroniseringsvedligeholdelse
 
-Åbn **Indstillinger → Synkronisering → Vedligeholdelse** for database-niveau reparation og oprydning.
-Disse handlinger er ikke en del af rutinemæssig parring eller daglig synkronisering.
-Før du bruger dem, lad aktive skrivninger færdige og gem en aktuel backup af data
-Du kan ikke genskabe.
+Åbn **Indstillinger → Synkronisering → Vedligeholdelse** for reparation og
+oprydning på databaseniveau. Disse handlinger er ikke en del af rutinemæssig
+parring eller daglig synkronisering. Før du bruger dem, så lad aktive
+skrivninger blive færdige, og gem en aktuel backup af data, du ikke kan
+genskabe.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lotti Matrix Sync Maintenance with sync database deletion, definition sync, message re-sync, sequence-log population, and sent-outbox purge"
-  caption="Maintenance groups destructive, replay, and cleanup actions on one page. The confirmation text defines the scope of each operation."
+  alt="Lottis Matrix-synkroniseringsvedligeholdelse med sletning af synkroniseringsdatabase, definitionssynkronisering, gen-synkronisering af beskeder, opbygning af sekvenslog og rensning af sendt udbakke"
+  caption="Vedligeholdelse samler destruktive handlinger, genafspilning og oprydning på én side. Bekræftelsesteksten definerer omfanget af hver operation."
 />
 
 ## Vælg den smalleste reparation
 
-- **Slet Sync Database** fjerner den lokale synkroniseringsdatabase. Det er ødelæggende
-  Lokal gendannelse, ikke en normal måde at afbryde en enhed på.
-- **Sync definitions** sender de aktuelle definitionsposter igen, såsom
-  kategorier og anden delt konfiguration.
-- ** Re-synkroniseringsbeskeder** afspiller udvalgte beskeder, når fjerntilstanden mangler
-  eller en tidligere levering skal gentages.
-- **Udfyld sekvenslog** rekonstruerer den lokale sekvenshistorik, der bruges til at
-  Opdag huller og driv tilbagefyldning.
-- **Rens gamle sendte udbakke-elementer** sletter allerede sendte diagnostiske køhistorik
-  efter dens opbevaringsperiode. Den fjerner ikke afventende eller mislykket arbejde.
+- **Slet synkroniseringsdatabase** fjerner den lokale
+  synkroniseringsdatabase. Det er destruktiv lokal gendannelse, ikke en
+  normal måde at afkoble en enhed på.
+- **Synkronisér definitioner** sender de aktuelle definitionsposter igen,
+  såsom kategorier og anden delt konfiguration.
+- **Gen-synkronisér beskeder** genafspiller udvalgte beskeder, når
+  fjerntilstanden mangler, eller en tidligere levering skal gentages.
+- **Udfyld sekvenslog** rekonstruerer den lokale sekvenshistorik, der bruges
+  til at opdage huller og drive tilbagefyldning.
+- **Rens gamle udsendte udbakke-varer** sletter allerede sendt diagnostisk
+  køhistorik efter dens opbevaringsperiode. Den fjerner ikke afventende eller
+  mislykket arbejde.
 
-Start med den mindste operation, der matcher symptomet. En fastlåst tilknytning
-belongs in the [Outbox](./sync.mdx#inspicer-outboxen); persistent sequence gaps
-hører til i Backfill; to gyldige samtidige redigeringer hører til i
-[Conflicts](./conflicts.mdx). Deleting the sync database should be a last-resort
-Lokal nulstilling udført med en kendt god peer og backup til rådighed.
+Start med den mindste operation, der matcher symptomet. En fastlåst
+vedhæftning hører til i [udbakken](./sync.mdx#inspicer-outboxen);
+vedvarende sekvenshuller hører til i tilbagefyldning; to gyldige samtidige
+redigeringer hører til i [Konflikter](./conflicts.mdx). Sletning af
+synkroniseringsdatabasen bør være en sidste udvejs lokal nulstilling, udført
+med en kendt god peer og en backup ved hånden.
 
-Efter en reparation, vend tilbage til **Sync Statistics**, bekræft at det behandlede arbejde er
-Fremgang uden stigende fejl, og tjek at Udbakken og
-Tilbagefyldnings mangler tælling.
+Efter en reparation: vend tilbage til **synkroniseringsstatistikken**,
+bekræft at det behandlede arbejde skrider frem uden stigende fejl, og tjek at
+udbakken og tilbagefyldningens mangler-tal falder.

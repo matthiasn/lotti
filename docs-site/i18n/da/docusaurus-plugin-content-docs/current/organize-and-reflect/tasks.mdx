@@ -5,35 +5,38 @@ description: Brug status, prioritet, tjeklister og tilknyttet kontekst til at fr
 
 # Arbejd med opgaver
 
-Opgaver grupperer et resultat med konteksten og de nødvendige trin for at færdiggøre det. Keep
-Titler resultatorienterede og sæt støttende noter, billeder, optagelser og tid
-Registrer i opgaven.
+Opgaver samler et resultat med konteksten og de trin, der skal til for at
+færdiggøre det. Hold titlerne resultatorienterede, og læg støttende noter,
+billeder, optagelser og tidsregistreringer ind i opgaven.
 
 <ManualScreenshot
   caseId="tasks/workspace"
-  alt="Production task workspace showing real task rows with cover-art thumbnails from the Intergalactic Penguin Logistics demo data"
+  alt="Produktionsopgave-arbejdsområde med rigtige opgaverækker og coverkunst-miniaturer fra Intergalactic Penguin Logistics-demodataene"
 />
 
-På skrivebordet forbliver opgavelisten synlig ved siden af den valgte opgave, så du kan
-Bevæge dig igennem arbejdet uden at miste kontekst. På mobilen åbner valg af en opgave sin
-detaljevisning i fuld skærm. Coverkunsten følger opgaven overalt, hvor den dukker op,
-herunder opgavelisten og tilknyttede daglige OS-dagsordenspunkter.
+På desktop forbliver opgavelisten synlig ved siden af den valgte opgave, så du
+kan bevæge dig gennem arbejdet uden at miste kontekst. På mobil åbner valg af
+en opgave dens detaljevisning i fuld skærm. Coverkunsten følger opgaven,
+overalt hvor den dukker op, herunder opgavelisten og tilknyttede Daily
+OS-dagsordenspunkter.
 
-Coverkunst er valgfrit, men det kan gøre et tæt arbejdsområde meget nemmere at scanne.
-Brug det som et nyttigt visuelt signal, en produktreference eller en mindeværdig metafor
-for arbejdet. Project Waddle-illustrationerne i denne manual er kun en
-Eksempel: Et cover kan være lige så praktisk, legende eller vidunderligt mærkeligt som dig
-ønske. Se [Generer coverkunst til opgaven](./task-cover-art.mdx) for at skabe et
-ud fra opgavens egen kontekst og referencebilleder.
+Coverkunst er valgfri, men den kan gøre et tæt arbejdsområde meget nemmere at
+skimme. Brug den som et nyttigt visuelt signal, en produktreference eller en
+mindeværdig metafor for arbejdet. Project Waddle-illustrationerne i denne
+manual er kun ét eksempel: et cover kan være lige så praktisk, legende eller
+vidunderligt mærkeligt, som du ønsker. Se [Generer coverkunst til
+opgaven](./task-cover-art.mdx) for at skabe et ud fra opgavens egen kontekst
+og referencebilleder.
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Production task detail page for inspecting the orbital penguin habitat, with the same cover art used by task thumbnails"
+  alt="Produktionsopgaveside for inspektion af det orbitale pingvinhabitat med den samme coverkunst, som opgaveminiaturerne bruger"
 />
 
-Den samme opgave kan indeholde en beskrivelse, kategori, etiketter, forfaldsdato, tidsregistreringer,
-tjeklisteelementer, billeder, links og lydoptagelser. Den kan også have en
-vedvarende AI-assistent med sit eget resumé, vågentilstand og foreslåede
+Den samme opgave kan indeholde en beskrivelse, kategori, etiketter,
+forfaldsdato, tidsregistreringer, tjeklistepunkter, billeder, links og
+lydoptagelser. Den kan også have en vedvarende AI-assistent med sit eget
+resumé, sin vågentilstand og sine foreslåede
 ændringer — se [Tildel en task agent](./task-agents.mdx).
 
 ## Prioritet
@@ -42,7 +45,7 @@ Lotti bruger fire kompakte prioritetsniveauer:
 
 | Prioritet | Betyder | Brug den til |
 | --- | --- | --- |
-| P0 | Hastende | Arbejde, der virkelig kræver opmærksomhed næste |
+| P0 | Hastende | Arbejde, der virkelig kræver opmærksomhed som det næste |
 | P1 | Høj | Vigtigt arbejde, der bør ske snart |
 | P2 | Medium | Den normale standard |
 | P3 | Lav | Arbejde der kan vente |
@@ -50,9 +53,10 @@ Lotti bruger fire kompakte prioritetsniveauer:
 Åbn en opgave og brug prioritetskontrollen i dens header til at ændre niveauet.
 Eksisterende opgaver uden eksplicit prioritet opfører sig som P2.
 
-Pickeren staver de kompakte koder, mens prioritetsglyfferne tilføjer et visuelt udseende
-Sæt både lyse og mørke temaer ind. Behandl P0–P3-koderne som betydningen; farve
-Hjælper med scanning, men bør aldrig være det eneste signal, du er afhængig af.
+Vælgeren skriver de kompakte koder helt ud, mens prioritetsglyfferne tilføjer
+et visuelt anker i både lyst og mørkt tema. Behandl P0–P3-koderne som selve
+betydningen; farven hjælper med at skimme, men bør aldrig være det eneste
+signal, du er afhængig af.
 
 ## Filtrer og ordn opgavelisten
 
@@ -62,79 +66,84 @@ Hjælper med scanning, men bør aldrig være det eneste signal, du er afhængig 
   caption="Video med fortæller: filtrere opgavelisten efter status og kategori og derefter gemme visningen."
 />
 
-Brug filterkontrollen ved siden af opgavesøgningsfeltet for at fokusere listen. Vælg
-en eller flere statusser, prioriteter, kategorier, etiketter og—når Projekter er
-aktiveret—projekter. Kategori- og labelvælgere tilbyder også **Unassigned** for
-arbejde, der stadig mangler den organiserende detalje. **Agent**-valget adskiller
-opgaver med en tildelt agent fra opgaver uden en.
+Brug filterkontrollen ved siden af opgavesøgningsfeltet for at fokusere listen.
+Vælg en eller flere statusser, prioriteter, kategorier, etiketter og — når
+Projekter er aktiveret — projekter. Kategori- og etiketvælgerne tilbyder også
+**Ikke tildelt** for arbejde, der stadig mangler den organiserende detalje.
+**Agent**-valget adskiller opgaver med en tildelt agent fra opgaver uden en.
 
 <ManualScreenshot
   caseId="tasks/filters"
-  alt="Task filter sheet with sort, status, priority, category, and label controls"
+  alt="Opgavefilterark med kontroller for sortering, status, prioritet, kategori og etiketter"
 />
 
-Valg inden for ét filter er alternativer: valg af P0 og P1 viser enten
-Prioritet. Forskellige filtre indsnævrer resultatet sammen: vælg P0 eller P1
-*og* Penguin Operations viser kun matchende arbejde. Brug **Ryd alt** for at returnere
-til et ubegrænset syn i stedet for at forsøge at omgøre hvert valg individuelt.
+Valg inden for ét filter er alternativer: at vælge P0 og P1 viser begge
+prioriteter. Forskellige filtre indsnævrer resultatet sammen: at vælge P0
+eller P1 *og* Penguin-operationer viser kun matchende arbejde. Brug **Ryd
+alt** for at vende tilbage til en ubegrænset visning i stedet for at forsøge
+at omgøre hvert valg enkeltvis.
 
-Vælg **Forfaldsdato**, **Oprettet** eller **Prioritet** i samme ark for at ændre
-Rækkefølgen. Prioritetsrækkefølgen er P0 til P3, med nyere opgaver først inden for en
-Prioritet, medmindre en anden sortering er aktiv. På skrivebordet er en aktiveret vektorsøgning
-Setup kan også tilbyde semantisk søgning sammen med almindelig fuldtekstsøgning.
+Vælg **Forfaldsdato**, **Oprettet** eller **Prioritet** i samme ark for at
+ændre rækkefølgen. Prioritetsrækkefølgen er P0 til P3, med nyere opgaver først
+inden for en prioritet, medmindre en anden sortering er aktiv. På desktop kan
+en aktiveret vektorsøgningsopsætning også tilbyde semantisk søgning sammen med
+almindelig fuldtekstsøgning.
 
-Når du regelmæssigt vender tilbage til det samme fokuserede syn, gem det aktive filter
-fra arket og giv det et klart navn. Genåbn den fra opgavelisten, så
-Opdater det gemte filter, når dets kriterier ændres.
+Når du regelmæssigt vender tilbage til den samme fokuserede visning, så gem
+det aktive filter fra arket, og giv det et klart navn. Genåbn det fra
+opgavelisten, og opdater det gemte filter, når dets kriterier ændres.
 
 ## Brug tjeklister til næste lag ned
 
 En tjekliste bør være mindre og mere konkret end dens opgave. "Udgiv
 manualen" er en opgave; "Verificér hvert navigationslink" er et tjeklistepunkt.
-Tjeklister kan redigeres direkte og kan også foreslås af konfigureret AI
-færdigheder ud fra opgavekonteksten.
+Tjeklister kan redigeres direkte og kan også foreslås af konfigurerede
+AI-færdigheder ud fra opgavekonteksten.
 
 ## Tilføj opgavekontekst
 
-Brug opgavens **Add**-handling til at vedhæfte en tjekliste, en anden opgave, en lyd
-optagelse, en timer, en tekstindtastning eller et billede uden at forlade opgaven. Den
-Tilgængelige handlinger afhænger af den aktuelle platform og kontekst.
+Brug opgavens **Tilføj**-handling til at vedhæfte en tjekliste, en anden
+opgave, en lydoptagelse, en timer, en tekstindtastning eller et billede uden
+at forlade opgaven. De tilgængelige handlinger afhænger af den aktuelle
+platform og kontekst.
 
 <ManualScreenshot
   caseId="entries/create-menu"
-  alt="Add menu over the orbital habitat task with task-aware capture actions"
+  alt="Tilføjelsesmenu over opgaven om det orbitale habitat med opgavebevidste indfangningshandlinger"
 />
 
-See [Add entries and context](../plan-and-capture/entries.mdx) for when to use
-hver indgangstype.
+Se [Tilføj poster og kontekst](../plan-and-capture/entries.mdx) for hvornår du
+skal bruge hver posttype.
 
-## Linkrelaterede opgaver
+## Link relaterede opgaver
 
-Åbn opgavens **Linked**-sektion og vælg at linke en eksisterende opgave. Søgning
-vælger derefter det relevante udfald. Lotti udelukker den aktuelle opgave
-og opgaver, der allerede er forbundet i den retning.
+Åbn opgavens **Links**-sektion, og vælg at linke en eksisterende opgave.
+Søgningen vælger derefter det relevante mål. Lotti udelukker den aktuelle
+opgave og opgaver, der allerede er forbundet i den retning.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Production task-link picker listing related Project Waddle tasks and their status, priority, category, and due-date context"
+  alt="Produktionsvælger til opgavelinks med relaterede Project Waddle-opgaver og deres status-, prioritets-, kategori- og forfaldsdatokontekst"
 />
 
-Opgavelinks er retningsbestemt: den aktuelle opgave peger på den opgave, du vælger.
-Begge sider forbliver tilgængelige via deres sammenkædede indgangssektioner, mens hver side
-Opgaven bevarer sin egen status, tidsplan og vedhæftninger.
+Opgavelinks er retningsbestemte: den aktuelle opgave peger på den opgave, du
+vælger. Begge sider forbliver tilgængelige via deres sektioner for tilknyttede
+poster, mens hver opgave bevarer sin egen status, tidsplan og vedhæftninger.
 
 ## Brug stemmen uden at miste kontrollen
 
-Skriv en note i opgaven, når det er hurtigere at forklare situationen højt.
-Med transskription og opgavefærdigheder konfigureret kan Lotti omsætte den kontekst til
-tekst og foreslåede ændringer i tjeklisten. Gennemgå resultatet, især navne,
-datoer og destruktive ændringer. Se [Optag lyd](../plan-and-capture/recordings.mdx)
-for optagelseskontroller og behandlingsmuligheder. [Lav din første
-opgave](../getting-started/first-task.mdx) har en fortalt gennemgang af den samme
-diktér-gennemgå-bekræft-arbejdsgang.
+Indtal en note i opgaven, når det er hurtigere at forklare situationen højt.
+Med transskription og opgavefærdigheder konfigureret kan Lotti omsætte den
+kontekst til tekst og foreslåede ændringer i tjeklisten. Gennemgå resultatet,
+især navne, datoer og destruktive ændringer. Se [Optag
+lyd](../plan-and-capture/recordings.mdx) for optagelseskontroller og
+behandlingsmuligheder. [Lav din første
+opgave](../getting-started/first-task.mdx) har en fortalt gennemgang af den
+samme diktér-gennemgå-bekræft-arbejdsgang.
 
 :::tip
 
-Brug P0 sparsomt. Hvis alt er akut, stopper etiketten med at bære information.
+Brug P0 sparsomt. Hvis alt er akut, holder etiketten op med at bære
+information.
 
 :::

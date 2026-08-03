@@ -5,150 +5,159 @@ description: Kontrollera funktionsflaggor och loggning, kör underhållsverktyg,
 
 # Använd Avancerade inställningar säkert
 
-Öppna **Inställningar → Avancerade inställningar** för avancerade användarkontroller, diagnostik och
-underhåll. Dessa sidor ändrar antingen hur Lotti driver eller agerar direkt på lokalt
-data, så vanlig personalisering hör hemma någon annanstans i Inställningar.
+Öppna **Inställningar → Avancerade inställningar** för avancerade
+användarkontroller, diagnostik och underhåll. Dessa sidor ändrar antingen hur
+Lotti körs eller agerar direkt på lokal data, så vanlig personalisering hör
+hemma någon annanstans i Inställningar.
 
-Skrivbordet behåller inställningsträdet bredvid den valda sidan. Mobilen öppnar en
-sida i taget och ger en tillbaka-knapp. Samma kontroller och fortsatte
-värden används i båda layouterna.
+Skrivbordet behåller inställningsträdet bredvid den valda sidan. Mobilen
+öppnar en sida i taget och erbjuder en tillbaka-knapp. Samma kontroller och
+sparade värden används i båda layouterna.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Lotti Advanced Settings hub with Config Flags, Animations, Language, Logging, Maintenance, Onboarding Metrics, and About Lotti"
-  caption="Advanced Settings groups operational controls away from everyday preferences. Some entries vary by platform and enabled capabilities."
+  alt="Lottis nav för avancerade inställningar med Konfigurationsflaggor, Underhållning, Språk, Loggning, Underhåll, Onboarding-mått och Om Lotti"
+  caption="Avancerade inställningar samlar operativa kontroller åtskilda från vardagliga preferenser. Vissa poster varierar efter plattform och aktiverade förmågor."
 />
 
-## Välj manualspråket
+## Välj manualens språk
 
 Öppna **Språk** för att avgöra vilken publicerad manual appen öppnar. **Följ
-systemet** är standarden och väljer engelska, tyska, franska, italienska,
-Spanska, tjeckiska, rumänska eller portugisiska Manual från ditt språk.
-Välj **engelska**, **tyska**, **franska**, **italienska**, **spanska**, **tjeckiska**,
-**Rumänska**, eller **portugisiska** för att hålla fast vid ett annat val. Manualens inträde
-längst ner i Inställningar och **Hjälp → Manual** på macOS använder båda denna inställning.
+systemet** är standarden och väljer den engelska, tyska, franska,
+italienska, spanska, tjeckiska, rumänska eller portugisiska manualen utifrån
+ditt enhetsspråk. Välj **Engelska**, **Tyska**, **Franska**, **Italienska**,
+**Spanska**, **Tjeckiska**, **Rumänska** eller **Portugisiska** för att spara
+ett annat val. Både manualsposten längst ner i Inställningar och **Hjälp →
+Manual** på macOS använder den här inställningen.
 
-## Kontrollfunktioner med konfigurationsflaggor
+## Styr förmågor med konfigurationsflaggor
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Lotti Config Flags page with searchable switches for private entries, notifications, location recording, tooltips, and AI streaming"
-  caption="Search matches both flag names and descriptions. Each switch changes its stored runtime capability immediately."
+  alt="Lottis sida med konfigurationsflaggor med sökbara omkopplare för privata poster, notiser, platsregistrering, verktygstips och AI-strömning"
+  caption="Sökningen matchar både flaggnamn och beskrivningar. Varje omkopplare ändrar sin lagrade körtidsförmåga omedelbart."
 />
 
-**Konfigurationsflaggor** är kapabilitetsväxeln. Den innehåller kontroller för:
+**Konfigurationsflaggor** är förmågornas kopplingsbord. Sidan innehåller
+kontroller för:
 
--  synlighet vid privat inträde, notiser, platsfångst och verktygstips;
-- AI-svarsströmning och sammanfattningsuppspelning;
-- loggning och Matrix-synkroniseringsbeteende;
--  funktionssidor som Vanor, Instrumentpaneler, Evenemang, Projekt och Vad som är nytt;
--  inbäddningar och vektorsökning; och
-- operativa indikatorer såsom synkroniseringsaktivitet, väntande agentvakningar och fork
-  läkande.
+- synlighet för privata poster, notiser, platsfångst och verktygstips;
+- strömning av AI-svar och uppläsning av sammanfattningar;
+- loggning och Matrix-synkbeteende;
+- funktionssidor som Vanor, Instrumentpaneler, Evenemang, Projekt och Vad är
+  nytt;
+- inbäddningar och vektorsökning; och
+- operativa indikatorer som synkaktivitet, väntande agentvakningar och
+  fork-läkning.
 
-Använd **Sökflaggor** för att begränsa listan efter titel eller beskrivning. Välj en rad
-Eller så är det en switch för att byta flagga. Det nya värdet sparas omedelbart; Där
-är ingen separat Spar-åtgärd.
+Använd **Sökflaggor** för att begränsa listan efter titel eller beskrivning.
+Välj en rad eller dess omkopplare för att ändra flaggan. Det nya värdet
+sparas omedelbart; det finns ingen separat sparåtgärd.
 
-Flaggor kan avslöja experimentellt eller diagnostiskt beteende. Byt ett medvetet,
-Verifiera sedan det påverkade arbetsflödet innan du ändrar ett annat. **Showens privata
-Poster?**-flaggan styr om känsligt innehåll inkluderas i listor och
-uttagare; den krypterar, exporterar, raderar inte och ändrar inte integriteten för en
-Inträde.
+Flaggor kan exponera experimentellt eller diagnostiskt beteende. Ändra en i
+taget, medvetet, och verifiera det påverkade arbetsflödet innan du ändrar
+nästa. Flaggan **Visa privata bidrag?** styr om känsligt innehåll tas med i
+listor och väljare; den krypterar, exporterar, raderar eller ändrar inte en
+posts sekretess.
 
 ## Välj vad Lotti loggar
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Lotti Logging settings with a master logging switch, individual operational domains, and slow-query logging"
-  caption="The master switch gates the per-domain controls. The Project Waddle fixture keeps Sync, AI, and Tasks enabled for focused diagnostics."
+  alt="Lottis loggningsinställningar med en huvudströmbrytare för loggning, enskilda operativa domäner och loggning av långsamma frågor"
+  caption="Huvudströmbrytaren styr per-domänkontrollerna. Project Waddle-fixturen håller Synk, AI och Uppgifter aktiverade för fokuserad diagnostik."
 />
 
-**Loggningen** börjar med den globala **Aktivera loggning**-brytaren. När den är på,
-aktivera endast de domäner som behövs för en undersökning, såsom Sync, AI, Tasks,
-Etiketter, hälsa, vanor, navigering, notiser eller dagligt operativsystem. **Logga långsamt
-Frågor** lägger till databasprestandadiagnostik.
+**Loggning** börjar med den globala omkopplaren **Aktivera loggning**. När
+den är på, aktivera bara de domäner som behövs för en undersökning, som synk,
+AI, uppgifter, etiketter, hälsa, vanor, navigering, notiser eller Daily OS.
+**Långsamma databasfrågor** lägger till prestandadiagnostik för databasen.
 
-Att stänga av huvudströmbrytaren inaktiverar domänkontrollerna. Fel är fortfarande
-written to the daily `error-*.log`; these switches govern additional diagnostic
-Loggning, inte minsta felposten. Inaktivera brusiga domäner efter en
-Undersökning så att loggarna hålls fokuserade och lagringsanvändningen förblir förutsägbar.
+Att stänga av huvudströmbrytaren inaktiverar domänkontrollerna. Fel skrivs
+fortfarande till den dagliga `error-*.log`; dessa omkopplare styr extra
+diagnostisk loggning, inte den minsta felposten. Inaktivera brusiga domäner
+efter en undersökning så att loggarna hålls fokuserade och
+lagringsanvändningen förblir förutsägbar.
 
 ## Utför underhållsåtgärder medvetet
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Lotti Maintenance page with onboarding previews, reset actions, database deletion, purge, search index, embeddings, and repaint diagnostics"
-  caption="Maintenance combines safe previews with destructive and diagnostic actions. Read the confirmation and scope before continuing."
+  alt="Lottis underhållssida med onboardingförhandsvisningar, återställningsåtgärder, databasradering, rensning, sökindex, inbäddningar och ommålningsdiagnostik"
+  caption="Underhåll kombinerar säkra förhandsvisningar med destruktiva och diagnostiska åtgärder. Läs bekräftelsen och omfånget innan du fortsätter."
 />
 
-**Underhåll** innehåller flera olika typer av åtgärder:
+**Underhåll** innehåller flera olika slags åtgärder:
 
-- **Visa onboarding välkomna** och **Onboarding animationsgalleri** är live
-  förhandsvisningar för utveckling och QA.
+- **Välkommen för introduktion av programmet** och
+  **Introduktionsanimationsgalleri** är liveförhandsvisningar för utveckling
+  och QA.
 - **Återställ tips i appen** gör engångstips berättigade att visas igen.
-- **Återställ Gemini Setup Dialog** rensar sin avvisning så att leverantörsprompten kan
-  Testas igen.
-- **Ta bort redigerardatabas** tar bort redaktörsutkast.
-- **Ta bort agentdatabas** tar bort agentdatabasen och lämnar Lotti så att
-  Appen kan starta om mot en ren butik.
-- **Rensa raderade objekt** rensar permanent mjukt raderade poster genom en
-  Dedikerat bekräftelseflöde.
-- **Återskapa fulltextindex** bygger upp lokal sökdata utan att återskapa
-  Dagboksanteckningar.
-- **Generate Embeddings** visas när embeddingsbutiken är tillgänglig och
-  Utvalda kategorier fyller ut.
-- **Måla om regnbågsöverlägg** blinkar och målar om regioner för UI-diagnostik. Det
-  hålls i minnet och återgår till avstängning efter omstart.
+- **Återställ Gemini-inställningsdialogen** rensar dess avvisning så att
+  leverantörsprompten kan testas igen.
+- **Ta bort editordatabasen** tar bort redigerarutkast.
+- **Databas för borttagningsagenter** tar bort agentdatabasen och avslutar
+  Lotti så att appen kan starta om mot ett rent lager.
+- **Rensa bort raderade objekt** rensar permanent mjukraderade poster genom
+  ett dedikerat bekräftelseflöde.
+- **Återskapa fulltextindex** bygger om lokal sökdata utan att återskapa
+  dagboksposter.
+- **Generera inbäddningar** visas när inbäddningslagret är tillgängligt och
+  fyller på valda kategorier.
+- **Regnbågsöverlägg för ommålning** blinkar regioner som målas om för
+  UI-diagnostik. Den hålls i minnet och återgår till av efter omstart.
 
-Förhandsgranskning och återställningsåtgärder innebär inte samma risk som radering och rensning.
-För destruktiva handlingar, bekräfta att målet är den avsedda lokala butiken
-och låt alla nuvarande synk- eller skrivoperationer bli klara först.
+Förhandsvisnings- och återställningsåtgärder bär inte samma risk som
+radering och rensning. Bekräfta vid destruktiva åtgärder att målet är det
+avsedda lokala lagret och låt pågående synk- eller skrivoperationer bli
+klara först.
 
 ## Inspektera onboarding-tratten
 
 <ManualScreenshot
   caseId="advanced-settings/onboarding-metrics"
-  alt="Lotti Onboarding Metrics page showing install time, four active days, activation status, and content-free event counts"
-  caption="The deterministic manual fixture reached its real aha across four active days after connecting a provider and recording several captures."
+  alt="Lottis sida med onboarding-mått som visar installationstid, fyra aktiva dagar, aktiveringsstatus och innehållsfria händelseräkningar"
+  caption="Den deterministiska manualfixturen nådde sitt verkliga aha under fyra aktiva dagar efter att en leverantör kopplats in och flera fångster spelats in."
 />
 
-**Onboarding Metrics** är en utvecklar- och QA-yta. Den härleder en lokal tratt.
-Från innehållsfria evenemang och shower:
+**Onboarding-mått** är en utvecklar- och QA-yta. Den härleder en lokal tratt
+från innehållsfria händelser och visar:
 
--  den första tidsstämpeln i UTC;
-- Totala aktiva dagar och aktiva dagar under de första sju dagarna;
-- om installationen tillhör pre-FTUE-baslinjekohorten;
+- den första tidsstämpeln i UTC;
+- totala aktiva dagar och aktiva dagar under de första sju dagarna;
+- om installationen tillhör baslinjekohorten före FTUE;
 - om den verkliga aktiveringsmilstolpen nåddes; och
-- a räknas för varje introduktionsevent.
+- en räkning för varje onboardinghändelse.
 
-Sidan registrerar händelsenamn och metadata med låg kardinalitet, inte journaltext,
-uppgiftstitlar, transkriptioner eller de sardinkänsliga detaljerna i Project Waddle.
+Sidan registrerar händelsenamn och metadata med låg kardinalitet, inte
+dagbokstext, uppgiftstitlar, transkriptioner eller Project Waddles
+sardinkänsliga detaljer.
 
-**Återställ onboarding teststatus** rensar onboardingpromptens och lokal
-Funnel-mätvärden efter bekräftelse. Den raderar inte journaldata, konfiguration
-flaggor, eller riktig Daily OS-planhistorik. En profil som redan har planerat en dag
-därför förblir det fortfarande inte berättigat till exakt ren profil av första planen.
+**Återställ onboarding-teststatus** rensar onboardingpromptens frekvens och
+de lokala trattmätvärdena efter bekräftelse. Den raderar inte dagboksdata,
+konfigurationsflaggor eller verklig Daily OS-planhistorik. En profil som
+redan har planerat en dag förblir därför obehörig för den exakta
+förstaplansvägen för rena profiler.
 
-## Verifiera bygget och lokala totaler
+## Verifiera bygget och de lokala totalerna
 
 <ManualScreenshot
   caseId="advanced-settings/about"
-  alt="Lotti About page showing version, platform, build type, 2604 journal entries, 11 flagged entries, and task counts"
-  caption="About Lotti identifies the running build and summarizes local data. The Project Waddle fixture contains 2,604 entries and 65 tasks across five states."
+  alt="Lottis Om-sida med version, plattform, byggtyp, 2604 dagboksposter, 11 flaggade poster och uppgiftsantal"
+  caption="Om Lotti identifierar det körande bygget och sammanfattar lokal data. Project Waddle-fixturen innehåller 2 604 poster och 65 uppgifter fördelade på fem statusar."
 />
 
-**About Lotti** är det snabbaste stället att verifiera vilken build som faktiskt körs.
-Den visar appversionen och byggnummer, plattform och byggtyp. Inkludera
-dessa värden i en diagnostisk rapport så att ett beteende kan matchas till höger
-kod och frigörelse.
+**Om Lotti** är det snabbaste stället att verifiera vilket bygge som
+faktiskt körs. Sidan visar appversionen och byggnumret, plattformen och
+byggtypen. Ta med de värdena i en diagnostikrapport så att ett beteende kan
+matchas mot rätt kod och release.
 
-**Dina data**-kort sammanfattar lokala journalposter, flaggade poster och
-Uppgiftsantalet delas upp i Öppen, Pågående, På Paus, Blockerad och Klar. The
-manualens etablerade Project Waddle-arbetsyta visar ett icke-tomt konto:
-2 604 journalposter, 11 flaggade poster och 65 uppgifter istället för platshållare
-nollor.
+Kortet **Dina data** sammanfattar lokala dagboksposter, flaggade poster och
+uppgiftsantal uppdelade i Öppet, Pågående, På vänt, Blockerad och Klart.
+Manualens etablerade Project Waddle-arbetsyta visar ett icke-tomt konto:
+2 604 dagboksposter, 11 flaggade poster och 65 uppgifter i stället för
+platshållarnollor.
 
-Fullbordandeeffekter har sin egen guide: se
-**[Customize completion celebrations](./completion-celebrations.mdx)** for the
-Animationssidan och dess live-lekplats.
+Slutförandeeffekter har sin egen guide: se
+**[Anpassa firanden vid slutförande](./completion-celebrations.mdx)** för
+animationssidan och dess levande lekplats.

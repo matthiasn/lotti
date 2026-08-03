@@ -58,6 +58,21 @@ categoria da tarefa, então você pode fazer perguntas focadas como “mostrar o
 trabalho aberto P1 crítico para o habitat” sem inventar uma nova categoria para
 essa visão temporária.
 
+## Deixe um agente de tarefa sugerir rótulos
+
+Quando um agente de tarefa configurado tem contexto suficiente da tarefa, ele
+pode sugerir rótulos adequados junto com outras alterações da tarefa. A Lotti
+só disponibiliza rótulos ativos válidos para a categoria da tarefa e rejeita
+sugestões excluídas, fora de escopo, duplicadas ou de baixa confiança. O agente
+nunca recebe um caminho livre para criar marcadores arbitrários a partir de um
+prompt.
+
+Revise um rótulo originado pelo agente na área de alterações propostas da
+tarefa, exatamente como revisaria uma alteração de lista de verificação, data
+ou status. Confirme-o quando o rótulo melhorar a filtragem futura; rejeite-o
+quando não melhorar. Assim, a organização visível da tarefa permanece sob seu
+controle, em vez de tratar um palpite do modelo como fonte de verdade.
+
 Remover um rótulo de uma tarefa é tratado como uma rejeição intencional quando
 as sugestões automáticas de rótulos estão ativadas. A Lotti registra essa
 escolha para que a mesma sugestão não seja reaplicada imediatamente sem um novo

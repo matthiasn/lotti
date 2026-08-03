@@ -5,21 +5,21 @@ description: Koppel apparaten, verifieer hun identiteit, controleer de levering 
 
 # Synchroniseer apparaten
 
-Lotti Sync houdt ondersteunde gegevens op één lijn tussen uw apparaten. Elk apparaat heeft
-een eigen lokale database; Bij synchronisatie worden wijzigingen verplaatst via het geconfigureerde synchronisatieaccount
-en haalt een apparaat op nadat het offline is geweest. Sync verplaatst het
-registratiesysteem niet naar een Lotti-cloud: de geconfigureerde Matrix-servicerelais
-end-to-end gecodeerde payloads tussen uw apparaten, terwijl elk apparaat deze behoudt
-zijn eigen lokale kopie.
+Lotti Sync houdt ondersteunde gegevens op één lijn tussen je apparaten. Elk apparaat
+heeft een eigen lokale database; Sync verplaatst wijzigingen via het geconfigureerde
+synchronisatieaccount en werkt een apparaat bij nadat het offline is geweest. Sync
+verplaatst de brongegevens niet naar een Lotti-cloud: de geconfigureerde
+Matrix-service geeft end-to-end versleutelde payloads tussen je apparaten door,
+terwijl elk apparaat zijn eigen lokale kopie behoudt.
 
-Open **Instellingen → Synchroniseren** om de beschikbare instellingen, status en herstel te bekijken
-pagina's. Het nummer naast **Outbox** is werk dat de synchronisatie niet heeft bereikt
-nog dienst.
+Open **Instellingen → Instellingen synchroniseren** om de beschikbare setup-, status-
+en herstelpagina's te bekijken. Het getal naast **Postvak UIT** is werk dat de
+synchronisatiedienst nog niet heeft bereikt.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Lotti Synchroniseren instellingen met Provisioned Sync, apparaat identiteit, backfill, statistieken, outbox, conflicten, en onderhoud"
-  caption="De Sync-hub houdt de dagelijkse status in de buurt van diagnoses en hersteltools. Project Waddle heeft momenteel drie outbox-items te inspecteren."
+  alt="Lotti-synchronisatie-instellingen met Apparaten, apparaatidentiteit, backfill, statistieken, outbox, conflicten en onderhoud"
+  caption="De Sync-hub houdt de dagelijkse status dicht bij diagnoses en hersteltools. Project Waddle heeft momenteel drie outbox-items om te inspecteren."
 />
 
 ## Bekijk je apparaten
@@ -51,101 +51,108 @@ gaat alleen naar je eigen apparaat.
 
 ## Controleer het nieuwe apparaat
 
-Koppelen verbindt het apparaat; verificatie bevestigt dat beide apparaten dat zijn
-met elkaar praten zonder een onbekend apparaat in het midden.
+Koppelen verbindt het apparaat; verificatie bevestigt dat beide apparaten met
+elkaar praten zonder een onbekend apparaat ertussen.
 
 <ManualScreenshot
   caseId="sync/verification"
-  alt="Lotti apparaat verificatie vergelijken van een reeks van pinguïn, vis, raket, ijs, aarde, maan, en ster emoji"
+  alt="Lotti-apparaatverificatie vergelijkt een reeks van pinguïn-, vis-, raket-, ijs-, aarde-, maan- en steremoji"
   caption="Vergelijk de gehele emoji-reeks op beide apparaten. Accepteer alleen wanneer elke afbeelding en de volgorde precies overeenkomen."
 />
 
-Vergelijk de emoji persoonlijk of via een vertrouwd gesprek. Selecteer **Ze komen overeen** voor beide
-apparaten alleen als de volledige reeks overeenkomt. Als zelfs maar één emoji verschilt,
-annuleer de verificatie en onderzoek de account- en apparaatnamen eerder
-opnieuw proberen.
+Vergelijk de emoji persoonlijk of via een vertrouwd gesprek. Selecteer **Ze komen
+overeen** op beide apparaten alleen als de volledige reeks overeenkomt. Als zelfs
+maar één emoji verschilt, annuleer dan de verificatie en onderzoek de account- en
+apparaatnamen voordat je het opnieuw probeert.
 
-## Geef apparaten een naam en maak reclame voor mogelijkheden
+## Geef apparaten een naam en adverteer mogelijkheden
 
-**Synchronisatieknooppuntprofiel** identificeert het huidige apparaat voor de rest van de synchronisatie
-groep. Geef het een naam die de fysieke machine onderscheidt, zoals
-'Mission Control Mac' in plaats van 'Desktop'.
+**Dit apparaat** (het synchronisatieknooppuntprofiel) identificeert het huidige
+apparaat voor de rest van de synchronisatiegroep. Geef het een naam die de fysieke
+machine onderscheidt, zoals 'Mission Control Mac' in plaats van 'Desktop'.
 
 <ManualScreenshot
   caseId="sync/node-profile"
-  alt="Lotti Synchroniseren knooppuntprofiel voor Mission Control Mac met lokale gevolgtrekkingen mogelijkheden en bekende Project Waddle apparaten"
-  caption="Duidelijke apparaatnamen maken verificatie, diagnoses, en apparaat-gepinde lokale gevolgtrekking veel gemakkelijker te controleren."
+  alt="Lotti-synchronisatieknooppuntprofiel voor Mission Control Mac met lokale inferentiemogelijkheden en bekende Project Waddle-apparaten"
+  caption="Duidelijke apparaatnamen maken verificatie, diagnoses en apparaat-vastgezette lokale inferentie veel gemakkelijker te controleren."
 />
 
-De pagina vermeldt ook de mogelijkheden die het apparaat kan bieden, zoals lokale audio
-transcriptie of gevolgtrekking uit een lokaal taalmodel. Bekende apparaten laten zien wat de
-andere knooppunten die het laatst zijn geadverteerd. De genoemde mogelijkheden zijn beschrijvend;
-het relevante AI-profiel moet nog steeds worden geconfigureerd om ze te gebruiken.
+De pagina vermeldt ook de mogelijkheden die het apparaat kan bieden, zoals lokale
+audiotranscriptie of inferentie met een lokaal taalmodel. Bekende apparaten tonen
+wat de andere knooppunten het laatst hebben geadverteerd. De genoemde mogelijkheden
+zijn beschrijvend; het relevante AI-profiel moet nog steeds worden geconfigureerd om
+ze te gebruiken.
 
-## Begrijp inhaal- en aanvullingsactiviteiten
+## Begrijp inhalen en backfill
 
-Normale synchronisatieprocessen veranderen zodra ze binnenkomen. **Backfill** detecteert gaten in de
-reeks ontvangen van bekende apparaten en vraagt ontbrekende records opnieuw op.
+Normale synchronisatie verwerkt wijzigingen zodra ze binnenkomen. **Synchronisatie
+van backfill** detecteert gaten in de reeks die van bekende apparaten is ontvangen
+en vraagt ontbrekende records opnieuw op.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lotti Synchroniseren Backfill pagina met inkomend, ontbrekend en overgeslagen status plus reeks statistieken en automatische backfill"
-  caption="Project Waddle heeft 2.868 sequentie records ontvangen en weet momenteel over vier ontbrekende records over twee apparaat ID's."
+  alt="Lotti-synchronisatie-backfillpagina met inkomende, ontbrekende en overgeslagen status plus reeksstatistieken en automatische backfill"
+  caption="Project Waddle heeft 2.868 reeksrecords ontvangen en weet momenteel van vier ontbrekende records over twee apparaat-ID's."
 />
 
 - **Inkomend** is werk dat momenteel in de wachtrij voor binnenkomend verkeer staat.
-- **Ontbreekt** is het aantal bekende hiaten in de reeks.
-- **Overgeslagen** is werk dat in de wachtrij voor binnenkomend verkeer is verlaten nadat dit niet meer mogelijk was
-  normaal verwerkt.
-- **Automatische aanvulling** vraagt voortdurend om herstelbare gaten en is de
+- **Ontbrekend** is het aantal bekende gaten in de reeks.
+- **Overgeslagen** is werk dat de inkomende wachtrij heeft opgegeven nadat het niet
+  normaal verwerkt kon worden.
+- **Automatische backfill** vraagt voortdurend herstelbare gaten op en is de
   juiste standaard voor normaal gebruik.
-- **Geavanceerd herstel** bevat handmatige controles voor een onderzoek. Gebruik het
-  pas nadat gewone synchronisatie en automatische aanvulling tijd hebben gehad om tot rust te komen.
+- **Geavanceerd herstel** bevat handmatige besturing voor een onderzoek. Gebruik het
+  pas nadat gewone synchronisatie en automatische backfill de tijd hebben gehad om
+  tot rust te komen.
 
-Een ontbrekende telling die niet nul is, betekent niet automatisch gegevensverlies: een ander apparaat kan dat wel zijn
-nog steeds offline zijn, of het verzoek is mogelijk al onderweg. Onderzoek wanneer de
-het aantal blijft ongewijzigd terwijl alle verwachte apparaten online zijn.
+Een ontbrekende telling die niet nul is, betekent niet automatisch gegevensverlies:
+een ander apparaat kan nog offline zijn, of het verzoek kan al onderweg zijn.
+Onderzoek pas wanneer het aantal ongewijzigd blijft terwijl alle verwachte apparaten
+online zijn.
 
 ## Synchronisatiestatistieken lezen
 
-**Synchronisatiestatistieken** scheidt het berichtvolume en de verwerkingsstatus. Het is
-handig als de gegevens er verouderd uitzien, maar het account nog steeds als verbonden rapporteert.
+**Matrix Stats** scheidt het berichtvolume van de verwerkingsstatus. Het is handig
+wanneer de gegevens er verouderd uitzien, maar het account nog steeds als verbonden
+rapporteert.
 
 <ManualScreenshot
   caseId="sync/stats"
-  alt="Lotti Matrix Synchroniseren Statistieken met verzonden berichten tellen, top verwerking KPI's, berichtentypes, storingen, retrieves, en entiteit totalen"
-  caption="Tellingen stellen vast of berichten bewegen; fouten en geplande herhalingen tonen aan of de pijpleiding schoon beweegt."
+  alt="Lotti Matrix-synchronisatiestatistieken met aantallen verzonden berichten, top-verwerkings-KPI's, berichttypen, fouten, herhalingen en entiteitstotalen"
+  caption="Tellingen stellen vast of berichten bewegen; fouten en geplande herhalingen tonen of de pijplijn schoon doorloopt."
 />
 
-De kaart voor verzonden berichten groepeert Matrix-gebeurtenistypen. **Top-KPI's** samengevat
-verwerkte berichten, mislukkingen en geplande nieuwe pogingen, terwijl de entiteit optelt
-laten zien welke Lotti-ladingfamilies aan dat werk hebben bijgedragen. Een stijgende verwerkt
-tellen met stabiele mislukkingen is gezond. Als fouten zich herhalen of nooit opnieuw proberen
-wissen, controleer het postvak UIT en de connectiviteit van het andere apparaat.
+De kaart met verzonden berichten groepeert Matrix-gebeurtenistypen. **Top KPI's** vat
+verwerkte berichten, fouten en geplande nieuwe pogingen samen, terwijl de
+entiteitstotalen laten zien welke Lotti-payloadfamilies aan dat werk hebben
+bijgedragen. Een stijgend verwerkt aantal met stabiele fouten is gezond. Als fouten
+zich herhalen of herhalingen nooit verdwijnen, controleer dan het Postvak UIT en de
+connectiviteit van het andere apparaat.
 
 ## Inspecteer de Outbox
 
-De **Outbox** is de lokale wachtrij met wijzigingen die wachten om te worden verzonden. Filter het op
-staat om actief werk te scheiden van mislukkingen.
+Het **Postvak UIT** is de lokale wachtrij met wijzigingen die wachten om te worden
+verzonden. Filter op status om actief werk van fouten te scheiden.
 
 <ManualScreenshot
   caseId="sync/outbox"
-  alt="Lotti Sync Outbox gefilterd naar een mislukte project Waddle-habitat druk-seal foto met retry en verwijdering acties"
-  caption="Foute items houden hun onderwerp, lading details, retry geschiedenis, en lokale bijlage pad zodat herstel is specifiek in plaats van blind."
+  alt="Lotti-sync-outbox gefilterd op een mislukte Project Waddle-drukafdichtingsfoto met acties voor opnieuw proberen en verwijderen"
+  caption="Mislukte items behouden hun onderwerp, payloaddetails, herhaalgeschiedenis en lokale bijlagepad, zodat herstel gericht is in plaats van blind."
 />
 
-- **Pending** items wachten op hun beurt.
-- **Verzendende** artikelen zijn momenteel onderweg.
-- **Mislukte** items hebben hun huidige poging voltooid en blijven beschikbaar voor
-  inspectie.
-- **Verzonden** artikelen zijn afgeleverd en worden tijdelijk bewaard
+- **Wachten om te verzenden**-items wachten op hun beurt.
+- **Verzenden**-items zijn momenteel onderweg.
+- **Kon niet verzenden**-items hebben hun huidige poging opgebruikt en blijven
+  beschikbaar voor inspectie.
+- **Verzonden**-items zijn afgeleverd en worden tijdelijk bewaard voor
   diagnostiek.
 
-Gebruik **Alles opnieuw proberen** nadat het onderliggende verbindings- of accountprobleem is opgelost.
-Verwijder een mislukt item alleen als u de wijziging opzettelijk niet wilt
-andere apparaten bereiken. Het verwijderen uit het postvak UIT is geen vervanging voor
-het repareren van de overeenkomstige lokale vermelding of bijlage.
+Gebruik **Alles opnieuw proberen** nadat het onderliggende verbindings- of
+accountprobleem is opgelost. Verwijder een mislukt item alleen wanneer je bewust
+niet wilt dat die wijziging andere apparaten bereikt. Het verwijderen uit het
+Postvak UIT is geen vervanging voor het repareren van de bijbehorende lokale invoer
+of bijlage.
 
-Ga verder met [Synchronisatieconflicten oplossen](./conflicts.mdx) wanneer twee apparaten zijn bewerkt
-hetzelfde item onafhankelijk, of [Synchronisatieonderhoud](./maintenance.mdx) voor
-hersteltools op databaseniveau.
+Ga verder met [Synchronisatieconflicten oplossen](./conflicts.mdx) wanneer twee
+apparaten dezelfde invoer onafhankelijk hebben bewerkt, of
+[Synchronisatieonderhoud](./maintenance.mdx) voor hersteltools op databaseniveau.

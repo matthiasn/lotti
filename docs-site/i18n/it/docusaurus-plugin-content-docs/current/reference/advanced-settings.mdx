@@ -1,156 +1,167 @@
 ---
-title: Utilizzare le impostazioni avanzate in modo sicuro
-description: Caratteristiche di controllo bandiere e registrazione, eseguire strumenti di manutenzione, ispezionare metriche di bordo, e verificare la costruzione Lotti installato.
+title: Usa le Impostazioni avanzate in sicurezza
+description: Controlla flag delle funzionalità e logging, esegui gli strumenti di manutenzione, ispeziona le metriche di onboarding e verifica la build di Lotti installata.
 ---
 
-# Utilizzare le impostazioni avanzate in modo sicuro
+# Usa le Impostazioni avanzate in sicurezza
 
-Aprire **Impostazioni → Impostazioni avanzate** per i controlli, la diagnostica, e
-manutenzione. Queste pagine modificano il modo in cui Lotti funziona o opera direttamente sul territorio
-i dati, quindi la personalizzazione ordinaria appartiene altrove in Impostazioni.
+Apri **Impostazioni → Impostazioni avanzate** per i controlli da utente esperto,
+la diagnostica e la manutenzione. Queste pagine cambiano il modo in cui Lotti
+funziona oppure agiscono direttamente sui dati locali, quindi la
+personalizzazione di tutti i giorni sta altrove nelle Impostazioni.
 
-Desktop mantiene l'albero delle impostazioni accanto alla pagina selezionata.
-pagina alla volta e fornisce un pulsante posteriore. Gli stessi controlli e persistiti
-i valori sono utilizzati in entrambi i layout.
+Su desktop l'albero delle impostazioni resta accanto alla pagina selezionata.
+Su mobile si apre una pagina alla volta, con un pulsante per tornare indietro.
+Entrambi i layout usano gli stessi controlli e gli stessi valori salvati.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Mozzo Impostazioni avanzate Lotti con Bandiere di Configurazione, Animazioni, Lingua, Logging, Manutenzione, Metriche di bordo, e Informazioni su Lotti"
-  caption="Le impostazioni avanzate raggruppano i controlli operativi lontano dalle preferenze di tutti i giorni. Alcune voci variano per piattaforma e le funzionalità abilitate."
+  alt="Hub Impostazioni avanzate di Lotti con Bandiere di conflitto, Animazione, Lingua, Registrazione di domini, Manutenzione, Metriche di bordo e A proposito di Lotti"
+  caption="Le Impostazioni avanzate raggruppano i controlli operativi lontano dalle preferenze di tutti i giorni. Alcune voci variano in base alla piattaforma e alle funzionalità abilitate."
 />
 
-## Scegli la lingua del manuale
+## Scegli la lingua del Manuale
 
-Apri **Lingua** per scegliere quale Manuale pubblicato deve aprire l'app.
-**Segui il sistema** è l'impostazione predefinita: usa la lingua del tuo
-dispositivo per aprire il Manuale in inglese, tedesco, francese, italiano,
-spagnolo, ceco, rumeno o portoghese. Puoi selezionare esplicitamente
-**Inglese**, **Tedesco**, **Francese**, **Italiano**, **Spagnolo**, **Ceco**,
-**Rumeno** o **Portoghese** per mantenere una scelta diversa. La voce
-**Manuale** in fondo alle Impostazioni e **Aiuto → Manuale** su macOS usano
-entrambe questa impostazione.
+Apri **Lingua** per decidere quale Manuale pubblicato deve aprire l'app.
+**Segui il sistema** è l'impostazione predefinita: sceglie il Manuale in
+inglese, tedesco, francese, italiano, spagnolo, ceco, rumeno o portoghese in
+base alla lingua del tuo dispositivo. Seleziona **Inglese**, **Tedesco**,
+**Francese**, **Italiano**, **Spagnolo**, **Ceco**, **Rumeno** o **Portoghese**
+per mantenere una scelta diversa. La voce **Manuale** in fondo alle
+Impostazioni e **Aiuto → Manuale** su macOS usano entrambe questa impostazione.
 
-## Funzionalità di controllo con Bandiere Configurate
+## Controlla le funzionalità con i flag di configurazione
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Lotti Config Flags pagina con interruttori ricercabili per le voci private, le notifiche, la registrazione della posizione, i tooltips e lo streaming AI"
-  caption="La ricerca corrisponde sia ai nomi delle bandiere che alle descrizioni. Ogni interruttore cambia immediatamente la sua capacità di runtime memorizzata."
+  alt="Pagina Bandiere di conflitto di Lotti con interruttori ricercabili per voci private, notifiche, registrazione della posizione, tooltip e streaming AI"
+  caption="La ricerca confronta sia i nomi dei flag sia le descrizioni. Ogni interruttore cambia subito la capacità salvata."
 />
 
-**Config Flags** è l'interruttore di capacità. Include i controlli per:
+**Bandiere di conflitto** è il quadro di comando delle funzionalità. Include i
+controlli per:
 
-- visibilità, notifiche, acquisizione della posizione e tempi degli strumenti;
-- Risposta dell'AI in streaming e riproduzione sommaria;
-- registrazione e comportamento di sincronizzazione Matrix;
-- pagine caratteristiche come Abitudini, Dashboard, Eventi, Progetti e Cosa c'è di nuovo;
-- embeddings e ricerca vettoriale; e
-- indicatori operativi come l'attività di sincronizzazione, l'agente in attesa si sveglia, e forchetta
-  guarigione.
+- visibilità delle voci private, notifiche, acquisizione della posizione e
+  tooltip;
+- streaming delle risposte AI e riproduzione dei riepiloghi;
+- logging e comportamento della sincronizzazione Matrix;
+- pagine di funzionalità come Abitudini, Dashboard, Eventi, Progetti e
+  What's New;
+- embedding e ricerca vettoriale; e
+- indicatori operativi come l'attività di sincronizzazione, i risvegli agente
+  in attesa e la riparazione dei fork.
 
-Utilizzare **Search flags** per restringere l'elenco per titolo o descrizione.
-o il suo interruttore per cambiare la bandiera. Il nuovo valore è persistito immediatamente; lì
-non è separato Salva azione.
+Usa **Bandiere di ricerca** per restringere l'elenco per titolo o descrizione.
+Seleziona una riga o il suo interruttore per cambiare il flag. Il nuovo valore
+viene salvato subito; non esiste un'azione Salva separata.
 
-Le bandiere possono esporre comportamenti sperimentali o diagnostici.
-poi verificare il flusso di lavoro interessato prima di cambiare un altro. Il **Show private
-** controlli della bandiera se i contenuti sensibili sono inclusi in liste e
-selettori; non crittografa, esporta, elimina o modifica la privacy di un
-Entrata.
+I flag possono esporre comportamenti sperimentali o diagnostici. Cambiane uno
+alla volta, in modo deliberato, e verifica il flusso di lavoro interessato
+prima di cambiarne un altro. Il flag **Mostrare voci private?** decide se i
+contenuti sensibili compaiono in elenchi e selettori; non cifra, esporta,
+elimina né cambia la privacy di una voce.
 
-## Scegli quello che Lotti logs
+## Scegli cosa registra Lotti
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Impostazioni di registrazione Lotti con un interruttore di registrazione master, domini operativi individuali e registrazione lenta"
-  caption="L'interruttore master porta i controlli per-dominio. L'apparecchio Project Waddle mantiene Sync, AI e Tasks abilitati per la diagnostica focalizzata."
+  alt="Impostazioni di logging di Lotti con un interruttore generale, i singoli domini operativi e il log delle query lente"
+  caption="L'interruttore generale governa i controlli per dominio. Il set dimostrativo di Project Waddle tiene abilitati Sync, AI e Attività per una diagnostica mirata."
 />
 
-**Logging** inizia con l'interruttore globale **Enable Logging**.
-abilitare solo i domini necessari per un'indagine, come Sync, AI, Tasks,
-Etichette, Salute, Abitudini, Navigazione, Notifiche, o Daily OS.
-query** aggiunge la diagnostica delle prestazioni del database.
+La pagina **Registrazione di domini** inizia con l'interruttore globale
+**Abilita la registrazione**. Quando è attivo, abilita solo i domini che
+servono a un'indagine, come sincronizzazione, AI, attività, etichette, salute,
+abitudini, navigazione, notifiche o Daily OS. **Lenti quesiti del database**
+aggiunge la diagnostica delle prestazioni del database.
 
-Spegnere l'interruttore master disabilita i controlli di dominio.
-scritto al `error-*.log` quotidiano; questi switch governano la diagnostica aggiuntiva
-registrazione, non il record minimo di errore. Disattivare i domini rumorosi dopo un
-indagine in modo che i registri rimangano concentrati e l'uso di storage rimane prevedibile.
+Spegnere l'interruttore generale disabilita i controlli di dominio. Gli errori
+vengono comunque scritti nel file giornaliero `error-*.log`: questi
+interruttori governano la diagnostica aggiuntiva, non il registro minimo degli
+errori. Disattiva i domini rumorosi a indagine conclusa, così i log restano
+mirati e l'uso dello spazio resta prevedibile.
 
-## Eseguire azioni di manutenzione deliberatamente
+## Esegui le azioni di manutenzione in modo deliberato
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Pagina di manutenzione Lotti con anteprime onboarding, azioni di reset, cancellazione del database, purge, indice di ricerca, incorporazioni e diagnostica di riverniciatura"
-  caption="Manutenzione combina anteprime sicure con azioni distruttive e diagnostiche. Leggi la conferma e lo scopo prima di continuare."
+  alt="Pagina Manutenzione di Lotti con anteprime dell'onboarding, azioni di ripristino, eliminazione dei database, purga, indice di ricerca, embedding e diagnostica di repaint"
+  caption="Manutenzione unisce anteprime sicure ad azioni distruttive e diagnostiche. Leggi la conferma e la portata prima di continuare."
 />
 
-**Maintenance** contiene diversi tipi di azione:
+**Manutenzione** contiene azioni di natura diversa:
 
-- **Mostrare l'accoglienza a bordo** e **La galleria d'animazione a bordo** sono in diretta
-  anteprime per lo sviluppo e QA.
-- **Reset In-App Hints** fa una volta che i consigli possono comparire di nuovo.
-- **Reset Gemini Setup Dialog** cancella il suo licenziamento in modo che il prompt dei fornitori possa
-  essere testato di nuovo.
-- **Delete Editor Database** rimuove le bozze dell'editor.
-- **Delete Agents Database** rimuove il database degli agenti ed esce da Lotti così il
-  app può riavviare contro un negozio pulito.
-- **Gli elementi eliminati** cancellano definitivamente i record cancellati dal morbido attraverso un
-  flusso di conferma dedicato.
-- **Ricreare l'indice full-text** ricostruisce i dati di ricerca locali senza ricreare
-  voci del diario.
-- **Generate Embeddings** appare quando il negozio incorporato è disponibile e
-  backfill categorie selezionate.
-- **Repaint rainbow overlay** lampeggia le regioni di riverniciatura per la diagnostica dell'interfaccia utente.
-  è tenuto in memoria e ritorna a off dopo il rilancio.
+- **Mostra il benvenuto a bordo** e **Galleria di animazione onboarding** sono
+  anteprime dal vivo per sviluppo e QA.
+- **Reimposta suggerimenti nell'app** rende di nuovo visibili i consigli
+  mostrati una sola volta.
+- **Reimposta finestra di configurazione Gemini** ne cancella la chiusura,
+  così il prompt del provider può essere provato di nuovo.
+- **Eliminare il database degli editor** rimuove le bozze dell'editor.
+- **Eliminare il database degli agenti** rimuove il database degli agenti e
+  chiude Lotti, così l'app può ripartire da uno store pulito.
+- **Purezza oggetti cancellati** elimina definitivamente i record già
+  cancellati in modo soft, tramite un flusso di conferma dedicato.
+- **Ricreare l'indice di testo completo** ricostruisce i dati di ricerca
+  locali senza ricreare le voci del diario.
+- **Generare Embeddings** compare quando lo store degli embedding è
+  disponibile e recupera le categorie selezionate.
+- **Repaint rainbow overlay** evidenzia le regioni ridisegnate per la
+  diagnostica dell'interfaccia. Vive solo in memoria e torna spento al
+  riavvio.
 
-Anteprima e azzerare le azioni non condividono lo stesso rischio di cancellazione e purificazione.
-Per azioni distruttive, confermare che l'obiettivo è il negozio locale destinato
-e lasciare che qualsiasi operazione di sincronizzazione o scrittura corrente finisca prima.
+Anteprime e ripristini non comportano lo stesso rischio di eliminazioni e
+purghe. Per le azioni distruttive, verifica che il bersaglio sia davvero lo
+store locale che intendi toccare e lascia prima terminare ogni operazione di
+sincronizzazione o scrittura in corso.
 
-## Ispezionare l'imbuto di bordo
+## Ispeziona il funnel di onboarding
 
 <ManualScreenshot
   caseId="advanced-settings/onboarding-metrics"
-  alt="Lotti Onboarding Metrics pagina che mostra il tempo di installazione, quattro giorni attivi, stato di attivazione e conteggi eventi senza contenuto"
-  caption="Il dispositivo manuale deterministico ha raggiunto il suo vero aha in quattro giorni attivi dopo aver collegato un fornitore e la registrazione di diverse catture."
+  alt="Pagina Metriche di bordo di Lotti che mostra il momento dell'installazione, quattro giorni attivi, lo stato di attivazione e conteggi di eventi privi di contenuto"
+  caption="Il set dimostrativo deterministico del manuale ha raggiunto il suo vero momento aha in quattro giorni attivi, dopo aver collegato un provider e registrato diverse catture."
 />
 
-**Onboarding Metrics** è uno sviluppatore e una superficie QA che deriva da un imbuto locale
-da eventi e spettacoli senza contenuto:
+**Metriche di bordo** è una superficie per sviluppo e QA. Ricava un funnel
+locale da eventi privi di contenuto e mostra:
 
-- il primo timestamp in UTC;
-- giorni attivi totali e giorni attivi durante i primi sette giorni;
-- se l'installazione appartiene alla coorte base pre-FTUE;
-- se la vera pietra miliare di attivazione è stata raggiunta; e
-- un conteggio per ogni evento di bordo.
+- il primo avvistamento in UTC;
+- i giorni attivi totali e quelli nei primi sette giorni;
+- se l'installazione appartiene alla coorte di riferimento pre-FTUE;
+- se il vero traguardo di attivazione è stato raggiunto; e
+- un conteggio per ogni evento di onboarding.
 
-La pagina registra i nomi degli eventi e i metadati a bassa cartacità, non il testo della rivista,
-titoli di attività, trascrizioni, o i dettagli sardine-sensibili del Progetto Waddle.
+La pagina registra nomi di eventi e metadati a bassa cardinalità, non il testo
+del diario, i titoli delle attività, le trascrizioni o i dettagli
+sulle sardine sensibili di Project Waddle.
 
-**Reset onboarding test state** cancella la cadenza rapida a bordo e la locale
-imbuto metriche dopo la conferma. Non elimina i dati della rivista, config
-bandiere, o vera storia del piano del sistema operativo giornaliero. Un profilo che ha già pianificato un giorno
-rimane quindi ineleggibile per l'esatto percorso di primo piano pulito-profilo.
+**Ripristino dello stato del test di bordo** azzera, dopo conferma, la cadenza
+dei prompt di onboarding e le metriche del funnel locale. Non elimina i dati
+del diario, i flag di configurazione né la vera cronologia dei piani del Daily
+OS. Un profilo che ha già pianificato una giornata resta quindi escluso dal
+percorso esatto del primo piano su profilo pulito.
 
-## Verificare la costruzione e i totali locali
+## Verifica la build e i totali locali
 
 <ManualScreenshot
   caseId="advanced-settings/about"
-  alt="Lotti Informazioni sulla pagina che mostra la versione, la piattaforma, il tipo di costruzione, 2604 voci di giornale, 11 voci contrassegnate, e conteggi di attività"
-  caption="Lotti identifica la configurazione in esecuzione e riassume i dati locali. Il progetto Waddle fixture contiene 2.604 voci e 65 compiti in cinque stati."
+  alt="Pagina A proposito di Lotti che mostra versione, piattaforma, tipo di build, 2604 voci di diario, 11 voci contrassegnate e i conteggi delle attività"
+  caption="A proposito di Lotti identifica la build in esecuzione e riassume i dati locali. Il set dimostrativo di Project Waddle contiene 2.604 voci e 65 attività in cinque stati."
 />
 
-**About Lotti ** è il posto più veloce per verificare quale costruzione è realmente in esecuzione.
-Mostra la versione app e costruisci il numero, la piattaforma e costruisci il tipo.
-quei valori in un rapporto diagnostico in modo che un comportamento può essere abbinato alla destra
-codice e rilascio.
+**A proposito di Lotti** è il posto più rapido per verificare quale build è
+davvero in esecuzione. Mostra la versione dell'app con il numero di build, la
+piattaforma e il tipo di build. Includi questi valori in una segnalazione
+diagnostica, così un comportamento può essere ricondotto al codice e alla
+release giusti.
 
-La scheda **Your Data** riassume le voci del giornale locale, le voci contrassegnate, e
-conteggi di attività suddivisi in Open, In Progress, On Hold, Blocked, e Fatto.
-Lo spazio di lavoro del Progetto Waddle dimostra un conto non vuoto:
-2.604 voci di giornale, 11 voci segnalate, e 65 compiti piuttosto che segnaposto
-zero.
+La scheda **I tuoi dati** riassume le voci di diario locali, le voci
+contrassegnate e i conteggi delle attività suddivisi negli stati Aprire, In
+corso, Aspetta., Bloccato e Fatto. Lo spazio di lavoro Project Waddle del
+manuale mostra un profilo non vuoto: 2.604 voci di diario, 11 voci
+contrassegnate e 65 attività, invece di zeri segnaposto.
 
-Gli effetti di completamento hanno la loro guida: vedi
-**[Customizzare le celebrazioni di completamento](./completion-celebrations.mdx)** per il
-Pagina di animazione e il suo parco giochi dal vivo.
+Gli effetti di completamento hanno una guida dedicata: vedi
+**[Personalizza le celebrazioni di completamento](./completion-celebrations.mdx)**
+per la pagina Animazione e il suo playground dal vivo.
