@@ -11,7 +11,7 @@ void main() {
   const policy = AgentRetentionPolicy();
 
   group('what is never eligible', () {
-    test("the user's own material has no horizon, however old", () {
+    test("the user's own material stays user-authored, however old", () {
       final authored = <AgentDomainEntity>[
         makeTestCapture(createdAt: DateTime(2015)),
         makeTestDayPlan(createdAt: DateTime(2015)),
@@ -30,8 +30,8 @@ void main() {
     });
 
     test('the deliberate keeps stay keeps', () {
-      // These were decided against on the record, not overlooked. A horizon
-      // appearing on any of them is a regression, not a new feature.
+      // These were decided against on the record, not overlooked. Any of them
+      // classifying as bounded is a regression, not a new feature.
       final kept = <AgentDomainEntity>[
         makeTestWeekRollup(),
         makeTestIdentity(),
