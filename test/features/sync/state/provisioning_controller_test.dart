@@ -772,10 +772,10 @@ void main() {
         expect(states[2], const ProvisioningState.done());
 
         verifyInOrder([
-          () => mockMatrixService.clearPersistedRoom(),
           () => mockOnboardingSyncService.beginInboundPreflight(
             recipientUserId: handoverBundle.user,
           ),
+          () => mockMatrixService.clearPersistedRoom(),
           () => mockMatrixService.setConfig(any()),
           () => mockMatrixService.login(waitForLifecycle: false),
         ]);
@@ -866,7 +866,7 @@ void main() {
       });
 
       test(
-        'restores the previous session when preflight creation fails',
+        'leaves the previous session untouched when preflight creation fails',
         () async {
           const oldConfig = MatrixConfig(
             homeServer: 'https://old.example.com',
@@ -890,16 +890,15 @@ void main() {
               .read(provisioningControllerProvider.notifier)
               .configureFromBundle(handoverBundle);
 
-          verifyInOrder([
-            () => mockMatrixService.logout(),
-            () => mockMatrixService.clearPersistedRoom(),
+          verify(
             () => mockOnboardingSyncService.beginInboundPreflight(
               recipientUserId: handoverBundle.user,
             ),
-            () => mockMatrixService.setConfig(oldConfig),
-            () => mockMatrixService.saveRoom('!old-room:example.com'),
-            () => mockMatrixService.login(waitForLifecycle: false),
-          ]);
+          ).called(1);
+          verifyNever(() => mockMatrixService.logout());
+          verifyNever(() => mockMatrixService.clearPersistedRoom());
+          verifyNever(() => mockMatrixService.setConfig(any()));
+          verifyNever(() => mockMatrixService.login(waitForLifecycle: false));
           verifyNever(() => mockMatrixService.joinRoom(any()));
           container
               .read(provisioningControllerProvider)
@@ -908,51 +907,6 @@ void main() {
                     expect(error, ProvisioningError.configurationError),
                 orElse: () => fail('Expected error state'),
               );
-        },
-      );
-
-      test(
-        'logs restoration failure without hiding the preflight error',
-        () async {
-          const oldConfig = MatrixConfig(
-            homeServer: 'https://old.example.com',
-            user: '@old:example.com',
-            password: 'old-secret',
-          );
-          final preflightError = StateError('preflight failed');
-          when(
-            () => mockMatrixService.loadConfig(),
-          ).thenAnswer((_) async => oldConfig);
-          when(() => mockMatrixService.isLoggedIn()).thenReturn(true);
-          when(
-            () => mockOnboardingSyncService.beginInboundPreflight(
-              recipientUserId: handoverBundle.user,
-            ),
-          ).thenThrow(preflightError);
-          when(
-            () => mockMatrixService.setConfig(oldConfig),
-          ).thenThrow(StateError('restore failed'));
-
-          await container
-              .read(provisioningControllerProvider.notifier)
-              .configureFromBundle(handoverBundle);
-
-          verify(
-            () => mockLoggingService.error(
-              LogDomain.sync,
-              any<Object>(),
-              stackTrace: any<StackTrace>(named: 'stackTrace'),
-              subDomain: 'configureFromBundle.restorePreviousSession',
-            ),
-          ).called(1);
-          verify(
-            () => mockLoggingService.error(
-              LogDomain.sync,
-              preflightError,
-              stackTrace: any<StackTrace>(named: 'stackTrace'),
-              subDomain: 'configureFromBundle',
-            ),
-          ).called(1);
         },
       );
 

@@ -149,6 +149,7 @@ void main() {
 
     await service.releaseInboundPreflight(target);
 
+    expect(enqueued, hasLength(2));
     final begin = enqueued.first as SyncOnboardingSnapshotBegin;
     final end = enqueued.last as SyncOnboardingSnapshotEnd;
     expect(begin.coverageUpperBounds, isEmpty);
@@ -505,7 +506,7 @@ void main() {
         enqueueMessage: (message) async => enqueued.add(message),
         getHostId: () async => null,
         getSnapshotCoverage: () async => const {},
-        getLocalUserId: () => '@sync:example.org',
+        getLocalUserId: () => null,
         getLocalDeviceId: () => 'DESKTOP',
         serviceClock: serviceClock,
       );
@@ -519,6 +520,7 @@ void main() {
         service.releaseInboundPreflight(target),
         throwsStateError,
       );
+      expect(await service.hasActiveInboundPreflight(), isFalse);
       expect(enqueued, isEmpty);
     },
   );

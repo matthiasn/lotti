@@ -114,10 +114,10 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     OutboundOnboardingRound? onboardingRound;
     try {
       if (_isFullOnboarding) {
-        widget.onOnboardingPreflightHandled?.call();
         onboardingRound = await _onboardingService.beginOutbound(
           widget.onboardingTarget!,
         );
+        widget.onOnboardingPreflightHandled?.call();
       } else if (widget.onboardingTarget case final target?) {
         await _onboardingService.releaseInboundPreflight(target);
         widget.onOnboardingPreflightHandled?.call();

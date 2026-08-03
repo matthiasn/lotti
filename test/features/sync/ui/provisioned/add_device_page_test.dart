@@ -256,6 +256,35 @@ void main() {
     return calls;
   }
 
+  Future<void> openAndCloseAddDeviceModal(
+    WidgetTester tester, {
+    required AddDeviceJoinSignal signal,
+  }) async {
+    useTallSurface(tester);
+    Future<void>? modalFuture;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => DesignSystemButton(
+            label: 'open',
+            onPressed: () {
+              modalFuture = AddDeviceModal.show(context, signal: signal);
+            },
+          ),
+        ),
+        overrides: overrides(calls: _Calls()),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    Navigator.of(tester.element(find.byType(AddDeviceView))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await modalFuture;
+  }
+
   /// A signal wired up and disposed for one test.
   AddDeviceJoinSignal newSignal(WidgetTester tester) {
     final signal = AddDeviceJoinSignal();
@@ -1228,6 +1257,7 @@ void main() {
       );
       expect(modal.onboardingTarget?.userId, target.userId);
       expect(modal.onboardingTarget?.deviceId, target.deviceId);
+      expect(signal.onboardingPreflightHandedOff, isTrue);
     });
 
     testWidgets('runs the hand-off when pressed', (tester) async {
@@ -1258,6 +1288,63 @@ void main() {
       await tester.pump();
 
       expect(messageHandOffs, 1);
+    });
+  });
+
+  group('AddDeviceModal onboarding cleanup', () {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'NEWPHONE',
+    );
+
+    testWidgets('dismissal releases a verified target not handed to history', (
+      tester,
+    ) async {
+      final onboarding = MockOnboardingSyncService();
+      when(
+        () => onboarding.releaseInboundPreflight(target),
+      ).thenAnswer((_) async {});
+      getIt.registerSingleton<OnboardingSyncService>(onboarding);
+      final signal = AddDeviceJoinSignal()..target = target;
+
+      await openAndCloseAddDeviceModal(tester, signal: signal);
+
+      verify(() => onboarding.releaseInboundPreflight(target)).called(1);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('release failure is logged when Add Device is dismissed', (
+      tester,
+    ) async {
+      final onboarding = MockOnboardingSyncService();
+      when(
+        () => onboarding.releaseInboundPreflight(target),
+      ).thenThrow(StateError('release failed'));
+      getIt.registerSingleton<OnboardingSyncService>(onboarding);
+      final logger = MockDomainLogger();
+      when(
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'addDeviceOnboardingRelease',
+        ),
+      ).thenAnswer((_) async {});
+      await getIt.unregister<DomainLogger>();
+      getIt.registerSingleton<DomainLogger>(logger);
+      final signal = AddDeviceJoinSignal()..target = target;
+
+      await openAndCloseAddDeviceModal(tester, signal: signal);
+
+      verify(
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'addDeviceOnboardingRelease',
+        ),
+      ).called(1);
+      expect(tester.takeException(), isNull);
     });
   });
 

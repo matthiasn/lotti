@@ -265,10 +265,11 @@ persists an automatic-backfill preflight before its Matrix login can start
 timeline processing. The full *Everything* action then replaces that blanket,
 one-hour-bounded gate with an exact suppression range for the new device, so it
 does not request snapshot rows that are merely queued or in flight. Choosing a
-partial range, or dismissing the history sheet without starting, sends an
-empty-range Begin/End pair that adopts and releases the provisional gate
-without suppressing any counter range. Manual repair remains unchanged. The
-runtime contract is in
+partial range, dismissing the history sheet without starting, or closing Add
+Device after verification without opening history sends an empty-range
+Begin/End pair that adopts and releases the provisional gate without
+suppressing any counter range. Manual repair remains unchanged. The runtime
+contract is in
 [sequence and backfill](sequence-and-backfill.md#initial-onboarding-suppression).
 
 The agent phases stamp before they send. An agent entity or link persisted with

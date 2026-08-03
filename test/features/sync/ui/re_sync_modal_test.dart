@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -33,6 +34,14 @@ void main() {
   late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
   late MockDomainLogger mockLogging;
 
+  List<Override> modalOverrides() => [
+    maintenanceProvider.overrideWithValue(mockMaintenance),
+    agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+    syncMaintenanceRepositoryProvider.overrideWithValue(
+      mockSyncMaintenanceRepository,
+    ),
+  ];
+
   Future<void> pumpModal(
     WidgetTester tester, {
     OnboardingSyncTarget? onboardingTarget,
@@ -44,13 +53,7 @@ void main() {
           onboardingTarget: onboardingTarget,
           onboardingSyncService: onboardingSyncService,
         ),
-        overrides: [
-          maintenanceProvider.overrideWithValue(mockMaintenance),
-          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
-          syncMaintenanceRepositoryProvider.overrideWithValue(
-            mockSyncMaintenanceRepository,
-          ),
-        ],
+        overrides: modalOverrides(),
       ),
     );
     await tester.pump();
@@ -75,13 +78,7 @@ void main() {
             child: const Text('Open onboarding'),
           ),
         ),
-        overrides: [
-          maintenanceProvider.overrideWithValue(mockMaintenance),
-          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
-          syncMaintenanceRepositoryProvider.overrideWithValue(
-            mockSyncMaintenanceRepository,
-          ),
-        ],
+        overrides: modalOverrides(),
       ),
     );
 
@@ -393,6 +390,39 @@ void main() {
     verify(() => onboarding.beginOutbound(target)).called(1);
     verify(() => onboarding.completeOutbound(round)).called(1);
     verifyNever(() => onboarding.releaseInboundPreflight(target));
+    expect(find.byType(ReSyncModalContent), findsNothing);
+  });
+
+  testWidgets('failed onboarding Begin keeps dismissal cleanup armed', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenThrow(StateError('Begin was not queued'));
+    when(
+      () => onboarding.releaseInboundPreflight(target),
+    ).thenAnswer((_) async {});
+
+    await openOnboardingModal(
+      tester,
+      target: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+    expect(find.byKey(const Key('reSyncFailed')), findsOneWidget);
+
+    Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    verify(() => onboarding.beginOutbound(target)).called(1);
+    verify(() => onboarding.releaseInboundPreflight(target)).called(1);
     expect(find.byType(ReSyncModalContent), findsNothing);
   });
 

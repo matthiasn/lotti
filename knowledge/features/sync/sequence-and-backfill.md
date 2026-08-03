@@ -162,10 +162,13 @@ re-request remains available throughout.
 The inviting device captures the exact verified Matrix user/device pair,
 persists an outbound round, queues `onboardingSnapshotBegin`, and waits for that
 device's durable `onboardingSnapshotAccepted` before staging history. If the
-inviter chooses a partial transfer or dismisses the history sheet, it instead
-queues an empty-range Begin followed by a complete End. That Begin atomically
-adopts the provisional gate but claims no covered counters, so automatic
-backfill is no longer blocked while the partial or declined flow continues.
+inviter chooses a partial transfer, dismisses the history sheet, or closes Add
+Device after verification without opening history, it instead queues an
+empty-range Begin followed by a complete End. Add Device hands cleanup to the
+history sheet only once that sheet opens, and the history sheet disarms its own
+cleanup only after `beginOutbound` succeeds. The empty Begin atomically adopts
+the provisional gate but claims no covered counters, so automatic backfill is
+no longer blocked while the partial or declined flow continues.
 
 ```mermaid
 stateDiagram-v2
@@ -198,13 +201,15 @@ The persisted state strings also include receiver preflight states
 `awaitingBegin`, `adopted`, and `cancelled`, alongside round states
 `awaitingAcceptance`, `active`, `ending`, `completed`, and `aborted`.
 `awaitingBegin` is a durable blanket gate with no claimed sender host or
-coverage. The targeted Begin installs its bounded range row and marks every
-unexpired matching-user preflight `adopted` in one database transaction. A
-restart therefore preserves the gate, while a failed provisioning attempt
-cancels its own gate before restoring any previous Matrix session. A failure
-while creating the preflight also restores that previous session before the
-configuration attempt reports its error. If no Begin or explicit empty-range
-release ever arrives, expiry releases automatic repair after one hour.
+coverage. Preflight checks are scoped to the currently logged-in Matrix user,
+so a stale row from a previous account cannot block the active account. The
+targeted Begin installs its bounded range row and marks every unexpired
+matching-user preflight `adopted` in one database transaction. A restart
+therefore preserves the gate, while a failed provisioning attempt cancels its
+own gate before restoring any previous Matrix session. Preflight creation runs
+before that session is changed, so a creation failure leaves the previous
+account connected. If no Begin or explicit empty-range release ever arrives,
+expiry releases automatic repair after one hour.
 
 `ending` keeps sender-side filtering alive while the
 low-priority end barrier drains; the sender terminalizes it only when Matrix

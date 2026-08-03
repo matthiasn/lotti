@@ -113,7 +113,10 @@ void main() {
       );
 
       expect(
-        await db.hasActiveInboundOnboardingSyncPreflight(now: now),
+        await db.hasActiveInboundOnboardingSyncPreflight(
+          now: now,
+          recipientUserId: '@sync:example.org',
+        ),
         isTrue,
       );
 
@@ -132,9 +135,20 @@ void main() {
         reason: 'an expired historical row does not need mutation',
       );
       expect(
-        await db.hasActiveInboundOnboardingSyncPreflight(now: now),
+        await db.hasActiveInboundOnboardingSyncPreflight(
+          now: now,
+          recipientUserId: '@sync:example.org',
+        ),
+        isFalse,
+        reason: 'another account cannot gate the active account',
+      );
+      expect(
+        await db.hasActiveInboundOnboardingSyncPreflight(
+          now: now,
+          recipientUserId: '@other:example.org',
+        ),
         isTrue,
-        reason: 'another account still has an independent active preflight',
+        reason: 'the other account retains its independent preflight',
       );
 
       await db.updateOnboardingSyncRound(
@@ -145,7 +159,10 @@ void main() {
         ),
       );
       expect(
-        await db.hasActiveInboundOnboardingSyncPreflight(now: now),
+        await db.hasActiveInboundOnboardingSyncPreflight(
+          now: now,
+          recipientUserId: '@other:example.org',
+        ),
         isFalse,
       );
     },

@@ -388,13 +388,7 @@ void main() {
         when(
           onboarding.hasActiveInboundPreflight,
         ).thenAnswer((_) async => false);
-        when(
-          () => onboarding.serializeInboundSuppression<bool>(any()),
-        ).thenAnswer(
-          (invocation) =>
-              (invocation.positionalArguments.single as Future<bool> Function())
-                  .call(),
-        );
+        _stubPassThroughSuppression(onboarding);
         when(onboarding.activeInboundCoverage).thenAnswer(
           (_) async => {aliceHostId: 10},
         );
@@ -463,14 +457,9 @@ void main() {
           domainLogger: mockLogging,
           onboardingSyncService: onboarding,
         );
-        var missingLoadStarted = false;
         when(
           onboarding.hasActiveInboundPreflight,
-        ).thenAnswer((_) async => !missingLoadStarted);
-        when(onboarding.activeInboundCoverage).thenAnswer((_) async {
-          missingLoadStarted = true;
-          return {};
-        });
+        ).thenAnswer((_) async => true);
         when(
           () => mockSequenceService.getMissingEntriesWithLimits(
             limit: any(named: 'limit'),
@@ -508,6 +497,17 @@ void main() {
           ),
         );
         verifyNever(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
+            requestedMinAge: any(named: 'requestedMinAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
+          ),
+        );
+        verifyNever(
           () => mockOutboxService.enqueueMessageOrThrow(any<SyncMessage>()),
         );
         verifyNever(() => mockSequenceService.markAsRequested(any()));
@@ -527,13 +527,7 @@ void main() {
         when(onboarding.hasActiveInboundPreflight).thenAnswer(
           (_) async => preflightChecks++ > 0,
         );
-        when(
-          () => onboarding.serializeInboundSuppression<bool>(any()),
-        ).thenAnswer(
-          (invocation) =>
-              (invocation.positionalArguments.single as Future<bool> Function())
-                  .call(),
-        );
+        _stubPassThroughSuppression(onboarding);
         when(onboarding.activeInboundCoverage).thenAnswer((_) async => {});
         when(
           () => mockSequenceService.getMissingEntriesWithLimits(
@@ -593,13 +587,7 @@ void main() {
         when(onboarding.activeInboundCoverage).thenAnswer(
           (_) async => coverageReads++ == 0 ? {} : {aliceHostId: 10},
         );
-        when(
-          () => onboarding.serializeInboundSuppression<bool>(any()),
-        ).thenAnswer(
-          (invocation) =>
-              (invocation.positionalArguments.single as Future<bool> Function())
-                  .call(),
-        );
+        _stubPassThroughSuppression(onboarding);
         when(
           () => mockSequenceService.getMissingEntriesWithLimits(
             limit: any(named: 'limit'),
@@ -3074,6 +3062,16 @@ void main() {
       );
     });
   });
+}
+
+void _stubPassThroughSuppression(MockOnboardingSyncService onboarding) {
+  when(
+    () => onboarding.serializeInboundSuppression<bool>(any()),
+  ).thenAnswer(
+    (invocation) =>
+        (invocation.positionalArguments.single as Future<bool> Function())
+            .call(),
+  );
 }
 
 SyncSequenceLogItem _createMissingLogItem(

@@ -15,13 +15,6 @@ const onboardingTerminalCounterChunkSize = 250;
 
 const _inbound = 'inbound';
 const _outbound = 'outbound';
-const _awaitingBegin = 'awaitingBegin';
-const _awaitingAcceptance = 'awaitingAcceptance';
-const _active = 'active';
-const _ending = 'ending';
-const _completed = 'completed';
-const _aborted = 'aborted';
-const _cancelled = 'cancelled';
 
 typedef OnboardingAcceptanceWaiter =
     Future<void> Function(Future<void> acceptance, Duration timeout);
@@ -112,7 +105,7 @@ class OnboardingSyncService {
       OnboardingSyncRoundsCompanion.insert(
         roundId: roundId,
         direction: _inbound,
-        state: _awaitingBegin,
+        state: onboardingSyncStateAwaitingBegin,
         senderHostId: '',
         recipientUserId: recipientUserId,
         recipientDeviceId: '',
@@ -134,13 +127,13 @@ class OnboardingSyncService {
         final row = await _syncDatabase.onboardingSyncRound(roundId);
         if (row == null ||
             row.direction != _inbound ||
-            row.state != _awaitingBegin) {
+            row.state != onboardingSyncStateAwaitingBegin) {
           return;
         }
         await _syncDatabase.updateOnboardingSyncRound(
           roundId,
           OnboardingSyncRoundsCompanion(
-            state: const Value(_cancelled),
+            state: const Value(onboardingSyncStateCancelled),
             updatedAt: Value(_clock.now()),
           ),
         );
@@ -148,8 +141,11 @@ class OnboardingSyncService {
       });
 
   Future<bool> hasActiveInboundPreflight() {
+    final recipientUserId = _getLocalUserId();
+    if (recipientUserId == null) return Future.value(false);
     return _syncDatabase.hasActiveInboundOnboardingSyncPreflight(
       now: _clock.now(),
+      recipientUserId: recipientUserId,
     );
   }
 
@@ -243,7 +239,7 @@ class OnboardingSyncService {
       OnboardingSyncRoundsCompanion.insert(
         roundId: roundId,
         direction: _outbound,
-        state: _awaitingAcceptance,
+        state: onboardingSyncStateAwaitingAcceptance,
         senderHostId: senderHostId,
         senderUserId: Value(senderUserId),
         senderDeviceId: Value(senderDeviceId),
@@ -307,7 +303,7 @@ class OnboardingSyncService {
     await _syncDatabase.updateOnboardingSyncRound(
       round.roundId,
       OnboardingSyncRoundsCompanion(
-        state: const Value(_ending),
+        state: const Value(onboardingSyncStateEnding),
         updatedAt: Value(now),
       ),
     );
@@ -397,7 +393,7 @@ class OnboardingSyncService {
     if (existing != null) {
       final isMatchingActiveRound =
           existing.direction == _inbound &&
-          existing.state == _active &&
+          existing.state == onboardingSyncStateActive &&
           existing.senderHostId == message.senderHostId &&
           existing.recipientUserId == message.recipientUserId &&
           existing.recipientDeviceId == message.recipientDeviceId &&
@@ -418,7 +414,7 @@ class OnboardingSyncService {
       round: OnboardingSyncRoundsCompanion.insert(
         roundId: message.roundId,
         direction: _inbound,
-        state: _active,
+        state: onboardingSyncStateActive,
         senderHostId: message.senderHostId,
         senderUserId: Value(message.senderUserId),
         senderDeviceId: Value(message.senderDeviceId),
@@ -471,14 +467,14 @@ class OnboardingSyncService {
         row.direction != _outbound ||
         row.senderHostId != message.senderHostId ||
         row.recipientDeviceId != message.recipientDeviceId ||
-        row.state != _awaitingAcceptance) {
+        row.state != onboardingSyncStateAwaitingAcceptance) {
       return;
     }
     final now = _clock.now();
     await _syncDatabase.updateOnboardingSyncRound(
       message.roundId,
       OnboardingSyncRoundsCompanion(
-        state: const Value(_active),
+        state: const Value(onboardingSyncStateActive),
         recipientHostId: Value(message.recipientHostId),
         updatedAt: Value(now),
       ),
@@ -525,7 +521,7 @@ class OnboardingSyncService {
     if (row == null ||
         row.direction != _inbound ||
         row.senderHostId != message.senderHostId ||
-        row.state != _active) {
+        row.state != onboardingSyncStateActive) {
       return;
     }
     final now = _clock.now();
@@ -534,8 +530,8 @@ class OnboardingSyncService {
       OnboardingSyncRoundsCompanion(
         state: Value(
           message.reason == OnboardingSyncEndReason.complete
-              ? _completed
-              : _aborted,
+              ? onboardingSyncStateCompleted
+              : onboardingSyncStateAborted,
         ),
         updatedAt: Value(now),
       ),
@@ -553,7 +549,7 @@ class OnboardingSyncService {
     final row = await _syncDatabase.onboardingSyncRound(message.roundId);
     if (row == null ||
         row.direction != _outbound ||
-        row.state != _ending ||
+        row.state != onboardingSyncStateEnding ||
         row.senderHostId != message.senderHostId ||
         row.recipientUserId != message.recipientUserId ||
         row.recipientDeviceId != message.recipientDeviceId) {
@@ -565,8 +561,8 @@ class OnboardingSyncService {
       OnboardingSyncRoundsCompanion(
         state: Value(
           message.reason == OnboardingSyncEndReason.complete
-              ? _completed
-              : _aborted,
+              ? onboardingSyncStateCompleted
+              : onboardingSyncStateAborted,
         ),
         updatedAt: Value(now),
       ),
@@ -581,7 +577,7 @@ class OnboardingSyncService {
     final now = _clock.now();
     if (row == null ||
         row.direction != _inbound ||
-        row.state != _active ||
+        row.state != onboardingSyncStateActive ||
         row.senderHostId != senderHostId ||
         !row.expiresAt.isAfter(now)) {
       return null;

@@ -157,38 +157,28 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       // Step 1: Login
       state = const ProvisioningState.loggingIn();
 
-      // If already logged in, disconnect first so the session manager will
-      // actually attempt credential login instead of silently reusing the
-      // existing session.
       final oldConfig = await matrixService.loadConfig();
       final oldRoomId = await matrixService.getRoom();
+
+      // Persist the gate before changing the current Matrix session. A failed
+      // preflight therefore leaves the existing account connected, while a
+      // successful one is already durable before login can start background
+      // lifecycle processing and gap detection.
+      if (onboardingSyncService != null) {
+        inboundPreflightRoundId = await onboardingSyncService
+            .beginInboundPreflight(
+              recipientUserId: bundle.user,
+            );
+      }
+
+      // If already logged in, disconnect so the session manager actually
+      // attempts credential login instead of silently reusing that session.
       if (matrixService.isLoggedIn()) {
         await matrixService.logout();
       }
       // Clear stale room pointer before switching credentials to avoid an
       // eager auto-join attempt against a room from a previous account.
       await matrixService.clearPersistedRoom();
-
-      // A peer handover is the only flow that immediately receives an
-      // existing history snapshot. Persist its automatic-backfill gate before
-      // login can start background lifecycle processing and gap detection.
-      if (onboardingSyncService != null) {
-        try {
-          inboundPreflightRoundId = await onboardingSyncService
-              .beginInboundPreflight(
-                recipientUserId: bundle.user,
-              );
-        } catch (error, stackTrace) {
-          await _restorePreviousSessionPreservingError(
-            matrixService,
-            oldConfig,
-            oldRoomId,
-            loggingService,
-            error,
-            stackTrace,
-          );
-        }
-      }
 
       final newConfig = MatrixConfig(
         homeServer: bundle.homeServer,
@@ -295,27 +285,6 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       await matrixService.saveRoom(oldRoomId);
     }
     await matrixService.login(waitForLifecycle: false);
-  }
-
-  Future<Never> _restorePreviousSessionPreservingError(
-    MatrixService matrixService,
-    MatrixConfig? oldConfig,
-    String? oldRoomId,
-    DomainLogger loggingService,
-    Object error,
-    StackTrace stackTrace,
-  ) async {
-    try {
-      await _restorePreviousSession(matrixService, oldConfig, oldRoomId);
-    } catch (restoreError, restoreStackTrace) {
-      loggingService.error(
-        LogDomain.sync,
-        restoreError,
-        stackTrace: restoreStackTrace,
-        subDomain: 'configureFromBundle.restorePreviousSession',
-      );
-    }
-    Error.throwWithStackTrace(error, stackTrace);
   }
 
   /// Resets the controller to its initial state.
