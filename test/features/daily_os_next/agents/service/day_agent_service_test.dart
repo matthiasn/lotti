@@ -581,25 +581,37 @@ void main() {
         expect(record.scheduledAt, DateTime(2026, 5, 26, 6));
       });
 
-      test('retries today after a digest interrupted mid-run', () async {
-        // The record was consumed, but no watermark was written: neither the
-        // success nor the failure path ran, so the process died mid-digest.
-        withDigestWatermarks([]);
+      test(
+        'retries an interrupted digest without a live-run probe',
+        () async {
+          service = DayAgentService(
+            agentService: agentService,
+            repository: repository,
+            orchestrator: orchestrator,
+            syncService: syncService,
+            templateService: templateService,
+            domainLogger: domainLogger,
+            onPersistedStateChanged: changedTokens.add,
+          );
+          // The record was consumed, but no watermark was written: neither the
+          // success nor the failure path ran, so the process died mid-digest.
+          withDigestWatermarks([]);
 
-        await restoreWithPlanner(
-          existingRecord: consumedTodayAt(DateTime(2026, 5, 25, 6)),
-        );
+          await restoreWithPlanner(
+            existingRecord: consumedTodayAt(DateTime(2026, 5, 25, 6)),
+          );
 
-        final record = upsertedWakes().single;
-        expect(record.status, ScheduledWakeStatus.pending);
-        // Today's slot, already past — so the record is due on the first pass
-        // after start-up rather than tomorrow morning.
-        expect(record.scheduledAt, DateTime(2026, 5, 25, 6));
-        expect(
-          record.triggerTokens,
-          [dayAgentDigestToken('dayplan-2026-05-25')],
-        );
-      });
+          final record = upsertedWakes().single;
+          expect(record.status, ScheduledWakeStatus.pending);
+          // Today's slot, already past — so the record is due on the first pass
+          // after start-up rather than tomorrow morning.
+          expect(record.scheduledAt, DateTime(2026, 5, 25, 6));
+          expect(
+            record.triggerTokens,
+            [dayAgentDigestToken('dayplan-2026-05-25')],
+          );
+        },
+      );
 
       test('pre-check retries a locally interrupted digest', () async {
         withDigestWatermarks([]);
