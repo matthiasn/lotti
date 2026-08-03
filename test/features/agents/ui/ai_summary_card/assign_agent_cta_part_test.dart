@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -6,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -249,6 +251,36 @@ void main() {
     );
 
     testWidgets(
+      'showAssignTaskAgentPicker opens the same flow the card does — the task '
+      "page's first-run block calls it directly rather than duplicating it",
+      (tester) async {
+        const categoryId = 'cat-123';
+        final harness = _SuccessPathHarness.create(categoryId: categoryId);
+
+        await tester.pumpWidget(
+          harness.build(
+            child: Consumer(
+              builder: (context, ref, _) => TextButton(
+                onPressed: () => showAssignTaskAgentPicker(
+                  context,
+                  ref,
+                  harness.task.meta.id,
+                ),
+                child: const Text('open picker'),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('open picker'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Solo'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'success path: category lookup, modal, then createTaskAgent + invalidate',
       (tester) async {
         const categoryId = 'cat-123';
@@ -369,7 +401,10 @@ class _SuccessPathHarness {
   /// to a real identity instead of null.
   void attachAgent() => _agentAttached = true;
 
-  Widget build() {
+  /// [child] replaces the card, so a test can drive the same flow from a
+  /// different entry point — the task page's first-run row calls
+  /// `showAssignTaskAgentPicker` directly rather than rendering the card.
+  Widget build({Widget? child}) {
     return RiverpodWidgetTestBench(
       mediaQueryData: const MediaQueryData(size: Size(900, 1000)),
       overrides: [
@@ -386,7 +421,7 @@ class _SuccessPathHarness {
           () => _FakeInferenceProfileController([profile]),
         ),
       ],
-      child: AiSummaryCard(taskId: task.meta.id),
+      child: child ?? AiSummaryCard(taskId: task.meta.id),
     );
   }
 }

@@ -535,6 +535,57 @@ void main() {
     );
 
     testWidgets(
+      'losing focus commits the edit — the text is in front of the user and '
+      'they typed it, so discarding on a stray tap is the ruder outcome',
+      (tester) async {
+        String? saved;
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(title: ''),
+            onTitleSaved: (value) => saved = value,
+            initialEditing: true,
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'Buy milk');
+        await tester.pump();
+
+        // Focus goes away without the commit button being pressed — a tap
+        // elsewhere on the page, or the keyboard being dismissed.
+        primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
+
+        expect(saved, 'Buy milk');
+        expect(find.byType(TextField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      "the keyboard's own done action commits, not just the Enter shortcut "
+      '— on a phone that is the control the user actually presses',
+      (tester) async {
+        String? saved;
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(title: ''),
+            onTitleSaved: (value) => saved = value,
+            initialEditing: true,
+          ),
+          platform: TargetPlatform.iOS,
+        );
+
+        await tester.enterText(find.byType(TextField), 'Buy milk');
+        await tester.pump();
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+
+        expect(saved, 'Buy milk');
+      },
+    );
+
+    testWidgets(
       'a titled task keeps the bare title — no field chrome around content '
       'the user already owns',
       (tester) async {

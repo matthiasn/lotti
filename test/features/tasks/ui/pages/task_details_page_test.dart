@@ -21,6 +21,7 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dar
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -180,6 +181,58 @@ void main() {
     // This group stubs journalEntityById per test, so leave it unstubbed here.
     setUp(() => registerTaskDetailsServices(stubTaskEntity: false));
     tearDown(getIt.reset);
+
+    testWidgets(
+      'a first-run task fills the remaining viewport and narrows the column, '
+      'so the group is composed rather than stacked at the top of a blank page',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => blank);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: hTaskDetailsPageOverrides(),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The first content sliver claims the rest of the viewport instead of
+        // taking its child's height, which is what turns the leftover space
+        // into margin above and below.
+        expect(find.byType(SliverLayoutBuilder), findsWidgets);
+
+        final constraints = tester
+            .widgetList<ConstrainedBox>(
+              find.descendant(
+                of: find.byType(SliverLayoutBuilder),
+                matching: find.byType(ConstrainedBox),
+              ),
+            )
+            .map((box) => box.constraints)
+            .toList();
+        expect(
+          constraints.any((c) => c.minHeight > 0),
+          isTrue,
+          reason:
+              'a minHeight floor, not a fixed height — a long title or a '
+              'large text scale must still grow and scroll',
+        );
+        expect(
+          constraints.any((c) => c.maxWidth == TaskFirstRunActions.maxWidth),
+          isTrue,
+          reason:
+              'the column adopts the block measure so the field, the chip '
+              'lane and the card share one right edge',
+        );
+      },
+    );
 
     testWidgets('Task Entry is rendered', (tester) async {
       when(

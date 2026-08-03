@@ -7,12 +7,14 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -132,6 +134,57 @@ void main() {
           .first,
     );
   }
+
+  group('TaskForm — first-run block', () {
+    testWidgets(
+      'a task with nothing on it gets the first-run block, and the AI card '
+      'stands its assign CTA down so the offer is not made twice',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+
+        await tester.pumpWidget(buildSubject(task: blank));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsOneWidget);
+        expect(find.byType(AssignAgentCta), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the block retires as soon as the task holds a checklist',
+      (tester) async {
+        final withContent = testTask.copyWith(
+          data: testTask.data.copyWith(checklistIds: const ['c1']),
+          entryText: null,
+        );
+
+        await tester.pumpWidget(buildSubject(task: withContent));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'an attached agent retires it too — the task is already doing something',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(task: blank, agent: makeTestIdentity()),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsNothing);
+      },
+    );
+  });
 
   group('TaskForm', () {
     testWidgets('renders nothing when entry is null', (tester) async {

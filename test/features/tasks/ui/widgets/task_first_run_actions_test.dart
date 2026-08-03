@@ -6,14 +6,32 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 class _MockEntryCreationService extends Mock implements EntryCreationService {}
+
+/// Prototype for mocktail's `any<BuildContext>()`; never interacted with.
+class _FakeBuildContext extends Fake implements BuildContext {}
+
+/// Resolves to no entry, so the assign flow takes its early return instead of
+/// reaching a picker. `EntryController`'s own field initializer still resolves
+/// `EditorStateService` from getIt even when the class is overridden, which is
+/// why the test registers one.
+class _NullEntryController extends EntryController {
+  @override
+  Future<EntryState?> build() async => null;
+}
 
 void main() {
   final now = DateTime(2026, 8, 3, 13);
@@ -58,12 +76,22 @@ void main() {
   late _MockEntryCreationService creation;
 
   setUpAll(() {
+    registerFallbackValue(_FakeBuildContext());
     // `createChecklist` takes a Task, so mocktail needs a fallback for the
     // `any(named: 'task')` matcher below.
     registerFallbackValue(buildTask());
   });
 
-  setUp(() {
+  setUp(() async {
+    // The shared harness rather than a hand-rolled graph: the assign flow
+    // resolves `entryControllerProvider`, whose base-class initializers reach
+    // into getIt for the editor state service and the journal DB even when the
+    // controller itself is overridden.
+    await setUpTestGetIt(
+      additionalSetup: () => getIt.registerSingleton<EditorStateService>(
+        MockEditorStateService(),
+      ),
+    );
     creation = _MockEntryCreationService();
     when(
       () => creation.createTextEntry(
@@ -74,7 +102,16 @@ void main() {
     when(
       () => creation.createChecklist(task: any(named: 'task')),
     ).thenAnswer((_) async => null);
+    when(
+      () => creation.showAudioRecordingModal(
+        any(),
+        linkedId: any(named: 'linkedId'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((_) {});
   });
+
+  tearDown(tearDownTestGetIt);
 
   Future<void> pump(
     WidgetTester tester, {
@@ -204,6 +241,52 @@ void main() {
         final intent = container.read(taskFocusControllerProvider('task-1'));
         expect(intent, isNotNull);
         expect(intent!.entryId, 'note-1');
+      },
+    );
+
+    testWidgets('the voice-note row opens the audio recording modal', (
+      tester,
+    ) async {
+      await pump(tester, task: buildTask(categoryId: 'cat-1'));
+
+      await tester.tap(find.text('Record a voice note'));
+      await tester.pump();
+
+      verify(
+        () => creation.showAudioRecordingModal(
+          any(),
+          linkedId: 'task-1',
+          categoryId: 'cat-1',
+        ),
+      ).called(1);
+    });
+
+    testWidgets(
+      'the agent row runs the assign flow — it short-circuits when the entry '
+      'is not a task, which is the guard that keeps a stale id harmless',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: <Override>[
+              entryCreationServiceProvider.overrideWithValue(creation),
+              entryControllerProvider(
+                'task-1',
+              ).overrideWith(_NullEntryController.new),
+            ],
+            child: WidgetTestBench(
+              child: TaskFirstRunActions(task: buildTask()),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The entry resolves to nothing, so the flow returns before any
+        // picker. What matters is that the row is wired to the shared flow at
+        // all and survives the miss.
+        await tester.tap(find.text('Assign an agent'));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
       },
     );
 
