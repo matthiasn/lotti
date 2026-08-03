@@ -57,24 +57,3 @@ const _$ObservationPriorityEnumMap = {
   ObservationPriority.notable: 'notable',
   ObservationPriority.critical: 'critical',
 };
-
-_ClassifiedFeedback _$ClassifiedFeedbackFromJson(
-  Map<String, dynamic> json,
-) => _ClassifiedFeedback(
-  items: (json['items'] as List<dynamic>)
-      .map((e) => ClassifiedFeedbackItem.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  windowStart: DateTime.parse(json['windowStart'] as String),
-  windowEnd: DateTime.parse(json['windowEnd'] as String),
-  totalObservationsScanned: (json['totalObservationsScanned'] as num).toInt(),
-  totalDecisionsScanned: (json['totalDecisionsScanned'] as num).toInt(),
-);
-
-Map<String, dynamic> _$ClassifiedFeedbackToJson(_ClassifiedFeedback instance) =>
-    <String, dynamic>{
-      'items': instance.items,
-      'windowStart': instance.windowStart.toIso8601String(),
-      'windowEnd': instance.windowEnd.toIso8601String(),
-      'totalObservationsScanned': instance.totalObservationsScanned,
-      'totalDecisionsScanned': instance.totalDecisionsScanned,
-    };

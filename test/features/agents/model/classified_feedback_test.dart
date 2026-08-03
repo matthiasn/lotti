@@ -245,23 +245,5 @@ void main() {
 
       expect(restored, item);
     });
-
-    test('ClassifiedFeedback encodes aggregate fields to JSON', () {
-      final feedback = ClassifiedFeedback(
-        items: [
-          makeItem(sentiment: FeedbackSentiment.positive),
-        ],
-        windowStart: DateTime(2024, 3, 10),
-        windowEnd: DateTime(2024, 3, 20),
-        totalObservationsScanned: 5,
-        totalDecisionsScanned: 3,
-      );
-
-      final json = feedback.toJson();
-
-      expect(json['items'], hasLength(1));
-      expect(json['totalObservationsScanned'], 5);
-      expect(json['totalDecisionsScanned'], 3);
-    });
   });
 }
