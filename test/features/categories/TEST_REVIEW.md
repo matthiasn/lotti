@@ -9,7 +9,7 @@
 
 | File | Lines | Has test? | Top issue |
 |---|---|---|---|
-| `lib/features/categories/domain/category_icon.dart` | 306 | Yes (425) | Large enum data is split into part files; serialization remains covered |
+| `lib/features/categories/domain/category_icon.dart` | 306 | Yes (425) | No active issue; unused suggestion logic is removed and serialization remains covered |
 | `lib/features/categories/repository/categories_repository.dart` | 114 | Yes (663) | **[MED]** Repository test uses inline getIt boilerplate instead of `setUpTestGetIt()` |
 | `lib/features/categories/state/category_details_controller.dart` | 290 | Yes (1350) | **[HIGH]** 21 real-time `completer.future.timeout(100ms)` calls; test massively oversized |
 | `lib/features/categories/state/category_details_controller.freezed.dart` | 283 | n/a — generated | — |
@@ -84,7 +84,7 @@
 
 ## Generative (Glados) Testing Opportunities
 
-- [x] **[HIGH]** `CategoryIconExtension.fromJson` / `toJson` roundtrip — `category_icon.dart:926-948`. The `toJson` → `fromJson` property (i.e., `fromJson(icon.toJson()) == icon` for all `CategoryIcon` values) is already exercised by an explicit loop in the test, but it is an ideal Glados property: generate arbitrary `String` inputs (including valid icon names, whitespace-padded strings, unknown strings, empty strings, camelCase variants), and assert `fromJson` returns a non-null value iff the trimmed input is an exact `.name` match. Also verify `fromJson(toJson(icon)) == icon` holds for all `CategoryIcon.values` as a roundtrip property. This replaces the hand-rolled loop with a shrinkable property.
+- [x] **[HIGH]** `CategoryIconExtension.fromJson` / `toJson` roundtrip — `category_icon.dart:270-304`. The `toJson` → `fromJson` property (i.e., `fromJson(icon.toJson()) == icon` for all `CategoryIcon` values) is already exercised by an explicit loop in the test, but it is an ideal Glados property: generate arbitrary `String` inputs (including valid icon names, whitespace-padded strings, unknown strings, empty strings, camelCase variants), and assert `fromJson` returns a non-null value iff the trimmed input is an exact `.name` match. Also verify `fromJson(toJson(icon)) == icon` holds for all `CategoryIcon.values` as a roundtrip property. This replaces the hand-rolled loop with a shrinkable property.
 
 - [x] **[MED]** `CategoryIconExtension._byName` static map — `category_icon.dart:274-277`. The map is initialized once from `CategoryIcon.values`. A Glados property can assert `_byName.length == CategoryIcon.values.length` (no duplicates in enum names) and that every value's `name` round-trips through the map. Although these are structural invariants that cannot regress without a compile error, they document the invariant explicitly.
   **RESOLVED (adapted):** added an exhaustive test (better than Glados for a finite enum): enum names are collision-free (`toSet` length equals values length) and every value round-trips through the map-backed `fromJson`. The Glados fromJson/toJson round-trip group already existed.
@@ -129,9 +129,8 @@
 
 ## Summary
 
-- **1 oversized impl file**: `category_details_page.dart` (753 lines — widget extraction). `category_icon.dart` is down to 306 lines after table extraction and unused-code removal.
-- **2 severely oversized test files**: `category_details_page_test.dart` (1955 lines, 86 `pumpAndSettle`) and `category_details_controller_test.dart` (1350 lines, 21 real-time timeouts) — both need `_pumpPage`/`_TestBench` helpers and file-level splits.
-- **5 weak/smoke tests**: `controller state updates trigger UI rebuilds` (asserts only `verify().called(1)`); `dispose does not throw` (asserts only text render); `CategoryIconConstants` size checks; `handles stream errors` (asserts only `findsOneWidget`); Performance map test (re-tests `fromJson` already covered).
+- **1 oversized impl file**: `category_details_page.dart` is now 521 lines after form-section extraction. `category_icon.dart` is down to 306 lines after table extraction and unused-code removal.
+- **2 long test files**: `category_details_page_test.dart` is 1718 lines and `category_details_controller_test.dart` is 1108 lines. Their shared pump/container helpers are implemented; further file splitting is constrained by the one-test-file-per-source rule.
 - **1 prime Glados candidate**: `fromJson`/`toJson` roundtrip on arbitrary strings, a pure function on structured input.
-- **3 missing test files**: `categories_list_controller.dart`, `category_color_icon.dart`, `category_icon_compact.dart` (+ `category_type_card.dart`).
+- **2 missing test files**: `category_color_icon.dart` and `category_type_card.dart`. `categories_list_controller.dart` and `category_icon_compact.dart` now have mirror tests.
 - **3 speed wins**: Replace 21 real-time timeouts (~100–300ms), replace 86 `pumpAndSettle` with targeted `pump()` (~2–5s), replace 6 `Future.delayed(Duration.zero)` with `fakeAsync`.
