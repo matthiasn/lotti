@@ -11,7 +11,7 @@ sources:
   - id: queue
     resource: ../../../lib/features/sync/queue
     title: Inbound queue pipeline
-    last_modified: 2026-07-29
+    last_modified: 2026-08-03
   - id: processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
@@ -258,9 +258,10 @@ ahead of it. The current or next process therefore walks backward to the floor
 instead of stepping over work known to be unresolved. Only a completed walk
 may raise or clear the floor.
 
-It deliberately does **not** use `TimelineEventOrdering.isNewer`, because
-`isNewer` treats a null stored event id as "no marker" even when the marker
-carries a non-zero timestamp.
+`QueueMarkerAdvancer` performs that comparison inline: it checks the stored
+timestamp first and uses durable event ids only to break an equal-timestamp
+tie. A null stored event id therefore does not erase a non-zero timestamp or
+let an older durable event regress the marker.
 
 The net effect: an out-of-order apply — a live event at ts=100 applied first,
 then a bridge event at ts=60 from the same burst — cannot regress the marker.
