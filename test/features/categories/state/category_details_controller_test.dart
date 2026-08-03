@@ -1090,18 +1090,20 @@ void main() {
             overrides: [
               categoryRepositoryProvider.overrideWithValue(mockRepository),
             ],
-          )..read(
-            categoryDetailsControllerProvider(testCategoryId).notifier,
+          )..listen(
+            categoryDetailsControllerProvider(testCategoryId),
+            (_, _) {},
           );
 
       // Add a value and drain the event queue so the subscription is active.
       streamController.add(CategoryTestUtils.createTestCategory());
       await pumpEventQueue();
+      expect(streamController.hasListener, isTrue);
 
-      // Dispose the controller
+      // Dispose the controller and verify its stream subscription is canceled.
       container.dispose();
+      expect(streamController.hasListener, isFalse);
 
-      // Verify stream can be closed without errors
       await streamController.close();
     });
   });

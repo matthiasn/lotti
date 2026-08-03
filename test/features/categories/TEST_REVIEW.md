@@ -13,7 +13,7 @@
 | `lib/features/categories/repository/categories_repository.dart` | 114 | Yes (663) | **[MED]** Repository test uses inline getIt boilerplate instead of `setUpTestGetIt()` |
 | `lib/features/categories/state/category_details_controller.dart` | 376 | Yes (1108) | Shared helpers and deterministic event-queue coordination are implemented |
 | `lib/features/categories/state/category_details_controller.freezed.dart` | 283 | n/a — generated | — |
-| `lib/features/categories/state/category_task_count_provider.dart` | 40 | Yes (178) | **[MED]** 6 `Future<void>.delayed(Duration.zero)` violations |
+| `lib/features/categories/state/category_task_count_provider.dart` | 40 | Yes (178) | No active issue; six delayed futures were replaced with deterministic event-queue drains |
 | `lib/features/categories/state/categories_list_controller.dart` | 14 | Yes (69) | Repository stream values and errors are covered |
 | `lib/features/categories/ui/pages/category_details_page.dart` | 521 | Yes (1718) | Shared page-pump helper is implemented; the mirror test remains long |
 | `lib/features/categories/ui/pages/categories_list_page.dart` | 370 | Yes (in ui/pages/) | **[MED]** Tests use `pumpAndSettle` throughout |
@@ -31,7 +31,7 @@
 | `lib/features/categories/ui/widgets/category_selection_modal_content.dart` | 288 | Yes | **[MED]** 22 `pumpAndSettle` calls |
 | `lib/features/categories/ui/widgets/category_speech_dictionary.dart` | 130 | Yes | **[MED]** 9 `pumpAndSettle` calls |
 | `lib/features/categories/ui/widgets/category_switch_tiles.dart` | 71 | Yes | OK |
-| `lib/features/categories/ui/widgets/category_type_card.dart` | 63 | No | Missing test file |
+| `lib/features/categories/ui/widgets/category_type_card.dart` | 63 | Yes | Selection, tap, and background behavior are covered in the correctly named mirror test |
 
 ---
 
@@ -50,17 +50,14 @@
 
 ## Test Quality Improvements
 
-- [x] **[HIGH]** `test/features/categories/state/category_details_controller_test.dart` — all 21 controller tests use a real-async `Completer` with a `.timeout(const Duration(milliseconds: 100))` wall-clock guard. This is borderline real-time: under CI load the 100 ms budget can be insufficient and the test flakes with a `TimeoutException`. The pattern should be replaced: since the repository returns `Stream.value(category)` (a synchronous-ish stream), the completer fires after a single microtask. Replace the pattern with `await container.read(provider.future)` if using `AsyncNotifier`, or schedule a `Future.microtask()`-based drain instead of a wall-clock `.timeout`. Alternatively, move to `fakeAsync` to eliminate all real-time dependency.
-
-  Additionally, `test:1341` uses an explicit `Future<void>.delayed(Duration.zero)` (a banned pattern per `test/README.md`) — replace with `await Future.microtask(() {})` or restructure to avoid it entirely.
+- [x] **[HIGH]** `test/features/categories/state/category_details_controller_test.dart` — **RESOLVED:** the shared `loadCategory(container)` helper replaces the 21 timeout-backed completers, and the disposal test uses `pumpEventQueue()` plus listener-state assertions instead of a delayed future.
 
 - [x] **[HIGH]** `test/features/categories/ui/pages/category_details_page_test.dart:633-689` — two tests (`controller state updates trigger UI rebuilds` and `dispose does not throw errors`) are near-smoke tests. The first asserts only `verify(() => mockRepository.watchCategory(...)).called(1)` — a behavior that is trivially satisfied by the widget being pumped at all. The second asserts only `find.text('Different Page')` after replacing the widget tree. Neither meaningfully tests the page. Both should be deleted or replaced with behavior assertions (e.g., verify that the initial category name is rendered after the stream emits; verify no `ErrorStateWidget` appears after disposal).
 
 - [x] **[MED]** `test/features/categories/repository/categories_repository_test.dart` — the `setUp`/`tearDown` blocks at lines 44–79 contain 12 lines of inline `getIt.isRegistered` / `getIt.unregister` / `getIt.registerSingleton` boilerplate — exactly the pattern `setUpTestGetIt()` / `tearDownTestGetIt()` is designed to replace. Replace with those helpers from `test/widget_test_utils.dart`.
   **RESOLVED:** setUp/tearDown now use `setUpTestGetIt(additionalSetup: ...)` / `tearDownTestGetIt()`; this test's JournalDb/UpdateNotifications instances replace the helper's stock mocks where the provider-wiring test needs them.
 
-- [x] **[MED]** `test/features/categories/state/category_task_count_provider_test.dart:117-172` — six `await Future<void>.delayed(Duration.zero)` calls (2 per test, in 3 tests). Per `test/README.md` these are forbidden. The tests are running against a `ProviderContainer` (not a widget test), so the correct replacement is `await container.pump()` or restructuring to use `fakeAsync` and `async.flushMicrotasks()` after firing the notification stream.
-  **RESOLVED:** each double micro-delay replaced with a single `await pumpEventQueue()`; all 6 tests green.
+- [x] **[MED]** `test/features/categories/state/category_task_count_provider_test.dart:117-172` — **RESOLVED:** each pair of delayed futures was replaced with a single deterministic `pumpEventQueue()`; all six tests are green.
 
 - [x] **[MED]** `test/features/categories/ui/pages/category_details_page_test.dart` — 48 instances of `RiverpodWidgetTestBench(overrides: [categoryRepositoryProvider.overrideWithValue(mockRepository)], child: CategoryDetailsPage(categoryId: testCategoryId))` are copy-pasted. Extract a file-level helper:
   ```dart
@@ -101,8 +98,7 @@
 - [x] **[HIGH]** `lib/features/categories/ui/widgets/category_icon_compact.dart` (153 lines) — no test file exists. This widget is used in several places (task items, journal entries). Missing coverage of: rendering with icon set, rendering without icon (fallback character), different size variants, color application.
   **RESOLVED:** `category_icon_compact_test.dart` covers icon/color rendering, dark and light fallback text, missing-category fallback, sizing, and direct-definition rendering.
 
-- [x] **[MED]** `lib/features/categories/ui/widgets/category_type_card.dart` (63 lines) — no test file exists. A small widget but used as the selection tile in the category picker; behaviors (selection state, tap callback) are untested.
-  **RESOLVED (adapted):** a test file existed but was misnamed (`categories_type_card_test.dart`) — renamed to the proper mirror `category_type_card_test.dart`. Added the missing behaviors: tap forwarding via callback counter and the selected/unselected background matrix; moved out the stray `CategoryIconCompact` test (already covered in its own mirror).
+- [x] **[MED]** `lib/features/categories/ui/widgets/category_type_card.dart` (63 lines) — **RESOLVED (adapted):** the existing misnamed test was renamed to the proper mirror `category_type_card_test.dart`. It now covers tap forwarding and the selected/unselected background matrix; the stray `CategoryIconCompact` test moved to its own mirror.
 
 - [x] **[MED]** `category_details_controller_test.dart` does not test the `updateFormField(icon:)` branch. The `CategoryDetailsController.updateFormField` accepts an `icon` named parameter but no controller test exercises it (icon change → `hasChanges = true`, icon reflected in pending state). This is exercised only indirectly in the UI tests.
   **RESOLVED:** the form-field change test now also drives `updateFormField(icon: CategoryIcon.fitness)` and asserts `hasChanges` plus the icon landing in pending state.
@@ -114,12 +110,11 @@
 
 ## Test Execution Speed Opportunities
 
-- [x] **[HIGH]** `test/features/categories/state/category_details_controller_test.dart` — 21 tests each await a real `completer.future.timeout(const Duration(milliseconds: 100))`. Each timeout is a 100ms wall-clock wait. Even if each completer fires in a few microseconds, the default Dart `Future` async machinery means the test runner must go through at least one event-loop cycle per test. Under `very_good test` batching these 21 tests may add 100–300ms to the shard. Using `Stream.value()` (which is already used as the mock answer) always fires synchronously before the timeout, but the pattern still incurs the overhead of a `Completer`-backed future. Replacing with `await Future.microtask(() {})` + `container.read(provider).category != null ? null : (throw ...)` or restructuring to use `provider.future` directly would be faster and more reliable. **Estimated saving: 1–3s per full-suite shard run.**
+- [x] **[HIGH]** `test/features/categories/state/category_details_controller_test.dart` — **RESOLVED:** the 21 real-time timeout guards were replaced by the shared `loadCategory(container)` helper, removing their wall-clock dependency.
 
 - [x] **[HIGH]** `test/features/categories/ui/pages/category_details_page_test.dart` — 86 `pumpAndSettle()` calls. Each `pumpAndSettle` drives the frame scheduler until all animations settle (default 10-second timeout). Many of these are used after a single `tester.pump()` or after a stream emit where no animation is pending; substituting `tester.pump()` (or `tester.pump(const Duration(milliseconds: 50))`) would suffice and remove the risk of a 10s hang if an animation never settles. In particular, the tests at lines 168, 194, 221, 337, 368 all use `pumpAndSettle()` after a simple `Stream.value()` emission where a single `pump()` would suffice. **Estimated saving: 2–5s per shard + eliminates potential 10s hang on animation-related regressions.**
 
-- [x] **[MED]** `test/features/categories/state/category_task_count_provider_test.dart` — 6 `Future<void>.delayed(Duration.zero)` calls (lines 117–172). These yield two microtask ticks to allow the `ProviderContainer` to propagate stream events. Replace with a `fakeAsync` + `async.flushMicrotasks()` pattern so the test is deterministic and has no wall-clock dependency.
-  **RESOLVED:** same fix as the duplicate item above — `pumpEventQueue()` replaces the micro-delays (no wall-clock dependency; fakeAsync not needed since nothing uses timers).
+- [x] **[MED]** `test/features/categories/state/category_task_count_provider_test.dart` — **RESOLVED:** `pumpEventQueue()` replaces the six delayed futures; fake time is unnecessary because the provider uses no timers.
 
 - [x] **[MED]** `test/features/categories/ui/pages/category_details_page_test.dart` — 48 per-test `pumpWidget` calls that each reconstruct the full `MaterialApp` + localization + `ProviderScope` + `SliverAppBar` + form widget tree. A `setUpAll`-level warm-up (or grouping tests that share the same initial state under one `setUp`) would avoid repeating full cold-start widget builds. **Estimated saving: 0.5–1s per shard.**
   **RESOLVED (assessed, no change):** `testWidgets` gives every test a fresh binding and widget tree by design — a `setUpAll` warm-up cannot be shared across tests, so the suggested mechanism can't deliver the saving. The source-level duplication was removed via the pump helper; the directory runs in ~3 s.
@@ -134,5 +129,5 @@
 - **1 oversized impl file**: `category_details_page.dart` is now 521 lines after form-section extraction. `category_icon.dart` is down to 306 lines after table extraction and unused-code removal.
 - **2 long test files**: `category_details_page_test.dart` is 1718 lines and `category_details_controller_test.dart` is 1108 lines. Their shared pump/container helpers are implemented; further file splitting is constrained by the one-test-file-per-source rule.
 - **1 prime Glados candidate**: `fromJson`/`toJson` roundtrip on arbitrary strings, a pure function on structured input.
-- **2 missing test files**: `category_color_icon.dart` and `category_type_card.dart`. `categories_list_controller.dart` and `category_icon_compact.dart` now have mirror tests.
-- **3 speed wins**: Replace 21 real-time timeouts (~100–300ms), replace 86 `pumpAndSettle` with targeted `pump()` (~2–5s), replace 6 `Future.delayed(Duration.zero)` with `fakeAsync`.
+- **1 missing test file**: `category_color_icon.dart`. `category_type_card.dart`, `categories_list_controller.dart`, and `category_icon_compact.dart` now have mirror tests.
+- **1 remaining speed opportunity**: review the 86 `pumpAndSettle` calls in `category_details_page_test.dart`; the timeout-backed controller waits and six delayed futures are resolved.
