@@ -5,7 +5,7 @@ description: Two durable synced entities instead of RPC — binding day directiv
 resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive_service.dart
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-03T12:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-03T12:35:33Z }
 stale_after: 2026-11-01
 sources:
   - id: agents
@@ -257,25 +257,33 @@ It runs from the wake manager's `beforeCheck`, not only from
 `restoreSubscriptions`. The restore pass happens well after the manager's first
 scan, so a record armed there would sit due until the next hourly tick — and a
 user who opens the app briefly after a crash would still get no briefing.
-That frequent pre-check is **repair-only**: it never creates an absent cadence
-or advances a completed record. Startup restoration owns those transitions
-after synced state has had time to arrive, so an early local absence cannot
-race a real row that is still syncing.
+That frequent pre-check is **repair-only**: it never creates an absent cadence.
+Startup restoration owns first bootstrap after synced state has had time to
+arrive, so an early local absence cannot race a real row that is still syncing.
+An existing consumed row from an older local day is different: it can never
+surface in the due query again, so the periodic repair advances it to the next
+slot. Otherwise one peer's preserved consumed row would disable every later
+digest until that app restarted.
 
 Five bounds keep the retry from costing more than it saves:
 
 - **The coordinator is active.** A retained dormant or destroyed identity is
   history, not authority to restart scheduled work.
-- **No digest is live locally.** The consumed row is written before inference
-  begins, so its missing completion watermark is expected while the runner
-  still holds the coordinator lock.
+- **No digest work is live locally.** The consumed row is written before
+  inference begins, so its missing completion watermark is expected while the
+  digest is queued, holds the runner lock, or continues as an uncancellable
+  executor after an abort released that lock. The workspace-scoped
+  `WakeOrchestrator.hasPendingOrActiveWake` probe covers all three states.
 - **This device ran it.** On a peer, the consumed row can arrive before the
   milestone that followed it, so an absent local watermark there means "not
   synced yet", not "interrupted". Only the host in `leaseHostId` may read its
   own silence as a crash; an unleased record has no claimant to check.
 - **It ran today**, judged by `consumedAt` rather than `scheduledAt` — an
   overdue catch-up keeps the slot it was armed for even though the workflow
-  re-anchors it to today. This is a local-calendar comparison only; a backward
+  re-anchors it to today. The manager stamps `consumedAt` at the record's
+  enqueue boundary, not from the pass-level clock captured before due-state and
+  lease work, so a long pass crossing midnight records the day the digest
+  actually fires. This is a local-calendar comparison only; a backward
   wall-clock adjustment within that day does not invalidate the evidence.
 - **No `dailyWakeCompleted` watermark inside `[consumedAt, now]`.** The crash
   can land between the milestone and the re-arm, and that run did digest the
@@ -291,11 +299,13 @@ the clock forward makes the pending row causally dominate, so it never reaches
 the concurrent path. The lease fields are cleared: the claim belonged to the run
 that died, and the retry re-elects.
 
-Every ambiguous same-day consumed row is preserved, not overwritten. A live
-run, another host's claim, an unreadable message log, or an unreadable local
-host all answer "leave it alone" — because of the two failure modes, the
-duplicate digest is the one that bills. A proven completion or a record from an
-older local day may advance to the next slot during startup restoration.
+Every ambiguous same-day consumed row is preserved, not overwritten. Queued,
+running, or detached local work, another host's claim, an unreadable message
+log, or an unreadable local host all answer "leave it alone" — because of the
+two failure modes, the duplicate digest is the one that bills. A proven
+completion advances during startup restoration; a record from an older local
+day also advances during the periodic repair so a long-running session does not
+lose the cadence.
 
 **The lease bounds cost, not correctness.** Devices partitioned from sync while
 their model providers stay reachable can each hold a locally-consistent claim and

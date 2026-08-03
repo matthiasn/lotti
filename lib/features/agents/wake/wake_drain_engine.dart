@@ -406,16 +406,18 @@ extension WakeDrainEngine on WakeOrchestrator {
         final aborted = Completer<void>();
         final abortSentinel = Object();
 
+        final executorFuture = runZoned(
+          () => executor(
+            job.agentId,
+            job.runKey,
+            job.triggerTokens,
+            threadId,
+          ),
+          zoneValues: {agentExecutionZoneKey: true},
+        );
+        _trackExecutor(job, executorFuture);
         unawaited(
-          runZoned(
-            () => executor(
-              job.agentId,
-              job.runKey,
-              job.triggerTokens,
-              threadId,
-            ),
-            zoneValues: {agentExecutionZoneKey: true},
-          ).then(
+          executorFuture.then(
             (value) {
               if (!completed.isCompleted) completed.complete(value);
             },

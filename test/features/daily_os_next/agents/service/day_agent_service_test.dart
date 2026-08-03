@@ -176,7 +176,7 @@ void main() {
       syncService: syncService,
       templateService: templateService,
       domainLogger: domainLogger,
-      isCoordinatorRunning: () => coordinatorRunning,
+      hasCoordinatorWork: () => coordinatorRunning,
       onPersistedStateChanged: (token) {
         syncService.events.add('notify');
         changedTokens.add(token);
@@ -677,6 +677,27 @@ void main() {
         );
 
         expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 26, 6));
+      });
+
+      test('pre-check advances a stale consumed digest record', () async {
+        when(
+          () => repository.getEntity(digestRecordId),
+        ).thenAnswer(
+          (_) async => consumedTodayAt(
+            DateTime(2026, 5, 24, 6),
+            consumedAt: DateTime(2026, 5, 24, 6, 2),
+            leaseHostId: 'another-host',
+          ),
+        );
+
+        await withClock(
+          Clock.fixed(now),
+          service.ensureCoordinatorDigestWake,
+        );
+
+        final record = upsertedWakes().single;
+        expect(record.status, ScheduledWakeStatus.pending);
+        expect(record.scheduledAt, DateTime(2026, 5, 26, 6));
       });
 
       test('judges the day by when the record fired, not its slot', () async {

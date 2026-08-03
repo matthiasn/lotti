@@ -12,6 +12,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
@@ -94,11 +96,17 @@ void main() {
       );
     });
 
-    test('wires the live coordinator-run probe', () async {
+    test('wires the orchestrator coordinator-work probe', () async {
       final agentService = MockAgentService();
       final repository = MockAgentRepository();
       final syncService = MockAgentSyncService();
+      final queue = WakeQueue();
       final runner = WakeRunner();
+      final orchestrator = WakeOrchestrator(
+        repository: repository,
+        queue: queue,
+        runner: runner,
+      );
       final digestRecordId = scheduledWakeRecordId(
         dailyOsPlannerAgentId,
         workspaceKey: coordinatorDigestWorkspaceKey,
@@ -131,13 +139,24 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
       when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
-      await runner.tryAcquire(dailyOsPlannerAgentId);
-      addTearDown(runner.dispose);
+      queue.enqueue(
+        WakeJob(
+          runKey: 'digest-run',
+          agentId: dailyOsPlannerAgentId,
+          reason: dayAgentDigestReason,
+          triggerTokens: const {'digest'},
+          createdAt: DateTime(2026, 8, 3, 6),
+          workspaceKey: coordinatorDigestWorkspaceKey,
+        ),
+      );
+      addTearDown(() async {
+        await orchestrator.stop();
+        runner.dispose();
+      });
       final container = buildContainer([
         agentServiceProvider.overrideWithValue(agentService),
         agentRepositoryProvider.overrideWithValue(repository),
-        wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
-        wakeRunnerProvider.overrideWithValue(runner),
+        wakeOrchestratorProvider.overrideWithValue(orchestrator),
         agentSyncServiceProvider.overrideWithValue(syncService),
         agentTemplateServiceProvider.overrideWithValue(
           MockAgentTemplateService(),

@@ -38,9 +38,9 @@ class DayAgentService {
     required this.syncService,
     required this.templateService,
     required this.domainLogger,
-    bool Function()? isCoordinatorRunning,
+    bool Function()? hasCoordinatorWork,
     this.onPersistedStateChanged,
-  }) : _isCoordinatorRunning = isCoordinatorRunning ?? _neverRunning;
+  }) : _hasCoordinatorWork = hasCoordinatorWork ?? _noCoordinatorWork;
 
   /// Shared agent lifecycle service.
   final AgentService agentService;
@@ -60,9 +60,9 @@ class DayAgentService {
   /// Structured logger.
   final DomainLogger domainLogger;
 
-  /// Live coordinator-run probe used to avoid treating an in-flight digest
-  /// as an interrupted one during startup restoration or periodic repair.
-  final bool Function() _isCoordinatorRunning;
+  /// Live coordinator-work probe used to avoid treating queued, running, or
+  /// detached digest execution as an interrupted run.
+  final bool Function() _hasCoordinatorWork;
 
   /// Callback fired when persisted state changes.
   final void Function(String agentId)? onPersistedStateChanged;
@@ -895,10 +895,12 @@ class DayAgentService {
   /// next hourly tick — and a user who opens the app briefly after a crash
   /// would still get no briefing.
   ///
-  /// This frequent path deliberately does not bootstrap an absent cadence or
-  /// advance a completed one. Startup restoration owns those transitions after
-  /// synced state has had a chance to arrive; otherwise an early scan can
-  /// create a competing row while the real record is still syncing.
+  /// This frequent path deliberately does not bootstrap an absent cadence.
+  /// Startup restoration owns that transition after synced state has had a
+  /// chance to arrive; otherwise an early scan can create a competing row
+  /// while the real record is still syncing. It does advance an existing
+  /// consumed row from an earlier day, because such a row can never re-enter
+  /// the due scan and would otherwise strand the cadence until app restart.
   ///
   /// Only an active coordinator participates. A dormant or destroyed identity
   /// is retained for history, not as authority to resume scheduled work.
@@ -906,9 +908,17 @@ class DayAgentService {
     final coordinator = await agentService.getAgent(dailyOsPlannerAgentId);
     if (coordinator?.lifecycle != AgentLifecycle.active) return;
     final existing = await repository.getEntity(_digestRecordId);
-    final recovery = await _digestRecovery(existing, clock.now());
-    if (recovery case _RetryDigest(:final record)) {
-      await _retryInterruptedDigest(record);
+    final now = clock.now();
+    switch (await _digestRecovery(existing, now)) {
+      case _RetryDigest(:final record):
+        await _retryInterruptedDigest(record);
+      case _AdvanceDigest()
+          when existing is ScheduledWakeEntity &&
+              existing.deletedAt == null &&
+              existing.status == ScheduledWakeStatus.consumed:
+        await _scheduleNextDigest(now);
+      case _AdvanceDigest() || _PreserveDigest():
+        return;
     }
   }
 
@@ -934,6 +944,10 @@ class DayAgentService {
       case _AdvanceDigest():
         break;
     }
+    await _scheduleNextDigest(now);
+  }
+
+  Future<void> _scheduleNextDigest(DateTime now) async {
     final next = nextDigestTime(now);
     await syncService.upsertEntity(
       AgentDomainEntity.scheduledWake(
@@ -986,7 +1000,7 @@ class DayAgentService {
     // A consumed row is written before inference starts. While that inference
     // is still live, its missing completion watermark is expected rather than
     // evidence of a crash.
-    if (_isCoordinatorRunning()) return const _DigestRecovery.preserve();
+    if (_hasCoordinatorWork()) return const _DigestRecovery.preserve();
     // Falls back to the slot for a record consumed by a build that predates
     // `consumedAt`; the day check below is what either answer feeds.
     final ranAt = existing.consumedAt ?? existing.scheduledAt;
@@ -1107,7 +1121,7 @@ class DayAgentService {
   }
 }
 
-bool _neverRunning() => false;
+bool _noCoordinatorWork() => false;
 
 sealed class _DigestRecovery {
   const _DigestRecovery();

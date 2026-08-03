@@ -380,6 +380,11 @@ class ScheduledWakeManager {
         // would fire it a second time — a transient write error must not
         // become a second billed wake. It stays due for the next invocation.
         handled.recordIds.add(record.id);
+        // The pass-level `now` can age across due-state processing, lease
+        // settlement, and repository reads. Stamp when this record actually
+        // reaches the enqueue boundary so recovery assigns it to the day whose
+        // digest the executor will produce, including a pass crossing midnight.
+        final firedAt = clock.now();
         _orchestrator.enqueueManualWake(
           agentId: record.agentId,
           reason: record.reason,
@@ -389,8 +394,8 @@ class ScheduledWakeManager {
         await _syncService.upsertEntity(
           record.copyWith(
             status: ScheduledWakeStatus.consumed,
-            consumedAt: now,
-            updatedAt: now,
+            consumedAt: firedAt,
+            updatedAt: firedAt,
           ),
         );
         onPersistedStateChanged?.call(record.agentId);

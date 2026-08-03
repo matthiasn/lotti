@@ -205,6 +205,7 @@ class WakeOrchestrator {
 
   final _subscriptions = <AgentSubscription>[];
   final _suppression = WakeSuppressionTracker();
+  final _activeExecutors = <String, ({String agentId, String? workspaceKey})>{};
   late final WakeThrottleCoordinator _throttle;
 
   final _runCompletions = StreamController<WakeRunCompletion>.broadcast();
@@ -215,6 +216,44 @@ class WakeOrchestrator {
   /// **before** calling [enqueueManualWake] and filter on the returned run
   /// key to await a specific wake without polling.
   Stream<WakeRunCompletion> get runCompletions => _runCompletions.stream;
+
+  /// Whether matching work is queued, owns the runner lock, or is still
+  /// executing after an abort released that lock.
+  ///
+  /// The last state matters because Dart futures cannot be cancelled. A timed
+  /// out executor may continue mutating data after its wake-run row becomes
+  /// terminal, so recovery code must not start replacement work until the
+  /// underlying future has actually settled.
+  bool hasPendingOrActiveWake(
+    String agentId, {
+    String? workspaceKey,
+  }) {
+    if (queue.hasQueuedJobFor(agentId, workspaceKey: workspaceKey)) return true;
+    if (runner.isRunning(agentId) &&
+        runner.workspaceKeyFor(agentId) == workspaceKey) {
+      return true;
+    }
+    return _activeExecutors.values.any(
+      (execution) =>
+          execution.agentId == agentId &&
+          execution.workspaceKey == workspaceKey,
+    );
+  }
+
+  void _trackExecutor(WakeJob job, Future<Map<String, VectorClock>?> future) {
+    _activeExecutors[job.runKey] = (
+      agentId: job.agentId,
+      workspaceKey: job.workspaceKey,
+    );
+    unawaited(
+      future.then(
+        (_) => _activeExecutors.remove(job.runKey),
+        onError: (Object _, StackTrace _) {
+          _activeExecutors.remove(job.runKey);
+        },
+      ),
+    );
+  }
 
   void _emitRunCompletion(
     WakeJob job,

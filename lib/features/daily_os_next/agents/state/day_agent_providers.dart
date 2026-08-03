@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
@@ -25,18 +26,18 @@ final dayAgentServiceProvider = Provider<DayAgentService>(
 );
 DayAgentService dayAgentService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
+  final orchestrator = ref.watch(wakeOrchestratorProvider);
   return DayAgentService(
     agentService: ref.watch(agentServiceProvider),
     repository: ref.watch(agentRepositoryProvider),
-    orchestrator: ref.watch(wakeOrchestratorProvider),
+    orchestrator: orchestrator,
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
-    // Deferred read avoids a provider cycle: the runner already depends on
-    // services assembled from this provider graph, while the probe is needed
-    // only when digest recovery actually runs.
-    isCoordinatorRunning: () =>
-        ref.read(wakeRunnerProvider).isRunning(dailyOsPlannerAgentId),
+    hasCoordinatorWork: () => orchestrator.hasPendingOrActiveWake(
+      dailyOsPlannerAgentId,
+      workspaceKey: coordinatorDigestWorkspaceKey,
+    ),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }
