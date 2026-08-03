@@ -245,27 +245,5 @@ void main() {
 
       expect(restored, item);
     });
-
-    test('ClassifiedFeedback roundtrips through JSON', () {
-      final feedback = ClassifiedFeedback(
-        items: [
-          makeItem(sentiment: FeedbackSentiment.positive),
-        ],
-        windowStart: DateTime(2024, 3, 10),
-        windowEnd: DateTime(2024, 3, 20),
-        totalObservationsScanned: 5,
-        totalDecisionsScanned: 3,
-      );
-
-      final json = jsonDecode(jsonEncode(feedback.toJson()));
-      final restored = ClassifiedFeedback.fromJson(
-        json as Map<String, dynamic>,
-      );
-
-      expect(restored.items, hasLength(1));
-      expect(restored.items.first.sentiment, FeedbackSentiment.positive);
-      expect(restored.totalObservationsScanned, 5);
-      expect(restored.totalDecisionsScanned, 3);
-    });
   });
 }

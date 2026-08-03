@@ -311,7 +311,6 @@ as ObservationPriority?,
 
 }
 
-
 /// @nodoc
 mixin _$ClassifiedFeedback {
 
@@ -322,8 +321,6 @@ mixin _$ClassifiedFeedback {
 @pragma('vm:prefer-inline')
 $ClassifiedFeedbackCopyWith<ClassifiedFeedback> get copyWith => _$ClassifiedFeedbackCopyWithImpl<ClassifiedFeedback>(this as ClassifiedFeedback, _$identity);
 
-  /// Serializes this ClassifiedFeedback to a JSON map.
-  Map<String, dynamic> toJson();
 
 
 @override
@@ -331,7 +328,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is ClassifiedFeedback&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.windowStart, windowStart) || other.windowStart == windowStart)&&(identical(other.windowEnd, windowEnd) || other.windowEnd == windowEnd)&&(identical(other.totalObservationsScanned, totalObservationsScanned) || other.totalObservationsScanned == totalObservationsScanned)&&(identical(other.totalDecisionsScanned, totalDecisionsScanned) || other.totalDecisionsScanned == totalDecisionsScanned));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(items),windowStart,windowEnd,totalObservationsScanned,totalDecisionsScanned);
 
@@ -510,11 +507,11 @@ return $default(_that.items,_that.windowStart,_that.windowEnd,_that.totalObserva
 }
 
 /// @nodoc
-@JsonSerializable()
+
 
 class _ClassifiedFeedback implements ClassifiedFeedback {
   const _ClassifiedFeedback({required final  List<ClassifiedFeedbackItem> items, required this.windowStart, required this.windowEnd, required this.totalObservationsScanned, required this.totalDecisionsScanned}): _items = items;
-  factory _ClassifiedFeedback.fromJson(Map<String, dynamic> json) => _$ClassifiedFeedbackFromJson(json);
+
 
  final  List<ClassifiedFeedbackItem> _items;
 @override List<ClassifiedFeedbackItem> get items {
@@ -534,17 +531,14 @@ class _ClassifiedFeedback implements ClassifiedFeedback {
 @pragma('vm:prefer-inline')
 _$ClassifiedFeedbackCopyWith<_ClassifiedFeedback> get copyWith => __$ClassifiedFeedbackCopyWithImpl<_ClassifiedFeedback>(this, _$identity);
 
-@override
-Map<String, dynamic> toJson() {
-  return _$ClassifiedFeedbackToJson(this, );
-}
+
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _ClassifiedFeedback&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.windowStart, windowStart) || other.windowStart == windowStart)&&(identical(other.windowEnd, windowEnd) || other.windowEnd == windowEnd)&&(identical(other.totalObservationsScanned, totalObservationsScanned) || other.totalObservationsScanned == totalObservationsScanned)&&(identical(other.totalDecisionsScanned, totalDecisionsScanned) || other.totalDecisionsScanned == totalDecisionsScanned));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_items),windowStart,windowEnd,totalObservationsScanned,totalDecisionsScanned);
 

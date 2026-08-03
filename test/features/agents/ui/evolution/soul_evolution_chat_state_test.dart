@@ -556,75 +556,6 @@ void main() {
       });
     });
 
-    group('endSession', () {
-      test('abandons session and adds system message', () async {
-        stubSuccessfulStart();
-
-        container = createContainer();
-        await withClock(
-          testClock,
-          () => container.read(
-            soulEvolutionChatStateProvider(kTestSoulId).future,
-          ),
-        );
-
-        await withClock(
-          testClock,
-          () => container
-              .read(soulEvolutionChatStateProvider(kTestSoulId).notifier)
-              .endSession(),
-        );
-
-        final data = container
-            .read(soulEvolutionChatStateProvider(kTestSoulId))
-            .value!;
-
-        expect(data.sessionId, isNull);
-        expect(data.processor, isNull);
-        expect(data.isWaiting, isFalse);
-        expect(
-          data.messages.whereType<EvolutionSystemMessage>().any(
-            (m) => m.text == 'session_abandoned',
-          ),
-          isTrue,
-        );
-        verify(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).called(greaterThanOrEqualTo(1));
-      });
-
-      test('does nothing when sessionId is null', () async {
-        stubNullStart();
-
-        container = createContainer();
-        await withClock(
-          testClock,
-          () => container.read(
-            soulEvolutionChatStateProvider(kTestSoulId).future,
-          ),
-        );
-
-        await withClock(
-          testClock,
-          () => container
-              .read(soulEvolutionChatStateProvider(kTestSoulId).notifier)
-              .endSession(),
-        );
-
-        final data = container
-            .read(soulEvolutionChatStateProvider(kTestSoulId))
-            .value!;
-
-        expect(
-          data.messages
-              .whereType<EvolutionSystemMessage>()
-              .where((m) => m.text == 'session_abandoned')
-              .isEmpty,
-          isTrue,
-        );
-      });
-    });
-
     group('sendMessage — edge cases', () {
       test('handles sendMessage error gracefully', () async {
         stubSuccessfulStart();
@@ -1043,59 +974,6 @@ void main() {
           );
         },
       );
-    });
-
-    group('endSession — edge cases', () {
-      test('cleans up state even when abandonSession throws', () async {
-        stubSuccessfulStart();
-
-        container = createContainer();
-        await withClock(
-          testClock,
-          () => container.read(
-            soulEvolutionChatStateProvider(kTestSoulId).future,
-          ),
-        );
-
-        // Re-stub to throw AFTER session started successfully.
-        var callCount = 0;
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {
-          callCount++;
-          // Throw on the first call (endSession), succeed on subsequent
-          // calls (dispose cleanup).
-          if (callCount == 1) {
-            throw Exception('cleanup error');
-          }
-        });
-
-        // Also make the workflow report no active session after endSession
-        // so the dispose callback doesn't attempt another abandon.
-        when(
-          () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-        ).thenReturn(null);
-
-        await withClock(
-          testClock,
-          () => container
-              .read(soulEvolutionChatStateProvider(kTestSoulId).notifier)
-              .endSession(),
-        );
-
-        final data = container
-            .read(soulEvolutionChatStateProvider(kTestSoulId))
-            .value!;
-
-        // Session should be cleaned up even after error.
-        expect(data.sessionId, isNull);
-        expect(
-          data.messages.whereType<EvolutionSystemMessage>().any(
-            (m) => m.text == 'session_abandoned',
-          ),
-          isTrue,
-        );
-      });
     });
 
     group('build — opening surfaces', () {

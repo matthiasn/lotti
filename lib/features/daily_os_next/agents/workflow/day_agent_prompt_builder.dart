@@ -51,11 +51,6 @@ Worked example:
   omitted or conflicting.
 ''';
 
-/// Combined fixture retained for source-mirrored prompt regression tests.
-@visibleForTesting
-const dayAgentPlanningExamples =
-    '$dayAgentCaptureExample\n$dayAgentDraftExample';
-
 @visibleForTesting
 const dayAgentCaptureTerminalRule = '''
 - On capture-submitted wakes, `parse_capture_to_items` MUST be the final tool

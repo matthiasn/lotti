@@ -2482,7 +2482,6 @@ void main() {
       final mockRepo = MockAgentRepository();
       final mockSync = MockAgentSyncService();
       final mockOutbox = MockOutboxService();
-      final mockOrchestrator = MockWakeOrchestrator();
       final mockNotifications = MockUpdateNotifications();
 
       final container = ProviderContainer(
@@ -2491,7 +2490,6 @@ void main() {
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
-          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           updateNotificationsProvider.overrideWithValue(mockNotifications),
         ],
       );
