@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now raise the notification they were always meant to.
 
 ### Fixed
+- **The Add device QR code has a clearer edge for scanners.** Its white margin
+  was narrow enough that the outer QR modules looked almost clipped against the
+  surrounding card. The code now has four more pixels of white space on every
+  side, making its boundary easier for a camera to distinguish.
 - **Adding a device no longer sends the same history over and over.** During a
   full initial message transfer, the new device could mistake queued or
   in-flight history for missing data and repeatedly ask for it in batches,
