@@ -325,11 +325,12 @@ final scheduledWakeManagerProvider = Provider<ScheduledWakeManager>(
 );
 ScheduledWakeManager scheduledWakeManager(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
+  final domainLogger = ref.watch(domainLoggerProvider);
   final manager = ScheduledWakeManager(
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
-    domainLogger: ref.watch(domainLoggerProvider),
+    domainLogger: domainLogger,
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
     // The coordinator's morning digest is the one scheduled wake whose work
     // is shared rather than device-local: every device firing it means one
@@ -357,8 +358,26 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
     // only to run a pass.
     beforeCheck: () async {
       final dayAgents = ref.read(dayAgentServiceProvider);
-      await dayAgents.retirePastDayAgents();
-      await dayAgents.ensureCoordinatorDigestWake();
+      try {
+        await dayAgents.retirePastDayAgents();
+      } catch (e, s) {
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message: 'failed to retire past day agents before wake scan',
+          stackTrace: s,
+        );
+      }
+      try {
+        await dayAgents.ensureCoordinatorDigestWake();
+      } catch (e, s) {
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message: 'failed to repair coordinator digest before wake scan',
+          stackTrace: s,
+        );
+      }
     },
   );
   ref.onDispose(manager.stop);

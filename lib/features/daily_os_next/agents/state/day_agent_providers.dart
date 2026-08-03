@@ -32,6 +32,11 @@ DayAgentService dayAgentService(Ref ref) {
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    // Deferred read avoids a provider cycle: the runner already depends on
+    // services assembled from this provider graph, while the probe is needed
+    // only when digest recovery actually runs.
+    isCoordinatorRunning: () =>
+        ref.read(wakeRunnerProvider).isRunning(dailyOsPlannerAgentId),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }

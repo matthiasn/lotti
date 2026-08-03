@@ -57,6 +57,7 @@ void main() {
   late MockDomainLogger domainLogger;
   late DayAgentService service;
   late List<String> changedTokens;
+  late bool coordinatorRunning;
 
   const agentId = 'day-agent-1';
   final testDate = DateTime(2026, 5, 25, 9);
@@ -67,6 +68,7 @@ void main() {
     String id = agentId,
     String kind = AgentKinds.dayAgent,
     AgentConfig config = const AgentConfig(),
+    AgentLifecycle lifecycle = AgentLifecycle.active,
     DateTime? createdAt,
   }) {
     return makeTestIdentity(
@@ -76,6 +78,7 @@ void main() {
       displayName: 'Shepherd',
       currentStateId: 'state-$id',
       config: config,
+      lifecycle: lifecycle,
       createdAt: createdAt ?? now,
       updatedAt: createdAt ?? now,
     );
@@ -105,6 +108,7 @@ void main() {
     templateService = MockAgentTemplateService();
     domainLogger = MockDomainLogger();
     changedTokens = [];
+    coordinatorRunning = false;
 
     when(
       () => domainLogger.log(
@@ -172,6 +176,7 @@ void main() {
       syncService: syncService,
       templateService: templateService,
       domainLogger: domainLogger,
+      isCoordinatorRunning: () => coordinatorRunning,
       onPersistedStateChanged: (token) {
         syncService.events.add('notify');
         changedTokens.add(token);
@@ -479,21 +484,32 @@ void main() {
         },
       );
 
-      test(
-        'pre-check restores the digest cadence for an existing planner',
-        () async {
-          await withClock(
-            Clock.fixed(now),
-            service.ensureCoordinatorDigestWake,
-          );
+      test('pre-check does not bootstrap an absent digest record', () async {
+        await withClock(
+          Clock.fixed(now),
+          service.ensureCoordinatorDigestWake,
+        );
 
-          final record = upsertedWakes().single;
-          expect(record.id, digestRecordId);
-          expect(record.status, ScheduledWakeStatus.pending);
-          expect(record.scheduledAt, DateTime(2026, 5, 26, 6));
-          expect(record.workspaceKey, coordinatorDigestWorkspaceKey);
-        },
-      );
+        verify(() => repository.getEntity(digestRecordId)).called(1);
+        verifyNever(
+          () => syncService.upsertEntity(any(that: isA<ScheduledWakeEntity>())),
+        );
+      });
+
+      test('pre-check ignores a dormant coordinator', () async {
+        when(
+          () => agentService.getAgent(dailyOsPlannerAgentId),
+        ).thenAnswer(
+          (_) async => identity(
+            id: dailyOsPlannerAgentId,
+            lifecycle: AgentLifecycle.dormant,
+          ),
+        );
+
+        await service.ensureCoordinatorDigestWake();
+
+        verifyNever(() => repository.getEntity(digestRecordId));
+      });
 
       test(
         'schedules the first digest wake when no record exists',
@@ -585,6 +601,47 @@ void main() {
         );
       });
 
+      test('pre-check retries a locally interrupted digest', () async {
+        withDigestWatermarks([]);
+        when(
+          () => repository.getEntity(digestRecordId),
+        ).thenAnswer(
+          (_) async => consumedTodayAt(
+            DateTime(2026, 5, 25, 6),
+            leaseHostId: 'test-host',
+          ),
+        );
+
+        await withClock(
+          Clock.fixed(now),
+          service.ensureCoordinatorDigestWake,
+        );
+
+        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 25, 6));
+      });
+
+      test('preserves a consumed row while its digest is running', () async {
+        withDigestWatermarks([]);
+        coordinatorRunning = true;
+
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(
+            DateTime(2026, 5, 25, 6),
+            leaseHostId: 'test-host',
+          ),
+        );
+
+        verifyNever(
+          () => syncService.upsertEntity(any(that: isA<ScheduledWakeEntity>())),
+        );
+        verifyNever(
+          () => repository.getMessagesByKind(
+            dailyOsPlannerAgentId,
+            AgentMessageKind.system,
+          ),
+        );
+      });
+
       test(
         "a watermark from a previous day does not count as today's run",
         () async {
@@ -625,6 +682,20 @@ void main() {
         expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 22, 6));
       });
 
+      test('retries after a same-day backward clock adjustment', () async {
+        withDigestWatermarks([]);
+
+        await restoreWithPlanner(
+          existingRecord: consumedTodayAt(
+            DateTime(2026, 5, 25, 6),
+            consumedAt: DateTime(2026, 5, 25, 8, 15),
+            leaseHostId: 'test-host',
+          ),
+        );
+
+        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 25, 6));
+      });
+
       test('a future-dated watermark does not suppress the retry', () async {
         // Synced history from a peer with a skewed clock. An open-ended "at or
         // after" test would read this as proof today's run finished.
@@ -648,7 +719,9 @@ void main() {
           ),
         );
 
-        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 26, 6));
+        verifyNever(
+          () => syncService.upsertEntity(any(that: isA<ScheduledWakeEntity>())),
+        );
       });
 
       test('the claimant itself does retry its own interrupted run', () async {
@@ -703,7 +776,9 @@ void main() {
           ),
         );
 
-        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 26, 6));
+        verifyNever(
+          () => syncService.upsertEntity(any(that: isA<ScheduledWakeEntity>())),
+        );
       });
 
       test('an unreadable message log skips the retry', () async {
@@ -718,8 +793,11 @@ void main() {
           existingRecord: consumedTodayAt(DateTime(2026, 5, 25, 6)),
         );
 
-        // Of the two failure modes, a duplicate digest is the one that bills.
-        expect(upsertedWakes().single.scheduledAt, DateTime(2026, 5, 26, 6));
+        // Of the two failure modes, a duplicate digest is the one that bills,
+        // so unreadable evidence is preserved rather than overwritten.
+        verifyNever(
+          () => syncService.upsertEntity(any(that: isA<ScheduledWakeEntity>())),
+        );
       });
 
       test(

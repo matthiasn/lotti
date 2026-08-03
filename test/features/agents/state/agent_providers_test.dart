@@ -2352,6 +2352,108 @@ void main() {
       // due until the next hourly tick.
       verify(dayAgentService.ensureCoordinatorDigestWake).called(1);
     });
+
+    test(
+      'its pre-check still repairs the digest when retirement fails',
+      () async {
+        final notifications = UpdateNotifications();
+        final dayAgentService = MockDayAgentService();
+        final domainLogger = MockDomainLogger();
+        when(dayAgentService.retirePastDayAgents).thenThrow(
+          StateError('retirement read failed'),
+        );
+        when(
+          dayAgentService.ensureCoordinatorDigestWake,
+        ).thenAnswer((_) async {});
+        when(
+          () => domainLogger.error(
+            any(),
+            any(),
+            message: any(named: 'message'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        final container = ProviderContainer(
+          overrides: [
+            agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+            wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
+            agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+            updateNotificationsProvider.overrideWithValue(notifications),
+            domainLoggerProvider.overrideWithValue(domainLogger),
+            dayAgentServiceProvider.overrideWithValue(dayAgentService),
+          ],
+        );
+        addTearDown(() {
+          notifications.dispose();
+          container.dispose();
+        });
+
+        await container.read(scheduledWakeManagerProvider).beforeCheck!();
+
+        verify(dayAgentService.ensureCoordinatorDigestWake).called(1);
+        verify(
+          () => domainLogger.error(
+            LogDomain.agentRuntime,
+            any(that: isA<StateError>()),
+            message: 'failed to retire past day agents before wake scan',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'its pre-check keeps retirement when digest repair fails',
+      () async {
+        final notifications = UpdateNotifications();
+        final dayAgentService = MockDayAgentService();
+        final domainLogger = MockDomainLogger();
+        when(dayAgentService.retirePastDayAgents).thenAnswer((_) async => 1);
+        when(dayAgentService.ensureCoordinatorDigestWake).thenThrow(
+          StateError('digest read failed'),
+        );
+        when(
+          () => domainLogger.error(
+            any(),
+            any(),
+            message: any(named: 'message'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        final container = ProviderContainer(
+          overrides: [
+            agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+            wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
+            agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+            updateNotificationsProvider.overrideWithValue(notifications),
+            domainLoggerProvider.overrideWithValue(domainLogger),
+            dayAgentServiceProvider.overrideWithValue(dayAgentService),
+          ],
+        );
+        addTearDown(() {
+          notifications.dispose();
+          container.dispose();
+        });
+
+        await container.read(scheduledWakeManagerProvider).beforeCheck!();
+
+        verify(dayAgentService.retirePastDayAgents).called(1);
+        verify(
+          () => domainLogger.error(
+            LogDomain.agentRuntime,
+            any(that: isA<StateError>()),
+            message: 'failed to repair coordinator digest before wake scan',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('feedbackExtractionServiceProvider', () {
