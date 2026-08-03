@@ -14,7 +14,6 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
-import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
@@ -59,11 +58,6 @@ class NoAgentOverrides {
 
   List<Override> build() => [
     taskAgentProvider.overrideWith((ref, id) async => null),
-    // The offer is gated on the feature being usable: with no task-agent
-    // template installed the picker dead-ends on a warning toast, so the CTA
-    // is withheld. Default to "installed" — the no-template case has its own
-    // dedicated test.
-    taskAgentTemplatesExistProvider.overrideWith((ref) async => true),
   ];
 }
 
@@ -181,11 +175,6 @@ class AgentTestBench {
       surfaceConstraints: surfaceConstraints,
       locale: locale,
       overrides: [
-        // The assign-agent offer is gated on at least one task-agent template
-        // existing — without one the picker it opens dead-ends on a warning
-        // toast. The bench assumes the feature is installed; tests for the
-        // no-template path override this back to false.
-        taskAgentTemplatesExistProvider.overrideWith((ref) async => true),
         configFlagProvider.overrideWith(
           (ref, flagName) => Stream.value(
             flagName == enableAiSummaryTtsFlag

@@ -6,7 +6,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
-import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -101,11 +100,6 @@ void main() {
         await tester.pumpWidget(
           RiverpodWidgetTestBench(
             overrides: [
-              // These cases exercise the *create flow* — what happens after
-              // the tap — so the render gate is pinned open. Whether the CTA
-              // is offered at all when no template exists is covered by its
-              // own test in ai_summary_card_test.dart.
-              taskAgentTemplatesExistProvider.overrideWith((ref) async => true),
               configFlagProvider.overrideWith(
                 (ref, flagName) => Stream.value(true),
               ),
@@ -162,11 +156,6 @@ void main() {
         await tester.pumpWidget(
           RiverpodWidgetTestBench(
             overrides: [
-              // These cases exercise the *create flow* — what happens after
-              // the tap — so the render gate is pinned open. Whether the CTA
-              // is offered at all when no template exists is covered by its
-              // own test in ai_summary_card_test.dart.
-              taskAgentTemplatesExistProvider.overrideWith((ref) async => true),
               configFlagProvider.overrideWith(
                 (ref, flagName) => Stream.value(true),
               ),
@@ -223,11 +212,6 @@ void main() {
         await tester.pumpWidget(
           RiverpodWidgetTestBench(
             overrides: [
-              // These cases exercise the *create flow* — what happens after
-              // the tap — so the render gate is pinned open. Whether the CTA
-              // is offered at all when no template exists is covered by its
-              // own test in ai_summary_card_test.dart.
-              taskAgentTemplatesExistProvider.overrideWith((ref) async => true),
               configFlagProvider.overrideWith(
                 (ref, flagName) => Stream.value(true),
               ),
@@ -389,7 +373,6 @@ class _SuccessPathHarness {
     return RiverpodWidgetTestBench(
       mediaQueryData: const MediaQueryData(size: Size(900, 1000)),
       overrides: [
-        taskAgentTemplatesExistProvider.overrideWith((ref) async => true),
         configFlagProvider.overrideWith((ref, flagName) => Stream.value(true)),
         taskAgentProvider.overrideWith(
           (ref, id) async => _agentAttached ? makeTestIdentity() : null,

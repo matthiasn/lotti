@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
@@ -80,15 +79,11 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     required Task task,
-    bool templatesExist = true,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: <Override>[
           entryCreationServiceProvider.overrideWithValue(creation),
-          taskAgentTemplatesExistProvider.overrideWith(
-            (ref) async => templatesExist,
-          ),
         ],
         child: WidgetTestBench(child: TaskFirstRunActions(task: task)),
       ),
@@ -168,18 +163,6 @@ void main() {
     });
 
     testWidgets(
-      'without a single task-agent template the agent row is absent — the '
-      'picker would dead-end on a warning toast',
-      (tester) async {
-        await pump(tester, task: buildTask(), templatesExist: false);
-
-        expect(find.text('Assign an agent'), findsNothing);
-        expect(find.text('Write a note'), findsOneWidget);
-        expect(find.byType(DesignSystemListItem), findsNWidgets(3));
-      },
-    );
-
-    testWidgets(
       'the note row creates a text entry linked to this task AND scrolls to '
       'it — a linked entry does not navigate on its own, so without the focus '
       'intent the row looked like a dead button that silently made empty notes',
@@ -187,7 +170,6 @@ void main() {
         final container = ProviderContainer(
           overrides: <Override>[
             entryCreationServiceProvider.overrideWithValue(creation),
-            taskAgentTemplatesExistProvider.overrideWith((ref) async => true),
           ],
         );
         addTearDown(container.dispose);

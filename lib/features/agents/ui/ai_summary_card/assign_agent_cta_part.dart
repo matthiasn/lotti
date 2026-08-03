@@ -40,12 +40,6 @@ class AssignAgentCta extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    // No templates, no offer — see [taskAgentTemplatesExistProvider]. Absent
-    // while the lookup is in flight too, so a fresh install never flashes an
-    // offer it is about to withdraw.
-    if (ref.watch(taskAgentTemplatesExistProvider).value != true) {
-      return const SizedBox.shrink();
-    }
     final radius = BorderRadius.circular(tokens.radii.l);
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -83,22 +77,6 @@ class AssignAgentCta extends ConsumerWidget {
     );
   }
 }
-
-/// Whether any task-agent template exists at all.
-///
-/// The assign offer is only rendered when this is true. Without a single
-/// task-agent template — the state of a fresh install — tapping "Assign
-/// Agent" ran the whole picker flow only to dead-end on a warning toast,
-/// which is exactly the "don't offer what cannot happen" rule the linked-tasks
-/// card already follows. The picker itself still narrows to category-scoped
-/// templates first; this is only the "is the feature usable at all" gate.
-final FutureProvider<bool> taskAgentTemplatesExistProvider =
-    FutureProvider<bool>((ref) async {
-      final templates = await ref
-          .watch(agentTemplateServiceProvider)
-          .listTemplates();
-      return templates.any((t) => t.kind == AgentTemplateKind.taskAgent);
-    }, name: 'taskAgentTemplatesExistProvider');
 
 /// Opens the assign-agent picker for [taskId] and creates the agent on
 /// confirmation. Public so the task page's first-run block can offer the same

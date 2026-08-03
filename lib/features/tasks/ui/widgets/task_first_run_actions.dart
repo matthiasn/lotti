@@ -71,11 +71,6 @@ class TaskFirstRunActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final radius = BorderRadius.circular(tokens.radii.l);
-    // Only offered when the feature can actually run — same gate the
-    // standalone CTA uses.
-    final canAssignAgent =
-        ref.watch(taskAgentTemplatesExistProvider).value == true;
-
     final rows = <Widget>[
       // First, because writing something down is what a journaling app's user
       // came to do. The page offered a voice note and a checklist and no way
@@ -122,26 +117,25 @@ class TaskFirstRunActions extends ConsumerWidget {
               categoryId: task.meta.categoryId,
             ),
       ),
-      if (canAssignAgent)
-        _FirstRunRow(
-          icon: Icons.auto_awesome_rounded,
-          // The AI accent, the one place this palette appears on an empty
-          // task, so the agent row reads as a different kind of offer from
-          // the two manual ones above it.
-          iconColor: tokens.colors.aiCard.accent,
-          // The block's own sentence-case label, not the chip's Title Case
-          // one: three rows reading "Write a note / Add a checklist / Assign
-          // Agent" made the third look imported from somewhere else.
-          label: context.messages.taskFirstRunAssignAgent,
-          // One short sentence describing what the tap does. It first named
-          // the category-default alternative instead, which described a
-          // different screen than the row it sat under; then it did both,
-          // which made the card's most optional row its largest — and
-          // truncated in German on a phone. The category route now belongs to
-          // the picker this row opens.
-          subtitle: context.messages.taskAgentAssignHint,
-          onTap: () => showAssignTaskAgentPicker(context, ref, task.meta.id),
-        ),
+      _FirstRunRow(
+        icon: Icons.auto_awesome_rounded,
+        // The AI accent, the one place this palette appears on an empty
+        // task, so the agent row reads as a different kind of offer from
+        // the two manual ones above it.
+        iconColor: tokens.colors.aiCard.accent,
+        // The block's own sentence-case label, not the chip's Title Case
+        // one: three rows reading "Write a note / Add a checklist / Assign
+        // Agent" made the third look imported from somewhere else.
+        label: context.messages.taskFirstRunAssignAgent,
+        // One short sentence describing what the tap does. It first named
+        // the category-default alternative instead, which described a
+        // different screen than the row it sat under; then it did both,
+        // which made the card's most optional row its largest — and
+        // truncated in German on a phone. The category route now belongs to
+        // the picker this row opens.
+        subtitle: context.messages.taskAgentAssignHint,
+        onTap: () => showAssignTaskAgentPicker(context, ref, task.meta.id),
+      ),
     ];
 
     // Its own measure, narrower than the page's reading column. A row of a
