@@ -35,11 +35,17 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
           uuidV5Input: json.encode(data),
         ),
       );
-      await logic.createDbEntity(
+      // Honour the write verdict. Health entries carry deterministic uuidV5
+      // ids and `createDbEntity` writes with `overwrite: false`, so
+      // re-importing a range that is already stored is rejected row by row.
+      // Returning the entity regardless made every caller unable to tell a
+      // fresh sample from a duplicate — the health import counted both and
+      // told the user it had imported samples it had not.
+      final applied = await logic.createDbEntity(
         journalEntity,
         shouldAddGeolocation: false,
       );
-      return journalEntity;
+      return (applied ?? false) ? journalEntity : null;
     } catch (exception, stackTrace) {
       loggingService.error(
         LogDomain.persistence,
@@ -63,12 +69,12 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
         ),
       );
 
-      await logic.createDbEntity(
+      final applied = await logic.createDbEntity(
         workout,
         shouldAddGeolocation: false,
       );
 
-      return workout;
+      return (applied ?? false) ? workout : null;
     } catch (exception, stackTrace) {
       loggingService.error(
         LogDomain.persistence,

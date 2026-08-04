@@ -24,8 +24,12 @@ The available imports are:
 - **Body Measurement** for body-metric readings; and
 - **Workout** for recorded workouts.
 
-Each button imports only its own data family over the displayed date range.
-Changing the range does not start an import by itself.
+Each row imports only its own data family over the displayed date range, and
+reports what happened underneath its name once it has finished: how many samples
+arrived, that there were none, that access was denied, or that the import
+failed. **Import all** runs every row in turn. The **Last 7 / 30 / 90 days**
+shortcuts set both dates at once; changing the range does not start an import by
+itself.
 
 Your operating system may ask for health-data permission. Lotti can only read
 the types you grant. If an expected data family is missing, check the app's

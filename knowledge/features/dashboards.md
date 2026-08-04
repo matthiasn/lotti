@@ -79,8 +79,10 @@ chart runs the matching questionnaire — CFQ-11, PANAS or GHQ-12, dispatched on
 .createSurveyEntry`. Both mean recording a value does not require navigating away,
 which is why this feature is not purely read-only.
 
-The other three render only: health and workout data arrive from outside the app,
-and a habit is completed on its own surface.
+The other three render only: health and workout data arrive from outside the app
+— see [health import](health_import.md) for how, including the background delta
+each health chart schedules on construction — and a habit is completed on its own
+surface.
 
 # Refresh and caching
 

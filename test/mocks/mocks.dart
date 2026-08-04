@@ -915,6 +915,16 @@ class MockHealthService extends Mock implements HealthService {}
 
 class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
 
+/// The device-info payloads, mocked rather than built from a map: their
+/// `fromMap` factories assume the full native payload and throw on a partial
+/// one, so a test that only cares about the model would have to spell out every
+/// unrelated field.
+class MockIosDeviceInfo extends Mock implements IosDeviceInfo {}
+
+class MockIosUtsname extends Mock implements IosUtsname {}
+
+class MockAndroidDeviceInfo extends Mock implements AndroidDeviceInfo {}
+
 class MockBuildContext extends Mock implements BuildContext {}
 
 class MockAssetEntity extends Mock implements AssetEntity {}

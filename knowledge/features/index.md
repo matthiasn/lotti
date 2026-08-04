@@ -29,6 +29,7 @@ what it does for a user; these describe how it runs.
 * [Labels](labels.md) - the lightweight taxonomy and its AI-suggestion coupling.
 * [Insights](insights.md) - time analysis over the journal.
 * [Dashboards](dashboards.md) - user-built chart views over journal data.
+* [Health import](health_import.md) - reading Apple Health / Health Connect samples into the journal: one queue, one authorization sheet at a time.
 
 # Replication and delivery
 

@@ -4735,15 +4735,46 @@
   "settingsHabitsSearchHint": "Search habits…",
   "settingsHabitsSubtitle": "Manage your habits and routines",
   "settingsHabitsTitle": "Habits",
-  "settingsHealthImportActivity": "Import Activity Data",
-  "settingsHealthImportBloodPressure": "Import Blood Pressure Data",
-  "settingsHealthImportBodyMeasurement": "Import Body Measurement Data",
+  "settingsHealthImportActivity": "Activity",
+  "settingsHealthImportActivityDescription": "Steps, flights climbed and walking distance",
+  "settingsHealthImportAll": "Import all",
+  "settingsHealthImportBloodPressure": "Blood Pressure",
+  "settingsHealthImportBloodPressureDescription": "Systolic and diastolic readings",
+  "settingsHealthImportBodyMeasurement": "Body Measurements",
+  "settingsHealthImportBodyMeasurementDescription": "Weight, body fat, BMI and height",
+  "settingsHealthImportDataSectionTitle": "Data to import",
   "settingsHealthImportFromDate": "Start",
-  "settingsHealthImportHeartRate": "Import Heart Rate Data",
-  "settingsHealthImportSleep": "Import Sleep Data",
+  "settingsHealthImportHeartRate": "Heart Rate",
+  "settingsHealthImportHeartRateDescription": "Resting rate, walking rate and variability",
+  "settingsHealthImportQuickRange": "{days, plural, =1{Last day} other{Last {days} days}}",
+  "@settingsHealthImportQuickRange": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportRangeSectionTitle": "Date range",
+  "settingsHealthImportSleep": "Sleep",
+  "settingsHealthImportSleepDescription": "Time in bed and sleep stages",
+  "settingsHealthImportStatusFailed": "Import failed — check the logs",
+  "settingsHealthImportStatusImported": "{count, plural, =0{No new samples} =1{1 sample imported} other{{count} samples imported}}",
+  "@settingsHealthImportStatusImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportStatusPermissionDenied": "Access denied — allow Lotti in your health app",
+  "settingsHealthImportStatusRunning": "Importing…",
+  "settingsHealthImportStatusUnsupportedType": "This data type is no longer supported",
+  "settingsHealthImportSubtitle": "Import from Apple Health or Health Connect",
   "settingsHealthImportTitle": "Health Import",
   "settingsHealthImportToDate": "End",
-  "settingsHealthImportWorkout": "Import Workout Data",
+  "settingsHealthImportUnavailable": "Health data is only available on iOS and Android",
+  "settingsHealthImportWorkout": "Workouts",
+  "settingsHealthImportWorkoutDescription": "Workouts with distance and energy burned",
   "settingsKeyboardShortcutsSubtitle": "Learn the keyboard combinations for faster desktop navigation and editing",
   "settingsKeyboardShortcutsTitle": "Keyboard shortcuts",
   "settingsLabelsCategoriesAdd": "Add category",

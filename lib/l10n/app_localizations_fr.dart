@@ -9420,24 +9420,93 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsHabitsTitle => 'Habitudes';
 
   @override
-  String get settingsHealthImportActivity => 'Importer les données d\'activité';
+  String get settingsHealthImportActivity => 'Activité';
 
   @override
-  String get settingsHealthImportBloodPressure =>
-      'Importer les données de tension artérielle';
+  String get settingsHealthImportActivityDescription =>
+      'Pas, étages montés et distance à pied';
 
   @override
-  String get settingsHealthImportBodyMeasurement => 'Importer les mensurations';
+  String get settingsHealthImportAll => 'Tout importer';
+
+  @override
+  String get settingsHealthImportBloodPressure => 'Tension artérielle';
+
+  @override
+  String get settingsHealthImportBloodPressureDescription =>
+      'Valeurs systoliques et diastoliques';
+
+  @override
+  String get settingsHealthImportBodyMeasurement => 'Mensurations';
+
+  @override
+  String get settingsHealthImportBodyMeasurementDescription =>
+      'Poids, masse grasse, IMC et taille';
+
+  @override
+  String get settingsHealthImportDataSectionTitle => 'Données à importer';
 
   @override
   String get settingsHealthImportFromDate => 'Début';
 
   @override
-  String get settingsHealthImportHeartRate =>
-      'Importer les données de fréquence cardiaque';
+  String get settingsHealthImportHeartRate => 'Fréquence cardiaque';
 
   @override
-  String get settingsHealthImportSleep => 'Importer les données de sommeil';
+  String get settingsHealthImportHeartRateDescription =>
+      'Au repos, à la marche et variabilité cardiaque';
+
+  @override
+  String settingsHealthImportQuickRange(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days derniers jours',
+      one: 'Dernier jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHealthImportRangeSectionTitle => 'Période';
+
+  @override
+  String get settingsHealthImportSleep => 'Sommeil';
+
+  @override
+  String get settingsHealthImportSleepDescription =>
+      'Temps au lit et phases de sommeil';
+
+  @override
+  String get settingsHealthImportStatusFailed =>
+      'Échec de l’import — consulte les journaux';
+
+  @override
+  String settingsHealthImportStatusImported(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mesures importées',
+      one: '1 mesure importée',
+      zero: 'Aucune nouvelle mesure',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHealthImportStatusPermissionDenied =>
+      'Accès refusé — autorise Lotti dans ton app de santé';
+
+  @override
+  String get settingsHealthImportStatusRunning => 'Importation…';
+
+  @override
+  String get settingsHealthImportStatusUnsupportedType =>
+      'Ce type de données n’est plus pris en charge';
+
+  @override
+  String get settingsHealthImportSubtitle =>
+      'Importe depuis Apple Santé ou Health Connect';
 
   @override
   String get settingsHealthImportTitle => 'Importation de données de santé';
@@ -9446,8 +9515,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsHealthImportToDate => 'Fin';
 
   @override
-  String get settingsHealthImportWorkout =>
-      'Importer les données d\'entraînement';
+  String get settingsHealthImportUnavailable =>
+      'Les données de santé ne sont disponibles que sur iOS et Android';
+
+  @override
+  String get settingsHealthImportWorkout => 'Entraînements';
+
+  @override
+  String get settingsHealthImportWorkoutDescription =>
+      'Entraînements avec distance et énergie dépensée';
 
   @override
   String get settingsKeyboardShortcutsSubtitle =>

@@ -3763,15 +3763,46 @@
   "settingsHabitsSearchHint": "Căutați obiceiuri…",
   "settingsHabitsSubtitle": "Gestionați obiceiurile și rutinele dvs.",
   "settingsHabitsTitle": "Obiceiuri",
-  "settingsHealthImportActivity": "Importați datele de activitate",
-  "settingsHealthImportBloodPressure": "Importați datele de tensiune arterială",
-  "settingsHealthImportBodyMeasurement": "Importați datele de măsurători corporale",
+  "settingsHealthImportActivity": "Activitate",
+  "settingsHealthImportActivityDescription": "Pași, etaje urcate și distanța parcursă",
+  "settingsHealthImportAll": "Importați tot",
+  "settingsHealthImportBloodPressure": "Tensiune arterială",
+  "settingsHealthImportBloodPressureDescription": "Valori sistolice și diastolice",
+  "settingsHealthImportBodyMeasurement": "Măsurători corporale",
+  "settingsHealthImportBodyMeasurementDescription": "Greutate, grăsime corporală, IMC și înălțime",
+  "settingsHealthImportDataSectionTitle": "Date de importat",
   "settingsHealthImportFromDate": "Început",
-  "settingsHealthImportHeartRate": "Importați datele de puls",
-  "settingsHealthImportSleep": "Importați datele de somn",
+  "settingsHealthImportHeartRate": "Puls",
+  "settingsHealthImportHeartRateDescription": "În repaus, la mers și variabilitatea pulsului",
+  "settingsHealthImportQuickRange": "{days, plural, =1{Ultima zi} few{Ultimele {days} zile} other{Ultimele {days} de zile}}",
+  "@settingsHealthImportQuickRange": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportRangeSectionTitle": "Interval de timp",
+  "settingsHealthImportSleep": "Somn",
+  "settingsHealthImportSleepDescription": "Timpul în pat și fazele somnului",
+  "settingsHealthImportStatusFailed": "Importul a eșuat — verificați jurnalele",
+  "settingsHealthImportStatusImported": "{count, plural, =0{Nicio valoare nouă} =1{1 valoare importată} few{{count} valori importate} other{{count} de valori importate}}",
+  "@settingsHealthImportStatusImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportStatusPermissionDenied": "Acces refuzat — permiteți Lotti în aplicația dvs. de sănătate",
+  "settingsHealthImportStatusRunning": "Se importă…",
+  "settingsHealthImportStatusUnsupportedType": "Acest tip de date nu mai este acceptat",
+  "settingsHealthImportSubtitle": "Importați din Apple Health sau Health Connect",
   "settingsHealthImportTitle": "Import de date de sănătate",
   "settingsHealthImportToDate": "Sfârșit",
-  "settingsHealthImportWorkout": "Importați datele de antrenament",
+  "settingsHealthImportUnavailable": "Datele de sănătate sunt disponibile doar pe iOS și Android",
+  "settingsHealthImportWorkout": "Antrenamente",
+  "settingsHealthImportWorkoutDescription": "Antrenamente cu distanță și energie consumată",
   "settingsKeyboardShortcutsSubtitle": "Aflați combinațiile de taste pentru navigare și editare mai rapide pe desktop",
   "settingsKeyboardShortcutsTitle": "Comenzi rapide de la tastatură",
   "settingsLabelsCategoriesAdd": "Adăugați o categorie",

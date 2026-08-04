@@ -4275,15 +4275,46 @@
   "settingsHabitsSearchHint": "Zoekgewoonten...",
   "settingsHabitsSubtitle": "Beheer uw gewoonten en routines",
   "settingsHabitsTitle": "Gewoontes",
-  "settingsHealthImportActivity": "Gegevens over de invoeractiviteit",
-  "settingsHealthImportBloodPressure": "Bloeddrukgegevens importeren",
-  "settingsHealthImportBodyMeasurement": "Gegevens over de import van lichaamsmetingen",
+  "settingsHealthImportActivity": "Activiteit",
+  "settingsHealthImportActivityDescription": "Stappen, traplopen en wandelafstand",
+  "settingsHealthImportAll": "Alles importeren",
+  "settingsHealthImportBloodPressure": "Bloeddruk",
+  "settingsHealthImportBloodPressureDescription": "Systolische en diastolische waarden",
+  "settingsHealthImportBodyMeasurement": "Lichaamsmaten",
+  "settingsHealthImportBodyMeasurementDescription": "Gewicht, lichaamsvet, BMI en lengte",
+  "settingsHealthImportDataSectionTitle": "Te importeren gegevens",
   "settingsHealthImportFromDate": "Begin",
-  "settingsHealthImportHeartRate": "Hartslaggegevens importeren",
-  "settingsHealthImportSleep": "Slaapgegevens importeren",
+  "settingsHealthImportHeartRate": "Hartslag",
+  "settingsHealthImportHeartRateDescription": "Rust, wandelen en variabiliteit",
+  "settingsHealthImportQuickRange": "{days, plural, =1{Laatste dag} other{Laatste {days} dagen}}",
+  "@settingsHealthImportQuickRange": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportRangeSectionTitle": "Periode",
+  "settingsHealthImportSleep": "Slaap",
+  "settingsHealthImportSleepDescription": "Tijd in bed en slaapfasen",
+  "settingsHealthImportStatusFailed": "Importeren mislukt — bekijk de logs",
+  "settingsHealthImportStatusImported": "{count, plural, =0{Geen nieuwe waarden} =1{1 waarde geïmporteerd} other{{count} waarden geïmporteerd}}",
+  "@settingsHealthImportStatusImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportStatusPermissionDenied": "Toegang geweigerd — geef Lotti toegang in je gezondheidsapp",
+  "settingsHealthImportStatusRunning": "Bezig met importeren…",
+  "settingsHealthImportStatusUnsupportedType": "Dit gegevenstype wordt niet meer ondersteund",
+  "settingsHealthImportSubtitle": "Importeer uit Apple Health of Health Connect",
   "settingsHealthImportTitle": "Gezondheidsimport",
   "settingsHealthImportToDate": "Einde",
-  "settingsHealthImportWorkout": "Gegevens importeren",
+  "settingsHealthImportUnavailable": "Gezondheidsgegevens zijn alleen beschikbaar op iOS en Android",
+  "settingsHealthImportWorkout": "Workouts",
+  "settingsHealthImportWorkoutDescription": "Workouts met afstand en verbruikte energie",
   "settingsKeyboardShortcutsSubtitle": "De toetsenbordcombinaties leren voor snellere desktopnavigatie en bewerken",
   "settingsKeyboardShortcutsTitle": "Sneltoetsen",
   "settingsLabelsCategoriesAdd": "Categorie toevoegen",
