@@ -45,7 +45,7 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 
-class TestableOutboxService extends OutboxService {
+class TestableOutboxService extends MatrixOutboxService {
   TestableOutboxService({
     required super.syncDatabase,
     required super.loggingService,
@@ -115,7 +115,7 @@ OutboxService buildSequenceLogService({
   required UserActivityGate gate,
   SyncSequenceLogService? sequenceLogService,
 }) {
-  return OutboxService(
+  return MatrixOutboxService(
     syncDatabase: syncDatabase,
     loggingService: loggingService,
     vectorClockService: vectorClockService,
@@ -879,7 +879,7 @@ void main() {
     when(ownedGate.waitUntilIdle).thenAnswer((_) async {});
     when(ownedGate.dispose).thenAnswer((_) async {});
 
-    final serviceOwned = OutboxService(
+    final serviceOwned = MatrixOutboxService(
       syncDatabase: syncDatabase,
       loggingService: loggingService,
       vectorClockService: vectorClockService,
@@ -903,7 +903,7 @@ void main() {
     when(externalGate.waitUntilIdle).thenAnswer((_) async {});
     when(externalGate.dispose).thenAnswer((_) async {});
 
-    final serviceExternal = OutboxService(
+    final serviceExternal = MatrixOutboxService(
       syncDatabase: syncDatabase,
       loggingService: loggingService,
       vectorClockService: vectorClockService,
@@ -2597,7 +2597,7 @@ void main() {
 
       final matrixService = stubMatrixService();
 
-      final svc = OutboxService(
+      final svc = MatrixOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -2761,7 +2761,7 @@ void main() {
 
   test('throws when neither matrix service nor message sender provided', () {
     expect(
-      () => OutboxService(
+      () => MatrixOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -2776,7 +2776,7 @@ void main() {
   test('constructs with matrixService fallback sender', () async {
     final matrixService = stubMatrixService();
 
-    final serviceWithMatrix = OutboxService(
+    final serviceWithMatrix = MatrixOutboxService(
       syncDatabase: syncDatabase,
       loggingService: loggingService,
       vectorClockService: vectorClockService,
@@ -2825,7 +2825,7 @@ void main() {
 
       // Inject matrixService by replacing the sender with MatrixOutboxMessageSender
       // and re-creating the service with matrixService for login gate.
-      final gatedSvc = OutboxService(
+      final gatedSvc = MatrixOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -2861,7 +2861,7 @@ void main() {
       final matrixService = stubMatrixService();
       when(matrixService.isLoggedIn).thenReturn(true);
 
-      final svc = OutboxService(
+      final svc = MatrixOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -2909,7 +2909,7 @@ void main() {
         when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
 
         fakeAsync((async) {
-          final svc = OutboxService(
+          final svc = MatrixOutboxService(
             syncDatabase: syncDatabase,
             loggingService: loggingService,
             vectorClockService: vectorClockService,
@@ -2984,7 +2984,7 @@ void main() {
         addTearDown(connectivityController.close);
 
         fakeAsync((async) {
-          final svc = OutboxService(
+          final svc = MatrixOutboxService(
             syncDatabase: syncDatabase,
             loggingService: loggingService,
             vectorClockService: vectorClockService,
@@ -3248,7 +3248,7 @@ void main() {
       });
 
       await withClock(Clock(() => now), () async {
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -3388,7 +3388,7 @@ void main() {
       ).thenAnswer((_) => countController.stream);
 
       fakeAsync((async) {
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -3467,7 +3467,7 @@ void main() {
 
       fakeAsync((async) {
         gateReleased = Completer<void>();
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -3542,7 +3542,7 @@ void main() {
       ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       fakeAsync((async) {
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -3595,7 +3595,7 @@ void main() {
       ).thenAnswer((_) => const Stream<int>.empty());
 
       fakeAsync((async) {
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -3663,7 +3663,7 @@ void main() {
       ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       fakeAsync((async) {
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -3709,7 +3709,7 @@ void main() {
       ).thenAnswer((_) => countController.stream);
 
       fakeAsync((async) {
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -3759,7 +3759,7 @@ void main() {
         ).thenAnswer((_) => countController.stream);
 
         fakeAsync((async) {
-          final svc = OutboxService(
+          final svc = MatrixOutboxService(
             syncDatabase: syncDatabase,
             loggingService: loggingService,
             vectorClockService: vectorClockService,
@@ -3833,7 +3833,7 @@ void main() {
       ).thenAnswer((_) => countController.stream);
 
       fakeAsync((async) {
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -3879,7 +3879,7 @@ void main() {
       ).thenAnswer((_) => countController.stream);
 
       fakeAsync((async) {
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -3928,7 +3928,7 @@ void main() {
         OutboxService? svc;
         runZonedGuarded(
           () {
-            svc = OutboxService(
+            svc = MatrixOutboxService(
               syncDatabase: syncDatabase,
               loggingService: loggingService,
               vectorClockService: vectorClockService,
@@ -4008,7 +4008,7 @@ void main() {
 
       fakeAsync((async) {
         gateReleased = Completer<void>();
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -4112,7 +4112,7 @@ void main() {
 
         fakeAsync((async) {
           gateReleased = Completer<void>();
-          final svc = OutboxService(
+          final svc = MatrixOutboxService(
             syncDatabase: syncDatabase,
             loggingService: loggingService,
             vectorClockService: vectorClockService,
@@ -4209,7 +4209,7 @@ void main() {
 
         fakeAsync((async) {
           fetchPending = Completer<List<OutboxItem>>();
-          final svc = OutboxService(
+          final svc = MatrixOutboxService(
             syncDatabase: syncDatabase,
             loggingService: loggingService,
             vectorClockService: vectorClockService,
@@ -5448,7 +5448,7 @@ void main() {
           () => nullHostVcs.getHostHash(),
         ).thenAnswer((_) async => 'hash123');
 
-        final serviceWithNullHost = OutboxService(
+        final serviceWithNullHost = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: nullHostVcs,
@@ -6816,7 +6816,7 @@ void main() {
         final matrixService = stubMatrixService();
         when(matrixService.isLoggedIn).thenReturn(false);
 
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -6873,7 +6873,7 @@ void main() {
         // service at t0, then call sendNext after the 5 s grace elapsed.
         var now = DateTime(2026, 3, 15, 10);
         await withClock(Clock(() => now), () async {
-          final svc = OutboxService(
+          final svc = MatrixOutboxService(
             syncDatabase: syncDatabase,
             loggingService: loggingService,
             vectorClockService: vectorClockService,
@@ -7027,7 +7027,7 @@ void main() {
         ).thenAnswer((_) async => <OutboxItem>[]);
 
         final gate = createGate();
-        final svc = OutboxService(
+        final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,

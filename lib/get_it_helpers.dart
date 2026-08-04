@@ -87,14 +87,20 @@ void _safeLog(String message, {required bool isError}) {
 /// one-time sequence-log backfill. Split from [registerSingletons] for file
 /// size; every dependency is resolved through [getIt], so no state is
 /// threaded in from the caller.
-Future<void> _registerLateAndOptionalServices() async {
+Future<void> _registerLateAndOptionalServices({
+  required ProfileContext profile,
+}) async {
   // Register services that might fail in sandboxed environments using lazy loading
   _registerLazyServiceSafely<AudioWaveformService>(
     AudioWaveformService.new,
     'AudioWaveformService',
   );
 
-  unawaited(getIt<MatrixService>().init());
+  // Guest worlds have no MatrixService registered — the sync stack is
+  // structurally absent, so there is nothing to init.
+  if (profile.capabilities.syncEnabled) {
+    unawaited(getIt<MatrixService>().init());
+  }
 
   // Label validator used by the assignment processor
   _registerLazyServiceSafely<LabelValidator>(
@@ -162,6 +168,10 @@ Future<void> _registerLateAndOptionalServices() async {
   }
   // coverage:ignore-end
 
-  // Automatically populate sequence log if empty (one-time migration)
-  unawaited(_checkAndPopulateSequenceLog());
+  // Automatically populate sequence log if empty (one-time migration).
+  // Skipped in guest worlds: their sequence log stays empty because nothing
+  // ever enqueues.
+  if (profile.capabilities.syncEnabled) {
+    unawaited(_checkAndPopulateSequenceLog());
+  }
 }

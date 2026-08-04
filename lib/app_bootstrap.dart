@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -199,9 +200,16 @@ Future<ProfileContext> bootstrapProfileServices(
 
 /// The getIt→Riverpod bridge overrides, recomputed for every service
 /// generation so a rebuilt ProviderScope binds to the fresh singletons.
+///
+/// In guest worlds [matrixServiceProvider] is deliberately NOT overridden:
+/// the Matrix stack is never constructed there, and an accidental resolution
+/// should fail loudly (UnimplementedError) instead of silently no-opping —
+/// every sync surface is expected to gate on [syncFeatureAvailableProvider].
 List<Override> buildProviderOverrides(ProfileContext context) {
   return [
-    matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
+    profileContextProvider.overrideWithValue(context),
+    if (context.capabilities.syncEnabled)
+      matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
     maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
     journalDbProvider.overrideWithValue(getIt<JournalDb>()),
     syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),

@@ -144,7 +144,7 @@ class _DeviceOutbox {
     required this.deviceName,
   });
 
-  final OutboxService service;
+  final MatrixOutboxService service;
   final _ObservedOutboxMessageSender sender;
   final JournalDb journalDb;
   final SyncDatabase syncDb;
@@ -168,7 +168,7 @@ class _DeviceOutbox {
       loggingService: loggingService,
     );
     final sender = _ObservedOutboxMessageSender(matrixService);
-    final service = OutboxService(
+    final service = MatrixOutboxService(
       syncDatabase: syncDb,
       loggingService: loggingService,
       vectorClockService: vectorClockService,
@@ -206,7 +206,7 @@ class _DeviceMediaRepair {
 
   factory _DeviceMediaRepair.wire({
     required MatrixService matrixService,
-    required OutboxService outboxService,
+    required MatrixOutboxService outboxService,
     required JournalDb journalDb,
     required VectorClockService vectorClockService,
     required Directory documentsDirectory,
