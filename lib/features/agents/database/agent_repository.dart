@@ -449,9 +449,6 @@ class AgentRepository {
 
   Future<void> upsertLink(model.AgentLink link) => _links.upsertLink(link);
 
-  Future<void> insertLinkExclusive(model.AgentLink link) =>
-      _links.insertLinkExclusive(link);
-
   Future<List<model.AgentLink>> getLinksFrom(String fromId, {String? type}) =>
       _links.getLinksFrom(fromId, type: type);
 

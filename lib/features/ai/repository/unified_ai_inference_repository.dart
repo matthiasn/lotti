@@ -94,7 +94,8 @@ class UnifiedAiInferenceRepository {
   }
 
   // For testing purposes only
-  // ignore: avoid_setters_without_getters
+  // Injected by repository tests outside DCM's `lib`-only usage graph.
+  // ignore: avoid_setters_without_getters, unused-code
   set autoChecklistServiceForTesting(AutoChecklistService service) {
     _autoChecklistService = service;
   }
@@ -967,6 +968,9 @@ class UnifiedAiInferenceRepository {
   // entity/category context.
   // ===========================================================================
 
+  // Exercised directly by repository and widget tests outside DCM's
+  // `lib`-only usage graph.
+  // ignore: unused-code
   Future<List<AiConfigPrompt>> getActivePromptsForContext({
     required JournalEntity entity,
   }) => _promptResolver.getActivePromptsForContext(entity: entity);

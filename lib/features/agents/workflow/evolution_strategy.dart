@@ -112,6 +112,8 @@ class EvolutionStrategy extends ConversationStrategy {
   PendingRitualRecap? get latestRecap => _latestRecap;
 
   /// All notes recorded during this session.
+  // Read by workflow tests outside DCM's `lib`-only usage graph.
+  // ignore: unused-code
   List<PendingNote> get pendingNotes => List.unmodifiable(_pendingNotes);
 
   /// Clear the current proposal (e.g., after rejection).
